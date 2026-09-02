@@ -1283,7 +1283,13 @@ describe('Typeahead disabledMessage', () => {
       />,
     );
 
-    const container = screen.getByRole('combobox').parentElement as HTMLElement;
+    // The field itself, by its own class: the input no longer sits directly
+    // inside it — it is in the content lane that bounds the value — and
+    // `mouseEnter` does not bubble, so the hover has to land on the element
+    // the tooltip is actually bound to.
+    const container = document.querySelector(
+      '.astryx-typeahead',
+    ) as HTMLElement;
     const tooltip = screen.getByRole('tooltip', h);
     expect(tooltip).toHaveTextContent('You need the Editor role');
 
@@ -1649,13 +1655,12 @@ describe('end controls stay in flow', () => {
     ).toBeNull();
   });
 
-  it('holds the controls at the inline end when a token collapses the input', () => {
-    // The field pushes its end controls over with an `auto` margin rather
-    // than by leaning on the input to absorb the free space, because it
-    // collapses that input to nothing while a token shows. Without it the
-    // clear button sat against the token in mid-field instead of in the
-    // corner: measured in Chromium at a 300px field width, x=49.7 with the
-    // margin removed against x=271 with it.
+  it('holds the controls at the inline end when a token shows', () => {
+    // `auto` gives free space to the margin rather than to a sibling, so the
+    // controls stay in the corner in the states where the content lane is not
+    // the only flexible item in the row. Without it the clear button sat
+    // against the token in mid-field instead of in the corner (measured:
+    // x=39 in a 300px field, against TextInput's 281).
     render(
       <Typeahead
         label="Fruit"
@@ -1683,5 +1688,129 @@ describe('end controls stay in flow', () => {
     );
     const field = container.querySelector('.astryx-typeahead') as HTMLElement;
     expect(getComputedStyle(field).flexWrap).not.toBe('wrap');
+  });
+
+  it('keeps the input in flow while a token shows, so the field keeps its width', () => {
+    // A field's width must not depend on its value. Every other field in the
+    // family gets that for free: the `<input>` stays in flow and the field is
+    // as wide as the input's own intrinsic width. This one used to take the
+    // input out of flow and zero its width when a token showed, leaving the
+    // field measuring the token — in a shrink-to-fit parent it snapped to the
+    // value's length (199px to 57px in Chromium, #5560). Block parents hid it,
+    // which is why no story caught it. jsdom resolves no layout, so assert the
+    // mechanism: the input still occupies the row.
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    const style = getComputedStyle(input);
+    expect(style.position).not.toBe('absolute');
+    expect(style.width).not.toBe('0px');
+    expect(style.flex).not.toBe('0 0 0');
+  });
+
+  it('paints the token over the input rather than beside it', () => {
+    // In flow the token would add its own width to the row — the same
+    // value-dependent sizing from the other direction, where a long value
+    // grows the field instead of collapsing it.
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    const token = container.querySelector('.astryx-token') as HTMLElement;
+    expect(getComputedStyle(token).position).toBe('absolute');
+  });
+
+  it('lets the token take the pointer that the hidden input would swallow', () => {
+    // The input still covers that space, so it has to stop intercepting the
+    // clicks that enter edit mode.
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    expect(getComputedStyle(screen.getByRole('combobox')).pointerEvents).toBe(
+      'none',
+    );
+  });
+});
+
+describe('the value is bounded by the content lane', () => {
+  // Keeping the input in flow fixed the field's width, but it left the token
+  // positioned against the whole field, which has no idea where the end
+  // controls start. A value longer than the input then ran under the clear
+  // button and out past the field's own border — measured in Chromium at
+  // 28-33px of overlap and up to 4px outside the border, worse than the 12px
+  // of overlap on main. The lane is the box the value may occupy: an ordinary
+  // flex item that ends exactly where the end lane begins.
+  //
+  // jsdom resolves no layout, so what is asserted here is the mechanism. The
+  // geometry is browser-verified in the PR.
+  const renderWithValue = () =>
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+
+  it('puts the input and the token in one lane, inside the field', () => {
+    const {container} = renderWithValue();
+    const field = container.querySelector('.astryx-typeahead');
+    const input = screen.getByRole('combobox');
+    const token = container.querySelector('.astryx-token') as HTMLElement;
+
+    const lane = input.parentElement as HTMLElement;
+    expect(lane).not.toBe(field);
+    expect(lane.parentElement).toBe(field);
+    // The token's containing block is the lane, which is what bounds it.
+    expect(token.parentElement).toBe(lane);
+    expect(getComputedStyle(lane).position).toBe('relative');
+  });
+
+  it('lets the lane yield its whole width, so a narrow field cannot overflow', () => {
+    // `min-width: 0` is the half of this that the earlier `200px` floor got
+    // wrong: the field states no width of its own, so it still shrinks to
+    // whatever a narrow parent or an InputGroup gives it.
+    const {container} = renderWithValue();
+    const lane = screen.getByRole('combobox').parentElement as HTMLElement;
+    const style = getComputedStyle(lane);
+    expect(style.minWidth).toBe('0');
+    expect(style.flexGrow).toBe('1');
+    // Nothing states a width: a narrow parent gets all of it back.
+    expect(
+      (container.querySelector('.astryx-typeahead') as HTMLElement).style
+        .minWidth,
+    ).toBe('');
+  });
+
+  it("anchors the token at the lane's end, not just its start", () => {
+    // The bound that stops the value reaching the end controls. Anchored at
+    // one end only, the token is capped by the field's own padding box, which
+    // is past the clear button.
+    const {container} = renderWithValue();
+    const token = container.querySelector('.astryx-token') as HTMLElement;
+    const style = getComputedStyle(token);
+    expect(style.insetInlineEnd).toBe('0');
+    // `fit-content` against that pair of insets is what shrink-wraps the
+    // label yet still caps it at the lane; the `auto` end margin is what
+    // keeps the pair from being over-constrained and dropping the end inset.
+    expect(style.width).toBe('fit-content');
+    expect(style.marginInlineEnd).toBe('auto');
   });
 });

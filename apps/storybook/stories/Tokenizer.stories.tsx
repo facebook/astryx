@@ -496,3 +496,30 @@ export const Loading: Story = {
   },
   name: 'Loading (async source, with clear and end content)',
 };
+
+/**
+ * Tokens plus a clear-all button — the two ends of the field. Under RTL they
+ * must swap sides; this is the story the RTL audit measures as a D2
+ * layout-order-flip.
+ */
+export const LogicalOrder: Story = {
+  render: args => {
+    const [value, setValue] = useState([users[0], users[2]]);
+    return (
+      <div style={{width: 420}}>
+        <Tokenizer
+          {...args}
+          searchSource={userSource}
+          value={value}
+          onChange={items => setValue(items)}
+        />
+      </div>
+    );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Add more...',
+    hasClear: true,
+  },
+  name: 'Logical order',
+};
