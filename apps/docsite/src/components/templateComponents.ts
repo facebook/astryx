@@ -162,6 +162,10 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-grouped/page'),
   ),
+  'table-inbox': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-inbox/page'),
+  ),
   'table-page': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-page/page'),
