@@ -45,7 +45,7 @@
   },
   {
     "component": "Chat",
-    "storyId": "core-chat--default",
+    "storyId": "core-chat--mixed-content",
     "dims": [
       "D2"
     ],
