@@ -2,7 +2,7 @@
 
 'use client';
 
-import {type ReactNode, useState} from 'react';
+import {type ReactNode, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {colorVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
@@ -50,6 +50,7 @@ import {
   TrashIcon,
   PhotoIcon,
   ViewColumnsIcon,
+  InformationCircleIcon,
   BellIcon,
   ShareIcon,
   EyeIcon,
@@ -375,9 +376,9 @@ function PageHeader({
   return (
     <LayoutHeader padding={6} hasDivider>
       <VStack gap={4}>
-        <HStack gap={3} vAlign="start" hAlign="between">
+        <HStack gap={4} vAlign="start" hAlign="between">
           <VStack gap={2}>
-            <HStack gap={3} vAlign="center" wrap="wrap">
+            <HStack gap={4} vAlign="center" wrap="wrap">
               <Link href="#" type="supporting" color="secondary">
                 <HStack as="span" gap={1} vAlign="center">
                   <Icon icon={ArrowLeftIcon} size="sm" />
@@ -397,7 +398,14 @@ function PageHeader({
               Refresh onboarding flow for workspaces
             </Heading>
           </VStack>
-          {!isNarrow && (
+          {isNarrow ? (
+            <IconButton
+              label="Show details"
+              variant="secondary"
+              icon={<Icon icon={InformationCircleIcon} size="sm" />}
+              onClick={onToggleDetails}
+            />
+          ) : (
             <HStack gap={1}>
               {HEADER_ACTIONS.map(action => (
                 <IconButton
@@ -416,7 +424,6 @@ function PageHeader({
             </HStack>
           )}
         </HStack>
-
         <HStack gap={1} vAlign="center" wrap="wrap">
           <Selector
             label="Status"
@@ -426,15 +433,6 @@ function PageHeader({
             options={STATUS_OPTIONS}
           />
           <Selector
-            label="Assignee"
-            isLabelHidden
-            hasSearch
-            searchPlaceholder="Search assignees..."
-            value={fields.assignee}
-            onChange={assignee => onFieldsChange({assignee})}
-            options={ASSIGNEE_OPTIONS}
-          />
-          <Selector
             label="Priority"
             isLabelHidden
             value={fields.priority}
@@ -442,6 +440,15 @@ function PageHeader({
             options={PRIORITY_OPTIONS}
             renderValue={option => <PriorityBadge value={option.value} />}
             renderOption={option => <PriorityBadge value={option.value} />}
+          />
+          <Selector
+            label="Assignee"
+            isLabelHidden
+            hasSearch
+            searchPlaceholder="Search assignees..."
+            value={fields.assignee}
+            onChange={assignee => onFieldsChange({assignee})}
+            options={ASSIGNEE_OPTIONS}
           />
           <Tokenizer
             label="Labels"
@@ -453,7 +460,6 @@ function PageHeader({
               <Token
                 label={label.label}
                 color={label.color}
-                size="sm"
                 onRemove={onRemove}
               />
             )}
@@ -616,10 +622,25 @@ function ActivitySection({
   comment: string;
   onCommentChange: (value: string) => void;
 }) {
+  const commentFieldRef = useRef<HTMLTextAreaElement>(null);
+
+  const focusCommentField = () => {
+    const field = commentFieldRef.current;
+    if (!field) {
+      return;
+    }
+    // Scroll first, then take focus without a second jump competing with it.
+    field.scrollIntoView({behavior: 'smooth', block: 'center'});
+    field.focus({preventScroll: true});
+  };
+
   return (
     <Section padding={SECTION_PADDING}>
-      <VStack gap={6}>
-        <SectionHeader title="Comments and activity" />
+      <VStack gap={10}>
+        <SectionHeader
+          title="Comments and activity"
+          action={<Button label="Add comment" onClick={focusCommentField} />}
+        />
         <VStack gap={6}>
           {ACTIVITY.map(entry => {
             const isComment = entry.kind === 'comment';
@@ -663,16 +684,16 @@ function ActivitySection({
             );
           })}
         </VStack>
-        <Divider />
         <VStack gap={2} hAlign="stretch">
           <TextArea
+            ref={commentFieldRef}
             width="100%"
             label="Add a comment"
             isLabelHidden
             placeholder="Write a comment…"
             value={comment}
             onChange={onCommentChange}
-            rows={3}
+            rows={5}
           />
           <HStack gap={2} hAlign="end">
             <Button label="Cancel" variant="ghost" />
@@ -754,11 +775,7 @@ function DetailsPanel({fields}: {fields: WorkItemFields}) {
       </VStack>
 
       <VStack gap={4}>
-        <SectionHeader
-          title="Watchers"
-          level={3}
-          action={<Button label="Add" />}
-        />
+        <SectionHeader title="Watchers" level={3} />
         <AvatarGroup size="md">
           {WATCHERS.map(name => (
             <Avatar key={name} name={name} />
@@ -836,9 +853,11 @@ export default function WorkItemDetailTemplate() {
         }
         content={
           <LayoutContent padding={6} role="main">
-            <VStack gap={10}>
+            <VStack gap={6}>
               <DescriptionSection />
+              <Divider />
               <SubtasksSection subtasks={subtasks} onSetDone={setSubtaskDone} />
+              <Divider />
               <AttachmentsSection />
               <Divider />
               <ActivitySection comment={comment} onCommentChange={setComment} />
@@ -850,8 +869,8 @@ export default function WorkItemDetailTemplate() {
             <LayoutPanel
               width={340}
               padding={6}
-              hasDivider
-              role="complementary">
+              role="complementary"
+              hasDivider>
               <DetailsPanel fields={fields} />
             </LayoutPanel>
           ) : undefined
