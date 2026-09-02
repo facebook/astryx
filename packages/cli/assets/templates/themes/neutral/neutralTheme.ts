@@ -554,10 +554,6 @@ function getPaletteStop(
   return neutralPalettes[family][mode][stop];
 }
 
-function lightDark(light: string, dark: string): string {
-  return `light-dark(${light}, ${dark})`;
-}
-
 function withAlpha(
   color: string,
   alpha: '0D' | '0F' | '14' | '1A' | '33' | '3D' | '4D' | '80' | 'CC',

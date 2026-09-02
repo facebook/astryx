@@ -111,6 +111,14 @@ describe('defineTonalPalettes', () => {
     ).toThrow('Palette "blue" description must be a string, got false.');
   });
 
+  it('rejects unknown family keys', () => {
+    expect(() =>
+      defineTonalPalettes({
+        blue: {light: ramp(), aliases: ['info']},
+      } as unknown as ThemePalettes),
+    ).toThrow('Palette "blue" contains unknown family key "aliases".');
+  });
+
   it('rejects hue and chroma values outside their valid ranges', () => {
     expect(() =>
       defineTonalPalettes({

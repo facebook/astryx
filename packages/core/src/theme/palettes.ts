@@ -1,5 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {parseColor} from '../utils/color';
+import {relativeLuminance} from './contrast';
+
 /** Canonical numeric stop labels used as Astryx palette keys. */
 export const TONAL_PALETTE_TONES = [
   0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
@@ -43,16 +46,12 @@ const TONAL_PALETTE_KEYS = new Set<string>([
   'hue',
   'chroma',
 ]);
-
-function relativeLuminance(hex: string): number {
-  const channels = [1, 3, 5].map(index => {
-    const channel = Number.parseInt(hex.slice(index, index + 2), 16) / 255;
-    return channel <= 0.04045
-      ? channel / 12.92
-      : ((channel + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
-}
+const PALETTE_FAMILY_KEYS = new Set([
+  'light',
+  'dark',
+  'semantic',
+  'description',
+]);
 
 function validateRamp(
   name: string,
@@ -79,7 +78,13 @@ function validateRamp(
         `Palette "${name}" ${mode} stop ${stop} must be an opaque six-digit hex color.`,
       );
     }
-    const luminance = relativeLuminance(value);
+    const parsed = parseColor(value);
+    if (parsed === null) {
+      throw new Error(
+        `Palette "${name}" ${mode} stop ${stop} must be an opaque six-digit hex color.`,
+      );
+    }
+    const luminance = relativeLuminance(parsed);
     if (luminance < previousLuminance) {
       throw new Error(
         `Palette "${name}" ${mode} stops must be ordered from darker to lighter; stop ${stop} is darker than the previous stop.`,
@@ -117,6 +122,13 @@ export function defineTonalPalettes<const T extends ThemePalettes>(
   for (const [name, family] of Object.entries(palettes)) {
     if (!family || typeof family !== 'object' || !family.light) {
       throw new Error(`Palette "${name}" must define a light tonal ramp.`);
+    }
+    for (const key of Object.keys(family)) {
+      if (!PALETTE_FAMILY_KEYS.has(key)) {
+        throw new Error(
+          `Palette "${name}" contains unknown family key "${key}".`,
+        );
+      }
     }
     validateRamp(name, 'light', family.light);
     if (family.dark === null) {

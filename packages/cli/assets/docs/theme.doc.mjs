@@ -289,7 +289,7 @@ export const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: '`extends` lets you derive a new theme from an existing one, inheriting its tokens, approved palette families, component overrides, icons, and fonts. Only specify what you want to change; everything else carries over from the base theme.',
+          text: '`extends` lets you derive a new theme from an existing one, inheriting its tokens, component overrides, icons, and fonts. Source-theme bases also carry approved palette families. Built themes intentionally omit palette metadata; import the matching palette sidecar explicitly when a child needs those families. Only specify what you want to change; everything else available on the chosen base carries over.',
         },
         {
           type: 'code',
@@ -330,7 +330,7 @@ const brandTheme = defineTheme({
             ],
             [
               'palettes',
-              'Shallow-merged by family: a child replaces a complete named family and inherits the others.',
+              'Source bases only: shallow-merged by family. Built bases omit palettes, so a child must attach an explicitly imported palette sidecar.',
             ],
             [
               'onDark, onLight',

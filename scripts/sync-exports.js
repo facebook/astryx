@@ -87,6 +87,11 @@ const STATIC_EXPORTS = {
     types: './dist/theme/syntax/index.d.ts',
     default: './dist/theme/syntax/index.js',
   },
+  './theme/palettes': {
+    source: './src/theme/palettes.ts',
+    types: './dist/theme/palettes.d.ts',
+    default: './dist/theme/palettes.js',
+  },
   './docs.mjs': './docs.mjs',
   './groups.doc.mjs': './groups.doc.mjs',
   // i18n message catalogs. Consumers pass these to

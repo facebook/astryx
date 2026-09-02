@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe('themeBuild() — older core compatibility', () => {
-  it('requires a Core version that supports the palette contract', async () => {
+  it('builds a palette-free theme when the installed Core predates palettes', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'legacy-theme.mjs'),
       `export default {name: 'legacy-theme', tokens: {'--color-accent': '#123456'}};\n`,
@@ -30,16 +30,20 @@ describe('themeBuild() — older core compatibility', () => {
 
     await expect(
       themeBuild('legacy-theme.mjs', {}, {cwd: tmpDir}),
-    ).rejects.toThrow('does not support approved tonal palettes');
+    ).resolves.toMatchObject({type: 'theme.build'});
   });
 
-  it('reports the compatibility error before evaluating a theme module', async () => {
+  it('requires palette support only when the resolved theme has palettes', async () => {
+    const tones = Object.fromEntries(
+      Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
+    );
     fs.writeFileSync(
       path.join(tmpDir, 'palette-helper-theme.mjs'),
-      `import {defineTheme, defineTonalPalettes} from '@astryxdesign/core/theme';
-const palettes = defineTonalPalettes({blue: {light: {}}});
-export default defineTheme({name: 'palette-helper-theme', palettes});
-`,
+      `export default ${JSON.stringify({
+        name: 'palette-helper-theme',
+        tokens: {'--color-accent': '#123456'},
+        palettes: {blue: {light: tones}},
+      })};\n`,
     );
 
     await expect(

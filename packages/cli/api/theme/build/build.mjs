@@ -671,7 +671,7 @@ function unsupportedTonalPalettesError() {
       'palettes. Upgrade @astryxdesign/core before building themes with this ' +
       'version of the CLI.',
     undefined,
-    ERROR_CODES.ERR_CORE_NOT_FOUND,
+    ERROR_CODES.ERR_THEME_INVALID,
   );
 }
 
@@ -1110,10 +1110,6 @@ export async function themeBuild(
     );
   }
 
-  if (!_defineTonalPalettes) {
-    throw unsupportedTonalPalettesError();
-  }
-
   logger.log(`\nBuilding theme from ${path.relative(cwd, filePath)}...`);
 
   // Extract theme definition
@@ -1217,8 +1213,20 @@ export async function themeBuild(
     } else {
       resolvedTheme = themeDef;
     }
-    if ('palettes' in themeDef && themeDef.palettes !== undefined) {
-      _defineTonalPalettes(themeDef.palettes);
+    const palettesToValidate = resolvedTheme?.palettes ?? themeDef.palettes;
+    if (palettesToValidate !== undefined) {
+      if (!_defineTonalPalettes) {
+        throw unsupportedTonalPalettesError();
+      }
+      try {
+        _defineTonalPalettes(palettesToValidate);
+      } catch (error) {
+        throw new AstryxError(
+          /** @type {Error} */ (error).message,
+          undefined,
+          ERROR_CODES.ERR_THEME_INVALID,
+        );
+      }
     }
     const scopeSelector = themeScopeStart(themeDef.name);
     const scopeTo = THEME_SCOPE_TO;
@@ -1330,15 +1338,12 @@ export async function themeBuild(
   const hasPalettes = Boolean(
     resolvedTheme?.palettes && Object.keys(resolvedTheme.palettes).length > 0,
   );
-  const paletteJsPath = hasPalettes
-    ? path.join(outDir, `${baseName}.palette.js`)
-    : null;
-  const paletteJsonPath = hasPalettes
-    ? path.join(outDir, `${baseName}.palette.json`)
-    : null;
-  const paletteDtsPath = hasPalettes
-    ? path.join(outDir, `${baseName}.palette.d.ts`)
-    : null;
+  const paletteJsPath = path.join(outDir, `${baseName}.palette.js`);
+  const paletteJsonPath = path.join(outDir, `${baseName}.palette.json`);
+  const paletteDtsPath = path.join(outDir, `${baseName}.palette.d.ts`);
+  const obsoletePaths = hasPalettes
+    ? []
+    : [paletteJsPath, paletteJsonPath, paletteDtsPath];
 
   const iconInfo = extractIconInfo(filePath);
 
@@ -1396,14 +1401,7 @@ export async function themeBuild(
   if (variantDtsPath && variantContent) {
     writes.push({dest: variantDtsPath, content: variantContent});
   }
-  if (
-    paletteJsPath &&
-    paletteJsonPath &&
-    paletteDtsPath &&
-    paletteJsContent &&
-    paletteJsonContent &&
-    paletteDtsContent
-  ) {
+  if (paletteJsContent && paletteJsonContent && paletteDtsContent) {
     writes.push(
       {dest: paletteJsPath, content: paletteJsContent},
       {dest: paletteJsonPath, content: paletteJsonContent},
@@ -1416,7 +1414,7 @@ export async function themeBuild(
   // volatile @generated `Command:` line is ignored. Returns a
   // receipt listing stale/missing outputs so callers (CI) can fail on drift.
   if (options.check) {
-    /** @type {Array<{path: string, reason: 'missing' | 'outdated'}>} */
+    /** @type {Array<{path: string, reason: 'missing' | 'outdated' | 'obsolete'}>} */
     const stale = [];
     for (const w of writes) {
       const rel = path.relative(cwd, w.dest);
@@ -1429,6 +1427,14 @@ export async function themeBuild(
         stale.push({path: rel, reason: 'outdated'});
       }
     }
+    for (const obsoletePath of obsoletePaths) {
+      if (fs.existsSync(obsoletePath)) {
+        stale.push({
+          path: path.relative(cwd, obsoletePath),
+          reason: 'obsolete',
+        });
+      }
+    }
     const upToDate = stale.length === 0;
     if (upToDate) {
       logger.log(`\n✓ Theme outputs are up to date with ${sourceRelative}.`);
@@ -1438,7 +1444,7 @@ export async function themeBuild(
       );
       for (const s of stale) {
         logger.error(
-          `  ${s.reason === 'missing' ? 'missing' : 'stale'}: ${s.path}`,
+          `  ${s.reason === 'missing' ? 'missing' : s.reason === 'obsolete' ? 'obsolete' : 'stale'}: ${s.path}`,
         );
       }
       logger.error(`\n  Rebuild with: ${buildCommand}`);
@@ -1449,7 +1455,10 @@ export async function themeBuild(
         name: themeDef.name,
         upToDate,
         stale,
-        checked: writes.map(w => path.relative(cwd, w.dest)),
+        checked: [
+          ...writes.map(w => path.relative(cwd, w.dest)),
+          ...obsoletePaths.map(p => path.relative(cwd, p)),
+        ],
       },
     };
   }
@@ -1465,6 +1474,9 @@ export async function themeBuild(
     }
     for (const s of staged) {
       fs.renameSync(s.tmp, s.dest);
+    }
+    for (const obsoletePath of obsoletePaths) {
+      fs.rmSync(obsoletePath, {force: true});
     }
   } catch (err) {
     // Roll back any temp files we managed to create.
@@ -1486,7 +1498,7 @@ export async function themeBuild(
   logger.log(`  ${size} KB`);
   logger.log(`✓ ${path.relative(cwd, jsPath)}`);
   logger.log(`✓ ${path.relative(cwd, dtsPath)}`);
-  if (paletteJsPath && paletteJsonPath && paletteDtsPath) {
+  if (hasPalettes) {
     logger.log(`✓ ${path.relative(cwd, paletteJsPath)} (opt-in palette)`);
     logger.log(
       `✓ ${path.relative(cwd, paletteJsonPath)} (agent-readable palette)`,
@@ -1569,7 +1581,7 @@ Palette metadata is opt-in and is not part of the runtime theme module:
         ...(variantDecl && variantDtsPath
           ? {variantsDts: path.relative(cwd, variantDtsPath)}
           : {}),
-        ...(paletteJsPath && paletteJsonPath && paletteDtsPath
+        ...(hasPalettes
           ? {
               paletteJs: path.relative(cwd, paletteJsPath),
               paletteJson: path.relative(cwd, paletteJsonPath),

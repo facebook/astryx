@@ -273,6 +273,57 @@ describe('themeBuild() — receipt', () => {
     expect(check?.data.upToDate).toBe(true);
   });
 
+  it('reports and removes obsolete palette artifacts when palettes are removed', async () => {
+    const withPaletteFile = path.join(tmpDir, 'palette-lifecycle-with.mjs');
+    const withoutPaletteFile = path.join(
+      tmpDir,
+      'palette-lifecycle-without.mjs',
+    );
+    const tones = Object.fromEntries(
+      Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
+    );
+    fs.writeFileSync(
+      withPaletteFile,
+      `export default ${JSON.stringify({
+        name: 'palette-lifecycle',
+        tokens: {'--color-accent': '#123456'},
+        palettes: {blue: {light: tones}},
+      })};\n`,
+    );
+    await themeBuild('palette-lifecycle-with.mjs', {}, {cwd: tmpDir});
+
+    const palettePaths = [
+      'palette-lifecycle.palette.js',
+      'palette-lifecycle.palette.json',
+      'palette-lifecycle.palette.d.ts',
+    ];
+    for (const file of palettePaths) {
+      expect(fs.existsSync(path.join(tmpDir, file))).toBe(true);
+    }
+
+    fs.writeFileSync(
+      withoutPaletteFile,
+      `export default {name: 'palette-lifecycle', tokens: {'--color-accent': '#123456'}};\n`,
+    );
+
+    const check = await themeBuild(
+      'palette-lifecycle-without.mjs',
+      {check: true},
+      {cwd: tmpDir},
+    );
+    expect(check?.data.upToDate).toBe(false);
+    expect(check?.data.stale).toEqual(
+      expect.arrayContaining(
+        palettePaths.map(file => ({path: file, reason: 'obsolete'})),
+      ),
+    );
+
+    await themeBuild('palette-lifecycle-without.mjs', {}, {cwd: tmpDir});
+    for (const file of palettePaths) {
+      expect(fs.existsSync(path.join(tmpDir, file))).toBe(false);
+    }
+  });
+
   it('keeps palette metadata out of the default runtime bundle', async () => {
     const tones = Object.fromEntries(
       Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
@@ -338,7 +389,7 @@ describe('themeBuild() — receipt', () => {
     await expect(
       themeBuild('invalid-palette-theme.mjs', {}, {cwd: tmpDir}),
     ).rejects.toThrow(
-      'Palette "blue" light tone 5 must be an opaque six-digit hex color.',
+      'Palette "blue" light stop 5 must be an opaque six-digit hex color.',
     );
   });
 
@@ -365,7 +416,7 @@ describe('themeBuild() — receipt', () => {
           },
         },
         message:
-          'Palette "blue" light contains unknown tone or metadata key "42".',
+          'Palette "blue" light contains unknown stop or metadata key "42".',
       },
       {
         file: 'invalid-palette-semantic.mjs',
@@ -386,6 +437,16 @@ describe('themeBuild() — receipt', () => {
           description: false,
         },
         message: 'Palette "blue" description must be a string, got false.',
+      },
+      {
+        file: 'invalid-palette-family-key.mjs',
+        family: {
+          light: Object.fromEntries(
+            Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
+          ),
+          aliases: ['info'],
+        },
+        message: 'Palette "blue" contains unknown family key "aliases".',
       },
       {
         file: 'invalid-palette-dark.mjs',

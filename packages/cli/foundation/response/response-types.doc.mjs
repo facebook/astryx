@@ -187,7 +187,7 @@ export const doc = {
     {
       value: 'theme.build.check',
       description:
-        'The --check receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: missing | outdated}), and the full list of checked paths. Writes nothing.',
+        'The --check receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: missing | outdated | obsolete}), and the full list of checked paths. Writes nothing.',
     },
     {
       value: 'theme.build.batch',
