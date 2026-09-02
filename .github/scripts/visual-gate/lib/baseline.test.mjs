@@ -45,17 +45,37 @@ describe('accept', () => {
     expect(() => promote({reason: ' '})).toThrow(/reason/);
   });
 
+  it('refuses keys that are not shot keys — they name files under shots/', () => {
+    // shotKey() output is [a-zA-Z0-9._-] only; anything path-shaped (or
+    // dots-only) must be rejected before it is joined into a path, whichever
+    // list it arrives in.
+    for (const bad of ['../escape', 'a/b', 'a\\b', '..', ' a']) {
+      expect(() => promote({keys: [bad]})).toThrow(/Invalid shot key/);
+      expect(() => promote({keys: [], prune: [bad]})).toThrow(
+        /Invalid shot key/,
+      );
+    }
+  });
+
   it('copies only the named shots into the baseline', () => {
     promote();
-    expect(fs.readFileSync(path.join(baselineDir, 'shots', 'a.png'), 'utf8')).toBe('new-a');
+    expect(
+      fs.readFileSync(path.join(baselineDir, 'shots', 'a.png'), 'utf8'),
+    ).toBe('new-a');
     expect(fs.existsSync(path.join(baselineDir, 'shots', 'b.png'))).toBe(false);
-    expect(Object.keys(readBaseline(baselineDir).manifest.shots)).toEqual(['a']);
+    expect(Object.keys(readBaseline(baselineDir).manifest.shots)).toEqual([
+      'a',
+    ]);
   });
 
   it('records who promoted what, and why', () => {
     promote();
     const [decision] = readBaseline(baselineDir).manifest.decisions;
-    expect(decision).toMatchObject({actor: 'tester', promoted: ['a'], reason: 'Button radius changed on purpose'});
+    expect(decision).toMatchObject({
+      actor: 'tester',
+      promoted: ['a'],
+      reason: 'Button radius changed on purpose',
+    });
   });
 
   it('keeps earlier decisions when promoting again', () => {
@@ -68,13 +88,17 @@ describe('accept', () => {
     promote({keys: ['a', 'b']});
     promote({keys: [], prune: ['b'], reason: 'story deleted'});
     expect(fs.existsSync(path.join(baselineDir, 'shots', 'b.png'))).toBe(false);
-    expect(Object.keys(readBaseline(baselineDir).manifest.shots)).toEqual(['a']);
+    expect(Object.keys(readBaseline(baselineDir).manifest.shots)).toEqual([
+      'a',
+    ]);
   });
 });
 
 describe('incomparable', () => {
   it('refuses a baseline from another platform', () => {
-    expect(incomparable({platform: 'darwin-arm64'}, {platform: 'linux-arm64'})).toMatch(/darwin-arm64/);
+    expect(
+      incomparable({platform: 'darwin-arm64'}, {platform: 'linux-arm64'}),
+    ).toMatch(/darwin-arm64/);
   });
 
   it('refuses a baseline captured at another viewport', () => {

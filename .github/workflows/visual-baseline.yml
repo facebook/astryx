@@ -55,6 +55,26 @@ jobs:
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup
 
+      - name: Verify the source run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -eu
+          # Promotion pulls shots out of a specific run's capture artifact. The
+          # run id is operator-typed — confirm it names a completed Release Gate
+          # run on main before anything from it is treated as baseline material
+          # (a typo'd id should fail here, not become the baseline).
+          RUN_JSON=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}")
+          RUN_PATH=$(printf '%s' "$RUN_JSON" | jq -r '.path')
+          RUN_BRANCH=$(printf '%s' "$RUN_JSON" | jq -r '.head_branch')
+          RUN_STATUS=$(printf '%s' "$RUN_JSON" | jq -r '.status')
+          if [ "$RUN_PATH" != ".github/workflows/release-gate.yml" ] || \
+             [ "$RUN_BRANCH" != "main" ] || [ "$RUN_STATUS" != "completed" ]; then
+            echo "::error::Run ${RUN_ID} is not a completed Release Gate run on main (path=${RUN_PATH}, branch=${RUN_BRANCH}, status=${RUN_STATUS})."
+            exit 1
+          fi
+
       - name: Queue baseline publication
         env:
           GH_TOKEN: ${{ github.token }}
@@ -67,6 +87,22 @@ jobs:
           run-id: ${{ inputs.run_id }}
           github-token: ${{ github.token }}
           path: .visual-run
+
+      - name: Validate the downloaded verdict
+        env:
+          RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -eu
+          # The capture uploads with if: always(), and a terminal gate failure
+          # still reports its run as status=completed — so the run check above
+          # cannot tell a green gate from a failed one. The verdict can: only
+          # a capture the gate stood behind (pass or changed) may become the
+          # baseline. gate.mjs accept enforces the same rule as backstop.
+          STATUS="$(jq -r '.status // "missing"' .visual-run/verdict.json 2>/dev/null || echo missing)"
+          if [ "$STATUS" != "pass" ] && [ "$STATUS" != "changed" ]; then
+            echo "::error::Run ${RUN_ID}'s verdict status is '${STATUS}' — only pass/changed captures may be promoted. Fix or rerun the gate first."
+            exit 1
+          fi
 
       - name: Wait for the baseline publication turn
         env:
@@ -95,11 +131,15 @@ jobs:
         run: node .github/scripts/gh-pages-publisher.mjs release --scope visual-gate/baseline
 
       - name: Summary
+        env:
+          KEYS: ${{ inputs.keys }}
+          RUN_ID: ${{ inputs.run_id }}
+          REASON: ${{ inputs.reason }}
         run: |
           {
             echo "## Visual baseline updated"
             echo ""
-            echo "- promoted: \`${{ inputs.keys }}\`"
-            echo "- from run: ${{ inputs.run_id }}"
-            echo "- reason: ${{ inputs.reason }}"
+            echo "- promoted: \`${KEYS}\`"
+            echo "- from run: ${RUN_ID}"
+            echo "- reason: ${REASON}"
           } >> "$GITHUB_STEP_SUMMARY"

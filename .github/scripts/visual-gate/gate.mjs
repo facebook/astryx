@@ -707,11 +707,22 @@ async function main() {
       const verdict = fs.existsSync(verdictPath)
         ? JSON.parse(fs.readFileSync(verdictPath, 'utf8'))
         : null;
+      // A failed or skipped gate still uploads its capture (if: always()),
+      // and GitHub reports a terminal failure's run as status=completed — the
+      // verdict, not the run state, decides promotability. Never promote a
+      // capture the gate itself could not stand behind.
+      if (verdict && (verdict.status === 'failed' || verdict.status === 'skipped')) {
+        throw new Error(
+          `Refusing to promote from a "${verdict.status}" gate run — promote from a run whose verdict is pass or changed.`,
+        );
+      }
       const requested = flag('keys');
+      // The dispatch form invites "a, b" — trim each key before it meets the
+      // key validation in accept().
       const named =
         !requested || requested === 'all'
           ? Object.keys(currentManifest.shots)
-          : requested.split(',').filter(Boolean);
+          : requested.split(',').map(key => key.trim()).filter(Boolean);
       if (new Set(named).size !== named.length) throw new Error('accept repeats a shot key.');
       const removed = new Set(verdict?.removed ?? []);
       const prune = has('prune') ? named.filter(key => removed.has(key)) : [];

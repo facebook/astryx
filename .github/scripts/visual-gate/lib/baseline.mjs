@@ -29,8 +29,12 @@ export const EMPTY_MANIFEST = {version: 1, shots: {}, decisions: []};
  */
 export function readBaseline(baselineDir) {
   const manifestPath = path.join(baselineDir, 'manifest.json');
-  if (!fs.existsSync(manifestPath)) return {manifest: {...EMPTY_MANIFEST}, exists: false};
-  return {manifest: JSON.parse(fs.readFileSync(manifestPath, 'utf8')), exists: true};
+  if (!fs.existsSync(manifestPath))
+    return {manifest: {...EMPTY_MANIFEST}, exists: false};
+  return {
+    manifest: JSON.parse(fs.readFileSync(manifestPath, 'utf8')),
+    exists: true,
+  };
 }
 
 /**
@@ -97,7 +101,18 @@ export function accept({
   runId = null,
   prune = [],
 }) {
-  if (!reason?.trim()) throw new Error('accept requires a reason — it is the record of the decision');
+  if (!reason?.trim())
+    throw new Error(
+      'accept requires a reason — it is the record of the decision',
+    );
+  // Shot keys name files inside shots/. A real key is shotKey() output
+  // ([a-zA-Z0-9._-] only, see plan.mjs), never a path — reject anything else
+  // before it is joined into one, whichever manifest or flag it came from.
+  const SHOT_KEY = /^(?!\.+$)[a-zA-Z0-9._-]+$/;
+  const badKey = [...keys, ...prune].find(key => !SHOT_KEY.test(String(key)));
+  if (badKey != null) {
+    throw new Error(`Invalid shot key: ${JSON.stringify(badKey)}`);
+  }
   const {manifest} = readBaseline(baselineDir);
   const shotsDir = path.join(baselineDir, 'shots');
   fs.mkdirSync(shotsDir, {recursive: true});
