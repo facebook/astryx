@@ -7,89 +7,55 @@
  * is installed and the project hasn't run init yet, print a one-line next-step
  * so agents/humans discover it (this is the most common fresh-install entry).
  *
- * Self-contained: core is a separate package and cannot import the CLI (the CLI
- * peer-depends on core, so importing it would be a cycle), so the agent-doc
- * locations + markers below intentionally MIRROR the CLI's dependency-free leaf
- * packages/cli/foundation/agent-docs/agent-doc-state.mjs. They are exported and
- * pinned to that leaf by a drift test in src/postinstall.test.mjs, so the two
- * copies cannot silently diverge. Non-interactive, never fails the install, and
- * quiet in the monorepo build, during npx's fetch, and once set up.
+ * ONE authoritative source. Core is a separate package and cannot import the CLI
+ * (the CLI peer-depends on core, so importing it would be a cycle), so it ships
+ * ./agent-doc-state.mjs — a GENERATED, byte-for-byte copy of the CLI's
+ * dependency-free leaf packages/cli/foundation/agent-docs/agent-doc-state.mjs.
+ * `pnpm check:setup-contract` (inside `pnpm check:repo`) fails the build if the
+ * two differ, and also fails if core stops publishing the copy. The paths,
+ * markers, predicate and nudge decision therefore cannot drift between layers.
+ *
+ * Non-interactive, never fails the install, and quiet in the monorepo build,
+ * during npx's fetch, and once set up.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 
 const HERE = fileURLToPath(import.meta.url);
 
-// Mirrors the CLI's dependency-free leaf, packages/cli/foundation/agent-docs/
-// agent-doc-state.mjs. Exported so src/postinstall.test.mjs can pin both lists
-// to that leaf and fail the build if they drift apart.
-export const AGENT_DOC_PATHS = [
-  'AGENTS.md',
-  'CLAUDE.md',
-  '.claude/CLAUDE.md',
-  '.cursorrules',
-  '.hermes.md',
-  'HERMES.md',
-];
-export const MARKERS = ['<!-- ASTRYX:START -->', '<!-- XDS:START -->'];
-
 /**
- * True when the project already has the Astryx agent prompt installed (an Astryx
- * marker is present in any agent-doc file) — the same check the CLI performs.
- * @param {string} root @returns {boolean}
+ * Load the generated contract copy. Dynamic, not static, so a packaging mistake
+ * degrades to "no nudge" instead of throwing out of module evaluation and
+ * failing a consumer's install — the one thing this script must never do.
+ * @returns {Promise<object|null>}
  */
-export function isAstryxInitialized(root) {
-  for (const rel of AGENT_DOC_PATHS) {
-    try {
-      const content = fs.readFileSync(path.join(root, rel), 'utf-8');
-      if (MARKERS.some(m => content.includes(m))) return true;
-    } catch {
-      // Unreadable/missing — keep checking the others.
-    }
+async function loadContract() {
+  try {
+    return await import('./agent-doc-state.mjs');
+  } catch {
+    return null;
   }
-  return false;
 }
 
-/**
- * Pure decision: should the postinstall print the setup nudge? Unit-testable
- * without an actual npm install.
- * @returns {boolean}
- */
-export function shouldNudge({scriptPath, npmCommand, isSetUp} = {}) {
-  if (!scriptPath || !scriptPath.includes('node_modules')) return false; // monorepo/source build
-  if (scriptPath.includes('_npx') || npmCommand === 'exec') return false; // npx transient
-  if (isSetUp) return false; // already set up — stay quiet
-  return true;
-}
-
-function main() {
+async function main() {
+  const contract = await loadContract();
+  if (!contract) return;
   const root = process.env.INIT_CWD || process.cwd();
   if (
-    shouldNudge({
+    contract.shouldNudge({
       scriptPath: HERE,
       npmCommand: process.env.npm_command,
-      isSetUp: isAstryxInitialized(root),
+      isSetUp: contract.isAstryxInitialized(root),
     })
   ) {
-    // Scoped package form (`@astryxdesign/cli`) — always resolves to us, even
-    // before the CLI is installed. Bare `npx astryx` would fetch an unrelated
-    // look-alike package (see PR #4151). After that lands, switch this to its
-    // getCliInvocation() single source of truth.
-    process.stdout.write(
-      '\nNext step: run `npx @astryxdesign/cli init` to finish setup and install the Astryx agent prompt.\n\n',
-    );
+    process.stdout.write(contract.SETUP_NUDGE);
   }
 }
 
 // Run only when executed directly (`node scripts/postinstall.mjs`), never when
 // imported by tests.
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
-  try {
-    main();
-  } catch {
-    // never break an install
-  }
-  process.exit(0);
+  main()
+    .catch(() => {}) // never break an install
+    .finally(() => process.exit(0));
 }

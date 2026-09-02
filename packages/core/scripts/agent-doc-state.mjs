@@ -1,5 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+// GENERATED FILE — DO NOT EDIT.
+// Source:     packages/cli/foundation/agent-docs/agent-doc-state.mjs
+// Regenerate: pnpm generate:setup-contract
+//
+// @astryxdesign/core cannot import @astryxdesign/cli (the CLI peer-depends on
+// core, so the import would be a cycle), but core's postinstall must answer
+// "is Astryx set up?" exactly as the CLI does. The CLI's dependency-free leaf is
+// therefore copied here verbatim and pinned by `pnpm check:setup-contract`,
+// which runs inside `pnpm check:repo`.
+
 /**
  * @file agent-doc-state — the canonical, dependency-free contract for "where
  * Astryx writes its agent block" and "has this project run init yet?".
