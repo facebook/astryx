@@ -3,11 +3,11 @@ schema_version: 3
 template_version: 3
 kind: component
 id: component:Stepper
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-09-02
 owners: [cixzhang]
 review_triggers: [public-api, theming, layout]
 verified_by:
@@ -26,8 +26,8 @@ system_specs: [spec:AST-002/DEC-1]
 ## Intent
 
 Stepper presents an ordered flow of steps and the progress made through it. This
-draft records the anatomy-to-target map for the existing targets and owns the one
-public semantic custom property the component exposes,
+contract records the anatomy-to-target map for the existing targets and owns the
+one public semantic custom property the component exposes,
 `--step-connector-gap`.
 
 ## Compatibility and migration
@@ -115,9 +115,9 @@ Consumer syntax and description remain in `Stepper.doc.mjs` `theming.vars`.
 
 ## Accessibility contract
 
-This draft does not change Stepper's existing roles, `aria-current` handling, or
-reduced-motion behavior. The connector is `aria-hidden`, so the gap is a purely
-visual change.
+This contract does not change Stepper's existing roles, `aria-current` handling,
+or reduced-motion behavior. The connector is `aria-hidden`, so the gap is a
+purely visual change.
 
 ## Design relationships
 
@@ -175,10 +175,12 @@ why the caller-owned gap is a custom property rather than a per-piece vocabulary
 ### DEC-1 — The connector gap is a public custom property, not a theme target per piece
 
 **Reference:** `component:Stepper/DEC-1`
-**Decider:** `cixzhang`, pending
+**Decider:** `cixzhang`, `2026-09-02`
 
-A theme may want the track to stop short of the indicator rather than run
-through it. Two otherwise identical Steppers need different resolved outcomes
+The optional Connector anatomy represents the connected, on-track presentation;
+its inner gap from the component-owned Indicator is a stable component
+responsibility. A theme may want that track to stop short of the indicator rather
+than run through it. Two otherwise identical Steppers need different resolved outcomes
 and only the theme knows which, so the need is caller-owned
 (`spec:AST-002/DEC-1` FR1). Astryx cannot derive it: nothing in the component's
 state, content, or layout says whether this design wants a broken or a
@@ -208,12 +210,7 @@ could not know what it would get.
 
 ## Open questions
 
-- **OQ1 — Is per-segment percentage variation acceptable?** (`human-api`) A
-  percentage resolves against each segment's own box, so a fixed 8px segment and
-  a flexible 12px one clip by different amounts from the same declared value.
-  Both layers of any one segment agree exactly, and the cap bounds the spread,
-  so this is a cosmetic inconsistency rather than the track/fill disagreement it
-  replaced. Documented as accepted (`AV2`) rather than fixed.
+None.
 
 ## Content boundary
 
