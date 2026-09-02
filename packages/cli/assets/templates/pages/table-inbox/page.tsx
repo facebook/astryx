@@ -71,6 +71,8 @@ import {
   useState,
 } from 'react';
 
+import * as stylex from '@stylexjs/stylex';
+
 import {
   HStack,
   Layout,
@@ -80,12 +82,19 @@ import {
   StackItem,
   VStack,
 } from '@astryxdesign/core/Layout';
+import {
+  durationVars,
+  easeVars,
+  radiusVars,
+  spacingVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Badge} from '@astryxdesign/core/Badge';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {Collapsible, CollapsibleGroup} from '@astryxdesign/core/Collapsible';
+import {Section} from '@astryxdesign/core/Section';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
 import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
@@ -118,7 +127,6 @@ import {
   ArrowLeftIcon,
   ArrowPathIcon,
   ArrowUturnLeftIcon,
-  ChatBubbleLeftRightIcon,
   FaceSmileIcon,
   FolderArrowDownIcon,
   InboxIcon,
@@ -632,6 +640,35 @@ const TIGHTEN_COLUMNS_BELOW = 900;
 const LIST_DEFAULT_WIDTH = 480;
 
 /**
+ * The tab strip's height, borrowed by the bulk-selection bar that replaces it.
+ *
+ * The two share a slot, and the whole point of sharing it is that selecting a
+ * row must not move the table. That only holds if the replacement is the same
+ * height as what it replaced, and the strip's height is not something either
+ * row states — it falls out of a `Tab`'s type and padding. So it is measured
+ * once and named here, and the bar is pinned to it rather than left to arrive
+ * at its own height and miss by a few pixels.
+ *
+ * The band inside is shorter than this and centred in it. The strip's height
+ * includes the rule `TabList hasDivider` draws at its bottom edge; the band
+ * has no rule, so the difference shows up as breathing room around it rather
+ * than as a taller row.
+ */
+const SELECTION_BAR_HEIGHT = 37;
+
+/**
+ * How wide a message is allowed to get, regardless of the pane.
+ *
+ * The pane is resizable and its ceiling is over a thousand pixels, which is
+ * two or three times a comfortable measure — drag it out and the prose starts
+ * running the full width, where the eye loses the start of the next line on
+ * the way back from the end of the last. A cap is the fix, and it applies to
+ * the body block rather than the pane, so the header, the tags and the
+ * thread's own structure still use the width they were given.
+ */
+const MESSAGE_MEASURE = 680;
+
+/**
  * The width of the box this template was given, tracked as it changes.
  *
  * Every responsive decision below is a question about that box and none of
@@ -819,6 +856,40 @@ const ACTIONS_CLAIM_CELL = {flexBasis: '100%', flexShrink: 0};
  * screen, overlapping the buttons that just took its cell.
  */
 const HIDE_SQUEEZED_CONTENT = {overflow: 'hidden'};
+
+/**
+ * The bulk-selection band, matched to the one in the `table-filter` template.
+ *
+ * Same muted fill, same element radius, same entry. Two tables that both let
+ * you tick rows and act on the set should not disagree about what that looks
+ * like, and `table-filter` got there first.
+ */
+const styles = stylex.create({
+  // A radius because the band is inset to the content line rather than run
+  // full-bleed, so square corners would read as a clipped strip.
+  bulkBand: {
+    borderRadius: radiusVars['--radius-element'],
+  },
+  // The band mounts the moment the first row is checked, so the entry is a
+  // `@starting-style` transition rather than a keyframe or a mount flag: the
+  // settled value is the one written here, so an interrupted transition still
+  // lands correctly. Reduced motion collapses the duration rather than the
+  // property, because a media query cannot nest inside `@starting-style`.
+  bulkBandEnter: {
+    opacity: 1,
+    transform: 'translateY(0)',
+    transitionProperty: 'opacity, transform',
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
+    transitionTimingFunction: easeVars['--ease-standard'],
+    '@starting-style': {
+      opacity: 0,
+      transform: `translateY(${spacingVars['--spacing-3']})`,
+    },
+  },
+});
 
 /**
  * The timestamp, and the actions that take its place on hover.
@@ -1144,18 +1215,6 @@ function ThreadHistory({conversation}: {conversation: Conversation}) {
 
   return (
     <VStack gap={2}>
-      {/* Only worth saying when there is a thread to describe. On the single
-          message that most of a triage queue is made of, "1 message" is a
-          label for something already fully visible. */}
-      {messages.length === 1 ? null : (
-        <HStack gap={1} vAlign="center">
-          <Icon icon={ChatBubbleLeftRightIcon} size="sm" color="gray" />
-          <Text type="supporting" color="secondary">
-            {messages.length} messages
-          </Text>
-        </HStack>
-      )}
-
       {/* No dividers. Each message already announces itself with an avatar, a
           name and an address on their own line, and a rule between them was a
           second boundary drawn where there was visibly one already —
@@ -1191,8 +1250,14 @@ function ThreadHistory({conversation}: {conversation: Conversation}) {
                  `fill` on the identity is what sends the date to the far edge:
                  Collapsible lays the trigger out against the chevron with
                  `space-between`, so the slack has to be claimed by something
-                 for the date to end up on the other side of it. */
-              <HStack gap={THREAD_HEADER_GAP} vAlign="center">
+                 for the date to end up on the other side of it. The end inset
+                 is what keeps the date off the chevron once it gets there —
+                 `space-between` puts the two hard against each other, and the
+                 trigger's own gap does not apply across that boundary. */
+              <HStack
+                gap={THREAD_HEADER_GAP}
+                vAlign="center"
+                paddingInlineEnd={2}>
                 <Avatar name={message.sender} tooltip={false} />
                 <StackItem size="fill">
                   <VStack gap={0.5}>
@@ -1212,7 +1277,7 @@ function ThreadHistory({conversation}: {conversation: Conversation}) {
             <HStack gap={THREAD_HEADER_GAP}>
               <ThreadGutter />
               <StackItem size="fill">
-                <VStack gap={3}>
+                <VStack gap={3} maxWidth={MESSAGE_MEASURE}>
                   {message.body.map(paragraph => (
                     <Text key={paragraph}>{paragraph}</Text>
                   ))}
@@ -1302,37 +1367,57 @@ function ConversationPane({
           </VStack>
         </>
       ) : (
-        <Toolbar
-          label="Conversation"
-          startContent={
-            /* `level={3}` for the size, `accessibilityLevel={2}` for the
-               outline. This is the pane's title and belongs directly under
-               the page's h1, but an h2's type size is built for a page
-               header and would set the toolbar's height on its own. */
-            <Heading
-              level={3}
-              accessibilityLevel={2}
-              // Subjects run long and a header that reflows to three lines
-              // moves the message every time you open a different thread. The
-              // tooltip is what keeps the rest of the subject reachable.
-              maxLines={1}
-              hasTruncateTooltip>
-              {conversation.subject}
-            </Heading>
-          }
-          endContent={
-            <>
-              {threadActions}
-              <IconButton
-                variant="ghost"
-                label="Close conversation"
-                tooltip="Close"
-                icon={<Icon icon={XMarkIcon} size="sm" />}
-                onClick={onClose}
-              />
-            </>
-          }
-        />
+        /* Outer inset on top of the toolbar's own, and deliberately uneven.
+
+           A Toolbar holds the content line by insetting itself by the
+           container's padding less its buttons' intrinsic padding — it expects
+           the things on its ends to be buttons, and lets their padding make up
+           the difference. It reads that container figure from a CSS custom
+           property no template can set, but a plain Stack does not republish
+           the property, so a Stack's padding simply adds on top.
+
+           The two ends then need different amounts, because only one of them
+           is a button. The title is a Heading with no side bearing at all, so
+           it needs the larger share to reach 24px. The close button carries
+           its own, so the same amount would push its glyph past the line the
+           text is on. 12 and 8 put both on it. */
+        <VStack paddingInlineStart={3} paddingInlineEnd={2}>
+          <Toolbar
+            label="Conversation"
+            startContent={
+              /* `accessibilityLevel={2}` for the outline — this is the pane's
+                 title and belongs directly under the page's h1 — while
+                 `type="display-3"` sets the size off the display scale rather
+                 than the heading scale, so the subject reads as the thing the
+                 pane is about without an h2's page-header weight. */
+              <Heading
+                level={3}
+                type="display-3"
+                accessibilityLevel={2}
+                // Two lines, then truncate. Display-3 is large enough that a
+                // long subject no longer fits on one, and cutting it at the
+                // first line hid most of what the pane is about. Three would
+                // start moving the message down far enough to notice between
+                // threads, so the tooltip covers the rest.
+                maxLines={2}
+                hasTruncateTooltip>
+                {conversation.subject}
+              </Heading>
+            }
+            endContent={
+              <>
+                {threadActions}
+                <IconButton
+                  variant="ghost"
+                  label="Close conversation"
+                  tooltip="Close"
+                  icon={<Icon icon={XMarkIcon} size="sm" />}
+                  onClick={onClose}
+                />
+              </>
+            }
+          />
+        </VStack>
       )}
 
       <StackItem size="fill">
@@ -1341,7 +1426,17 @@ function ConversationPane({
             page. Padding again here would double it, so the pane only pays for
             its own gutters when it is the panel beside the list. */}
         <VStack
-          padding={isFullWidth ? 0 : 4}
+          // 24px, matching the header above. The pane is the reading surface
+          // and was wearing the same 16px as the list beside it, which left
+          // the message crowded against both edges of the wider of the two.
+          paddingInline={isFullWidth ? 0 : 6}
+          paddingBlockEnd={isFullWidth ? 0 : 6}
+          // Tighter at the top than the other three sides. The tags qualify
+          // the subject — priority, then what it is about — and the subject is
+          // now up in the header, so a full inset here read as the gap between
+          // two unrelated blocks rather than the gap between a title and its
+          // own tags.
+          paddingBlockStart={isFullWidth ? 0 : 3}
           gap={4}
           isScrollable
           height="100%">
@@ -1939,16 +2034,34 @@ export default function SupportInboxTemplate() {
   // Whether the rows stack is a question about the table, not the surface and
   // certainly not the window. A reading pane holding the majority of a wide
   // page leaves the table narrow long before anything else is narrow, so the
-  // table's own width is what gets asked — the surface, less whatever the pane
-  // is currently holding.
-  const listWidth =
-    isSingleSurface || openId == null ? surfaceWidth : surfaceWidth - pane.size;
-  const isStacked = isMeasured && listWidth < STACK_ROWS_BELOW;
-  const isTight = isMeasured && listWidth < TIGHTEN_COLUMNS_BELOW;
+  // table's own width is what gets asked.
+  //
+  // Measured, not `surfaceWidth - pane.size`. That subtraction looks like it
+  // says the same thing and does not: `pane.size` is the resizable's *model*
+  // of the pane, which starts life as the `'58%'` string below and only
+  // becomes a pixel count once something has resized it. Until then the term
+  // is not in the same units as `surfaceWidth`, the difference comes out as
+  // the full surface, and a 330px list confidently reports itself wide enough
+  // for columns. Reading the element settles it — the list is a box on the
+  // page and its width is observable, so observe it.
+  const [listRef, measuredListWidth] = useSurfaceWidth();
+  const listWidth = measuredListWidth;
+  const isListMeasured = listWidth > 0;
+  const isStacked = isListMeasured && listWidth < STACK_ROWS_BELOW;
+  const isTight = isListMeasured && listWidth < TIGHTEN_COLUMNS_BELOW;
 
   // Touch never hovers, so the reveal shows the actions permanently there.
   // Overlaying content that never goes away is not a swap, it is a deletion.
-  const isTouch = useMediaQuery('(any-pointer: coarse)');
+  //
+  // `hover: none` and not `any-pointer: coarse`. The question being asked is
+  // whether the primary input can hover, and `any-pointer` answers a different
+  // one — whether *some* attached input is coarse — which is true of a laptop
+  // with a touchscreen, a desktop with a tablet plugged in, and any browser
+  // with touch emulation on. All of those have a mouse, so all of them were
+  // getting the permanent-actions layout and losing both the timestamp and the
+  // hover swap for no reason. `hover` is the media feature that describes the
+  // capability actually in question.
+  const isTouch = useMediaQuery('(hover: none)');
 
   const handleOpen = useCallback((item: Conversation) => {
     setChosenId(item.id);
@@ -2201,43 +2314,76 @@ export default function SupportInboxTemplate() {
 
               {/* Nothing here applies to a conversation, so when the pane has
                   taken the whole surface the row goes with the list. */}
-              {isPaneFullWidth ? null : (
-                <>
-                  {/* Above the rail rather than replacing the tabs. The
-                      control that used to sit here was a filter, and hiding a
-                      filter while acting on a selection costs nothing; hiding
-                      navigation costs the user their place — which bucket am I
-                      even in? So the bar is additive, and it only appears in
-                      response to a deliberate act. It goes above the strip
-                      because the strip's rail has to stay against the table:
-                      a bar wedged between them would leave the line dividing
-                      the tabs from the selection bar instead. */}
-                  {hasSelection ? (
-                    <HStack
-                      gap={2}
-                      vAlign="center"
-                      wrap="wrap"
-                      paddingInline={4}
-                      paddingBlockEnd={4}>
-                      <Text weight="semibold">{selectedCount} selected</Text>
-                      {ROW_ACTIONS.filter(action => action.id !== 'reply').map(
-                        action => (
-                          <Button
-                            key={action.id}
-                            label={action.label}
-                            variant="secondary"
-                            icon={<Icon icon={action.icon} size="sm" />}
-                          />
-                        ),
-                      )}
-                      <Button
-                        label="Clear selection"
-                        variant="ghost"
-                        onClick={() => setSelectedKeys(new Set())}
-                      />
-                    </HStack>
-                  ) : null}
+              {isPaneFullWidth ? null : hasSelection ? (
+                /* In the strip's place, not above it. Stacking the two was
+                   costing a row of height the moment a checkbox was ticked,
+                   which moved the table out from under the pointer that had
+                   just clicked it — and moved it back on untick. Swapping in
+                   place keeps the table still, which matters more here than
+                   keeping the tabs visible: acting on a selection is a
+                   deliberate, short-lived mode, and the bucket you are in is
+                   still named by the heading above and the rows themselves.
+                   Clearing the selection puts the tabs straight back.
 
+                   The band itself is `table-filter`'s, down to the muted fill,
+                   the radius and the `@starting-style` rise on entry, and it
+                   runs full-bleed there too — so it lands on exactly the
+                   footprint the tab strip's rail just vacated. The fill is
+                   what separates it from the rows, which is why nothing draws
+                   a rule under it.
+
+                   Height is pinned to `SELECTION_BAR_HEIGHT` so the swap costs
+                   the table nothing. That makes the band shorter than
+                   `table-filter`'s, which is free to size to its own content;
+                   here the strip it replaces sets the budget. */
+                <VStack height={SELECTION_BAR_HEIGHT} vAlign="center">
+                  <Section
+                    variant="muted"
+                    paddingInline={3}
+                    paddingBlock={0.5}
+                    xstyle={[styles.bulkBand, styles.bulkBandEnter]}>
+                    <HStack gap={3} vAlign="center" minHeight={28}>
+                      <StackItem size="fill">
+                        <HStack gap={1} vAlign="center">
+                          {ROW_ACTIONS.filter(
+                            action => action.id !== 'reply',
+                          ).map(action => (
+                            <Button
+                              key={action.id}
+                              label={action.label}
+                              variant="ghost"
+                              size="sm"
+                              icon={<Icon icon={action.icon} size="sm" />}
+                            />
+                          ))}
+                        </HStack>
+                      </StackItem>
+
+                      {/* Grouped so the separator cannot strand itself at the
+                          end of a line once the actions grow wide. */}
+                      <HStack gap={3} vAlign="center">
+                        <Text type="body">
+                          {selectedCount}{' '}
+                          {selectedCount === 1
+                            ? 'conversation'
+                            : 'conversations'}{' '}
+                          selected
+                        </Text>
+                        <Text type="supporting" color="secondary">
+                          •
+                        </Text>
+                        <Button
+                          label="Unselect All"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedKeys(new Set())}
+                        />
+                      </HStack>
+                    </HStack>
+                  </Section>
+                </VStack>
+              ) : (
+                <>
                   {/* Tabs, not a SegmentedControl, because these are places
                       rather than filters — a thread has one standing at a
                       time, and switching moves you rather than narrowing what
@@ -2313,7 +2459,7 @@ export default function SupportInboxTemplate() {
           </LayoutHeader>
         }
         content={
-          <LayoutContent padding={4} isScrollable>
+          <LayoutContent ref={listRef} padding={4} isScrollable>
             {isPaneFullWidth && openConversation != null ? (
               <ConversationPane
                 conversation={openConversation}
