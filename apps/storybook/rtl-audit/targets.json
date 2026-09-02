@@ -80,6 +80,17 @@
     }
   },
   {
+    "component": "TabList",
+    "storyId": "core-tablist--overflow",
+    "dims": [
+      "D3"
+    ],
+    "selectors": {
+      "scroller": ".astryx-tab-strip",
+      "nextButton": ".astryx-tab-scroll-button"
+    }
+  },
+  {
     "component": "Typeahead",
     "storyId": "core-typeahead--logical-order",
     "dims": [

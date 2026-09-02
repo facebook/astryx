@@ -10,6 +10,7 @@ import {
   buildComponentCoverage,
   classifyDirectionalDecorationPair,
   collectDirectionalDecorations,
+  findUnmatchedComponentFilters,
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 
 const IDENTITY = [1, 0, 0, 1];
@@ -96,6 +97,18 @@ describe('classifyDirectionalDecorationPair', () => {
         decoration('›', 'auto-bidi', MIRROR),
       ),
     ).toMatchObject({verdict: 'fail'});
+  });
+});
+
+describe('findUnmatchedComponentFilters', () => {
+  it('accepts a story-only component without synthesizing an unknown gap', () => {
+    expect(
+      findUnmatchedComponentFilters({
+        filters: ['chat', 'missing'],
+        sourceComponents: ['core/Button'],
+        storyComponents: ['core/Chat'],
+      }),
+    ).toEqual(['unknown/missing']);
   });
 });
 

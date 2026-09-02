@@ -3,8 +3,9 @@
 /**
  * @file Shared RTL coverage and directional-decoration helpers.
  * @input Rendered DOM decorations plus D1/D5/D6/curated audit results.
- * @output Contextual decoration candidates, pair verdicts, and per-component
- *   measured / verified-N-A / coverage-gap classifications.
+ * @output Contextual decoration candidates, pair verdicts, component-filter
+ *   reconciliation, and per-component measured / verified-N-A / coverage-gap
+ *   classifications.
  * @position Pure support layer for rtl-audit.mjs and its unit tests.
  */
 
@@ -258,6 +259,26 @@ export function evaluateDirectionalDecorations(ltr, rtl) {
 
 function resultIsApplicable(result) {
   return result?.verdict === 'pass' || result?.verdict === 'fail';
+}
+
+/**
+ * Return filter names that match neither a discovered source component nor a
+ * Storybook component. Story-only aggregate titles such as Core/Chat are valid
+ * audit surfaces and must not also create a synthetic unknown/chat gap.
+ */
+export function findUnmatchedComponentFilters({
+  filters = [],
+  sourceComponents = [],
+  storyComponents = [],
+}) {
+  const knownNames = new Set(
+    [...sourceComponents, ...storyComponents].map(component =>
+      component.split('/').at(-1)?.toLowerCase(),
+    ),
+  );
+  return filters
+    .filter(filter => !knownNames.has(filter.toLowerCase()))
+    .map(filter => `unknown/${filter}`);
 }
 
 /**

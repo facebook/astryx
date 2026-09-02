@@ -51,6 +51,7 @@ import {
   buildComponentCoverage,
   collectDirectionalDecorations,
   evaluateDirectionalDecorations,
+  findUnmatchedComponentFilters,
 } from './rtl-audit-coverage.mjs';
 
 const args = process.argv.slice(2);
@@ -790,15 +791,15 @@ async function mapPool(items, pages, fn) {
       console.error(`WARN: cannot discover ${packageName} component roster: ${String(error).slice(0, 120)}`);
     }
   }
-  const unmatchedFilters = FILTER.filter(
-    filter =>
-      !sourceComponents.some(
-        component => component.split('/').at(-1)?.toLowerCase() === filter,
-      ),
-  ).map(filter => `unknown/${filter}`);
+  const storyComponents = storyIds.map(componentFromId);
+  const unmatchedFilters = findUnmatchedComponentFilters({
+    filters: FILTER,
+    sourceComponents,
+    storyComponents,
+  });
   const auditedComponents = Array.from(
     new Map(
-      [...sourceComponents, ...storyIds.map(componentFromId), ...unmatchedFilters].map(component => [component.toLowerCase(), component]),
+      [...sourceComponents, ...storyComponents, ...unmatchedFilters].map(component => [component.toLowerCase(), component]),
     ).values(),
   ).filter(matchesFilter);
 
