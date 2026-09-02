@@ -111,5 +111,19 @@
       "prev": ".astryx-token",
       "next": ".astryx-input-clear-button"
     }
+  },
+  {
+    "component": "Toast",
+    "storyId": "core-toast--logical-placement",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": "button:has-text(\"Show toast\")"
+    },
+    "selectors": {
+      "overlay": "[data-toast-id]",
+      "overlayRoot": "body"
+    }
   }
 ]
