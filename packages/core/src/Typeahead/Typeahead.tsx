@@ -22,10 +22,12 @@ import React, {
   useCallback,
   useId,
   useRef,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {BusyIndicatorLaneProvider} from './busyIndicatorLane';
 import {BaseTypeahead} from './BaseTypeahead';
 import {useSize} from '../SizeContext/SizeContext';
 import {
@@ -317,6 +319,7 @@ export function Typeahead<T extends SearchableItem>({
   // Reported by BaseTypeahead so the indicator can live in this field's own
   // end lane, beside the clear button, rather than in the engine's row.
   const [isLoading, setIsLoading] = useState(false);
+  const busyLane = useMemo(() => ({onBusyChange: setIsLoading}), []);
   const [isEditing, setIsEditing] = useState(false);
   const [editingValue, setEditingValue] = useState<T | null>(null);
 
@@ -484,38 +487,42 @@ export function Typeahead<T extends SearchableItem>({
             xstyle={styles.token}
           />
         )}
-        <BaseTypeahead
-          ref={inputRef}
-          searchSource={searchSource}
-          value={value}
-          onChange={handleChange}
-          renderItem={renderItem}
-          placeholder={showToken ? undefined : placeholder}
-          hasEntriesOnFocus={hasEntriesOnFocus}
-          maxMenuItems={maxMenuItems}
-          minQueryLength={minQueryLength}
-          emptySearchResultsText={emptySearchResultsText}
-          isDisabled={isDisabled}
-          hasAutoFocus={hasAutoFocus}
-          isFocusableDisabled={showsDisabledMessage}
-          inputId={inputId}
-          ariaDescribedBy={ariaDescribedBy}
-          ariaLabelledBy={ariaLabelledBy}
-          onChangeQuery={onChangeQuery}
-          onOpenChange={onOpenChange}
-          __onLoadingChange={setIsLoading}
-          debounceMs={debounceMs}
-          anchorRef={wrapperRef}
-          onKeyDown={handleKeyDown}
-          inputXStyle={showToken ? styles.inputHidden : undefined}
-          // While the token is shown the input is collapsed (width 0 /
-          // opacity 0) — take it out of the Tab order so keyboard users
-          // don't hit an invisible stop (WCAG 2.4.3 / 2.4.7). It stays
-          // programmatically focusable: entering edit mode and clearing
-          // both refocus it after it uncollapses.
-          inputTabIndex={showToken ? -1 : undefined}
-          size={size}
-        />
+        {/* The base reports its busy state through this lane, so the
+            indicator lands in the end controls below beside the clear
+            button rather than as a second one inside the base. */}
+        <BusyIndicatorLaneProvider value={busyLane}>
+          <BaseTypeahead
+            ref={inputRef}
+            searchSource={searchSource}
+            value={value}
+            onChange={handleChange}
+            renderItem={renderItem}
+            placeholder={showToken ? undefined : placeholder}
+            hasEntriesOnFocus={hasEntriesOnFocus}
+            maxMenuItems={maxMenuItems}
+            minQueryLength={minQueryLength}
+            emptySearchResultsText={emptySearchResultsText}
+            isDisabled={isDisabled}
+            hasAutoFocus={hasAutoFocus}
+            isFocusableDisabled={showsDisabledMessage}
+            inputId={inputId}
+            ariaDescribedBy={ariaDescribedBy}
+            ariaLabelledBy={ariaLabelledBy}
+            onChangeQuery={onChangeQuery}
+            onOpenChange={onOpenChange}
+            debounceMs={debounceMs}
+            anchorRef={wrapperRef}
+            onKeyDown={handleKeyDown}
+            inputXStyle={showToken ? styles.inputHidden : undefined}
+            // While the token is shown the input is collapsed (width 0 /
+            // opacity 0) — take it out of the Tab order so keyboard users
+            // don't hit an invisible stop (WCAG 2.4.3 / 2.4.7). It stays
+            // programmatically focusable: entering edit mode and clearing
+            // both refocus it after it uncollapses.
+            inputTabIndex={showToken ? -1 : undefined}
+            size={size}
+          />
+        </BusyIndicatorLaneProvider>
         {(isLoading || (hasClear && value && !isDisabled)) && (
           <div {...stylex.props(styles.endLane)}>
             {isLoading && (

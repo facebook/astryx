@@ -25,6 +25,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {BusyIndicatorLaneProvider} from '../Typeahead/busyIndicatorLane';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {BaseTypeahead} from '../Typeahead/BaseTypeahead';
@@ -470,6 +471,7 @@ export function Tokenizer<T extends SearchableItem>({
   // Reported by BaseTypeahead so the indicator can live in this field's own
   // end lane, beside endContent and the clear button.
   const [isLoading, setIsLoading] = useState(false);
+  const busyLane = useMemo(() => ({onBusyChange: setIsLoading}), []);
   // What sits in the end lane varies most here — a spinner, arbitrary
   // `endContent`, a clear button, or all three — so its width is measured
   // rather than assumed, and the input reserves it.
@@ -813,41 +815,45 @@ export function Tokenizer<T extends SearchableItem>({
       ) : (
         tokens
       )}
-      <BaseTypeahead
-        ref={inputRef}
-        searchSource={isAtMax ? emptySource : filteredSource}
-        value={null}
-        onChange={handleAdd}
-        renderItem={renderItem}
-        placeholder={value.length === 0 ? placeholder : ''}
-        hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
-        maxMenuItems={maxMenuItems}
-        menuWidth={menuWidth}
-        minQueryLength={minQueryLength}
-        emptySearchResultsText={emptySearchResultsText}
-        isDisabled={isDisabled}
-        isFocusableDisabled={showsDisabledMessage}
-        hasAutoFocus={hasAutoFocus}
-        inputId={inputId}
-        ariaDescribedBy={ariaDescribedBy}
-        onChangeQuery={onChangeQuery}
-        __queryEntries={createEntries}
-        __onLoadingChange={setIsLoading}
-        debounceMs={debounceMs}
-        onKeyDown={handleKeyDown}
-        anchorRef={wrapperRef}
-        size={size}
-        inputXStyle={[
-          isAtMax || isTruncated
-            ? styles.inputAtMax
-            : value.length > 0
-              ? styles.inputCompact
-              : undefined,
-          // Not for the collapsed states above: those give the input no width
-          // to pad, and `inputAtMax` zeroes its padding outright.
-          !(isAtMax || isTruncated) && hasEndLane && laneReserve,
-        ]}
-      />
+      {/* The base reports its busy state through this lane, so the
+          indicator lands in the end controls below beside the clear
+          button rather than as a second one inside the base. */}
+      <BusyIndicatorLaneProvider value={busyLane}>
+        <BaseTypeahead
+          ref={inputRef}
+          searchSource={isAtMax ? emptySource : filteredSource}
+          value={null}
+          onChange={handleAdd}
+          renderItem={renderItem}
+          placeholder={value.length === 0 ? placeholder : ''}
+          hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
+          maxMenuItems={maxMenuItems}
+          menuWidth={menuWidth}
+          minQueryLength={minQueryLength}
+          emptySearchResultsText={emptySearchResultsText}
+          isDisabled={isDisabled}
+          isFocusableDisabled={showsDisabledMessage}
+          hasAutoFocus={hasAutoFocus}
+          inputId={inputId}
+          ariaDescribedBy={ariaDescribedBy}
+          onChangeQuery={onChangeQuery}
+          __queryEntries={createEntries}
+          debounceMs={debounceMs}
+          onKeyDown={handleKeyDown}
+          anchorRef={wrapperRef}
+          size={size}
+          inputXStyle={[
+            isAtMax || isTruncated
+              ? styles.inputAtMax
+              : value.length > 0
+                ? styles.inputCompact
+                : undefined,
+            // Not for the collapsed states above: those give the input no width
+            // to pad, and `inputAtMax` zeroes its padding outright.
+            !(isAtMax || isTruncated) && hasEndLane && laneReserve,
+          ]}
+        />
+      </BusyIndicatorLaneProvider>
       {htmlName != null &&
         value.map(item => (
           <input

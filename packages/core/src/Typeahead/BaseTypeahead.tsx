@@ -27,6 +27,7 @@ import React, {
   type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {useBusyIndicatorLane} from './busyIndicatorLane';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -171,25 +172,6 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * @internal
    */
   __queryEntries?: (query: string, results: T[]) => T[];
-
-  /**
-   * Called when a search starts or settles, so a wrapper can paint the busy
-   * state in the one inline-end lane it already owns for its clear button and
-   * end content, instead of the base rendering a second indicator competing
-   * for the same corner.
-   *
-   * Passing this takes the indicator over: the base stops rendering its own.
-   * A caller that does not pass it keeps the visible, named status the base
-   * has always rendered.
-   *
-   * Underscored and `@internal` for the same reason as `__queryEntries`
-   * above: `BaseTypeaheadProps` is re-exported from the package entry point,
-   * so anything named on it ships as public API at the next cut, and this is
-   * a wiring detail between the two wrappers and the base.
-   *
-   * @internal
-   */
-  __onLoadingChange?: (isLoading: boolean) => void;
 
   /**
    * Debounce delay in ms before triggering search after typing.
@@ -415,7 +397,6 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   onChangeQuery,
   onOpenChange,
   __queryEntries,
-  __onLoadingChange,
   inputId: externalInputId,
   ariaDescribedBy,
   ariaLabelledBy,
@@ -468,10 +449,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // This effect only writes a ref, so it commits nothing and no wrapper
   // re-renders for it; every caller of `setLoading` runs from an event or an
   // awaited continuation, long after the first commit.
-  const onLoadingChangeRef = useRef(__onLoadingChange);
+  // A wrapper that owns the inline-end lane subscribes through context; see
+  // busyIndicatorLane.tsx for why this is not a prop.
+  const busyLane = useBusyIndicatorLane();
+  const onLoadingChangeRef = useRef(busyLane?.onBusyChange);
   useIsomorphicLayoutEffect(() => {
-    onLoadingChangeRef.current = __onLoadingChange;
-  }, [__onLoadingChange]);
+    onLoadingChangeRef.current = busyLane?.onBusyChange;
+  }, [busyLane]);
   const loadingRef = useRef(false);
   const setLoading = useCallback((next: boolean) => {
     if (loadingRef.current === next) {
@@ -984,7 +968,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           inputXStyle,
         )}
       />
-      {isLoading && __onLoadingChange == null && (
+      {isLoading && busyLane == null && (
         <span {...stylex.props(styles.loadingStatus)}>
           <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
         </span>

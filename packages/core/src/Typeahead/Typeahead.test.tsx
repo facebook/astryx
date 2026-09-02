@@ -21,7 +21,10 @@ import {
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Typeahead} from './Typeahead';
+import {readFile} from 'node:fs/promises';
+import {resolve} from 'node:path';
 import {BaseTypeahead} from './BaseTypeahead';
+import {BusyIndicatorLaneProvider} from './busyIndicatorLane';
 import type {SearchSource, SearchableItem} from './types';
 import {InternationalizationProvider} from '../i18n';
 
@@ -1508,13 +1511,14 @@ describe('busy indicator ownership', () => {
     const {source, settle} = pendingSource();
     const onLoadingChange = vi.fn();
     render(
-      <BaseTypeahead
-        searchSource={source}
-        value={null}
-        onChange={() => {}}
-        __onLoadingChange={onLoadingChange}
-        debounceMs={0}
-      />,
+      <BusyIndicatorLaneProvider value={{onBusyChange: onLoadingChange}}>
+        <BaseTypeahead
+          searchSource={source}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+      </BusyIndicatorLaneProvider>,
     );
     const input = screen.getByRole('combobox');
 
@@ -1536,6 +1540,23 @@ describe('busy indicator ownership', () => {
     expect(onLoadingChange).toHaveBeenLastCalledWith(false);
   });
 
+  it('keeps the busy handoff out of the exported prop surface', async () => {
+    // The handoff used to be `__onLoadingChange` on BaseTypeaheadProps, which
+    // the package entry point re-exports — so a builder reading the exported
+    // declaration would find it and could reasonably wire it, pinning a detail
+    // between two wrappers and their base as permanent API. An `@internal` tag
+    // is a note to a reader; a module boundary is the actual seam.
+    const entry = await import('./index');
+    expect(Object.keys(entry)).not.toContain('BusyIndicatorLaneProvider');
+    expect(Object.keys(entry)).not.toContain('useBusyIndicatorLane');
+
+    const source = await readFile(
+      resolve(__dirname, 'BaseTypeahead.tsx'),
+      'utf8',
+    );
+    expect(source).not.toContain('__onLoadingChange');
+  });
+
   it('reports each transition once, and reports nothing when nothing changed', async () => {
     // Edge-triggered on purpose. Every keystroke below the query threshold
     // clears the flag, and an unconditional report would hand the wrapper a
@@ -1544,14 +1565,15 @@ describe('busy indicator ownership', () => {
     const {source, settle} = pendingSource();
     const onLoadingChange = vi.fn();
     render(
-      <BaseTypeahead
-        searchSource={source}
-        value={null}
-        onChange={() => {}}
-        __onLoadingChange={onLoadingChange}
-        minQueryLength={3}
-        debounceMs={0}
-      />,
+      <BusyIndicatorLaneProvider value={{onBusyChange: onLoadingChange}}>
+        <BaseTypeahead
+          searchSource={source}
+          value={null}
+          onChange={() => {}}
+          minQueryLength={3}
+          debounceMs={0}
+        />
+      </BusyIndicatorLaneProvider>,
     );
     const input = screen.getByRole('combobox');
 
