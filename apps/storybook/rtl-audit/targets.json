@@ -91,6 +91,17 @@
     }
   },
   {
+    "component": "Stepper",
+    "storyId": "core-stepper--default-horizontal",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-stepper > li:first-child",
+      "next": ".astryx-stepper > li:last-child"
+    }
+  },
+  {
     "component": "TabList",
     "storyId": "core-tablist--overflow",
     "dims": [

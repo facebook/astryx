@@ -6,6 +6,8 @@ import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Stepper} from './Stepper';
 import {Step} from './Step';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
 describe('Stepper', () => {
   it('renders an ordered list of steps (not a nav landmark)', () => {
@@ -1183,6 +1185,25 @@ describe('Stepper', () => {
         '.astryx-step-connector',
       ) as HTMLElement;
       expect(declarationsFor(lead)).not.toContain('--step-connector-gap:0px');
+    });
+
+    it('emits a root-owned override through the theme build path', () => {
+      const theme = defineTheme({
+        name: 'stepper-connector-gap-test',
+        components: {
+          stepper: {
+            base: {'--step-connector-gap': '6px'},
+          },
+        },
+      });
+      const {component} = generateThemeCSS(theme);
+
+      expect(component).toMatch(
+        /\.astryx-stepper\s*\{[^}]*--step-connector-gap:\s*6px;/,
+      );
+      expect(component).not.toMatch(
+        /\.astryx-step-connector\s*\{[^}]*--step-connector-gap:/,
+      );
     });
 
     it('leaves the connector target itself free of a segment vocabulary', () => {

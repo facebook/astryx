@@ -764,19 +764,12 @@ const styles = stylex.create({
   // The gap a connector leaves where it meets the indicator, spent on the side
   // that faces the node so the pair leaves a symmetric hole around it.
   //
-  // Padding rather than margin, and `box-sizing: border-box` is universal in
-  // the reset — so the segment's outer size does not change and the node stays
-  // put. That matters most for the vertical leading segment, whose height is
-  // what aligns the node with the label's first line: a margin there would
-  // push the node down by the gap.
-  //
-  // Each rule spends the gap twice, on the track and on the fill: the track's
-  // paint is clipped to the content box, and the fill layer — absolutely
-  // placed at `inset: 0`, which resolves against the PADDING box and would
-  // otherwise paint straight through the gap — is inset by the same amount, so
-  // both stop at the same line. No fallback in the `var()`: the default is
-  // declared on `connectorTrack` above, which every one of these segments also
-  // carries.
+  // Clip the segment rather than changing its box: one `clip-path` clips the
+  // segment's own track and its absolutely positioned `::before` fill against
+  // the same reference box. The indicator stays put, the Stepper cannot grow,
+  // and percentage values cannot resolve differently between the two layers.
+  // The inherited value is clamped in CONNECTOR_GAP; its default is declared
+  // once on the Stepper root, where a generated theme override can replace it.
   //
   // A public var rather than a per-segment theme vocabulary: "do not touch the
   // indicator" is one intent, and naming the segments would publish which
