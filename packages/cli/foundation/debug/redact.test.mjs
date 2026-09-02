@@ -1,25 +1,25 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {createRedactor, isSensitiveKey, REDACTED} from './redact.mjs';
+import {
+  createRedactor,
+  isSensitiveKey,
+  redactArgv,
+  REDACTED,
+} from './redact.mjs';
 
 const ctx = {home: '/Users/ada', cwd: '/Users/ada/projects/app'};
 const scrub = createRedactor({enabled: true, ...ctx});
 
 describe('isSensitiveKey', () => {
-  it.each([
-    'token',
-    'authToken',
-    'GITHUB_TOKEN',
-    'password',
-    'apiSecret',
-    'sessionId',
-    'x-signature',
-  ])('treats %s as sensitive', key => {
-    expect(isSensitiveKey(key)).toBe(true);
-  });
+  it.each(['token', 'authToken', 'GITHUB_TOKEN', 'password', 'apiSecret', 'sessionId', 'x-signature', 'api-key', 'apiKey', 'API_KEY', 'accessKey', 'key', 'pat', 'pw'])(
+    'treats %s as sensitive',
+    key => {
+      expect(isSensitiveKey(key)).toBe(true);
+    },
+  );
 
-  it.each(['out', 'detail', 'component', 'limit', undefined])(
+  it.each(['out', 'detail', 'component', 'limit', 'path', 'keyboard', 'sortkey', 'pattern', 'compatible', undefined])(
     'leaves %s alone',
     key => {
       expect(isSensitiveKey(key)).toBe(false);
@@ -125,6 +125,76 @@ describe('credential scrubbing', () => {
 
   it('leaves an ordinary assignment alone', () => {
     expect(scrub('--out=dist/theme.css')).toBe('--out=dist/theme.css');
+  });
+
+  it.each(['--api-key', '--api_key', '--apiKey', '--APIKEY'])(
+    'drops the value of %s',
+    flag => {
+      // `key` is not a substring rule — it would take `--keyboard` with it —
+      // so the spellings have to normalize to one entry.
+      const out = String(scrub(`unknown option '${flag}=shhSECRETVALUE'`));
+      expect(out).not.toContain('shhSECRETVALUE');
+    },
+  );
+
+  it.each(['--key', '--pat', '--pw', '--pwd', '--creds', '--sig'])(
+    'drops the value of the whole-word key %s',
+    flag => {
+      expect(String(scrub(`${flag}=shhSECRETVALUE`))).not.toContain(
+        'shhSECRETVALUE',
+      );
+    },
+  );
+
+  it.each(['--keyboard', '--path', '--sortkey', '--pattern', '--signal'])(
+    'leaves %s alone — a whole-word rule must not eat ordinary flags',
+    flag => {
+      expect(String(scrub(`${flag}=ordinaryvalue`))).toContain('ordinaryvalue');
+    },
+  );
+});
+
+describe('argv, where the flag and its value are separate elements', () => {
+  it('drops the element after a sensitive flag', () => {
+    // `--flag value` is the ordinary CLI spelling. Redacting it in `options`
+    // and printing it in `argv` would be the worst of both.
+    expect(redactArgv(['docs', '--token', 'hunter2SECRET'], scrub)).toEqual([
+      'docs',
+      '--token',
+      REDACTED,
+    ]);
+  });
+
+  it('keeps the flag name itself', () => {
+    const out = /** @type {string[]} */ (
+      redactArgv(['--api-key', 'shhSECRET'], scrub)
+    );
+    expect(out[0]).toBe('--api-key');
+    expect(out[1]).toBe(REDACTED);
+  });
+
+  it('leaves an ordinary flag and its value alone', () => {
+    expect(redactArgv(['theme', 'build', '--out', 'dist'], scrub)).toEqual([
+      'theme',
+      'build',
+      '--out',
+      'dist',
+    ]);
+  });
+
+  it('still scrubs each element on its own merits', () => {
+    expect(redactArgv(['docs', 'ada@example.com'], scrub)).toEqual([
+      'docs',
+      REDACTED,
+    ]);
+  });
+
+  it('does not treat the value after `--token=x` as sensitive', () => {
+    // The `=` form carries its own value; the NEXT element is unrelated.
+    expect(redactArgv(['--token=x', 'docs'], scrub)).toEqual([
+      `--token=${REDACTED}`,
+      'docs',
+    ]);
   });
 });
 

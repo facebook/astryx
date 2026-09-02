@@ -130,8 +130,6 @@ export interface DebugEvent {
   schemaVersion: DebugSchemaVersion;
   /** Unique per invocation. Collectors should dedupe on this. */
   id: string;
-  /** Anonymous, stable per install, resettable by the user. */
-  installId: string | null;
 
   /** ISO 8601. */
   startedAt: string;
@@ -172,8 +170,14 @@ export interface DebugEvent {
 }
 
 /**
- * A function that receives each recorded run, attached via
- * `debug.onEvent` in `astryx.config`.
+ * A function that receives each recorded run. Set it as `debug` in
+ * `astryx.config`:
+ *
+ * ```
+ * export default {
+ *   debug: event => appendFileSync('runs.ndjson', JSON.stringify(event) + '\n'),
+ * };
+ * ```
  *
  * IMPORTANT — this is called synchronously as the process exits, so a promise
  * it returns will never be awaited and pending I/O will not complete. Use it
@@ -184,5 +188,11 @@ export interface DebugEvent {
  * The event is a copy, so mutating it is harmless and changes nothing that
  * reaches the log. Anything the handler throws is swallowed; recording must
  * never fail a command.
+ *
+ * Two things a handler still CAN do to its own command, because they happen
+ * after the CLI has finished and outside anything this module controls:
+ * calling `process.exit` from in here replaces the command's exit code, and
+ * writing to stdout appends to the command's own output — which will break a
+ * `--json` consumer parsing that stream. Don't do either.
  */
 export type DebugEventHandler = (event: DebugEvent) => void;

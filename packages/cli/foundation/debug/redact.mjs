@@ -37,14 +37,24 @@ export const MAX_VALUE_CHARS = 2048;
 
 /**
  * Option/field names whose VALUE is always removed, matched case-insensitively
- * as a substring. Deliberately broad — a false positive costs one unusable
- * field in a usage log; a false negative writes a live credential to disk.
+ * as a substring of the name with `-` and `_` stripped, so `apiKey`,
+ * `api-key` and `API_KEY` are one entry. Deliberately broad — a false positive
+ * costs one unusable field in a usage log; a false negative writes a live
+ * credential to disk.
+ *
+ * Substring matching is why `key` and `pat` are not in here: they would take
+ * `--keyboard`, `--sortkey` and, worse, `--path` with them. Those live in
+ * {@link SENSITIVE_KEY_EXACT} instead.
  */
 const SENSITIVE_KEY_PARTS = [
+  'accesskey',
+  'apikey',
   'auth',
+  'bearer',
   'credential',
   'cookie',
   'jwt',
+  'passphrase',
   'passwd',
   'password',
   'private',
@@ -55,7 +65,26 @@ const SENSITIVE_KEY_PARTS = [
 ];
 
 /**
- * `--flag=value` / `KEY=value` where the key half looks sensitive.
+ * Names that are sensitive on their own but are substrings of ordinary words,
+ * so they are matched WHOLE (again after stripping `-`/`_`).
+ */
+const SENSITIVE_KEY_EXACT = new Set([
+  'creds',
+  'key',
+  'pat',
+  'pw',
+  'pwd',
+  'sig',
+]);
+
+/** Flags whose NEXT argv element is the value, e.g. `--token hunter2`. */
+const SENSITIVE_FLAG_RE = /^--?([\w-]{1,64})$/;
+
+/**
+ * `--flag=value` / `KEY=value`, ANY key. Whether the key is sensitive is
+ * decided per match by {@link isSensitiveKey}, not encoded in the pattern —
+ * one keyword list, and `--api-key`, `--api_key` and `--apiKey` are all the
+ * same entry instead of three alternations to keep in step.
  *
  * Global and unanchored, because the same text arrives twice: once as its own
  * argv element, and again quoted inside an error message, a stack frame and
@@ -63,21 +92,12 @@ const SENSITIVE_KEY_PARTS = [
  * scrubs the first and leaves the other three, which is the same secret,
  * written to the same record.
  *
- * The key halves are BOUNDED. Unbounded `[\w-]*` either side of the keyword
- * makes an unanchored scan quadratic, and this runs over captured output that
- * can be tens of kilobytes — a 500KB option value took the whole thing from
- * microseconds to minutes. See {@link SENSITIVE_ANYWHERE_RE} for the cheap
- * pre-check that keeps the common case free.
+ * The key half is BOUNDED. An unbounded `[\w-]*` before a keyword makes an
+ * unanchored scan quadratic, and this runs over captured output that can be
+ * tens of kilobytes — 500KB of word characters followed by `token=` took over
+ * seven minutes.
  */
-const ASSIGNMENT_RE = /(--?[\w-]{0,64}(?:auth|credential|cookie|jwt|passwd|password|private|secret|session|signature|token)[\w-]{0,64}|[\w.]{0,64}(?:AUTH|CREDENTIAL|COOKIE|JWT|PASSWD|PASSWORD|PRIVATE|SECRET|SESSION|SIGNATURE|TOKEN)[\w.]{0,64})=([^\s'"`]*)/gi;
-
-/**
- * Is it even worth running {@link ASSIGNMENT_RE}? A plain substring scan is
- * linear and rules out almost every string; the assignment rule only earns its
- * cost once both an `=` and a sensitive-looking word are present.
- */
-const SENSITIVE_ANYWHERE_RE =
-  /auth|credential|cookie|jwt|passwd|password|private|secret|session|signature|token/i;
+const ASSIGNMENT_RE = /(--?[\w-]{1,64}|[\w.]{1,64})=([^\s'"`]*)/g;
 
 /** Well-known credential formats worth catching wherever they appear. */
 const CREDENTIAL_PATTERNS = [
@@ -108,8 +128,34 @@ const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
  */
 export function isSensitiveKey(key) {
   if (!key) return false;
-  const lower = String(key).toLowerCase();
+  const lower = String(key).toLowerCase().replace(/[-_]/g, '');
+  if (SENSITIVE_KEY_EXACT.has(lower)) return true;
   return SENSITIVE_KEY_PARTS.some(part => lower.includes(part));
+}
+
+/**
+ * Scrub an argv array, where a flag and its value are two separate elements.
+ *
+ * `redact` walks a plain array element by element with no key context, so
+ * `['--token', 'hunter2']` reaches it as two ordinary strings and the second
+ * one matches nothing. `--flag value` is the ordinary CLI spelling, and it
+ * would be perverse for `options` to redact what `argv` prints in full.
+ *
+ * @param {string[]} argv
+ * @param {Redactor} redact
+ * @returns {unknown[]}
+ */
+export function redactArgv(argv, redact) {
+  if (!Array.isArray(argv)) return /** @type {any} */ (redact(argv));
+  let sensitiveNext = false;
+  return argv.map(element => {
+    const wasFlagged = sensitiveNext;
+    const flag =
+      typeof element === 'string' ? element.match(SENSITIVE_FLAG_RE) : null;
+    sensitiveNext = Boolean(flag && isSensitiveKey(flag[1]));
+    // A flag's own name is never the secret; the element AFTER it is.
+    return wasFlagged ? REDACTED : redact(element);
+  });
 }
 
 /**
@@ -139,9 +185,11 @@ function scrubPaths(value, ctx) {
   // The lead alternation matters as much as the path itself: the paths that
   // carry a username are the ones in a stack frame, and those arrive wrapped —
   // `at cliError (file:///Users/someone/…/redact.mjs:12:5)`. Anchoring on
-  // whitespace alone leaves every one of them intact.
+  // whitespace alone leaves every one of them intact. A bare `:` leads too,
+  // for the second and later entries of a `PATH`-style list, but not when it
+  // starts a `://` scheme — that would chew the tail off every URL.
   out = out.replace(
-    /(^|[\s"'`([{<=,;]|file:\/\/)(\/[^\s:;,"'`)\]}>]{2,})/g,
+    /(^|[\s"'`([{<=,;]|:(?!\/\/)|file:\/\/)(\/[^\s:;,"'`)\]}>]{2,})/g,
     (match, lead, abs) => {
       const parts = String(abs).split('/').filter(Boolean);
       if (parts.length <= 2) return match;
@@ -169,8 +217,14 @@ function scrubString(value, ctx) {
 
   // `--token=abc` / `GITHUB_TOKEN=abc` survive the patterns above when the
   // value is an unrecognized format, so drop the right-hand side by key name.
-  if (out.includes('=') && SENSITIVE_ANYWHERE_RE.test(out)) {
-    out = out.replace(ASSIGNMENT_RE, (_m, key) => `${key}=${REDACTED}`);
+  // The `=` test is the cheap way out: most strings have none and skip the
+  // scan entirely.
+  if (out.includes('=')) {
+    out = out.replace(ASSIGNMENT_RE, (whole, key) =>
+      isSensitiveKey(String(key).replace(/^--?/, ''))
+        ? `${key}=${REDACTED}`
+        : whole,
+    );
   }
 
   return scrubPaths(out, ctx);

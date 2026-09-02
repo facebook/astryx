@@ -28,9 +28,8 @@ import {isCliOneOff, detectPackageManager} from '../env/package-manager.mjs';
 export const SCHEMA_VERSION = 1;
 
 /**
- * The recorded shape is PUBLISHED — a project can attach a `debug.onEvent`
- * handler that receives these, and the same objects are what `debug export`
- * prints. So the definition lives in
+ * The recorded shape is PUBLISHED — a project sets `debug` in `astryx.config`
+ * to a function, and that function receives these. So the definition lives in
  * `authoring/debug/type.ts` alongside the other public contracts, and this
  * module re-uses it rather than keeping a second copy that could drift. A
  * sealed zod schema in `authoring/debug/parse.mjs` is drift-locked to it.
@@ -41,12 +40,14 @@ export const SCHEMA_VERSION = 1;
  */
 
 /**
- * An event still being filled in. Timing is only knowable once the run ends,
- * so those two fields are absent until {@link finish} seals the record — every
- * PERSISTED event has them.
+ * An event still being filled in. Timing is only knowable once the run ends
+ * and the environment probe is deferred until there is a handler to deliver
+ * to, so those fields are absent or null until {@link finish} seals the
+ * record — every PERSISTED event has them.
  *
- * @typedef {Omit<DebugEvent, 'endedAt' | 'durationMs'> &
- *   {endedAt?: string, durationMs?: number}} InFlightEvent
+ * @typedef {Omit<DebugEvent, 'endedAt' | 'durationMs' | 'env'> &
+ *   {endedAt?: string, durationMs?: number,
+ *    env: DebugEvent['env'] | null}} InFlightEvent
  */
 
 /**
@@ -160,21 +161,24 @@ export function captureProject(facts = {}) {
 }
 
 /**
- * Build a new event in its initial (in-flight) state. The recorder fills in
- * the outcome, timing, and error fields as the invocation progresses.
+ * A blank event, ready to accumulate into.
  *
- * @param {object} init
- * @param {string | null} [init.installId]
+ * Deliberately cheap: allocation only. `env` is left null and filled in by
+ * {@link finish} once there is a handler to deliver to — probing it here would
+ * charge every run for something most runs never use. It is not a small
+ * charge: the first `Intl.DateTimeFormat().resolvedOptions()` initialises ICU,
+ * and with `detectPackageManager` and `isCliOneOff` alongside it the probe
+ * dominated `begin()` and put ~9% on the CLI's startup for everyone.
+ *
+ * @param {object} [init]
  * @param {string} [init.command]
  * @param {string[]} [init.argv]
- * @param {string} [init.cliVersion]
  * @returns {InFlightEvent}
  */
-export function createEvent({installId = null, command = '', argv = [], cliVersion} = {}) {
+export function createEvent({command = '', argv = []} = {}) {
   return {
     schemaVersion: SCHEMA_VERSION,
     id: crypto.randomUUID(),
-    installId,
     startedAt: new Date().toISOString(),
     command,
     commandPath: command ? command.split(' ') : [],
@@ -198,7 +202,7 @@ export function createEvent({installId = null, command = '', argv = [], cliVersi
       stderrBytes: 0,
       truncated: false,
     },
-    env: captureEnv({cliVersion}),
+    env: null,
     project: captureProject(),
     redacted: true,
   };

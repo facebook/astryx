@@ -34,7 +34,7 @@
  */
 
 import {createEvent, toEventError, captureProject, captureEnv} from './event.mjs';
-import {createRedactor} from './redact.mjs';
+import {createRedactor, redactArgv} from './redact.mjs';
 import {ERROR_CODES} from '../response/error-codes.mjs';
 
 /**
@@ -190,7 +190,9 @@ export function setEventHandler(handler) {
  *
  * Provisional collection is deliberately cheap: an object, and one no-op
  * `exit` listener. Probing the machine for {@link captureEnv} is deferred to
- * {@link finish}, so a run with no handler pays for none of it.
+ * {@link finish}, so a run with no handler pays for none of it — that probe
+ * initialises ICU on its first call and is most of what `begin` would
+ * otherwise cost.
  *
  * @param {object} [options]
  * @param {string[]} [options.argv] - argv after the binary.
@@ -205,7 +207,7 @@ export function begin({argv = process.argv.slice(2), cliVersion} = {}) {
     _startedAt = Date.now();
     _finished = false;
     _cliVersion = cliVersion;
-    _event = createEvent({argv, cliVersion});
+    _event = createEvent({argv});
 
     if (!_listenerInstalled) {
       process.on('exit', handleExit);
@@ -493,7 +495,10 @@ export function finish({exitCode} = {}) {
       ..._event,
       endedAt,
       durationMs,
-      argv: /** @type {string[]} */ (redact(_event.argv)),
+      // Filled in just above — `env` is null only while the event is still in
+      // flight, which a sealed one never is.
+      env: /** @type {import('./event.mjs').DebugEvent['env']} */ (_event.env),
+      argv: /** @type {string[]} */ (redactArgv(_event.argv, redact)),
       args: /** @type {Record<string, unknown>} */ (redact(_event.args)),
       options: /** @type {Record<string, unknown>} */ (redact(_event.options)),
       globalOptions: /** @type {Record<string, unknown>} */ (

@@ -33,9 +33,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Read version from package.json so it stays in sync
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf-8'));
 
-// Start the debug recorder before anything can exit. This is a no-op (two env
-// reads) unless recording is enabled, and it must run ahead of the --version
-// preflight below so even that early exit is recorded. See foundation/debug.
+// Start the debug recorder before anything can exit. Allocation only — no
+// filesystem, no environment probe, no config — and it must run ahead of the
+// --version preflight below so even that early exit is recorded. The env
+// probe is deferred to delivery. See foundation/debug.
 debug.begin({cliVersion: pkg.version});
 
 // Intercept `xds --version --json` (or `-V --json`) before Commander processes
@@ -112,9 +113,19 @@ function fullCommandName(actionCommand, root) {
  * short-circuit before any hook runs — so anywhere later would leave exactly
  * the failures you most want reported with nowhere to report them.
  *
- * Cheap enough to do unconditionally: a project with no config pays one
- * `existsSync` walk, and one with a config pays a load whose modules the CLI
- * has already imported.
+ * The gate before the load is the point. `Project.load` EVALUATES the config
+ * module and loads every integration it names, and before this feature most
+ * commands did neither: running a project's own code on `astryx --version`,
+ * for a project that never asked for any of this, is not a cost the feature
+ * gets to impose. So the file is read as text first and only loaded if the
+ * word appears in it. A project with no config pays one `existsSync` walk; a
+ * project with a config and no `debug` pays one small `readFile`.
+ *
+ * The text test is deliberately loose — any occurrence, comments included —
+ * because a false positive costs one config load the CLI used to do anyway,
+ * while a false negative silently records nothing. The one shape it cannot
+ * see is a config that never spells the word, e.g. spreading in an object
+ * from another module; that is documented on the `debug` config key.
  *
  * @returns {Promise<void>}
  */
@@ -123,7 +134,9 @@ export async function loadProjectDebugHandler() {
     const {findConfigPath, Project} = await import(
       '../../foundation/config/project.mjs'
     );
-    if (!findConfigPath(process.cwd())) return;
+    const configPath = findConfigPath(process.cwd());
+    if (!configPath) return;
+    if (!fs.readFileSync(configPath, 'utf-8').includes('debug')) return;
     await Project.load(process.cwd());
   } catch {
     // A broken config is the command's problem to report, not ours.

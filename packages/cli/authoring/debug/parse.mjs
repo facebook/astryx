@@ -94,7 +94,6 @@ const eventSchema = z
   .object({
     schemaVersion: z.literal(1),
     id: z.string(),
-    installId: z.string().nullable(),
     startedAt: z.string(),
     endedAt: z.string(),
     durationMs: z.number(),
