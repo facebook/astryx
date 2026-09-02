@@ -40,6 +40,12 @@ describe('template gallery playground links', () => {
     );
     expect(playground).toContain('template => template.slug === templateSlug');
     expect(playground).toContain(
+      "canonicalURL.searchParams.delete('template')",
+    );
+    expect(playground).toContain(
+      '`${canonicalURL.pathname}${canonicalURL.search}${canonicalURL.hash}`',
+    );
+    expect(playground).toContain(
       'stripCodeExampleCopyrightHeader(templateSource)',
     );
   });

@@ -152,7 +152,14 @@ function getInitialCode(): string {
 
 function updateURL(code: string) {
   const compressed = compressCode(code);
-  window.history.replaceState(null, '', `#code=${compressed}`);
+  const canonicalURL = new URL(window.location.href);
+  canonicalURL.searchParams.delete('template');
+  canonicalURL.hash = `code=${compressed}`;
+  window.history.replaceState(
+    null,
+    '',
+    `${canonicalURL.pathname}${canonicalURL.search}${canonicalURL.hash}`,
+  );
 }
 
 type LeftView = 'code' | 'theme';
