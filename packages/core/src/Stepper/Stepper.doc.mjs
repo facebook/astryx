@@ -54,10 +54,28 @@ export const docs = {
     ],
     anatomy: [
       {
+        name: 'Stepper',
+        required: true,
+        description:
+          'The ordered list holding the steps. Owns the orientation and the indicator placement the whole flow is laid out on.',
+      },
+      {
+        name: 'Step',
+        required: true,
+        description:
+          'One step in the flow, and the element carrying its status. Wraps the indicator, label, description, and the track segments belonging to it.',
+      },
+      {
         name: 'Progress bar',
         required: true,
         description:
           'A 4px segmented bar per step. Filled for completed and active steps. Advancing one step grows the fill along the track it just covered, so the movement reads as progress rather than a bar changing color. Every other change applies at once: going back, jumping forward by more than one step, mounting mid-flow, and any change at all under prefers-reduced-motion. Where a span is drawn by more than one segment (the on-track layouts split it between two steps, three when a content slot sits between them), the segments run in track order at one constant speed, so the fill reads as a single line growing rather than pieces lighting in turn.',
+      },
+      {
+        name: 'Connector',
+        required: false,
+        description:
+          'The track drawn between indicators in the on-track layouts. Each connector paints an unfilled line and, over it, the accent fill covering the progress made. How many pieces a connector is drawn from is an implementation detail of the layout, not a themeable part; use --step-connector-gap to hold the track off the indicator.',
       },
       {
         name: 'Indicator',

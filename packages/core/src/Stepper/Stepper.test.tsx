@@ -1043,6 +1043,12 @@ describe('Stepper', () => {
      * atomic classes, `::before` rules included — the same route `fillEasings`
      * above takes, because StyleX puts static styles in the sheet rather than
      * inline and jsdom resolves no cascade of its own.
+     *
+     * Atomic class names are unique hashes, so the owning class is matched
+     * anywhere in the selector rather than only at its head: a StyleX variant
+     * such as the `dir="rtl"` mirror emits a compound selector the class does
+     * not lead. Those rules are tagged `rtl:` so a test can tell the two
+     * directions apart.
      */
     const declarationsFor = (el: Element) => {
       const classes = new Set(el.className.split(/\s+/));
@@ -1053,11 +1059,15 @@ describe('Stepper', () => {
             continue;
           }
           const {selectorText, style} = rule as CSSStyleRule;
-          const owner = selectorText.match(/^\.([\w-]+)/);
-          if (owner == null || !classes.has(owner[1])) {
+          const owner = [...selectorText.matchAll(/\.([\w-]+)/g)].find(match =>
+            classes.has(match[1]),
+          );
+          if (owner == null) {
             continue;
           }
-          const prefix = selectorText.endsWith('::before') ? 'before:' : '';
+          const prefix =
+            (selectorText.includes('[dir="rtl"]') ? 'rtl:' : '') +
+            (selectorText.endsWith('::before') ? 'before:' : '');
           for (const prop of Array.from(style)) {
             out.push(`${prefix}${prop}:${style.getPropertyValue(prop)}`);
           }
@@ -1110,9 +1120,12 @@ describe('Stepper', () => {
     });
 
     it('clamps a negative gap away and caps an oversized one', () => {
-      // A theme value arrives with nothing in between to reject it. A negative
-      // inset is invalid and drops the declaration entirely, painting the
-      // track through the node it was asked to avoid.
+      // A theme value arrives with nothing in between to reject it, and
+      // `inset()` is not padding: Chromium ACCEPTS `inset(0 0 -4px 0)` rather
+      // than clamping it, so the floor has to be written. The cap is the
+      // flexible segment's own `min-height`, bounding an oversized gap to a
+      // short track. Neither can grow the Stepper — a clip cannot change
+      // layout.
       const {container} = render(onTrack('vertical'));
       const lead = container.querySelector(
         '.astryx-step-connector',
@@ -1120,6 +1133,23 @@ describe('Stepper', () => {
       const declarations = declarationsFor(lead);
       expect(declarations).toContain('max(0px');
       expect(declarations).toContain('min(var(--step-connector-gap');
+    });
+
+    it('flips the horizontal clip under dir="rtl"', () => {
+      // `clip-path: inset()` is physical (top/right/bottom/left) and has no
+      // logical form, but the row reverses under `dir="rtl"`. Unflipped, the
+      // leading segment sits to the RIGHT of the node in RTL and still clips
+      // its right edge, opening the hole at the join between steps instead of
+      // at the indicator.
+      const {container} = render(onTrack('horizontal'));
+      const [lead, rail] = [
+        ...container.querySelectorAll('.astryx-step-connector'),
+      ];
+      // Each segment carries BOTH the LTR clip and its mirrored RTL variant.
+      const leadRules = declarationsFor(lead);
+      const railRules = declarationsFor(rail);
+      expect(leadRules).toMatch(/rtl:clip-path:inset\(0 0 0 [^0]/);
+      expect(railRules).toMatch(/rtl:clip-path:inset\(0 [^0][^;]*0 0\)/);
     });
 
     it('leaves the track unbroken when there is no indicator to avoid', () => {

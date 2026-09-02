@@ -216,9 +216,15 @@ const BAR_WIDTH = spacingVars['--spacing-1'];
  * a 180px stepper to 240px.
  *
  * Still clamped, because the value arrives with nothing in between to reject
- * it: `max(0px, …)` because a negative inset is invalid and would drop the
- * declaration, and `min(…, --spacing-2)` — the flexible segment's own
- * `min-height` — so an oversized gap leaves a short track rather than none.
+ * it. Both halves earn their place, and not for the reasons padding needed:
+ *
+ * - `max(0px, …)` — `inset()` ACCEPTS a negative length. Chromium computes
+ *   `inset(0 0 -4px 0)` as-is rather than dropping it, which is the opposite
+ *   of padding (there CSS clamps a negative to `0` for you). This normalises
+ *   it to `0` so a negative gap means "no gap" rather than a clip rect
+ *   stretched outside the segment's own box.
+ * - `min(…, --spacing-2)` — the flexible segment's own `min-height`, so an
+ *   oversized gap leaves a short track rather than an unbounded one.
  */
 const CONNECTOR_GAP = `max(0px, min(var(--step-connector-gap, 0px), ${spacingVars['--spacing-2']}))`;
 
@@ -781,11 +787,23 @@ const styles = stylex.create({
   otSegGapRailV: {
     clipPath: `inset(${CONNECTOR_GAP} 0 0 0)`,
   },
+  // The horizontal pair is PHYSICAL: `clip-path: inset()` takes top/right/
+  // bottom/left and has no logical form, while the row itself reverses under
+  // `dir="rtl"`. Left unflipped, the leading segment sits to the RIGHT of the
+  // node in RTL and still clips its right edge — opening the hole at the join
+  // between steps instead of at the indicator. The block axis needs no such
+  // handling: `dir` does not reverse it.
   otSegGapLeadH: {
-    clipPath: `inset(0 ${CONNECTOR_GAP} 0 0)`,
+    clipPath: {
+      default: `inset(0 ${CONNECTOR_GAP} 0 0)`,
+      ':is([dir="rtl"] *)': `inset(0 0 0 ${CONNECTOR_GAP})`,
+    },
   },
   otSegGapRailH: {
-    clipPath: `inset(0 0 0 ${CONNECTOR_GAP})`,
+    clipPath: {
+      default: `inset(0 0 0 ${CONNECTOR_GAP})`,
+      ':is([dir="rtl"] *)': `inset(0 ${CONNECTOR_GAP} 0 0)`,
+    },
   },
   // Flexible segment (below the node) — grows to fill the step height and
   // meets the next node's leading segment.
