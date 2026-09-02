@@ -1,0 +1,159 @@
+{
+  "name": "stacked-sheet-api-rubric",
+  "version": 1,
+  "conditionBlind": true,
+  "tracksReportedSeparately": ["core", "policy"],
+  "qualificationGates": [
+    {
+      "id": "typescript",
+      "description": "The final output compiles against the exact declarations installed for its anonymous condition."
+    },
+    {
+      "id": "runtime",
+      "description": "The component renders with no uncaught exception or console error."
+    },
+    {
+      "id": "uses-family",
+      "description": "The output uses the installed Astryx BottomSheet family and does not replace it with a raw dialog or custom overlay."
+    }
+  ],
+  "criticalBehaviors": [
+    {
+      "id": "ordered-path",
+      "tracks": ["core"],
+      "description": "Requested sheets present in the correct bottom-to-top logical order."
+    },
+    {
+      "id": "single-active-layer",
+      "tracks": ["core", "policy"],
+      "description": "Exactly one presented sheet is interactive and exposed to accessibility APIs."
+    },
+    {
+      "id": "covered-visible-inert",
+      "tracks": ["core"],
+      "description": "Covered sheets stay painted and mounted while inert, aria-hidden, and non-hit-testable."
+    },
+    {
+      "id": "top-only-dismissal",
+      "tracks": ["core", "policy"],
+      "description": "One dismissal request affects only the current top sheet."
+    },
+    {
+      "id": "state-persistence",
+      "tracks": ["core"],
+      "description": "Covered input, selection, and scroll state survive push and pop."
+    },
+    {
+      "id": "focus-per-level",
+      "tracks": ["core"],
+      "description": "Push focuses the new top and pop restores the covered control."
+    },
+    {
+      "id": "root-focus-return",
+      "tracks": ["core", "policy"],
+      "description": "Closing the full flow restores focus safely without stealing it from unrelated content."
+    },
+    {
+      "id": "independent-scope",
+      "tracks": ["core"],
+      "description": "Unrelated flows do not share depth, focus, or dismissal order."
+    },
+    {
+      "id": "initial-path",
+      "tracks": ["core"],
+      "description": "A non-empty initial/deep-linked path renders and focuses correctly without a blank host."
+    },
+    {
+      "id": "dynamic-convergence",
+      "tracks": ["core"],
+      "description": "Removal or replacement of a dynamic suffix converges without duplicates or a blank blocking layer."
+    },
+    {
+      "id": "modal-without-scrim",
+      "tracks": ["policy"],
+      "description": "Modal enforcement works when visual dimming is absent."
+    },
+    {
+      "id": "nonmodal-with-scrim",
+      "tracks": ["policy"],
+      "description": "Visual dimming can remain pointer-transparent while background interaction stays enabled."
+    }
+  ],
+  "accessibilityChecks": [
+    "axe has no critical or serious violation",
+    "active dialog boundary has the requested accessible name",
+    "covered content has no tabbable descendants",
+    "modal focus cannot escape",
+    "non-modal focus is never captured or stolen after moving outside"
+  ],
+  "escapeHatches": [
+    {
+      "pattern": "raw-dialog",
+      "description": "Uses a raw <dialog> instead of the installed BottomSheet family."
+    },
+    {
+      "pattern": "manual-inert",
+      "description": "Sets inert or aria-hidden to reproduce stack behavior in consumer code."
+    },
+    {
+      "pattern": "manual-layering",
+      "description": "Adds consumer z-index, transform, scale, or translate rules for sheet depth."
+    },
+    {
+      "pattern": "manual-focus-trap",
+      "description": "Implements keydown/tab looping or focus sentinels for the sheet stack."
+    },
+    {
+      "pattern": "manual-scrim",
+      "description": "Renders a custom fixed backdrop to compensate for the candidate API."
+    },
+    {
+      "pattern": "invalid-api",
+      "description": "Uses a component or prop absent from the installed declaration set."
+    }
+  ],
+  "frictionMetrics": [
+    "durationMs",
+    "inputTokens",
+    "outputTokens",
+    "docsReadCount",
+    "compileAttemptCount",
+    "correctionSnapshotCount",
+    "finalCodeLines",
+    "stateDeclarationCount",
+    "callbackCount",
+    "maximumStateSpread",
+    "followUpLinesChanged",
+    "followUpRegressionCount"
+  ],
+  "primaryRates": [
+    "qualifiedRunRate",
+    "allCriticalCoreBehaviorRate",
+    "allCriticalPolicyBehaviorRate",
+    "followUpCompletionRate",
+    "escapeHatchFreeRate"
+  ],
+  "statistics": {
+    "binary": "Wilson 95% confidence interval",
+    "continuous": "median, median absolute deviation, and stratified bootstrap 95% confidence interval",
+    "pairing": "compare identical prompt, repetition index, model, and persona cells",
+    "missingRuns": "count as failures unless preregistered infrastructure evidence proves the model never started"
+  },
+  "decisionRule": {
+    "qualification": {
+      "minimumTypeScriptRate": 0.9,
+      "minimumCoreLowerWilsonBound": 0.7,
+      "requiresAtLeastOneSuccessPerCorePrompt": true,
+      "allowsCriticalAccessibilityRegression": false
+    },
+    "tieBreakOrder": [
+      "highest allCriticalCoreBehaviorRate",
+      "lowest median correctionSnapshotCount",
+      "lowest median outputTokens",
+      "lowest median maximumStateSpread",
+      "smallest public API surface"
+    ],
+    "policyAdoption": "Adopt the richer policy surface only when it materially improves policy behavior, does not reduce core completion, and increases median core output tokens by no more than 10%.",
+    "aggregateScoreIsDecisive": false
+  }
+}

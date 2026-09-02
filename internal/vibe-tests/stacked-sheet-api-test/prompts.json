@@ -1,0 +1,217 @@
+{
+  "name": "stacked-sheet-api-prompts",
+  "description": "User-outcome prompts for comparing stacked-sheet APIs. The prompt field is the only task text shown to agents. driver and expectedBehavior are evaluation-only.",
+  "pilotDefault": ["ss-1", "ss-2", "ss-3", "ss-7"],
+  "prompts": [
+    {
+      "id": "ss-1",
+      "track": "core",
+      "category": "basic-drill-down",
+      "complexity": "moderate",
+      "prompt": "Build a mobile issue inbox using Astryx. A button labeled 'Open issues' opens a bottom sheet containing three issues. Selecting 'Login timeout' opens its details as a new sheet above the list while the list remains visibly present underneath. The details view needs 'Back' to reveal the list again and 'Close all' to close the complete flow.",
+      "followUp": "Add an 'Activity' action in Login timeout details. It should open a third sheet above the details, and Back should unwind one level at a time without losing the issue list.",
+      "expectedBehavior": [
+        "opens list then details in bottom-to-top order",
+        "covered list stays mounted, visible, inert, and accessibility-hidden",
+        "Back removes only details",
+        "Close all removes the full flow",
+        "focus returns to the control that opened each level"
+      ],
+      "driver": [
+        {"action": "click", "role": "button", "name": "Open issues"},
+        {"action": "click", "role": "button", "name": "Login timeout"},
+        {"assert": "visibleDepths", "value": [1, 0]},
+        {"action": "click", "role": "button", "name": "Back"},
+        {"assert": "activeLabel", "value": "Issues"},
+        {"action": "click", "role": "button", "name": "Close all"},
+        {"assert": "stackClosed", "value": true}
+      ]
+    },
+    {
+      "id": "ss-2",
+      "track": "core",
+      "category": "deep-state-preservation",
+      "complexity": "complex",
+      "prompt": "Create a deployment setup flow using Astryx. 'Configure deployment' opens a bottom sheet with a searchable service list. Choosing 'Payments API' opens a settings sheet with a checkbox labeled 'Run smoke tests'. Continue opens a review sheet. Back must unwind one sheet at a time, and the search text, selected service, checkbox value, and scroll position must survive while their sheets are covered.",
+      "followUp": "Add a confirmation sheet above Review and let the user return all the way to the service list without resetting any earlier input.",
+      "expectedBehavior": [
+        "supports at least three ordered levels",
+        "only the top level is interactive",
+        "input, checkbox, selection, and scroll state survive cover and uncover",
+        "Back removes exactly one suffix level",
+        "no level duplicates during repeated forward and back navigation"
+      ],
+      "driver": [
+        {"action": "click", "role": "button", "name": "Configure deployment"},
+        {
+          "action": "fill",
+          "role": "textbox",
+          "name": "Search services",
+          "value": "pay"
+        },
+        {"action": "click", "role": "button", "name": "Payments API"},
+        {"action": "click", "role": "checkbox", "name": "Run smoke tests"},
+        {"action": "click", "role": "button", "name": "Continue"},
+        {"assert": "stackDepth", "value": 3},
+        {"action": "click", "role": "button", "name": "Back"},
+        {"assert": "checked", "name": "Run smoke tests", "value": true},
+        {"action": "click", "role": "button", "name": "Back"},
+        {"assert": "value", "name": "Search services", "value": "pay"}
+      ]
+    },
+    {
+      "id": "ss-3",
+      "track": "core",
+      "category": "branching-navigation",
+      "complexity": "complex",
+      "prompt": "Build a team directory using Astryx. 'Open directory' shows people in a bottom sheet. Selecting 'Avery Chen' opens a profile sheet. From the profile, Activity and Permissions each open their own detail sheet. The Activity sheet also has a 'View permissions' action that replaces Activity with Permissions; it must not leave Activity hidden in the flow. Back from Permissions returns directly to Avery's profile, then Back returns to the directory.",
+      "expectedBehavior": [
+        "models a parent with mutually exclusive child branches",
+        "branch replacement does not accumulate stale layers",
+        "Back follows the visible logical path",
+        "profile and directory state stay mounted while covered",
+        "top-only dismissal remains correct after switching branches"
+      ],
+      "driver": [
+        {"action": "click", "role": "button", "name": "Open directory"},
+        {"action": "click", "role": "button", "name": "Avery Chen"},
+        {"action": "click", "role": "button", "name": "Activity"},
+        {"action": "click", "role": "button", "name": "View permissions"},
+        {
+          "assert": "visibleLabels",
+          "value": ["Directory", "Avery Chen", "Permissions"]
+        },
+        {"action": "click", "role": "button", "name": "Back"},
+        {"assert": "activeLabel", "value": "Avery Chen"}
+      ]
+    },
+    {
+      "id": "ss-4",
+      "track": "core",
+      "category": "independent-scope",
+      "complexity": "complex",
+      "holdout": true,
+      "prompt": "Build a dashboard with two independent non-modal inspectors using Astryx: Sessions and Alerts. 'Inspect sessions' opens a session list and can drill into 'Session 42'. 'Inspect alerts' opens an alert list and can drill into 'High latency'. Both inspectors may be open at once. Opening, backing out of, or closing one must not change the depth, focus, or dismissal order of the other, and the dashboard remains interactive.",
+      "followUp": "Render the Alerts inspector in a separate React subtree while preserving complete independence between the two inspectors.",
+      "expectedBehavior": [
+        "represents two logical stacks without shared ordering",
+        "both non-modal inspectors can coexist",
+        "depth and dismissal are scoped per inspector",
+        "dashboard controls remain interactive",
+        "focus changes in one inspector do not move focus in the other"
+      ],
+      "driver": [
+        {"action": "click", "role": "button", "name": "Inspect sessions"},
+        {"action": "click", "role": "button", "name": "Session 42"},
+        {"action": "click", "role": "button", "name": "Inspect alerts"},
+        {"action": "click", "role": "button", "name": "High latency"},
+        {"assert": "logicalStacks", "value": {"sessions": 2, "alerts": 2}},
+        {
+          "action": "clickWithin",
+          "scope": "alerts",
+          "role": "button",
+          "name": "Back"
+        },
+        {"assert": "logicalStacks", "value": {"sessions": 2, "alerts": 1}}
+      ]
+    },
+    {
+      "id": "ss-5",
+      "track": "core",
+      "category": "deep-link-state",
+      "complexity": "complex",
+      "holdout": true,
+      "prompt": "Create an order browser using Astryx whose sheet navigation is reflected in the URL. With '?order=42&line=7', the first render should already show Order 42 with Line 7 above it. A browser-style Back action removes only the line item and updates the URL; another Back closes the order. Reloading either URL reconstructs the same visible sheet path.",
+      "expectedBehavior": [
+        "supports a non-empty initially rendered stack",
+        "stack state serializes to and restores from URL state",
+        "Back removes exactly one logical suffix",
+        "initial focus lands in the top sheet",
+        "no blank dialog appears during initialization"
+      ],
+      "driver": [
+        {"action": "navigate", "search": "?order=42&line=7"},
+        {"assert": "visibleLabels", "value": ["Order 42", "Line 7"]},
+        {"assert": "activeLabel", "value": "Line 7"},
+        {"action": "click", "role": "button", "name": "Back"},
+        {"assert": "search", "value": "?order=42"},
+        {"action": "reload"},
+        {"assert": "visibleLabels", "value": ["Order 42"]}
+      ]
+    },
+    {
+      "id": "ss-6",
+      "track": "core",
+      "category": "dynamic-data",
+      "complexity": "complex",
+      "prompt": "Build a queue browser using Astryx. A bottom sheet lists jobs and selecting Job 17 opens its details above the list. The details include a button labeled 'Simulate Job Removed' that removes Job 17 as if a live update arrived. Close only that invalid detail level, keep the queue sheet usable, and never leave a blank blocking layer.",
+      "expectedBehavior": [
+        "dynamic removal converges to a valid remaining path",
+        "no unknown or duplicate sheet identity is presented",
+        "only the invalid suffix closes",
+        "the queue remains interactive after removal",
+        "no blank dialog or stranded focus remains"
+      ],
+      "driver": [
+        {"action": "click", "role": "button", "name": "Open queue"},
+        {"action": "click", "role": "button", "name": "Job 17"},
+        {"action": "click", "role": "button", "name": "Simulate Job Removed"},
+        {"assert": "visibleLabels", "value": ["Queue"]},
+        {"assert": "activeLabel", "value": "Queue"}
+      ]
+    },
+    {
+      "id": "ss-7",
+      "track": "policy",
+      "category": "modal-without-paint",
+      "complexity": "moderate",
+      "prompt": "Build a protected account-recovery flow using Astryx. 'Recover account' opens an Identity step and Continue opens a Verification step above it. The complete flow is modal: it blocks the page and traps focus, but the product must not visually dim the page. Escape from Verification closes only that top step. Closing Identity returns focus to the 'Recover account' button.",
+      "expectedBehavior": [
+        "modal enforcement is independent from scrim paint",
+        "background pointer and keyboard interaction are blocked",
+        "no visible scrim is painted",
+        "Escape closes only the top level",
+        "root close restores focus to the named opener"
+      ],
+      "driver": [
+        {"action": "focus", "role": "button", "name": "Recover account"},
+        {"action": "click", "role": "button", "name": "Recover account"},
+        {"action": "click", "role": "button", "name": "Continue"},
+        {"assert": "stackDepth", "value": 2},
+        {"assert": "modal", "value": true},
+        {"assert": "scrimVisible", "value": false},
+        {"assert": "backgroundInteractive", "value": false},
+        {"action": "press", "key": "Escape"},
+        {"assert": "stackDepthDecrement", "value": 1}
+      ]
+    },
+    {
+      "id": "ss-8",
+      "track": "policy",
+      "category": "paint-without-modality",
+      "complexity": "moderate",
+      "prompt": "Build a non-modal comparison inspector using Astryx. Its stacked bottom sheets visually dim the dashboard, but dashboard controls must remain clickable and keyboard reachable. Closing the inspector should return focus to 'Compare plans' only when focus is still inside the inspector; it must not steal focus if the user has moved to a dashboard control.",
+      "expectedBehavior": [
+        "scrim paint is independent from modal enforcement",
+        "background pointer and keyboard interaction remain enabled",
+        "a visual scrim is present but does not intercept input",
+        "focus return is deterministic when closing from inside",
+        "focus is not stolen after the user moves outside"
+      ],
+      "driver": [
+        {"action": "click", "role": "button", "name": "Compare plans"},
+        {"assert": "modal", "value": false},
+        {"assert": "scrimVisible", "value": true},
+        {"action": "click", "role": "button", "name": "Refresh dashboard"},
+        {"assert": "dashboardRefreshCount", "value": 1},
+        {
+          "action": "clickWithin",
+          "scope": "inspector",
+          "role": "button",
+          "name": "Close"
+        },
+        {"assert": "focusNotStolenFromDashboard", "value": true}
+      ]
+    }
+  ]
+}

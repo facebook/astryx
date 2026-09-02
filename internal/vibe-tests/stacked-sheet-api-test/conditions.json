@@ -1,0 +1,69 @@
+{
+  "name": "stacked-sheet-api",
+  "description": "Four-way vibe test for stacked BottomSheet API design. Every condition uses the same prompts, package name, visual runtime, and blind evaluator; only the public BottomSheet declarations, adapter, and consumer docs vary.",
+  "referenceCondition": "c3-ordered-ids",
+  "conditions": [
+    {
+      "id": "c1-declarative-root",
+      "internalLabel": "Silk-style declarative membership",
+      "role": "candidate",
+      "variantDoc": "variants/c1-declarative-root.md",
+      "stateModel": "independent-controlled-sheets",
+      "orderingModel": "opening-chronology-within-root",
+      "scopeModel": "explicit-root",
+      "hypothesis": "The root makes ownership obvious and ordinary controlled sheets feel familiar, but coordinating several booleans and branches increases state spread and makes deep links harder."
+    },
+    {
+      "id": "c2-implicit-siblings",
+      "internalLabel": "Drawer-style implicit sibling stack",
+      "role": "candidate",
+      "variantDoc": "variants/c2-implicit-siblings.md",
+      "stateModel": "independent-controlled-sheets",
+      "orderingModel": "global-opening-chronology",
+      "scopeModel": "implicit-registry",
+      "hypothesis": "The smallest markup wins basic generation, but hidden chronology and the absence of a grouping primitive cause branching, deep-link, and unrelated-stack failures."
+    },
+    {
+      "id": "c3-ordered-ids",
+      "internalLabel": "Original controlled ordered IDs",
+      "role": "reference",
+      "variantDoc": "variants/c3-ordered-ids.md",
+      "stateModel": "controlled-ordered-id-array",
+      "orderingModel": "explicit-bottom-to-top-array",
+      "scopeModel": "explicit-controller",
+      "hypothesis": "One serializable stack value improves ordering, branching, and deep links, at the cost of array manipulation and more controller markup."
+    },
+    {
+      "id": "c4-ordered-policy",
+      "internalLabel": "Ordered IDs with explicit interaction policy",
+      "role": "candidate",
+      "variantDoc": "variants/c4-ordered-policy.md",
+      "stateModel": "controlled-ordered-id-array",
+      "orderingModel": "explicit-bottom-to-top-array",
+      "scopeModel": "explicit-controller",
+      "hypothesis": "Explicit modality, scrim paint, and focus return improve advanced-policy tasks but may add discovery and configuration cost to ordinary flows."
+    }
+  ],
+  "coreCapabilities": [
+    "two-level-push-pop",
+    "three-level-push-pop",
+    "branch-replacement",
+    "top-only-dismissal",
+    "covered-state-persistence",
+    "initially-open-stack",
+    "deep-link-serialization",
+    "independent-stack-scope"
+  ],
+  "policyCapabilities": [
+    "modal-without-scrim",
+    "nonmodal-with-scrim",
+    "explicit-final-focus"
+  ],
+  "blinding": {
+    "taskConditionLabels": "random opaque tokens generated per experiment",
+    "agentCanReadThisFile": false,
+    "evaluatorCanReadConditionMap": false,
+    "reportUnblindsAfterScoring": true
+  },
+  "fixtureRule": "All variants delegate to one private visual/runtime engine. Adapter differences are limited to state ownership, grouping, public props, and behavior that the public shape cannot express."
+}
