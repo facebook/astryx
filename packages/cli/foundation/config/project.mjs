@@ -36,6 +36,10 @@ import {findPresentFiles, loadModuleWithParser} from '../fs/module-loader.mjs';
 import {parseConfig} from '../../authoring/config/parse.mjs';
 import {loadIntegrations} from '../integrations/integrations.mjs';
 import {
+  setProject as setDebugProject,
+  setEventHandler as setDebugEventHandler,
+} from '../debug/index.mjs';
+import {
   CORE_PACKAGE,
   discoverOwnedComponents,
   discoverIntegrationComponents,
@@ -218,6 +222,23 @@ export class Project {
       loadedIntegrations = await loadIntegrations(integrations, {
         cwd: configDir,
       });
+    }
+
+    // The debug recorder resolves its settings synchronously, long before any
+    // command gets here, so this is where a project's `debug` block gets a
+    // turn. The event is not written until process exit, so settings applied
+    // now still shape the record for this same invocation.
+    try {
+      // The `debug` function is the destination for recorded runs. The
+      // recorder collects provisionally until now precisely because the config
+      // could not be read any earlier; it only needs the handler by exit.
+      setDebugEventHandler(config.debug);
+      setDebugProject({
+        hasConfig: Boolean(configPath),
+        integrationCount: integrations.length,
+      });
+    } catch {
+      // Never let recording break config loading.
     }
 
     return new Project({

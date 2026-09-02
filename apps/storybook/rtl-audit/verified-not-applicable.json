@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "component": "core/Spinner",
+    "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG — two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
+  }
+]

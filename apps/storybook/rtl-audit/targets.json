@@ -1,5 +1,16 @@
 [
   {
+    "component": "AppShell",
+    "storyId": "core-appshell--top-nav-with-side-nav",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": ".astryx-app-shell-sidenav",
+      "overlayRoot": ".astryx-app-shell"
+    }
+  },
+  {
     "component": "ButtonGroup",
     "storyId": "core-buttongroup--horizontal",
     "dims": [
@@ -8,6 +19,28 @@
     "selectors": {
       "prev": "[role=\"group\"] button:first-child",
       "next": "[role=\"group\"] button:last-child"
+    }
+  },
+  {
+    "component": "CheckboxList",
+    "storyId": "core-checkboxlist--rich-descriptions",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-checkbox-input",
+      "next": "[data-testid=\"checkbox-end-content\"]"
+    }
+  },
+  {
+    "component": "RadioList",
+    "storyId": "core-radiolist--rich-content",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "input[aria-label=\"Pro\"]",
+      "next": "[data-testid=\"radio-end-content\"]"
     }
   },
   {
@@ -44,6 +77,28 @@
     "selectors": {
       "prev": "button[aria-label=\"Previous\"]",
       "next": "button[aria-label=\"Next\"]"
+    }
+  },
+  {
+    "component": "Typeahead",
+    "storyId": "core-typeahead--logical-order",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-token",
+      "next": ".astryx-input-clear-button"
+    }
+  },
+  {
+    "component": "Tokenizer",
+    "storyId": "core-tokenizer--logical-order",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-token",
+      "next": ".astryx-input-clear-button"
     }
   }
 ]

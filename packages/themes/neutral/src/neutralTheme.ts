@@ -38,7 +38,7 @@ import {neutralIconRegistry} from './icons';
  * stops of the categorical ramps. Same colors used by --color-icon-* tokens.
  */
 const neutralSyntax = defineSyntaxTheme({
-  name: 'xds-neutral',
+  name: 'astryx-neutral',
   tokens: {
     keyword: ['#700084', '#efa8ff'], // purple T30/T80
     string: ['#005600', '#a6d2a2'], // green (sat T30 / pastel T80)
