@@ -1,6 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
+ * Generated CLI guidance for AI agents. Run:
+ * `npx @astryxdesign/cli search "BottomSheet"`
+ * for current props, examples, and usage guidance.
+ */
+
+/**
  * @file BottomSheet.doc.mjs
  * @input BottomSheet props, sheet anatomy, and focus-time keyboard scrolling behavior
  * @output Consumer documentation and examples for BottomSheet
