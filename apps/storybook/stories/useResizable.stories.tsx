@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {useRef} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -324,6 +325,81 @@ export const MixedContainers: Story = {
               </div>
             </LayoutContent>
           }
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * Percentage configuration, resolved against a container.
+ *
+ * `containerRef` marks what a percentage is a share of. The panel starts at 40%
+ * of the frame's content box and cannot be dragged past 60% of it. Narrow the
+ * frame and the BOUNDS follow — but the size you dragged to stays the pixel
+ * size you chose, clamped rather than rescaled. That is the whole contract:
+ * percentages configure pixels, they do not create a responsive mode.
+ */
+export const PercentageSizing: Story = {
+  render: () => {
+    const frameRef = useRef<HTMLDivElement>(null);
+    const region = useResizable({
+      defaultSize: '40%',
+      minSize: '15%',
+      maxSize: '60%',
+      containerRef: frameRef,
+    });
+    return (
+      <div ref={frameRef} {...stylex.props(s.shell)}>
+        <Layout
+          height="fill"
+          start={
+            <>
+              <LayoutPanel width={region.size} hasDivider={false}>
+                <div {...stylex.props(s.card)}>{Math.round(region.size)}px</div>
+              </LayoutPanel>
+              <ResizeHandle
+                direction="horizontal"
+                hasDivider
+                resizable={region.props}
+              />
+            </>
+          }
+          content={<LayoutContent>Content</LayoutContent>}
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * The compatibility path: a percentage with no `containerRef`.
+ *
+ * This is what shipped before percentages could name a container, and it is
+ * unchanged — `'25%'` resolves once against `window.innerWidth` (1200px on the
+ * server), then behaves as pixels. Resize the window and the panel stays where
+ * it is; only a percentage BOUND would follow.
+ */
+export const ViewportPercentage: Story = {
+  render: () => {
+    const region = useResizable({defaultSize: '25%', minSize: 80});
+    return (
+      <div {...stylex.props(s.shell)} data-testid="viewport-pct">
+        <Layout
+          height="fill"
+          start={
+            <>
+              <LayoutPanel width={region.size} hasDivider={false}>
+                <div {...stylex.props(s.card)}>{Math.round(region.size)}px</div>
+              </LayoutPanel>
+              <ResizeHandle
+                direction="horizontal"
+                hasDivider
+                resizable={region.props}
+              />
+            </>
+          }
+          content={<LayoutContent>Content</LayoutContent>}
         />
       </div>
     );

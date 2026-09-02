@@ -10,19 +10,48 @@
  * @position Public hook; consumed by layout components via `resizable` prop
  */
 
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type RefObject,
+} from 'react';
+import {observeResize} from '../utils/sharedResizeObserver';
+import {devWarn} from '../utils/devWarning';
+import type {SizeValue} from '../utils/types';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface ResizableRegionConfig {
-  /** Default size in pixels, or percentage string (e.g. '20%'). */
-  defaultSize?: number | string;
-  /** Minimum size in pixels. @default 50 */
-  minSizePx?: number;
-  /** Maximum size in pixels. @default Infinity */
-  maxSizePx?: number;
+/**
+ * The minimum, in one of two spellings. Exactly one may be supplied: the union
+ * makes passing both a type error, so a migration cannot leave a stale
+ * deprecated value shadowing the new one (AST-010 API4).
+ */
+export type ResizableMinConfig =
+  | {minSize?: SizeValue; minSizePx?: never}
+  | {minSize?: never; minSizePx?: number};
+
+/** The maximum, in one of two spellings. See {@link ResizableMinConfig}. */
+export type ResizableMaxConfig =
+  | {maxSize?: SizeValue; maxSizePx?: never}
+  | {maxSize?: never; maxSizePx?: number};
+
+export type ResizableDirection = 'horizontal' | 'vertical';
+
+export interface ResizableRegionSizing {
+  /**
+   * Initial size. A number is pixels, `'Npx'` is pixels, and `'N%'` (0–100) is
+   * a share of the basis: the container when `containerRef` is supplied, the
+   * viewport otherwise.
+   *
+   * A percentage is resolved ONCE into a pixel size. It configures the initial
+   * selection; it does not make the region track its basis afterwards.
+   */
+  defaultSize?: SizeValue;
   /** Whether this region can collapse to 0. @default false */
   collapsible?: boolean;
   /** Size in px at which dragging triggers collapse. @default 40 */
@@ -32,6 +61,10 @@ export interface ResizableRegionConfig {
   /** Cascade priority — lower number shrinks first. */
   shrinkOrder?: number;
 }
+
+export type ResizableRegionConfig = ResizableRegionSizing &
+  ResizableMinConfig &
+  ResizableMaxConfig;
 
 /**
  * Shared config shape for any component that integrates built-in resize
@@ -57,7 +90,23 @@ export interface ResizableConfig {
   onCollapseChange?: (isCollapsed: boolean) => void;
 }
 
-export interface UseResizableSingleConfig extends ResizableRegionConfig {
+export interface UseResizableSingleOptions {
+  /**
+   * The element a percentage is a share of. Caller-owned: only the caller
+   * knows which element is the intended layout container, so the hook never
+   * infers one from the panel or the handle.
+   *
+   * Omitted, percentages keep the released viewport basis. Supplied, they use
+   * this element's content-box size on the active axis. It changes the basis
+   * only — it does not make a selected size responsive.
+   */
+  containerRef?: RefObject<HTMLElement | null>;
+  /**
+   * Which axis this region resizes along. Selects the container's inline or
+   * block content-box size as the percentage basis, and must match the
+   * `direction` given to `ResizeHandle`. @default 'horizontal'
+   */
+  direction?: ResizableDirection;
   /** Unique key for localStorage persistence. */
   autoSaveId?: string;
   /**
@@ -78,9 +127,18 @@ export interface UseResizableSingleConfig extends ResizableRegionConfig {
   onCollapseChange?: (isCollapsed: boolean) => void;
 }
 
+export type UseResizableSingleConfig = ResizableRegionConfig &
+  UseResizableSingleOptions;
+
 export interface UseResizableMultiConfig {
-  /** Layout direction. @default 'horizontal' */
-  direction?: 'horizontal' | 'vertical';
+  /** Layout direction, shared by every region. @default 'horizontal' */
+  direction?: ResizableDirection;
+  /**
+   * One container for every region's percentage basis. Regions stay
+   * independently pixel-selected; sharing a basis adds no ratio or
+   * total-100% invariant between them.
+   */
+  containerRef?: RefObject<HTMLElement | null>;
   /** Named region configurations. */
   regions: Record<string, ResizableRegionConfig>;
   /** Unique key for localStorage persistence. */
@@ -109,6 +167,16 @@ export interface ResizableProps {
   _onResizeStart: () => void;
   _onResizeMove: (delta: number) => void;
   _onResizeEnd: () => void;
+  /**
+   * The gesture ended without completing — pointercancel, a lost pointer
+   * capture, or a handle unmounted mid-drag. Separate from `_onResizeEnd`
+   * because a cancelled drag deliberately does not signal a resize end (#5297),
+   * but it must still release everything the gesture was holding.
+   *
+   * Optional: `ResizableProps` is exported, so a hand-built object from before
+   * this existed has to keep compiling.
+   */
+  _onResizeCancel?: () => void;
   _minSizePx: number;
   _maxSizePx: number;
   _snaps: number[];
@@ -116,6 +184,14 @@ export interface ResizableProps {
   /** Whether the region supports collapsing. */
   // eslint-disable-next-line @astryx/boolean-prop-naming
   _collapsible: boolean;
+  /**
+   * The hook's axis, so a handle can flag a direction mismatch.
+   *
+   * Optional for the same reason as `_onResizeCancel`: this type is exported,
+   * and requiring a new field would break every object literal that already
+   * satisfies it. Absent means "no axis to check", not "horizontal".
+   */
+  _direction?: ResizableDirection;
   _isResizableProps: true;
 }
 
@@ -225,21 +301,137 @@ function persistState(key: string, state: PersistedResizableState): void {
   }
 }
 
-function resolveDefaultSize(defaultSize: number | string | undefined): number {
-  if (defaultSize == null) {
-    return 250;
+/** The released compatibility basis when there is no window to measure. */
+const SERVER_BASIS = 1200;
+const DEFAULT_SIZE_FALLBACK = 250;
+
+/**
+ * A configured size, parsed. `null` means the input was not accepted — the
+ * caller applies its own role-specific fallback, because an invalid default
+ * (250px), minimum (50px) and maximum (Infinity) each repair to something
+ * different (AST-010 FR12).
+ *
+ * Parsing is exact and matches the COMPLETE input: `'50 px'`, `'50%%'`,
+ * `'50rem'`, `'120%'` and `'-1px'` are all rejected rather than partially
+ * parsed into a number that happens to look plausible.
+ */
+type ParsedSize =
+  {kind: 'px'; value: number} | {kind: 'percent'; value: number};
+
+const PX_PATTERN = /^(\d+(?:\.\d+)?)px$/;
+const PERCENT_PATTERN = /^(\d+(?:\.\d+)?)%$/;
+
+function isPercentage(value: SizeValue | undefined): boolean {
+  return typeof value === 'string' && PERCENT_PATTERN.test(value);
+}
+
+function parseSize(value: SizeValue | undefined): ParsedSize | null {
+  if (value == null) {
+    return null;
   }
-  if (typeof defaultSize === 'number') {
-    return defaultSize;
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value >= 0 ? {kind: 'px', value} : null;
   }
-  if (defaultSize.endsWith('%')) {
-    const pct = parseFloat(defaultSize);
-    if (!isNaN(pct)) {
-      const approx = typeof window !== 'undefined' ? window.innerWidth : 1200;
-      return Math.round((pct / 100) * approx);
+  const px = PX_PATTERN.exec(value);
+  if (px) {
+    const parsed = Number(px[1]);
+    return Number.isFinite(parsed) ? {kind: 'px', value: parsed} : null;
+  }
+  const percent = PERCENT_PATTERN.exec(value);
+  if (percent) {
+    const parsed = Number(percent[1]);
+    return Number.isFinite(parsed) && parsed <= 100
+      ? {kind: 'percent', value: parsed}
+      : null;
+  }
+  return null;
+}
+
+/**
+ * A parsed size in pixels, or `null` when it is a percentage and the basis is
+ * not measurable yet. Percentages round, because a fractional pixel basis
+ * would otherwise leak into ARIA and persistence.
+ */
+function toPixels(parsed: ParsedSize, basis: number | null): number | null {
+  if (parsed.kind === 'px') {
+    return parsed.value;
+  }
+  if (basis == null) {
+    return null;
+  }
+  return Math.round((parsed.value / 100) * basis);
+}
+
+/**
+ * Resolve one configured bound, applying its role's fallback when the input is
+ * not accepted. Warns once per invalid input in development only: production
+ * takes the identical fallback silently, so behaviour never differs by build.
+ */
+function resolveBound(
+  raw: SizeValue | undefined,
+  basis: number | null,
+  fallback: number,
+  label: string,
+  didWarnRef: {current: boolean},
+): number {
+  if (raw === undefined) {
+    return fallback;
+  }
+  // Explicit `Infinity` is legal for `maxSizePx` alone — a shipped template
+  // uses it — and reaches here already normalized to the same fallback.
+  if (raw === Infinity && fallback === Infinity) {
+    return Infinity;
+  }
+  const parsed = parseSize(raw);
+  if (parsed == null) {
+    if (!didWarnRef.current) {
+      didWarnRef.current = true;
+      devWarn(
+        'useResizable',
+        `${label}: ${JSON.stringify(raw)} is not a size. Use a non-negative ` +
+          'number of pixels, an exact "Npx" string, or an exact "N%" string ' +
+          `from 0% to 100%. Falling back to ${fallback}.`,
+      );
     }
+    return fallback;
   }
-  return 250;
+  const px = toPixels(parsed, basis);
+  return px ?? fallback;
+}
+
+/**
+ * The container's content-box size on the active axis.
+ *
+ * Content box, not border box: a bordered or padded container would otherwise
+ * report a basis a few pixels larger than the space a percentage is actually a
+ * share of, and that error lands in `aria-valuemax`. The observer entry
+ * carries `contentBoxSize` natively, which is already writing-mode aware;
+ * measuring the element is the fallback for the synthetic entry
+ * `observeResize` fires on registration.
+ */
+function measureContentBox(
+  element: HTMLElement,
+  direction: ResizableDirection,
+  entry?: ResizeObserverEntry,
+): number | null {
+  const box = entry?.contentBoxSize?.[0];
+  if (box) {
+    return direction === 'vertical' ? box.blockSize : box.inlineSize;
+  }
+  const style =
+    typeof window === 'undefined' ? null : window.getComputedStyle(element);
+  if (style == null) {
+    return null;
+  }
+  const size =
+    direction === 'vertical'
+      ? element.clientHeight -
+        parseFloat(style.paddingTop) -
+        parseFloat(style.paddingBottom)
+      : element.clientWidth -
+        parseFloat(style.paddingLeft) -
+        parseFloat(style.paddingRight);
+  return Number.isFinite(size) ? size : null;
 }
 
 // =============================================================================
@@ -249,8 +441,12 @@ function resolveDefaultSize(defaultSize: number | string | undefined): number {
 function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   const {
     defaultSize,
-    minSizePx = DEFAULT_MIN,
-    maxSizePx = Infinity,
+    minSize,
+    maxSize,
+    minSizePx,
+    maxSizePx,
+    containerRef,
+    direction = 'horizontal',
     collapsible = false,
     collapsedSize = DEFAULT_COLLAPSED_SIZE,
     snaps: configuredSnaps,
@@ -263,15 +459,243 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   const emptySnapsRef = useRef<number[]>([]);
   const snaps = configuredSnaps ?? emptySnapsRef.current;
 
-  const resolvedDefault = resolveDefaultSize(defaultSize);
-  const persisted = autoSaveId ? loadPersistedState(autoSaveId) : null;
-  const initial = persisted?.size ?? resolvedDefault;
+  // The unified prop wins over its deprecated alias. The types make supplying
+  // both an error, so reaching here means untyped JavaScript, an `any`, or a
+  // spread — exactly the case where a stale alias hidden in an object would
+  // otherwise silently beat the explicit migration target.
+  const minConflict = minSize !== undefined && minSizePx !== undefined;
+  const maxConflict = maxSize !== undefined && maxSizePx !== undefined;
+  const rawMin = minSize ?? minSizePx;
+  const rawMax = maxSize ?? maxSizePx;
 
-  // `size` is always the *expanded* size: collapse hides it behind the
-  // isCollapsed gate below rather than zeroing it, so the width the user had
-  // survives a collapse, a persist round-trip, and an expand.
-  const [size, setSize] = useState(() =>
-    clampSize(initial, minSizePx, maxSizePx, snaps),
+  // Whether any percentage is in play at all. A region configured entirely in
+  // pixels subscribes to nothing and behaves exactly as it did before.
+  const usesPercentage =
+    isPercentage(defaultSize) || isPercentage(rawMin) || isPercentage(rawMax);
+  const hasContainer = containerRef != null;
+
+  // The container basis, read through the shared observer. `useSyncExternalStore`
+  // rather than an effect: the store IS the measurement, so there is no render
+  // that paints before the basis is known and no `setState` in an effect.
+  //
+  // The subscription depends on the ELEMENT, not on the ref object. A ref is
+  // stable across an element swap, so `containerRef.current` can become a
+  // different node — a remount behind the same ref, a conditional branch, a
+  // portal moving — without any input to this hook changing. Keyed on the ref,
+  // the old detached node stayed observed (and a detached node measures 0,
+  // which is how a replacement zeroed the bounds) and the new one was never
+  // observed at all.
+  const [containerElement, setContainerElement] = useState<HTMLElement | null>(
+    null,
+  );
+  const containerBasisRef = useRef<number | null>(null);
+
+  // Follow the ref to whatever element it points at now. No dependency array:
+  // a ref mutation is invisible to React, and refs are assigned during commit,
+  // so after every commit is the only moment this comparison can be made — the
+  // deps the heuristic suggests ([containerRef]) would run this once and never
+  // notice a swap. State is set only when the element actually changed, so it
+  // settles in one extra render rather than looping.
+  // eslint-disable-next-line @eslint-react/exhaustive-deps -- must run after every commit; a ref swap changes no dependency
+  useEffect(() => {
+    const element = containerRef?.current ?? null;
+    if (element !== containerElement) {
+      // The cached measurement belongs to the element being left behind.
+      containerBasisRef.current = null;
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the observed element is DOM identity, which exists only after commit
+      setContainerElement(element);
+    }
+  });
+
+  const subscribeToContainer = useCallback(
+    (onStoreChange: () => void) => {
+      if (!usesPercentage || containerElement == null) {
+        return () => {};
+      }
+      // Unsubscribe by callback: several regions share one container, and any
+      // number of unrelated hooks may observe the same node.
+      return observeResize(containerElement, entry => {
+        containerBasisRef.current = measureContentBox(
+          containerElement,
+          direction,
+          entry,
+        );
+        onStoreChange();
+      });
+    },
+    [containerElement, usesPercentage, direction],
+  );
+  const readContainerBasis = useCallback(() => {
+    if (!usesPercentage || containerElement == null) {
+      return null;
+    }
+    // Cached in a ref so the snapshot is referentially stable between resizes;
+    // returning a fresh measurement every call would loop the store.
+    if (containerBasisRef.current == null) {
+      containerBasisRef.current = measureContentBox(containerElement, direction);
+    }
+    return containerBasisRef.current;
+  }, [containerElement, usesPercentage, direction]);
+  const containerBasis = useSyncExternalStore(
+    subscribeToContainer,
+    readContainerBasis,
+    () => null,
+  );
+
+  // The viewport basis, for the no-container compatibility path. Percentage
+  // BOUNDS follow it (FR6); the percentage default does not, because it is
+  // latched once below.
+  const subscribeToViewport = useCallback(
+    (onStoreChange: () => void) => {
+      if (hasContainer || !usesPercentage || typeof window === 'undefined') {
+        return () => {};
+      }
+      window.addEventListener('resize', onStoreChange);
+      return () => window.removeEventListener('resize', onStoreChange);
+    },
+    [hasContainer, usesPercentage],
+  );
+  const viewportBasis = useSyncExternalStore(
+    subscribeToViewport,
+    () => (typeof window === 'undefined' ? SERVER_BASIS : window.innerWidth),
+    () => SERVER_BASIS,
+  );
+
+  // With a container, its content box is the basis; without one, the released
+  // viewport basis. Before a supplied container has been measured — the first
+  // render, the server, and any moment it is display:none or detached — the
+  // deterministic 1200px stands in, and the first real measurement replaces it.
+  //
+  // A zero measurement is not a measurement. A hidden or detached container
+  // reports 0, and resolving `'50%'` against it produced a real maximum of 0:
+  // the panel collapsed and, with `autoSaveId`, that 0 was written over a
+  // perfectly good saved width. Treating 0 as unmeasured keeps the temporary
+  // basis until the container is actually laid out (AST-010 Platform support).
+  const needsContainerBasis = hasContainer && usesPercentage;
+  const hasPositiveMeasurement = containerBasis != null && containerBasis > 0;
+  const liveBasis = hasContainer
+    ? (hasPositiveMeasurement ? containerBasis : SERVER_BASIS)
+    : viewportBasis;
+  const isBasisMeasured = needsContainerBasis ? hasPositiveMeasurement : true;
+
+  // One stable basis per gesture. A container that resizes mid-drag would
+  // otherwise move the bound under the pointer; the new basis applies once the
+  // gesture ends.
+  const gestureBasisRef = useRef<number | null>(null);
+  // Only forces the render that releases the frozen basis when a gesture ends.
+  const [gestureTick, setGestureTick] = useState(0);
+  void gestureTick;
+  const basis = gestureBasisRef.current ?? liveBasis;
+
+  const didWarnMinRef = useRef(false);
+  const didWarnMaxRef = useRef(false);
+  const didWarnDefaultRef = useRef(false);
+  const didWarnInvertedRef = useRef(false);
+  const didWarnAliasRef = useRef(false);
+
+  // Bounds re-resolve from the live basis on every render — that is the whole
+  // point of a percentage bound — and clamp the pixel selection below.
+  const resolvedMin = resolveBound(
+    rawMin,
+    basis,
+    DEFAULT_MIN,
+    'minSize',
+    didWarnMinRef,
+  );
+  const resolvedMax = resolveBound(
+    rawMax,
+    basis,
+    Infinity,
+    'maxSize',
+    didWarnMaxRef,
+  );
+
+  const persisted = autoSaveId ? loadPersistedState(autoSaveId) : null;
+
+  // The percentage default is resolved ONCE into a pixel size. Latched in a ref
+  // (React's sanctioned lazy-init shape) rather than recomputed, because a
+  // default that kept tracking its basis would be a second, responsive sizing
+  // mode — the thing this API deliberately does not have.
+  //
+  // Not final while a supplied container is still unmeasured: that render used
+  // the temporary 1200px stand-in, and the first real measurement replaces it.
+  // That correction is not a user interaction, so it neither persists nor
+  // fires `onSizeChange`.
+  const initialDefaultRef = useRef<{px: number; isFinal: boolean} | null>(null);
+  if (initialDefaultRef.current == null || !initialDefaultRef.current.isFinal) {
+    initialDefaultRef.current = {
+      px: resolveBound(
+        defaultSize,
+        basis,
+        DEFAULT_SIZE_FALLBACK,
+        'defaultSize',
+        didWarnDefaultRef,
+      ),
+      isFinal: isBasisMeasured,
+    };
+  }
+
+  // The size the user has settled on, or null while a container-relative
+  // default is still waiting for its first positive measurement. Once that
+  // basis is real, the default becomes an ordinary pixel selection — including
+  // any clamp applied at initialization. Leaving it represented by `null`
+  // allowed the raw default to be re-read later: 321px first clamped to 200px
+  // in a 400px container, then revived to 321px when the container grew.
+  const [chosenSize, setChosenSize] = useState<number | null>(
+    () => persisted?.size ?? null,
+  );
+
+  if (isBasisMeasured && chosenSize == null) {
+    // Render-phase adjustment is deliberate: React re-runs this render before
+    // paint, so the initialized selection, paint, persistence, and ARIA all see
+    // the same pixel value. It fires no interaction callback.
+    setChosenSize(
+      clampSize(
+        initialDefaultRef.current.px,
+        resolvedMin,
+        resolvedMax,
+        snaps,
+      ),
+    );
+  }
+
+  // A re-resolved bound clamps the SELECTION, not just the paint. Deriving
+  // alone was not enough: the stored choice survived, so a container that
+  // shrank and grew again revived the pre-clamp size — measured 320px
+  // reviving to 560px. The clamp has to be committed to be permanent.
+  //
+  // Adjusting state during render (React's documented shape for "a prop
+  // changed, so state must follow") rather than in an effect: React re-runs
+  // this render before painting, so nothing shows at the stale size, and no
+  // interaction callback fires for what is only a layout correction (FR10).
+  //
+  // Held until the basis is final. Before a supplied container is measured the
+  // bounds come from the temporary 1200px stand-in, and committing against
+  // that would move a persisted size to fit a basis that was never real.
+  const [committedBounds, setCommittedBounds] = useState({
+    min: resolvedMin,
+    max: resolvedMax,
+  });
+  if (
+    isBasisMeasured &&
+    gestureBasisRef.current == null &&
+    (committedBounds.min !== resolvedMin || committedBounds.max !== resolvedMax)
+  ) {
+    setCommittedBounds({min: resolvedMin, max: resolvedMax});
+    setChosenSize(current =>
+      current == null
+        ? null
+        : clampSize(current, resolvedMin, resolvedMax, snaps),
+    );
+  }
+
+  // Derived for paint, so the clamp above and the rendered size agree on the
+  // very render that observes a new basis.
+  const size = clampSize(
+    chosenSize ?? initialDefaultRef.current.px,
+    resolvedMin,
+    resolvedMax,
+    snaps,
   );
   const [uncontrolledIsCollapsed, setUncontrolledIsCollapsed] = useState(
     () => persisted?.isCollapsed ?? defaultIsCollapsed ?? false,
@@ -303,11 +727,47 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     [isControlled],
   );
 
+  // Configuration warnings live in an effect, not in render: render runs twice
+  // under StrictMode and must stay free of side effects.
   useEffect(() => {
-    if (autoSaveId) {
+    if (minConflict && !didWarnAliasRef.current) {
+      didWarnAliasRef.current = true;
+      devWarn(
+        'useResizable',
+        'both `minSize` and `minSizePx` were supplied. `minSize` wins; the ' +
+          'deprecated `minSizePx` is ignored.',
+      );
+    }
+    if (maxConflict && !didWarnAliasRef.current) {
+      didWarnAliasRef.current = true;
+      devWarn(
+        'useResizable',
+        'both `maxSize` and `maxSizePx` were supplied. `maxSize` wins; the ' +
+          'deprecated `maxSizePx` is ignored.',
+      );
+    }
+  }, [minConflict, maxConflict]);
+
+  useEffect(() => {
+    if (resolvedMin > resolvedMax && !didWarnInvertedRef.current) {
+      didWarnInvertedRef.current = true;
+      devWarn(
+        'useResizable',
+        `the resolved minimum (${resolvedMin}px) is above the resolved ` +
+          `maximum (${resolvedMax}px). The maximum wins, as it always has.`,
+      );
+    }
+  }, [resolvedMin, resolvedMax]);
+
+  useEffect(() => {
+    // Nothing is written while the basis is still the temporary stand-in. The
+    // size on such a render is a placeholder, and persisting it overwrites the
+    // real saved size with a value derived from a basis that was never real
+    // (AST-010 Platform support, FR9).
+    if (autoSaveId && isBasisMeasured) {
       persistState(autoSaveId, {size, isCollapsed});
     }
-  }, [size, isCollapsed, autoSaveId]);
+  }, [size, isCollapsed, autoSaveId, isBasisMeasured]);
 
   const collapse = useCallback(() => {
     // The already-collapsed guard keeps a repeated call from re-notifying a
@@ -331,9 +791,21 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
 
   const resize = useCallback(
     (newSize: number) => {
-      const clamped = clampSize(newSize, minSizePx, maxSizePx, snaps);
+      // An invalid programmatic size repairs nothing — it must not replace a
+      // legal selection with NaN, which would then reach paint, storage and
+      // `aria-valuenow`.
+      if (!Number.isFinite(newSize) || newSize < 0) {
+        devWarn(
+          'useResizable',
+          `resize(${String(newSize)}) is not a pixel size. Keeping the ` +
+            'current size. Percentages configure the hook; they are not a ' +
+            'programmatic input.',
+        );
+        return;
+      }
+      const clamped = clampSize(newSize, resolvedMin, resolvedMax, snaps);
       const wasCollapsed = isCollapsedRef.current;
-      setSize(clamped);
+      setChosenSize(clamped);
       setCollapsed(false);
       // Resizing out of the collapsed state is an implicit expand — notify
       // like the drag path does when it crosses back over the threshold.
@@ -342,12 +814,22 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
       }
       onSizeChange?.(clamped);
     },
-    [minSizePx, maxSizePx, snaps, setCollapsed, onCollapseChange, onSizeChange],
+    [
+      resolvedMin,
+      resolvedMax,
+      snaps,
+      setCollapsed,
+      onCollapseChange,
+      onSizeChange,
+    ],
   );
 
   const onResizeStart = useCallback(() => {
+    // Freeze the basis for the whole gesture so a container resizing mid-drag
+    // cannot move the bound out from under the pointer.
+    gestureBasisRef.current = liveBasis;
     dragStartSizeRef.current = isCollapsedRef.current ? 0 : size;
-  }, [size]);
+  }, [size, liveBasis]);
 
   const onResizeMove = useCallback(
     (delta: number) => {
@@ -364,25 +846,42 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
         setCollapsed(false);
         onCollapseChange?.(false);
       }
-      const clamped = clampSize(raw, minSizePx, maxSizePx, snaps);
-      setSize(clamped);
+      const clamped = clampSize(raw, resolvedMin, resolvedMax, snaps);
+      setChosenSize(clamped);
       onSizeChange?.(clamped);
     },
     [
       collapsible,
       collapsedSize,
       setCollapsed,
-      minSizePx,
-      maxSizePx,
+      resolvedMin,
+      resolvedMax,
       snaps,
       onSizeChange,
       onCollapseChange,
     ],
   );
 
-  const onResizeEnd = useCallback(() => {
-    // Sizes already committed during move
+  // Releasing the frozen basis needs a render to apply whatever the basis
+  // became during the gesture.
+  const releaseGestureBasis = useCallback(() => {
+    if (gestureBasisRef.current != null) {
+      gestureBasisRef.current = null;
+      setGestureTick(tick => tick + 1);
+    }
   }, []);
+
+  const onResizeEnd = useCallback(() => {
+    // Sizes are already committed during move; only the basis is held.
+    releaseGestureBasis();
+  }, [releaseGestureBasis]);
+
+  // A gesture that is cancelled rather than completed — pointercancel, a lost
+  // capture, a handle unmounted mid-drag — is still over. It does not signal a
+  // resize end (that is #5297's contract, and the sizes were committed during
+  // move anyway), but the basis it froze has to come back, or every later
+  // percentage bound stays pinned to the container size at grab time.
+  const onResizeCancel = releaseGestureBasis;
 
   const props: ResizableProps = {
     _size: isCollapsed ? 0 : size,
@@ -390,11 +889,13 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     _onResizeStart: onResizeStart,
     _onResizeMove: onResizeMove,
     _onResizeEnd: onResizeEnd,
-    _minSizePx: minSizePx,
-    _maxSizePx: maxSizePx,
+    _onResizeCancel: onResizeCancel,
+    _minSizePx: resolvedMin,
+    _maxSizePx: resolvedMax,
     _snaps: snaps,
     _collapsedSize: collapsedSize,
     _collapsible: collapsible,
+    _direction: direction,
     _isResizableProps: true,
   };
 
@@ -421,7 +922,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
 function useMultiResizable(
   config: UseResizableMultiConfig,
 ): Record<string, ResizableRegion> {
-  const {regions, autoSaveId} = config;
+  const {regions, autoSaveId, containerRef, direction} = config;
 
   // Stable key order — callers must not change region keys between renders.
   // Using Object.keys is safe here because the regions object shape is static.
@@ -433,6 +934,11 @@ function useMultiResizable(
     // eslint-disable-next-line @eslint-react/rules-of-hooks -- region count is stable (documented contract)
     useSingleResizable({
       ...regionConfig,
+      // One container and one axis for every region (AST-010 FR11). Regions
+      // stay independently pixel-selected; sharing a basis introduces no ratio
+      // between them and no 100% total.
+      containerRef,
+      direction,
       autoSaveId: autoSaveId ? `${autoSaveId}:${key}` : undefined,
     }),
   );

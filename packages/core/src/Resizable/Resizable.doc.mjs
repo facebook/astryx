@@ -190,7 +190,7 @@ export const docs = {
           name: 'resizable',
           type: 'ResizableProps',
           description:
-            'Resize props from useResizable: connects handle to panel.',
+            "Resize props from useResizable: connects handle to panel. Carries the region's axis ('horizontal' | 'vertical'), which must match this handle's direction.",
           required: true,
         },
         {
@@ -242,9 +242,9 @@ export const docsDense = {
       description:
         'Hook managing resize state for one or more panel regions. Returns size, isCollapsed, collapse/expand/resize methods, + props to pass to handles.',
       propDescriptions: {
-        defaultSize: 'initial size in px or % string (e.g. "20%")',
-        minSizePx: 'minimum size in px',
-        maxSizePx: 'maximum size in px',
+        defaultSize: 'initial size: px number, "Npx", or "N%" of the basis',
+        minSize: 'minimum size: px number, "Npx", or "N%" of the basis',
+        maxSize: 'maximum size: px number, "Npx", or "N%" of the basis',
         collapsible: 'region can collapse to size 0?',
         collapsedSize: 'px threshold triggering collapse during drag',
         snaps: 'px values to snap to during resize',

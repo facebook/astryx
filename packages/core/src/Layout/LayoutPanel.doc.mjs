@@ -52,7 +52,7 @@ export const docs = {
       name: 'resizable',
       type: 'ResizableProps',
       description:
-        'Resize props from useResizable(). When provided, the hook drives the panel width and a ResizeHandle should be placed adjacent to the panel.',
+        "Resize props from useResizable(). When provided, the hook drives the panel width and a ResizeHandle should be placed adjacent to the panel. Carries the region's axis ('horizontal' | 'vertical'), which must match the adjacent ResizeHandle's direction.",
     },
   ],
 };
@@ -105,7 +105,7 @@ export const docsZh = {
       name: 'resizable',
       type: 'ResizableProps',
       description:
-        '来自 useResizable() 的调整大小属性。提供时面板宽度由 hook 驱动，应在面板旁放置 ResizeHandle。',
+        "来自 useResizable() 的调整大小属性。提供时面板宽度由 hook 驱动，应在面板旁放置 ResizeHandle。其中携带区域的轴向（'horizontal' | 'vertical'），必须与相邻 ResizeHandle 的 direction 一致。",
     },
   ],
 };
@@ -118,7 +118,8 @@ export const docsDense = {
   propDescriptions: {
     children: 'Panel content.',
     hasDivider: 'Border on appropriate edge.',
-    padding: 'Internal padding on spacing scale. Overrides layout container default.',
+    padding:
+      'Internal padding on spacing scale. Overrides layout container default.',
     isScrollable: 'Enable scrollable overflow.',
     label: 'Accessible label for landmark element.',
     role: 'ARIA landmark role.',
