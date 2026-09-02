@@ -8,6 +8,10 @@
  * prev/next arrows to move quickly between templates in the gallery's
  * display order. Arrow keys (←/→) also navigate; Escape closes.
  *
+ * @input Template metadata, selected index, open state, and navigation callbacks.
+ * @output A responsive dialog with live preview and template actions.
+ * @position Shared preview controller for the templates gallery.
+ *
  * The header surfaces template metadata (name, description) on
  * the left. All controls cluster on the right of the header: a
  * copy-to-clipboard CLI scaffold command, an Open in Playground action,
@@ -41,14 +45,13 @@ import {Skeleton} from '@astryxdesign/core/Skeleton';
 import {Dialog} from '@astryxdesign/core/Dialog';
 import {Tooltip} from '@astryxdesign/core/Tooltip';
 import {TemplatePreviewSurface} from './TemplatePreviewSurface';
-import {buildPlaygroundHref} from './playgroundLink';
+import {buildTemplatePlaygroundHref} from './playgroundLink';
 import {trackCopy, trackOpenPlayground, trackNavigate} from '../lib/analytics';
 
 export interface TemplatePreviewItem {
   slug: string;
   name: string;
   description?: string;
-  source?: string;
   category?: string;
 }
 
@@ -146,7 +149,7 @@ function TemplatePreviewHeader({
   onCopyCommand,
   onClose,
 }: TemplatePreviewHeaderProps) {
-  const playgroundHref = item.source ? buildPlaygroundHref(item.source) : null;
+  const playgroundHref = buildTemplatePlaygroundHref(item.slug);
 
   const metadata = (
     <VStack
@@ -177,7 +180,7 @@ function TemplatePreviewHeader({
     </HStack>
   );
 
-  const playgroundButton = playgroundHref ? (
+  const playgroundButton = (
     <Button
       label="Open in Playground"
       variant="primary"
@@ -191,7 +194,7 @@ function TemplatePreviewHeader({
         });
       }}
     />
-  ) : null;
+  );
 
   const closeButton = (
     <Button

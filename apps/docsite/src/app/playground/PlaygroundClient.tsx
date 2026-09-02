@@ -2,7 +2,7 @@
 
 /**
  * @file PlaygroundClient.tsx
- * @input URL hash (shared code), user edits, knob edits
+ * @input URL hash or template query, user edits, and knob edits
  * @output Full-page two-panel playground (editor + live preview)
  * @position app/playground — the interactive Astryx code playground.
  *
@@ -128,20 +128,26 @@ function getInitialCode(): string {
   if (typeof window === 'undefined') {
     return DEFAULT_CODE;
   }
-  const hash = window.location.hash.slice(1);
-  if (!hash) {
-    return DEFAULT_CODE;
+
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  const compressed = hashParams.get('code');
+  if (compressed) {
+    try {
+      return decompressCode(compressed) || DEFAULT_CODE;
+    } catch {
+      return DEFAULT_CODE;
+    }
   }
-  const params = new URLSearchParams(hash);
-  const compressed = params.get('code');
-  if (!compressed) {
-    return DEFAULT_CODE;
-  }
-  try {
-    return decompressCode(compressed) || DEFAULT_CODE;
-  } catch {
-    return DEFAULT_CODE;
-  }
+
+  const templateSlug = new URLSearchParams(window.location.search).get(
+    'template',
+  );
+  const templateSource = templates.find(
+    template => template.slug === templateSlug,
+  )?.source;
+  return templateSource
+    ? stripCodeExampleCopyrightHeader(templateSource)
+    : DEFAULT_CODE;
 }
 
 function updateURL(code: string) {
