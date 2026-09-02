@@ -35,8 +35,6 @@ const DOMAIN_FLOOR = 55;
  * not the same claim as matching three.
  */
 const PAGE_COVERAGE = 0.5;
-/** Fewer results than this and the kit says how to look further. */
-const THIN_KIT = 3;
 
 /**
  * Always-surfaced primitives. Every page needs a shell + layout/typography/
@@ -117,17 +115,6 @@ export async function buildKit(query, options = {}) {
     .slice(0, 6);
   const directMatch = pages.length > 0 && pages[0].score >= PAGE_DIRECT;
 
-  // What to try when the kit comes back thin. Keyword search over a design
-  // system misses in a predictable way — the reader's words and the package's
-  // often do not overlap — and an agent reading an empty kit concludes the
-  // package has nothing and falls back on its own memory of it, which is the
-  // failure this command exists to prevent. Say so, and name the way to browse.
-  const hint =
-    pages.length + blocks.length + domain.length < THIN_KIT
-      ? 'Few matches. This is keyword search, not semantic — try other wordings, ' +
-        'or browse with `astryx component --list` and `astryx template --list`.'
-      : undefined;
-
   return {
     type: 'build.kit',
     data: {
@@ -142,7 +129,6 @@ export async function buildKit(query, options = {}) {
       domain,
       frame: FRAME,
       foundation: FOUNDATION,
-      hint,
     },
   };
 }

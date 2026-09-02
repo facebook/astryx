@@ -148,24 +148,3 @@ describe('build kit — coverage gates the pages group', () => {
     for (const p of r.data.pages) expect(p.queryTerms).toBe(1);
   });
 });
-
-describe('build kit — a thin kit says what to try next', () => {
-  it('hints when the kit comes back nearly empty', async () => {
-    // An agent reading an empty kit concludes the package has nothing and
-    // falls back on its own memory of it, which is the failure build exists
-    // to prevent.
-    const r = await build('quantum flux capacitor telemetry', {cwd: REPO});
-    expect(r.type).toBe('build.kit');
-    if (r.type !== 'build.kit') return;
-    expect(r.data.pages.length + r.data.blocks.length + r.data.domain.length).toBeLessThan(3);
-    expect(r.data.hint).toMatch(/keyword search/i);
-    expect(r.data.hint).toMatch(/--list/);
-  });
-
-  it('carries no hint when the kit is healthy', async () => {
-    const r = await build('dashboard', {cwd: REPO});
-    expect(r.type).toBe('build.kit');
-    if (r.type !== 'build.kit') return;
-    expect(r.data.hint).toBeUndefined();
-  });
-});

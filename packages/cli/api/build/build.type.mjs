@@ -34,7 +34,6 @@
  * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.domain Idea-specific components/hooks (≤6), excluding frame/foundation.
  * @property {string[]} data.frame Always-on page-shell component names.
  * @property {string[]} data.foundation Always-on layout/typography/action component names.
- * @property {string} [data.hint] Present only when the kit is thin — what to try instead, so a caller does not read an empty kit as "the package has nothing".
  */
 
 /**
