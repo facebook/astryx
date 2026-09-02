@@ -1045,7 +1045,7 @@ export default function ComponentScoresPage() {
               ' audit details'
             : 'Component audit details'
         }
-        modality="nonModal"
+        hasScrim={false}
         hasCloseButton
         width={560}>
         {selectedRow ? (

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {useRef, useState} from 'react';
+import {useState} from 'react';
 import {Drawer} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
@@ -30,9 +30,9 @@ const meta: Meta<typeof Drawer> = {
           '  budget, and below 640px the panel preserves a 56px reveal',
           '  without exceeding that budget (`isFullWidthOnMobile` makes it',
           '  edge to edge).',
-          '- **Three independent axes**: `containerRef` chooses scope,',
-          '  `modality` chooses whether that scope is blocked, and `hasScrim`',
-          '  chooses whether it is dimmed. Defaults remain modal + scrim.',
+          '- **Scrim optional**: modal with a scrim by default, or',
+          '  `hasScrim={false}` for a non-modal overlay that leaves the page',
+          '  behind interactive.',
           '- **Square corners** (0px radius) — the panel is flush with three',
           '  viewport edges.',
         ].join('\n'),
@@ -117,7 +117,7 @@ export const RowInspector: Story = {
           isOpen={selected != null}
           onOpenChange={isOpen => !isOpen && setSelectedId(null)}
           label={selected ? `Host details: ${selected.id}` : 'Host details'}
-          modality="nonModal"
+          hasScrim={false}
           width={360}>
           {selected != null && (
             <Section padding={4}>
@@ -145,154 +145,6 @@ export const RowInspector: Story = {
           )}
         </Drawer>
       </>
-    );
-  },
-};
-
-/**
- * `containerRef` binds the drawer to an element instead of the viewport: the
- * panel slides against the pane's edge, at the pane's height, and its scrim
- * dims only that pane. `modality` then applies to the pane rather than the
- * page — the pane is `inert` while the drawer is open, and the rest of the
- * page stays live. The mechanism differs because the browser top layer is
- * always viewport-sized, so a bounded modal is not `aria-modal` and does not
- * lock body scroll. Give the container `position: relative`.
- */
-export const Bounded: Story = {
-  render: () => {
-    const paneRef = useRef<HTMLDivElement>(null);
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const selected = HOSTS.find(host => host.id === selectedId);
-    return (
-      <VStack gap={3}>
-        <Text type="supporting" color="secondary">
-          The drawer is bound to the bordered pane. Everything outside it stays
-          interactive while the drawer is open.
-        </Text>
-        <div
-          ref={paneRef}
-          style={{
-            position: 'relative',
-            overflow: 'hidden',
-            height: 300,
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-          }}>
-          <Section padding={4}>
-            <VStack gap={1}>
-              <Heading level={3}>Hosts</Heading>
-              {HOSTS.map(host => (
-                <Button
-                  key={host.id}
-                  variant="ghost"
-                  label={`${host.id} / ${host.region}`}
-                  onClick={() => setSelectedId(host.id)}
-                />
-              ))}
-            </VStack>
-          </Section>
-        </div>
-        <Button
-          label="Still clickable while the drawer is open"
-          variant="secondary"
-        />
-        <Drawer
-          isOpen={selected != null}
-          onOpenChange={isOpen => !isOpen && setSelectedId(null)}
-          label={selected ? `Host details: ${selected.id}` : 'Host details'}
-          containerRef={paneRef}
-          width={260}>
-          {selected != null && (
-            <Section padding={4}>
-              <VStack gap={4}>
-                <VStack gap={1}>
-                  <Heading level={3}>{selected.id}</Heading>
-                  <Text type="supporting" color="secondary">
-                    {selected.region}
-                  </Text>
-                </VStack>
-                <Divider />
-                <VStack gap={2}>
-                  <Text type="label">Status</Text>
-                  <Text type="body">{selected.status}</Text>
-                  <Text type="label">CPU</Text>
-                  <Text type="body">{selected.cpu}</Text>
-                </VStack>
-              </VStack>
-            </Section>
-          )}
-        </Drawer>
-      </VStack>
-    );
-  },
-};
-
-/**
- * A bounded drawer in a pane that SCROLLS. The panel is pinned to the pane's
- * scrollport, so scrolling the host list moves the list and leaves the
- * inspector where it is — an absolutely positioned child would ride the
- * content out of view instead. With the scrim up, the list behind it is
- * `inert`: it cannot be clicked, and it cannot be tabbed into either.
- */
-export const BoundedInAScrollingPane: Story = {
-  name: 'Bounded in a scrolling pane',
-  render: () => {
-    const paneRef = useRef<HTMLDivElement>(null);
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const selected = HOSTS.find(host => host.id === selectedId);
-    // Enough rows that the pane genuinely scrolls.
-    const rows = [...HOSTS, ...HOSTS, ...HOSTS, ...HOSTS];
-    return (
-      <VStack gap={3}>
-        <Text type="supporting" color="secondary">
-          Open the drawer, then scroll the pane behind it. The panel stays put.
-        </Text>
-        <div
-          ref={paneRef}
-          style={{
-            position: 'relative',
-            overflow: 'auto',
-            height: 300,
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-          }}>
-          <Section padding={4}>
-            <VStack gap={1}>
-              <Heading level={3}>Hosts</Heading>
-              {rows.map((host, index) => (
-                <Button
-                  key={`${host.id}-${index}`}
-                  variant="ghost"
-                  label={`${host.id} / ${host.region}`}
-                  onClick={() => setSelectedId(host.id)}
-                />
-              ))}
-            </VStack>
-          </Section>
-        </div>
-        <Button
-          label="Still clickable while the drawer is open"
-          variant="secondary"
-        />
-        <Drawer
-          isOpen={selected != null}
-          onOpenChange={isOpen => !isOpen && setSelectedId(null)}
-          label={selected ? `Host details: ${selected.id}` : 'Host details'}
-          containerRef={paneRef}
-          width={260}>
-          {selected != null && (
-            <Section padding={4}>
-              <VStack gap={2}>
-                <Heading level={3}>{selected.id}</Heading>
-                <Text type="body">{selected.region}</Text>
-                <Divider />
-                <Text type="label">Status</Text>
-                <Text type="body">{selected.status}</Text>
-              </VStack>
-            </Section>
-          )}
-        </Drawer>
-      </VStack>
     );
   },
 };
@@ -470,7 +322,7 @@ export const FloatsOverContent: Story = {
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           label="Deployment details"
-          modality="nonModal">
+          hasScrim={false}>
           <Section padding={4}>
             <VStack gap={4}>
               <Heading level={3}>web-prod-04</Heading>
@@ -486,63 +338,56 @@ export const FloatsOverContent: Story = {
 };
 
 /**
- * `modality` controls interaction; `hasScrim` controls paint. Their defaults
- * match, while all four combinations remain available for future products.
- * A non-modal scrim is visual only and does not intercept the page behind it.
+ * With a scrim (default) the drawer is modal: the page behind dims, focus is
+ * trapped, and clicking the scrim closes it. Without one it is a plain
+ * overlay — no dimming, no focus trap, and the page behind stays clickable,
+ * which is what master-detail flows want.
  */
 export const Scrim: Story = {
   render: () => {
-    type Combination =
-      'modal-scrim' | 'modal-clear' | 'nonmodal-scrim' | 'nonmodal-clear';
-    const [combination, setCombination] = useState<Combination | null>(null);
-    const blocksBehind = combination?.startsWith('modal-') ?? true;
-    const hasScrim = combination?.endsWith('-scrim') ?? true;
-
+    const [openWith, setOpenWith] = useState(false);
+    const [openWithout, setOpenWithout] = useState(false);
     return (
       <>
         <VStack gap={3}>
-          <HStack gap={2} wrap="wrap">
+          <HStack gap={2}>
+            <Button label="With scrim" onClick={() => setOpenWith(true)} />
             <Button
-              label="Modal + scrim"
-              onClick={() => setCombination('modal-scrim')}
-            />
-            <Button
-              label="Modal + clear"
+              label="Without scrim"
               variant="secondary"
-              onClick={() => setCombination('modal-clear')}
-            />
-            <Button
-              label="Non-modal + scrim"
-              variant="secondary"
-              onClick={() => setCombination('nonmodal-scrim')}
-            />
-            <Button
-              label="Non-modal + clear"
-              variant="secondary"
-              onClick={() => setCombination('nonmodal-clear')}
+              onClick={() => setOpenWithout(true)}
             />
           </HStack>
           <Text type="supporting" color="secondary">
-            Scope, enforcement and paint are independent: containerRef chooses
-            where, modality chooses blocking, and hasScrim chooses dimming.
+            These buttons stay clickable while the scrim-less drawer is open.
           </Text>
         </VStack>
         <Drawer
-          isOpen={combination != null}
-          onOpenChange={isOpen => !isOpen && setCombination(null)}
-          label="Drawer axis combination"
-          modality={blocksBehind ? 'modal' : 'nonModal'}
-          hasScrim={hasScrim}>
+          isOpen={openWith}
+          onOpenChange={setOpenWith}
+          label="Modal details">
           <Section padding={4}>
             <VStack gap={4}>
-              <Heading level={3}>
-                {blocksBehind ? 'Modal' : 'Non-modal'}
-              </Heading>
+              <Heading level={3}>Modal</Heading>
               <Text type="body">
-                {hasScrim ? 'Scrim painted.' : 'No scrim painted.'}{' '}
-                {blocksBehind
-                  ? 'The area behind is blocked.'
-                  : 'The area behind remains interactive.'}
+                Scrim dims the page, focus is trapped, Escape or a scrim click
+                closes.
+              </Text>
+            </VStack>
+          </Section>
+        </Drawer>
+        <Drawer
+          isOpen={openWithout}
+          onOpenChange={setOpenWithout}
+          label="Non-modal details"
+          hasScrim={false}
+          hasCloseButton>
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Non-modal</Heading>
+              <Text type="body">
+                No scrim, no focus trap. The page behind keeps working while
+                this stays open.
               </Text>
             </VStack>
           </Section>
@@ -552,51 +397,150 @@ export const Scrim: Story = {
   },
 };
 
-/**
- * Sibling drawers stack last-opened-on-top, and a buried drawer recedes: it
- * withdraws toward its own edge and shrinks a little per level, so the stack
- * reads as layered pages with each leading edge still visible. The user can
- * see what they came from and how deep they are.
- *
- * Depth comes from the drawer stack itself, so this works with the documented
- * sibling pattern — no nesting. Retune the geometry on the theme
- * (`--drawer-stack-peek`, `--drawer-stack-scale-step`,
- * `--drawer-stack-min-scale`, `--drawer-stack-radius`), or set
- * `hasStackRecede={false}` to keep a panel at rest.
- */
 export const NestedStack: Story = {
-  render: () => {
+  parameters: {
+    docs: {
+      description: {
+        story: [
+          'Open a drawer over another and the one behind **recedes** — it',
+          'withdraws toward its own closing edge and shrinks a little per',
+          'level, so the stack reads as layered pages instead of one panel',
+          'replacing another.',
+          '',
+          'Only drawers on the **same side** stack. The `start` drawer here',
+          'sits beside the `end` stack and never buries it, or is buried by',
+          'it.',
+          '',
+          'Geometry is themeable on the `drawer` target:',
+          '`--drawer-stack-peek`, `--drawer-stack-scale-step` and',
+          '`--drawer-stack-min-scale`. `hasStackRecede={false}` opts out.',
+        ].join('\n'),
+      },
+    },
+  },
+  render: function NestedStackStory() {
     const [depth, setDepth] = useState(0);
+    const [asideOpen, setAsideOpen] = useState(false);
     const levels = [1, 2, 3];
+
     return (
       <>
-        <VStack gap={3}>
-          <Button label="Open level 1" onClick={() => setDepth(1)} />
+        <VStack gap={4}>
+          <Button
+            label="Open drawer"
+            data-testid="open-stack"
+            onClick={() => setDepth(1)}
+          />
+          <Button
+            label="Open unrelated start drawer"
+            data-testid="open-aside"
+            onClick={() => setAsideOpen(true)}
+          />
           <Text type="supporting" color="secondary">
-            Open another level from inside the drawer to see the stack fan back.
+            Each level pushes the one behind it further back.
           </Text>
         </VStack>
+
+        <Drawer
+          isOpen={asideOpen}
+          onOpenChange={setAsideOpen}
+          side="start"
+          hasScrim={false}
+          label="Filters">
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Filters</Heading>
+              <Text type="body">
+                Anchored to the opposite edge, and non-modal so the page stays
+                live beside it. Opening the end-side stack must not move this
+                panel.
+              </Text>
+            </VStack>
+          </Section>
+        </Drawer>
+
         {levels.map(level => (
           <Drawer
             key={level}
             isOpen={depth >= level}
             onOpenChange={isOpen => !isOpen && setDepth(level - 1)}
-            label={`Level ${level}`}
-            width={360}>
+            label={`Level ${level}`}>
             <Section padding={4}>
               <VStack gap={4}>
                 <Heading level={3}>Level {level}</Heading>
                 <Text type="body">
-                  {level < levels.length
-                    ? 'Open the next level: this panel stays visible behind it.'
-                    : 'The deepest level. Close it to bring the one behind forward.'}
+                  {level < 3
+                    ? 'Open another to see this one recede.'
+                    : 'The front of the stack sits at rest.'}
                 </Text>
-                {level < levels.length && (
+                <Divider />
+                <HStack gap={2}>
+                  {level < 3 && (
+                    <Button
+                      label={`Open level ${level + 1}`}
+                      data-testid={`push-${level}`}
+                      onClick={() => setDepth(level + 1)}
+                    />
+                  )}
                   <Button
-                    label={`Open level ${level + 1}`}
-                    onClick={() => setDepth(level + 1)}
+                    label="Back"
+                    data-testid={`pop-${level}`}
+                    onClick={() => setDepth(level - 1)}
                   />
-                )}
+                </HStack>
+              </VStack>
+            </Section>
+          </Drawer>
+        ))}
+      </>
+    );
+  },
+};
+
+export const NestedStackNoRecede: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The same three-deep stack with `hasStackRecede={false}`. Every panel stays at rest, which is the negative control for the recede.',
+      },
+    },
+  },
+  render: function NestedStackNoRecedeStory() {
+    const [depth, setDepth] = useState(0);
+    const levels = [1, 2, 3];
+
+    return (
+      <>
+        <Button
+          label="Open drawer"
+          data-testid="open-stack"
+          onClick={() => setDepth(1)}
+        />
+        {levels.map(level => (
+          <Drawer
+            key={level}
+            isOpen={depth >= level}
+            onOpenChange={isOpen => !isOpen && setDepth(level - 1)}
+            hasStackRecede={false}
+            label={`Level ${level}`}>
+            <Section padding={4}>
+              <VStack gap={4}>
+                <Heading level={3}>Level {level}</Heading>
+                <HStack gap={2}>
+                  {level < 3 && (
+                    <Button
+                      label={`Open level ${level + 1}`}
+                      data-testid={`push-${level}`}
+                      onClick={() => setDepth(level + 1)}
+                    />
+                  )}
+                  <Button
+                    label="Back"
+                    data-testid={`pop-${level}`}
+                    onClick={() => setDepth(level - 1)}
+                  />
+                </HStack>
               </VStack>
             </Section>
           </Drawer>

@@ -10,8 +10,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, act, cleanup} from '@testing-library/react';
-import {Profiler, useEffect, useRef, useState} from 'react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
+import {useState} from 'react';
 import {Drawer} from './Drawer';
 
 // Mock dialog methods since they're not fully implemented in jsdom
@@ -78,6 +78,30 @@ describe('Drawer', () => {
     expect(screen.getByRole('dialog')).toHaveAccessibleName('Host details');
   });
 
+  describe('modal vs non-modal', () => {
+    it('opens with showModal() and aria-modal by default (hasScrim)', () => {
+      render(
+        <Drawer isOpen onOpenChange={() => {}} label="Details">
+          Content
+        </Drawer>,
+      );
+      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalled();
+      expect(HTMLDialogElement.prototype.show).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
+    });
+
+    it('opens with show() and no aria-modal when hasScrim is false', () => {
+      render(
+        <Drawer isOpen onOpenChange={() => {}} label="Details" hasScrim={false}>
+          Content
+        </Drawer>,
+      );
+      expect(HTMLDialogElement.prototype.show).toHaveBeenCalled();
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-modal');
+    });
+  });
+
   describe('Escape key', () => {
     it('calls onOpenChange(false) on Escape keydown', () => {
       const handleOpenChange = vi.fn();
@@ -97,7 +121,7 @@ describe('Drawer', () => {
           isOpen
           onOpenChange={handleOpenChange}
           label="Details"
-          modality="nonModal">
+          hasScrim={false}>
           Content
         </Drawer>,
       );
@@ -194,7 +218,7 @@ describe('Drawer', () => {
           isOpen
           onOpenChange={handleOpenChange}
           label="Details"
-          modality="nonModal">
+          hasScrim={false}>
           Content
         </Drawer>,
       );
@@ -442,7 +466,7 @@ describe('Drawer', () => {
           isOpen
           onOpenChange={handleOpenChange}
           label="Details"
-          modality="nonModal">
+          hasScrim={false}>
           Content
         </Drawer>,
       );
@@ -471,122 +495,12 @@ describe('Drawer', () => {
           isOpen
           onOpenChange={() => {}}
           label="Details"
-          modality="nonModal"
+          hasScrim={false}
           hasCloseButton>
           Content
         </Drawer>,
       );
       expect(screen.getByRole('button', {name: 'Close'})).toBeInTheDocument();
-    });
-  });
-
-  describe('stack recede', () => {
-    function ThreeDeep({
-      openCount,
-      hasStackRecede,
-    }: {
-      openCount: number;
-      hasStackRecede?: boolean;
-    }) {
-      return (
-        <>
-          {['First', 'Second', 'Third'].map((label, index) => (
-            <Drawer
-              key={label}
-              isOpen={index < openCount}
-              onOpenChange={() => {}}
-              label={label}
-              hasStackRecede={hasStackRecede}
-              modality="nonModal">
-              {label} content
-            </Drawer>
-          ))}
-        </>
-      );
-    }
-
-    it('recedes each buried drawer by how deep it is, and never the top one', () => {
-      // The pages-in-a-book read: the drawer in front sits at rest and every
-      // one behind it withdraws further, so the user can see what they came
-      // from and how deep they are.
-      const {rerender} = render(<ThreeDeep openCount={1} />);
-      expect(screen.getByRole('dialog', {name: 'First'})).not.toHaveAttribute(
-        'data-stack-depth',
-      );
-
-      rerender(<ThreeDeep openCount={2} />);
-      expect(screen.getByRole('dialog', {name: 'First'})).toHaveAttribute(
-        'data-stack-depth',
-        '1',
-      );
-      expect(screen.getByRole('dialog', {name: 'Second'})).not.toHaveAttribute(
-        'data-stack-depth',
-      );
-
-      rerender(<ThreeDeep openCount={3} />);
-      expect(screen.getByRole('dialog', {name: 'First'})).toHaveAttribute(
-        'data-stack-depth',
-        '2',
-      );
-      expect(screen.getByRole('dialog', {name: 'Second'})).toHaveAttribute(
-        'data-stack-depth',
-        '1',
-      );
-      expect(screen.getByRole('dialog', {name: 'Third'})).not.toHaveAttribute(
-        'data-stack-depth',
-      );
-    });
-
-    it('brings a drawer back as the stack above it closes', () => {
-      const {rerender} = render(<ThreeDeep openCount={3} />);
-      expect(screen.getByRole('dialog', {name: 'First'})).toHaveAttribute(
-        'data-stack-depth',
-        '2',
-      );
-
-      rerender(<ThreeDeep openCount={2} />);
-      expect(screen.getByRole('dialog', {name: 'First'})).toHaveAttribute(
-        'data-stack-depth',
-        '1',
-      );
-
-      rerender(<ThreeDeep openCount={1} />);
-      expect(screen.getByRole('dialog', {name: 'First'})).not.toHaveAttribute(
-        'data-stack-depth',
-      );
-    });
-
-    it('stays at rest when the drawer opts out', () => {
-      render(<ThreeDeep openCount={3} hasStackRecede={false} />);
-      expect(screen.getByRole('dialog', {name: 'First'})).not.toHaveAttribute(
-        'data-stack-depth',
-      );
-      expect(screen.getByRole('dialog', {name: 'Second'})).not.toHaveAttribute(
-        'data-stack-depth',
-      );
-    });
-
-    it('declares the stack geometry as themeable custom properties', () => {
-      // The recede is retuned on the theme, not per call, so the vars have to
-      // be declared on the element carrying the `drawer` theme target.
-      render(
-        <Drawer isOpen onOpenChange={() => {}} label="Details">
-          Content
-        </Drawer>,
-      );
-      const computed = window.getComputedStyle(screen.getByRole('dialog'));
-      expect(computed.getPropertyValue('--drawer-stack-peek')).toBe('40px');
-      // Parsed, not string-compared: the CSSOM normalises a leading zero away
-      // ('0.04' round-trips as '.04'), and the value is what matters.
-      expect(
-        Number(computed.getPropertyValue('--drawer-stack-scale-step')),
-      ).toBeCloseTo(0.04);
-      expect(
-        Number(computed.getPropertyValue('--drawer-stack-min-scale')),
-      ).toBeCloseTo(0.8);
-      expect(
-        computed.getPropertyValue('--drawer-stack-radius').trim(),
-      ).not.toBe('');
     });
   });
 
@@ -600,14 +514,14 @@ describe('Drawer', () => {
             isOpen
             onOpenChange={closeFirst}
             label="First"
-            modality="nonModal">
+            hasScrim={false}>
             First content
           </Drawer>
           <Drawer
             isOpen
             onOpenChange={closeSecond}
             label="Second"
-            modality="nonModal">
+            hasScrim={false}>
             Second content
           </Drawer>
         </>,
@@ -637,14 +551,14 @@ describe('Drawer', () => {
             isOpen={outerOpen}
             onOpenChange={setOuterOpen}
             label="Outer"
-            modality="nonModal">
+            hasScrim={false}>
             Outer content
           </Drawer>
           <Drawer
             isOpen={innerOpen}
             onOpenChange={setInnerOpen}
             label="Inner"
-            modality="nonModal">
+            hasScrim={false}>
             Inner content
           </Drawer>
         </>
@@ -679,24 +593,20 @@ describe('Drawer', () => {
             isOpen
             onOpenChange={closeFirst}
             label="First"
-            modality="nonModal">
+            hasScrim={false}>
             First content
           </Drawer>
           <Drawer
             isOpen
             onOpenChange={() => {}}
             label="Second"
-            modality="nonModal">
+            hasScrim={false}>
             Second content
           </Drawer>
         </>,
       );
       rerender(
-        <Drawer
-          isOpen
-          onOpenChange={closeFirst}
-          label="First"
-          modality="nonModal">
+        <Drawer isOpen onOpenChange={closeFirst} label="First" hasScrim={false}>
           First content
         </Drawer>,
       );
@@ -740,454 +650,113 @@ describe('Drawer', () => {
     });
   });
 
-  describe('bounded to a container', () => {
-    function BoundedHarness({
-      modality,
-      hasScrim,
-      isOpen = true,
+  describe('stack recede', () => {
+    function ThreeDeep({
+      hasStackRecede,
+      sides = ['end', 'end', 'end'],
+      depth,
     }: {
-      modality?: 'modal' | 'nonModal';
-      hasScrim?: boolean;
-      isOpen?: boolean;
+      hasStackRecede?: boolean;
+      sides?: ('start' | 'end')[];
+      depth: number;
     }) {
-      const containerRef = useRef<HTMLDivElement>(null);
-      const [, force] = useState(0);
-      // One re-render so the ref is populated for the portal.
-      useEffect(() => {
-        force(1);
-      }, []);
-      // The Drawer is deliberately NOT a JSX child of the container — the
-      // point of containerRef is that the panel goes there regardless of
-      // where it is declared.
       return (
         <>
-          <div
-            ref={containerRef}
-            data-testid="pane"
-            style={{position: 'relative', width: 600, height: 400}}>
-            <span>pane content</span>
-          </div>
-          <Drawer
-            isOpen={isOpen}
-            onOpenChange={onOpenChange}
-            label="Row details"
-            modality={modality}
-            hasScrim={hasScrim}
-            containerRef={containerRef}>
-            Bounded content
-          </Drawer>
+          {sides.map((side, level) => (
+            <Drawer
+              key={level}
+              isOpen={level < depth}
+              onOpenChange={() => {}}
+              side={side}
+              hasStackRecede={hasStackRecede}
+              label={`Level ${level + 1}`}>
+              {`Level ${level + 1}`}
+            </Drawer>
+          ))}
         </>
       );
     }
 
-    let onOpenChange: (isOpen: boolean) => void;
-    beforeEach(() => {
-      onOpenChange = vi.fn();
+    const depths = () =>
+      screen
+        .getAllByRole('dialog')
+        .map(dialog => dialog.getAttribute('data-stack-depth'));
+
+    it('buries each drawer one level deeper per drawer opened on top', () => {
+      const {rerender} = render(<ThreeDeep depth={1} />);
+      expect(depths()).toEqual([null]);
+
+      rerender(<ThreeDeep depth={2} />);
+      expect(depths()).toEqual(['1', null]);
+
+      rerender(<ThreeDeep depth={3} />);
+      expect(depths()).toEqual(['2', '1', null]);
     });
 
-    it('renders the panel inside the container, not the document body', () => {
-      render(<BoundedHarness />);
-      const pane = screen.getByTestId('pane');
-      const dialog = screen.getByRole('dialog');
-      expect(pane).toContainElement(dialog);
+    it('returns each drawer to rest as the stack unwinds', () => {
+      const {rerender} = render(<ThreeDeep depth={3} />);
+      expect(depths()).toEqual(['2', '1', null]);
+
+      // A closing drawer stays rendered for its exit transition, so it is
+      // still in the DOM here — at rest, and already out of the registry, so
+      // the drawer below it starts coming back in the same commit.
+      rerender(<ThreeDeep depth={2} />);
+      expect(depths()).toEqual(['1', null, null]);
+
+      rerender(<ThreeDeep depth={1} />);
+      expect(depths()).toEqual([null, null, null]);
     });
 
-    it('never uses the top layer, even with a scrim', () => {
-      render(<BoundedHarness />);
-      expect(HTMLDialogElement.prototype.show).toHaveBeenCalled();
-      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+    it('does not bury a drawer anchored to the opposite edge', () => {
+      const {rerender} = render(
+        <ThreeDeep depth={1} sides={['start', 'end', 'end']} />,
+      );
+      expect(depths()).toEqual([null]);
+
+      // A drawer opens against the OTHER edge. The two sit side by side and
+      // never overlap, so the first must stay at rest.
+      rerender(<ThreeDeep depth={2} sides={['start', 'end', 'end']} />);
+      expect(depths()).toEqual([null, null]);
+
+      // A third against the end edge buries the second one only.
+      rerender(<ThreeDeep depth={3} sides={['start', 'end', 'end']} />);
+      expect(depths()).toEqual([null, '1', null]);
     });
 
-    it('is not aria-modal — the page behind stays live', () => {
-      render(<BoundedHarness />);
-      expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-modal');
+    it('stays at rest with hasStackRecede={false}', () => {
+      render(<ThreeDeep depth={3} hasStackRecede={false} />);
+      expect(depths()).toEqual([null, null, null]);
     });
 
-    it('renders its own scrim, because ::backdrop needs the top layer', () => {
-      const {rerender} = render(<BoundedHarness />);
-      const pane = screen.getByTestId('pane');
-      const scrim = pane.querySelector('[data-drawer-scrim]');
-      expect(scrim).not.toBeNull();
-
-      fireEvent.click(scrim as Element);
-      expect(onOpenChange).toHaveBeenCalledWith(false);
-
-      rerender(<BoundedHarness modality="nonModal" />);
-      expect(
-        screen.getByTestId('pane').querySelector('[data-drawer-scrim]'),
-      ).toBeNull();
-    });
-
-    it('wraps the panel in a clip box, so the container is never scrolled', () => {
-      // overflow:hidden would make the container a scroll container, and the
-      // browser's focus scroll-into-view would then scroll it by exactly the
-      // entry transform — freezing the panel while the page content flies.
-      render(<BoundedHarness />);
-      const dialog = screen.getByRole('dialog');
-      const clip = dialog.parentElement as HTMLElement;
-      expect(window.getComputedStyle(clip).overflow).toBe('clip');
-      expect(screen.getByTestId('pane')).toContainElement(clip);
-    });
-
-    it('closes on Escape', () => {
-      render(<BoundedHarness />);
-      fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
-      expect(onOpenChange).toHaveBeenCalledWith(false);
-    });
-
-    it('renders nothing before the container ref resolves', () => {
-      function Unresolved() {
-        const containerRef = useRef<HTMLDivElement>(null);
-        return (
-          <Drawer
-            isOpen
-            onOpenChange={() => {}}
-            label="Details"
-            containerRef={containerRef}>
-            Content
-          </Drawer>
-        );
-      }
-      render(<Unresolved />);
-      expect(screen.queryByRole('dialog')).toBeNull();
-    });
-
-    it('pins the clip box to the scrollport, not to the scrolled content', () => {
-      // An absolutely positioned child of a scroll container resolves against
-      // the SCROLLED padding box, so `inset: 0` alone rides the content: in
-      // Chromium, scrolling the pane 0 -> 180px carried the panel from y=44
-      // to y=-136. The clip box offsets itself by the scroll position to
-      // stay put.
-      render(<BoundedHarness />);
-      const pane = screen.getByTestId('pane');
-      const clip = screen.getByRole('dialog').parentElement as HTMLElement;
-
-      // jsdom does not lay out, so drive the geometry directly — the effect
-      // reads exactly these four properties.
-      Object.defineProperty(pane, 'clientWidth', {
-        value: 600,
-        configurable: true,
-      });
-      Object.defineProperty(pane, 'clientHeight', {
-        value: 400,
-        configurable: true,
-      });
-      pane.scrollTop = 180;
-      pane.scrollLeft = 0;
-      fireEvent.scroll(pane);
-
-      expect(clip.style.transform).toBe('translate(0px, 180px)');
-      // Sized to the scrollport, so it covers what the user can see rather
-      // than the full scroll height.
-      expect(clip.style.blockSize).toBe('400px');
-      expect(clip.style.inlineSize).toBe('600px');
-    });
-
-    it('makes the container inert when modal, so keyboard matches pointer', () => {
-      // Bounded mode's modal enforcement: the container is the area taken out
-      // of play. Dimming alone blocked only the pointer, so two reverse Tabs
-      // out of the panel landed on the dimmed opener and Enter fired a
-      // control no click could reach.
-      render(<BoundedHarness />);
-      const pane = screen.getByTestId('pane');
-      const content = pane.querySelector('span') as HTMLElement;
-      expect(content).toHaveAttribute('inert');
-
-      // The panel itself is inside the container and must stay live.
-      const clip = screen.getByRole('dialog').parentElement as HTMLElement;
-      expect(clip).not.toHaveAttribute('inert');
-    });
-
-    it('leaves the container live when non-modal', () => {
-      // The negative control: a non-modal bounded drawer leaves its
-      // container alone.
-      render(<BoundedHarness modality="nonModal" />);
-      const content = screen
-        .getByTestId('pane')
-        .querySelector('span') as HTMLElement;
-      expect(content).not.toHaveAttribute('inert');
-    });
-
-    it('inerts pane content inserted after the drawer opened', async () => {
-      // A pane is live content: a row streams in, a menu opens, a lazy panel
-      // resolves. Stamping `inert` once at open leaves every one of those
-      // focusable behind a scrim that already blocks the pointer — the same
-      // keyboard/pointer split one layer down. Reported on #5550.
-      render(<BoundedHarness />);
-      const pane = screen.getByTestId('pane');
-      expect(pane.querySelector('span')).toHaveAttribute('inert');
-
-      const late = document.createElement('button');
-      late.textContent = 'streamed in';
-      await act(async () => {
-        pane.appendChild(late);
-        // MutationObserver delivers on a microtask.
-        await Promise.resolve();
-      });
-
-      expect(late).toHaveAttribute('inert');
-    });
-
-    it('hands back only what it inerted, including the late arrivals', async () => {
-      render(<BoundedHarness />);
-      const pane = screen.getByTestId('pane');
-      // Something the drawer must not touch: already inert for its own
-      // reason before the drawer ever opened.
-      const preInert = document.createElement('div');
-      preInert.setAttribute('inert', '');
-      const late = document.createElement('button');
-      await act(async () => {
-        pane.appendChild(preInert);
-        pane.appendChild(late);
-        await Promise.resolve();
-      });
-      expect(late).toHaveAttribute('inert');
-
-      // Closing gives back the drawer's own, and leaves the other alone.
-      await act(async () => {
-        cleanup();
-      });
-      expect(late).not.toHaveAttribute('inert');
-      expect(preInert).toHaveAttribute('inert');
-    });
-
-    it('keeps the container inert through the exit transition', () => {
-      const {rerender} = render(<BoundedHarness isOpen />);
-      const content = screen
-        .getByTestId('pane')
-        .querySelector('span') as HTMLElement;
-      expect(content).toHaveAttribute('inert');
-
-      rerender(<BoundedHarness isOpen={false} />);
-      expect(content).toHaveAttribute('inert');
-
-      fireEvent.transitionEnd(screen.getByRole('dialog', {hidden: true}), {
-        propertyName: 'transform',
-      });
-      expect(content).not.toHaveAttribute('inert');
-    });
-
-    it('follows the container when the element behind the ref is replaced', async () => {
-      // The ref object never changes identity, so a dep array on it cannot
-      // see this. Swapping the element used to leave the drawer `isOpen`
-      // with no dialog anywhere.
-      function SwappingHarness() {
-        const containerRef = useRef<HTMLDivElement>(null);
-        const [which, setWhich] = useState<'a' | 'b'>('a');
-        const [, force] = useState(0);
-        useEffect(() => {
-          force(1);
-        }, []);
+    it('keeps Escape on the last-opened drawer when a buried drawer changes edge', () => {
+      const onOpenChange = [vi.fn(), vi.fn()];
+      function Pair({firstSide}: {firstSide: 'start' | 'end'}) {
         return (
           <>
-            {/* Keyed, so React unmounts one and mounts the other rather
-                than reconciling a single div and swapping its attributes —
-                without the key there is no swap to survive. */}
-            <div
-              key={which}
-              ref={containerRef}
-              data-testid={`pane-${which}`}
-              style={{position: 'relative'}}
-            />
-            <button onClick={() => setWhich('b')}>swap</button>
             <Drawer
               isOpen
-              onOpenChange={() => {}}
-              label="Row details"
-              containerRef={containerRef}>
-              Bounded content
+              onOpenChange={onOpenChange[0]}
+              side={firstSide}
+              label="First">
+              First
+            </Drawer>
+            <Drawer isOpen onOpenChange={onOpenChange[1]} label="Second">
+              Second
             </Drawer>
           </>
         );
       }
-      render(<SwappingHarness />);
-      expect(screen.getByTestId('pane-a')).toContainElement(
-        screen.getByRole('dialog'),
-      );
+      const {rerender} = render(<Pair firstSide="end" />);
+      expect(depths()).toEqual(['1', null]);
 
-      await act(async () => {
-        fireEvent.click(screen.getByText('swap'));
-      });
+      // Moving the buried drawer to the other edge must not promote it in the
+      // registry: the registry position IS the stacking order.
+      rerender(<Pair firstSide="start" />);
+      expect(depths()).toEqual([null, null]);
 
-      // Still open, and now living in the new host.
-      const dialog = screen.getByRole('dialog');
-      expect(screen.getByTestId('pane-b')).toContainElement(dialog);
-    });
-
-    it('resolves no container while closed, so an unopened drawer costs nothing', () => {
-      // Resolving the target is a state write, and doing it on mount cost
-      // every closed bounded Drawer on the page a second commit.
-      const commits: string[] = [];
-      function CountingHarness() {
-        const containerRef = useRef<HTMLDivElement>(null);
-        return (
-          <>
-            <div
-              ref={containerRef}
-              data-testid="pane"
-              style={{position: 'relative'}}
-            />
-            <Profiler
-              id="drawer"
-              onRender={(_id, phase) => commits.push(phase)}>
-              <Drawer
-                isOpen={false}
-                onOpenChange={() => {}}
-                label="Row details"
-                containerRef={containerRef}>
-                Bounded content
-              </Drawer>
-            </Profiler>
-          </>
-        );
-      }
-      render(<CountingHarness />);
-      expect(screen.queryByRole('dialog')).toBeNull();
-      // One mount, and no update behind it. Resolving the target on mount
-      // used to add an 'update' commit to every closed bounded Drawer.
-      expect(commits).toEqual(['mount']);
-    });
-
-    it('defaults scrim paint to match modality', () => {
-      const {rerender} = render(<BoundedHarness />);
-      const pane = screen.getByTestId('pane');
-      expect(pane.querySelector('[data-drawer-scrim]')).not.toBeNull();
-      expect(pane.querySelector('span')).toHaveAttribute('inert');
-
-      rerender(<BoundedHarness modality="nonModal" />);
-      expect(pane.querySelector('[data-drawer-scrim]')).toBeNull();
-      expect(pane.querySelector('span')).not.toHaveAttribute('inert');
-    });
-
-    it('can paint a scrim without enforcing modality', () => {
-      render(<BoundedHarness modality="nonModal" hasScrim />);
-      const pane = screen.getByTestId('pane');
-      const scrim = pane.querySelector('[data-drawer-scrim]') as HTMLElement;
-
-      expect(scrim).not.toBeNull();
-      expect(window.getComputedStyle(scrim).pointerEvents).toBe('none');
-      expect(pane.querySelector('span')).not.toHaveAttribute('inert');
-
-      fireEvent.click(scrim);
-      expect(onOpenChange).not.toHaveBeenCalled();
-    });
-
-    it('can enforce modality without painting a scrim', () => {
-      render(<BoundedHarness hasScrim={false} />);
-      const pane = screen.getByTestId('pane');
-
-      expect(pane.querySelector('[data-drawer-scrim]')).toBeNull();
-      expect(pane.querySelector('span')).toHaveAttribute('inert');
-    });
-
-    it('means the same thing bounded, by a different mechanism', () => {
-      // A bounded modal cannot use the top layer, so it is not aria-modal
-      // and does not lock body scroll — but the area behind it is still out
-      // of play, which is what the word promises.
-      render(<BoundedHarness />);
-      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
-      expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-modal');
-      expect(screen.getByTestId('pane').querySelector('span')).toHaveAttribute(
-        'inert',
-      );
-    });
-  });
-
-  describe('modality and scrim paint', () => {
-    it('is modal with a scrim by default', () => {
-      render(
-        <Drawer isOpen onOpenChange={() => {}} label="Details">
-          Content
-        </Drawer>,
-      );
-      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalled();
-      expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
-    });
-
-    it('can enforce viewport modality without painting a scrim', () => {
-      const {container} = render(
-        <Drawer isOpen onOpenChange={() => {}} label="Details" hasScrim={false}>
-          Content
-        </Drawer>,
-      );
-      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalled();
-      expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
-      expect(container.querySelector('[data-drawer-scrim]')).toBeNull();
-    });
-
-    it('leaves the page interactive when modality is nonModal', () => {
-      render(
-        <Drawer
-          isOpen
-          onOpenChange={() => {}}
-          label="Details"
-          modality="nonModal">
-          Content
-        </Drawer>,
-      );
-      expect(HTMLDialogElement.prototype.show).toHaveBeenCalled();
-      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
-      expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-modal');
-    });
-
-    it('can paint a viewport scrim without enforcing modality', () => {
-      const {container} = render(
-        <Drawer
-          isOpen
-          onOpenChange={() => {}}
-          label="Details"
-          modality="nonModal"
-          hasScrim>
-          Content
-        </Drawer>,
-      );
-      const scrim = container.querySelector(
-        '[data-drawer-scrim]',
-      ) as HTMLElement;
-      expect(HTMLDialogElement.prototype.show).toHaveBeenCalled();
-      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
-      expect(scrim).not.toBeNull();
-      expect(window.getComputedStyle(scrim).position).toBe('fixed');
-      expect(window.getComputedStyle(scrim).pointerEvents).toBe('none');
-    });
-
-    it('reopens the native dialog when modality changes while open', () => {
-      const {rerender} = render(
-        <Drawer
-          isOpen
-          onOpenChange={() => {}}
-          label="Details"
-          modality="nonModal">
-          Content
-        </Drawer>,
-      );
-      vi.mocked(HTMLDialogElement.prototype.close).mockClear();
-      vi.mocked(HTMLDialogElement.prototype.showModal).mockClear();
-
-      rerender(
-        <Drawer isOpen onOpenChange={() => {}} label="Details" modality="modal">
-          Content
-        </Drawer>,
-      );
-
-      expect(HTMLDialogElement.prototype.close).toHaveBeenCalledTimes(1);
-      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
-      expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
-
-      vi.mocked(HTMLDialogElement.prototype.close).mockClear();
-      vi.mocked(HTMLDialogElement.prototype.show).mockClear();
-      rerender(
-        <Drawer
-          isOpen
-          onOpenChange={() => {}}
-          label="Details"
-          modality="nonModal">
-          Content
-        </Drawer>,
-      );
-      expect(HTMLDialogElement.prototype.close).toHaveBeenCalledTimes(1);
-      expect(HTMLDialogElement.prototype.show).toHaveBeenCalledTimes(1);
-      expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-modal');
+      fireEvent.keyDown(screen.getAllByRole('dialog')[1], {key: 'Escape'});
+      expect(onOpenChange[1]).toHaveBeenCalledWith(false);
+      expect(onOpenChange[0]).not.toHaveBeenCalled();
     });
   });
 
