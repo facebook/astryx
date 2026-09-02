@@ -2,6 +2,8 @@
 
 'use client';
 
+// CI probe only: touching a shipped component activates the trusted visual planner.
+
 /**
  * @file Button.tsx
  * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator)
