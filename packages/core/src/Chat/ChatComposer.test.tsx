@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {beforeEach, describe, it, expect, vi} from 'vitest';
-import {render, fireEvent} from '@testing-library/react';
+import {act, render, fireEvent} from '@testing-library/react';
 import {useEffect, useRef} from 'react';
 import {ChatComposer} from './ChatComposer';
 import {useChatComposerContext} from './ChatContext';
@@ -71,6 +71,26 @@ describe('ChatComposer focus indication', () => {
 
     fireEvent.pointerDown(editor);
     fireEvent.focus(editor);
+
+    expect(body.className).toBe(restingClass);
+  });
+
+  it('shows the composer ring for programmatic editor focus after keyboard input', () => {
+    const {body, editor} = renderComposer();
+    const restingClass = body.className;
+
+    fireEvent.keyDown(document, {key: 'Tab'});
+    act(() => editor.focus());
+
+    expect(body.className).not.toBe(restingClass);
+  });
+
+  it('hides the composer ring for programmatic editor focus after pointer input', () => {
+    const {body, editor} = renderComposer();
+    const restingClass = body.className;
+
+    fireEvent.pointerDown(document.body);
+    act(() => editor.focus());
 
     expect(body.className).toBe(restingClass);
   });
