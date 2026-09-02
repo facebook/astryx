@@ -10,17 +10,14 @@
  */
 
 import {createContext, use} from 'react';
+import type {IconSize} from './IconSize.stylex';
 
-export type ContextualIconSize = 'xsm' | 'sm' | 'md' | 'lg';
-
-const IconDefaultSizeContext = createContext<ContextualIconSize | null>(null);
+const IconDefaultSizeContext = createContext<IconSize | null>(null);
 IconDefaultSizeContext.displayName = 'IconDefaultSizeContext';
 
 export const IconDefaultSizeProvider = IconDefaultSizeContext.Provider;
 
-export function useIconSize(
-  size: ContextualIconSize | undefined,
-): ContextualIconSize {
+export function useIconSize(size: IconSize | undefined): IconSize {
   const contextualSize = use(IconDefaultSizeContext);
   return size ?? contextualSize ?? 'md';
 }

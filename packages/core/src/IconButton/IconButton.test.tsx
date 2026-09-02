@@ -54,12 +54,12 @@ describe('IconButton', () => {
   });
 
   it.each([
-    ['sm', 'sm'],
-    ['md', 'sm'],
-    ['lg', 'md'],
+    ['sm', 'sm', '1rem'],
+    ['md', 'sm', '1rem'],
+    ['lg', 'md', '1.25rem'],
   ] as const)(
-    'defaults the Astryx Icon to the %s button icon size',
-    (buttonSize, iconSize) => {
+    'renders the %s button wrapper and inherited Icon at the same size',
+    (buttonSize, iconSize, renderedSize) => {
       render(
         <IconButton
           label="Add"
@@ -68,7 +68,15 @@ describe('IconButton', () => {
         />,
       );
 
-      expect(screen.getByTestId('icon')).toHaveAttribute('data-size', iconSize);
+      const icon = screen.getByTestId('icon');
+      const wrapper = icon.parentElement;
+      expect(wrapper).not.toBeNull();
+
+      expect(icon).toHaveAttribute('data-size', iconSize);
+      expect(getComputedStyle(icon).width).toBe(renderedSize);
+      expect(getComputedStyle(icon).height).toBe(renderedSize);
+      expect(getComputedStyle(wrapper!).width).toBe(renderedSize);
+      expect(getComputedStyle(wrapper!).height).toBe(renderedSize);
     },
   );
 
