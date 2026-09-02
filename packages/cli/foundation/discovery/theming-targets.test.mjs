@@ -41,6 +41,10 @@ const coreSrc = path.join(coreDir, 'src');
 
 /** @type {Promise<import('./theming-targets.mjs').ThemingTarget[]>} */
 const enumerated = collectThemingTargets(coreSrc);
+/** @type {Promise<import('./theming-targets.mjs').ThemingTarget[]>} */
+const activeEnumerated = collectThemingTargets(coreSrc, {
+  includeDeprecated: false,
+});
 
 describe('collectThemingTargets', () => {
   it('enumerates the whole surface, not a handful', async () => {
@@ -56,6 +60,39 @@ describe('collectThemingTargets', () => {
     }
   });
 
+  it('can limit ownership checks to active targets', async () => {
+    const all = await enumerated;
+    const active = await activeEnumerated;
+    expect(
+      all.some(t => t.component === 'CodeBlock' && t.key === 'codeblock'),
+    ).toBe(true);
+    expect(
+      active.some(t => t.component === 'CodeBlock' && t.key === 'codeblock'),
+    ).toBe(false);
+    expect(
+      active.some(t => t.component === 'CodeBlock' && t.key === 'code-block'),
+    ).toBe(true);
+  });
+
+  it('keeps the deprecated Popover alias enumerable but out of active ownership', async () => {
+    const allPopoverKeys = (await enumerated)
+      .filter(target => target.component === 'Popover')
+      .map(target => target.key);
+    const activePopoverKeys = (await activeEnumerated)
+      .filter(target => target.component === 'Popover')
+      .map(target => target.key);
+    const doc = await loadComponentDoc(
+      path.join(coreSrc, 'Popover', 'Popover.doc.mjs'),
+    );
+
+    expect(allPopoverKeys).toEqual(['popover', 'popover-surface']);
+    expect(activePopoverKeys).toEqual(['popover']);
+    expect(doc.theming.targets).toContainEqual({
+      className: 'astryx-popover-surface',
+      deprecatedFor: 'popover',
+    });
+  });
+
   it('carries the props and states a target reflects', async () => {
     const targets = await enumerated;
     expect(targets.find(t => t.key === 'switch-thumb')).toEqual({
@@ -66,6 +103,37 @@ describe('collectThemingTargets', () => {
       states: ['checked'],
     });
   });
+
+  it.each([
+    ['TableHeader', 'table-header'],
+    ['TableBody', 'table-body'],
+    ['TableFooter', 'table-footer'],
+  ])(
+    'keeps %s theming metadata available in its direct doc',
+    async (name, key) => {
+      const doc = await loadComponentDoc(
+        path.join(coreSrc, 'Table', `${name}.doc.mjs`),
+      );
+      expect(doc.subComponentOf).toBe('Table');
+      expect(doc.theming.targets).toContainEqual({className: `astryx-${key}`});
+    },
+  );
+
+  it.each(['table-header', 'table-body', 'table-footer'])(
+    'enumerates %s once under its canonical Table owner',
+    async key => {
+      const matches = (await enumerated).filter(target => target.key === key);
+      expect(matches).toEqual([
+        {
+          key,
+          className: `astryx-${key}`,
+          component: 'Table',
+          props: [],
+          states: [],
+        },
+      ]);
+    },
+  );
 
   it('is sorted by key, so a diff of two runs is readable', async () => {
     const keys = (await enumerated).map(t => t.key);
@@ -78,9 +146,10 @@ describe('collectThemingTargets', () => {
   it('collapses to the override keys, merging the components that share one', async () => {
     const byKey = targetsByKey(await enumerated);
     expect(byKey['switch']).toEqual(['size', 'checked', 'disabled']);
-    // `radio` is documented by both Indicator and RadioList.
+    // `radio` is documented by two unrelated owners. Parent/child
+    // canonicalization must not collapse a shared target across families.
     const radio = (await enumerated).filter(t => t.key === 'radio');
-    expect(radio.length).toBeGreaterThan(1);
+    expect(radio.map(t => t.component)).toEqual(['Indicator', 'RadioList']);
     for (const t of radio) {
       for (const name of [...t.props, ...t.states]) {
         expect(byKey['radio']).toContain(name);

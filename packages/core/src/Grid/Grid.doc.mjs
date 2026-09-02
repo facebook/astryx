@@ -1,5 +1,21 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Grid container',
+    required: true,
+    description:
+      'Two-dimensional layout container that arranges caller-supplied items in rows and columns.',
+  },
+  {
+    name: 'Spanning item',
+    required: false,
+    description:
+      "Optional GridSpan wrapper that changes one item's column or row participation.",
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -9,6 +25,7 @@ export const docs = {
   category: 'Layout',
   keywords: ["grid","columns","responsive","auto-fill","auto-fit","masonry","tiles","row","col","simplegrid","responsive grid","card grid"],
   usage: {
+    anatomy,
     description:
       'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
     bestPractices: [
@@ -99,6 +116,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
+    anatomy,
     description:
       'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
     bestPractices: [
@@ -116,6 +134,7 @@ export const docsZh = {
 export const docsDense = {
   description: 'CSS Grid-based layout w/ responsive column support.',
   usage: {
+    anatomy,
     description: 'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
     bestPractices: [
       { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size: columns={{minWidth: 280}}.' },

@@ -1,5 +1,26 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'List',
+    required: true,
+    description: 'Visible horizontal list container for the currently shown content.',
+  },
+  {
+    name: 'Items',
+    required: true,
+    description:
+      'Caller-supplied items selected for visible display by the current width and count limits.',
+  },
+  {
+    name: 'Overflow indicator',
+    required: false,
+    description:
+      'Optional caller-rendered indicator for items collapsed by width or count limits.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -106,6 +127,7 @@ export const docs = {
     targets: [{className: 'astryx-overflow-list'}],
   },
   usage: {
+    anatomy,
     description:
       'A horizontal list that automatically hides items when they exceed the available width. Use OverflowList for breadcrumbs, toolbars, tag lists, or any row that needs to collapse gracefully at smaller sizes.',
     bestPractices: [
@@ -209,6 +231,7 @@ export const docsZh = {
     },
   ],
   usage: {
+    anatomy,
     description:
       'A horizontal list that automatically hides items when they exceed the available width. Use OverflowList for breadcrumbs, toolbars, tag lists, or any row that needs to collapse gracefully at smaller sizes.',
     bestPractices: [
@@ -246,6 +269,7 @@ export const docsDense = {
   description:
     'horizontal list w/ overflow indicator: hides items beyond container width',
   usage: {
+    anatomy,
     description:
       'A horizontal list that automatically hides items when they exceed the available width. Use OverflowList for breadcrumbs, toolbars, tag lists, or any row that needs to collapse gracefully at smaller sizes.',
     bestPractices: [

@@ -3,7 +3,7 @@
 /**
  * @file Layout.test.tsx
  * @input Uses vitest, @testing-library/react, Layout + layout contexts
- * @output Characterization tests for the Layout page-shell component
+ * @output Characterization tests for the five-slot Layout primitive
  * @position Testing; validates slot rendering, context provisioning, and
  *   divider/padding/height wiring
  *

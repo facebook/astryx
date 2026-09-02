@@ -1,6 +1,6 @@
 ---
-schema_version: 1
-template_version: 1
+schema_version: 3
+template_version: 4
 kind: component
 id: component:<Name>
 authority: draft
@@ -11,6 +11,7 @@ approved_at: null
 owners: [<owner>]
 review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by: [<test-or-check>]
+modules: [module:<Name>/<PublicModule>]
 families: [family:<family-name>]
 design_specs: [design:<surface>]
 architecture: [architecture:<surface>]
@@ -45,7 +46,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-<!-- Concepts, not a prop table. Consumer syntax/defaults remain in <Name>.doc.mjs. -->
+<!--
+Concepts, not a prop table. Consumer syntax/defaults remain in <Name>.doc.mjs.
+Record only component-local semantic concepts, additions, and exceptions; inherit
+current family rules. When a public hook, plugin, utility, or subsystem has an
+independent contract, list its `module:<Name>/<PublicName>` record in `modules`
+and keep its API, behavior, accessibility, precedence, and evidence there.
+Follow spec:AST-002 without copying system rules.
+-->
 
 | Concept     | Closed values or states | Meaning     | Availability by variant/orientation/state | Default     | Owner              | Stability                  | Invalid-value behavior          |
 | ----------- | ----------------------- | ----------- | ----------------------------------------- | ----------- | ------------------ | -------------------------- | ------------------------------- |
@@ -95,12 +103,44 @@ The component implements design requirements without copying their rationale.
 An `unsettled` representation remains a human decision; principles do not let an
 agent invent the answer.
 
+### Theming anatomy
+
+<!--
+Optional during migration. When present, this block must map every exact English
+anatomy name from <Name>.doc.mjs to one disposition. It is maintainer metadata:
+do not copy it into ComponentDoc, generated docsite data, CLI/MCP output, or
+consumer prose. Target names omit the `astryx-` prefix. Put only non-obvious
+rationale or exceptions in prose below the block. `none` is factual: its reason
+must start with `intentional:`, `reachability-gap:`, or `unsettled:` so absence of
+current reachability never silently decides future themeability.
+-->
+
+<!-- anatomy-theming:v1 -->
+
+```json
+{
+  "<root part>": {"target": "<target>"},
+  "<inherited part>": {"inherits": "<parent-or-root-target>"},
+  "<delegated part>": {
+    "delegatesTo": {"owner": "component:<Owner>", "target": "<target>"}
+  },
+  "<currently unreachable part>": {
+    "none": {
+      "reason": "<intentional | reachability-gap | unsettled>: <required factual reason>"
+    }
+  }
+}
+```
+
 ## Family and system relationships
 
-Frontmatter lists only `current` family, design, architecture, and system
-relationships. Candidate records list proposed members on the candidate itself;
-do not edit an existing component contract merely to backlink to a draft.
+Frontmatter lists structural `modules` links plus only `current` family, design,
+architecture, and system relationships. A module backlink may name an active
+draft because it records ownership rather than adopting draft behavior. Candidate
+family or design records list proposed members on the candidate itself; do not
+edit an existing component contract merely to backlink to those drafts.
 
+- `module:<Name>/<PublicName>` owns `<independent public module contract>`; this component owns aggregate module protocol, ordering, and composition.
 - `family:<family-name>` owns `<shared concept>`; this component `<adopts or deliberately differs>`.
 
 ## Verification map
@@ -111,6 +151,8 @@ do not edit an existing component contract merely to backlink to a draft.
 
 ## Decision log
 
+<!-- Record a durable boundary or requirement, not a review transcript. Keep a rejected alternative only when it is consequential and likely to recur. -->
+
 ### DEC-1 — `<component-local decision>`
 
 **Reference:** `component:<Name>/DEC-1`
@@ -118,7 +160,7 @@ do not edit an existing component contract merely to backlink to a draft.
 
 `<Reason and user impact.>`
 
-Rejected: `<alternative — why>`.
+Rejected: `<include only when the alternative is consequential and likely to recur; otherwise delete this line>`.
 
 ## Open questions
 

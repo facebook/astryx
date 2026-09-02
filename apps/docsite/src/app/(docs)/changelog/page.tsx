@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Changelog route for published Astryx packages.
+ * @input Generated package changelogs, component names, and URL selection state
+ * @output The canonical What's New page with package-filtered release notes
+ * @position Public docsite page at /changelog
+ */
+
 import {Suspense} from 'react';
 import type {Metadata} from 'next';
 import {
@@ -9,9 +16,10 @@ import {
 import {components} from '../../../generated/componentRegistry';
 import {packages} from '../../../generated/packageRegistry';
 import {pageMetadata} from '../../../lib/pageMetadata';
+import {CHANGELOG_PAGE_TITLE} from '../../../lib/pageTitles';
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Changelog',
+  title: CHANGELOG_PAGE_TITLE,
   description:
     'Release notes and version history for Astryx packages and components.',
   path: '/changelog',

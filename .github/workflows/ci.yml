@@ -48,8 +48,12 @@ jobs:
             printf 'docsite_only=false\nspec_only=false\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          CLASSIFIER="$RUNNER_TEMP/change-scope.cjs"
-          if git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs" > "$CLASSIFIER" 2>/dev/null; then
+          CLASSIFIER_DIR="$RUNNER_TEMP/change-scope"
+          mkdir -p "$CLASSIFIER_DIR"
+          CLASSIFIER="$CLASSIFIER_DIR/change-scope.cjs"
+          MATCHER="$CLASSIFIER_DIR/knowledge-paths.cjs"
+          if git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs" > "$CLASSIFIER" 2>/dev/null \
+            && git show "origin/${{ github.base_ref }}:.github/scripts/knowledge-paths.cjs" > "$MATCHER" 2>/dev/null; then
             git diff --name-status "$MERGE_BASE"...HEAD \
               | node "$CLASSIFIER" --github-output
           else
@@ -77,12 +81,13 @@ jobs:
 
       - uses: actions/checkout@v7
 
+      # Spec validation imports the canonical CLI discovery path, so the
+      # lightweight docs path needs workspace dependencies too.
+      - uses: ./.github/actions/setup
+
       - name: Validate spec records
         if: needs.check-scope.outputs.spec_only == 'true'
         run: node scripts/check-knowledge.mjs
-
-      - uses: ./.github/actions/setup
-        if: needs.check-scope.outputs.spec_only != 'true'
 
       # docsite `generate` runs `astryx theme build`, which imports the compiled
       # @astryxdesign/core/theme entry (dist/theme/index.js). Build core first so that
@@ -361,9 +366,11 @@ jobs:
           {
             "prNumber": "${{ steps.urls.outputs.pr_number }}",
             "shortHash": "${{ steps.urls.outputs.short_hash }}",
-            "storybookUrl": "${{ steps.urls.outputs.storybook_url }}",
-            "sandboxUrl": "${{ steps.urls.outputs.sandbox_url }}",
+            "headSha": "${{ github.event.pull_request.head.sha }}",
+            "headRepository": "${{ github.event.pull_request.head.repo.full_name }}",
+            "baseRepository": "${{ github.event.pull_request.base.repo.full_name }}",
             "runId": "${{ github.run_id }}",
+            "runAttempt": "${{ github.run_attempt }}",
             "runUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           }
           EOF
@@ -619,14 +626,15 @@ jobs:
       - name: Verify guest fixture contrast
         run: pnpm -F @astryxdesign/vibe-tests fixtures:contrast
 
-  # Stable-package visual regression. Core components get every story in
-  # every shipped theme that styles them; a changed shipped theme gets its
-  # relevant matrix. Packages marked `astryx.canaryOnly` (Lab, charts,
+  # Stable-package visual regression. Core components get one representative
+  # story in every shipped theme that styles them, plus explicit
+  # `visual-baseline` stories in the default theme; a changed shipped theme gets
+  # its relevant matrix. Packages marked `astryx.canaryOnly` (Lab, charts,
   # richtext, vega) do not compare pixels and do not own a baseline.
   #
-  # Deeper than the daily gate where it looks: the release gate shoots ONE
-  # representative story per component, this shoots EVERY story of the touched
-  # component in EVERY theme that styles it.
+  # Deeper than the daily gate only where the component declares it: audit and
+  # interaction fixtures stay available to their dedicated checks without
+  # multiplying the pixel baseline.
   #
   # SKIPS ITSELF WHEN A PR IS TOO BROAD (--max-shots). A token or shared-hook
   # change puts hundreds of diffs in front of a reviewer who cannot judge them
@@ -762,8 +770,10 @@ jobs:
   # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that
   # covers untouched components runs in rtl-weekly.yml.
   #
-  # Two layers: (A) auto-discovery — D1 icon-mirror + D5 positional-mirror, no
-  # curated selectors; (B) curated D2/D3/D4 from targets.json.
+  # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
+  # contextual directional decorations. Curated D2/D3/D4 adds behavior that
+  # needs selectors. The applicability rollup treats unexplained all-N/A as a
+  # coverage gap for both new and existing components.
   #
   # SOFT / NON-BLOCKING (continue-on-error): findings surface a scorecard in the
   # job summary but don't block the merge, while the suite is observed for
@@ -835,9 +845,9 @@ jobs:
                 const a = r.autoDiscovery;
                 const known = new Set(r.knownNotRtl || []);
                 const out = [];
-                out.push("### Auto-discovery (D1 icon-mirror, all core stories)");
+                out.push("### Auto-discovery (D1 icon-mirror, one representative story per scoped component)");
                 out.push("");
-                out.push(`**${a.pass} pass · ${a.fail} not-RTL · ${a.na} N-A** (of ${a.total} core components). Surprises (not pre-labelled): **${a.surprises.length}**${a.surprises.length ? " — " + a.surprises.join(", ") : ""}.`);
+                out.push(`**${a.pass} pass · ${a.fail} not-RTL · ${a.na} N-A** (of ${a.total} scoped components). Surprises (not pre-labelled): **${a.surprises.length}**${a.surprises.length ? ": " + a.surprises.join(", ") : ""}.`);
                 out.push("");
                 const fails = a.results.filter(x => x.verdict === "fail" || x.verdict === "ERROR");
                 if (fails.length) {
@@ -856,11 +866,11 @@ jobs:
                 out.push("");
                 const pm = r.positionalMirror;
                 if (pm) {
-                  out.push("### Positional-mirror (D5, all core stories)");
+                  out.push("### Positional-mirror (D5, all scoped stories)");
                   out.push("");
                   out.push("Catches a logical anchor (insetInlineStart/End) paired with an UNFLIPPED physical transform (translate/translateX) → element lands on the wrong side in RTL. Lint can\u2019t see this (each prop is individually fine). Tolerance " + pm.tolerancePx + "px, degenerate-parent guard (<8px) applied.");
                   out.push("");
-                  out.push(`**${pm.pass} pass · ${pm.fail} FAIL · ${pm.na} N-A** (of ${pm.total} core stories scanned).`);
+                  out.push(`**${pm.pass} pass · ${pm.fail} FAIL · ${pm.na} N-A** (of ${pm.total} scoped stories scanned).`);
                   out.push("");
                   const pmFails = pm.results.filter(x => x.verdict === "fail" || x.verdict === "ERROR");
                   if (pmFails.length) {
@@ -875,6 +885,36 @@ jobs:
                     out.push("");
                   } else {
                     out.push("_No positional-mirror FAILs._");
+                    out.push("");
+                  }
+                }
+                const decorations = r.directionalDecorations;
+                if (decorations) {
+                  out.push("### Contextual directional decorations (D6, all stories)");
+                  out.push("");
+                  out.push(`**${decorations.pass} pass · ${decorations.fail} FAIL · ${decorations.na} N-A** (of ${decorations.total} stories scanned).`);
+                  out.push("");
+                  const decorationFails = decorations.results.filter(x => x.verdict === "fail" || x.verdict === "ERROR");
+                  if (decorationFails.length) {
+                    out.push("| Story | D6 | Detail |");
+                    out.push("|-------|----|--------|");
+                    for (const c of decorationFails) out.push(`| ${c.storyId} | ${c.verdict} | ${(c.notes||[]).join("; ")} |`);
+                  } else {
+                    out.push("_No directional-decoration FAILs._");
+                  }
+                  out.push("");
+                }
+                const coverage = r.coverage;
+                if (coverage) {
+                  out.push("### Applicability coverage");
+                  out.push("");
+                  out.push(`**${coverage.measured} measured · ${coverage.verifiedNa} verified N-A · ${coverage.gaps} coverage gap · ${coverage.staleVerifiedNa} stale verified N-A.**`);
+                  out.push("");
+                  const gaps = coverage.results.filter(x => x.status === "coverage-gap" || x.status === "stale-verified-na");
+                  if (gaps.length) {
+                    out.push("| Component | Status | Detail |");
+                    out.push("|-----------|--------|--------|");
+                    for (const c of gaps) out.push(`| ${c.component} | ${c.status} | ${c.note || c.reason || "unexplained all-N/A result"} |`);
                     out.push("");
                   }
                 }

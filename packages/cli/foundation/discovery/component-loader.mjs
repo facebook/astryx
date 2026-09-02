@@ -51,7 +51,7 @@ export async function loadComponentDoc(
   /** @type {any} */
   const translation = mod[translationKey];
   if (translation.props || translation.components?.some((/** @type {any} */ c) => c.props)) {
-    return translation;
+    return overlayComponentDoc(docs, translation);
   }
   return mergeTranslation(docs, translation);
 }
@@ -194,16 +194,27 @@ function overlayComponentDoc(docs, translation) {
     });
   };
 
-  /** Preserve the new accessibility field without changing established translated output.
+  /** Preserve canonical structured guidance added after legacy full-doc translations,
+   * without changing established translated prose behavior.
    * @param {any} baseUsage
    * @param {any} translatedUsage
    */
   const mergeUsage = (baseUsage, translatedUsage) => {
     if (!translatedUsage) return baseUsage;
-    if (!baseUsage?.accessibility || translatedUsage.accessibility !== undefined) {
-      return translatedUsage;
-    }
-    return {...translatedUsage, accessibility: baseUsage.accessibility};
+    return {
+      ...translatedUsage,
+      ...(translatedUsage.accessibility === undefined &&
+      baseUsage?.accessibility !== undefined
+        ? {accessibility: baseUsage.accessibility}
+        : null),
+      ...(translatedUsage.accessibilityThemeCoverage === undefined &&
+      baseUsage?.accessibilityThemeCoverage !== undefined
+        ? {accessibilityThemeCoverage: baseUsage.accessibilityThemeCoverage}
+        : null),
+      ...(translatedUsage.anatomy === undefined && baseUsage?.anatomy !== undefined
+        ? {anatomy: baseUsage.anatomy}
+        : null),
+    };
   };
 
   const merged = {...docs, ...translation, usage: mergeUsage(docs.usage, translation.usage)};

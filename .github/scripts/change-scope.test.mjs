@@ -7,13 +7,18 @@ const require = createRequire(import.meta.url);
 const {classifyChanges, parseNameStatus} = require('./change-scope.cjs');
 
 describe('spec-only change scope', () => {
-  it('accepts system, family, component, and plan records', () => {
+  it('accepts system, family, design, theme, component, and plan records', () => {
     const result = classifyChanges([
       {filename: 'docs/specs/AST-001-overlay-policy/spec.md'},
       {filename: 'docs/specs/AST-001-overlay-policy/plan.md'},
       {filename: 'docs/families/input-fields.md'},
       {filename: 'docs/design/selection-inputs.md'},
+      {filename: 'packages/themes/neutral/neutral.spec.md'},
       {filename: 'packages/core/src/Selector/Selector.spec.md'},
+      {
+        filename:
+          'packages/core/src/Table/plugins/rowStatus/useTableRowStatus.spec.md',
+      },
       {filename: 'packages/lab/src/FutureInput/FutureInput.spec.md'},
     ]);
     expect(result.specOnly).toBe(true);
@@ -36,16 +41,92 @@ describe('spec-only change scope', () => {
     expect(result.specOnly).toBe(false);
   });
 
+  it('rejects Changesets attached only to spec records', () => {
+    const result = classifyChanges([
+      {filename: 'docs/families/input-fields.md'},
+      {filename: '.changeset/input-fields-docs.md'},
+    ]);
+    expect(result.specOnly).toBe(false);
+    expect(result.specChangesetConflict).toBe(true);
+  });
+
+  it('does not let an unrelated file hide a spec-only Changeset', () => {
+    const result = classifyChanges([
+      {filename: 'docs/families/input-fields.md'},
+      {filename: '.changeset/input-fields-docs.md'},
+      {filename: 'docs/README.md'},
+    ]);
+    expect(result.specChangesetConflict).toBe(true);
+  });
+
+  it.each([
+    'packages/core/src/Selector/Selector.test.tsx',
+    'packages/core/src/Selector/Selector.audit.json',
+    'packages/core/test/selector-fixture.ts',
+    'packages/core/src/Selector/__fixtures__/options.ts',
+    'packages/core/src/__tests__/TestIcon.tsx',
+  ])(
+    'does not let non-release package file %s hide a spec-only Changeset',
+    filename => {
+      const result = classifyChanges([
+        {filename: 'docs/families/input-fields.md'},
+        {filename: '.changeset/input-fields-docs.md'},
+        {filename},
+      ]);
+      expect(result.specChangesetConflict).toBe(true);
+    },
+  );
+
+  it('allows a Changeset when a package release surface also changes', () => {
+    const result = classifyChanges([
+      {filename: 'docs/families/input-fields.md'},
+      {filename: 'packages/core/src/Selector/Selector.tsx'},
+      {filename: '.changeset/selector-behavior.md'},
+    ]);
+    expect(result.specChangesetConflict).toBe(false);
+  });
+
   it.each([
     'packages/core/src/Selector/Selector.tsx',
     'packages/core/src/Selector/Selector.audit.json',
+    'packages/core/src/Table/__fixtures__/fake.spec.md',
+    'packages/core/src/Table/generated/fake.spec.md',
+    'packages/core/src/Table/plugins/fake.generated.spec.md',
     'docs/architecture/layers.md',
     'docs/templates/knowledge/component-spec.md',
+    'docs/templates/knowledge/theme-spec.md',
     'docs/schemas/knowledge/v2.json',
+    'docs/themes/neutral.md',
+    'packages/themes/neutral/Theme.spec.md',
+    'docs/themes/README.md',
+    'docs/README.md',
     'docs/specs/README.md',
     '.github/workflows/ci.yml',
   ])('rejects %s', filename => {
     expect(classifyChanges([{filename}]).specOnly).toBe(false);
+  });
+
+  it.each([
+    'docs/themes/neutral.md',
+    'packages/themes/neutral/Theme.spec.md',
+    'packages/themes/neutral/subdir/neutral.spec.md',
+  ])('treats misplaced theme candidate %s as unsafe knowledge', filename => {
+    const result = classifyChanges([{filename}]);
+    expect(result.touchesKnowledgeRecords).toBe(true);
+    expect(result.specOnly).toBe(false);
+  });
+
+  it.each([
+    'packages/core/src/__tests__/TopLevel.spec.md',
+    'packages/core/src/Selector/__fixtures__/fixture.spec.md',
+    'packages/core/src/Selector/.hidden/Hidden.spec.md',
+    'packages/core/src/Selector/.Hidden.spec.md',
+    'packages/core/src/Selector/generated/fake.spec.md',
+    'packages/core/src/Selector/plugins/fake.generated.spec.md',
+  ])('ignores non-record component spec path %s consistently', filename => {
+    const result = classifyChanges([{filename}]);
+    expect(result.specOnly).toBe(false);
+    expect(result.touchesKnowledgeRecords).toBe(false);
   });
 
   it('fails closed for an empty change set', () => {

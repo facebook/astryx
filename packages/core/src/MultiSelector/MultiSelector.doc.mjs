@@ -1,5 +1,116 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Field',
+    required: false,
+    description:
+      'Standalone Field shell that provides the label and optional supporting content; omitted inside InputGroup.',
+  },
+  {
+    name: 'Trigger',
+    required: true,
+    description:
+      'Painted control that displays the current selection or placeholder and opens the selection surface when editable.',
+  },
+  {
+    name: 'Icon-rendered start icon',
+    required: false,
+    description:
+      'Optional leading semantic icon or icon component rendered through Icon.',
+  },
+  {
+    name: 'Caller-rendered start content',
+    required: false,
+    description:
+      'Optional arbitrary React content rendered directly at the start of the trigger.',
+  },
+  {
+    name: 'Trigger clear button',
+    required: false,
+    description:
+      'Shared clear action that removes every selected value when hasClear is enabled.',
+  },
+  {
+    name: 'Status icon',
+    required: false,
+    description:
+      'Status glyph shown in place of the disclosure indicator for attached or tooltip status.',
+  },
+  {
+    name: 'Indicator icon',
+    required: false,
+    description:
+      'Trailing chevron shown when status presentation does not replace it; reflects collapsed or expanded state.',
+  },
+  {
+    name: 'Search row',
+    required: false,
+    description:
+      'Panel header with a borderless search input and optional clear action.',
+  },
+  {
+    name: 'Search icon',
+    required: false,
+    description:
+      'Leading magnifier rendered through Icon inside the search row.',
+  },
+  {
+    name: 'Search clear button',
+    required: false,
+    description:
+      'Shared clear action shown in the search row while a query is present.',
+  },
+  {
+    name: 'Option row',
+    required: false,
+    description:
+      'Selectable row for an option or the optional select-all choice.',
+  },
+  {
+    name: 'Option checkbox indicator',
+    required: false,
+    description:
+      'CheckboxInput indicator that presents each row’s selected, unselected, or indeterminate state.',
+  },
+  {
+    name: 'Option divider',
+    required: false,
+    description:
+      'Divider supplied in the public options data to separate adjacent option groups.',
+  },
+  {
+    name: 'Section heading',
+    required: false,
+    description: 'Visible heading for a labeled group of option rows.',
+  },
+  {
+    name: 'Empty state',
+    required: false,
+    description:
+      'Message shown when the shared panel content has no options or no search matches.',
+  },
+  {
+    name: 'Pointer popup',
+    required: false,
+    description:
+      'Anchored painted surface that hosts the shared panel content for popover presentation.',
+  },
+  {
+    name: 'Touch sheet heading',
+    required: false,
+    description:
+      'Heading above the shared panel content in bottom-sheet presentation.',
+  },
+  {
+    name: 'Touch sheet',
+    required: false,
+    description:
+      'BottomSheet surface that hosts the same panel content for bottom-sheet presentation.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -23,7 +134,7 @@ export const docs = {
       {
         className: 'astryx-multi-selector',
         visualProps: ['variant', 'size', 'status'],
-        states: ['disabled'],
+        states: ['disabled', 'readonly'],
       },
       {
         className: 'astryx-multi-selector-clear-icon',
@@ -162,6 +273,13 @@ export const docs = {
           description: 'Disables the selector.',
         },
         {
+          name: 'isReadOnly',
+          type: 'boolean',
+          description:
+            'Makes the selector read-only: the selected values stay visible, focusable, and included in form submission, and retain their combobox identity with aria-readonly. The selection surface, clear action, and disclosure indicator are removed. Unlike isDisabled, the control is not dimmed. isDisabled takes precedence when both are set.',
+          default: 'false',
+        },
+        {
           name: 'htmlName',
           type: 'string',
           description:
@@ -264,6 +382,7 @@ export const docs = {
     },
   ],
   usage: {
+    anatomy,
     description:
       'A checkbox dropdown for selecting multiple values from a list. Selected items can display as a count, labels, or badges. Use it for filtering or when presenting a finite set of options where multiple choices are needed.',
     bestPractices: [
@@ -347,6 +466,8 @@ export const docsZh = {
         emptyText: '没有可显示的选项时，下拉面板中显示的内容。',
         emptySearchText: '搜索查询未匹配到任何选项时，下拉面板中显示的内容。',
         isDisabled: '禁用选择器。',
+        isReadOnly:
+          '将选择器设为只读：保留当前值、焦点顺序和表单提交，但移除选择面板、清除操作和展开指示器。与 isDisabled 不同，只读控件不会变暗；两者同时设置时 isDisabled 优先。',
         htmlName:
           '用于表单提交的 HTML name 属性。为每个已选值渲染一个隐藏输入，类似原生多选。',
         disabledMessage:
@@ -488,6 +609,8 @@ export const docsDense = {
         emptyText: 'panel content when there are no options',
         emptySearchText: 'panel content when the query matches nothing',
         isDisabled: 'disables selector',
+        isReadOnly:
+          'read-only: preserves values, focus + form submission; removes menu, clear + disclosure',
         htmlName: 'HTML name attr; one hidden input per selected value.',
         disabledMessage:
           'why disabled; w/ isDisabled shows tooltip on hover/focus, trigger stays focusable via aria-disabled; use instead of Tooltip wrapper',

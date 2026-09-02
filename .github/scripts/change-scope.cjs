@@ -1,34 +1,68 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 'use strict';
-/* global module, process, require */
+/* global console, module, process, require */
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const {isComponentSpecRecordPath} = require('./knowledge-paths.cjs');
 
 /**
  * Classifies changed paths without reading PR-controlled content.
  *
  * A spec-only PR may change only spec records. Templates, schemas, indexes,
- * architecture, audits, workflows, and code deliberately do not qualify.
+ * architecture, guidance, audits, workflows, and code deliberately do not
+ * qualify.
  */
 
 const SPEC_RECORD_PATTERNS = [
   /^docs\/specs\/[^/]+\/(?:spec|plan)\.md$/,
   /^docs\/families\/(?!README\.md$)[^/]+\.md$/,
   /^docs\/design\/(?!README\.md$)(?!assets\/)[^/]+\.md$/,
-  /^packages\/(?:core|lab)\/src\/[^/]+\/[^/]+\.spec\.md$/,
+  /^packages\/themes\/([^/]+)\/\1\.spec\.md$/,
 ];
+
+const CHANGESET_PATTERN = /^\.changeset\/(?!README\.md$)[^/]+\.md$/;
+
+const THEME_DOC_CANDIDATE = /^docs\/themes\/(?!README\.md$)[^/]+\.md$/;
+const THEME_PACKAGE_CANDIDATE =
+  /^packages\/themes\/[^/]+\/(?:.*\/)?[^/]+\.spec\.md$/;
 
 const KNOWLEDGE_RECORD_PATTERNS = [
   ...SPEC_RECORD_PATTERNS,
+  THEME_DOC_CANDIDATE,
+  THEME_PACKAGE_CANDIDATE,
   /^docs\/architecture\/(?!README\.md$)[^/]+\.md$/,
   /^docs\/design\/assets\//,
 ];
 
 function isSpecRecordPath(filePath) {
-  return SPEC_RECORD_PATTERNS.some(pattern => pattern.test(filePath));
+  return (
+    isComponentSpecRecordPath(filePath) ||
+    SPEC_RECORD_PATTERNS.some(pattern => pattern.test(filePath))
+  );
+}
+
+function isPackageReleasePath(filePath) {
+  if (!filePath.startsWith('packages/') || isSpecRecordPath(filePath)) {
+    return false;
+  }
+  if (
+    /(?:^|\/)(?:test|tests|test-utils|__tests__|__fixtures__|__snapshots__)\//.test(
+      filePath,
+    ) ||
+    /\.test\.[^/]+$/.test(filePath) ||
+    /\.audit\.json$/.test(filePath)
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function isKnowledgeRecordPath(filePath) {
-  return KNOWLEDGE_RECORD_PATTERNS.some(pattern => pattern.test(filePath));
+  return (
+    isSpecRecordPath(filePath) ||
+    KNOWLEDGE_RECORD_PATTERNS.some(pattern => pattern.test(filePath))
+  );
 }
 
 function normalizeChange(change) {
@@ -51,6 +85,7 @@ function classifyChanges(changes, {expectedCount} = {}) {
       specOnly: false,
       touchesKnowledgeRecords: !complete,
       touchesDesignAssets: false,
+      specChangesetConflict: false,
       docsiteOnly: false,
       complete,
       reason: complete ? 'no changed files' : 'changed-file list is incomplete',
@@ -68,6 +103,13 @@ function classifyChanges(changes, {expectedCount} = {}) {
   const touchesDesignAssets = allPaths.some(filePath =>
     filePath.startsWith('docs/design/assets/'),
   );
+  const hasSpecRecord = allPaths.some(isSpecRecordPath);
+  const hasChangeset = allPaths.some(filePath =>
+    CHANGESET_PATTERN.test(filePath),
+  );
+  const hasPackageReleaseChange = allPaths.some(isPackageReleasePath);
+  const specChangesetConflict =
+    complete && hasSpecRecord && hasChangeset && !hasPackageReleaseChange;
   const specOnly = complete && allPaths.every(isSpecRecordPath);
   const docsiteOnly = allPaths.every(filePath =>
     filePath.startsWith('apps/docsite/'),
@@ -76,6 +118,7 @@ function classifyChanges(changes, {expectedCount} = {}) {
     specOnly,
     touchesKnowledgeRecords,
     touchesDesignAssets,
+    specChangesetConflict,
     docsiteOnly,
     complete,
     reason: !complete
@@ -109,7 +152,12 @@ if (require.main === module) {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('node:fs');
   const result = classifyChanges(parseNameStatus(fs.readFileSync(0, 'utf8')));
-  if (process.argv.includes('--github-output')) {
+  if (result.specChangesetConflict) {
+    console.error(
+      'Pure spec-record changes must not add a Changeset; they do not release packages.',
+    );
+    process.exitCode = 1;
+  } else if (process.argv.includes('--github-output')) {
     const outputPath = process.env.GITHUB_OUTPUT;
     if (!outputPath)
       throw new Error('GITHUB_OUTPUT is required with --github-output.');

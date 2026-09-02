@@ -132,7 +132,13 @@ export const doc = {
           name: 'usage.accessibility',
           type: 'ComponentAccessibilityRequirement[]',
           description:
-            'Component-specific accessibility requirements ({name, description}) rendered as a dedicated Accessibility section. Keep audit procedures in the wiki rubric.',
+            'Component-specific requirements rendered in the shared Accessibility tab. Write at about a grade-7 reading level with short sentences, common words, and active voice. For color contrast, put the ratio in `requirement`; name the exact foreground, background, state, and any overlay in `description`; explain exceptions in plain language; and give a human or agent enough detail to reproduce the check. Keep repository audit procedures in the wiki rubric.',
+        },
+        {
+          name: 'usage.accessibilityThemeCoverage',
+          type: 'ComponentAccessibilityThemeCoverage[]',
+          description:
+            'Verified per-theme accessibility measurements rendered in the shared Accessibility tab. Record light and dark mode separately, include rendered color pairs, and mark failed measurements. Put visuals excluded from the audit in `notMeasured` with a short reason; do not add them as table measurements. Each theme declares `applicability` for measured values, informed by the component contract and never inferred from the ratio: `Conditional` is required only in some contexts, `Supplemental` adds another meaningful cue, and `Decorative` has no required meaning. These values do not change row status. Provide a complete breakdown when one cell summarizes multiple combinations, and protect derived values with an automated audit.',
         },
         {
           name: 'usage.anatomy',

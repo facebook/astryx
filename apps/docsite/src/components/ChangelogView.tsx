@@ -18,6 +18,7 @@ import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {Carousel} from '@astryxdesign/core/Carousel';
 import {typeScaleVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {layout} from '../layout.stylex';
+import {CHANGELOG_PAGE_TITLE} from '../lib/pageTitles';
 import {
   linkifyPRs,
   linkifyContributors,
@@ -128,7 +129,7 @@ export function ChangelogView({
       <VStack gap={8}>
         <VStack gap={4}>
           <Heading level={1} type="display-1">
-            What&apos;s New
+            {CHANGELOG_PAGE_TITLE}
           </Heading>
           <Text type="large" weight="normal" color="secondary">
             Release notes and changelog for all packages.

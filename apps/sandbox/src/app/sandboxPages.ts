@@ -208,6 +208,12 @@ export const categories: SandboxCategory[] = [
         description:
           'Generate and explore color palettes from an accent color or image',
       },
+      {
+        name: 'Palette Generator Lab',
+        href: '/pages/palette-generator/',
+        description:
+          'Compare experimental OKLCH and HCT-like ramps with profiles, anchors, custom stops, and separate dark-mode generation',
+      },
     ],
   },
   {

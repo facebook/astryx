@@ -5,8 +5,12 @@ import {describe, expect, it} from 'vitest';
 
 const require = createRequire(import.meta.url);
 const {
+  canonicalRunUrl,
+  newestGateRun,
+  parseCanonicalRunId,
   parseOwnerCommand,
   parseOwnerFile,
+  parseReadyAttestations,
   requiredApprovalGroups,
   resolveOwnerDecision,
 } = require('./spec-owner-decision.cjs');
@@ -83,7 +87,16 @@ describe('spec owner decision', () => {
           headContent: 'kind: design\nauthority: current',
         },
       ]),
-    ).toEqual({spec: false, design: true});
+    ).toEqual({spec: false, design: true, theme: false});
+    expect(
+      requiredApprovalGroups([
+        {
+          path: 'packages/themes/neutral/neutral.spec.md',
+          baseContent: null,
+          headContent: 'kind: theme\nauthority: current',
+        },
+      ]),
+    ).toEqual({spec: false, design: false, theme: true});
     expect(
       requiredApprovalGroups([
         {
@@ -92,7 +105,7 @@ describe('spec owner decision', () => {
           headContent: 'kind: component\nauthority: current',
         },
       ]),
-    ).toEqual({spec: true, design: false});
+    ).toEqual({spec: true, design: false, theme: false});
     expect(
       requiredApprovalGroups(
         [
@@ -109,7 +122,7 @@ describe('spec owner decision', () => {
         ],
         {touchesDesignAssets: true},
       ),
-    ).toEqual({spec: true, design: true});
+    ).toEqual({spec: true, design: true, theme: false});
     expect(
       requiredApprovalGroups([
         {
@@ -118,7 +131,7 @@ describe('spec owner decision', () => {
           headContent: 'kind: architecture\nauthority: current',
         },
       ]),
-    ).toEqual({spec: true, design: false});
+    ).toEqual({spec: true, design: false, theme: false});
     expect(
       requiredApprovalGroups([
         {
@@ -128,18 +141,68 @@ describe('spec owner decision', () => {
           headContent: 'kind: design\nauthority: current',
         },
       ]),
-    ).toEqual({spec: true, design: true});
+    ).toEqual({spec: true, design: true, theme: false});
   });
 
   it('owner-gates design assets even without a text record', () => {
     expect(requiredApprovalGroups([], {touchesDesignAssets: true})).toEqual({
       spec: false,
       design: true,
+      theme: false,
     });
     expect(requiredApprovalGroups([], {complete: false})).toEqual({
       spec: true,
       design: true,
+      theme: true,
     });
+  });
+
+  it('accepts an exact-head repo-owner review for the theme group', () => {
+    const groups = requiredApprovalGroups([
+      {
+        path: 'packages/themes/neutral/neutral.spec.md',
+        baseContent: null,
+        headContent: 'kind: theme\nauthority: current',
+      },
+    ]);
+    const decision = resolveOwnerDecision({
+      owners: ['cixzhang', 'rubyycheung', 'imdreamrunner'],
+      headSha: head,
+      comments: [],
+      reviews: [
+        {
+          user: {login: 'rubyycheung'},
+          state: 'APPROVED',
+          commit_id: head,
+          submitted_at: '2026-08-30T10:00:00Z',
+        },
+      ],
+    });
+
+    expect(groups).toEqual({spec: false, design: false, theme: true});
+    expect(decision).toMatchObject({
+      approved: true,
+      owner: 'rubyycheung',
+      source: 'review',
+    });
+  });
+
+  it('does not make a self-declared record owner an approver', () => {
+    const decision = resolveOwnerDecision({
+      owners: ['cixzhang', 'rubyycheung', 'imdreamrunner'],
+      headSha: head,
+      comments: [],
+      reviews: [
+        {
+          user: {login: 'self-declared-owner'},
+          state: 'APPROVED',
+          commit_id: head,
+          submitted_at: '2026-08-30T10:00:00Z',
+        },
+      ],
+    });
+
+    expect(decision.approved).toBe(false);
   });
 
   it('accepts either configured owner', () => {
@@ -263,5 +326,168 @@ describe('spec owner decision', () => {
       ],
     });
     expect(decision.approved).toBe(false);
+  });
+
+  it('accepts only trusted workflow ready attestations', () => {
+    const repository = 'facebook/astryx';
+    const trusted = {
+      context: 'spec-owner-ready/cixzhang',
+      state: 'success',
+      description: 'Owner ready at 2026-08-30T10:00:00.000Z.',
+      target_url: canonicalRunUrl(repository, '9007199254740993', '2'),
+      creator: {login: 'github-actions[bot]'},
+    };
+    const attestations = parseReadyAttestations(
+      [
+        trusted,
+        {...trusted, creator: {login: 'cixzhang'}},
+        {...trusted, target_url: 'https://example.com/forged'},
+        {...trusted, description: 'owner says ready'},
+      ],
+      {repository, headSha: head},
+    );
+
+    expect(attestations).toEqual([
+      {
+        approved: true,
+        at: '2026-08-30T10:00:00.000Z',
+        headSha: head,
+        owner: 'cixzhang',
+        source: 'ready',
+      },
+    ]);
+    expect(
+      resolveOwnerDecision({
+        owners: ['cixzhang'],
+        headSha: head,
+        reviews: [],
+        comments: [],
+        readyAttestations: attestations,
+      }),
+    ).toMatchObject({approved: true, owner: 'cixzhang', source: 'ready'});
+  });
+
+  it('invalidates a ready attestation on a new head', () => {
+    const decision = resolveOwnerDecision({
+      owners: ['cixzhang'],
+      headSha: '1111111111111111111111111111111111111111',
+      reviews: [],
+      comments: [],
+      readyAttestations: [
+        {
+          owner: 'cixzhang',
+          headSha: head,
+          at: '2026-08-30T10:00:00Z',
+        },
+      ],
+    });
+
+    expect(decision.approved).toBe(false);
+  });
+
+  it('lets a newer exact-head revoke override owner-ready', () => {
+    const decision = resolveOwnerDecision({
+      owners: ['cixzhang'],
+      headSha: head,
+      reviews: [],
+      readyAttestations: [
+        {
+          owner: 'cixzhang',
+          headSha: head,
+          at: '2026-08-30T10:00:00Z',
+        },
+      ],
+      comments: [
+        {
+          user: owner,
+          body: `/revoke-spec ${head}`,
+          created_at: '2026-08-30T10:01:00Z',
+        },
+      ],
+    });
+
+    expect(decision).toMatchObject({
+      approved: false,
+      owner: 'cixzhang',
+      source: 'command',
+    });
+  });
+
+  it('orders dismissal by updated_at instead of the original submission', () => {
+    const decision = resolveOwnerDecision({
+      owners: ['cixzhang'],
+      headSha: head,
+      comments: [],
+      readyAttestations: [
+        {
+          owner: 'cixzhang',
+          headSha: head,
+          at: '2026-08-30T10:01:00Z',
+        },
+      ],
+      reviews: [
+        {
+          id: 17,
+          user: owner,
+          state: 'DISMISSED',
+          commit_id: head,
+          submitted_at: '2026-08-30T09:00:00Z',
+          updated_at: '2026-08-30T10:02:00Z',
+        },
+      ],
+    });
+
+    expect(decision.approved).toBe(false);
+    expect(decision.source).toBe(null);
+  });
+
+  it('uses review_dismissed timeline time when it is newer', () => {
+    const decision = resolveOwnerDecision({
+      owners: ['cixzhang'],
+      headSha: head,
+      comments: [],
+      readyAttestations: [
+        {
+          owner: 'cixzhang',
+          headSha: head,
+          at: '2026-08-30T10:01:00Z',
+        },
+      ],
+      reviews: [
+        {
+          id: 17,
+          user: owner,
+          state: 'DISMISSED',
+          commit_id: head,
+          submitted_at: '2026-08-30T09:00:00Z',
+          updated_at: '2026-08-30T09:30:00Z',
+        },
+      ],
+      dismissalEvents: [
+        {
+          event: 'review_dismissed',
+          created_at: '2026-08-30T10:02:00Z',
+          dismissed_review: {review_id: 17},
+        },
+      ],
+    });
+
+    expect(decision.approved).toBe(false);
+  });
+
+  it('compares workflow run ids without losing integer precision', () => {
+    const repository = 'facebook/astryx';
+    const statuses = ['9007199254740992', '9007199254740993'].map(runId => ({
+      context: 'spec-owner-approval',
+      state: 'pending',
+      description: `Run ${runId}`,
+      target_url: canonicalRunUrl(repository, runId, '1'),
+      creator: {login: 'github-actions[bot]'},
+    }));
+
+    expect(parseCanonicalRunId(statuses[1].target_url, repository)).toBe(
+      9007199254740993n,
+    );
+    expect(newestGateRun(statuses, repository)?.runId).toBe(9007199254740993n);
   });
 });
