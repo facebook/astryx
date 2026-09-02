@@ -887,6 +887,10 @@
     "defaultMessage": "Done",
     "description": "Primary footer button in the PowerSearch touch management sheet that closes the sheet after filter management."
   },
+  "@astryx.powersearch.mobile.editFilterTitle": {
+    "defaultMessage": "Edit filter",
+    "description": "Primary confirmation button in the PowerSearch touch editor when updating an existing filter."
+  },
   "@astryx.powersearch.mobile.filterTitle": {
     "defaultMessage": "{field} {operator}",
     "description": "Title of a simple PowerSearch touch value sheet. {field} is the filter field label and {operator} is its only operator label; translators may reorder them."
@@ -894,10 +898,6 @@
   "@astryx.powersearch.mobile.selectedValue": {
     "defaultMessage": "{value}, selected",
     "description": "Accessible name for the currently selected single-choice value in PowerSearch's touch editor. {value} is the visible option label."
-  },
-  "@astryx.powersearch.mobile.save": {
-    "defaultMessage": "Save",
-    "description": "Primary footer button in the PowerSearch touch editor. It confirms the staged field, operator, and value, then returns to the filter-management sheet."
   },
   "@astryx.powersearch.mobile.back": {
     "defaultMessage": "Back",

@@ -339,8 +339,9 @@ export interface PowerSearchConfig {
   readonly name: string;
   readonly fields: ReadonlyArray<PowerSearchField>;
   /**
-   * Key of the field used for content/text search. Configurations using content
-   * search retain the typeahead and suggestion popover on coarse pointers.
+   * Key of the field used for content/text search. Supported string-valued
+   * configurations expose the existing PowerSearch suggestions from the
+   * management-sheet input on coarse pointers.
    */
   readonly contentSearchFieldKey?: string;
 }
