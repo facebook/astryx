@@ -1,13 +1,18 @@
 # Default reviewers for the Astryx repository
 # See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Matching is LAST-RULE-WINS, not cumulative: a file matched by a later, more
+# specific rule takes ONLY that rule's owners. So an owner of everything has to
+# appear on every line, not just on `*` — which is why @josephfarina is repeated
+# below rather than left to the default.
 
-* @cixzhang @imdreamrunner
+* @cixzhang @imdreamrunner @josephfarina
 
 /packages/cli/ @josephfarina
 
-/packages/richtext/ @potatowagon
+/packages/richtext/ @potatowagon @josephfarina
 
-/packages/core/src/Table/ @humbertovirtudes
+/packages/core/src/Table/ @humbertovirtudes @josephfarina
 
 # The core README is the front door for component/CLI discovery — often the
 # first (and only) doc a consumer or agent reads. Scope it to a small set of
