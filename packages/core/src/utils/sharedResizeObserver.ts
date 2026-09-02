@@ -22,11 +22,10 @@
 type ResizeCallback = (entry: ResizeObserverEntry) => void;
 
 let observer: ResizeObserver | null = null;
-// A SET per element. Two hooks observing the same node is ordinary — a
-// resizable region's container is also what `useOverflow`, `useTruncation` or a
-// `TabList` root watches — and a single-callback map silently dropped whichever
-// registered first, so one of them just stopped receiving resizes.
-const callbacks = new Map<Element, Set<ResizeCallback>>();
+// A callback may be registered more than once for one element. The inner map
+// keeps those registrations alive independently without dispatching duplicate
+// work for the same callback reference.
+const callbacks = new Map<Element, Map<ResizeCallback, number>>();
 
 /**
  * The shared observer, or null where the API does not exist (jsdom, an old
@@ -42,9 +41,8 @@ function getObserver(): ResizeObserver | null {
       for (const entry of entries) {
         const targetCallbacks = callbacks.get(entry.target);
         if (targetCallbacks) {
-          // Copied before iterating: a callback is allowed to unsubscribe, and
-          // mutating the live set mid-iteration would skip its neighbour.
-          for (const cb of [...targetCallbacks]) {
+          // A callback may unsubscribe while dispatch is in progress.
+          for (const cb of [...targetCallbacks.keys()]) {
             cb(entry);
           }
         }
@@ -82,9 +80,9 @@ export function observeResize(
 ): () => void {
   const existing = callbacks.get(element);
   if (existing) {
-    existing.add(callback);
+    existing.set(callback, (existing.get(callback) ?? 0) + 1);
   } else {
-    callbacks.set(element, new Set([callback]));
+    callbacks.set(element, new Map([[callback, 1]]));
   }
   getObserver()?.observe(element);
 
@@ -93,7 +91,12 @@ export function observeResize(
   const entry: Partial<ResizeObserverEntry> = {target: element};
   callback(entry as ResizeObserverEntry);
 
+  let isSubscribed = true;
   return () => {
+    if (!isSubscribed) {
+      return;
+    }
+    isSubscribed = false;
     unobserveResize(element, callback);
   };
 }
@@ -114,10 +117,16 @@ export function unobserveResize(
   callback?: ResizeCallback,
 ): void {
   const targetCallbacks = callbacks.get(element);
-  if (callback != null && targetCallbacks != null) {
+  if (callback != null) {
+    const registrationCount = targetCallbacks?.get(callback);
+    if (targetCallbacks == null || registrationCount == null) {
+      return;
+    }
+    if (registrationCount > 1) {
+      targetCallbacks.set(callback, registrationCount - 1);
+      return;
+    }
     targetCallbacks.delete(callback);
-    // Someone else is still listening: the element stays observed, or one
-    // hook's unmount would blind every other hook on it.
     if (targetCallbacks.size > 0) {
       return;
     }

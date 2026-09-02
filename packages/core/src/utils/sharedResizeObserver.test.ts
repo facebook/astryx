@@ -189,6 +189,36 @@ describe('sharedResizeObserver', () => {
     expect(mockUnobserve).not.toHaveBeenCalledWith(el);
   });
 
+  it('keeps duplicate callback registrations independently subscribed', async () => {
+    const {observeResize} = await import('./sharedResizeObserver');
+
+    const el = document.createElement('div');
+    const callback = vi.fn();
+    const unsubscribeFirst = observeResize(el, callback);
+    const unsubscribeSecond = observeResize(el, callback);
+    callback.mockClear();
+
+    unsubscribeFirst();
+    unsubscribeFirst();
+    capturedCallback(
+      [{target: el} as unknown as ResizeObserverEntry],
+      {} as ResizeObserver,
+    );
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(mockUnobserve).not.toHaveBeenCalledWith(el);
+
+    callback.mockClear();
+    unsubscribeSecond();
+    capturedCallback(
+      [{target: el} as unknown as ResizeObserverEntry],
+      {} as ResizeObserver,
+    );
+
+    expect(callback).not.toHaveBeenCalled();
+    expect(mockUnobserve).toHaveBeenCalledWith(el);
+  });
+
   it('releases the element once its last observer unsubscribes', async () => {
     const {observeResize} = await import('./sharedResizeObserver');
 
