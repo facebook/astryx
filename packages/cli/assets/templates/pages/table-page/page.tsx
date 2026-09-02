@@ -3,59 +3,141 @@
 'use client';
 
 /**
- * An invoice you can interrogate: the document's own facts up top, a sortable
- * and filterable table of line items, and totals that stay glued to the
- * columns above them.
+ * A searchable table: one flat list of uniform records, three ways to narrow
+ * it, and a summary underneath that follows whatever survives.
  *
- * The reader here does two things — find a line, and check what it cost. Sorting
- * by amount answers "what is driving this bill?" and the column filters answer
- * "show me only the design work", without either question needing a new screen.
- * `table-grouped` is the version for heterogeneous records and `table-inbox` the
- * version for triage; this is the one for a single uniform list.
+ * The fixture is an invoice, but nothing structural depends on that. Swap the
+ * rows for orders, runs, assets or tickets and the page is unchanged — what
+ * picks this template is the shape, not the subject: a single homogeneous
+ * list, searched and filtered in place, with figures below that recompute as
+ * the list narrows. `table-grouped` is the version for records that do not
+ * share a schema, `table-tree` for nested rows, `table-inbox` for triage.
  *
  * ## Extending this template
  *
- * **Plugins mean data mode, and data mode has no footer.** `BaseTable` renders
- * `children ? children : (header + body)`, so composing rows by hand — the only
- * way to reach `TableFooter` — bypasses the plugin pipeline entirely. Sorting
- * and column filters are render plugins, so they need `data` + `columns`, which
- * puts `TableFooter` permanently out of reach.
+ * ### Narrowing: search, scope, and column filters
  *
- * The obvious workaround is a second `<Table>` sharing the first one's
- * `colgroup`. Don't: it costs a hand-written `<colgroup>`, a `<col>` per
- * column, a border declaration on every cell that needs a rule, and an extra
- * table in the accessibility tree that has to be papered over with a labelled
- * group. The totals are arithmetic *about* the table, not rows *of* it, and
- * `TotalRow` below gets the same alignment out of a right-aligned stack — see
- * the note there.
+ * **Three surfaces, three different questions.** Decide which you need before
+ * you build them, because they are not interchangeable:
+ *
+ * - A **free-text box** answers "find the row I am thinking of". One field,
+ *   substring, no syntax. Cheap to learn, useless for anything comparative.
+ * - A **scope toggle** answers a single high-frequency cut that is worth a
+ *   permanent control — here, "which lines are time-based?". Two or three
+ *   segments is the ceiling; past that it is a filter wearing a toggle's
+ *   clothes, and belongs in the column popovers with everything else.
+ * - **Per-column filters** answer "show me only X", per field and typed.
+ *   Discoverable from the column they act on, and invisible until wanted.
+ *
+ * The failure mode is shipping all of them by reflex, so two controls do the
+ * same job. A `PowerSearch` query builder sitting above a set of column
+ * filters is the usual version: both reach `category = Design`, and the user
+ * has to guess which one you meant. Reach for `PowerSearch` when the useful
+ * queries genuinely span fields and operators — `amount > 5000 AND category =
+ * Design` — and drop the column filters when you do.
+ *
+ * **Typed controls come from the search config, not from the column.**
+ * `usePowerSearchConfig(SEARCH_FIELDS)` is still the source here even though
+ * no `PowerSearch` is rendered: `useTableFiltering` resolves each column's
+ * control from a config of that shape, and `toSearchFilters` turns the
+ * resulting state back into predicates. The `type` is what decides Category
+ * gets a checklist and Quantity gets a numeric comparison — an `enum` field
+ * that forgets its `enumValues` silently degrades to a text box.
+ *
+ * **`variant="popover"` unless the table owns the page.** `inline` puts a
+ * control row under every header, which roughly doubles the header's height;
+ * on a page that also carries a masthead and a summary that is most of a
+ * viewport spent on controls nobody has asked for yet. Switch to `inline` when
+ * filtering *is* the activity and the table is the only thing on screen.
+ *
+ * **Narrow once, into one array.** All three surfaces converge in a single
+ * `useMemo` that returns `visible`, and everything downstream — the body, the
+ * subtotal, the tax, the total, the banner — reads that one array. There is
+ * therefore no path where the figures describe a different set of rows than
+ * the table shows. Deriving a second filtered list somewhere else is exactly
+ * how a total starts disagreeing with the rows above it. The predicates are
+ * independent, so order them by selectivity if the list is ever long enough
+ * for it to matter; correctness does not depend on it.
+ *
+ * **One reset that clears all of them.** `clearEverything` resets the box, the
+ * toggle and the popovers together. A "clear filters" that only empties the
+ * popovers leaves the user staring at three rows and hunting for the stale
+ * search term that explains them.
+ *
+ * ### Sorting
+ *
+ * **Sort after filtering, not before.** `useTableSortableState` is handed
+ * `visible`, not `ROWS`. Sorting first does the work over rows about to be
+ * discarded, and — the part that actually bites — leaves a sorted-but-
+ * unfiltered array lying around for someone to render by mistake.
  *
  * **Sort keys default to the column key, so derived columns need comparators.**
- * `unitPrice` and `amount` are not fields on the row — the money lives in
- * `unitPriceCents` and `amountCents` — and the hook's fallback stringifies the
- * value it finds, which for a missing key means sorting a column of
- * `undefined`. Every numeric column here passes an explicit comparator, and
- * they subtract integers rather than comparing formatted strings, so `$1,240.00`
- * never sorts below `$980.00`.
+ * `unitPrice` and `amount` are display names with no matching field — the
+ * numbers live in `unitPriceCents` and `amountCents` — and the fallback
+ * stringifies whatever it finds, which for a missing key means sorting a
+ * column of `undefined`.
  *
- * **Three narrowing surfaces, one array.** The search box, the scope segments,
- * and the per-column popovers each narrow the same list in a single `useMemo`
- * that returns `visible`. Everything downstream — the body, the subtotal, the
- * tax, the total, the banner — reads that one array, so there is no path where
- * the figures describe a different set of rows than the table shows. Deriving a
- * second filtered list somewhere else is how a total starts disagreeing with
- * the lines above it.
+ * **Sort the value, never the label.** The fallback compares rendered strings,
+ * so `$1,240.00` sorts below `$980.00`, `Apr` sorts below `Jan`, and `10`
+ * sorts below `9`. Every numeric column here subtracts integers instead.
+ * The same rule covers dates (compare timestamps) and enums — `category`
+ * compares the *label* a reader sees rather than the raw key, so the order
+ * matches the column instead of matching the database.
  *
- * The search is a plain `TextInput` over `description`, not a PowerSearch. On a
- * five-column invoice the columns already have their own filters, so a query
- * builder would be a second way to do what the popovers do, sitting directly
- * above them. Reach for `PowerSearch` when the useful queries span fields and
- * operators — `amount > 5000 AND category = Design` — rather than being "find
- * the line I am thinking of", which is a substring match.
+ * ### Saying what the reader is looking at
  *
- * The popover variant is deliberate for the same reason. `inline` puts a
- * control row under every header, which doubles the header's height on a table
- * this dense; the popover keeps the filter available and the header quiet.
- * Switch to `inline` when the table is the only thing on the page.
+ * **Two states, not one.** A filter that matches nothing needs an `EmptyState`
+ * with a reset in it. A filter that matches *something* needs the opposite
+ * treatment: the rows are fine, but every figure below them now describes a
+ * subset, so the `Banner` says so and offers the same reset.
+ *
+ * **Detect on filter presence, not on row count.** A filter that happens to
+ * match every row still means the summary is a view rather than the whole. And
+ * the banner is mounted on the filter change rather than rendered hidden and
+ * revealed: `status="warning"` carries `role="alert"`, and inserting that node
+ * is what announces it.
+ *
+ * **Derive the summary from the rows on screen.** `visible` feeds the body and
+ * every figure under it, so narrowing the list really does recompute them. The
+ * failure mode this avoids is a hardcoded total that quietly disagrees with
+ * the rows above it.
+ *
+ * ### Structure
+ *
+ * **Record-level facts go above the table, not inside it.** The test is
+ * whether the value varies per row. Client, project and terms are true of the
+ * whole document, so they render as a `MetadataList` rather than as columns
+ * repeating one value nineteen times.
+ *
+ * **The masthead scrolls.** Title, actions and those facts sit in the content,
+ * not in the `Layout` header slot — with `height="fill"` the content area is
+ * the scroll container, so a slotted header stays pinned while the controls
+ * slide underneath it. A document's own title is not chrome. Keep the slot for
+ * things that stay useful mid-scroll: an app bar, a toolbar, a sticky action
+ * row. `contentWidth` still caps the column either way, and caps it on the
+ * `Layout` rather than on the table so full-bleed dividers keep spanning the
+ * window.
+ *
+ * **Per-row detail, given no `rowComponent`.** Three constraints force the
+ * shape in `DescriptionCell`: `<HoverCard>` wraps its trigger in a
+ * `display: contents` span, which is invalid between `<tr>` and `<td>`;
+ * `renderCell` is a plain function, so the hook needs a per-row component; and
+ * `Table` exposes no row-level escape hatch. Letting `useHoverCard` stay
+ * uncontrolled and pointing it at the enclosing `<tr>` is the way through —
+ * drive `isOpen` from row mouse handlers instead and the card closes the
+ * moment the pointer leaves the row, which makes anything inside it
+ * unreachable.
+ *
+ * **Plugins mean data mode, and data mode has no footer.** `BaseTable` renders
+ * `children ? children : (header + body)`, so composing rows by hand — the
+ * only way to reach `TableFooter` — bypasses the plugin pipeline entirely.
+ * Sorting and column filters are render plugins and need `data` + `columns`,
+ * which puts `TableFooter` permanently out of reach. Don't work around it with
+ * a second `<Table>` sharing the first one's `colgroup`: that costs a
+ * hand-written `<colgroup>`, a `<col>` per column, a border declaration on
+ * every ruled cell, and an extra table in the accessibility tree. A summary is
+ * arithmetic *about* the table, not rows *of* it, and `TotalRow` gets the same
+ * alignment out of a right-aligned stack — see the note there.
  *
  * **Sitting flush takes two separate fixes, not one.** A `Table` bleeds past
  * its container — the scroll wrapper applies negative inline margins equal to
@@ -63,54 +145,42 @@
  * text still lines up. Correct for a table that owns its surface; wrong here,
  * where the table shares a content line with a `MetadataList`.
  *
- * Half one is `LayoutContent padding={0}`, which stops the container publishing
- * the padding the table would escape. The padding moves to the `VStack`, a
- * plain flex box that publishes nothing. Half two is `useFlushEdges`, because
- * cell padding resolves to `max(var(--container-padding-inline-start),
- * spacing-2)` — a hard floor, so zeroing the variable still leaves the text
- * indented 8px. Only the cell can close that gap.
+ * Half one is `LayoutContent padding={0}`, which stops the container
+ * publishing the padding the table would escape. The padding moves to the
+ * `VStack`, a plain flex box that publishes nothing. Half two is
+ * `useFlushEdges`, because cell padding resolves to
+ * `max(var(--container-padding-inline-start), spacing-2)` — a hard floor, so
+ * zeroing the variable still leaves the text indented 8px. Only the cell can
+ * close that gap. Do not reach instead for a wrapper `<div>` that zeroes the
+ * variables inline: it works, and it hides the cause. The padding belongs to
+ * the container, so that is where it should be turned off.
  *
- * Do not reach for a wrapper `<div>` that zeroes the variables inline. It works
- * and it is the version that hides the cause: the padding belongs to the
- * container, so that is where it should be turned off.
+ * `useFlushEdges` is worth reading as a plugin in its own right — a complete
+ * one in a dozen lines, no factory, no registration. Reach for the same shape
+ * whenever you need per-cell chrome that columns cannot express.
  *
- * `useFlushEdges` is also worth reading as a plugin in its own right — a
- * complete one in a dozen lines, no factory, no registration. Reach for the
- * same shape whenever you need per-cell chrome that columns cannot express.
+ * ### Reading the figures
  *
- * **No dividers on the rows, three rules around the totals.** The table runs
+ * **No dividers on the rows, three rules around the summary.** The table runs
  * `dividers="none"` and leans on `hasHover` to track a row, so the grid stays
  * quiet under nineteen lines of similar text. That is what buys the totals
  * their three `Divider`s: on a page with no other hairline they read as
  * punctuation rather than as one more line in a grid. Turn the row dividers
  * back on and the rules stop meaning anything.
  *
- * **Figures are tabular, and it is load-bearing.** Figtree's default digits are
- * proportional — ten `1`s measure 63px against ten `0`s at 87px — so a column
- * of amounts would not align at the decimal without `hasTabularNumbers`, which
- * the shared `Figure` and `TotalRow` both set. Every currency cell in a column
- * lands on the same right edge to the pixel as a result.
+ * **Tabular figures are load-bearing, not decorative.** Figtree's default
+ * digits are proportional — ten `1`s measure 63px against ten `0`s at 87px —
+ * so a numeric column will not align at the decimal without
+ * `hasTabularNumbers`, which the shared `Figure` and `TotalRow` both set.
  *
- * **Document facts belong above the table, not inside it.** Client, project,
- * and terms are true of the whole invoice, so they render as a `MetadataList`
- * rather than as columns repeating the same value nineteen times. The test is
- * whether the value varies per row; if it does not, it is a header fact.
- *
- * **Width is capped on the Layout, not on the table.** `contentWidth` bounds
- * every slot and leaves dividers full-bleed, so the header rule still spans the
- * window while the invoice sits in a readable column. Wrapping the table in a
- * centered box instead would pull the header rule in with it.
- *
- * **The totals are derived from the rows on screen.** `visible` feeds the body,
- * the count caption, and every figure below it, so filtering to Design really
- * does retotal the invoice. The failure mode this avoids is a hardcoded total
- * that silently disagrees with the rows above it.
- *
- * **Money is stored in cents and formatted once.** Only the display step goes
- * through `Intl.NumberFormat`, at a pinned locale. Float dollars accumulate
- * rounding drift across nineteen lines and the total is exactly where it shows
- * up. Swap the formatter for the viewer's locale in a real app; keep the
- * integers.
+ * **Store the sortable value, format at the edge.** Money lives in integer
+ * cents and only the display step goes through `Intl.NumberFormat`, at a
+ * pinned locale. Float dollars accumulate rounding drift across nineteen lines
+ * and the total is precisely where it surfaces. The general rule outlives the
+ * currency: keep the comparable primitive on the row — a timestamp, an
+ * integer, an enum key — and format it in `renderCell`, so sorting and
+ * display never read the same field. Swap the formatter for the viewer's
+ * locale in a real app; keep the primitive.
  */
 
 import {useEffect, useMemo, useRef, useState} from 'react';
