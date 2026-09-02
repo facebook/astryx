@@ -61,6 +61,9 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
     borderEndStartRadius: radiusVars['--radius-element'],
     borderEndEndRadius: radiusVars['--radius-element'],
+    // The overlap is visual only. Let pointer input reach the control beneath
+    // it instead of allowing the later-painted status box to steal the click.
+    pointerEvents: 'none',
   },
   detached: {
     marginTop: spacingVars['--spacing-1'],

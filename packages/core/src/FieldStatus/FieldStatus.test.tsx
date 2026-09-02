@@ -158,6 +158,14 @@ describe('FieldStatus', () => {
         'calc(-1 * var(--_field-status-overlap,var(--spacing-1-5)))',
       );
     });
+
+    it('does not intercept pointer input over the attached control', () => {
+      render(<FieldStatus type="warning" message="msg" data-testid="fs" />);
+
+      expect(getComputedStyle(screen.getByTestId('fs')).pointerEvents).toBe(
+        'none',
+      );
+    });
   });
 
   describe('color styling per status type', () => {
