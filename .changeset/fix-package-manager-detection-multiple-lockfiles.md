@@ -15,8 +15,24 @@ written into the agent-docs block, which agents copy verbatim into their own
 runs.
 
 A single lockfile still outranks everything else in its directory, unchanged.
-When several are present the CLI now consults the declared `packageManager`
-field, then the package manager actually running it
-(`npm_config_user_agent`), and only then falls back to the fixed order.
+When several sit in one directory the tie is broken only from evidence the
+project owns: the declared `packageManager` field, then a committed
+package-manager config file (`pnpm-workspace.yaml`, `.yarnrc.yml`,
+`bunfig.toml`). A stray `install` drops a lockfile; it writes none of those.
+
+The runner (`npm_config_user_agent`) deliberately does NOT break that tie. An
+agent handed the wrong `yarn astryx` line runs the CLI through yarn, so the
+runner agrees with the mistake and regenerating agent docs writes the wrong
+line again — the failure reproduces itself. The same holds for an installed
+binary invoked from that shell. Both now have regressions that start from the
+wrong line.
+
+When nothing project-owned decides it, the CLI does not guess.
+`detectPackageManager` returns the neutral `npx`, which is correct under every
+package manager, and the new `explainPackageManager` reports `ambiguous` with
+the tied candidates. `astryx doctor` turns that into a FAIL naming the
+directory and the fix — add a `packageManager` field, or delete the lockfile
+that does not belong. It is the refusal `findConfigPath` already makes for
+coexisting config files.
 
 @josephfarina

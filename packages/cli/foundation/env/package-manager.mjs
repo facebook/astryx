@@ -89,7 +89,41 @@ function lockfilesIn(dir) {
 }
 
 /**
- * Detect the package manager used in a project directory.
+ * Files a project COMMITS that name its package manager. A stray `install` in
+ * the wrong tool drops a lockfile; it does not write any of these. That is what
+ * makes them project-owned evidence and a lockfile, on its own, merely a trace.
+ * @type {readonly [PackageManager, readonly string[]][]}
+ */
+const PROJECT_EVIDENCE = [
+  ['pnpm', ['pnpm-workspace.yaml']],
+  ['yarn', ['.yarnrc.yml', '.yarnrc']],
+  ['bun', ['bunfig.toml']],
+];
+
+/**
+ * Every package manager this directory declares through a committed config file.
+ * @param {string} dir
+ * @returns {PackageManager[]}
+ */
+function evidenceIn(dir) {
+  return PROJECT_EVIDENCE.filter(([, names]) =>
+    names.some(name => fs.existsSync(path.join(dir, name))),
+  ).map(([pm]) => pm);
+}
+
+/**
+ * A detection result, with the reasoning a caller needs to report it.
+ * @typedef {object} PackageManagerResolution
+ * @property {DetectedPackageManager} pm - What to use.
+ * @property {boolean} ambiguous - True when several lockfiles sit in one
+ *   directory and nothing the project owns picks between them. `pm` is then the
+ *   neutral `'npx'`: correct under every package manager, wrong under none.
+ * @property {string | null} dir - The directory that answered, if any.
+ * @property {PackageManager[]} candidates - The tied lockfile owners, when ambiguous.
+ */
+
+/**
+ * Detect the project's package manager, with the reasoning attached.
  * Walks up from targetDir, taking the first directory that answers.
  *
  * A single lockfile still wins over everything else in its directory, which is
@@ -103,43 +137,76 @@ function lockfilesIn(dir) {
  * array order then makes every command the CLI prints wrong for that project —
  * including the invocation line written into agent docs, which agents copy.
  *
- * So ambiguity now consults, in order: the declared `packageManager` field,
- * then whoever is running us (`npm_config_user_agent`), then the fixed order.
+ * Ambiguity is therefore resolved ONLY from evidence the project owns: the
+ * declared `packageManager` field, then a committed package-manager config
+ * file. Deliberately NOT `npm_config_user_agent`: an agent that was handed the
+ * wrong `yarn astryx` line runs the CLI *through yarn*, so the runner agrees
+ * with the mistake and the wrong line reproduces itself forever. The same is
+ * true of an installed binary invoked from that shell.
  *
- * Returns `'npx'` when nothing can be detected — see {@link DetectedPackageManager}.
+ * When nothing project-owned decides it, the answer is not a guess — it is
+ * `'npx'`, which runs correctly under every package manager, plus
+ * `ambiguous: true` so `astryx doctor` can report the real problem. (Same idea
+ * as `findConfigPath`, which refuses to choose between coexisting configs.)
  *
  * @param {string} [targetDir=process.cwd()]
- * @returns {DetectedPackageManager}
+ * @returns {PackageManagerResolution}
  */
-export function detectPackageManager(targetDir = process.cwd()) {
+export function explainPackageManager(targetDir = process.cwd()) {
   let dir = path.resolve(targetDir);
   const root = path.parse(dir).root;
-  const running = runningPackageManager();
 
   while (dir !== root) {
     const locks = lockfilesIn(dir);
 
     // 1. One lockfile is unambiguous, and outranks the field as it always has.
-    if (locks.length === 1) return locks[0];
+    if (locks.length === 1) {
+      return {pm: locks[0], ambiguous: false, dir, candidates: locks};
+    }
 
-    // 2. Several lockfiles: the filesystem cannot say. Ask for a declaration,
-    //    then ask who is running us, and only then fall back to array order.
+    // 2. Several lockfiles: the filesystem cannot say. Only the project can.
     if (locks.length > 1) {
       const declared = declaredPackageManager(dir);
-      if (declared && locks.includes(declared)) return declared;
-      if (running && locks.includes(running)) return running;
-      return locks[0];
+      if (declared && locks.includes(declared)) {
+        return {pm: declared, ambiguous: false, dir, candidates: locks};
+      }
+      const evidence = evidenceIn(dir).filter(pm => locks.includes(pm));
+      if (evidence.length === 1) {
+        return {pm: evidence[0], ambiguous: false, dir, candidates: locks};
+      }
+      return {pm: 'npx', ambiguous: true, dir, candidates: locks};
     }
 
     // 3. No lockfile here: the field, if this directory declares one.
     const declared = declaredPackageManager(dir);
-    if (declared) return declared;
+    if (declared) return {pm: declared, ambiguous: false, dir, candidates: []};
 
     dir = path.dirname(dir);
   }
 
-  // 4. Nothing on disk said anything — fall back to whoever invoked us.
-  return running ?? 'npx';
+  // 4. Nothing on disk said anything anywhere. With no project evidence to
+  //    contradict, the runner is the only signal there is.
+  return {
+    pm: runningPackageManager() ?? 'npx',
+    ambiguous: false,
+    dir: null,
+    candidates: [],
+  };
+}
+
+/**
+ * Detect the package manager used in a project directory.
+ *
+ * Returns `'npx'` when nothing can be detected, and also when several lockfiles
+ * tie with nothing project-owned to break them — see
+ * {@link explainPackageManager}, which carries the `ambiguous` flag callers need
+ * to report that second case.
+ *
+ * @param {string} [targetDir=process.cwd()]
+ * @returns {DetectedPackageManager}
+ */
+export function detectPackageManager(targetDir = process.cwd()) {
+  return explainPackageManager(targetDir).pm;
 }
 
 /**
