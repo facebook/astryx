@@ -210,6 +210,18 @@ async function main() {
       {cwd: REPO_ROOT},
     );
 
+    const repository = getRepository();
+    if (!repository) {
+      throw new Error(
+        'Report was published to gh-pages, but the repository identity could not be resolved for the Pages deployment.',
+      );
+    }
+    run(
+      `gh workflow run pages-deploy.yml --repo ${shellQuote(repository)} --ref main`,
+      {cwd: REPO_ROOT},
+    );
+    console.log('   ✓ Queued the GitHub Actions Pages deployment');
+
     const repoUrl = getRepoUrl();
     const reportUrl = repoUrl
       ? `${repoUrl}/${deployPath}/`
@@ -315,17 +327,27 @@ function countFiles(dir: string, ext: string): number {
   return count;
 }
 
-function getRepoUrl(): string | null {
+function getRepository(): string | null {
+  const fromEnvironment = process.env.GITHUB_REPOSITORY;
+  if (fromEnvironment && /^[^/]+\/[^/]+$/.test(fromEnvironment)) {
+    return fromEnvironment;
+  }
   try {
     const remote = runSilent('git remote get-url origin', {cwd: REPO_ROOT});
     const match = remote.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
-    if (match) {
-      return `https://${match[1]}.github.io/${match[2]}`;
-    }
+    return match ? `${match[1]}/${match[2]}` : null;
   } catch {
-    // ignore
+    return null;
   }
-  return null;
+}
+
+function getRepoUrl(): string | null {
+  const repository = getRepository();
+  if (!repository) {
+    return null;
+  }
+  const [owner, repo] = repository.split('/');
+  return `https://${owner}.github.io/${repo}`;
 }
 
 main().catch(err => {

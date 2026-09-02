@@ -162,7 +162,7 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
+          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. Theme maintainers may declare reusable, non-portable roles through localTokens using complete --astryx-theme-<name>-* custom-property names; these roles remain inside that enrolled theme family and do not expand the shared token vocabulary. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
         },
         {
           type: 'code',
@@ -184,8 +184,15 @@ const myTheme = defineTheme({
     // Explicit overrides take precedence over scale-generated values
     '--color-background-body': ['#FFFFFF', '#0A0A0A'],
   },
+  localTokens: {
+    '--astryx-theme-my-theme-color-status-fill-accent': ['#0077B6', '#48CAE4'],
+  },
   components: {
-    button: { 'variant:primary': { color: 'white' } },
+    badge: {
+      'variant:info': {
+        backgroundColor: 'var(--astryx-theme-my-theme-color-status-fill-accent)',
+      },
+    },
   },
 });`,
         },

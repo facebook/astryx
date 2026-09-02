@@ -50,6 +50,10 @@
       "types": "./authoring/config/type.ts",
       "import": "./authoring/config/parse.mjs"
     },
+    "./debug": {
+      "types": "./authoring/debug/type.ts",
+      "import": "./authoring/debug/parse.mjs"
+    },
     "./integration": {
       "types": "./authoring/integration/type.ts",
       "import": "./authoring/integration/parse.mjs"

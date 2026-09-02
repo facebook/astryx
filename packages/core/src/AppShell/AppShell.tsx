@@ -53,7 +53,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps, isRenderable} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
-import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {observeResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {AppShellVariantMap} from './index';
@@ -269,6 +269,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
+    overflow: 'clip',
   },
   variantWash: {
     backgroundColor: colorVars['--color-background-body'],
@@ -554,6 +555,11 @@ export function AppShell({
       : variant === 'surface'
         ? styles.navAreaSurface
         : undefined;
+  // Section normally inherits the shell's surface background. Its auto-height
+  // header needs to paint that surface itself while content scrolls beneath it.
+  const headerAreaStyle =
+    navAreaStyle ??
+    (isAuto && variant === 'section' ? styles.navAreaSurface : undefined);
   const contentAreaStyle =
     variant === 'wash'
       ? styles.contentBgWash
@@ -587,8 +593,7 @@ export function AppShell({
       shellEl.style.setProperty('--_app-shell-header-height', `${height}px`);
     };
 
-    observeResize(headerEl, () => updateHeight());
-    return () => unobserveResize(headerEl);
+    return observeResize(headerEl, () => updateHeight());
   }, [isAuto]);
 
   // =========================================================================
@@ -684,7 +689,7 @@ export function AppShell({
       role="banner"
       {...mergeProps(
         themeProps('app-shell-header', {variant}),
-        stylex.props(navAreaStyle, isAuto && styles.headerSticky),
+        stylex.props(headerAreaStyle, isAuto && styles.headerSticky),
       )}>
       {headerInner}
     </div>
@@ -773,7 +778,7 @@ export function AppShell({
         role={headerContent == null ? 'banner' : undefined}
         {...mergeProps(
           themeProps('app-shell-header', {variant}),
-          stylex.props(navAreaStyle, isAuto && styles.headerSticky),
+          stylex.props(headerAreaStyle, isAuto && styles.headerSticky),
         )}>
         <LayoutHeader padding={0} hasDivider={navHasDividers}>
           <div

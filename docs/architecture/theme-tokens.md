@@ -13,6 +13,7 @@ applies_to:
   [
     packages/core/src/theme/tokens.stylex.ts,
     packages/core/src/theme/tokens.ts,
+    packages/core/src/theme/localTokens.ts,
     packages/core/src/theme/domainTokens/,
     packages/core/src/theme/syntax/,
     packages/cli/assets/theme.template.ts,
@@ -20,10 +21,11 @@ applies_to:
 verified_by:
   [
     packages/core/src/theme/tokens.test.ts,
+    packages/core/src/theme/defineTheme.test.ts,
     scripts/check-theme-template.test.mjs,
     scripts/generate-token-docs.mjs,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-006/DEC-1, spec:AST-006/DEC-5]
 ---
 
 # Theme token architecture
@@ -57,6 +59,13 @@ available to theme validation and resolution.
 The CLI theme template and generated token documentation are projections of
 this vocabulary. They do not define additional tokens.
 
+Theme-family-local tokens are a separate enrolled map. They may reuse the
+existing token value shape, but they do not enter `TokenName`, defaults,
+`tokenVar`, `tokenVars`, `resolveThemeToken`, `resolveThemeTokens`, generated
+portable documentation, or Core component source. A name cannot be present in
+both portable `tokens` and `localTokens` because CSS and non-CSS resolution would
+then have contradictory winners.
+
 ## Boundaries and invariants
 
 - **INV1 — `defineVars` declarations are canonical.** A core token name and its
@@ -77,10 +86,14 @@ this vocabulary. They do not define additional tokens.
   second set of resolved values.
 - **INV7 — Projections cannot drift silently.** Theme-template inventory and
   generated token docs change with the canonical family or fail validation.
+- **INV8 — Theme-local names stay non-portable.** Enrolled local declarations
+  remain outside the canonical vocabulary, typed helpers, generated portable
+  documentation, and Core component dependencies.
 
 This record does not own:
 
 - the `defineTheme` input shape, generated scales, or precedence;
+- local-token names, meanings, enrollment, ownership, lineage, and emission;
 - mounting, nesting, color-mode selection, or runtime theme observation;
 - turning a normalized theme into scoped CSS and build files;
 - component-specific targets, visual states, or private derived variables.
@@ -102,6 +115,9 @@ does not silently change authoring, runtime, compiler, or component contracts.
 - Changes to JavaScript resolution preserve CSS cascade semantics for supported
   references and color expressions; unsupported expressions remain intact
   rather than being guessed.
+- Adding a theme-local name does not update portable defaults, name types,
+  helpers, or generated token docs. Authoring validation rejects a duplicate
+  across `tokens` and `localTokens` before the compiler or helpers can disagree.
 
 ## Owning code
 
@@ -112,12 +128,17 @@ does not silently change authoring, runtime, compiler, or component contracts.
 - `packages/core/src/theme/defineTheme.ts` aggregates token types/defaults for
   validation and authoring; it does not become a second token source.
 - `packages/core/src/theme/tokens.ts` owns server-safe references and resolution.
+- `packages/core/src/theme/localTokens.ts` enforces the boundary between the
+  portable and enrolled local maps; it does not add local names to this
+  vocabulary.
 - `packages/cli/assets/theme.template.ts` and generated token docs are checked
   projections for theme authors and consumers.
 
 ## Deciding specs
 
-None. This record captures the approved shipped token architecture.
+AST-006 decisions 1 and 5 establish that theme-local names are additive,
+theme-family contracts rather than portable Astryx tokens. The existing portable
+vocabulary and helper architecture remain unchanged.
 
 ## Verification
 
@@ -126,5 +147,6 @@ None. This record captures the approved shipped token architecture.
 | INV1, INV2, INV7             | `scripts/check-theme-template.test.mjs` and token-doc generation check    | A token family exists without a matching author-facing inventory or generated documentation               |
 | INV5                         | Domain-token exports and theme-generation tests                           | Domain names disappear from validation or require importing unused domain implementation                  |
 | INV6                         | `packages/core/src/theme/tokens.test.ts`                                  | JavaScript resolution disagrees with defaults, mode selection, references, or supported color expressions |
+| INV8                         | `defineTheme.test.ts`, template checks, and token-doc generation          | A local name enters portable helpers/docs or can conflict with a portable declaration                     |
 | Released token compatibility | Type checking plus representative package/source builds                   | A released CSS variable or typed token name disappears without an explicit migration decision             |
 | Visual defaults              | Real Chromium examples in light, dark, status, and high-contrast contexts | A changed default produces unreadable or semantically inconsistent output                                 |

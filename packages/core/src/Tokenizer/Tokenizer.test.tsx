@@ -9,14 +9,42 @@
  * SYNC: When Tokenizer.tsx changes, update tests to match
  */
 
-import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterAll,
+  afterEach,
+} from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
+import {Profiler} from 'react';
 import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InternationalizationProvider} from '../i18n';
+import type * as TokenModule from '../Token';
+
+// Every Token render, in order, by label.
+//
+// A spy that WRAPS the real component rather than replacing it: a stand-in
+// would measure the stand-in, and the number under review is how often the
+// real token subtree re-renders during a search.
+const renderedTokens: string[] = [];
+vi.mock('../Token', async importActual => {
+  const actual = await importActual<typeof TokenModule>();
+  return {
+    ...actual,
+    Token: (props: Parameters<typeof TokenModule.Token>[0]) => {
+      renderedTokens.push(typeof props.label === 'string' ? props.label : '');
+      return actual.Token(props);
+    },
+  };
+});
 
 // Test-supplied announcement strings: the assertions below depend on no
 // catalog, and no hardcoded English in the component can satisfy them.
@@ -1378,5 +1406,311 @@ describe('Tokenizer disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-tokenizer');
     expect(root).not.toHaveAttribute('data-disabled');
+  });
+});
+
+describe('Tokenizer end-lane reserve', () => {
+  // Tokenizer keeps the measured lane that Typeahead no longer needs: its
+  // lane stays pinned to the field's first row while tokens wrap below it,
+  // so it has to be out of flow, and an out-of-flow box reserves nothing by
+  // definition. jsdom performs no layout — it reports every width as 0 and
+  // has no ResizeObserver — so these stub both, which is what makes the
+  // mechanism, and the bug it had, reproducible in CI.
+  class StubResizeObserver {
+    static instances = 0;
+    private readonly cb: ResizeObserverCallback;
+    constructor(cb: ResizeObserverCallback) {
+      this.cb = cb;
+      StubResizeObserver.instances++;
+    }
+    observe(target: Element) {
+      this.cb(
+        [
+          {
+            target,
+            borderBoxSize: [{inlineSize: 24, blockSize: 20}],
+            contentRect: {width: 24, height: 20},
+          } as unknown as ResizeObserverEntry,
+        ],
+        this,
+      );
+    }
+    unobserve() {}
+    disconnect() {}
+  }
+
+  // The lane's true, untransformed width. `offsetWidth` is what reports it.
+  const LANE_LOCAL_WIDTH = 24;
+  // What `getBoundingClientRect()` would report for that same lane inside a
+  // `scale(.5)` subtree: viewport space, so half. Reading this instead is the
+  // bug — the number is spent as padding, which is in local space.
+  const LANE_VIEWPORT_WIDTH = 12;
+
+  let originalRO: typeof ResizeObserver | undefined;
+  beforeEach(() => {
+    originalRO = globalThis.ResizeObserver;
+    StubResizeObserver.instances = 0;
+    globalThis.ResizeObserver = StubResizeObserver;
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(
+      LANE_LOCAL_WIDTH,
+    );
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      width: LANE_VIEWPORT_WIDTH,
+      height: 20,
+      top: 0,
+      left: 0,
+      right: LANE_VIEWPORT_WIDTH,
+      bottom: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+  });
+  afterEach(() => {
+    globalThis.ResizeObserver = originalRO as typeof ResizeObserver;
+    vi.restoreAllMocks();
+  });
+
+  const pendingSource = () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    return {
+      source: {
+        search: async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            settle = resolve;
+          }),
+        bootstrap: () => [],
+      },
+      settle: (items: SearchableItem[] = []) => settle(items),
+    };
+  };
+
+  const laneHost = (container: HTMLElement) =>
+    container.querySelector<HTMLElement>(
+      '[style*="--_tokenizer-end-lane-reserve"]',
+    );
+
+  // The variable carries the whole reserve — the lane's inset plus its
+  // measured width — so its ABSENCE means "no lane", not "a lane of zero
+  // width". That distinction is what lets the input apply the padding rule
+  // unconditionally and still keep its full content box when nothing is in
+  // the lane.
+  const reserveOf = (container: HTMLElement) =>
+    laneHost(container)?.style.getPropertyValue(
+      '--_tokenizer-end-lane-reserve',
+    );
+
+  it('reserves the lane\u2019s untransformed width, not its on-screen width', () => {
+    // The regression. A CSS transform anywhere above the field scales what
+    // `getBoundingClientRect()` reports but not what the padding means, so
+    // the two must not be mixed: measured in Chromium under `scale(.5)` the
+    // input reserved half what it needed and the live query ran under the
+    // controls again (22.83px), and under `scale(2)` the caret sat in a
+    // 202.69px gap. `offsetWidth` is the same number at every scale.
+    const {container} = render(
+      <Tokenizer
+        label="Users"
+        searchSource={userSource}
+        value={[users[0]]}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    expect(reserveOf(container)).toBe(
+      `calc(var(--spacing-2) + ${LANE_LOCAL_WIDTH}px)`,
+    );
+  });
+
+  it('reserves the lane when the spinner is the only thing in it', () => {
+    // Busy-only: no endContent and no clear button, so the lane exists for
+    // the duration of the search and for nothing else. It still has width,
+    // and the query still has to clear it.
+    const {source} = pendingSource();
+    const {container} = render(
+      <Tokenizer
+        label="Users"
+        searchSource={source}
+        value={[]}
+        onChange={() => {}}
+        hasClear={false}
+        debounceMs={0}
+      />,
+    );
+    expect(laneHost(container)).toBeNull();
+
+    act(() => {
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: 'Al'}});
+    });
+
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(reserveOf(container)).toBe(
+      `calc(var(--spacing-2) + ${LANE_LOCAL_WIDTH}px)`,
+    );
+  });
+
+  it('does not pad the input on the collapsed paths', () => {
+    // Collapsed: with tokens truncated the input is given no width to pad —
+    // `inputAtMax` zeroes its padding outright — so a reserve there would be
+    // padding applied to a zero-width box, fighting the collapse. The lane
+    // still publishes its width; what must not happen is the input claiming
+    // the reserve class.
+    const {container} = render(
+      <Tokenizer
+        label="Users"
+        searchSource={userSource}
+        value={[users[0], users[1], users[2]]}
+        onChange={() => {}}
+        tokenOverflowBehavior="unfocusedInline"
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    expect(input.className).not.toBe('');
+    // The reserve is the only rule that reads the lane variable; the
+    // collapsed input must not carry it.
+    const reserveClasses = new Set(
+      (laneHost(container)?.className ?? '').split(' '),
+    );
+    expect(
+      [...input.classList].some(c => reserveClasses.has(c) && c !== ''),
+    ).toBe(false);
+  });
+
+  it('costs no commit of its own across a whole search', async () => {
+    // The measurement reaches CSS as a custom property written to the DOM,
+    // never as state, so it cannot re-render the field. The two commits below
+    // are the ones the search itself owes: the spinner arriving, and the
+    // spinner leaving. Held in state, the measurement doubled that.
+    const {source, settle} = pendingSource();
+    const commits: string[] = [];
+    render(
+      <Profiler id="field" onRender={(_id, phase) => commits.push(phase)}>
+        <Tokenizer
+          label="Users"
+          searchSource={source}
+          value={[]}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+      </Profiler>,
+    );
+    const input = screen.getByRole('combobox');
+    commits.length = 0;
+
+    await act(async () => {
+      fireEvent.change(input, {target: {value: 'Al'}});
+    });
+    const afterStart = commits.length;
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+
+    expect(afterStart).toBe(1);
+    expect(commits.length).toBe(2);
+  });
+
+  it('re-renders no token when a search starts or settles', async () => {
+    // The regression this guards. The busy state has one owner — the base —
+    // and the field only needs it to decide whether one Spinner is on screen.
+    // Mirrored into the field's own state, every transition re-rendered the
+    // whole field including every selected token: measured at six tokens,
+    // 6 renders at search start and 6 more at settlement, and 20/40 at
+    // twenty. A token contains no part of the indicator, so the correct
+    // number is zero at any count.
+    const {source, settle} = pendingSource();
+    const selected = users.slice(0, 6);
+    renderedTokens.length = 0;
+
+    render(
+      <Tokenizer
+        label="Users"
+        searchSource={source}
+        value={selected}
+        onChange={() => {}}
+        hasClear
+        debounceMs={0}
+      />,
+    );
+    expect(new Set(renderedTokens).size).toBe(selected.length);
+    renderedTokens.length = 0;
+
+    await act(async () => {
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: 'Al'}});
+    });
+    // The indicator is up, so the transition really did happen. Scoped by
+    // name: the announcer for result counts is a role="status" live region
+    // too, and it is not the indicator.
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    // ...and it cost no token a render.
+    expect(renderedTokens).toEqual([]);
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('status', {name: 'Loading'}),
+      ).not.toBeInTheDocument();
+    });
+    expect(renderedTokens).toEqual([]);
+  });
+
+  it('shares one observer across every field on the page', () => {
+    // Browsers batch per observer instance, so one observer per lane meant N
+    // callback dispatches a frame for N fields.
+    render(
+      <>
+        <Tokenizer
+          label="One"
+          searchSource={userSource}
+          value={[users[0]]}
+          onChange={() => {}}
+          hasClear
+        />
+        <Tokenizer
+          label="Two"
+          searchSource={userSource}
+          value={[users[1]]}
+          onChange={() => {}}
+          hasClear
+        />
+        <Tokenizer
+          label="Three"
+          searchSource={userSource}
+          value={[users[2]]}
+          onChange={() => {}}
+          hasClear
+        />
+      </>,
+    );
+    expect(StubResizeObserver.instances).toBeLessThanOrEqual(1);
+  });
+
+  it('takes the room back when the lane goes', async () => {
+    const {source, settle} = pendingSource();
+    const {container} = render(
+      <Tokenizer
+        label="Users"
+        searchSource={source}
+        value={[]}
+        onChange={() => {}}
+        hasClear={false}
+        debounceMs={0}
+      />,
+    );
+    await act(async () => {
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: 'Al'}});
+    });
+    expect(laneHost(container)).not.toBeNull();
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(laneHost(container)).toBeNull();
+    });
   });
 });

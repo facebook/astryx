@@ -242,12 +242,16 @@ describe('Spinner ring', () => {
       render(
         <Spinner size={size as keyof typeof SIZES} data-testid="spinner" />,
       );
+      // No viewBox: one user unit is one px, so the attributes below mean px.
+      // They are the no-stylesheet fallback; CSS sizes the frame from the box.
       const frame = diameter + border * 2;
       const svg = ring();
-      expect(svg.getAttribute('viewBox')).toBe(`0 0 ${frame} ${frame}`);
+      expect(svg.getAttribute('viewBox')).toBeNull();
+      expect(Number(svg.getAttribute('width'))).toBe(frame);
+      expect(Number(svg.getAttribute('height'))).toBe(frame);
       for (const c of [circles().track, circles().arc]) {
-        expect(Number(c.getAttribute('cx'))).toBe(frame / 2);
-        expect(Number(c.getAttribute('cy'))).toBe(frame / 2);
+        expect(c.getAttribute('cx')).toBe('50%');
+        expect(c.getAttribute('cy')).toBe('50%');
         expect(Number(c.getAttribute('r'))).toBe(diameter / 2);
         expect(Number(c.getAttribute('stroke-width'))).toBe(border);
       }
@@ -269,12 +273,33 @@ describe('Spinner ring', () => {
     },
   );
 
+  // The regression this file could not have caught: #5214 made the RING
+  // themeable and left the frame at the size's own constant, so a themed
+  // diameter left the svg larger than the box it sits in. The overflowing grid
+  // item then aligned to start rather than centre — measured in Chromium at
+  // 1.5 to 3.3px off across the four sizes. Nothing asserted the two agreed,
+  // because nothing tied them.
+  it('sizes the frame from CSS, not from the size constant', () => {
+    render(<Spinner data-testid="spinner" />);
+    const svg = ring();
+    // No viewBox, and the circles centre on the box rather than on a centre
+    // in user units — together that is what lets CSS size the frame from
+    // `--_spinner-box-size`, the same composed var the span is sized from, so
+    // a themed diameter moves both. The px attributes remain as the
+    // no-stylesheet fallback and CSS outranks them whenever one is present.
+    expect(svg.getAttribute('viewBox')).toBeNull();
+    for (const c of [circles().track, circles().arc]) {
+      expect(c.getAttribute('cx')).toBe('50%');
+      expect(c.getAttribute('cy')).toBe('50%');
+    }
+  });
+
   it('starts the arc at twelve o’clock', () => {
     render(<Spinner data-testid="spinner" />);
-    const frame = SIZES.md.diameter + SIZES.md.border * 2;
-    expect(circles().arc.getAttribute('transform')).toBe(
-      `rotate(-90 ${frame / 2} ${frame / 2})`,
-    );
+    // A CSS rotation about the shape's own box, not an SVG transform about a
+    // centre in user units — the centre is `50%`, so there is no user-unit
+    // number to name, and the offset has to survive a themed diameter.
+    expect(circles().arc.getAttribute('transform')).toBeNull();
   });
 
   // The authored dash is the size's own absolute pattern, and stays that way:

@@ -98,9 +98,14 @@ for how it degrades on mobile, and flag the common failure modes:
   must be allowed to shrink (the classic fix for a child refusing to shrink
   inside a flex row). Flag fixed widths on content that needs to fit narrow
   screens.
-- **Overflow & tap targets.** Wide content (tables, code blocks, long rows)
-  should scroll within its container, not blow out the page width. Interactive
-  targets should stay comfortably tappable (~44px) at mobile sizes.
+- **Overflow & target sizes.** Wide content (tables, code blocks, long rows)
+  should scroll within its container, not blow out the page width. WCAG 2.2
+  [criterion 2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
+  (Level AA) requires targets to be at least 24×24 CSS px, or to satisfy its
+  spacing or other exceptions. The 44×44 CSS px threshold belongs to enhanced
+  [criterion 2.5.5](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html)
+  (Level AAA). Do not substitute the AAA threshold when evaluating or reporting
+  AA conformance.
 - **Prefer CSS-first responsiveness.** The docsite leans on `useMediaQuery` /
   `isMobile` JS in places; for _layout_ that CSS can express, prefer
   `@container` queries, `Grid` `minChildWidth`, `flex-wrap`, and

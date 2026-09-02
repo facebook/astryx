@@ -4,10 +4,10 @@
 export const doc = {
   type: 'block',
   exampleFor: 'useTableRowStatus',
-  name: 'useTableRowStatus - Status Icons',
-  displayName: 'useTableRowStatus - Status Icons',
+  name: 'useTableRowStatus - Semantic and Custom Markers',
+  displayName: 'useTableRowStatus - Semantic and Custom Markers',
   description:
-    'A job table using useTableRowStatus. Semantic outcomes use the themed success, warning, and error icons; a palette-only queued state keeps the neutral dot.',
+    'A job table using both row-status paths: status resolves themed semantic glyphs and tones, while color stays a custom paint choice with an optional caller-selected icon or the stable dot.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['Table'],

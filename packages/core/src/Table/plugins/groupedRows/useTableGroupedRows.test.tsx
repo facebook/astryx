@@ -5,7 +5,8 @@ import {render, screen, fireEvent, within} from '@testing-library/react';
 import {useState, useCallback} from 'react';
 import {Table} from '../../Table';
 import type {TableColumn} from '../../types';
-import {useTableRowStatus, type TableRowStatus} from '../rowStatus';
+import type {TableRowStatus} from '../../index';
+import {useTableRowStatus} from '../rowStatus';
 import {useTableGroupedRows} from './useTableGroupedRows';
 
 interface Person extends Record<string, unknown> {

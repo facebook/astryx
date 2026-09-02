@@ -29,6 +29,7 @@
  * consumers can negotiate. Exposed on every envelope as `apiVersion`.
  */
 import {ERROR_CODES} from './error-codes.mjs';
+import {recordEnvelope, setOutcome} from '../debug/index.mjs';
 
 export const API_VERSION = 1;
 
@@ -106,6 +107,7 @@ export function jsonOut(response) {
   // envelope" contract.
   const out = JSON.stringify(envelope, null, 2);
   process.__xdsJsonHandled = true;
+  recordEnvelope(response.type);
   console.log(out);
 }
 
@@ -150,6 +152,8 @@ export function toErrorEnvelope(err, suggestions, code) {
 export function jsonError(message, suggestions, code) {
   process.__xdsJsonHandled = true;
   const err = toErrorEnvelope(message, suggestions, code);
+  // No-op when cliError already classified this failure — first outcome wins.
+  setOutcome('error', {exitCode: 1, error: new Error(message), code: err.code});
   console.log(JSON.stringify(err, null, 2));
   process.exit(1);
 }
