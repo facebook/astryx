@@ -2,7 +2,7 @@
 schema_version: 1
 template_version: 1
 kind: system-spec
-id: spec:AST-012
+id: spec:AST-014
 authority: draft
 archive_reason: null
 superseded_by: null
@@ -249,7 +249,7 @@ No decisions are authoritative while this record remains draft.
 
 ### Proposed DEC-1 — Keep `presentation` for structural surface selection
 
-**Reference:** `spec:AST-012/DEC-1`
+**Reference:** `spec:AST-014/DEC-1`
 **Proposed deciders:** `cixzhang`, `rubyycheung`, `imdreamrunner`
 
 Use `presentation` for the shared Popover/BottomSheet axis. Keep `variant` for
@@ -262,7 +262,7 @@ to `mobile`, because explicit BottomSheet use is not limited to device identity.
 
 ### Proposed DEC-2 — Normalize native-picker policy around `auto`
 
-**Reference:** `spec:AST-012/DEC-2`
+**Reference:** `spec:AST-014/DEC-2`
 **Proposed deciders:** `cixzhang`, `rubyycheung`, `imdreamrunner`
 
 Keep `nativePicker` as the ownership axis and make `auto` the durable name for
@@ -274,7 +274,7 @@ because a browser-owned input is not another Astryx overlay surface.
 
 ### Proposed DEC-3 — One prop supports forced and responsive selection
 
-**Reference:** `spec:AST-012/DEC-3`
+**Reference:** `spec:AST-014/DEC-3`
 **Proposed deciders:** `cixzhang`, `rubyycheung`, `imdreamrunner`
 
 `presentation` selects a policy rather than acting only as a mobile override.
