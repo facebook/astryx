@@ -914,6 +914,42 @@ export const PlacementAbove: Story = {
   },
 };
 
+export const SelectedItemOverlayNearViewportBottom: Story = {
+  parameters: {
+    layout: 'fullscreen',
+  },
+  render: () => {
+    const [value, setValue] = useState('Gamma');
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          boxSizing: 'border-box',
+          paddingBottom: 52,
+        }}>
+        <div style={{width: 250}}>
+          <Selector
+            label="Selected item overlay near viewport bottom"
+            options={['Alpha', 'Beta', 'Gamma', 'Delta']}
+            value={value}
+            onChange={setValue}
+          />
+        </div>
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('[role="combobox"]');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
 export const Placements: Story = {
   render: () => {
     const [below, setBelow] = useState('Banana');

@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-08-30
+approved_at: 2026-09-02
 owners: [cixzhang, imdreamrunner]
 review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
@@ -88,6 +88,25 @@ and examples remain in `Selector.doc.mjs`.
 | popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                 | Popover; bottom sheet                     | `listbox` | Selector | released  | No separate role prop is public |
 | option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                  | Every rendered option                     | neither   | Selector | released  | Unknown states are not emitted  |
 | read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance | Closed trigger                            | `false`   | Caller   | additive  | Boolean normalization           |
+
+### Public hook contract
+
+`useSelectedItemOffset` exposes the selected-row alignment calculation for
+consumers building on Selector's positioning foundation. It accepts the open
+state, selected-item index, listbox id/ref, and outer anchor ref. After the open
+popover's existing hidden layout pass, it returns:
+
+- `offset`: the released non-negative distance from the below-anchor origin;
+  consumers using the original composition apply it as a negative block-start
+  margin;
+- `translateY`: an additive signed correction from the browser-resolved layer top
+  to the viewport-clamped target; consumers apply it with CSS `translate` so a
+  `position-try-fallbacks` choice remains stable; and
+- `isPositioned`: whether the measurement pass is complete and the surface may be
+  revealed.
+
+`translateY` is additive. `offset` retains its released name, sign, and meaning so
+existing hook consumers do not need to migrate.
 
 ## Behavioral and layout contract
 

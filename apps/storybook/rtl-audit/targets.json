@@ -91,6 +91,20 @@
     }
   },
   {
+    "component": "Selector",
+    "storyId": "core-selector--default",
+    "dims": [
+      "D2"
+    ],
+    "setup": {
+      "click": "[role=\"combobox\"]"
+    },
+    "selectors": {
+      "prev": ".astryx-selector-option-row:first-of-type > span:first-child",
+      "next": ".astryx-selector-option-row:first-of-type > span:last-child"
+    }
+  },
+  {
     "component": "TabList",
     "storyId": "core-tablist--overflow",
     "dims": [

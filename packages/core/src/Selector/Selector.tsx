@@ -1105,7 +1105,7 @@ export function Selector<T extends SelectorOptionType>(
   // placement opts out of the selector-specific overlay behavior and uses the
   // standard layer positioning API instead.
   const shouldOverlaySelectedItem = placement == null && !hasSearch;
-  const {offset: rawOffset, isPositioned: rawIsPositioned} =
+  const {translateY: rawTranslateY, isPositioned: rawIsPositioned} =
     useSelectedItemOffset({
       isOpen: popover.isOpen && shouldOverlaySelectedItem,
       selectedItemIndex,
@@ -1114,12 +1114,14 @@ export function Selector<T extends SelectorOptionType>(
       anchorRef,
     });
 
-  const selectedItemOffset = shouldOverlaySelectedItem ? rawOffset : 0;
+  const selectedItemTranslateY = shouldOverlaySelectedItem ? rawTranslateY : 0;
   const isPositioned = shouldOverlaySelectedItem ? rawIsPositioned : true;
   const popoverPlacement = placement ?? 'below';
+  // Individual translate composes with the layer's transform animation and,
+  // unlike margin, cannot make position-try-fallbacks choose a different side.
   const popoverOffsetStyle: React.CSSProperties | undefined =
-    selectedItemOffset > 0
-      ? {marginBlockStart: `-${selectedItemOffset}px`}
+    selectedItemTranslateY !== 0
+      ? {translate: `0 ${selectedItemTranslateY}px`}
       : undefined;
 
   // Clear the current value. Shared by the clear button and the keyboard
@@ -1686,8 +1688,8 @@ export function Selector<T extends SelectorOptionType>(
       placement: popoverPlacement,
       alignment: 'start',
       // The system's standard menu clearance, except in overlay mode:
-      // there the measured negative margin owns the block geometry and
-      // the menu is meant to sit on the trigger, not clear it.
+      // there the measured translation owns the block geometry and the
+      // menu is meant to sit on the trigger, not clear it.
       offset: shouldOverlaySelectedItem
         ? undefined
         : spacingVars['--spacing-1'],

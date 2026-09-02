@@ -4,10 +4,15 @@
 
 /**
  * @file hooks.ts
- * @input Uses untransformed DOM layout geometry from the Selector's outer
- *   anchor, listbox, and selected option
+ * @input Uses resolved Layer placement plus untransformed DOM layout geometry
+ *   from the Selector's outer anchor, listbox, and selected option
  * @output Hooks for Selector
- * @position Internal hooks; used by Selector.tsx
+ * @position Internal module; exports public Selector hooks through index.ts
+ *
+ * SYNC: When modifying useSelectedItemOffset, update:
+ * - /packages/core/src/Selector/useSelectedItemOffset.doc.mjs
+ * - /packages/core/src/Selector/Selector.spec.md
+ * - /packages/core/src/Selector/Selector.test.tsx
  */
 
 import {useCallback, useState} from 'react';
@@ -47,19 +52,36 @@ interface UseSelectedItemOffsetOptions {
 }
 
 interface UseSelectedItemOffsetResult {
+  /**
+   * Legacy positive distance from the below-anchor origin. Apply as a negative
+   * block-start margin when composing the original positioning behavior.
+   */
   offset: number;
+  /**
+   * Signed correction from the browser-resolved layer top to the clamped target.
+   * Apply with CSS `translate` so anchor fallback selection remains stable.
+   */
+  translateY: number;
   isPositioned: boolean;
 }
 
 /**
- * Calculates the offset needed to position the dropdown so that the selected
- * item appears centered over the outer selector control (macOS-style selector).
+ * Calculates the translation needed to position the dropdown so that the
+ * selected item appears centered over the outer selector control (macOS-style
+ * selector).
  *
  * The desired dropdown top is calculated directly from the anchor center and
  * selected-item center, then clamped to the viewport. This preserves the
  * default "selected item over trigger" behavior while letting the menu slide
  * upward near the bottom edge or downward near the top edge instead of being
  * clipped off-screen.
+ *
+ * CSS anchor positioning may place the layer above or below before this layout
+ * effect runs. The popover's `offsetTop` is that resolved, untransformed layout
+ * position, so translating from it to the viewport-clamped target reuses the
+ * existing hidden measurement pass without parsing CSS or adding another pass.
+ * `translate` does not participate in `position-try-fallbacks`, so applying the
+ * correction cannot make the browser choose a different fallback.
  */
 export function useSelectedItemOffset({
   isOpen,
@@ -69,12 +91,15 @@ export function useSelectedItemOffset({
   anchorRef,
 }: UseSelectedItemOffsetOptions): UseSelectedItemOffsetResult {
   const [offset, setOffset] = useState(0);
+  const [translateY, setTranslateY] = useState(0);
   const [isPositioned, setIsPositioned] = useState(false);
 
   const commitPosition = useCallback(
-    (nextOffset: number, nextIsPositioned: boolean) => {
+    (nextOffset: number, nextTranslateY: number, nextIsPositioned: boolean) => {
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- selector popover position is derived from DOM layout
       setOffset(nextOffset);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- selector popover position is derived from DOM layout
+      setTranslateY(nextTranslateY);
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- selector popover position is derived from DOM layout
       setIsPositioned(nextIsPositioned);
     },
@@ -83,13 +108,13 @@ export function useSelectedItemOffset({
 
   useIsomorphicLayoutEffect(() => {
     if (!isOpen) {
-      // Reset offset when closed
-      commitPosition(0, false);
+      // Reset translation when closed.
+      commitPosition(0, 0, false);
       return;
     }
 
     if (!listboxRef.current || !anchorRef.current) {
-      commitPosition(0, true);
+      commitPosition(0, 0, true);
       return;
     }
 
@@ -100,7 +125,7 @@ export function useSelectedItemOffset({
     const targetItem = document.getElementById(targetItemId);
 
     if (!targetItem) {
-      commitPosition(0, true);
+      commitPosition(0, 0, true);
       return;
     }
 
@@ -110,7 +135,7 @@ export function useSelectedItemOffset({
     // offset* metrics intentionally exclude the popover's entry transform.
     const listboxHeight = listbox.offsetHeight;
     if (listboxHeight <= 0) {
-      commitPosition(0, true);
+      commitPosition(0, 0, true);
       return;
     }
 
@@ -127,16 +152,18 @@ export function useSelectedItemOffset({
     // Desired top aligns the selected item's center with the anchor center.
     const desiredTop =
       anchorCenter - itemCenterInListbox - SELECTED_ITEM_OPTICAL_OFFSET;
-    const viewportHeight = window.innerHeight;
-    const maxTop = Math.max(0, viewportHeight - listboxHeight);
+    const view = listbox.ownerDocument.defaultView ?? window;
+    const maxTop = Math.max(0, view.innerHeight - listboxHeight);
     const clampedTop = Math.min(Math.max(desiredTop, 0), maxTop);
 
-    // useLayer positions the popover below the outer anchor. Apply a negative
-    // block-start margin to the layer container so the listbox top moves from
-    // anchorRect.bottom to clampedTop.
-    const clampedOffset = Math.max(0, anchorRect.bottom - clampedTop);
+    // The top-layer popover's offsetTop is its resolved layout top in the
+    // viewport. Unlike getBoundingClientRect(), it excludes the entry transform;
+    // unlike position-area, it needs no knowledge of which fallback won.
+    const popover = listbox.closest<HTMLElement>('[popover]');
+    const anchoredTop = popover?.offsetTop ?? anchorRect.bottom;
+    const offset = Math.max(0, anchorRect.bottom - clampedTop);
 
-    commitPosition(clampedOffset, true);
+    commitPosition(offset, clampedTop - anchoredTop, true);
   }, [
     isOpen,
     selectedItemIndex,
@@ -146,7 +173,7 @@ export function useSelectedItemOffset({
     commitPosition,
   ]);
 
-  return {offset, isPositioned};
+  return {offset, translateY, isPositioned};
 }
 
 // =============================================================================

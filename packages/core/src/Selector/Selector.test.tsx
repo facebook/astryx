@@ -14,6 +14,7 @@ import {readFileSync} from 'node:fs';
 import {
   act,
   render,
+  renderHook,
   screen,
   fireEvent,
   waitFor,
@@ -24,6 +25,7 @@ import * as stylex from '@stylexjs/stylex';
 import {useState} from 'react';
 import type {ReactNode} from 'react';
 import {Selector} from './Selector';
+import {useSelectedItemOffset} from './hooks';
 import {SelectorOption} from './SelectorOption';
 import {Item} from '../Item';
 import type {SelectorOptionData} from './types';
@@ -157,6 +159,7 @@ function mockSelectorRects({
   listboxLayoutHeight = listbox.height,
   selectedItemLayoutTop = selectedItem.top - listbox.top,
   selectedItemLayoutHeight = selectedItem.height,
+  popoverLayoutTop = anchor.bottom,
   viewportHeight = 200,
 }: {
   anchor?: DOMRect;
@@ -166,6 +169,7 @@ function mockSelectorRects({
   listboxLayoutHeight?: number;
   selectedItemLayoutTop?: number;
   selectedItemLayoutHeight?: number;
+  popoverLayoutTop?: number;
   viewportHeight?: number;
 } = {}) {
   const originalGetBoundingClientRect =
@@ -205,6 +209,9 @@ function mockSelectorRects({
   Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
     configurable: true,
     get() {
+      if (this.hasAttribute('popover')) {
+        return popoverLayoutTop;
+      }
       if (this.getAttribute('role') === 'listbox') {
         return 0;
       }
@@ -253,6 +260,43 @@ function mockSelectorRects({
 }
 
 describe('Selector', () => {
+  it('preserves public offset semantics while adding signed translation', async () => {
+    const restoreRects = mockSelectorRects();
+    const anchor = document.createElement('div');
+    anchor.className = 'astryx-selector';
+    const listbox = document.createElement('div');
+    listbox.id = 'public-offset-listbox';
+    listbox.setAttribute('role', 'listbox');
+    const selectedItem = document.createElement('div');
+    selectedItem.id = 'public-offset-listbox-item-1';
+    listbox.appendChild(selectedItem);
+    document.body.append(anchor, listbox);
+
+    try {
+      const {result} = renderHook(() =>
+        useSelectedItemOffset({
+          isOpen: true,
+          selectedItemIndex: 1,
+          listboxId: listbox.id,
+          listboxRef: {current: listbox},
+          anchorRef: {current: anchor},
+        }),
+      );
+
+      await waitFor(() => {
+        expect(result.current).toEqual({
+          offset: 110,
+          translateY: -110,
+          isPositioned: true,
+        });
+      });
+    } finally {
+      anchor.remove();
+      listbox.remove();
+      restoreRects();
+    }
+  });
+
   it('uses a bottom sheet and closes after a selection when requested', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -538,9 +582,46 @@ describe('Selector', () => {
         .getByRole('listbox', {hidden: true})
         .closest('[popover]');
       await waitFor(() => {
-        expect(popover?.getAttribute('style')).toContain(
-          'margin-block-start: -110px',
-        );
+        expect(popover?.getAttribute('style')).toContain('translate: 0 -110px');
+      });
+    } finally {
+      restoreRects();
+    }
+  });
+
+  it("uses the layer's resolved layout top during the existing measurement pass (#5835)", async () => {
+    const restoreRects = mockSelectorRects({
+      anchor: rect({top: 648, bottom: 668, height: 20}),
+      trigger: rect({top: 648, bottom: 668, height: 20}),
+      listbox: rect({top: 512, bottom: 648, height: 136}),
+      selectedItem: rect({top: 544, bottom: 576, height: 32}),
+      listboxLayoutHeight: 136,
+      selectedItemLayoutTop: 32,
+      selectedItemLayoutHeight: 32,
+      popoverLayoutTop: 512,
+      viewportHeight: 720,
+    });
+    const user = userEvent.setup();
+
+    try {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+        />,
+      );
+
+      await user.click(screen.getByRole('combobox'));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]');
+      await waitFor(() => {
+        // CSS placed the 136px menu above the 648px anchor (top 512). The
+        // viewport clamp wants top 584, so the same pre-paint pass moves it
+        // down 72px without changing CSS's chosen fallback.
+        expect(popover?.getAttribute('style')).toContain('translate: 0 72px');
       });
     } finally {
       restoreRects();
@@ -581,9 +662,7 @@ describe('Selector', () => {
         .closest('[popover]');
       await waitFor(() => {
         // 68px geometric alignment plus the 1px optical correction.
-        expect(popover?.getAttribute('style')).toContain(
-          'margin-block-start: -69px',
-        );
+        expect(popover?.getAttribute('style')).toContain('translate: 0 -69px');
       });
     } finally {
       restoreRects();
@@ -641,9 +720,7 @@ describe('Selector', () => {
         .getByRole('listbox', {hidden: true})
         .closest('[popover]');
       await waitFor(() => {
-        expect(popover?.getAttribute('style')).not.toContain(
-          'margin-block-start',
-        );
+        expect(popover?.getAttribute('style')).not.toContain('translate:');
       });
     } finally {
       restoreRects();
@@ -722,7 +799,7 @@ describe('Selector', () => {
           .closest('[popover]') as HTMLElement;
         await waitFor(() => {
           expect(popover.getAttribute('style')).toContain(
-            'margin-block-start: -110px',
+            'translate: 0 -110px',
           );
         });
         expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe('');
