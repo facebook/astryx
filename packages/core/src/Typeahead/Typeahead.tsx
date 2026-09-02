@@ -27,7 +27,12 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {BusyIndicatorLaneProvider} from './busyIndicatorLane';
+import {
+  BusyIndicatorLaneProvider,
+  createBusyIndicatorLane,
+  useIsBusy,
+  type BusyIndicatorLane,
+} from './busyIndicatorLane';
 import {BaseTypeahead} from './BaseTypeahead';
 import {useSize} from '../SizeContext/SizeContext';
 import {
@@ -298,6 +303,39 @@ const wrapperSizeStyles = stylex.create({
  * />
  * ```
  */
+
+/**
+ * The field's inline-end lane: the busy Spinner, then the clear button.
+ *
+ * A separate component so that subscribing to the busy state re-renders THIS
+ * and nothing else. Subscribing from `Typeahead` itself would re-render the
+ * whole field — and, in the Tokenizer that shares this design, every selected
+ * token — twice per search for one glyph.
+ *
+ * Renders nothing when there is neither a spinner nor a clear button, which is
+ * what keeps an empty flex item from taking a gap in the row.
+ */
+function EndLane({
+  lane,
+  loadingLabel,
+  clear,
+}: {
+  lane: BusyIndicatorLane;
+  loadingLabel: string;
+  clear: ReactNode;
+}) {
+  const isBusy = useIsBusy(lane);
+  if (!isBusy && clear == null) {
+    return null;
+  }
+  return (
+    <div {...stylex.props(styles.endLane)}>
+      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {clear}
+    </div>
+  );
+}
+
 export function Typeahead<T extends SearchableItem>({
   ref,
   label,
@@ -362,8 +400,11 @@ export function Typeahead<T extends SearchableItem>({
   // Edit mode: when the user clicks the token to edit the selected value
   // Reported by BaseTypeahead so the indicator can live in this field's own
   // end lane, beside the clear button, rather than in the engine's row.
-  const [isLoading, setIsLoading] = useState(false);
-  const busyLane = useMemo(() => ({onBusyChange: setIsLoading}), []);
+  // The base owns the busy state; this field only paints it. Held in a store
+  // rather than this component's state so a search transition re-renders the
+  // one leaf that shows the Spinner, not the whole field. See
+  // busyIndicatorLane.tsx.
+  const busyLane = useMemo(() => createBusyIndicatorLane(), []);
   const [isEditing, setIsEditing] = useState(false);
   const [editingValue, setEditingValue] = useState<T | null>(null);
 
@@ -569,12 +610,11 @@ export function Typeahead<T extends SearchableItem>({
             />
           </div>
         </BusyIndicatorLaneProvider>
-        {(isLoading || (hasClear && value && !isDisabled)) && (
-          <div {...stylex.props(styles.endLane)}>
-            {isLoading && (
-              <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
-            )}
-            {hasClear && value && !isDisabled && (
+        <EndLane
+          lane={busyLane}
+          loadingLabel={t('@astryx.typeahead.loading')}
+          clear={
+            hasClear && value && !isDisabled ? (
               <InputClearButton
                 label={t('@astryx.typeahead.clearSelection')}
                 onClick={e => {
@@ -582,9 +622,9 @@ export function Typeahead<T extends SearchableItem>({
                   handleClear();
                 }}
               />
-            )}
-          </div>
-        )}
+            ) : null
+          }
+        />
       </div>
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

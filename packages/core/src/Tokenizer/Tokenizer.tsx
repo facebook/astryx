@@ -25,7 +25,12 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {BusyIndicatorLaneProvider} from '../Typeahead/busyIndicatorLane';
+import {
+  BusyIndicatorLaneProvider,
+  createBusyIndicatorLane,
+  useIsBusy,
+  type BusyIndicatorLane,
+} from '../Typeahead/busyIndicatorLane';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {BaseTypeahead} from '../Typeahead/BaseTypeahead';
@@ -394,6 +399,45 @@ const CREATABLE_ID_PREFIX = '__xds_create__';
  * />
  * ```
  */
+/**
+ * The field's inline-end lane: the busy Spinner, then `endContent`, then the
+ * clear button — pinned to the field's first row while tokens wrap below it.
+ *
+ * A separate component so that subscribing to the busy state re-renders THIS
+ * and nothing else. Subscribed from `Tokenizer`, a search transition
+ * re-rendered every selected token twice — twenty tokens meant forty renders
+ * per search for one glyph none of them contain.
+ *
+ * Renders nothing when the lane would be empty, so `useEndLaneReserve` sees no
+ * element, publishes no width, and the input keeps its full content box.
+ */
+function EndLane({
+  lane,
+  laneRef,
+  laneXStyle,
+  loadingLabel,
+  hasStaticContent,
+  children,
+}: {
+  lane: BusyIndicatorLane;
+  laneRef: (node: HTMLElement | null) => void;
+  laneXStyle: stylex.StyleXStyles[];
+  loadingLabel: string;
+  hasStaticContent: boolean;
+  children: ReactNode;
+}) {
+  const isBusy = useIsBusy(lane);
+  if (!isBusy && !hasStaticContent) {
+    return null;
+  }
+  return (
+    <div ref={laneRef} {...stylex.props(laneXStyle)}>
+      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {children}
+    </div>
+  );
+}
+
 export function Tokenizer<T extends SearchableItem>({
   label,
   isLabelHidden = false,
@@ -470,16 +514,21 @@ export function Tokenizer<T extends SearchableItem>({
   // Focus-within state for overflow truncation
   // Reported by BaseTypeahead so the indicator can live in this field's own
   // end lane, beside endContent and the clear button.
-  const [isLoading, setIsLoading] = useState(false);
-  const busyLane = useMemo(() => ({onBusyChange: setIsLoading}), []);
+  // The base owns the busy state; this field only paints it. Held in a store
+  // rather than this component's state — held here, a search transition
+  // re-rendered every selected token twice, for a glyph no token contains.
+  // See busyIndicatorLane.tsx.
+  const busyLane = useMemo(() => createBusyIndicatorLane(), []);
   // What sits in the end lane varies most here — a spinner, arbitrary
   // `endContent`, a clear button, or all three — so its width is measured
   // rather than assumed, and the input reserves it.
   const [laneRef, laneReserve] = useEndLaneReserve(END_LANE_INSET);
-  // Whether a lane renders at all — known from props and state, without
-  // measuring anything, which is why the reserve costs no extra commit.
-  const hasEndLane = Boolean(
-    isLoading || endContent || (hasClear && value.length > 0 && !isDisabled),
+  // The half of the lane's contents this component knows about. The busy half
+  // is the leaf's own business — folding it in here would mean reading the
+  // busy state during this render, which is exactly the re-render the store
+  // exists to avoid.
+  const hasStaticEndLane = Boolean(
+    endContent || (hasClear && value.length > 0 && !isDisabled),
   );
   const [isFocusedWithin, setIsFocusedWithin] = useState(false);
   const isTruncated =
@@ -850,7 +899,10 @@ export function Tokenizer<T extends SearchableItem>({
                 : undefined,
             // Not for the collapsed states above: those give the input no width
             // to pad, and `inputAtMax` zeroes its padding outright.
-            !(isAtMax || isTruncated) && hasEndLane && laneReserve,
+            // Applied whether or not a lane is up: the reserve resolves to
+            // zero until the lane publishes a width, so this does not need to
+            // know about the busy state.
+            !(isAtMax || isTruncated) && laneReserve,
           ]}
         />
       </BusyIndicatorLaneProvider>
@@ -866,25 +918,23 @@ export function Tokenizer<T extends SearchableItem>({
             disabled={isDisabled}
           />
         ))}
-      {hasEndLane && (
-        <div
-          ref={laneRef}
-          {...stylex.props(styles.endSection, endSectionSizeStyles[size])}>
-          {isLoading && (
-            <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
-          )}
-          {endContent}
-          {hasClear && value.length > 0 && !isDisabled && (
-            <InputClearButton
-              label={t('@astryx.tokenizer.clearAll')}
-              onClick={e => {
-                e.stopPropagation();
-                handleClearAll();
-              }}
-            />
-          )}
-        </div>
-      )}
+      <EndLane
+        lane={busyLane}
+        laneRef={laneRef}
+        laneXStyle={[styles.endSection, endSectionSizeStyles[size]]}
+        loadingLabel={t('@astryx.typeahead.loading')}
+        hasStaticContent={hasStaticEndLane}>
+        {endContent}
+        {hasClear && value.length > 0 && !isDisabled && (
+          <InputClearButton
+            label={t('@astryx.tokenizer.clearAll')}
+            onClick={e => {
+              e.stopPropagation();
+              handleClearAll();
+            }}
+          />
+        )}
+      </EndLane>
     </div>
   );
 

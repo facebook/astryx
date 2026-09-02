@@ -24,7 +24,10 @@ import {Typeahead} from './Typeahead';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {BaseTypeahead} from './BaseTypeahead';
-import {BusyIndicatorLaneProvider} from './busyIndicatorLane';
+import {
+  BusyIndicatorLaneProvider,
+  createBusyIndicatorLane,
+} from './busyIndicatorLane';
 import type {SearchSource, SearchableItem} from './types';
 import {InternationalizationProvider} from '../i18n';
 
@@ -1515,9 +1518,13 @@ describe('busy indicator ownership', () => {
     // they already own. Two indicators in one field is the defect this PR
     // exists to fix, so the base must yield rather than add to it.
     const {source, settle} = pendingSource();
-    const onLoadingChange = vi.fn();
+    // A real lane with its notify spied, rather than a hand-built object: the
+    // lane is a store now, and the base must drive the store the wrappers use.
+    const lane = createBusyIndicatorLane();
+    const onLoadingChange = vi.fn(lane.onBusyChange);
     render(
-      <BusyIndicatorLaneProvider value={{onBusyChange: onLoadingChange}}>
+      <BusyIndicatorLaneProvider
+        value={{...lane, onBusyChange: onLoadingChange}}>
         <BaseTypeahead
           searchSource={source}
           value={null}
@@ -1569,9 +1576,13 @@ describe('busy indicator ownership', () => {
     // `false` per character — each one a state write, and on a field that is
     // re-rendering as the user types.
     const {source, settle} = pendingSource();
-    const onLoadingChange = vi.fn();
+    // A real lane with its notify spied, rather than a hand-built object: the
+    // lane is a store now, and the base must drive the store the wrappers use.
+    const lane = createBusyIndicatorLane();
+    const onLoadingChange = vi.fn(lane.onBusyChange);
     render(
-      <BusyIndicatorLaneProvider value={{onBusyChange: onLoadingChange}}>
+      <BusyIndicatorLaneProvider
+        value={{...lane, onBusyChange: onLoadingChange}}>
         <BaseTypeahead
           searchSource={source}
           value={null}
