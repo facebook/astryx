@@ -48,4 +48,9 @@ export {
   toEventError,
 } from './event.mjs';
 
-export {createRedactor, isSensitiveKey, redactArgv, REDACTED} from './redact.mjs';
+export {
+  createRedactor,
+  isSensitiveKey,
+  redactArgv,
+  REDACTED,
+} from './redact.mjs';

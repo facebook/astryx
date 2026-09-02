@@ -64,14 +64,6 @@ const SENSITIVE_KEY_PARTS = [
   'token',
 ];
 
-/**
- * Names that are sensitive on their own but are substrings of ordinary words,
- * so they are matched WHOLE (again after stripping `-`/`_`).
- *
- * These apply only where a name was GIVEN to us — an object field, a declared
- * option, a `--flag` — never to a bare `word=value` found in text. See
- * {@link isSensitiveKey}'s `flagged` parameter for why.
- */
 const SENSITIVE_KEY_EXACT = new Set([
   'creds',
   'key',
@@ -84,87 +76,38 @@ const SENSITIVE_KEY_EXACT = new Set([
 /** Flags whose NEXT argv element is the value, e.g. `--token hunter2`. */
 const SENSITIVE_FLAG_RE = /^--?([\w-]{1,64})$/;
 
-/**
- * `--flag=value` / `KEY=value`, ANY key. Whether the key is sensitive is
- * decided per match by {@link isSensitiveKey}, not encoded in the pattern —
- * one keyword list, and `--api-key`, `--api_key` and `--apiKey` are all the
- * same entry instead of three alternations to keep in step.
- *
- * Global and unanchored, because the same text arrives twice: once as its own
- * argv element, and again quoted inside an error message, a stack frame and
- * the captured stderr — `error: unknown option '--token=…'`. An anchored rule
- * scrubs the first and leaves the other three, which is the same secret,
- * written to the same record.
- *
- * The key half is BOUNDED. An unbounded `[\w-]*` before a keyword makes an
- * unanchored scan quadratic, and this runs over captured output that can be
- * tens of kilobytes — 500KB of word characters followed by `token=` took over
- * seven minutes. 128 is past any real flag or environment variable name, and
- * a bound is what keeps the scan linear; the cost of a longer one is only the
- * work done per candidate.
- *
- * The value half takes an optional matching quote, so `--token="s"` and the
- * JSON spelling `"token":"s"` lose their value like the bare form. Without it
- * the value stops AT the opening quote and the secret survives with quotes
- * around it, which is the shape a config blob or a quoted shell argument
- * arrives in.
- */
 const ASSIGNMENT_RE =
   /(--?[\w-]{1,128}|"[\w.-]{1,128}"|[\w.]{1,128})(\s*[=:]\s*)("[^"]*"|'[^']*'|[^\s'"`,}\]]*)/g;
 
 /** Well-known credential formats worth catching wherever they appear. */
 const CREDENTIAL_PATTERNS = [
-  // GitHub personal access / OAuth / app tokens.
   /\bgh[pousr]_[A-Za-z0-9]{16,}\b/g,
-  // GitLab personal access tokens.
   /\bglpat-[A-Za-z0-9_-]{16,}/g,
-  // Slack tokens.
   /\bxox[abposr]-[A-Za-z0-9-]{10,}\b/g,
-  // AWS access key ids.
   /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g,
-  // Generic "Bearer <token>".
   /\bBearer\s+[A-Za-z0-9._~+/-]{16,}=*/gi,
-  // JSON Web Tokens.
   /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
-  // Anthropic / OpenAI-style keys. The dashed form first: the plain `sk-`
-  // rule stops at the first `-` and would leave the rest of the key standing.
   /\bsk-(?:ant|proj|live|test)-[A-Za-z0-9_-]{16,}/g,
   /\bsk-[A-Za-z0-9]{20,}\b/g,
-  // Stripe secret / restricted keys.
   /\b[sr]k_(?:live|test)_[A-Za-z0-9]{10,}\b/g,
-  // Google API keys.
   /\bAIza[A-Za-z0-9_-]{35}\b/g,
-  // npm automation tokens.
   /\bnpm_[A-Za-z0-9]{30,}\b/g,
-  // Hugging Face.
   /\bhf_[A-Za-z0-9]{30,}\b/g,
-  // SendGrid.
   /\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}/g,
-  // Twilio account / api sids.
   /\b(?:AC|SK)[0-9a-f]{32}\b/g,
-  // A PEM private key, however it was line-wrapped.
   /-----BEGIN[A-Z ]*PRIVATE KEY-----[\s\S]*?-----END[A-Z ]*PRIVATE KEY-----/g,
 ];
 
-/**
- * Shortest string worth measuring for randomness, and the alphabet a candidate
- * may be built from.
- *
- * `/` is deliberately absent even though base64 uses it: paths are the biggest
- * source of long high-entropy-looking runs, and stopping a candidate at a
- * slash keeps every path segment far below the length floor. A `.` disqualifies
- * a candidate for the same reason — dates, versions and filenames all carry
- * one, and the formats that legitimately contain dots (JWT, SendGrid) have
- * their own rule above.
- */
 const ENTROPY_MIN_CHARS = 24;
 const HIGH_ENTROPY_CANDIDATE_RE = new RegExp(
   `[A-Za-z0-9+=_-]{${ENTROPY_MIN_CHARS},512}`,
   'g',
 );
 
+const ENCODED_PAYLOAD_RE =
+  /(?:;base64,|\bsha(?:256|384|512)-|\bsourceMappingURL=)[A-Za-z0-9+/=_-]+/g;
+
 /**
- * Shannon entropy in bits per character.
  * @param {string} value
  * @returns {number}
  */
@@ -181,37 +124,28 @@ function entropyBits(value) {
 }
 
 /**
- * Is this standalone word a credential nobody gave us a name for?
- *
- * The documented hole in the first version of this module: a secret passed as
- * a bare argument — `astryx docs <token>` — has no key to match, no flag in
- * front of it, and no recognizable prefix, so every rule above misses it and
- * it lands in `args`, the error message and the captured stderr at once.
- * Randomness is the only signal left.
- *
- * The threshold scales with length because Shannon entropy is bounded by
- * log2(length) for a short sample: a 24-character random token cannot score
- * above 4.58 however random it is. Capping the reference at 32 stops the bar
- * rising past what a real token reaches.
- *
- * That single measurement is the whole rule, deliberately. Character-class
- * gates are the obvious way to protect commit shas and CamelCase identifiers,
- * and every one that was tried here turned out to be either dead — the
- * threshold already excluded the thing it was aimed at, by 0.2 bits or more —
- * or actively harmful: "must contain a digit" throws away a letters-only
- * passphrase, and "three of four character classes" throws away a
- * lowercase-alphanumeric token, both of which are exactly what this is for.
- * What keeps ordinary strings safe is the margin, so the margin is what the
- * tests pin: a table of shas, uuids, component names, branch names, class
- * names and versions that must survive verbatim.
- *
  * @param {string} word
  * @returns {boolean}
  */
 function looksLikeSecret(word) {
-  // The length floor lives in HIGH_ENTROPY_CANDIDATE_RE, which is what
-  // produces every word this ever sees.
+  if (isOrdered(word)) return false;
   return entropyBits(word) >= 0.9 * Math.log2(Math.min(word.length, 32));
+}
+
+/**
+ * @param {string} word
+ * @returns {boolean}
+ */
+function isOrdered(word) {
+  if (word.length < 4) return false;
+  let turns = 0;
+  for (let i = 2; i < word.length; i += 1) {
+    const a = word.charCodeAt(i - 2);
+    const b = word.charCodeAt(i - 1);
+    const c = word.charCodeAt(i);
+    if ((b > a && c < b) || (b < a && c > b)) turns += 1;
+  }
+  return turns / (word.length - 2) < 0.25;
 }
 
 /** Credentials embedded in a URL's userinfo component. */
@@ -221,20 +155,8 @@ const URL_USERINFO_RE = /(\b[a-z][a-z0-9+.-]*:\/\/)[^/\s:@]+(?::[^/\s@]*)?@/gi;
 const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 
 /**
- * Does this key name mean "the value is a secret"?
- *
  * @param {string | undefined} key
- * @param {boolean} [named] - Was this name GIVEN to us — an object field, a
- *   declared option, an explicit `--flag` — rather than guessed from text?
- *   The short whole-word names only apply when it was.
- *
- *   `key` is the one that forces the distinction. As a declared option name it
- *   plausibly holds a credential, but as a bare `key=` in captured output it is
- *   overwhelmingly ordinary: every React example the CLI prints contains
- *   `<Avatar key={user.id}>`, and `astryx --help` documents its own output
- *   format as aligned `key: value` lines. Applying the whole-word set to text
- *   redacted both — the feature eating the answers it exists to record. `pwd`
- *   is the same story with shell output.
+ * @param {boolean} [named]
  * @returns {boolean}
  */
 export function isSensitiveKey(key, named = true) {
@@ -245,13 +167,6 @@ export function isSensitiveKey(key, named = true) {
 }
 
 /**
- * Scrub an argv array, where a flag and its value are two separate elements.
- *
- * `redact` walks a plain array element by element with no key context, so
- * `['--token', 'hunter2']` reaches it as two ordinary strings and the second
- * one matches nothing. `--flag value` is the ordinary CLI spelling, and it
- * would be perverse for `options` to redact what `argv` prints in full.
- *
  * @param {string[]} argv
  * @param {Redactor} redact
  * @returns {unknown[]}
@@ -308,9 +223,6 @@ function scrubPaths(value, ctx) {
     },
   );
 
-  // The same rule for a Windows path. The posix rule cannot see one — no
-  // leading `/`, backslash separators — so on Windows every absolute path in
-  // a stack trace or an error message survived whole.
   out = out.replace(
     /(^|[\s"'`([{<=,;])([A-Za-z]:\\|\\\\)([^\s"'`)\]}>]{2,})/g,
     (match, lead, root, rest) => {
@@ -320,12 +232,8 @@ function scrubPaths(value, ctx) {
     },
   );
 
-  // Whatever is left, the username can still be sitting in the middle of it:
-  // `/mnt/corp/alice/notes.txt` collapses to `/…/alice/notes.txt`, which keeps
-  // exactly the segment worth losing. Home-relative rewriting only catches the
-  // paths that start at home.
   if (ctx.user) {
-    out = out.replace(ctx.user, REDACTED);
+    out = out.replace(ctx.user, (whole, before) => `${before}${REDACTED}`);
   }
 
   return out;
@@ -346,21 +254,12 @@ function scrubString(value, ctx) {
   out = out.replace(URL_USERINFO_RE, (_m, scheme) => `${scheme}${REDACTED}@`);
   out = out.replace(EMAIL_RE, REDACTED);
 
-  // `--token=abc` / `GITHUB_TOKEN=abc` / `"token": "abc"` survive the patterns
-  // above when the value is an unrecognized format, so drop the right-hand
-  // side by key name. The separator test is the cheap way out: a string with
-  // neither skips the scan entirely.
   if (out.includes('=') || out.includes(':')) {
     out = out.replace(ASSIGNMENT_RE, (whole, key, sep, value) => {
       const raw = String(key);
       const flagged = raw.startsWith('-');
       const name = raw.replace(/^--?/, '').replace(/^"|"$/g, '');
-      // A `--flag=` is a name someone chose for an option; a bare `word=` is
-      // whatever the text happened to contain. Only the first earns the short
-      // whole-word names.
       if (!isSensitiveKey(name, flagged)) return whole;
-      // Keep the value's quoting so the surrounding shape — a JSON blob, a
-      // quoted shell argument — still parses as what it was.
       const q = /^["']/.test(value) ? value[0] : '';
       return `${key}${sep}${q}${REDACTED}${q}`;
     });
@@ -368,18 +267,44 @@ function scrubString(value, ctx) {
 
   out = scrubPaths(out, ctx);
 
-  // Last, because everything above gives a secret a name, a prefix or a
-  // position to be recognized by, and this is what is left when it has none:
-  // a bare argument that is simply too random to be anything else. Running it
-  // after path scrubbing matters — an absolute path is already collapsed to
-  // `/…/two/segments` by then, so it cannot look like one long random run.
   if (out.length >= ENTROPY_MIN_CHARS) {
-    out = out.replace(HIGH_ENTROPY_CANDIDATE_RE, word =>
-      looksLikeSecret(word) ? REDACTED : word,
-    );
+    const skip = encodedPayloadRanges(out);
+    out = out.replace(HIGH_ENTROPY_CANDIDATE_RE, (word, offset) => {
+      if (inAnyRange(offset, skip)) return word;
+      return looksLikeSecret(word) ? REDACTED : word;
+    });
   }
 
   return out;
+}
+
+/**
+ * @param {string} text
+ * @returns {Array<[number, number]>}
+ */
+function encodedPayloadRanges(text) {
+  /** @type {Array<[number, number]>} */
+  const ranges = [];
+  if (!/base64,|sha(?:256|384|512)-|sourceMappingURL=/.test(text))
+    return ranges;
+  ENCODED_PAYLOAD_RE.lastIndex = 0;
+  let m;
+  while ((m = ENCODED_PAYLOAD_RE.exec(text)) !== null) {
+    ranges.push([m.index, m.index + m[0].length]);
+  }
+  return ranges;
+}
+
+/**
+ * @param {number} offset
+ * @param {Array<[number, number]>} ranges
+ * @returns {boolean}
+ */
+function inAnyRange(offset, ranges) {
+  for (const [start, end] of ranges) {
+    if (offset >= start && offset < end) return true;
+  }
+  return false;
 }
 
 /**
@@ -496,14 +421,6 @@ function safeUsername() {
 }
 
 /**
- * A whole-word matcher for the machine's username, or null when there is
- * nothing safe to match.
- *
- * Short names are skipped: a two-character username matches inside half the
- * words in a help screen, and mangling ordinary output to hide something
- * already visible in the home path is a bad trade. Names that ARE ordinary
- * words are skipped for the same reason.
- *
  * @param {string} name
  * @returns {RegExp | null}
  */
@@ -513,13 +430,9 @@ function usernamePattern(name) {
     return null;
   }
   const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`(?<![A-Za-z0-9_-])${escaped}(?![A-Za-z0-9_-])`, 'gi');
+  return new RegExp(`([/\\\\~])${escaped}(?![A-Za-z0-9_-])`, 'gi');
 }
 
-/**
- * Usernames that are also ordinary words. Replacing these would corrupt help
- * text and error messages far more than it protects.
- */
 const COMMON_WORD_USERNAMES = new Set([
   'admin',
   'build',

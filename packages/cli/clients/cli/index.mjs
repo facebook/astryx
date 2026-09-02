@@ -137,9 +137,6 @@ export async function loadProjectDebugHandler() {
     const configPath = findConfigPath(process.cwd());
     if (!configPath) return;
     if (!fs.readFileSync(configPath, 'utf-8').includes('debug')) {
-      // Not "no handler" — "we declined to look". Told to the recorder rather
-      // than warned about here, because it is only worth mentioning if a
-      // handler shows up anyway and proves the guess wrong.
       debug.noteConfigGateSkipped();
       return;
     }

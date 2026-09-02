@@ -189,11 +189,7 @@ export interface DebugEvent {
  * reaches the log. Anything the handler throws is swallowed; recording must
  * never fail a command.
  *
- * The two ways a handler could once still reach its own command are closed.
- * `process.exit` is inert while the handler runs — the attempt is reported on
- * stderr rather than allowed to replace the code the command returned — and
- * anything the handler writes to stdout is sent to stderr instead, because
- * stdout belongs to the command and under `--json` it carries exactly one
- * envelope.
+ * `process.exit` is ignored and synchronous stdout writes go to stderr.
+ * Saved writers, deferred writes, and inherited child stdio are not contained.
  */
 export type DebugEventHandler = (event: DebugEvent) => void;

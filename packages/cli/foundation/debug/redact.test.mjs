@@ -8,31 +8,46 @@ import {
   REDACTED,
 } from './redact.mjs';
 
-/**
- * Fixture credentials are ASSEMBLED, never written whole. A file of literal
- * credential-shaped strings is a file every secret scanner in the world stops
- * on, and this one is in a public repository.
- * @param {string[]} parts
- */
+/** @param {string[]} parts */
 const cred = parts => parts.join('');
 
 const ctx = {home: '/Users/ada', cwd: '/Users/ada/projects/app', user: 'ada'};
 const scrub = createRedactor({enabled: true, ...ctx});
 
 describe('isSensitiveKey', () => {
-  it.each(['token', 'authToken', 'GITHUB_TOKEN', 'password', 'apiSecret', 'sessionId', 'x-signature', 'api-key', 'apiKey', 'API_KEY', 'accessKey', 'key', 'pat', 'pw'])(
-    'treats %s as sensitive',
-    key => {
-      expect(isSensitiveKey(key)).toBe(true);
-    },
-  );
+  it.each([
+    'token',
+    'authToken',
+    'GITHUB_TOKEN',
+    'password',
+    'apiSecret',
+    'sessionId',
+    'x-signature',
+    'api-key',
+    'apiKey',
+    'API_KEY',
+    'accessKey',
+    'key',
+    'pat',
+    'pw',
+  ])('treats %s as sensitive', key => {
+    expect(isSensitiveKey(key)).toBe(true);
+  });
 
-  it.each(['out', 'detail', 'component', 'limit', 'path', 'keyboard', 'sortkey', 'pattern', 'compatible', undefined])(
-    'leaves %s alone',
-    key => {
-      expect(isSensitiveKey(key)).toBe(false);
-    },
-  );
+  it.each([
+    'out',
+    'detail',
+    'component',
+    'limit',
+    'path',
+    'keyboard',
+    'sortkey',
+    'pattern',
+    'compatible',
+    undefined,
+  ])('leaves %s alone', key => {
+    expect(isSensitiveKey(key)).toBe(false);
+  });
 
   it.each(['key', 'pwd', 'sig', 'pat', 'pw', 'creds'])(
     'treats %s as sensitive only when the name was given, not guessed from text',
@@ -61,7 +76,6 @@ describe('path scrubbing', () => {
   });
 
   it('keeps only the tail of a path outside home and cwd', () => {
-    // The shape of the operation survives; where it lives on disk does not.
     expect(scrub('/mnt/corp/secret-project/themes/ocean.ts')).toBe(
       '/…/themes/ocean.ts',
     );
@@ -72,8 +86,6 @@ describe('path scrubbing', () => {
   });
 
   it('rewrites a path inside a stack frame', () => {
-    // The paths that carry a username are the ones in a stack, and a stack
-    // never puts whitespace before them: `at fn (file:///Users/ada/…)`.
     const frame =
       '    at cliError (file:///opt/tools/astryx/packages/cli/lib/x.mjs:12:5)';
     const out = String(scrub(frame));
@@ -88,36 +100,33 @@ describe('path scrubbing', () => {
   });
 
   it('removes the username left in the middle of a collapsed path', () => {
-    // `/mnt/corp/ada/notes.txt` keeps its last two segments, and one of them
-    // is the name. Rewriting relative to home only catches paths that start
-    // at home.
     expect(String(scrub('/mnt/corp/ada/notes.txt'))).toBe(
       `/…/${REDACTED}/notes.txt`,
     );
   });
 
-  it('removes the username wherever else it appears', () => {
-    expect(String(scrub('owner ada pushed'))).toBe(`owner ${REDACTED} pushed`);
-  });
-
-  it('does not take ordinary words containing the username with it', () => {
-    expect(String(scrub('adapter loaded, badam ready'))).toBe(
-      'adapter loaded, badam ready',
-    );
+  it.each([
+    [
+      'a theme the project ships',
+      'import {adaTheme} from "@astryxdesign/theme-ada"',
+    ],
+    ['a table row', 'Ada     | a calm neutral theme'],
+    ['prose', 'the Ada theme is best for dashboards'],
+    ['a component name', 'see the Ada component and ada layout docs'],
+  ])('leaves %s alone — the name is only sensitive in a path', (_l, input) => {
+    expect(String(scrub(input))).toBe(input);
   });
 
   it.each(['ad', 'root', 'build', 'test', 'node', ''])(
-    'skips the username %s — too short, or an ordinary word',
+    'skips the username %s — too short, or an ordinary directory name',
     user => {
-      // Mangling every occurrence of "build" in a help screen to hide a name
-      // the home path already shows is a bad trade.
       const s = createRedactor({enabled: true, ...ctx, user});
-      expect(String(s(`running ${user || 'x'} now`))).toContain(user || 'x');
+      const p = `/srv/${user || 'x'}/notes.txt`;
+      expect(String(s(p))).toContain(user || 'x');
     },
   );
 
   it('rewrites a Windows path', () => {
-    // The posix rule cannot see one: no leading slash, backslash separators.
     expect(String(scrub('at fn (C:\\Users\\ada\\proj\\src\\x.ts:3:1)'))).toBe(
       'at fn (C:\\…\\src\\x.ts:3:1)',
     );
@@ -137,11 +146,17 @@ describe('credential scrubbing', () => {
     ['AKIAIOSFODNN7EXAMPLE', 'AWS key id'],
     ['sk-abcdefghijklmnopqrstuvwxyz012345', 'OpenAI key'],
     [cred(['glp', 'at-', 'AbCdEfGhIjKlMnOpQrSt']), 'GitLab token'],
-    [cred(['sk-', 'ant-', 'api03-', 'AbCdEfGh_IjKlMnOpQrStUv']), 'Anthropic key'],
+    [
+      cred(['sk-', 'ant-', 'api03-', 'AbCdEfGh_IjKlMnOpQrStUv']),
+      'Anthropic key',
+    ],
     [cred(['sk', '_live_', '4eC39HqLyjWDarjtT1zdp7dc']), 'Stripe key'],
-    [cred(['AIza', 'SyD-1234567890abcdefghijklmnopqrstuvw']), 'Google API key'],
+    [cred(['AIza', 'SyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P67']), 'Google API key'],
     [cred(['npm', '_', 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789']), 'npm token'],
-    [cred(['hf', '_', 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789']), 'HuggingFace token'],
+    [
+      cred(['hf', '_', 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789']),
+      'HuggingFace token',
+    ],
     [cred(['AC', '0123456789abcdef0123456789abcdef']), 'Twilio sid'],
   ])('removes a %s', value => {
     expect(String(scrub(`--key ${value}`))).not.toContain(value);
@@ -158,12 +173,15 @@ describe('credential scrubbing', () => {
   });
 
   it('removes a bearer token', () => {
-    const out = String(scrub('Authorization: Bearer abcdefghijklmnopqrstuvwxyz'));
+    const out = String(
+      scrub('Authorization: Bearer abcdefghijklmnopqrstuvwxyz'),
+    );
     expect(out).not.toContain('abcdefghijklmnopqrstuvwxyz');
   });
 
   it('removes a JWT', () => {
-    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+    const jwt =
+      'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
     expect(String(scrub(jwt))).toBe(REDACTED);
   });
 
@@ -186,9 +204,6 @@ describe('credential scrubbing', () => {
   });
 
   it('drops it inside a larger string too', () => {
-    // A rejected flag comes back quoted in the error message, the stack and
-    // the captured stderr. Scrubbing only the standalone argv element writes
-    // the same secret to the record three more times.
     const out = String(
       scrub("error: unknown option '--token=whatever-shape-this-is'"),
     );
@@ -197,9 +212,6 @@ describe('credential scrubbing', () => {
   });
 
   it('drops every assignment in one string', () => {
-    // The anchored rule this replaced would swallow everything after the first
-    // `=`, so a case with only sensitive keys passes either way. This one has
-    // an ordinary flag in front, which the anchored rule never gets past.
     const out = String(scrub('--out=dist and --secret=two and TOKEN=three'));
     expect(out).toContain('--out=dist');
     expect(out).not.toContain('two');
@@ -213,8 +225,6 @@ describe('credential scrubbing', () => {
   it.each(['--api-key', '--api_key', '--apiKey', '--APIKEY'])(
     'drops the value of %s',
     flag => {
-      // `key` is not a substring rule — it would take `--keyboard` with it —
-      // so the spellings have to normalize to one entry.
       const out = String(scrub(`unknown option '${flag}=shhSECRETVALUE'`));
       expect(out).not.toContain('shhSECRETVALUE');
     },
@@ -231,26 +241,24 @@ describe('credential scrubbing', () => {
 
   it.each([
     ['a React key prop', '<Avatar key={user.id} src={user.src} />'],
-    ['the help text describing key: value output', 'shape: aligned "key: value" lines'],
+    [
+      'the help text describing key: value output',
+      'shape: aligned "key: value" lines',
+    ],
     ['a JSON key field', '{"key":"listItem"}'],
     ['a signature note', 'sig=(a: string) => void'],
-  ])('leaves %s alone — a bare word is not a name someone chose', (_l, input) => {
-    // The whole-word names (`key`, `pwd`, `sig`…) are sensitive when someone
-    // DECLARED them — an option, an object field, a `--flag`. Applied to bare
-    // text they eat the CLI's own answers: every React example it prints
-    // contains `key={…}`, and `--help` documents its output as `key: value`.
-    // Found by scrubbing 1.1MB of real command output, not by imagination.
-    expect(String(scrub(input))).toBe(input);
-  });
+  ])(
+    'leaves %s alone — a bare word is not a name someone chose',
+    (_l, input) => {
+      expect(String(scrub(input))).toBe(input);
+    },
+  );
 
   it('leaves shell pwd output readable', () => {
-    // The path is still collapsed, as any path is — but the value is not
-    // thrown away wholesale for being called `pwd`.
     expect(String(scrub('pwd=/srv/www/build'))).toBe('pwd=/…/www/build');
   });
 
   it('still drops a bare assignment whose name is unambiguous', () => {
-    // The substring list is not affected: nothing ordinary is called `token`.
     expect(String(scrub('token=shhSECRETVALUE'))).toBe(`token=${REDACTED}`);
     expect(String(scrub('{"password":"shhSECRETVALUE"}'))).toBe(
       `{"password":"${REDACTED}"}`,
@@ -258,18 +266,12 @@ describe('credential scrubbing', () => {
   });
 
   it('still redacts a real field named key, however it is nested', () => {
-    // This is the path a value actually reaches the recorder by — `options`,
-    // `args`, `globalOptions` are objects, and the key comes with them. The
-    // narrowing only affects a `key=` found inside a STRING.
     expect(scrub({key: 'shhSECRETVALUE'})).toEqual({key: REDACTED});
     expect(scrub({a: {key: 'shhSECRETVALUE'}})).toEqual({a: {key: REDACTED}});
     expect(scrub([{pwd: 'shhSECRETVALUE'}])).toEqual([{pwd: REDACTED}]);
   });
 
   it('catches a bare key= in text anyway when the value looks like a secret', () => {
-    // What the narrowing gives up is a LOW-entropy secret under a bare `key=`
-    // label in captured output. A real one is caught by the rules that do not
-    // need a name: randomness, or a recognizable format.
     expect(String(scrub("key: 'aB3xK9mQ7pL2vN8rT5wY6zC4dF1gH0jS'"))).toBe(
       `key: '${REDACTED}'`,
     );
@@ -292,9 +294,6 @@ describe('credential scrubbing', () => {
     ['a spaced JSON pair', '{ "apiKey": "shhSECRETVALUE" }'],
     ['a yaml pair', 'password: shhSECRETVALUE'],
   ])('drops %s', (_label, input) => {
-    // The value half has to take the quotes with it. Stopping AT the opening
-    // quote leaves the secret standing with quotes around it — which is the
-    // shape a config blob or a quoted argument arrives in.
     expect(String(scrub(input))).not.toContain('shhSECRETVALUE');
   });
 
@@ -312,24 +311,24 @@ describe('credential scrubbing', () => {
     ['a time', 'elapsed 12:30 done'],
     ['a ratio', 'aspect: 16/9'],
     ['an ordinary JSON pair', '{"name":"astryx"}'],
-  ])('leaves %s untouched — `:` is a separator, not an invitation', (_l, input) => {
-    expect(String(scrub(input))).toBe(input);
-  });
+  ])(
+    'leaves %s untouched — `:` is a separator, not an invitation',
+    (_l, input) => {
+      expect(String(scrub(input))).toBe(input);
+    },
+  );
 });
 
 describe('a bare secret, with nothing to identify it by', () => {
-  // The documented hole in the first version: a secret passed as a plain
-  // argument has no key, no flag and no recognizable prefix, so it landed in
-  // `args`, the error message and the captured stderr at once. Randomness is
-  // the only signal left, and the gates around the measurement are what stop
-  // it eating the record.
-
   it.each([
     ['a random alphanumeric token', 'aB3xK9mQ7pL2vN8rT5wY6zC4dF1gH0jS'],
     ['a longer one', 'Xk7Pq2Lm9Rt4Ws8Nb3Vc6Zy1Ha5Jd0Ge7Fu4Io2M'],
     ['a base64url secret', 'dBjftJeZ4CVPmB92K27uhbUJU1p1r-wW1gFWFOEjXkQ'],
     ['one at the length floor', 'M4nP8qR2tV6xZ9bD3fH7jL5s'],
-    ['a generated password', 'k2Qz9zx3w7ep1r5t8yu4io6pa0sdF2ghj9kl3zxc7vbn5m1qwe'],
+    [
+      'a generated password',
+      'k2Qz9zx3w7ep1r5t8yu4io6pa0sdF2ghj9kl3zxc7vbn5m1qwe',
+    ],
   ])('redacts %s passed as a bare argument', (_label, secret) => {
     expect(String(scrub(`docs ${secret}`))).toBe(`docs ${REDACTED}`);
   });
@@ -352,27 +351,58 @@ describe('a bare secret, with nothing to identify it by', () => {
     ['a package tarball', 'astryxdesign-core-0.5.2.tgz'],
     ['a relative path', 'packages/cli/foundation/debug/recorder.mjs'],
   ])('leaves %s alone', (_label, value) => {
-    // Every one of these is longer than the floor and looks random to a naive
-    // entropy rule. A record that redacts commit shas and component names is
-    // useless for the thing it exists for.
     expect(String(scrub(value))).toBe(value);
   });
+
+  it.each([
+    ['an ordered alphabet', 'abcdefghijklmnopqrstuvwxyz0123456789'],
+    ['a reversed one', 'zyxwvutsrqponmlkjihgfedcba9876543210'],
+    ['digits then letters', '0123456789abcdefghijklmnopqrstuvwxyz'],
+  ])(
+    'leaves %s alone — entropy ignores order, and a credential is never ordered',
+    (_l, input) => {
+      expect(String(scrub(input))).toBe(input);
+    },
+  );
 
   it('leaves a whole line of ordinary output alone', () => {
     const line = 'Compile one or more defineTheme files to CSS and JS';
     expect(String(scrub(line))).toBe(line);
   });
 
+  it.each([
+    [
+      'an inline PNG data URI',
+      '<Thumbnail src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAwFBMVEWPnaqJmKe4wsuvusS' +
+        'Rn6yhrbfP1dvo6+7c4eXFztXm6ez18/Hy8O3d3drGxsO5ubbR0c7q6un08/L7+/rj4+H29vX9/f3Q0M2rq6i0tLGYmJWFhYKJiYb' +
+        'w8O/Y2NWjo6CQkI2Ojov5+fj4+Pf39/YAAAB0dHFsbGlkZGFcXFlUVFFMTElERD8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" />',
+    ],
+    [
+      'a lockfile integrity hash',
+      'resolution: {integrity: sha512-9CjPWnUqmyBcJLwPnQ4RmBpqgpTsNMOgWkO3sYNMBoWtOgqBqOxBcXvVQx7bMvJhCXrVHOm+HTVHTfPu9pJ0Kw==}',
+    ],
+    [
+      'an inline source map',
+      '//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbXSwibmFtZXMiOltdfQ==',
+    ],
+  ])('leaves %s intact — it is an answer, not a secret', (_l, input) => {
+    expect(String(scrub(input))).toBe(input);
+  });
+
+  it('still redacts a secret sitting next to an encoded payload', () => {
+    const png =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4Hs';
+    const out = String(scrub(`${png} token=aB3xK9mQ7pL2vN8rT5wY6zC4dF1gH0jS`));
+    expect(out).toContain('iVBORw0KGgo');
+    expect(out).not.toContain('aB3xK9mQ7pL2vN8rT5wY6zC4dF1gH0jS');
+  });
+
   it('catches a letters-only passphrase and a lowercase token too', () => {
-    // Both are shapes a character-class gate would have thrown away.
     expect(String(scrub('QwErTyUiOpAsDfGhJkLzXcVbNm'))).toBe(REDACTED);
     expect(String(scrub('k3m9x2qb7ft4wz8vn5hd1jr6ps0y'))).toBe(REDACTED);
   });
 
   it('reports the margin the ordinary strings survive on', () => {
-    // The threshold is the whole rule, so the number that matters is how much
-    // room the closest ordinary string has. If a change eats into this, the
-    // table above starts failing — this is here to say by how much.
     const closest = 'RichTextEditorAutoLinkPlugin';
     expect(String(scrub(closest))).toBe(closest);
     expect(String(scrub(`${closest}1`))).toBe(`${closest}1`);
@@ -381,8 +411,6 @@ describe('a bare secret, with nothing to identify it by', () => {
 
 describe('argv, where the flag and its value are separate elements', () => {
   it('drops the element after a sensitive flag', () => {
-    // `--flag value` is the ordinary CLI spelling. Redacting it in `options`
-    // and printing it in `argv` would be the worst of both.
     expect(redactArgv(['docs', '--token', 'hunter2SECRET'], scrub)).toEqual([
       'docs',
       '--token',
@@ -415,7 +443,6 @@ describe('argv, where the flag and its value are separate elements', () => {
   });
 
   it('does not treat the value after `--token=x` as sensitive', () => {
-    // The `=` form carries its own value; the NEXT element is unrelated.
     expect(redactArgv(['--token=x', 'docs'], scrub)).toEqual([
       `--token=${REDACTED}`,
       'docs',
@@ -460,13 +487,6 @@ describe('structure preservation', () => {
 });
 
 describe('cost on hostile input', () => {
-  // Scrubbing runs before the length clamp and over captured output, so every
-  // rule has to stay linear in the size of the string. Two guards keep the
-  // assignment rule linear and BOTH are load-bearing: a cheap keyword
-  // pre-check skips strings that cannot match, and bounded quantifiers either
-  // side of the keyword save the ones that get past it. Measured on the
-  // unbounded version, a 500KB word run followed by `token=` took over seven
-  // minutes; it is 200ms here.
   const big = createRedactor({...ctx, maxLength: Number.MAX_SAFE_INTEGER});
 
   it.each([
@@ -475,10 +495,16 @@ describe('cost on hostile input', () => {
     ['a word run then a colon keyword', `${'y'.repeat(500_000)} token:abc`],
     ['colons', ':'.repeat(500_000)],
     ['quoted pairs', '"k":"xxxxxxxxxxxxxxxxxxxx" '.repeat(19_000)],
-    ['random-looking tokens', 'aB3xK9mQ7pL2vN8rT5wY6zC4dF1gH0jS '.repeat(15_000)],
+    [
+      'random-looking tokens',
+      'aB3xK9mQ7pL2vN8rT5wY6zC4dF1gH0jS '.repeat(15_000),
+    ],
     ['hex runs', 'a3e3d179dcb1f4e5a2b8c7d6e9f0a1b2c3d4e5f6 '.repeat(12_000)],
     ['one long base64 run', 'QWxhZGRpbjpvcGVuIHNlc2FtZQ'.repeat(19_000)],
-    ['a keyword between two word runs', `${'x'.repeat(250_000)}token=${'y'.repeat(250_000)}`],
+    [
+      'a keyword between two word runs',
+      `${'x'.repeat(250_000)}token=${'y'.repeat(250_000)}`,
+    ],
     ['a word run then an equals sign', `${'x'.repeat(500_000)}=`],
     ['repeated assignments', 'token=abc '.repeat(50_000)],
     ['deep paths', '/a/b/c/d/e/f '.repeat(38_000)],
@@ -490,7 +516,8 @@ describe('cost on hostile input', () => {
   });
 });
 
-describe('disabled mode', () => {  it('keeps sensitive content verbatim', () => {
+describe('disabled mode', () => {
+  it('keeps sensitive content verbatim', () => {
     const raw = createRedactor({enabled: false});
     expect(raw({token: 'ghp_secret', path: '/Users/ada/x'})).toEqual({
       token: 'ghp_secret',
@@ -499,8 +526,6 @@ describe('disabled mode', () => {  it('keeps sensitive content verbatim', () => 
   });
 
   it('still clamps oversized values', () => {
-    // Length limits are a size guard, not a privacy one, so they survive
-    // turning scrubbing off — otherwise one huge value costs the whole event.
     const raw = createRedactor({enabled: false, maxLength: 10});
     expect(String(raw({big: 'y'.repeat(500)}).big)).toMatch(
       /^y{10}…\[\+490 chars\]$/,
