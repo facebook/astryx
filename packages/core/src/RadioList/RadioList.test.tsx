@@ -666,13 +666,147 @@ describe('RadioList', () => {
             value="a"
             data-testid="item-a"
             id="item-a-id"
-            aria-label="First option"
+            aria-describedby="help-text"
           />
         </RadioList>,
       );
       const item = screen.getByTestId('item-a');
       expect(item).toHaveAttribute('id', 'item-a-id');
-      expect(item).toHaveAttribute('aria-label', 'First option');
+      expect(item).toHaveAttribute('aria-describedby', 'help-text');
+    });
+
+    it('routes aria-label to the radio control, not the row', () => {
+      render(
+        <RadioList label="Preference" value="" onChange={() => {}}>
+          <RadioListItem
+            label="Option A"
+            value="a"
+            data-testid="item-a"
+            aria-label="First option"
+          />
+        </RadioList>,
+      );
+      expect(screen.getByTestId('item-a')).not.toHaveAttribute('aria-label');
+      expect(
+        screen.getByRole('radio', {name: 'First option'}),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('RadioListItem rich content', () => {
+    it('names the radio from the text of a ReactNode label', () => {
+      render(
+        <RadioList label="Plans" value="" onChange={() => {}}>
+          <RadioListItem
+            label={
+              <span>
+                Pro plan <em>(recommended)</em>
+              </span>
+            }
+            value="pro"
+          />
+        </RadioList>,
+      );
+      // The radio points at its visible label, so the name is computed from
+      // the rich node's own text — unlike CheckboxListItem, whose control has
+      // a separate hidden label and needs aria-label to say anything useful.
+      expect(
+        screen.getByRole('radio', {name: 'Pro plan (recommended)'}),
+      ).toBeInTheDocument();
+    });
+
+    it('lets aria-label override the name a ReactNode label would compute', () => {
+      render(
+        <RadioList label="Plans" value="" onChange={() => {}}>
+          <RadioListItem
+            label={
+              <span>
+                Pro plan <em>(recommended)</em>
+              </span>
+            }
+            aria-label="Pro plan"
+            value="pro"
+          />
+        </RadioList>,
+      );
+      expect(screen.getByRole('radio', {name: 'Pro plan'})).toBeInTheDocument();
+    });
+
+    it('selects the option when a ReactNode label is clicked', async () => {
+      const onChange = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <RadioList label="Plans" value="" onChange={onChange}>
+          <RadioListItem label={<span>Pro plan</span>} value="pro" />
+        </RadioList>,
+      );
+      await user.click(screen.getByText('Pro plan'));
+      expect(onChange).toHaveBeenCalledWith('pro');
+    });
+
+    it('keeps a link in a ReactNode label independent from selection', async () => {
+      const onChange = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <RadioList label="Plans" value="" onChange={onChange}>
+          <RadioListItem
+            label={
+              <>
+                Pro plan <a href="#pricing">pricing details</a>
+              </>
+            }
+            aria-label="Pro plan"
+            value="pro"
+          />
+        </RadioList>,
+      );
+      const radio = screen.getByRole('radio', {name: 'Pro plan'});
+      const link = screen.getByRole('link', {name: 'pricing details'});
+      await user.tab();
+      expect(radio).toHaveFocus();
+      await user.tab();
+      expect(link).toHaveFocus();
+      await user.click(link);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('renders a ReactNode description and keeps it linked to the radio', async () => {
+      const onChange = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <RadioList label="Plans" value="" onChange={onChange}>
+          <RadioListItem
+            label="Pro plan"
+            description={
+              <span>
+                See the <a href="#pricing">pricing page</a>
+              </span>
+            }
+            value="pro"
+          />
+        </RadioList>,
+      );
+      const radio = screen.getByRole('radio', {name: 'Pro plan'});
+      expect(radio).toHaveAccessibleDescription('See the pricing page');
+      // The row delegates surface clicks to the radio, but a nested link is
+      // its own click target — following it must not also select the option.
+      await user.click(screen.getByRole('link', {name: 'pricing page'}));
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('leaves aria-describedby off when a conditional description renders nothing', () => {
+      const showDetails = false;
+      render(
+        <RadioList label="Plans" value="" onChange={() => {}}>
+          <RadioListItem
+            label="Pro plan"
+            // The common conditional-slot idiom yields `false`, not undefined.
+            description={showDetails && <span>Billing details</span>}
+            value="pro"
+          />
+        </RadioList>,
+      );
+      expect(screen.getByRole('radio')).not.toHaveAttribute('aria-describedby');
     });
   });
 

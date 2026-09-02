@@ -25,6 +25,27 @@ const userSource: SearchSource = {
   bootstrap: () => users.slice(0, 5),
 };
 
+/**
+ * A remote source, near enough — the busy state only exists between the
+ * keystroke and the response, so a synchronous source never shows it.
+ */
+const slowUserSource: SearchSource = {
+  search: (query: string) =>
+    new Promise(resolve => {
+      setTimeout(
+        () =>
+          resolve(
+            users.filter(u =>
+              u.label.toLowerCase().includes(query.toLowerCase()),
+            ),
+          ),
+        1200,
+      );
+    }),
+  bootstrap: () =>
+    new Promise(resolve => setTimeout(() => resolve(users.slice(0, 5)), 1200)),
+};
+
 const meta: Meta<typeof Tokenizer> = {
   title: 'Core/Tokenizer',
   component: Tokenizer,
@@ -453,4 +474,52 @@ export const StatusVariantComparison: Story = {
       </div>
     );
   },
+};
+
+export const Loading: Story = {
+  render: args => {
+    const [value, setValue] = useState<SearchableItem[]>([users[0]]);
+    return (
+      <Tokenizer
+        {...args}
+        searchSource={slowUserSource}
+        value={value}
+        onChange={items => setValue(items)}
+        hasClear
+        endContent={<span>{value.length} selected</span>}
+      />
+    );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Search people...',
+  },
+  name: 'Loading (async source, with clear and end content)',
+};
+
+/**
+ * Tokens plus a clear-all button — the two ends of the field. Under RTL they
+ * must swap sides; this is the story the RTL audit measures as a D2
+ * layout-order-flip.
+ */
+export const LogicalOrder: Story = {
+  render: args => {
+    const [value, setValue] = useState([users[0], users[2]]);
+    return (
+      <div style={{width: 420}}>
+        <Tokenizer
+          {...args}
+          searchSource={userSource}
+          value={value}
+          onChange={items => setValue(items)}
+        />
+      </div>
+    );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Add more...',
+    hasClear: true,
+  },
+  name: 'Logical order',
 };

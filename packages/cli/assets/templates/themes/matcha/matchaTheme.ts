@@ -13,7 +13,7 @@ import {matchaIconRegistry} from './icons';
 
 /** Matcha syntax palette — earthy greens and warm tones. */
 const matchaSyntax = defineSyntaxTheme({
-  name: 'xds-matcha',
+  name: 'astryx-matcha',
   tokens: {
     keyword: ['#5a6b2a', '#a8bf6a'],
     string: ['#2e6b4a', '#7bc49e'],

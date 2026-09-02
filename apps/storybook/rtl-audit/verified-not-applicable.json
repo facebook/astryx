@@ -2,5 +2,13 @@
   {
     "component": "core/Spinner",
     "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG — two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
+  },
+  {
+    "component": "core/Table",
+    "reason": "The Core/Table stories render native table rows and cells inside an overflow-x scroll wrapper. Column order, start/end alignment, column dividers and container bleed use table flow, text-align start/end, border-inline-end and logical inline margins, all resolved by CSS for the document direction. Horizontal overflow is native scrolling with no component-owned next/previous control or directional drag behavior, and these stories render no directional glyph or positioned element with a horizontal transform."
+  },
+  {
+    "component": "core/Text",
+    "reason": "Text sets typography — size, weight, colour, line-height, wrapping, truncation — and nothing else. Its one alignment prop is `justify`, which compiles to the logical `text-align: start | center | end` and defaults to `start`, so text hangs off the correct edge in either direction without a component-side branch. Truncation is `text-overflow: ellipsis` and `-webkit-line-clamp`, both of which put the ellipsis at the reading end on their own, and the tooltip that accompanies a clamped string is placed with the logical `above`/`below`/`start`/`end` vocabulary. Nothing is positioned, nothing is transformed, and the component renders no glyph, separator, or control."
   }
 ]

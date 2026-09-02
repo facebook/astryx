@@ -331,6 +331,66 @@ describe('visual acceptance workflow concurrency', () => {
     expect(releasePublisher).not.toContain('/tmp/gh-pages');
   });
 
+  it('enforces the main-push stable-site chain through the Actions Pages deployer', () => {
+    const stableSite = workflow('deploy.yml');
+    const pages = workflow('pages-deploy.yml');
+    const stableSiteHeader = stableSite.slice(
+      0,
+      stableSite.indexOf('\npermissions:'),
+    );
+
+    expect(stableSiteHeader).toContain('name: Deploy');
+    expect(stableSiteHeader).toContain("branches: ['main']");
+    expect(stableSite).toContain(
+      'node .github/scripts/gh-pages-publisher.mjs stable-site --source staged',
+    );
+    expect(pages).toContain("- 'Deploy'");
+    expect(pages).toContain('ref: gh-pages');
+    expect(pages).toContain('actions/upload-pages-artifact@v5');
+    expect(pages).toContain('actions/deploy-pages@v5');
+  });
+
+  it('deploys the latest gh-pages snapshot without cancelling an active deployment', () => {
+    const pages = workflow('pages-deploy.yml');
+    const reusablePreview = workflow('deploy-preview.yml');
+    const prComment = workflow('pr-comment.yml');
+    const directPublisherNames = fs
+      .readdirSync(WORKFLOWS)
+      .filter(file => file.endsWith('.yml'))
+      .filter(file => file !== 'deploy-preview.yml')
+      .map(file => workflow(file))
+      .filter(value => value.includes('gh-pages-publisher.mjs'))
+      .map(value => value.match(/^name: (.+)$/m)?.[1])
+      .filter(Boolean);
+
+    for (const source of directPublisherNames) {
+      expect(pages).toContain(`- '${source}'`);
+    }
+    expect(reusablePreview).toContain('workflow_call:');
+    expect(prComment).toContain('uses: ./.github/workflows/deploy-preview.yml');
+    expect(pages).toContain("- 'PR Comment'");
+    expect(pages).toContain('workflow_dispatch:');
+    expect(pages).toContain('group: github-pages-deployment');
+    expect(pages).toContain('cancel-in-progress: false');
+    expect(pages).toContain('pages: write');
+    expect(pages).toContain('id-token: write');
+    expect(pages).toContain('actions/configure-pages@v6');
+  });
+
+  it('queues an Actions deployment after the supported manual report publisher', () => {
+    const report = fs.readFileSync(
+      path.join(ROOT, 'internal/vibe-tests/src/deploy-report.ts'),
+      'utf8',
+    );
+    const publish = report.indexOf('gh-pages-publisher.mjs vibe-report');
+    const deploy = report.indexOf(
+      'gh workflow run pages-deploy.yml --repo ${shellQuote(repository)} --ref main',
+    );
+
+    expect(publish).toBeGreaterThan(-1);
+    expect(deploy).toBeGreaterThan(publish);
+  });
+
   it('grants queued gh-pages publishers read access to overlapping workflow runs', () => {
     const deploy = workflow('deploy.yml');
     const deployJob = deploy.slice(

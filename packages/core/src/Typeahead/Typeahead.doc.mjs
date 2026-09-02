@@ -33,6 +33,12 @@ const anatomy = [
       'Token that presents the selected item while the control is not in edit mode.',
   },
   {
+    name: 'Spinner',
+    required: false,
+    description:
+      'Loading indicator shown at the end of the input surface while a search is in flight.',
+  },
+  {
     name: 'Clear button',
     required: false,
     description:
