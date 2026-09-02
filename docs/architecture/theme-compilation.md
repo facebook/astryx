@@ -24,7 +24,7 @@ verified_by:
     packages/cli/api/theme/build/build.test.mjs,
     packages/cli/api/theme/build/build.public-component-vars.test.mjs,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-006/DEC-2, spec:AST-006/DEC-4]
 ---
 
 # Theme compilation
@@ -46,13 +46,15 @@ The compiler receives a `DefinedTheme` from the theme-authoring system.
 
 The current web compiler works like this:
 
-1. `generateThemeRules` turns tokens and component overrides into CSS rules.
+1. `generateThemeRules` turns portable tokens, theme-local tokens, and component
+   overrides into CSS rules.
 2. The same code adds state rules, media-surface rules, scopes, and layers.
 3. The `Theme` provider mounts those rules when a theme was not built ahead of
    time.
 4. The CLI saves those rules into CSS and packages the related JavaScript and
    types.
-5. A built theme is marked so the provider does not compile or inject it again.
+5. A built theme preserves local-token ownership and lineage metadata and is
+   marked so the provider does not compile or inject it again.
 
 For top-level declarations in base component target rules, the compiler preserves
 generic CSS properties as written. When a guaranteed property needs to reach
@@ -100,11 +102,16 @@ Platform-specific details stay inside that compiler.
 - **INV10 — Shared intent keeps the same meaning.** A token or supported component
   override means the same thing across outputs. Platform-only features have an
   explicit support boundary.
+- **INV11 — Theme-local names remain exact.** For an enrolled theme, the compiler
+  emits the normalized `localTokens` map beside portable declarations without
+  rewriting names or values. Runtime and static output use the same rules, and
+  invalid enrolled input is rejected before either path writes partial CSS.
 
 This record does not own:
 
-- token names and defaults;
-- `DefineThemeInput`, inheritance, or authoring precedence;
+- token names and defaults, including the meanings of theme-local names;
+- `DefineThemeInput`, local-token enrollment and lineage, inheritance, or
+  authoring precedence;
 - which component parts and properties are public theme APIs; or
 - provider nesting, root synchronization, and DOM observation after compilation.
 
@@ -126,6 +133,8 @@ This record does not own:
   tested as a compatibility guarantee unless the component-theming record admits
   that property into the guaranteed set.
 - Changing scope or layer output tests both source and distribution builds.
+- Changing local-token emission or packaging verifies exact-name runtime/static
+  parity, atomic failure, and preservation of built-theme lineage metadata.
 - Adding a platform compiler names the shared concepts it supports and tests
   that they keep the same meaning. Unsupported concepts fail clearly instead of
   disappearing.
@@ -133,7 +142,8 @@ This record does not own:
 
 ## Owning code
 
-- `generateThemeRules.ts` owns the web compiler and canonical CSS output.
+- `generateThemeRules.ts` owns the web compiler and canonical CSS output,
+  including portable and theme-local declarations in the same scoped block.
 - `Theme.tsx` mounts compiled CSS for themes that were not built ahead of time.
 - `derivedVarRegistry.ts` owns checked mappings from guaranteed public properties
   to private component variables.
@@ -147,8 +157,10 @@ This record does not own:
 
 ## Deciding specs
 
-None. The system owner selected one definition with platform-specific outputs and
-the guaranteed, best-effort, public-semantic, and private implementation tiers.
+AST-006 decisions 2 and 4 establish exact local-token output and atomic shared
+validation for enrolled themes. The system owner separately selected one
+definition with platform-specific outputs and the guaranteed, best-effort,
+public-semantic, and private implementation tiers.
 
 ## Verification
 
@@ -160,6 +172,7 @@ the guaranteed, best-effort, public-semantic, and private implementation tiers.
 | INV6, INV7       | Existing registry and CLI public-variable tests (partial)          | Private variables become authorable, or a reviewed public semantic variable fails build/runtime |
 | INV8             | Component target metadata and compatibility review                 | Successful generic emission is treated as a guaranteed public behavior                          |
 | INV9, INV10      | Platform compiler tests when another compiler ships                | CSS details enter shared authoring, or shared theme intent silently disappears                  |
+| INV11            | `defineTheme.test.ts` and `build.test.mjs` local-token fixtures    | Runtime/static output rewrites a local name, disagrees, or leaves partial output after failure  |
 | Built themes     | Theme and CLI build tests                                          | Runtime recompiles a built theme, or built output omits canonical rules                         |
 
 ## Known conformance and verification gaps

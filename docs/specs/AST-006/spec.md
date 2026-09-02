@@ -8,7 +8,7 @@ archive_reason: null
 superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-08-31
-phase: accepted
+phase: shipped
 owners: [cixzhang, rubyycheung, imdreamrunner]
 affects_architecture:
   [
@@ -31,7 +31,7 @@ Theme authors get one explicit, checked path for theme-family-local reuse;
 component and application authors keep the same portable token contract they have
 today.
 
-The accepted API is one optional `DefineThemeInput.localTokens` field. Supplying
+The shipped API is one optional `DefineThemeInput.localTokens` field. Supplying
 it explicitly enrolls a theme in the new contract; omitting it preserves existing
 behavior, even when legacy component overrides already mention
 `--astryx-theme-*`. A local token is declared with its complete CSS
@@ -42,10 +42,10 @@ contract, but a shipped enrolled definition recorded by its owning theme spec
 does: its exact name and semantic meaning are public within that theme family,
 not portable across themes or intended for Core component source.
 
-This current record accepts the cross-theme API and invariants independently of
-whether any particular theme has completed its own adoption evidence. Theme-local
-names, meanings, values, mappings, and rendered evidence remain owned by each
-adopting theme's colocated record.
+This current record governs the shipped cross-theme API and invariants
+independently of whether any particular theme has completed its own adoption
+evidence. Theme-local names, meanings, values, mappings, and rendered evidence
+remain owned by each adopting theme's colocated record.
 
 ## Non-goals
 
@@ -62,12 +62,10 @@ adopting theme's colocated record.
   authorization for application code to depend on it.
 - Defining any adopting theme's role meaning, value, component mappings, or
   evidence. Those belong to that theme's colocated record.
-- Implementing runtime, build, package, theme, or component changes in this
-  specification-only pull request.
 
 ## Requirements
 
-The requirements below are the accepted cross-theme contract.
+The requirements below are the shipped cross-theme contract.
 
 - **FR1 — Local tokens are purely additive, optional, and explicitly enrolled.**
   `DefineThemeInput` MUST gain at most one new authoring surface: optional
@@ -154,7 +152,7 @@ The requirements below are the accepted cross-theme contract.
   genuinely match the documented meaning and MUST provide rendered evidence for
   its actual light/dark and relevant interaction states.
 
-### Accepted authoring shape
+### Shipped authoring shape
 
 `defineTheme` remains the only authoring operation. Opt-in requires the existing
 `name` to already be the exact lower-kebab identifier used in every local token.
@@ -197,14 +195,12 @@ component mapping.
 
 ## Current-state impact
 
-Current `main` has a closed portable core/domain token vocabulary and no
-first-class local-token field. Unknown keys that reach permissive existing paths
-can serialize, and broad object spreads can therefore resemble intentional local
-authoring without ownership, reference closure, or lineage validation.
+Current `main` keeps its closed portable core/domain token vocabulary and now
+ships a separate first-class local-token field. Unknown keys that reach
+permissive legacy paths can still serialize, but only explicit `localTokens`
+enrollment creates ownership, reference closure, and lineage validation.
 
-If implemented:
-
-- `architecture:theme-authoring-contract` adds only the optional `localTokens`
+- `architecture:theme-authoring-contract` owns the optional `localTokens`
   input, its exact-name map, explicit enrollment state, flattened inheritance,
   and lineage metadata;
 - `architecture:theme-compilation` emits that exact map through the shared
@@ -214,11 +210,10 @@ If implemented:
   vocabulary and explicitly excludes theme-local names from its public helpers
   and documentation.
 
-The current architecture records remain authoritative for shipped behavior until
-AST-006 is implemented. This accepted spec decides future implementation; their
-`deciding_specs` relationships update with the implementation that changes those
-surfaces. A draft theme record may reference this current spec while keeping its
-own value, mapping, and evidence decisions unresolved.
+Those current architecture records are authoritative for the shipped behavior
+and cite the applicable AST-006 decisions. A draft theme record may reference
+this current spec while keeping its own value, mapping, and evidence decisions
+unresolved.
 
 ### Compatibility and adoption
 
@@ -244,8 +239,8 @@ own value, mapping, and evidence decisions unresolved.
 - Descendant compatibility follows explicit enrollment and exact lineage. A
   released enrolled theme or token rename, or semantic meaning change, requires
   an explicit migration or alias before descendants move.
-- This specification-only change has no Changeset. A later implementation or
-  theme output change carries its own release note.
+- The infrastructure implementation carries its own Changeset. A later adopting
+  theme output change carries a separate release note.
 
 ## Verification
 
@@ -262,7 +257,7 @@ own value, mapping, and evidence decisions unresolved.
 
 ### Completion criteria
 
-AST-006 moves from `accepted` to `shipped` only when:
+AST-006 is `shipped` because the implementation satisfies these criteria:
 
 - optional `DefineThemeInput.localTokens` is the only new local-token authoring
   surface and its presence is the root enrollment trigger;
@@ -295,7 +290,7 @@ AST-006 moves from `accepted` to `shipped` only when:
 
 ## Decision log
 
-The decisions below were approved by `cixzhang` as part of this current accepted
+The decisions below were approved by `cixzhang` as part of this current shipped
 specification.
 
 ### DEC-1 — Add one optional local-token field without changing tokens

@@ -235,5 +235,15 @@ export const doc = {
       description:
         'A layout expression parsed but failed validation (unknown component/prop/enum/block).',
     },
+    {
+      value: 'ERR_UNCLASSIFIED_EXIT',
+      description:
+        'Recorded in the debug log, never printed: a command exited non-zero without going through cliError/jsonError, so no stable code was available.',
+    },
+    {
+      value: 'ERR_SIGNAL_TERMINATED',
+      description:
+        'Recorded in the debug log, never printed: the process was ended by a signal (Ctrl-C, SIGTERM) before the command reached a terminal path.',
+    },
   ],
 };

@@ -7,6 +7,7 @@
 import {JSDOM} from 'jsdom';
 import {describe, expect, it} from 'vitest';
 import {
+  buildAuditedComponentRoster,
   buildComponentCoverage,
   classifyDirectionalDecorationPair,
   collectDirectionalDecorations,
@@ -181,5 +182,27 @@ describe('buildComponentCoverage', () => {
       'lab/Chat',
     ]);
     expect(coverage.gaps).toBe(2);
+  });
+});
+
+describe('buildAuditedComponentRoster', () => {
+  it('uses an umbrella Storybook surface without adding an unknown duplicate', () => {
+    expect(
+      buildAuditedComponentRoster({
+        sourceComponents: ['core/ChatComposer', 'core/ChatMessage'],
+        storyComponents: ['core/chat', 'core/chatcomposer'],
+        filters: ['chat'],
+      }),
+    ).toEqual(['core/chat']);
+  });
+
+  it('retains an unknown entry when neither source nor stories match', () => {
+    expect(
+      buildAuditedComponentRoster({
+        sourceComponents: ['core/Button'],
+        storyComponents: ['core/button'],
+        filters: ['missing'],
+      }),
+    ).toEqual(['unknown/missing']);
   });
 });

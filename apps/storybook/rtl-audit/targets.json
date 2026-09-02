@@ -1,5 +1,16 @@
 [
   {
+    "component": "AppShell",
+    "storyId": "core-appshell--top-nav-with-side-nav",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": ".astryx-app-shell-sidenav",
+      "overlayRoot": ".astryx-app-shell"
+    }
+  },
+  {
     "component": "ButtonGroup",
     "storyId": "core-buttongroup--horizontal",
     "dims": [
@@ -8,6 +19,28 @@
     "selectors": {
       "prev": "[role=\"group\"] button:first-child",
       "next": "[role=\"group\"] button:last-child"
+    }
+  },
+  {
+    "component": "CheckboxList",
+    "storyId": "core-checkboxlist--rich-descriptions",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-checkbox-input",
+      "next": "[data-testid=\"checkbox-end-content\"]"
+    }
+  },
+  {
+    "component": "RadioList",
+    "storyId": "core-radiolist--rich-content",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "input[aria-label=\"Pro\"]",
+      "next": "[data-testid=\"radio-end-content\"]"
     }
   },
   {
@@ -33,6 +66,41 @@
     }
   },
   {
+    "component": "Chat",
+    "storyId": "core-chat--mixed-content",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-chat-message-bubble[data-sender=\"assistant\"]",
+      "next": ".astryx-chat-message-bubble[data-sender=\"user\"]"
+    }
+  },
+  {
+    "component": "DropdownMenu",
+    "storyId": "core-dropdownmenu--alignment-end",
+    "dims": ["D4"],
+    "setup": {
+      "click": "button:has-text(\"Row actions\")"
+    },
+    "selectors": {
+      "overlay": ".astryx-dropdown-menu",
+      "overlayRoot": "body"
+    }
+  },
+  {
+    "component": "Layer",
+    "storyId": "core-layer--placements",
+    "dims": ["D4"],
+    "setup": {
+      "click": ["button:has-text(\"end\")", "button:has-text(\"Trigger\")"]
+    },
+    "selectors": {
+      "overlay": "[popover]:popover-open",
+      "overlayRoot": "body"
+    }
+  },
+  {
     "component": "Lightbox",
     "storyId": "core-lightbox--gallery",
     "dims": [
@@ -44,6 +112,64 @@
     "selectors": {
       "prev": "button[aria-label=\"Previous\"]",
       "next": "button[aria-label=\"Next\"]"
+    }
+  },
+  {
+    "component": "Stepper",
+    "storyId": "core-stepper--default-horizontal",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-stepper > li:first-child",
+      "next": ".astryx-stepper > li:last-child"
+    }
+  },
+  {
+    "component": "TabList",
+    "storyId": "core-tablist--overflow",
+    "dims": [
+      "D3"
+    ],
+    "selectors": {
+      "scroller": ".astryx-tab-strip",
+      "nextButton": ".astryx-tab-scroll-button"
+    }
+  },
+  {
+    "component": "Typeahead",
+    "storyId": "core-typeahead--rtl-end-lane",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": "button[aria-label=\"Clear selection\"]",
+      "overlayRoot": ".astryx-typeahead"
+    }
+  },
+  {
+    "component": "Tokenizer",
+    "storyId": "core-tokenizer--rtl-end-lane",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": "button[aria-label=\"Clear all\"]",
+      "overlayRoot": ".astryx-tokenizer"
+    }
+  },
+  {
+    "component": "Toast",
+    "storyId": "core-toast--logical-placement",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": "button:has-text(\"Show toast\")"
+    },
+    "selectors": {
+      "overlay": "[data-toast-id]",
+      "overlayRoot": "body"
     }
   }
 ]

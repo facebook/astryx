@@ -40,7 +40,7 @@ const INPUT_STATUS_VARS = {
  * the stone neutral palette doesn't carry a distinct green stop.
  */
 const stoneSyntax = defineSyntaxTheme({
-  name: 'xds-stone',
+  name: 'astryx-stone',
   tokens: {
     keyword: ['#645a72', '#b2a7c1'], // Purple T40 / T70
     string: ['#4e6357', '#9bb19a'], // Teal T40 / Green T70

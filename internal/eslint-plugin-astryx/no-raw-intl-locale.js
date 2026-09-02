@@ -13,7 +13,8 @@
  * Shipped component code must read it through the public provider-aware
  * locale utilities (`useLocale()`, `useCollator()` from
  * `@astryxdesign/core/i18n`, or an existing formatting helper such as
- * `plainDateFormat`/`formatInstant`/`formatFilterValue`) — never construct an
+ * `plainDateFormat`/`formatInstant`/`formatRelativeTime`/`formatFilterValue`) —
+ * never construct an
  * `Intl` formatter or call a locale-sensitive prototype method directly.
  * Calls to the public date helpers are tracked through named imports, aliases,
  * and namespace imports and must pass their locale argument explicitly.
@@ -106,9 +107,10 @@ const APPROVED_IMPLEMENTATION_FILES = [
   // Date formatting/parsing core.
   'packages/core/src/utils/plainDate.ts',
   'packages/core/src/utils/dateParser.ts',
-  // Timestamp's shared instant formatter and its tooltip zone resolution
-  // (the latter's fixed en-US locale only probes identifier validity).
+  // Timestamp's absolute/relative formatters and tooltip zone resolution (the
+  // latter's fixed en-US locale only probes identifier validity).
   'packages/core/src/Timestamp/formatInstant.ts',
+  'packages/core/src/Timestamp/formatRelativeTime.ts',
   'packages/core/src/Timestamp/tooltipEntries.ts',
   'packages/core/src/PowerSearch/formatFilterValue.ts',
   // NumberInput's locale-aware read of typed and pasted text: it derives the
@@ -473,7 +475,8 @@ const rule = {
         'Do not call Intl directly. Use a public provider-aware locale ' +
         'utility instead (useLocale()/useCollator() from ' +
         '@astryxdesign/core/i18n, or an existing formatting helper such as ' +
-        'plainDateFormat/formatInstant/formatFilterValue) so the locale ' +
+        'plainDateFormat/formatInstant/formatRelativeTime/formatFilterValue) ' +
+        'so the locale ' +
         'always traces back to InternationalizationProvider. An explicit ' +
         'locale argument does not satisfy this rule — literals, variables, ' +
         'and navigator.language are all still raw Intl access here. Raw ' +

@@ -51,7 +51,7 @@ const MAX_PNG_BYTES = 12 * 1024 * 1024;
 const MAX_PNG_WIDTH = 5000;
 const MAX_PNG_HEIGHT = 10000;
 const MAX_PNG_PIXELS = 25_000_000;
-const MAX_SHOTS = 5000;
+const MAX_SHOTS = config.visualPlanSafetyLimit;
 
 function fail(message) {
   throw new Error(`visual evidence rejected: ${message}`);

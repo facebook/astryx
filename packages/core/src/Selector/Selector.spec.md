@@ -16,7 +16,7 @@ verified_by:
     packages/core/src/Selector/Selector.source-build.test.mjs,
   ]
 modules: []
-families: []
+families: [family:input-fields]
 design_specs: []
 architecture:
   [
@@ -71,8 +71,9 @@ connection between the closed trigger and its selection surface.
 - Multi-value selection; MultiSelector owns it.
 - Product-specific option content or filtering performed outside the supplied
   option list.
-- Family-wide input sizing, loading, end-lane, or disabled-reason policy. The
-  draft `family:input-fields` record is non-authoritative context only.
+- Family-wide input state display, behavior, appearance, size, end-control,
+  status-placement, and disabled-reason policy — owned by current
+  `family:input-fields`.
 
 ## Public concepts
 
@@ -266,9 +267,10 @@ in `spec:AST-004` as current runtime behavior.
   has changed.
 - `spec:AST-011/DEC-1` owns the additive read-only state: caller-owned policy can
   preserve a focusable, submittable value without exposing selection controls.
-- `family:input-fields` remains a draft. It may inform future reconciliation, but
-  this current component contract neither backlinks to it in frontmatter nor
-  depends on it for present policy.
+- `family:input-fields` owns family-wide state display, behavior, appearance,
+  size, end-control, disabled-reason, and status-placement policy. Selector
+  keeps its DEC-1 standalone inline-size exception; this component contract
+  owns selection behavior inside that boundary.
 
 ## Verification map
 

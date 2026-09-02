@@ -22,7 +22,7 @@ verified_by:
     scripts/check-knowledge.mjs,
   ]
 modules: []
-families: [family:overlay-dismissal]
+families: [family:input-fields, family:overlay-dismissal]
 design_specs: []
 architecture:
   [

@@ -9,18 +9,16 @@
  * @position Internal focus-return policy for adaptive overlays
  */
 
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useState} from 'react';
 import {
   getInteractionModality,
-  trackInteractionModality,
+  useInteractionModalityTracking,
 } from '../utils/interactionModality';
 
 export function useFocusReturnVisibility() {
   const [isFocusRingSuppressed, setIsFocusRingSuppressed] = useState(false);
 
-  useEffect(() => {
-    trackInteractionModality();
-  }, []);
+  useInteractionModalityTracking();
 
   const prepareFocusReturn = useCallback(() => {
     setIsFocusRingSuppressed(getInteractionModality() === 'pointer');

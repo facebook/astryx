@@ -514,6 +514,14 @@ describe('visual acceptance', () => {
           componentPath: '../../packages/core/src/Button/index.ts',
           tags: ['visual-baseline'],
         },
+        variants: {
+          type: 'story',
+          id: 'core-button--variants',
+          title: 'Core/Button',
+          name: 'Variants',
+          componentPath: '../../packages/core/src/Button/index.ts',
+          tags: ['visual-theme-matrix'],
+        },
         fixture: {
           type: 'story',
           id: 'core-button--interaction-fixture',
@@ -561,13 +569,226 @@ describe('visual acceptance', () => {
       'core-button--default__y2k-dark',
       'core-button--separator__neutral-light',
       'core-button--separator__neutral-dark',
+      'core-button--variants__neutral-light',
+      'core-button--variants__neutral-dark',
+      'core-button--variants__y2k-light',
+      'core-button--variants__y2k-dark',
+    ]);
+  });
+
+  it('fails closed when any touched component has no representative story', () => {
+    const storybook = path.join(root, 'storybook-missing-component');
+    fs.mkdirSync(storybook);
+    writeJSON(path.join(storybook, 'index.json'), {
+      entries: {
+        button: {
+          type: 'story',
+          id: 'core-button--default',
+          title: 'Core/Button',
+          name: 'Default',
+          componentPath: '../../packages/core/src/Button/index.ts',
+          tags: [],
+        },
+      },
+    });
+    const scope = path.join(root, 'scope-missing-component.json');
+    writeJSON(scope, {
+      hasStableVisual: true,
+      broadStableVisual: false,
+      stableComponents: ['Button', 'Card'],
+      stableThemes: [],
+    });
+    expect(
+      fail('trusted-plan', {
+        scope,
+        baseline: path.join(pages, 'visual-gate', 'baseline'),
+        'storybook-dir': storybook,
+        output: path.join(root, 'missing-component-plan.json'),
+      }),
+    ).toMatch(/Card/);
+  });
+
+  it('applies the focused PR shot limit to trusted tagged stories', () => {
+    const storybook = path.join(root, 'storybook-shot-limit');
+    fs.mkdirSync(storybook);
+    const entries = {};
+    for (let index = 0; index < 61; index += 1) {
+      entries[`story-${index}`] = {
+        type: 'story',
+        id: `core-button--story-${index}`,
+        title: 'Core/Button',
+        name: index === 0 ? 'Default' : `Story ${index}`,
+        componentPath: '../../packages/core/src/Button/index.ts',
+        tags: index === 0 ? [] : ['visual-theme-matrix'],
+      };
+    }
+    writeJSON(path.join(storybook, 'index.json'), {entries});
+    const baselineFile = path.join(
+      pages,
+      'visual-gate',
+      'baseline',
+      'manifest.json',
+    );
+    const baseline = JSON.parse(fs.readFileSync(baselineFile, 'utf8'));
+    baseline.shots['core-button--default__y2k-light'] = {
+      ...baseline.shots[KEY],
+      key: 'core-button--default__y2k-light',
+      theme: 'y2k',
+      mode: 'light',
+    };
+    writeJSON(baselineFile, baseline);
+    const scope = path.join(root, 'scope-shot-limit.json');
+    writeJSON(scope, {
+      hasStableVisual: true,
+      broadStableVisual: false,
+      stableComponents: ['Button'],
+      stableThemes: [],
+    });
+    expect(
+      fail('trusted-plan', {
+        scope,
+        baseline: path.join(pages, 'visual-gate', 'baseline'),
+        'storybook-dir': storybook,
+        output: path.join(root, 'over-limit-plan.json'),
+      }),
+    ).toMatch(/244.*240/);
+  });
+
+  it('allows a theme-only trusted plan above the component review limit', () => {
+    const storybook = path.join(root, 'storybook-large-theme');
+    fs.mkdirSync(storybook);
+    const entries = {};
+    const shots = {};
+    for (let index = 0; index < 121; index += 1) {
+      const id = `core-button--theme-${index}`;
+      const key = `${id}__neutral-light`;
+      entries[`story-${index}`] = {
+        type: 'story',
+        id,
+        title: 'Core/Button',
+        name: index === 0 ? 'Default' : `Theme ${index}`,
+        componentPath: '../../packages/core/src/Button/index.ts',
+        tags: [],
+      };
+      shots[key] = {
+        ...SHOT,
+        key,
+        storyId: id,
+        name: entries[`story-${index}`].name,
+        theme: 'neutral',
+        mode: 'light',
+      };
+    }
+    writeJSON(path.join(storybook, 'index.json'), {entries});
+    writeJSON(
+      path.join(pages, 'visual-gate', 'baseline', 'manifest.json'),
+      {
+        version: 1,
+        platform: 'linux-arm64',
+        browser: 'chromium-140.0',
+        viewport: {width: 1280, height: 900},
+        shots,
+        decisions: [],
+      },
+    );
+    const scope = path.join(root, 'scope-large-theme.json');
+    writeJSON(scope, {
+      hasStableVisual: true,
+      broadStableVisual: false,
+      stableComponents: [],
+      stableThemes: ['neutral'],
+    });
+    const output = path.join(root, 'large-theme-plan.json');
+    run('trusted-plan', {
+      scope,
+      baseline: path.join(pages, 'visual-gate', 'baseline'),
+      'storybook-dir': storybook,
+      output,
+    });
+    const plan = JSON.parse(fs.readFileSync(output, 'utf8'));
+    expect(plan).toHaveLength(242);
+    expect(new Set(plan.map(shot => shot.theme))).toEqual(new Set(['neutral']));
+  });
+
+  it('includes newly targeted components for an existing changed theme', () => {
+    const storybook = path.join(root, 'storybook-existing-theme');
+    fs.mkdirSync(storybook);
+    writeJSON(path.join(storybook, 'index.json'), {
+      entries: {
+        button: {
+          type: 'story',
+          id: 'core-button--default',
+          title: 'Core/Button',
+          name: 'Default',
+          componentPath: '../../packages/core/src/Button/index.ts',
+          tags: [],
+        },
+        card: {
+          type: 'story',
+          id: 'core-card--default',
+          title: 'Core/Card',
+          name: 'Default',
+          componentPath: '../../packages/core/src/Card/index.ts',
+          tags: [],
+        },
+      },
+    });
+    const baselineFile = path.join(
+      pages,
+      'visual-gate',
+      'baseline',
+      'manifest.json',
+    );
+    const baseline = JSON.parse(fs.readFileSync(baselineFile, 'utf8'));
+    baseline.shots['core-card--default__y2k-light'] = {
+      ...baseline.shots[KEY],
+      key: 'core-card--default__y2k-light',
+      storyId: 'core-card--default',
+      title: 'Core/Card',
+      component: 'Card',
+      theme: 'y2k',
+      mode: 'light',
+    };
+    writeJSON(baselineFile, baseline);
+    const scope = path.join(root, 'scope-existing-theme.json');
+    writeJSON(scope, {
+      hasStableVisual: true,
+      broadStableVisual: false,
+      stableComponents: [],
+      stableThemes: ['y2k'],
+    });
+    const output = path.join(root, 'existing-theme-plan.json');
+    run('trusted-plan', {
+      scope,
+      baseline: path.join(pages, 'visual-gate', 'baseline'),
+      'storybook-dir': storybook,
+      output,
+    });
+    expect(
+      JSON.parse(fs.readFileSync(output, 'utf8')).map(shot => shot.key),
+    ).toEqual([
+      'core-button--default__y2k-light',
+      'core-button--default__y2k-dark',
+      'core-card--default__y2k-light',
+      'core-card--default__y2k-dark',
     ]);
   });
 
   it('plans every baseline story for a newly promoted stable theme', () => {
     const storybook = path.join(root, 'storybook-new-theme');
     fs.mkdirSync(storybook);
-    writeJSON(path.join(storybook, 'index.json'), {entries: {}});
+    writeJSON(path.join(storybook, 'index.json'), {
+      entries: {
+        button: {
+          type: 'story',
+          id: 'core-button--default',
+          title: 'Core/Button',
+          name: 'Default',
+          componentPath: '../../packages/core/src/Button/index.ts',
+          tags: [],
+        },
+      },
+    });
     const scope = path.join(root, 'scope-new-theme.json');
     writeJSON(scope, {
       hasStableVisual: true,

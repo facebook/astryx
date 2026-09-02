@@ -291,6 +291,23 @@ describe('ToastViewport placement', () => {
     expect(getComputedStyle(viewport).width).not.toBe('100%');
   });
 
+  // The viewport is positioned by spanning the inline axis and aligning within
+  // itself, which only works if the box actually spans. `popover` makes that
+  // conditional: the UA stylesheet gives every popover `width: fit-content`,
+  // and a shrink-wrapped box cannot honour both inset edges — it resolves
+  // against the start edge, and an end-aligned toast lands on the LEFT
+  // (measured in Chromium at 1200px: a 438px box at x=0, toast at x=19).
+  //
+  // jsdom resolves no UA popover styles and no cascade, so it cannot reproduce
+  // that. What it CAN hold is the reset itself: the declaration is what stops
+  // the UA rule applying, so its absence is the regression. The rendered
+  // behaviour is covered by the placement matrix in the PR.
+  it('resets the UA popover width so the viewport can span the inline axis', () => {
+    const {viewport} = renderPlacement();
+
+    expect(getComputedStyle(viewport).width).toBe('auto');
+  });
+
   it('maps explicit top and bottom placements to their configured edge', () => {
     const top = renderPlacement({position: 'topEnd'});
     expect(getComputedStyle(top.viewport).top).toBe('0px');
@@ -624,6 +641,183 @@ describe('Toast native motion contract', () => {
     expect(
       getComputedStyle(wrapper.firstElementChild as HTMLElement).overflow,
     ).toBe('hidden');
+  });
+
+  it('releases the shadow clip only while the toast is settled', () => {
+    const {wrapper} = renderMotionToast('bottomEnd', 'Shadow lifecycle');
+    const inner = wrapper.firstElementChild as HTMLElement;
+
+    // Entry starts with main's original clip boundary.
+    expect(getComputedStyle(inner).overflow).toBe('hidden');
+
+    act(() => {
+      fireEvent.transitionEnd(wrapper, {propertyName: 'grid-template-rows'});
+    });
+    expect(getComputedStyle(inner).overflow).toBe('visible');
+
+    act(() => {
+      fireEvent.click(
+        within(wrapper).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    // Dismissal restores main's original clip boundary synchronously. The
+    // wrapper keeps its normal hit boundary, so a second click while the toast
+    // is still visible is absorbed by the toast rather than falling through
+    // to an obscured control underneath.
+    expect(getComputedStyle(inner).overflow).toBe('hidden');
+    expect(getComputedStyle(wrapper).pointerEvents).toBe('auto');
+  });
+
+  it('settles a toast that replaced another through uniqueID', () => {
+    // An overwrite unmounts the replaced row and mounts a new one with a new
+    // id, so the new row runs its own entry transition and has to release the
+    // clip on its own. The replaced id is dropped at the same time: nothing
+    // dismisses it, so neither removeToast nor handleExited would ever prune
+    // it, and a viewport overwriting one uniqueID on a schedule would collect
+    // a dead id per update for as long as it lives.
+    render(
+      <ToastViewport isTopLayer={false} position="bottomEnd" maxVisible={3}>
+        <ShowToastButton
+          options={{uniqueID: 'save', body: 'Saving changes'}}
+          triggerLabel="Show v1"
+        />
+        <ShowToastButton
+          options={{uniqueID: 'save', body: 'Changes saved'}}
+          triggerLabel="Show v2"
+        />
+      </ToastViewport>,
+    );
+
+    act(() => {
+      fireEvent.click(screen.getByText('Show v1'));
+    });
+    const first = getToastWrapperByText('Saving changes');
+    const firstId = first.getAttribute('data-toast-id');
+    act(() => {
+      fireEvent.transitionEnd(first, {propertyName: 'grid-template-rows'});
+    });
+    expect(
+      getComputedStyle(first.firstElementChild as HTMLElement).overflow,
+    ).toBe('visible');
+
+    act(() => {
+      fireEvent.click(screen.getByText('Show v2'));
+    });
+    const second = getToastWrapperByText('Changes saved');
+    // A different row, so the settled state of the one it replaced says
+    // nothing about it: it starts clipped.
+    expect(second.getAttribute('data-toast-id')).not.toBe(firstId);
+    expect(
+      getComputedStyle(second.firstElementChild as HTMLElement).overflow,
+    ).toBe('hidden');
+
+    act(() => {
+      fireEvent.transitionEnd(second, {propertyName: 'grid-template-rows'});
+    });
+    expect(
+      getComputedStyle(second.firstElementChild as HTMLElement).overflow,
+    ).toBe('visible');
+  });
+
+  it('drops settled state when a toast is evicted and later resurfaces', () => {
+    // A toast beyond `maxVisible` unmounts without ever being dismissed, so
+    // neither removeToast nor handleExited runs for it. When the stack drains
+    // and it resurfaces, it mounts a fresh row that has to run its own entry
+    // transition from `@starting-style` — a settled id left over from its
+    // previous life would release the clip immediately, painting the card's
+    // shadow (and taking pointer input) outside the row that is still opening.
+    render(
+      <ToastViewport isTopLayer={false} position="bottomEnd" maxVisible={1}>
+        <ShowToastButton
+          options={{body: 'First', isAutoHide: false}}
+          triggerLabel="Show first"
+        />
+        <ShowToastButton
+          options={{body: 'Second', isAutoHide: false}}
+          triggerLabel="Show second"
+        />
+      </ToastViewport>,
+    );
+
+    act(() => {
+      fireEvent.click(screen.getByText('Show first'));
+    });
+    const first = getToastWrapperByText('First');
+    act(() => {
+      fireEvent.transitionEnd(first, {propertyName: 'grid-template-rows'});
+    });
+    expect(
+      getComputedStyle(first.firstElementChild as HTMLElement).overflow,
+    ).toBe('visible');
+
+    // Evicted: still in the list, no longer rendered.
+    act(() => {
+      fireEvent.click(screen.getByText('Show second'));
+    });
+    expect(screen.queryByText('First')).not.toBeInTheDocument();
+
+    // Drain the stack so it comes back.
+    const second = getToastWrapperByText('Second');
+    act(() => {
+      fireEvent.transitionEnd(second, {propertyName: 'grid-template-rows'});
+      fireEvent.click(
+        within(second).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    act(() => {
+      fireEvent.transitionEnd(second, {propertyName: 'grid-template-rows'});
+    });
+
+    const resurfaced = getToastWrapperByText('First');
+    expect(
+      getComputedStyle(resurfaced.firstElementChild as HTMLElement).overflow,
+    ).toBe('hidden');
+
+    // And it settles again on its own transition, rather than being stuck.
+    act(() => {
+      fireEvent.transitionEnd(resurfaced, {propertyName: 'grid-template-rows'});
+    });
+    expect(
+      getComputedStyle(resurfaced.firstElementChild as HTMLElement).overflow,
+    ).toBe('visible');
+  });
+
+  it('ignores a grid-template-rows transition bubbling from a descendant', () => {
+    // `grid-template-rows` is not private to the wrapper: any descendant may
+    // animate its own grid, and transitionend bubbles. Reading a descendant's
+    // event as the row's own releases the clip before the row has opened, and
+    // during exit it unmounts the toast mid-collapse.
+    const {wrapper} = renderMotionToast('bottomEnd', 'Bubbled transition');
+    const inner = wrapper.firstElementChild as HTMLElement;
+    expect(getComputedStyle(inner).overflow).toBe('hidden');
+
+    act(() => {
+      fireEvent.transitionEnd(inner, {propertyName: 'grid-template-rows'});
+    });
+    expect(getComputedStyle(inner).overflow).toBe('hidden');
+
+    // The wrapper's own transition still settles it.
+    act(() => {
+      fireEvent.transitionEnd(wrapper, {propertyName: 'grid-template-rows'});
+    });
+    expect(getComputedStyle(inner).overflow).toBe('visible');
+
+    // Same guard on the exit path: a descendant's event must not cut the
+    // collapse short and unmount the toast early.
+    act(() => {
+      fireEvent.click(
+        within(wrapper).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    act(() => {
+      fireEvent.transitionEnd(inner, {propertyName: 'grid-template-rows'});
+    });
+    expect(screen.getByText('Bubbled transition')).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.transitionEnd(wrapper, {propertyName: 'grid-template-rows'});
+    });
+    expect(screen.queryByText('Bubbled transition')).not.toBeInTheDocument();
   });
 
   it('keeps reduced motion transitions eventful for exit cleanup', () => {

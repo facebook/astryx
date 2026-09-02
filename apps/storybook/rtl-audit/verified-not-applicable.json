@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "component": "core/Field",
+    "reason": "The Core/Field stories use block-flow labels, controls, descriptions, and status text without directional icons, side-specific placement, order, scrolling, dragging, overlays, or keyboard behavior."
+  },
+  {
+    "component": "core/FieldStatus",
+    "reason": "FieldStatus uses block-flow message layout and logical padding and corner radii. Its status glyphs are non-directional, and it has no side-specific placement, order, scrolling, dragging, overlays, or directional keyboard behavior."
+  },
+  {
+    "component": "core/Spinner",
+    "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG — two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
+  },
+  {
+    "component": "core/Table",
+    "reason": "Base Table and row-status indicators have no direction-sensitive glyph, physical positioning, order, or interaction; directional Table plugins are audited separately."
+  },
+  {
+    "component": "core/Text",
+    "reason": "Text sets typography — size, weight, colour, line-height, wrapping, truncation — and nothing else. Its one alignment prop is `justify`, which compiles to the logical `text-align: start | center | end` and defaults to `start`, so text hangs off the correct edge in either direction without a component-side branch. Truncation is `text-overflow: ellipsis` and `-webkit-line-clamp`, both of which put the ellipsis at the reading end on their own, and the tooltip that accompanies a clamped string is placed with the logical `above`/`below`/`start`/`end` vocabulary. Nothing is positioned, nothing is transformed, and the component renders no glyph, separator, or control."
+  },
+  {
+    "component": "core/Timestamp",
+    "reason": "Timestamp renders locale-formatted text and a direction-neutral hover card; it has no directional icons, contextual decorations, side-specific layout, order, scroll, drag, or directional keyboard behavior."
+  }
+]

@@ -6,6 +6,8 @@ import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Stepper} from './Stepper';
 import {Step} from './Step';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
 describe('Stepper', () => {
   it('renders an ordered list of steps (not a nav landmark)', () => {
@@ -1019,6 +1021,206 @@ describe('Stepper', () => {
       rerender(<StrictMode>{separated(2)}</StrictMode>);
       expect(schedule(getByTestId('c'))).toEqual([{start: 0, length: 1}]);
       expect(isInstant(getByTestId('b'))).toBe(true);
+    });
+  });
+
+  describe('--step-connector-gap', () => {
+    // The on-track layouts draw the connector as one segment either side of
+    // the indicator. A theme that wants the track to stop short of the node
+    // sets one var; Astryx spends it on whichever side each segment faces the
+    // node from, so the pair leaves a symmetric hole and the caller never
+    // names the pieces.
+    const onTrack = (orientation: 'vertical' | 'horizontal') => (
+      <Stepper
+        activeStep={1}
+        orientation={orientation}
+        indicatorPosition="on-track">
+        <Step step={0} label="One" />
+        <Step step={1} label="Two" />
+      </Stepper>
+    );
+
+    /**
+     * Every declaration the injected stylesheet carries for an element's own
+     * atomic classes, `::before` rules included — the same route `fillEasings`
+     * above takes, because StyleX puts static styles in the sheet rather than
+     * inline and jsdom resolves no cascade of its own.
+     *
+     * Atomic class names are unique hashes, so the owning class is matched
+     * anywhere in the selector rather than only at its head: a StyleX variant
+     * such as the `dir="rtl"` mirror emits a compound selector the class does
+     * not lead. Those rules are tagged `rtl:` so a test can tell the two
+     * directions apart.
+     */
+    const declarationsFor = (el: Element) => {
+      const classes = new Set(el.className.split(/\s+/));
+      const out: string[] = [];
+      for (const sheet of Array.from(document.styleSheets)) {
+        for (const rule of Array.from(sheet.cssRules)) {
+          if (!('selectorText' in rule)) {
+            continue;
+          }
+          const {selectorText, style} = rule as CSSStyleRule;
+          const owner = [...selectorText.matchAll(/\.([\w-]+)/g)].find(match =>
+            classes.has(match[1]),
+          );
+          if (owner == null) {
+            continue;
+          }
+          const prefix =
+            (selectorText.includes('[dir="rtl"]') ? 'rtl:' : '') +
+            (selectorText.endsWith('::before') ? 'before:' : '');
+          for (const prop of Array.from(style)) {
+            out.push(`${prefix}${prop}:${style.getPropertyValue(prop)}`);
+          }
+        }
+      }
+      return out.join(';');
+    };
+
+    it('clips the side each segment faces the node from', () => {
+      const {container} = render(onTrack('vertical'));
+      const [lead, rail] = [
+        ...container.querySelectorAll('.astryx-step-connector'),
+      ];
+      // Above the node clips its bottom edge, below it clips its top —
+      // mirrored, so the hole is centred on the indicator.
+      expect(declarationsFor(lead)).toMatch(/clip-path:inset\(0 0 [^;]*\)/);
+      expect(declarationsFor(rail)).toMatch(/clip-path:inset\([^0][^;]*0 0\)/);
+    });
+
+    it('uses the inline axis when the stepper is horizontal', () => {
+      const {container} = render(onTrack('horizontal'));
+      const [lead, rail] = [
+        ...container.querySelectorAll('.astryx-step-connector'),
+      ];
+      expect(declarationsFor(lead)).toMatch(
+        /clip-path:inset\(0 [^0][^;]*0 0\)/,
+      );
+      expect(declarationsFor(rail)).toMatch(
+        /clip-path:inset\(0 0 0 [^0][^;]*\)/,
+      );
+    });
+
+    it('clips the track and the fill with one declaration', () => {
+      // The gap has to reach two layers: the track is the segment's own
+      // background, the accent fill an absolutely placed ::before. Spending it
+      // on each separately meant two declarations on two boxes, so a
+      // percentage resolved against a different containing block for each and
+      // stopped them ~1.2px apart. One clip on the segment covers both.
+      const {container} = render(onTrack('vertical'));
+      const lead = container.querySelector(
+        '.astryx-step-connector',
+      ) as HTMLElement;
+      const declarations = declarationsFor(lead);
+      expect(declarations).toContain('clip-path');
+      // No per-layer copy of the gap to disagree with.
+      expect(declarations).not.toMatch(
+        /before:[a-z-]*padding[^;]*connector-gap/,
+      );
+      expect(declarations).not.toMatch(/before:inset[^;]*connector-gap/);
+    });
+
+    it('clamps a negative gap away and caps an oversized one', () => {
+      // A theme value arrives with nothing in between to reject it, and
+      // `inset()` is not padding: Chromium ACCEPTS `inset(0 0 -4px 0)` rather
+      // than clamping it, so the floor has to be written. The cap is the
+      // flexible segment's own `min-height`, bounding an oversized gap to a
+      // short track. Neither can grow the Stepper — a clip cannot change
+      // layout.
+      const {container} = render(onTrack('vertical'));
+      const lead = container.querySelector(
+        '.astryx-step-connector',
+      ) as HTMLElement;
+      const declarations = declarationsFor(lead);
+      expect(declarations).toContain('max(0px');
+      expect(declarations).toContain('min(var(--step-connector-gap');
+    });
+
+    it('flips the horizontal clip under dir="rtl"', () => {
+      // `clip-path: inset()` is physical (top/right/bottom/left) and has no
+      // logical form, but the row reverses under `dir="rtl"`. Unflipped, the
+      // leading segment sits to the RIGHT of the node in RTL and still clips
+      // its right edge, opening the hole at the join between steps instead of
+      // at the indicator.
+      const {container} = render(onTrack('horizontal'));
+      const [lead, rail] = [
+        ...container.querySelectorAll('.astryx-step-connector'),
+      ];
+      // Each segment carries BOTH the LTR clip and its mirrored RTL variant.
+      const leadRules = declarationsFor(lead);
+      const railRules = declarationsFor(rail);
+      expect(leadRules).toMatch(/rtl:clip-path:inset\(0 0 0 [^0]/);
+      expect(railRules).toMatch(/rtl:clip-path:inset\(0 [^0][^;]*0 0\)/);
+    });
+
+    it('leaves the track unbroken when there is no indicator to avoid', () => {
+      // `indicator="none"` renders no node, so a gap is a hole in a track that
+      // is meant to be continuous.
+      const {container} = render(
+        <Stepper activeStep={0} indicatorPosition="on-track">
+          <Step step={0} label="One" indicator="none" />
+          <Step step={1} label="Two" indicator="none" />
+        </Stepper>,
+      );
+      const connectors = [
+        ...container.querySelectorAll('.astryx-step-connector'),
+      ];
+      expect(connectors.length).toBeGreaterThan(0);
+      for (const node of connectors) {
+        expect(declarationsFor(node)).not.toContain('--step-connector-gap');
+      }
+    });
+
+    it('declares the default on the Stepper root, where a theme reaches it', () => {
+      // Component vars are root-owned. Declared on each connector instead —
+      // where this started — every connector re-declared 0px on itself, and a
+      // declared value beats an inherited one, so a generated `stepper`
+      // override compiled cleanly and changed nothing.
+      const {container} = render(onTrack('vertical'));
+      const root = container.querySelector('.astryx-stepper') as HTMLElement;
+      expect(declarationsFor(root)).toContain('--step-connector-gap:0px');
+
+      const lead = container.querySelector(
+        '.astryx-step-connector',
+      ) as HTMLElement;
+      expect(declarationsFor(lead)).not.toContain('--step-connector-gap:0px');
+    });
+
+    it('emits a root-owned override through the theme build path', () => {
+      const theme = defineTheme({
+        name: 'stepper-connector-gap-test',
+        components: {
+          stepper: {
+            base: {'--step-connector-gap': '6px'},
+          },
+        },
+      });
+      const {component} = generateThemeCSS(theme);
+
+      expect(component).toMatch(
+        /\.astryx-stepper\s*\{[^}]*--step-connector-gap:\s*6px;/,
+      );
+      expect(component).not.toMatch(
+        /\.astryx-step-connector\s*\{[^}]*--step-connector-gap:/,
+      );
+    });
+
+    it('leaves the connector target itself free of a segment vocabulary', () => {
+      // The pieces are an implementation of the on-track layout, not API: no
+      // `data-segment`, and no bare `lead`/`rail`/`content` class that could
+      // collide with a consumer's own stylesheet.
+      const {container} = render(onTrack('vertical'));
+      const connectors = [
+        ...container.querySelectorAll('.astryx-step-connector'),
+      ];
+      expect(connectors.length).toBeGreaterThan(0);
+      for (const node of connectors) {
+        expect(node.getAttribute('data-segment')).toBeNull();
+        for (const cls of ['lead', 'rail', 'content']) {
+          expect(node.classList.contains(cls)).toBe(false);
+        }
+      }
     });
   });
 });
