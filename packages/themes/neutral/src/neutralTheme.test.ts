@@ -48,3 +48,23 @@ describe('neutral theme-local status mappings', () => {
     expect(neutralTheme.components).not.toHaveProperty('table-row-status');
   });
 });
+
+describe('neutral Banner tint mappings', () => {
+  it('uses light overlays in light mode and dark overlays in dark mode', () => {
+    expect(neutralTheme.localTokens).toMatchObject({
+      '--astryx-theme-neutral-color-on-tint-neutral':
+        'light-dark(#fafafa4D, #0a0a0a4D)',
+      '--astryx-theme-neutral-color-on-tint-overlay-hover':
+        'light-dark(#fafafa1A, #0a0a0a1A)',
+      '--astryx-theme-neutral-color-on-tint-overlay-pressed':
+        'light-dark(#fafafa33, #0a0a0a33)',
+    });
+    expect(neutralTheme.components?.banner?.base).toMatchObject({
+      '--color-neutral': 'var(--astryx-theme-neutral-color-on-tint-neutral)',
+      '--color-overlay-hover':
+        'var(--astryx-theme-neutral-color-on-tint-overlay-hover)',
+      '--color-overlay-pressed':
+        'var(--astryx-theme-neutral-color-on-tint-overlay-pressed)',
+    });
+  });
+});

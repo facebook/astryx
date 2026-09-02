@@ -68,14 +68,14 @@ const neutralLocalTokens: Record<string, TokenValue> = {
   '--astryx-theme-neutral-color-status-fill-success': ['#198100', '#64af4c'],
   '--astryx-theme-neutral-color-status-fill-warning': '#ffce2f',
   '--astryx-theme-neutral-color-status-fill-error': ['#c9303a', '#ff705d'],
-  '--astryx-theme-neutral-color-on-tint-neutral': ['#0a0a0a4D', '#fafafa4D'],
+  '--astryx-theme-neutral-color-on-tint-neutral': ['#fafafa4D', '#0a0a0a4D'],
   '--astryx-theme-neutral-color-on-tint-overlay-hover': [
-    '#0a0a0a1A',
     '#fafafa1A',
+    '#0a0a0a1A',
   ],
   '--astryx-theme-neutral-color-on-tint-overlay-pressed': [
-    '#0a0a0a33',
     '#fafafa33',
+    '#0a0a0a33',
   ],
 };
 

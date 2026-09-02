@@ -60,9 +60,9 @@ the related roles below for exact-head review:
 | `--astryx-theme-neutral-color-status-fill-success`     | Filled success status                               | `['#198100', '#64af4c']`     | Proposed |
 | `--astryx-theme-neutral-color-status-fill-warning`     | Filled warning status                               | `'#ffce2f'`                  | Proposed |
 | `--astryx-theme-neutral-color-status-fill-error`       | Filled error status                                 | `['#c9303a', '#ff705d']`     | Proposed |
-| `--astryx-theme-neutral-color-on-tint-neutral`         | Neutral content placed on a semantic tinted surface | `['#0a0a0a4D', '#fafafa4D']` | Proposed |
-| `--astryx-theme-neutral-color-on-tint-overlay-hover`   | Hover overlay placed on a semantic tinted surface   | `['#0a0a0a1A', '#fafafa1A']` | Proposed |
-| `--astryx-theme-neutral-color-on-tint-overlay-pressed` | Pressed overlay placed on a semantic tinted surface | `['#0a0a0a33', '#fafafa33']` | Proposed |
+| `--astryx-theme-neutral-color-on-tint-neutral`         | Neutral content placed on a semantic tinted surface | `['#fafafa4D', '#0a0a0a4D']` | Proposed |
+| `--astryx-theme-neutral-color-on-tint-overlay-hover`   | Hover overlay placed on a semantic tinted surface   | `['#fafafa1A', '#0a0a0a1A']` | Proposed |
+| `--astryx-theme-neutral-color-on-tint-overlay-pressed` | Pressed overlay placed on a semantic tinted surface | `['#fafafa33', '#0a0a0a33']` | Proposed |
 
 AST-006 is current and accepted, and its implementation is proposed separately
 in the parent local-token PR. This stacked candidate authors and consumes exact
