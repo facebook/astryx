@@ -11,17 +11,17 @@
   "dependencies": {
     "@astryxdesign/core": "*",
     "@astryxdesign/theme-neutral": "*",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^5.2.0",
     "tailwindcss": "^4",
     "typescript": "^6.0.3",
-    "vite": "^8.1.3"
+    "vite": "^8.2.2"
   },
   "browserslist": [
     "last 1 Chrome version"

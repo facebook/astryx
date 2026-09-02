@@ -686,6 +686,6 @@
     "@testing-library/react": "^16.3.2"
   },
   "dependencies": {
-    "intl-messageformat": "^11.2.9"
+    "intl-messageformat": "^11.2.14"
   }
 }
