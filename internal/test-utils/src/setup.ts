@@ -103,3 +103,42 @@ if (typeof window.localStorage === 'undefined') {
     } satisfies Storage,
   });
 }
+
+// Polyfill for ResizeObserver (not supported in jsdom). jsdom never lays
+// elements out, so getBoundingClientRect() is always 0×0 regardless of what
+// a component actually renders — there is no real size for this to report.
+// Firing once with a nonzero stub rect matches what a real observer reports
+// for anything actually visible, which is the case every test written
+// against this polyfill cares about (showWhenAnchored's "wait for a box"
+// path is exercised directly, with a real getBoundingClientRect() override,
+// where that distinction matters).
+if (typeof window.ResizeObserver === 'undefined') {
+  window.ResizeObserver = class {
+    #callback: ResizeObserverCallback;
+    constructor(callback: ResizeObserverCallback) {
+      this.#callback = callback;
+    }
+    observe(target: Element) {
+      const entry: ResizeObserverEntry = {
+        target,
+        contentRect: {
+          width: 1,
+          height: 1,
+          top: 0,
+          left: 0,
+          right: 1,
+          bottom: 1,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        },
+        borderBoxSize: [],
+        contentBoxSize: [],
+        devicePixelContentBoxSize: [],
+      };
+      this.#callback([entry], this as unknown as ResizeObserver);
+    }
+    unobserve() {}
+    disconnect() {}
+  };
+}
