@@ -22,4 +22,6 @@ A gesture that is cancelled rather than completed — `pointercancel`, a lost po
 
 Not in scope, per the spec: SideNav's simplified `defaultWidth`/`minWidth`/`maxWidth` stays pixel-only.
 
+A pixel-only configuration keeps its single render pass. With no percentage anywhere there is no container to measure, so the pixel selection is made at mount rather than corrected on a second pass; only a supplied container defers, because its measurement does not exist until after commit.
+
 @freddymeta

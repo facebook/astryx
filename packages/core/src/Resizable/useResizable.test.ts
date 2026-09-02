@@ -419,6 +419,21 @@ describe('useResizable identity', () => {
     expect(result.current.resize).toBe(first.resize);
     expect(result.current.props._snaps).toBe(first.snaps);
   });
+
+  it('settles a pixel-only mount in one render pass', () => {
+    // A configuration with no percentage anywhere needs no container
+    // measurement, so it must reach its final size on the first pass, as it
+    // did before percentages existed. Latching the selection lazily instead
+    // cost every such mount a second pass — 1→2, and 50→100 at fifty mounts.
+    let passes = 0;
+    const {result} = renderHook(() => {
+      passes += 1;
+      return useResizable({defaultSize: 200, minSizePx: 100, maxSizePx: 400});
+    });
+
+    expect(passes).toBe(1);
+    expect(result.current.size).toBe(200);
+  });
 });
 
 describe('useResizable percentage configuration (AST-010)', () => {
@@ -728,6 +743,33 @@ describe('useResizable percentage configuration (AST-010)', () => {
         } as never),
       );
       expect(result.current.size).toBe(300);
+    });
+
+    it('warns for both ignored aliases when untyped input supplies both pairs', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 250,
+          ...({
+            minSize: 100,
+            minSizePx: 60,
+            maxSize: 500,
+            maxSizePx: 800,
+          } as object),
+        } as never),
+      );
+
+      expect(result.current.size).toBe(250);
+      expect(warn).toHaveBeenCalledTimes(2);
+      expect(warn).toHaveBeenCalledWith(
+        'useResizable: both `minSize` and `minSizePx` were supplied. ' +
+          '`minSize` wins; the deprecated `minSizePx` is ignored.',
+      );
+      expect(warn).toHaveBeenCalledWith(
+        'useResizable: both `maxSize` and `maxSizePx` were supplied. ' +
+          '`maxSize` wins; the deprecated `maxSizePx` is ignored.',
+      );
+      warn.mockRestore();
     });
 
     it('leaves an old-only caller exactly as it was', () => {

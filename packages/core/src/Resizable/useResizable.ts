@@ -532,7 +532,10 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     // Cached in a ref so the snapshot is referentially stable between resizes;
     // returning a fresh measurement every call would loop the store.
     if (containerBasisRef.current == null) {
-      containerBasisRef.current = measureContentBox(containerElement, direction);
+      containerBasisRef.current = measureContentBox(
+        containerElement,
+        direction,
+      );
     }
     return containerBasisRef.current;
   }, [containerElement, usesPercentage, direction]);
@@ -574,7 +577,9 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   const needsContainerBasis = hasContainer && usesPercentage;
   const hasPositiveMeasurement = containerBasis != null && containerBasis > 0;
   const liveBasis = hasContainer
-    ? (hasPositiveMeasurement ? containerBasis : SERVER_BASIS)
+    ? hasPositiveMeasurement
+      ? containerBasis
+      : SERVER_BASIS
     : viewportBasis;
   const isBasisMeasured = needsContainerBasis ? hasPositiveMeasurement : true;
 
@@ -591,7 +596,8 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   const didWarnMaxRef = useRef(false);
   const didWarnDefaultRef = useRef(false);
   const didWarnInvertedRef = useRef(false);
-  const didWarnAliasRef = useRef(false);
+  const didWarnMinAliasRef = useRef(false);
+  const didWarnMaxAliasRef = useRef(false);
 
   // Bounds re-resolve from the live basis on every render — that is the whole
   // point of a percentage bound — and clamp the pixel selection below.
@@ -634,6 +640,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
       isFinal: isBasisMeasured,
     };
   }
+  const initialDefaultPx = initialDefaultRef.current.px;
 
   // The size the user has settled on, or null while a container-relative
   // default is still waiting for its first positive measurement. Once that
@@ -641,22 +648,29 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // any clamp applied at initialization. Leaving it represented by `null`
   // allowed the raw default to be re-read later: 321px first clamped to 200px
   // in a 400px container, then revived to 321px when the container grew.
-  const [chosenSize, setChosenSize] = useState<number | null>(
-    () => persisted?.size ?? null,
-  );
+  //
+  // Initialized outright whenever the basis is already real on the first
+  // render — every pixel-only configuration, and the no-container percentage
+  // path. Only a supplied container needs a measurement that does not exist
+  // until after commit, so only it starts null. Initializing lazily in all
+  // cases cost every legacy pixel-only mount a second render pass, because the
+  // adjustment below then had to run on the first render to fill the value in.
+  const [chosenSize, setChosenSize] = useState<number | null>(() => {
+    if (persisted?.size != null) {
+      return persisted.size;
+    }
+    return isBasisMeasured
+      ? clampSize(initialDefaultPx, resolvedMin, resolvedMax, snaps)
+      : null;
+  });
 
   if (isBasisMeasured && chosenSize == null) {
+    // The supplied container has now been measured, so the selection latched
+    // against the temporary basis is replaced by one against the real one.
     // Render-phase adjustment is deliberate: React re-runs this render before
-    // paint, so the initialized selection, paint, persistence, and ARIA all see
+    // paint, so the corrected selection, paint, persistence, and ARIA all see
     // the same pixel value. It fires no interaction callback.
-    setChosenSize(
-      clampSize(
-        initialDefaultRef.current.px,
-        resolvedMin,
-        resolvedMax,
-        snaps,
-      ),
-    );
+    setChosenSize(clampSize(initialDefaultPx, resolvedMin, resolvedMax, snaps));
   }
 
   // A re-resolved bound clamps the SELECTION, not just the paint. Deriving
@@ -692,7 +706,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // Derived for paint, so the clamp above and the rendered size agree on the
   // very render that observes a new basis.
   const size = clampSize(
-    chosenSize ?? initialDefaultRef.current.px,
+    chosenSize ?? initialDefaultPx,
     resolvedMin,
     resolvedMax,
     snaps,
@@ -730,16 +744,16 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // Configuration warnings live in an effect, not in render: render runs twice
   // under StrictMode and must stay free of side effects.
   useEffect(() => {
-    if (minConflict && !didWarnAliasRef.current) {
-      didWarnAliasRef.current = true;
+    if (minConflict && !didWarnMinAliasRef.current) {
+      didWarnMinAliasRef.current = true;
       devWarn(
         'useResizable',
         'both `minSize` and `minSizePx` were supplied. `minSize` wins; the ' +
           'deprecated `minSizePx` is ignored.',
       );
     }
-    if (maxConflict && !didWarnAliasRef.current) {
-      didWarnAliasRef.current = true;
+    if (maxConflict && !didWarnMaxAliasRef.current) {
+      didWarnMaxAliasRef.current = true;
       devWarn(
         'useResizable',
         'both `maxSize` and `maxSizePx` were supplied. `maxSize` wins; the ' +
