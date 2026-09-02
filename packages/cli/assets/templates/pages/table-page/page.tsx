@@ -823,7 +823,6 @@ export default function InvoiceLineItemsTemplate() {
                 <TextInput
                   label="Search line items"
                   isLabelHidden
-                  type="search"
                   value={query}
                   onChange={setQuery}
                   placeholder="Search…"
