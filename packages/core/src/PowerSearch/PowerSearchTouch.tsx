@@ -5,17 +5,17 @@
 /**
  * @file PowerSearchTouch.tsx
  * @input PowerSearchConfig, filters, onChange — the PowerSearch props, unchanged
- * @output Private coarse-pointer surface: inline content search, in-field filter
- *   actions, and a bottom-sheet filter builder
+ * @output Private coarse-pointer surface: display-only filter capsules and a
+ *   bottom-sheet filter builder
  * @position Internal PowerSearch surface selected by PowerSearch on coarse pointers
  *
  * PowerSearch's desktop shape is a typeahead that drops a popover under the
  * field, and an edit popover that lays field / operator / value out in a row.
  * Neither survives a phone: the popover fights the on-screen keyboard, and the
- * row has nowhere to go at 390px. This variant keeps the same props, the same
- * filter model, and the same tokens. A configured content-search field remains
- * a direct input in the outer field, while structured filter building moves into
- * a bottom sheet that drills down field -> (operator) -> value.
+ * row has nowhere to go at 390px. This variant keeps the same props, filter model,
+ * and tokens while moving structured filter management into a bottom sheet that
+ * drills down field -> (operator) -> value. Content-search configurations retain
+ * the pointer/typeahead surface and never render this component.
  *
  * The sheets are pinned tall on purpose. The field list resizes as it is
  * searched and the editor's content changes with the operator, so a sheet that
@@ -71,7 +71,7 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {isImeKeyEvent, isRenderable, mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {rtlStyles} from '../utils/rtlStyles';
 import {themeProps} from '../utils/themeProps';
 import {formatFilterValue} from './formatFilterValue';
@@ -396,7 +396,7 @@ const DEFAULT_MAX_SEARCH_RESULTS = 10;
 /**
  * Private coarse-pointer surface for PowerSearch. The outer field keeps active
  * filters as display-only capsules and acts as one sheet trigger. The first sheet
- * centralizes content search plus add, edit, clear, and per-filter removal.
+ * centralizes add, edit, clear, and per-filter removal.
  *
  * Each selected-filter row opens its value editor, while a separate remove
  * button leaves the management sheet open. Add filter follows the selected list,
@@ -440,30 +440,16 @@ export function PowerSearchTouchSurface({
   const t = useTranslator();
   const locale = useLocale();
 
-  const searchLabel = labelFromProps ?? t('@astryx.powersearch.label');
   const triggerLabel =
     labelFromProps ?? t('@astryx.powersearch.mobile.manageFiltersTrigger');
   const fieldPlaceholder =
     placeholderFromProps ??
     t('@astryx.powersearch.mobile.manageFiltersPlaceholder');
-  const contentSearchPlaceholder =
-    placeholderFromProps ?? t('@astryx.powersearch.placeholder');
   const saveButtonLabel =
     saveButtonLabelFromProps ?? t('@astryx.powersearch.mobile.save');
   const addFilterTitle = t('@astryx.powersearch.mobile.addFilterTitle');
   const manageFiltersTitle = t('@astryx.powersearch.mobile.manageFiltersTitle');
   const announce = useAnnounce();
-
-  const contentSearchFieldKey = config.config.contentSearchFieldKey;
-  const contentSearchField =
-    contentSearchFieldKey == null
-      ? undefined
-      : config.getField(contentSearchFieldKey);
-  const contentSearchOperator =
-    contentSearchFieldKey == null
-      ? undefined
-      : config.getDefaultOperator(contentSearchFieldKey);
-  const hasContentSearch = contentSearchOperator?.value.type === 'string';
 
   const triggerId = useId();
   const statusMessageId = useId();
@@ -483,7 +469,6 @@ export function PowerSearchTouchSurface({
   // draft with the step would blank that sheet mid-transition.
   const [draft, setDraft] = useState<FilterDraft | null>(null);
   const [fieldQuery, setFieldQuery] = useState('');
-  const [contentQuery, setContentQuery] = useState('');
 
   const isInteractive = !isDisabled && !isReadOnly;
 
@@ -539,48 +524,6 @@ export function PowerSearchTouchSurface({
     pendingSheetFocusRef.current = {type: 'manager-add'};
     pendingMutationFocusRef.current = afterMutation;
   }, []);
-
-  const submitContentSearch = useCallback((): boolean => {
-    const value = contentQuery.trim();
-    if (
-      !isInteractive ||
-      value === '' ||
-      contentSearchField == null ||
-      contentSearchOperator == null
-    ) {
-      return false;
-    }
-    const nextFilter: PowerSearchFilter = {
-      field: contentSearchField.key,
-      operator: contentSearchOperator.key,
-      value: {type: 'string', value},
-    };
-    onChange([...filters, nextFilter], 'add', filters.length);
-    setContentQuery('');
-    announce(t('@astryx.tokenizer.tokenAdded', {label: value}));
-    return true;
-  }, [
-    announce,
-    contentQuery,
-    contentSearchField,
-    contentSearchOperator,
-    filters,
-    isInteractive,
-    onChange,
-    t,
-  ]);
-
-  const handleContentSearchKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLInputElement>) => {
-      if (isImeKeyEvent(event.nativeEvent)) {
-        return;
-      }
-      if (event.key === 'Enter' && submitContentSearch()) {
-        event.preventDefault();
-      }
-    },
-    [submitContentSearch],
-  );
 
   // ---------------------------------------------------------------- fields --
 
@@ -1195,19 +1138,6 @@ export function PowerSearchTouchSurface({
                   <Heading level={3}>{manageFiltersTitle}</Heading>
                 </div>
               </div>
-              {hasContentSearch && isInteractive && (
-                <TextInput
-                  label={searchLabel}
-                  isLabelHidden
-                  placeholder={contentSearchPlaceholder}
-                  value={contentQuery}
-                  onChange={setContentQuery}
-                  onKeyDown={handleContentSearchKeyDown}
-                  startIcon={<Icon icon="search" size="sm" color="secondary" />}
-                  hasClear
-                  width="100%"
-                />
-              )}
             </div>
             <div {...stylex.props(styles.body)}>
               {filterRows.length === 0 ? (
@@ -1217,11 +1147,7 @@ export function PowerSearchTouchSurface({
                   </Text>
                 </div>
               ) : (
-                <List
-                  hasDividers
-                  density="spacious"
-                  header={t('@astryx.powersearch.mobile.selectedFilters')}
-                  xstyle={styles.flushList}>
+                <List hasDividers density="spacious" xstyle={styles.flushList}>
                   {filterRows.map(row => {
                     const canEdit = isInteractive && !row.filter.isReadOnly;
                     const removeLabel = t(

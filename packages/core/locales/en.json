@@ -875,10 +875,6 @@
     "defaultMessage": "Filters",
     "description": "Title of the first PowerSearch touch sheet, where users review, add, edit, or remove active filters."
   },
-  "@astryx.powersearch.mobile.selectedFilters": {
-    "defaultMessage": "Selected filters",
-    "description": "Heading above the active-filter list in PowerSearch's touch management sheet."
-  },
   "@astryx.powersearch.mobile.noSelectedFilters": {
     "defaultMessage": "No filters selected",
     "description": "Empty-state message in PowerSearch's touch management sheet when there are no active filters."
@@ -889,7 +885,7 @@
   },
   "@astryx.powersearch.mobile.done": {
     "defaultMessage": "Done",
-    "description": "Button in the PowerSearch touch management sheet header that closes the sheet after filter management."
+    "description": "Primary footer button in the PowerSearch touch management sheet that closes the sheet after filter management."
   },
   "@astryx.powersearch.mobile.filterTitle": {
     "defaultMessage": "{field} {operator}",
