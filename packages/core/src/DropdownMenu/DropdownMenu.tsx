@@ -80,7 +80,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {
   getInteractionModality,
-  trackInteractionModality,
+  useInteractionModalityTracking,
 } from '../utils/interactionModality';
 import {useTranslator} from '../i18n';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -605,9 +605,7 @@ function DropdownMenuPopover({
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
 
-  useEffect(() => {
-    trackInteractionModality();
-  }, []);
+  useInteractionModalityTracking();
 
   // Keyboard dismissal returns focus to the trigger. Pointer dismissal leaves
   // focus where the browser put it; Safari can otherwise paint a focus-visible

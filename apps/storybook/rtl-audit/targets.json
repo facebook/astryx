@@ -77,6 +77,30 @@
     }
   },
   {
+    "component": "DropdownMenu",
+    "storyId": "core-dropdownmenu--alignment-end",
+    "dims": ["D4"],
+    "setup": {
+      "click": "button:has-text(\"Row actions\")"
+    },
+    "selectors": {
+      "overlay": ".astryx-dropdown-menu",
+      "overlayRoot": "body"
+    }
+  },
+  {
+    "component": "Layer",
+    "storyId": "core-layer--placements",
+    "dims": ["D4"],
+    "setup": {
+      "click": ["button:has-text(\"end\")", "button:has-text(\"Trigger\")"]
+    },
+    "selectors": {
+      "overlay": "[popover]:popover-open",
+      "overlayRoot": "body"
+    }
+  },
+  {
     "component": "Lightbox",
     "storyId": "core-lightbox--gallery",
     "dims": [

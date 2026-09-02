@@ -17,7 +17,6 @@
  */
 
 import {
-  useEffect,
   useId,
   useMemo,
   useRef,
@@ -46,7 +45,7 @@ import {mergeProps, rtlStyles} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {
   getInteractionModality,
-  trackInteractionModality,
+  useInteractionModalityTracking,
 } from '../utils/interactionModality';
 import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
@@ -508,9 +507,7 @@ export function Slider({ref, ...props}: SliderProps) {
     null,
   );
 
-  useEffect(() => {
-    trackInteractionModality();
-  }, []);
+  useInteractionModalityTracking();
 
   const handleThumbFocus = useCallback(
     (thumbIndex: number, _e: FocusEvent<HTMLDivElement>) => {
