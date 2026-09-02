@@ -6,7 +6,7 @@ import type {ResolvedOnMedia} from './onMediaTokens';
 const LOCAL_TOKEN_PREFIX = '--astryx-theme-';
 const THEME_NAME_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const LOCAL_TOKEN_SUFFIX_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const CSS_VAR_PATTERN = /var\(\s*(--[^,\s)]+)/g;
+const CSS_VAR_PATTERN = /var\(\s*(--[^,\s)]+)/gi;
 
 export interface ResolvedLocalTokenContract {
   localTokens: Record<string, string>;
@@ -193,6 +193,7 @@ export function resolveLocalTokenContract(
     localTokens?: Record<string, TokenValue>;
   },
   base: DefinedTheme | undefined,
+  tokens: Record<string, string>,
   components: ComponentStyleMap | undefined,
   onDark: ResolvedOnMedia | undefined,
   onLight: ResolvedOnMedia | undefined,
@@ -251,6 +252,11 @@ export function resolveLocalTokenContract(
     if (!owners[name]) {
       throw new Error(
         `defineTheme("${input.name}"): inherited local token "${name}" has no owner metadata.`,
+      );
+    }
+    if (hasOwn(tokens, name)) {
+      throw new Error(
+        `defineTheme("${input.name}"): token "${name}" cannot be declared in both tokens and localTokens.`,
       );
     }
   }

@@ -4,6 +4,7 @@ import {describe, it, expect, vi} from 'vitest';
 import type {IconRegistry} from '../Icon/globalIconRegistry';
 import type {DefinedTheme} from './defineTheme';
 import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
+import {resolveThemeToken} from './tokens';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -114,6 +115,35 @@ describe('defineTheme', () => {
     );
   });
 
+  it('rejects a name declared in both tokens and localTokens before CSS and token helpers can disagree', () => {
+    const token = '--astryx-theme-ocean-theme-color-status-fill-accent';
+    const legacyTheme = defineTheme({
+      name: 'ocean-theme',
+      tokens: {
+        // @ts-expect-error legacy tokens remain permissive at runtime
+        [token]: '#0077b6',
+      },
+    });
+
+    expect(generateThemeTestCSS(legacyTheme)).toContain(`${token}: #0077b6;`);
+    expect(resolveThemeToken(legacyTheme, token, {mode: 'light'})).toBe(
+      '#0077b6',
+    );
+
+    expect(() =>
+      defineTheme({
+        name: 'ocean-theme',
+        tokens: {
+          // @ts-expect-error legacy tokens remain permissive at runtime
+          [token]: '#0077b6',
+        },
+        localTokens: {
+          [token]: '#48cae4',
+        },
+      }),
+    ).toThrow(/both tokens and localTokens/);
+  });
+
   it('does not reinterpret legacy reserved-prefix references without enrollment', () => {
     const theme = defineTheme({
       name: 'legacy',
@@ -147,51 +177,57 @@ describe('defineTheme', () => {
     ).toThrow(/localTokens|local token/);
   });
 
-  it('rejects undeclared local references in nested and media component rules', () => {
-    expect(() =>
-      defineTheme({
-        name: 'ocean',
-        localTokens: {},
-        components: {
-          button: {
-            base: {
-              ':hover': {
-                color: 'var(--astryx-theme-ocean-color-missing)',
-              },
-            },
-          },
-        },
-      }),
-    ).toThrow(/has no declaration/);
-
-    expect(() =>
-      defineTheme({
-        name: 'ocean',
-        localTokens: {},
-        onDark: {
+  it.each(['VAR', 'vAr'])(
+    'rejects undeclared local references using %s() in nested and media component rules',
+    functionName => {
+      expect(() =>
+        defineTheme({
+          name: 'ocean',
+          localTokens: {},
           components: {
-            badge: {
+            button: {
               base: {
-                color: 'var(--astryx-theme-ocean-color-missing)',
+                ':hover': {
+                  color: `${functionName}(--astryx-theme-ocean-color-missing)`,
+                },
               },
             },
           },
-        },
-      }),
-    ).toThrow(/has no declaration/);
-  });
+        }),
+      ).toThrow(/has no declaration/);
 
-  it('rejects cycles between local tokens', () => {
-    expect(() =>
-      defineTheme({
-        name: 'cycle',
-        localTokens: {
-          '--astryx-theme-cycle-color-a': 'var(--astryx-theme-cycle-color-b)',
-          '--astryx-theme-cycle-color-b': 'var(--astryx-theme-cycle-color-a)',
-        },
-      }),
-    ).toThrow(/cycle detected/);
-  });
+      expect(() =>
+        defineTheme({
+          name: 'ocean',
+          localTokens: {},
+          onDark: {
+            components: {
+              badge: {
+                base: {
+                  color: `${functionName}(--astryx-theme-ocean-color-missing)`,
+                },
+              },
+            },
+          },
+        }),
+      ).toThrow(/has no declaration/);
+    },
+  );
+
+  it.each(['VAR', 'vAr'])(
+    'rejects cycles between local tokens using %s()',
+    functionName => {
+      expect(() =>
+        defineTheme({
+          name: 'cycle',
+          localTokens: {
+            '--astryx-theme-cycle-color-a': `${functionName}(--astryx-theme-cycle-color-b)`,
+            '--astryx-theme-cycle-color-b': `${functionName}(--astryx-theme-cycle-color-a)`,
+          },
+        }),
+      ).toThrow(/cycle detected/);
+    },
+  );
 
   it('includes icons in the theme', () => {
     const icons = {close: 'X'} as Partial<IconRegistry>;

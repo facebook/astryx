@@ -687,6 +687,7 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
   const localTokenContract = resolveLocalTokenContract(
     input,
     base,
+    tokens,
     components,
     __onDark,
     __onLight,

@@ -116,30 +116,95 @@ describe('themeBuild() — receipt', () => {
     expect(built).toContain('__localTokenLineage: ["local-theme"]');
   });
 
-  it('rejects undeclared local-token references before writing outputs', async () => {
-    const themeFile = path.join(tmpDir, 'invalid-local-theme.mjs');
-    fs.writeFileSync(
-      themeFile,
-      `export default {
+  it.each(['VAR', 'vAr'])(
+    'rejects undeclared local-token references using %s() before writing outputs',
+    async functionName => {
+      const themeFile = path.join(tmpDir, 'invalid-local-theme.mjs');
+      fs.writeFileSync(
+        themeFile,
+        `export default {
         name: 'invalid-local-theme',
         localTokens: {},
         components: {
           badge: {
             base: {
-              color: 'var(--astryx-theme-invalid-local-theme-color-missing)',
+              color: '${functionName}(--astryx-theme-invalid-local-theme-color-missing)',
             },
           },
+        },
+      };\n`,
+      );
+
+      await expect(
+        themeBuild('invalid-local-theme.mjs', {}, {cwd: tmpDir}),
+      ).rejects.toThrow(/has no declaration/);
+      expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.css'))).toBe(
+        false,
+      );
+      expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.js'))).toBe(
+        false,
+      );
+      expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.d.ts'))).toBe(
+        false,
+      );
+    },
+  );
+
+  it.each(['VAR', 'vAr'])(
+    'rejects local-token cycles using %s() before writing outputs',
+    async functionName => {
+      const themeFile = path.join(tmpDir, 'cyclic-local-theme.mjs');
+      fs.writeFileSync(
+        themeFile,
+        `export default {
+          name: 'cyclic-local-theme',
+          localTokens: {
+            '--astryx-theme-cyclic-local-theme-color-a': '${functionName}(--astryx-theme-cyclic-local-theme-color-b)',
+            '--astryx-theme-cyclic-local-theme-color-b': '${functionName}(--astryx-theme-cyclic-local-theme-color-a)',
+          },
+        };\n`,
+      );
+
+      await expect(
+        themeBuild('cyclic-local-theme.mjs', {}, {cwd: tmpDir}),
+      ).rejects.toThrow(/cycle detected/);
+      expect(fs.existsSync(path.join(tmpDir, 'cyclic-local-theme.css'))).toBe(
+        false,
+      );
+      expect(fs.existsSync(path.join(tmpDir, 'cyclic-local-theme.js'))).toBe(
+        false,
+      );
+      expect(fs.existsSync(path.join(tmpDir, 'cyclic-local-theme.d.ts'))).toBe(
+        false,
+      );
+    },
+  );
+
+  it('rejects cross-map duplicate token names before writing outputs', async () => {
+    const themeFile = path.join(tmpDir, 'duplicate-local-theme.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'duplicate-local-theme',
+        tokens: {
+          '--astryx-theme-duplicate-local-theme-color-accent': '#0077b6',
+        },
+        localTokens: {
+          '--astryx-theme-duplicate-local-theme-color-accent': '#48cae4',
         },
       };\n`,
     );
 
     await expect(
-      themeBuild('invalid-local-theme.mjs', {}, {cwd: tmpDir}),
-    ).rejects.toThrow(/has no declaration/);
-    expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.css'))).toBe(
+      themeBuild('duplicate-local-theme.mjs', {}, {cwd: tmpDir}),
+    ).rejects.toThrow(/both tokens and localTokens/);
+    expect(fs.existsSync(path.join(tmpDir, 'duplicate-local-theme.css'))).toBe(
       false,
     );
-    expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.js'))).toBe(
+    expect(fs.existsSync(path.join(tmpDir, 'duplicate-local-theme.js'))).toBe(
+      false,
+    );
+    expect(fs.existsSync(path.join(tmpDir, 'duplicate-local-theme.d.ts'))).toBe(
       false,
     );
   });
