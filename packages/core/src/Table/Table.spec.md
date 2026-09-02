@@ -50,10 +50,27 @@ generated anatomy, accessibility, migration, and evidence belong to each listed
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, aliases, and public API remain unchanged
+- Compatibility class: additive targets plus an intentional visual change to two
+  existing affordances. Two targets are added (`table-sort-button`,
+  `table-filter-button`); no target, alias, DOM structure, prop, or export is
+  removed or renamed, and no public API changes.
+- Intentional visual changes, both to the sort control and the filter trigger:
+  - They are now the real `Button` and `IconButton` rather than native buttons
+    that restated Button's interaction states, so they take Button's hover and
+    pressed overlay and its `scale(0.98)` press, and the filter trigger draws
+    the shared 2px focus ring in place of the user agent's default outline. Its
+    box becomes Button's `sm` square (28x28 measured, above the 24px WCAG 2.2
+    2.5.8 minimum).
+  - Their resting `opacity: 0.35` is gone. Composited, that put them at 1.57:1
+    against the header, below the 3:1 WCAG 1.4.11 asks of a UI component; they
+    now render at `--color-icon-secondary`, measured 4.74:1, and stay visible at
+    rest rather than fading in on header hover.
+  - The column heading inside the sort control is unchanged: measured against
+    its `<th>`, colour, white-space, overflow, text-overflow, font size and
+    weight all match.
 - Controlled/uncontrolled behavior: unchanged
-- Migration decision: none
+- Migration decision: none. A theme that styled either affordance through a
+  structural selector keeps working; the new targets are the supported route.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -63,7 +80,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - The Table and Scroll region, the aggregate Header section, Body section,
   conditional Footer section, Row, Column header cell, and Cell anatomy, and the
-  eight current `table*` targets mapped below.
+  ten current `table*` targets mapped below.
 - The stable Sort control and Sort priority rendered by useTableSortable.
 - The stable Expansion control and Expanded detail panel rendered by
   useTableRowExpansion.
@@ -103,20 +120,20 @@ documented in `Table.doc.mjs` and the member and module docs.
 
 ## Behavioral and layout contract
 
-| ID   | Invariant                                                                                                                                                                                                                                                                                                                                                                | Basis                                | Evidence state                                                                  |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ | ------------------------------------------------------------------------------- |
-| FR1  | Styled Table renders one keyboard-focusable Scroll region around one semantic Table.                                                                                                                                                                                                                                                                                     | Current source, docs, and tests      | Verified current behavior; no new behavior decided                              |
-| FR2  | Data-driven mode renders a Body section and a Header section with Column header cells when columns are present. Each data item renders a standard Row and Cells; an empty data array instead renders the configured empty-state row when enabled. It never creates a Footer section.                                                                                     | Current source, docs, and tests      | Verified current behavior; no new behavior decided                              |
-| FR3  | Children mode passes caller composition through to the Table. TableHeader, TableBody, and TableFooter provide the respective sections, and TableRow, TableHeaderCell, and TableCell provide standard rows and cells.                                                                                                                                                     | Current source, docs, and tests      | Verified current composition; no new API or DOM rule                            |
-| FR4  | `Table.doc.mjs` is the canonical aggregate consumer owner for the eight current targets: `table`, `table-scroll-wrapper`, `table-header`, `table-body`, `table-footer`, `table-row`, `table-cell`, and `table-header-cell`. Member docs retain direct lookup metadata through `subComponentOf: 'Table'`.                                                                 | Current docs and CLI target tests    | Verified parent ownership; focused placement coverage is partial                |
-| FR5  | For a sortable column, useTableSortable renders a Sort control around the column label, an Icon-owned Sort indicator glyph, and a numeric Sort priority only while multi-sort has more than one active entry.                                                                                                                                                            | Current source, docs, and tests      | Control and priority are tested; glyph presence is source-inspected only        |
-| FR6  | useTableSelection renders CheckboxInput-owned Selection controls in the generated selection Column header cell and each selectable body Cell; selection remains row state rather than separate anatomy.                                                                                                                                                                  | Current source, docs, and tests      | Verified stable delegated controls; no target or state change                   |
-| FR7  | For an expandable row, useTableRowExpansion renders an Expansion control with an Icon-owned Expansion glyph and conditionally appends an Expanded detail panel whose cell spans the column count captured by that plugin's `transformColumns` step.                                                                                                                      | Current source, docs, and tests      | Verified stable plugin parts; current target gaps remain                        |
-| FR8  | Empty data renders the default compact EmptyState unless the caller supplies replacement content or disables it.                                                                                                                                                                                                                                                         | Current source, docs, and tests      | Verified conditional delegation; caller content remains outside ownership       |
-| FR9  | Table converts the caller's named plugin record into one ordered array after its built-in styling plugin. Known names use the current canonical sequence `columnSettings → sort → tree → selection → pagination`; every other name follows that known set while preserving its record insertion order.                                                                   | Current source and docs              | Current shared ordering; canonical-name coverage is source-inspected            |
-| FR10 | Every applicable non-context transform runs sequentially in the resolved plugin-array order, so a later plugin receives the value returned by every earlier successful plugin. A throwing transform reports a development error and leaves the prior accumulated value in the pipeline.                                                                                  | Current source and tests             | Sequential composition is tested; failure isolation is source-inspected         |
-| FR11 | `transformColumns` completes before element transforms. Table then applies table, header-cell/header-row, body-cell/body-row, scroll-wrapper, and context phases at their render points. Header-cell contributions use `before`, `content`, `after`, `overlay`, and `below` slots. Context transforms run in reverse so the first plugin becomes the outermost provider. | Current source, types, and tests     | Transform application is tested; complete cross-phase order is source-inspected |
-| FR12 | When built-in and named plugin references are unchanged, Table reuses the resolved plugin array; unknown/custom plugin value identity and insertion order remain stable inputs to memoization.                                                                                                                                                                           | Current source and performance tests | Current performance contract; focused named-order coverage is partial           |
+| ID   | Invariant                                                                                                                                                                                                                                                                                                                                                                                         | Basis                                | Evidence state                                                                  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------- |
+| FR1  | Styled Table renders one keyboard-focusable Scroll region around one semantic Table.                                                                                                                                                                                                                                                                                                              | Current source, docs, and tests      | Verified current behavior; no new behavior decided                              |
+| FR2  | Data-driven mode renders a Body section and a Header section with Column header cells when columns are present. Each data item renders a standard Row and Cells; an empty data array instead renders the configured empty-state row when enabled. It never creates a Footer section.                                                                                                              | Current source, docs, and tests      | Verified current behavior; no new behavior decided                              |
+| FR3  | Children mode passes caller composition through to the Table. TableHeader, TableBody, and TableFooter provide the respective sections, and TableRow, TableHeaderCell, and TableCell provide standard rows and cells.                                                                                                                                                                              | Current source, docs, and tests      | Verified current composition; no new API or DOM rule                            |
+| FR4  | `Table.doc.mjs` is the canonical aggregate consumer owner for the ten current targets: `table`, `table-scroll-wrapper`, `table-header`, `table-body`, `table-footer`, `table-row`, `table-cell`, `table-header-cell`, `table-sort-button` (reflecting `direction`), and `table-filter-button` (reflecting `active`). Member docs retain direct lookup metadata through `subComponentOf: 'Table'`. | Current docs and CLI target tests    | Verified parent ownership; focused placement coverage is partial                |
+| FR5  | For a sortable column, useTableSortable renders a Sort control around the column label, an Icon-owned Sort indicator glyph, and a numeric Sort priority only while multi-sort has more than one active entry.                                                                                                                                                                                     | Current source, docs, and tests      | Control and priority are tested; glyph presence is source-inspected only        |
+| FR6  | useTableSelection renders CheckboxInput-owned Selection controls in the generated selection Column header cell and each selectable body Cell; selection remains row state rather than separate anatomy.                                                                                                                                                                                           | Current source, docs, and tests      | Verified stable delegated controls; no target or state change                   |
+| FR7  | For an expandable row, useTableRowExpansion renders an Expansion control with an Icon-owned Expansion glyph and conditionally appends an Expanded detail panel whose cell spans the column count captured by that plugin's `transformColumns` step.                                                                                                                                               | Current source, docs, and tests      | Verified stable plugin parts; current target gaps remain                        |
+| FR8  | Empty data renders the default compact EmptyState unless the caller supplies replacement content or disables it.                                                                                                                                                                                                                                                                                  | Current source, docs, and tests      | Verified conditional delegation; caller content remains outside ownership       |
+| FR9  | Table converts the caller's named plugin record into one ordered array after its built-in styling plugin. Known names use the current canonical sequence `columnSettings → sort → tree → selection → pagination`; every other name follows that known set while preserving its record insertion order.                                                                                            | Current source and docs              | Current shared ordering; canonical-name coverage is source-inspected            |
+| FR10 | Every applicable non-context transform runs sequentially in the resolved plugin-array order, so a later plugin receives the value returned by every earlier successful plugin. A throwing transform reports a development error and leaves the prior accumulated value in the pipeline.                                                                                                           | Current source and tests             | Sequential composition is tested; failure isolation is source-inspected         |
+| FR11 | `transformColumns` completes before element transforms. Table then applies table, header-cell/header-row, body-cell/body-row, scroll-wrapper, and context phases at their render points. Header-cell contributions use `before`, `content`, `after`, `overlay`, and `below` slots. Context transforms run in reverse so the first plugin becomes the outermost provider.                          | Current source, types, and tests     | Transform application is tested; complete cross-phase order is source-inspected |
+| FR12 | When built-in and named plugin references are unchanged, Table reuses the resolved plugin array; unknown/custom plugin value identity and insertion order remain stable inputs to memoization.                                                                                                                                                                                                    | Current source and performance tests | Current performance contract; focused named-order coverage is partial           |
 
 ### Current evidence and gaps
 
@@ -230,7 +247,7 @@ pipeline does not confer correctness on module output.
   "Scroll region": {"target": "table-scroll-wrapper"},
   "Header section": {"target": "table-header"},
   "Column header cell": {"target": "table-header-cell"},
-  "Sort control": {"inherits": "table-header-cell"},
+  "Sort control": {"target": "table-sort-button"},
   "Sort indicator glyph": {
     "delegatesTo": {"owner": "component:Icon", "target": "icon"}
   },
@@ -238,6 +255,10 @@ pipeline does not confer correctness on module output.
     "none": {
       "reason": "unsettled: The multi-sort rank has no direct public target and uses a component-owned accent style; future exposure still needs an owner decision"
     }
+  },
+  "Filter control": {"target": "table-filter-button"},
+  "Filter indicator glyph": {
+    "delegatesTo": {"owner": "component:Icon", "target": "icon"}
   },
   "Selection control": {
     "delegatesTo": {
@@ -268,11 +289,23 @@ pipeline does not confer correctness on module output.
 }
 ```
 
-The exact map records all eight current non-deprecated Table targets once. The
+The exact map records all ten current non-deprecated Table targets once. The
 legacy `base-table` alias is compatibility, not anatomy. TableHeader, TableBody,
 TableFooter, TableRow, TableCell, and TableHeaderCell retain direct docs linked by
 `subComponentOf: 'Table'`; they do not need independent component specs for this
 aggregate ownership.
+
+The Sort control and the Filter control are rendered by Button and IconButton, so
+INV5 would make them delegate to `button`. They hold their own targets instead
+because each guarantees a public visual contract `button` cannot express: a
+colour on `table-sort-button` paints the sort glyph and leaves the column name on
+the header cell (routed by the `color` derived-var entry in
+`theming.derived`, INV11), where the same colour on `button` paints label and end
+content together by Button's own contract; and a colour on `table-filter-button`
+reaches one column's funnel rather than every button in the table. Both targets
+sit on the painting element that Button renders — the control itself, not a
+wrapper — so INV4 holds, and the interaction model stays Button's. The precedent
+is `toggle-button`, which carries its own target on the Button it renders.
 
 ## Family and system relationships
 
@@ -305,13 +338,35 @@ aggregate ownership.
 | FR9-FR11            | `Table.test.tsx`, `types.ts`, `BaseTable.tsx`, and `useBaseTablePlugins.ts`                          | Built-in plus known and custom named plugins; every transform phase | Sequential composition, base-before-user behavior, transform application, and slot output have focused coverage; complete known-name sorting, phase order, exception continuation, and context nesting remain source-inspected.                                           | `audit:Table/plugins`     |
 | FR12, PR1           | `Table.perf.test.tsx` plus `useBaseTablePlugins.ts` source inspection                                | Same plugin references, recreated record, and changed plugin value  | Unchanged plugin values must preserve the resolved array and representative no-op row-update budgets; focused named-record identity coverage remains partial.                                                                                                             | `audit:Table/performance` |
 | Module backlink     | `scripts/check-knowledge.mjs`                                                                        | Active parent and colocated module record                           | A missing, duplicate, mis-parented, wrong-kind, misnamed, or undiscovered module record fails knowledge validation.                                                                                                                                                       | `audit:Table/modules`     |
-| Theming anatomy map | `scripts/check-knowledge.mjs`, `themingTargets.test.ts`, and CLI parent-aware target discovery tests | Canonical anatomy, eight current targets, legacy alias              | Missing, extra, duplicated, prefixed, stale, alias-backed, or independently owned member mappings fail repository validation or discovery coverage.                                                                                                                       | `audit:Table/theming`     |
+| Theming anatomy map | `scripts/check-knowledge.mjs`, `themingTargets.test.ts`, and CLI parent-aware target discovery tests | Canonical anatomy, ten current targets, legacy alias                | Missing, extra, duplicated, prefixed, stale, alias-backed, or independently owned member mappings fail repository validation or discovery coverage.                                                                                                                       | `audit:Table/theming`     |
 
 ## Decision log
 
-None. This current contract records existing Table facts, approved canonical parent
-ownership, and the shared plugin protocol without introducing a component-local
-visual or runtime change.
+**DEC-1 — the sort and filter affordances carry their own targets rather than
+delegating to `button`.** Both are rendered inside Table's own plugins, so there
+is no wrapper a consumer can interpose and no `renderX` prop to route around:
+restyling either meant `.astryx-table-header-cell button[aria-haspopup='dialog']`,
+a selector that says "the button that opens a dialog" — the filter funnel today,
+anything tomorrow. Each also guarantees a visual contract `button` cannot
+express; see the anatomy note above for why, and INV5's exception. The precedent
+is `toggle-button`.
+
+**DEC-2 — a colour on `table-sort-button` is routed to the glyph and dropped
+from the control.** The sort control holds the column name as well as the glyph,
+and the name belongs to the header cell, so the colour cannot land on the button
+itself: `theming.derived` maps `color` onto the private
+`--_table-sort-glyph-color` with `replaces: true`. `table-filter-button` needs no
+such routing — that control holds nothing but its funnel.
+
+**DEC-3 — both controls are built on `Button`/`IconButton`.** They previously
+restated Button's rest, hover, pressed, focus-ring, press-transform and
+reduced-motion behaviour on native buttons, which is drift waiting to happen.
+The visible consequences are listed under Compatibility and are intentional.
+
+**DEC-4 — the resting `opacity: 0.35` is removed as an accessibility fix**, not
+a preference: it put both affordances at 1.57:1 against the header where WCAG
+1.4.11 asks 3:1. The sorted state still changes glyph as well as colour, so the
+state is never colour alone.
 
 ## Open questions
 

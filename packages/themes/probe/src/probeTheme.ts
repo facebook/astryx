@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  272 targets, 881 selectors (generated from the docs)
+//   components  274 targets, 886 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -3047,6 +3047,12 @@ export const probeTheme = defineTheme({
         borderColor: 'hsl(40.4 92% 25%)',
         outlineColor: 'hsl(177.8 82% 25%)',
       },
+      readonly: {
+        backgroundColor: 'hsl(291.7 88% 52%)',
+        color: 'hsl(213.7 89% 12%)',
+        borderColor: 'hsl(50.2 86% 25%)',
+        outlineColor: 'hsl(214.5 74% 25%)',
+      },
     },
     'multi-selector-clear-icon': {
       base: {
@@ -4136,6 +4142,12 @@ export const probeTheme = defineTheme({
         borderColor: 'hsl(298.2 93% 25%)',
         outlineColor: 'hsl(59.6 86% 25%)',
       },
+      readonly: {
+        backgroundColor: 'hsl(149.0 90% 62%)',
+        color: 'hsl(226.6 78% 12%)',
+        borderColor: 'hsl(25.9 71% 25%)',
+        outlineColor: 'hsl(86.5 79% 25%)',
+      },
     },
     'selector-check': {
       base: {
@@ -4791,6 +4803,20 @@ export const probeTheme = defineTheme({
         outlineColor: 'hsl(221.9 77% 25%)',
       },
     },
+    'table-filter-button': {
+      base: {
+        backgroundColor: 'hsl(10.3 75% 54%)',
+        color: 'hsl(252.2 89% 12%)',
+        borderColor: 'hsl(224.0 71% 25%)',
+        outlineColor: 'hsl(293.8 79% 25%)',
+      },
+      active: {
+        backgroundColor: 'hsl(100.0 74% 63%)',
+        color: 'hsl(337.7 70% 12%)',
+        borderColor: 'hsl(9.8 90% 25%)',
+        outlineColor: 'hsl(34.7 70% 25%)',
+      },
+    },
     'table-footer': {
       base: {
         backgroundColor: 'hsl(97.2 94% 49%)',
@@ -4847,6 +4873,14 @@ export const probeTheme = defineTheme({
         color: 'hsl(111.8 81% 12%)',
         borderColor: 'hsl(342.2 73% 25%)',
         outlineColor: 'hsl(187.4 90% 25%)',
+      },
+    },
+    'table-sort-button': {
+      base: {
+        backgroundColor: 'hsl(242.4 83% 46%)',
+        color: 'hsl(2.1 92% 12%)',
+        borderColor: 'hsl(279.1 91% 25%)',
+        outlineColor: 'hsl(157.3 85% 25%)',
       },
     },
     text: {

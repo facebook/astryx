@@ -30,7 +30,7 @@ const anatomy = [
     name: 'Sort control',
     required: false,
     description:
-      "Button that wraps a sortable column label and changes that column's sort direction.",
+      "Button wrapping a sortable column label that changes that column's sort direction.",
   },
   {
     name: 'Sort indicator glyph',
@@ -42,6 +42,17 @@ const anatomy = [
     required: false,
     description:
       'Number shown for a sorted column when multi-column sorting is active.',
+  },
+  {
+    name: 'Filter control',
+    required: false,
+    description:
+      'IconButton rendered in a filterable column header by the filtering plugin, opening that column\u2019s filter popover.',
+  },
+  {
+    name: 'Filter indicator glyph',
+    required: false,
+    description: 'Funnel symbol rendered by Icon inside a Filter control.',
   },
   {
     name: 'Selection control',
@@ -131,9 +142,23 @@ export const docs = {
       {className: 'astryx-table-row'},
       {className: 'astryx-table-cell', visualProps: ['density']},
       {className: 'astryx-table-header-cell', visualProps: ['density']},
+      {className: 'astryx-table-sort-button', visualProps: ['direction']},
+      {className: 'astryx-table-filter-button', states: ['active']},
       // Still emitted beside the names above, so themes written against
       // them keep working. Drop in the next major.
       {className: 'astryx-base-table', deprecatedFor: 'table'},
+    ],
+    vars: [
+      {
+        name: '--_table-sort-glyph-color',
+        description:
+          'Routes a color set on astryx-table-sort-button to the sort glyph alone. The sort control is a Button holding the column name as well as the glyph, and the name belongs to the header cell, so the color cannot land on the button itself.',
+        default: 'var(--color-icon-secondary)',
+        private: true,
+      },
+    ],
+    derived: [
+      {property: 'color', vars: ['--_table-sort-glyph-color'], replaces: true},
     ],
   },
   description: 'Styled, data-driven table with density, dividers, hover highlight, striped rows, and named plugin support. T must extend Record<string, unknown>.',

@@ -26,9 +26,10 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars, radiusVars} from '../../../theme/tokens.stylex';
+import {spacingVars, colorVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {Button} from '../../../Button';
+import {IconButton} from '../../../IconButton';
 import {Popover} from '../../../Popover';
 import {TextInput} from '../../../TextInput';
 import {NumberInput} from '../../../NumberInput';
@@ -50,6 +51,7 @@ import type {
 } from '../../types';
 import {proportional} from '../../columnUtils';
 import {useLocale, useTranslator} from '../../../i18n';
+import {themeProps} from '../../../utils/themeProps';
 import type {
   PowerSearchConfig,
   PowerSearchField,
@@ -367,33 +369,37 @@ const filterStyles = stylex.create({
     minWidth: 0,
   },
   triggerButton: {
-    background: 'none',
-    border: 'none',
-    cursor: {
-      default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'default',
-    },
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    borderRadius: radiusVars['--radius-element'],
     flexShrink: 0,
     // Minimum 44px touch target on coarse pointer devices (iOS guideline).
+    // WCAG 2.2 2.5.8 asks 24px; this coarse-pointer accommodation predates the
+    // change and is kept. On a fine pointer Button's own `sm` box governs.
     '@media (pointer: coarse)': {
       minWidth: '44px',
       minHeight: '44px',
     },
-  },
-  triggerInactive: {
-    opacity: {
-      default: 0.35,
-      ':is(th:hover *)': 1,
-      ':focus-visible': 1,
+    // This button holds the glyph and nothing else, so its `color` IS the
+    // glyph's colour: the funnel reads it through `color="inherit"`, and a
+    // theme setting `color` on `astryx-table-filter-button` reaches it with
+    // nothing else here for it to over-reach. Without this, `ghost` paints
+    // `--color-text-primary`.
+    //
+    // On hover the glyph darkens a step alongside Button's own overlay, so the
+    // feedback survives a forced-colors mode that drops backgrounds. Guarded
+    // on `hover: hover` so a touch device does not stick in the hovered colour
+    // after a tap. The tint, the pressed state and the focus ring are
+    // Button's, not restated here.
+    color: {
+      default: colorVars['--color-icon-secondary'],
+      '@media (hover: hover)': {
+        default: null,
+        ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+          colorVars['--color-text-primary'],
+      },
     },
   },
+  // Accent is the FILTERED state and nothing else.
   triggerActive: {
-    opacity: 1,
+    color: colorVars['--color-accent'],
   },
   popoverContent: {
     width: '240px',
@@ -1008,20 +1014,20 @@ function PopoverFilterTrigger({
           </div>
         </FilterStoreContext>
       }>
-      <button
-        type="button"
-        aria-label={t('@astryx.tableFiltering.filterByColumn', {header})}
+      <IconButton
+        variant="ghost"
+        size="sm"
+        label={t('@astryx.tableFiltering.filterByColumn', {header})}
         aria-haspopup="dialog"
-        {...stylex.props(
+        icon={<Icon icon="funnel" size="xsm" color="inherit" />}
+        {...themeProps('table-filter-button', {
+          active: hasValue ? 'active' : null,
+        })}
+        xstyle={[
           filterStyles.triggerButton,
-          hasValue ? filterStyles.triggerActive : filterStyles.triggerInactive,
-        )}>
-        <Icon
-          icon="funnel"
-          size="xsm"
-          color={hasValue ? 'accent' : 'secondary'}
-        />
-      </button>
+          ...(hasValue ? [filterStyles.triggerActive] : []),
+        ]}
+      />
     </Popover>
   );
 }

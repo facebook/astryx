@@ -82,6 +82,14 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
     {property: 'borderRadius', vars: ['--_segmented-control-radius']},
     {property: 'padding', vars: ['--_segmented-control-padding']},
   ],
+  // The sort control is a Button holding the column name as well as the
+  // glyph. `color` on the target would be inherited by both, and the name
+  // belongs to the header cell (`astryx-table-header-cell` paints it), so the
+  // value is routed to the glyph through a private var and the source property
+  // is dropped.
+  'table-sort-button': [
+    {property: 'color', vars: ['--_table-sort-glyph-color'], replaces: true},
+  ],
   'text-area': [
     {
       property: 'paddingInline',
