@@ -269,6 +269,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
+    overflow: 'clip',
   },
   variantWash: {
     backgroundColor: colorVars['--color-background-body'],

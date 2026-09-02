@@ -44,6 +44,27 @@ function getSeparator(): HTMLElement {
   return screen.getByRole('separator');
 }
 
+function getHitArea(): HTMLElement {
+  return getSeparator().firstElementChild as HTMLElement;
+}
+
+/** Stub region props, so drag assertions read the calls directly. */
+function makeResizable(): ResizableProps {
+  return {
+    _size: 200,
+    _isCollapsed: false,
+    _onResizeStart: vi.fn(),
+    _onResizeMove: vi.fn(),
+    _onResizeEnd: vi.fn(),
+    _minSizePx: 100,
+    _maxSizePx: 400,
+    _snaps: [],
+    _collapsedSize: 40,
+    _collapsible: false,
+    _isResizableProps: true,
+  };
+}
+
 describe('ResizeHandle', () => {
   // --- ARIA wiring ---
 
@@ -213,37 +234,86 @@ describe('ResizeHandle', () => {
 
   // --- Drag listener lifecycle ---
 
-  it('stops driving the region and releases window listeners when unmounted mid-drag', () => {
-    const resizable: ResizableProps = {
-      _size: 200,
-      _isCollapsed: false,
-      _onResizeStart: vi.fn(),
-      _onResizeMove: vi.fn(),
-      _onResizeEnd: vi.fn(),
-      _minSizePx: 100,
-      _maxSizePx: 400,
-      _snaps: [],
-      _collapsedSize: 40,
-      _collapsible: false,
-      _isResizableProps: true,
-    };
+  it('takes pointer capture on the grab zone when a drag starts', () => {
+    const resizable = makeResizable();
+    render(<ResizeHandle resizable={resizable} label="Resize" />);
+    const hitArea = getHitArea();
+    const setPointerCapture = vi.fn();
+    Object.defineProperty(hitArea, 'setPointerCapture', {
+      value: setPointerCapture,
+      configurable: true,
+    });
+
+    fireEvent.pointerDown(hitArea, {pointerId: 7, clientX: 0, clientY: 0});
+    // Capture keeps the rest of the gesture on this element, so an embedded
+    // frame under the cursor can't swallow the drag into its own document.
+    expect(setPointerCapture).toHaveBeenCalledWith(7);
+  });
+
+  it('drives and ends the drag from events on the grab zone', () => {
+    const resizable = makeResizable();
+    render(<ResizeHandle resizable={resizable} label="Resize" />);
+    const hitArea = getHitArea();
+
+    fireEvent.pointerDown(hitArea, {pointerId: 1, clientX: 0, clientY: 0});
+    fireEvent.pointerMove(hitArea, {pointerId: 1, clientX: 30, clientY: 0});
+    expect(resizable._onResizeMove).toHaveBeenLastCalledWith(30);
+    fireEvent.pointerUp(hitArea, {pointerId: 1, clientX: 30, clientY: 0});
+    expect(resizable._onResizeEnd).toHaveBeenCalledTimes(1);
+
+    // The drag is over: a later move must not resize anything.
+    fireEvent.pointerMove(hitArea, {pointerId: 1, clientX: 90, clientY: 0});
+    expect(resizable._onResizeMove).toHaveBeenCalledTimes(1);
+    expect(document.body.style.cursor).toBe('');
+    expect(document.body.style.userSelect).toBe('');
+  });
+
+  it('ignores moves from a pointer that does not own the drag', () => {
+    const resizable = makeResizable();
+    render(<ResizeHandle resizable={resizable} label="Resize" />);
+    const hitArea = getHitArea();
+
+    fireEvent.pointerDown(hitArea, {pointerId: 1, clientX: 0, clientY: 0});
+    fireEvent.pointerMove(hitArea, {pointerId: 2, clientX: 30, clientY: 0});
+    expect(resizable._onResizeMove).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['pointercancel', fireEvent.pointerCancel],
+    ['lostpointercapture', fireEvent.lostPointerCapture],
+  ])('ends the drag on %s without signalling a resize end', (_name, fire) => {
+    const resizable = makeResizable();
+    render(<ResizeHandle resizable={resizable} label="Resize" />);
+    const hitArea = getHitArea();
+
+    fireEvent.pointerDown(hitArea, {pointerId: 1, clientX: 0, clientY: 0});
+    fire(hitArea, {pointerId: 1});
+    expect(resizable._onResizeEnd).not.toHaveBeenCalled();
+    expect(document.body.style.cursor).toBe('');
+    expect(document.body.style.userSelect).toBe('');
+
+    fireEvent.pointerMove(hitArea, {pointerId: 1, clientX: 30, clientY: 0});
+    expect(resizable._onResizeMove).not.toHaveBeenCalled();
+  });
+
+  it('stops driving the region and releases body styles when unmounted mid-drag', () => {
+    const resizable = makeResizable();
     const {unmount} = render(
       <ResizeHandle resizable={resizable} label="Resize" />,
     );
-    const separator = screen.getByRole('separator');
-    const hitArea = separator.firstElementChild as HTMLElement;
+    const hitArea = getHitArea();
 
     // Start a drag and confirm moves reach the region.
-    fireEvent.pointerDown(hitArea, {clientX: 0, clientY: 0});
+    fireEvent.pointerDown(hitArea, {pointerId: 1, clientX: 0, clientY: 0});
     expect(resizable._onResizeStart).toHaveBeenCalledTimes(1);
-    fireEvent.pointerMove(window, {clientX: 10, clientY: 0});
+    fireEvent.pointerMove(hitArea, {pointerId: 1, clientX: 10, clientY: 0});
     expect(resizable._onResizeMove).toHaveBeenCalledTimes(1);
 
-    // Unmount mid-drag: the window listeners must be torn down, so further
-    // pointer moves no longer resize the (still-mounted) region, and the
-    // body cursor/user-select overrides are released.
+    // Unmounting removes the capturing element, which implicitly releases the
+    // pointer and takes its listeners with it. The body cursor/user-select
+    // overrides live outside the element, so they must be released here.
     unmount();
-    fireEvent.pointerMove(window, {clientX: 50, clientY: 0});
+    fireEvent.pointerMove(hitArea, {pointerId: 1, clientX: 50, clientY: 0});
     expect(resizable._onResizeMove).toHaveBeenCalledTimes(1);
     expect(document.body.style.cursor).toBe('');
     expect(document.body.style.userSelect).toBe('');
@@ -252,43 +322,18 @@ describe('ResizeHandle', () => {
   // --- RTL pointer-drag direction ---
 
   it('drives the region with the raw pointer delta under LTR', () => {
-    const resizable: ResizableProps = {
-      _size: 200,
-      _isCollapsed: false,
-      _onResizeStart: vi.fn(),
-      _onResizeMove: vi.fn(),
-      _onResizeEnd: vi.fn(),
-      _minSizePx: 100,
-      _maxSizePx: 400,
-      _snaps: [],
-      _collapsedSize: 40,
-      _collapsible: false,
-      _isResizableProps: true,
-    };
+    const resizable = makeResizable();
     render(<ResizeHandle resizable={resizable} label="Resize" />);
-    const hitArea = screen.getByRole('separator')
-      .firstElementChild as HTMLElement;
+    const hitArea = getHitArea();
 
-    fireEvent.pointerDown(hitArea, {clientX: 0, clientY: 0});
+    fireEvent.pointerDown(hitArea, {pointerId: 1, clientX: 0, clientY: 0});
     // Pointer moves +40px to the right → panel grows by +40 under LTR.
-    fireEvent.pointerMove(window, {clientX: 40, clientY: 0});
+    fireEvent.pointerMove(hitArea, {pointerId: 1, clientX: 40, clientY: 0});
     expect(resizable._onResizeMove).toHaveBeenLastCalledWith(40);
   });
 
   it('inverts the pointer delta under RTL so dragging resizes intuitively', () => {
-    const resizable: ResizableProps = {
-      _size: 200,
-      _isCollapsed: false,
-      _onResizeStart: vi.fn(),
-      _onResizeMove: vi.fn(),
-      _onResizeEnd: vi.fn(),
-      _minSizePx: 100,
-      _maxSizePx: 400,
-      _snaps: [],
-      _collapsedSize: 40,
-      _collapsible: false,
-      _isResizableProps: true,
-    };
+    const resizable = makeResizable();
     // Under RTL the start panel sits on the RIGHT, so a pointer move to the
     // right (+clientX) must SHRINK it — the delta is inverted. The handle reads
     // its own computed `direction` via getRTLMultiplier(); jsdom doesn't resolve
@@ -308,9 +353,9 @@ describe('ResizeHandle', () => {
         return realGetComputedStyle(el, pseudo ?? undefined);
       });
 
-    fireEvent.pointerDown(hitArea, {clientX: 0, clientY: 0});
+    fireEvent.pointerDown(hitArea, {pointerId: 1, clientX: 0, clientY: 0});
     // Same +40px physical move as LTR, but mirrored → −40 delta under RTL.
-    fireEvent.pointerMove(window, {clientX: 40, clientY: 0});
+    fireEvent.pointerMove(hitArea, {pointerId: 1, clientX: 40, clientY: 0});
     expect(resizable._onResizeMove).toHaveBeenLastCalledWith(-40);
 
     gcsSpy.mockRestore();
