@@ -298,6 +298,21 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('Selector satisfies its required props via playground defaults', () => {
+    const selector = components['@astryxdesign/core'].find(
+      c => c.name === 'Selector',
+    );
+    expect(selector).toBeDefined();
+    expect(selector!.playground?.defaults).toMatchObject({
+      label: 'Fruit',
+      options: [
+        {value: 'apple', label: 'Apple'},
+        {value: 'banana', label: 'Banana'},
+        {value: 'orange', label: 'Orange'},
+      ],
+    });
+  });
+
   it('MetadataListItem declares a playground wrapper for realistic preview structure', () => {
     const core = components['@astryxdesign/core'];
     const metadataListItem = core.find(c => c.name === 'MetadataListItem');
