@@ -279,18 +279,44 @@ describe('PowerSearchTouchSurface', () => {
     expect(screen.getByRole('button', {name: 'Manage filters'})).toHaveFocus();
   });
 
-  it('shows selected filters as editable rows with separate remove actions', () => {
+  it('shows selected filters as editable rows with only a separate remove action', () => {
     setup({filters: [openFilter]});
     openSheet();
+    const selectedList = within(sheet()).getByRole('list', {
+      name: 'Selected filters',
+    });
+    expect(selectedList).toBeTruthy();
     expect(
-      within(sheet()).getByRole('list', {name: 'Selected filters'}),
+      within(selectedList).getByRole('button', {name: 'Status is Open'}),
     ).toBeTruthy();
     expect(
-      within(sheet()).getByRole('button', {name: 'Status is Open'}),
+      within(selectedList).getByRole('button', {
+        name: 'Remove Status is Open',
+      }),
+    ).toBeTruthy();
+    expect(selectedList.querySelectorAll('svg')).toHaveLength(1);
+  });
+
+  it('places Add filter after the selected list and Done in the footer', () => {
+    setup({filters: [openFilter]});
+    openSheet();
+    const selectedList = within(sheet()).getByRole('list', {
+      name: 'Selected filters',
+    });
+    const addFilter = within(sheet()).getByRole('button', {
+      name: 'Add filter',
+    });
+    const done = within(sheet()).getByRole('button', {name: 'Done'});
+    expect(
+      selectedList.compareDocumentPosition(addFilter) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      within(sheet()).getByRole('button', {name: 'Remove Status is Open'}),
+      addFilter.compareDocumentPosition(done) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    expect(addFilter).toHaveAttribute('data-variant', 'secondary');
+    expect(done).toHaveAttribute('data-variant', 'primary');
   });
 
   it('lists the fields, grouped, after Add filter is pressed', () => {

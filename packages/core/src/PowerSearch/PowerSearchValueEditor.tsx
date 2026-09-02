@@ -19,7 +19,6 @@ import React, {
   type FormEvent,
   type KeyboardEvent,
 } from 'react';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import type {
   OperatorValue,
   FilterValue,
@@ -57,14 +56,11 @@ export interface PowerSearchValueEditorProps {
   /** Max suggestions in string and entity value typeaheads. */
   maxMenuItems?: number;
   isDisabled?: boolean;
-  /** Optional internal style applied to the rendered input control. */
-  controlXStyle?: StyleXStyles;
   timezoneID?: string;
 }
 
 interface EditorControlProps {
   isDisabled?: boolean;
-  controlXStyle?: StyleXStyles;
 }
 
 // =============================================================================
@@ -114,7 +110,6 @@ function StringEditor({
   onEnter: _onEnter,
   maxMenuItems,
   isDisabled,
-  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'string'};
   filterValue: FilterValue | undefined;
@@ -148,10 +143,7 @@ function StringEditor({
         placeholder={t('@astryx.powersearch.valueEditor.searchPlaceholder')}
         debounceMs={150}
         maxMenuItems={maxMenuItems}
-        hasClear={controlXStyle == null}
         isDisabled={isDisabled}
-        __inputWrapperXStyle={controlXStyle}
-        xstyle={controlXStyle}
       />
     );
   }
@@ -166,7 +158,6 @@ function StringEditor({
         onChange({type: 'string', value});
       }}
       isDisabled={isDisabled}
-      xstyle={controlXStyle}
     />
   );
 }
@@ -177,7 +168,6 @@ function StringListEditor({
   onChange,
   maxMenuItems,
   isDisabled,
-  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'string_list'};
   filterValue: FilterValue | undefined;
@@ -225,8 +215,6 @@ function StringListEditor({
       hasCreate={hasCreate}
       maxMenuItems={maxMenuItems}
       isDisabled={isDisabled}
-      __inputWrapperXStyle={controlXStyle}
-      xstyle={controlXStyle}
     />
   );
 }
@@ -300,7 +288,6 @@ function IntegerEditor({
   onChange,
   onEnter,
   isDisabled,
-  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'integer'};
   filterValue: FilterValue | undefined;
@@ -335,7 +322,6 @@ function IntegerEditor({
       isIntegerOnly
       placeholder={t('@astryx.powersearch.valueEditor.enterNumberPlaceholder')}
       isDisabled={isDisabled}
-      xstyle={controlXStyle}
     />
   );
 }
@@ -346,7 +332,6 @@ function FloatEditor({
   onChange,
   onEnter,
   isDisabled,
-  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'float'};
   filterValue: FilterValue | undefined;
@@ -380,7 +365,6 @@ function FloatEditor({
       units={operatorValue.units}
       placeholder={t('@astryx.powersearch.valueEditor.enterNumberPlaceholder')}
       isDisabled={isDisabled}
-      xstyle={controlXStyle}
     />
   );
 }
@@ -390,7 +374,6 @@ function TimeEditor({
   filterValue,
   onChange,
   isDisabled,
-  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'time'};
   filterValue: FilterValue | undefined;
@@ -415,7 +398,6 @@ function TimeEditor({
       min={operatorValue.minValue as ISOTimeString | undefined}
       max={operatorValue.maxValue as ISOTimeString | undefined}
       isDisabled={isDisabled}
-      xstyle={controlXStyle}
     />
   );
 }
@@ -424,7 +406,6 @@ function DateAbsoluteEditor({
   filterValue,
   onChange,
   isDisabled,
-  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'date_absolute'};
   filterValue: FilterValue | undefined;
@@ -452,7 +433,6 @@ function DateAbsoluteEditor({
         }
       }}
       isDisabled={isDisabled}
-      xstyle={controlXStyle}
     />
   );
 }
@@ -462,7 +442,6 @@ function DateRelativeEditor({
   filterValue,
   onChange,
   isDisabled,
-  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'date_relative'};
   filterValue: FilterValue | undefined;
@@ -514,7 +493,6 @@ function DateRelativeEditor({
         onChange({type: 'date_relative', value}, true);
       }}
       isDisabled={isDisabled}
-      xstyle={controlXStyle}
     />
   );
 }
@@ -523,7 +501,6 @@ function DateRangeEditor({
   filterValue,
   onChange,
   isDisabled,
-  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'date_range'};
   filterValue: FilterValue | undefined;
@@ -581,7 +558,6 @@ function DateRangeEditor({
         onChange={handleChange}
         hasClear={false}
         isDisabled={isDisabled}
-        xstyle={controlXStyle}
       />
     </div>
   );
@@ -592,7 +568,6 @@ function EnumEditor({
   filterValue,
   onChange,
   isDisabled,
-  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'enum'};
   filterValue: FilterValue | undefined;
@@ -621,7 +596,6 @@ function EnumEditor({
         onChange({type: 'enum', value}, true);
       }}
       isDisabled={isDisabled}
-      xstyle={controlXStyle}
     />
   );
 }
@@ -631,7 +605,6 @@ function EnumListEditor({
   filterValue,
   onChange,
   isDisabled,
-  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'enum_list'};
   filterValue: FilterValue | undefined;
@@ -671,8 +644,6 @@ function EnumListEditor({
       hasEntriesOnFocus
       debounceMs={0}
       isDisabled={isDisabled}
-      __inputWrapperXStyle={controlXStyle}
-      xstyle={controlXStyle}
     />
   );
 }
@@ -683,7 +654,6 @@ function EntityListEditor({
   onChange,
   maxMenuItems,
   isDisabled,
-  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'entity_list'};
   filterValue: FilterValue | undefined;
@@ -738,8 +708,6 @@ function EntityListEditor({
       debounceMs={operatorValue.searchSource ? 150 : 0}
       maxMenuItems={maxMenuItems}
       isDisabled={isDisabled}
-      __inputWrapperXStyle={controlXStyle}
-      xstyle={controlXStyle}
     />
   );
 }
@@ -785,9 +753,8 @@ export function PowerSearchValueEditor({
   onEnter,
   maxMenuItems,
   isDisabled,
-  controlXStyle,
 }: PowerSearchValueEditorProps) {
-  const controlProps: EditorControlProps = {isDisabled, controlXStyle};
+  const controlProps: EditorControlProps = {isDisabled};
   switch (operatorValue.type) {
     case 'empty':
       return null;

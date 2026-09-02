@@ -42,9 +42,6 @@ const styles = stylex.create({
   input: {
     paddingBlockStart: spacingVars['--spacing-1'],
   },
-  touchControl: {
-    minHeight: spacingVars['--spacing-11'],
-  },
 });
 
 export interface PowerSearchTouchValueEditorProps {
@@ -75,7 +72,7 @@ export function PowerSearchTouchValueEditor({
   const handleFallbackChange = useCallback(
     (value: FilterValue) => {
       // Even editors that are complete on selection stay staged here. The
-      // touch sheet always asks for explicit confirmation through Apply.
+      // touch sheet always asks for explicit confirmation through Save.
       onChange(value);
     },
     [onChange],
@@ -167,7 +164,6 @@ export function PowerSearchTouchValueEditor({
         onChange={handleFallbackChange}
         config={config}
         isDisabled={isDisabled}
-        controlXStyle={styles.touchControl}
         maxMenuItems={maxMenuItems}
         timezoneID={timezoneID}
       />
