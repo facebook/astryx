@@ -9,6 +9,6 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Rename built-in syntax theme identifiers.
+[fix] Rename built-in syntax theme identifiers. (#5847)
 
 @rubyycheung
