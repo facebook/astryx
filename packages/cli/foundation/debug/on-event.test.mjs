@@ -18,6 +18,7 @@ import {fileURLToPath} from 'node:url';
 import {
   begin,
   finish,
+  currentEvent,
   setCommand,
   setArgs,
   setOptions,
@@ -213,6 +214,49 @@ describe('scrubbing', () => {
     finish({exitCode: 0});
     expect(seen[0].command).toBe('docs');
     expect(String(seen[0].options.blob)).toContain('chars]');
+  });
+
+  it('scrubs the value after a sensitive flag in argv', () => {
+    // argv is a flat array: `--token` and its value are separate elements, and
+    // scrubbing element by element gives the value no key to match against.
+    // `--flag value` is the ordinary CLI spelling, so redacting it in options
+    // while printing it in argv would be the worst of both.
+    const seen = collect();
+    begin({argv: ['docs', '--token', 'hunter2SECRETVALUE']});
+    finish({exitCode: 0});
+    expect(JSON.stringify(seen[0].argv)).not.toContain('hunter2SECRETVALUE');
+    expect(seen[0].argv[1]).toBe('--token');
+  });
+
+  it('leaves an ordinary flag and its value in argv alone', () => {
+    const seen = collect();
+    begin({argv: ['theme', 'build', '--out', 'dist']});
+    finish({exitCode: 0});
+    expect(seen[0].argv).toEqual(['theme', 'build', '--out', 'dist']);
+  });
+});
+
+describe('what a run with no handler costs', () => {
+  // The merge condition for this feature was that nothing changes for a user
+  // who has not set `debug`. These are the two ways that quietly stopped being
+  // true once, so they are pinned.
+
+  it('does not probe the environment while collecting', () => {
+    // captureEnv's first Intl.DateTimeFormat().resolvedOptions() initialises
+    // ICU, and detectPackageManager and isCliOneOff touch the filesystem.
+    // Doing that in begin() charged every run for something most runs never
+    // deliver — ~9% of the CLI's startup.
+    begin({argv: ['--version']});
+    expect(currentEvent()?.env).toBe(null);
+  });
+
+  it('fills the environment in by the time a handler sees the event', () => {
+    const seen = collect();
+    begin({argv: [], cliVersion: '9.9.9'});
+    finish({exitCode: 0});
+    expect(seen[0].env).toBeTruthy();
+    expect(seen[0].env.cliVersion).toBe('9.9.9');
+    expect(seen[0].env.nodeVersion).toBe(process.versions.node);
   });
 });
 
