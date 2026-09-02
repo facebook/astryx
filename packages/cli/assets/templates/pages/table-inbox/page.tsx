@@ -62,7 +62,14 @@
  * a modal act, which is the opposite of what an inbox is for.
  */
 
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import {
   HStack,
@@ -570,15 +577,17 @@ const HOVER_INTENT_MS = 140;
 const OPEN_CELL_STYLE = {backgroundColor: 'var(--color-accent-muted)'};
 
 /**
- * Below this the window cannot hold a list and a pane side by side at all, so
- * the pane takes the whole surface and the list comes back when it closes —
- * the behaviour of every mail client on a phone.
+ * Below this the surface cannot hold a list and a pane side by side at all, so
+ * the pane takes the whole of it and the list comes back when it closes — the
+ * behaviour of every mail client on a phone.
  *
- * This one really is about the window, because it decides whether a two-column
- * page exists. How wide the *table* ends up inside that page is a different
- * question with a different answer; see `STACK_ROWS_BELOW`.
+ * The surface, not the window. A page template is not always given the window:
+ * dropped into a preview, a split editor or a modal it gets a box, and asking
+ * `matchMedia` how wide the *window* is answers a question nobody asked. How
+ * wide the table then ends up inside that box is a third question again; see
+ * `STACK_ROWS_BELOW`.
  */
-const SINGLE_SURFACE_VIEWPORT = '(max-width: 900px)';
+const SINGLE_SURFACE_BELOW = 900;
 
 /**
  * Below this much room *for the table*, the columns stop earning their keep
@@ -623,15 +632,44 @@ const TIGHTEN_COLUMNS_BELOW = 900;
 const LIST_DEFAULT_WIDTH = 480;
 
 /**
- * How coarsely the pane's width is fed into that threshold.
+ * The width of the box this template was given, tracked as it changes.
  *
- * The pane is resizable, so its width changes every frame of a drag, and the
- * threshold is a media query string — re-deriving it per frame would build a
- * new `matchMedia` per frame for a boolean that flips once. Rounding to 40px
- * buckets keeps the query stable through most of a drag while staying far
- * finer than the thing it decides.
+ * Every responsive decision below is a question about that box and none of
+ * them is a question about the window. The two are the same thing only when
+ * the template happens to own the page — put it in the docsite's preview, a
+ * split editor or a dialog and `matchMedia` starts describing a viewport the
+ * template cannot see, which is how a two-pane layout ends up drawing full-fat
+ * columns into 260px of room.
+ *
+ * `@container` is the right question in the wrong instrument: its answer never
+ * leaves CSS, and what changes here is the column *list*, which only React can
+ * do. So the box is measured instead. The first read is synchronous and inside
+ * `useLayoutEffect`, before paint, so the opening frame is already laid out for
+ * the real width rather than snapping to it afterwards.
  */
-const PANE_QUANTUM = 40;
+function useSurfaceWidth() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) {
+      return;
+    }
+    setWidth(node.getBoundingClientRect().width);
+
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0];
+      if (entry) {
+        setWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, width] as const;
+}
 
 /**
  * Controls that live inside the row but are not the row.
@@ -1831,7 +1869,14 @@ export default function SupportInboxTemplate() {
 
   const reveal = useContainerReveal();
 
-  const isSingleSurface = useMediaQuery(SINGLE_SURFACE_VIEWPORT);
+  const [surfaceRef, surfaceWidth] = useSurfaceWidth();
+
+  // Nothing measured yet — server render, or the tick before the layout effect
+  // runs. Assume the roomy case: guessing "narrow" would open on the phone
+  // layout and snap out of it, which is the more startling of the two wrong
+  // first frames.
+  const isMeasured = surfaceWidth > 0;
+  const isSingleSurface = isMeasured && surfaceWidth < SINGLE_SURFACE_BELOW;
 
   /**
    * The thread on screen: whatever was chosen, or the default when nothing has
@@ -1855,52 +1900,51 @@ export default function SupportInboxTemplate() {
   const isPaneFullWidth = isSingleSurface && openId != null;
 
   /**
-   * Sized so the list lands on `LIST_DEFAULT_WIDTH`, which means measuring
-   * from the far edge: `useResizable` sizes the panel, and the list is
-   * whatever `LayoutContent` has left over. A percentage cannot express that
-   * — 58% is a different number of pixels left over at every window width —
-   * so the arithmetic happens here, guarded the same way the hook guards its
-   * own `%` branch. Only the first render's value is used; the handle owns the
-   * width from then on.
+   * The movable boundary between the list and the pane.
    *
-   * Single-region, because there is one movable boundary here and the list is
-   * not a sized region at all. No `snaps` — those are not magnetism, they are
-   * the only positions the panel may rest at — and no `collapsible`, because
-   * both halves of this split have to stay on screen.
+   * Single-region, because there is one boundary here and the list is not a
+   * sized region at all — it is whatever `LayoutContent` has left over. No
+   * `snaps`, which are not magnetism but the only positions the panel may rest
+   * at, and no `collapsible`, because both halves have to stay on screen.
+   *
+   * `defaultSize` is a percentage and not the pixel arithmetic that would land
+   * the list exactly on `LIST_DEFAULT_WIDTH`, because at this point there is
+   * nothing to do that arithmetic against: the hook takes its default once, on
+   * the first render, before the surface has been measured. The pixel answer
+   * arrives just below, as soon as there is a width to subtract from.
    */
   const pane = useResizable({
-    defaultSize:
-      typeof window === 'undefined'
-        ? '58%'
-        : window.innerWidth - LIST_DEFAULT_WIDTH,
+    defaultSize: '58%',
     minSizePx: 440,
     // A reading pane is a column of prose, and past roughly this the line
     // length stops being readable. Wide screens spend the surplus on the list.
     maxSizePx: 1040,
   });
 
-  // Whether the rows stack is a question about the table, not the window. A
-  // reading pane holding the majority of a wide page leaves the table narrow
-  // long before the viewport is, and asking `matchMedia` about the viewport
-  // gets that backwards every time.
+  // Land the list on its default width, once, as soon as the surface is known.
   //
-  // `@container` is the right question and the wrong instrument: its answer
-  // never leaves CSS, and this swap changes the column *list*, which only
-  // React can do. So the query is rewritten to describe the table instead of
-  // the page — whatever the pane is holding gets added to the threshold, and
-  // "is the window under 560 + the pane" is the same test as "is the table
-  // under 560". The pane's live width is quantised on the way in; see
-  // `PANE_QUANTUM`.
-  const paneReserve =
-    isSingleSurface || openId == null
-      ? 0
-      : Math.round(pane.size / PANE_QUANTUM) * PANE_QUANTUM;
-  const isStacked = useMediaQuery(
-    `(max-width: ${STACK_ROWS_BELOW + paneReserve}px)`,
-  );
-  const isTight = useMediaQuery(
-    `(max-width: ${TIGHTEN_COLUMNS_BELOW + paneReserve}px)`,
-  );
+  // Not on every measurement: this is a starting position, and re-running it
+  // on resize would drag the boundary back under the user every time the
+  // window changed. `hasPlacedPane` is the latch.
+  const {resize: resizePane} = pane;
+  const hasPlacedPane = useRef(false);
+  useLayoutEffect(() => {
+    if (hasPlacedPane.current || !isMeasured) {
+      return;
+    }
+    hasPlacedPane.current = true;
+    resizePane(surfaceWidth - LIST_DEFAULT_WIDTH);
+  }, [isMeasured, surfaceWidth, resizePane]);
+
+  // Whether the rows stack is a question about the table, not the surface and
+  // certainly not the window. A reading pane holding the majority of a wide
+  // page leaves the table narrow long before anything else is narrow, so the
+  // table's own width is what gets asked — the surface, less whatever the pane
+  // is currently holding.
+  const listWidth =
+    isSingleSurface || openId == null ? surfaceWidth : surfaceWidth - pane.size;
+  const isStacked = isMeasured && listWidth < STACK_ROWS_BELOW;
+  const isTight = isMeasured && listWidth < TIGHTEN_COLUMNS_BELOW;
 
   // Touch never hovers, so the reveal shows the actions permanently there.
   // Overlaying content that never goes away is not a swap, it is a deletion.
@@ -2112,6 +2156,7 @@ export default function SupportInboxTemplate() {
   return (
     <>
       <Layout
+        ref={surfaceRef}
         height="fill"
         header={
           /* No padding on the header itself: the tab strip's own rail is the
