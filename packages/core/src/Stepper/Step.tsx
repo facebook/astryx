@@ -197,6 +197,31 @@ function CurrentIcon() {
 // --- Styles ---
 
 const BAR_WIDTH = spacingVars['--spacing-1'];
+
+/**
+ * How much of itself a connector gives up where it meets the indicator, read
+ * from the public `--step-connector-gap` declared on the Stepper root.
+ *
+ * Clipped, not padded. The gap has to apply to two layers — the track, which is
+ * the segment's own background, and the accent fill, which is an absolutely
+ * placed `::before`. Spending it on each separately meant two declarations on
+ * two boxes: a percentage then resolved against a different containing block
+ * for each and stopped them ~1.2px apart. `clip-path` is ONE declaration on the
+ * segment that clips the element and its pseudo-element together, against one
+ * reference box — so every accepted value behaves the same way on both layers,
+ * which is what a public input owes its full value domain.
+ *
+ * Clipping also cannot change layout: the segment keeps its box, so the node it
+ * positions cannot move and the Stepper cannot grow. A raw `1rem` padding grew
+ * a 180px stepper to 240px.
+ *
+ * Still clamped, because the value arrives with nothing in between to reject
+ * it: `max(0px, …)` because a negative inset is invalid and would drop the
+ * declaration, and `min(…, --spacing-2)` — the flexible segment's own
+ * `min-height` — so an oversized gap leaves a short track rather than none.
+ */
+const CONNECTOR_GAP = `max(0px, min(var(--step-connector-gap, 0px), ${spacingVars['--spacing-2']}))`;
+
 // Every indicator — check, ring, custom icon, number badge — occupies the same
 // box, so the `auto` mode swapping a number for a check as a step completes
 // never nudges the label or the track.
@@ -729,6 +754,38 @@ const styles = stylex.create({
     width: BAR_WIDTH,
     flexShrink: 0,
     borderRadius: 0,
+  },
+  // The gap a connector leaves where it meets the indicator, spent on the side
+  // that faces the node so the pair leaves a symmetric hole around it.
+  //
+  // Padding rather than margin, and `box-sizing: border-box` is universal in
+  // the reset — so the segment's outer size does not change and the node stays
+  // put. That matters most for the vertical leading segment, whose height is
+  // what aligns the node with the label's first line: a margin there would
+  // push the node down by the gap.
+  //
+  // Each rule spends the gap twice, on the track and on the fill: the track's
+  // paint is clipped to the content box, and the fill layer — absolutely
+  // placed at `inset: 0`, which resolves against the PADDING box and would
+  // otherwise paint straight through the gap — is inset by the same amount, so
+  // both stop at the same line. No fallback in the `var()`: the default is
+  // declared on `connectorTrack` above, which every one of these segments also
+  // carries.
+  //
+  // A public var rather than a per-segment theme vocabulary: "do not touch the
+  // indicator" is one intent, and naming the segments would publish which
+  // pieces this layout happens to be drawn from today.
+  otSegGapLeadV: {
+    clipPath: `inset(0 0 ${CONNECTOR_GAP} 0)`,
+  },
+  otSegGapRailV: {
+    clipPath: `inset(${CONNECTOR_GAP} 0 0 0)`,
+  },
+  otSegGapLeadH: {
+    clipPath: `inset(0 ${CONNECTOR_GAP} 0 0)`,
+  },
+  otSegGapRailH: {
+    clipPath: `inset(0 0 0 ${CONNECTOR_GAP})`,
   },
   // Flexible segment (below the node) — grows to fill the step height and
   // meets the next node's leading segment.
@@ -1352,6 +1409,7 @@ export function Step({
                   styles.otSegBaseV,
                   styles.otSegLeadV(densitySpace),
                   styles.connectorTrack,
+                  hasIndicator && styles.otSegGapLeadV,
                   beforeSegStyle,
                   beforeTiming,
                   styles.otSegHiddenIfFirst,
@@ -1367,6 +1425,7 @@ export function Step({
                   styles.otSegBaseV,
                   styles.otSegFlexV,
                   styles.connectorTrack,
+                  hasIndicator && styles.otSegGapRailV,
                   afterSegStyle,
                   railTiming,
                   styles.otSegHiddenIfLast,
@@ -1432,6 +1491,7 @@ export function Step({
               stylex.props(
                 styles.otSegH,
                 styles.connectorTrack,
+                hasIndicator && styles.otSegGapLeadH,
                 beforeSegStyle,
                 beforeTiming,
                 styles.otSegHiddenIfFirst,
@@ -1446,6 +1506,7 @@ export function Step({
               stylex.props(
                 styles.otSegH,
                 styles.connectorTrack,
+                hasIndicator && styles.otSegGapRailH,
                 afterSegStyle,
                 railTiming,
                 styles.otSegHiddenIfLast,

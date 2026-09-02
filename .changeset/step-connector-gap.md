@@ -1,0 +1,36 @@
+---
+'@astryxdesign/core': patch
+---
+
+[feat] Stepper: `--step-connector-gap`, so a theme can stop the on-track connector short of the indicator
+
+The on-track layouts draw the connector as one segment either side of the node. A theme that wants the track to leave a hole around the indicator had to reach the two segments separately, and they are only distinguishable by sibling position — which changes with `indicator="none"`.
+
+One public var does it instead, declared on the Stepper root because component vars are root-owned: a theme writes `stepper: {base: {'--step-connector-gap': '4px'}}` and every connector inherits it. Astryx spends it on whichever side each segment faces the node from, so the pair leaves a symmetric hole and the caller never names the pieces. `0px` by default: the shipped track still reads as one unbroken line.
+
+Measured in Chromium against a built theme override, reading painted pixels down a 12px segment:
+
+| value | clipped away | stepper height |
+| --- | --- | --- |
+| `6px` | 6px | unchanged |
+| `-4px` | 0 | unchanged |
+| `1rem` | capped to 8px | unchanged |
+| `999px` | capped to 8px | unchanged |
+| `10%` | 1px (of 12px) | unchanged |
+| `50%` | capped to 6px | unchanged |
+
+Four things that had to be true and are:
+
+**A theme override reaches it.** The default is declared once on the root, not on each connector. Declared per-connector, every connector re-declared `0px` on itself, and a value declared on an element beats an inherited one — so a generated `stepper` override compiled cleanly and changed nothing.
+
+**The value is bounded.** `max(0px, …)` because a negative padding is invalid and drops the declaration, painting the track through the node it was asked to avoid. `min(…, --spacing-2)` — the flexible segment's own `min-height` — so an oversized gap leaves a short track rather than none. (An earlier padding-based revision also grew the Stepper 180px → 240px at `1rem`; clipping cannot.)
+
+**One declaration covers both layers.** The gap has to reach the track (the segment's own background) and the accent fill (an absolutely placed `::before`). Spending it on each separately meant two declarations on two boxes, so a percentage resolved against a different containing block for each and stopped them ~1.2px apart. A single `clip-path: inset(…)` on the segment clips the element and its pseudo-element together against one reference box, so every accepted value behaves identically on both — which is what [#5824](https://github.com/facebook/astryx/pull/5824) requires of a public input across its full value domain. Clipping also cannot change layout, so the node the segment positions cannot move.
+
+**No indicator, no gap.** `indicator="none"` renders no node, so a gap there is a hole in a track that is meant to be continuous.
+
+Any CSS length or percentage is accepted and behaves the same way on both layers.
+
+Supersedes the `segment` variant this PR previously proposed. That exposed `lead` / `rail` / `content` as public theming vocabulary, which does not hold up: the words never appeared in the generated docs, they emit bare `lead` / `content` classes where a consumer's own stylesheet can collide with them, and `lead` means different geometry per orientation. The pieces are how this layout happens to be drawn today, not a contract.
+
+@freddymeta
