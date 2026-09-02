@@ -10,7 +10,13 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, within} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import {createRef, useState} from 'react';
 import {PowerSearchTouchSurface} from './PowerSearchTouch';
 import type {
@@ -111,6 +117,12 @@ const config: PowerSearchConfig = {
   ],
 };
 
+const contentSearchConfig: PowerSearchConfig = {
+  ...config,
+  name: 'ContentSearch',
+  contentSearchFieldKey: 'author',
+};
+
 const openFilter: PowerSearchFilter = {
   field: 'status',
   operator: 'is',
@@ -169,7 +181,9 @@ function tapRow(name: RegExp | string): void {
 
 function openAddFlow(): void {
   openSheet();
-  tapRow('Add filter');
+  if (within(sheet()).queryByRole('heading', {name: 'Filters'})) {
+    tapRow('Add filter');
+  }
 }
 
 function openEditFlow(name: RegExp | string): void {
@@ -203,14 +217,122 @@ describe('PowerSearchTouchSurface', () => {
     ).toBeTruthy();
   });
 
-  it('restores focus to the field after Done closes management', () => {
+  it('opens directly to Add filter when no filters are selected', () => {
     setup();
+    openSheet();
+    expect(
+      within(sheet()).getByRole('heading', {name: 'Add filter'}),
+    ).toBeTruthy();
+    expect(
+      within(sheet()).queryByRole('heading', {name: 'Filters'}),
+    ).toBeNull();
+  });
+
+  it('closes to the field when Back is pressed from direct Add filter entry', () => {
+    setup();
+    const trigger = screen.getByRole('button', {name: 'Manage filters'});
+    trigger.focus();
+    openSheet();
+    const dialog = document.querySelector('dialog')!;
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Back'}));
+    expect(isSheetOpen()).toBe(false);
+    fireEvent.transitionEnd(dialog);
+    expect(trigger).toHaveFocus();
+  });
+
+  it('restores focus to the field after Done closes management', () => {
+    setup({filters: [openFilter]});
     const trigger = screen.getByRole('button', {name: 'Manage filters'});
     trigger.focus();
     fireEvent.click(trigger);
     fireEvent.click(within(sheet()).getByRole('button', {name: 'Done'}));
     fireEvent.transitionEnd(document.querySelector('dialog')!);
     expect(trigger).toHaveFocus();
+  });
+
+  it('shows PowerSearch suggestions from the management search', async () => {
+    setup({config: contentSearchConfig, placeholder: 'Search content…'});
+    openSheet();
+    expect(
+      within(sheet()).getByRole('heading', {name: 'Filters'}),
+    ).toBeTruthy();
+    const input = within(sheet()).getByRole('combobox', {name: 'Search'});
+    expect(input).toHaveAttribute('placeholder', 'Search content…');
+    fireEvent.focus(input);
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    const options = document.querySelectorAll('[role="option"]');
+    expect(options).toHaveLength(config.fields.length);
+    expect([...options].map(option => option.textContent)).toEqual(
+      expect.arrayContaining(['Status', 'Author', 'Labels', 'Unassigned']),
+    );
+  });
+
+  it('opens a structured editor from a management suggestion', async () => {
+    setup({config: contentSearchConfig});
+    openSheet();
+    const input = within(sheet()).getByRole('combobox', {name: 'Search'});
+    fireEvent.focus(input);
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    const statusOption = [...document.querySelectorAll('[role="option"]')].find(
+      option => option.textContent === 'Status',
+    );
+    expect(statusOption).toBeTruthy();
+    fireEvent.click(statusOption!);
+    expect(within(sheet()).getByRole('heading', {name: 'Status'})).toBeTruthy();
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Back'}));
+    fireEvent.transitionEnd(document.querySelector('dialog')!);
+    expect(
+      within(sheet()).getByRole('combobox', {name: 'Search'}),
+    ).toHaveFocus();
+  });
+
+  it('adds a content-search suggestion and keeps management open', async () => {
+    const {onChange} = setup({
+      config: contentSearchConfig,
+      filters: [openFilter],
+    });
+    openSheet();
+    const input = within(sheet()).getByRole('combobox', {name: 'Search'});
+    fireEvent.change(input, {target: {value: 'release notes'}});
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    const contentOption = [
+      ...document.querySelectorAll('[role="option"]'),
+    ].find(option => option.textContent === '"release notes"');
+    expect(contentOption).toBeTruthy();
+    fireEvent.click(contentOption!);
+
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        openFilter,
+        {
+          field: 'author',
+          operator: 'is',
+          value: {type: 'string', value: 'release notes'},
+        },
+      ],
+      'add',
+      1,
+    );
+    await waitFor(() => expect(input).toHaveValue(''));
+    expect(isSheetOpen()).toBe(true);
+  });
+
+  it('does not submit a composing content-search suggestion', async () => {
+    const {onChange} = setup({config: contentSearchConfig});
+    openSheet();
+    const input = within(sheet()).getByRole('combobox', {name: 'Search'});
+    fireEvent.change(input, {target: {value: '검색'}});
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+    expect(input).toHaveValue('검색');
+  });
+
+  it('focuses the sheet trigger through the existing imperative handle', () => {
+    const handle = createRef<PowerSearchHandle>();
+    setup({config: contentSearchConfig, handleRef: handle});
+    handle.current?.focusTypeahead();
+    expect(screen.getByRole('button', {name: 'Manage filters'})).toHaveFocus();
   });
 
   it('shows selected filters as editable rows with only a separate remove action', () => {
@@ -271,7 +393,7 @@ describe('PowerSearchTouchSurface', () => {
     expect(statusRow.textContent).toBe('Status');
   });
 
-  it('stages an enum selection until Save is pressed', () => {
+  it('stages an enum selection until Add filter is pressed', () => {
     const {onChange} = setup();
     openAddFlow();
     tapRow(/^Status/);
@@ -280,7 +402,7 @@ describe('PowerSearchTouchSurface', () => {
       within(sheet()).getByRole('button', {name: 'Closed, selected'}),
     ).toBeTruthy();
     expect(onChange).not.toHaveBeenCalled();
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Add filter'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         {
@@ -299,7 +421,7 @@ describe('PowerSearchTouchSurface', () => {
     openAddFlow();
     tapRow(/^Status/);
     tapRow('Closed');
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Add filter'}));
     fireEvent.transitionEnd(document.querySelector('dialog')!);
     expect(isSheetOpen()).toBe(true);
     expect(
@@ -307,7 +429,7 @@ describe('PowerSearchTouchSurface', () => {
     ).toHaveFocus();
   });
 
-  it('confirms an empty-value operator through Save', () => {
+  it('confirms an empty-value operator through Add filter', () => {
     const {onChange} = setup();
     openAddFlow();
     tapRow(/^Unassigned/);
@@ -315,7 +437,7 @@ describe('PowerSearchTouchSurface', () => {
     expect(
       within(sheet()).getByRole('heading', {name: 'Unassigned is true'}),
     ).toBeTruthy();
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Add filter'}));
     expect(onChange).toHaveBeenCalledWith(
       [{field: 'unassigned', operator: 'isTrue', value: {type: 'empty'}}],
       'add',
@@ -343,7 +465,7 @@ describe('PowerSearchTouchSurface', () => {
     );
     tapRow('Open');
     expect(onChange).not.toHaveBeenCalled();
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Add filter'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         {
@@ -357,7 +479,7 @@ describe('PowerSearchTouchSurface', () => {
     );
   });
 
-  it('stages a non-default empty operator until Save', () => {
+  it('stages a non-default empty operator until Add filter', () => {
     const {onChange} = setup();
     openAddFlow();
     tapRow(/^Status/);
@@ -365,7 +487,7 @@ describe('PowerSearchTouchSurface', () => {
       within(sheet()).getByRole('radio', {name: 'Status is empty'}),
     );
     expect(onChange).not.toHaveBeenCalled();
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Add filter'}));
     expect(onChange).toHaveBeenCalledWith(
       [{field: 'status', operator: 'isEmpty', value: {type: 'empty'}}],
       'add',
@@ -403,7 +525,7 @@ describe('PowerSearchTouchSurface', () => {
     fireEvent.click(within(sheet()).getByRole('checkbox', {name: 'Bug'}));
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.click(within(sheet()).getByRole('checkbox', {name: 'Urgent'}));
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Add filter'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         {
@@ -417,11 +539,11 @@ describe('PowerSearchTouchSurface', () => {
     );
   });
 
-  it('keeps Save disabled until a value is chosen', () => {
+  it('keeps Add filter disabled until a value is chosen', () => {
     setup();
     openAddFlow();
     tapRow(/^Author/);
-    const apply = within(sheet()).getByRole('button', {name: 'Save'});
+    const apply = within(sheet()).getByRole('button', {name: 'Add filter'});
     expect(
       apply.getAttribute('aria-disabled') ?? apply.hasAttribute('disabled'),
     ).toBeTruthy();
@@ -442,7 +564,9 @@ describe('PowerSearchTouchSurface', () => {
     expect(
       within(sheet()).getByRole('radio', {name: 'Status is'}),
     ).toBeDisabled();
-    expect(within(sheet()).getByRole('button', {name: 'Save'})).toBeDisabled();
+    expect(
+      within(sheet()).getByRole('button', {name: 'Add filter'}),
+    ).toBeDisabled();
   });
 
   it('disables an open field picker when the component becomes read-only', () => {
@@ -465,13 +589,13 @@ describe('PowerSearchTouchSurface', () => {
     expect(within(sheet()).queryByRole('radiogroup')).toBeNull();
   });
 
-  it('edits a filter only after Save', () => {
+  it('edits a filter only after Edit filter', () => {
     const {onChange} = setup({filters: [openFilter]});
     openEditFlow('Status is Open');
     expect(within(sheet()).getByRole('heading', {name: 'Status'})).toBeTruthy();
     tapRow('Closed');
     expect(onChange).not.toHaveBeenCalled();
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Edit filter'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         {
@@ -533,7 +657,7 @@ describe('PowerSearchTouchSurface', () => {
       />,
     );
     tapRow('Closed');
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Edit filter'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         authorFilter,
@@ -571,7 +695,7 @@ describe('PowerSearchTouchSurface', () => {
       />,
     );
     tapRow('Closed');
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Edit filter'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         duplicate,
@@ -608,7 +732,7 @@ describe('PowerSearchTouchSurface', () => {
     render(<Harness />);
     openEditFlow('Status is Open');
     tapRow('Closed');
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Edit filter'}));
     fireEvent.transitionEnd(document.querySelector('dialog')!);
     expect(
       within(sheet()).getByRole('button', {name: 'Status is Closed'}),
@@ -638,7 +762,7 @@ describe('PowerSearchTouchSurface', () => {
       />,
     );
     tapRow('Closed');
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Edit filter'}));
     expect(onChange).not.toHaveBeenCalled();
     expect(isSheetOpen()).toBe(true);
     expect(
@@ -854,7 +978,7 @@ describe('PowerSearchTouchSurface', () => {
     ).toHaveFocus();
   });
 
-  it('moves focus to Add filter after clearing removable filters', () => {
+  it('clears removable filters, closes the sheet, and restores focus', () => {
     function Harness() {
       const [filters, setFilters] = useState<ReadonlyArray<PowerSearchFilter>>([
         openFilter,
@@ -868,13 +992,13 @@ describe('PowerSearchTouchSurface', () => {
       );
     }
     render(<Harness />);
+    const trigger = screen.getByRole('button', {name: 'Manage filters'});
     openSheet();
-    const clear = within(sheet()).getByRole('button', {name: 'Clear all'});
-    clear.focus();
-    fireEvent.click(clear);
-    expect(
-      within(sheet()).getByRole('button', {name: 'Add filter'}),
-    ).toHaveFocus();
+    const dialog = document.querySelector('dialog')!;
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Clear all'}));
+    expect(isSheetOpen()).toBe(false);
+    fireEvent.transitionEnd(dialog);
+    expect(trigger).toHaveFocus();
   });
 
   it('clears every removable filter but keeps the read-only ones', () => {
@@ -892,6 +1016,7 @@ describe('PowerSearchTouchSurface', () => {
     openSheet();
     fireEvent.click(within(sheet()).getByRole('button', {name: 'Clear all'}));
     expect(onChange).toHaveBeenCalledWith([pinned], 'remove', 0);
+    expect(isSheetOpen()).toBe(false);
   });
 
   it('keeps Clear all inside management and respects hasClear', () => {

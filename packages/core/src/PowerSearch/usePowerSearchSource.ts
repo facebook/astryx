@@ -5,8 +5,8 @@
 /**
  * @file usePowerSearchSource.ts
  * @input InternalConfig
- * @output SearchSource for field typeahead in the main tokenizer
- * @position Hook; consumed by PowerSearch
+ * @output SearchSource for PowerSearch field, operator, value, and content suggestions
+ * @position Hook; consumed by pointer and touch PowerSearch surfaces
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts

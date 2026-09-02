@@ -5,17 +5,17 @@
 /**
  * @file PowerSearchTouch.tsx
  * @input PowerSearchConfig, filters, onChange — the PowerSearch props, unchanged
- * @output Private coarse-pointer surface: display-only filter capsules and a
- *   bottom-sheet filter builder
+ * @output Private coarse-pointer surface: field-wide management trigger and a
+ *   bottom-sheet filter builder with suggestion-backed content search
  * @position Internal PowerSearch surface selected by PowerSearch on coarse pointers
  *
  * PowerSearch's desktop shape is a typeahead that drops a popover under the
  * field, and an edit popover that lays field / operator / value out in a row.
- * Neither survives a phone: the popover fights the on-screen keyboard, and the
- * row has nowhere to go at 390px. This variant keeps the same props, filter model,
- * and tokens while moving structured filter management into a bottom sheet that
- * drills down field -> (operator) -> value. Content-search configurations retain
- * the pointer/typeahead surface and never render this component.
+ * Neither survives a phone: the edit popover fights the on-screen keyboard, and
+ * the row has nowhere to go at 390px. This variant keeps the same props, filter
+ * model, and tokens. A configured content-search field moves into the management
+ * sheet and reuses the existing PowerSearch suggestion source; structured filter
+ * building drills down field -> (operator) -> value.
  *
  * The sheets are pinned tall on purpose. The field list resizes as it is
  * searched and the editor's content changes with the operator, so a sheet that
@@ -57,6 +57,7 @@ import {List, ListItem} from '../List';
 import {RadioList, RadioListItem} from '../RadioList';
 import {Text} from '../Text';
 import {TextInput} from '../TextInput';
+import {Typeahead} from '../Typeahead';
 import {useSize} from '../SizeContext/SizeContext';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useClickableContainer} from '../hooks/useClickableContainer';
@@ -79,11 +80,13 @@ import {PowerSearchTouchValueEditor} from './PowerSearchTouchValueEditor';
 import {PowerSearchToken} from './PowerSearchToken';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {useInternalConfig} from './useInternalConfig';
+import {usePowerSearchSource} from './usePowerSearchSource';
 import type {PowerSearchProps} from './PowerSearch';
 import type {
   FilterValue,
   PowerSearchField,
   PowerSearchFilter,
+  PowerSearchItem,
   PowerSearchOperator,
 } from './types';
 
@@ -275,6 +278,7 @@ type SheetStep = 'manage' | 'fields' | 'value';
 
 type PendingSheetFocus =
   | {readonly type: 'manager-add'}
+  | {readonly type: 'manager-search'}
   | {
       readonly type: 'manager-filter';
       readonly sourceFilter: PowerSearchFilter;
@@ -285,6 +289,8 @@ type PendingSheetFocus =
 
 interface FilterDraft {
   readonly mode: 'create' | 'edit';
+  /** Sheet a newly-created filter returns to when Back is pressed. */
+  readonly returnStep?: 'fields' | 'manage';
   /** Index in `filters` when edit mode opened. */
   readonly filterIndex?: number;
   /** Original controlled filter identity, used to follow immutable reorders. */
@@ -388,6 +394,7 @@ function matchesQuery(field: PowerSearchField, query: string): boolean {
 // MultiSelector.
 const SEARCHABLE_FIELD_COUNT = 8;
 const DEFAULT_MAX_SEARCH_RESULTS = 10;
+const MAX_BROWSE_MENU_ITEMS = 1000;
 
 // =============================================================================
 // Component
@@ -396,11 +403,12 @@ const DEFAULT_MAX_SEARCH_RESULTS = 10;
 /**
  * Private coarse-pointer surface for PowerSearch. The outer field keeps active
  * filters as display-only capsules and acts as one sheet trigger. The first sheet
- * centralizes add, edit, clear, and per-filter removal.
+ * centralizes content search plus add, edit, clear, and per-filter removal.
  *
  * Each selected-filter row opens its value editor, while a separate remove
  * button leaves the management sheet open. Add filter follows the selected list,
- * while Clear all and Done stay in the footer. Save returns to management.
+ * while Clear all and Done stay in the footer. The value-sheet confirmation says
+ * Add filter or Edit filter and returns to management.
  */
 export function PowerSearchTouchSurface({
   config: configProp,
@@ -440,24 +448,36 @@ export function PowerSearchTouchSurface({
   const t = useTranslator();
   const locale = useLocale();
 
+  const searchLabel = labelFromProps ?? t('@astryx.powersearch.label');
   const triggerLabel =
     labelFromProps ?? t('@astryx.powersearch.mobile.manageFiltersTrigger');
   const fieldPlaceholder =
     placeholderFromProps ??
     t('@astryx.powersearch.mobile.manageFiltersPlaceholder');
-  const saveButtonLabel =
-    saveButtonLabelFromProps ?? t('@astryx.powersearch.mobile.save');
+  const contentSearchPlaceholder =
+    placeholderFromProps ?? t('@astryx.powersearch.placeholder');
   const addFilterTitle = t('@astryx.powersearch.mobile.addFilterTitle');
+  const editFilterTitle = t('@astryx.powersearch.mobile.editFilterTitle');
   const manageFiltersTitle = t('@astryx.powersearch.mobile.manageFiltersTitle');
   const announce = useAnnounce();
+
+  const contentSearchFieldKey = config.config.contentSearchFieldKey;
+  const contentSearchOperator =
+    contentSearchFieldKey == null
+      ? undefined
+      : config.getDefaultOperator(contentSearchFieldKey);
+  const hasContentSearch = contentSearchOperator?.value.type === 'string';
+  const contentSearchSource = usePowerSearchSource(config, maxSearchResults);
 
   const triggerId = useId();
   const statusMessageId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const managerAddButtonRef = useRef<HTMLButtonElement>(null);
+  const managerSearchRef = useRef<HTMLDivElement>(null);
   const managerRowsRef = useRef(new Map<number, HTMLLIElement>());
   const fieldRowsRef = useRef(new Map<string, HTMLLIElement>());
+  const fieldPickerOriginRef = useRef<'manage' | 'trigger'>('manage');
   const latestFiltersRef = useRef(filters);
   const pendingSheetFocusRef = useRef<PendingSheetFocus | null>(null);
   const pendingMutationFocusRef = useRef(false);
@@ -469,6 +489,9 @@ export function PowerSearchTouchSurface({
   // draft with the step would blank that sheet mid-transition.
   const [draft, setDraft] = useState<FilterDraft | null>(null);
   const [fieldQuery, setFieldQuery] = useState('');
+  const saveButtonLabel =
+    saveButtonLabelFromProps ??
+    (draft?.mode === 'edit' ? editFilterTitle : addFilterTitle);
 
   const isInteractive = !isDisabled && !isReadOnly;
 
@@ -487,6 +510,12 @@ export function PowerSearchTouchSurface({
     requestAnimationFrame(() => {
       if (target.type === 'manager-add') {
         managerAddButtonRef.current?.focus({preventScroll: true});
+        return;
+      }
+      if (target.type === 'manager-search') {
+        managerSearchRef.current
+          ?.querySelector<HTMLInputElement>('input')
+          ?.focus({preventScroll: true});
         return;
       }
       if (target.type === 'field') {
@@ -519,11 +548,6 @@ export function PowerSearchTouchSurface({
       focusPendingSheetTarget();
     }
   }, [filters, focusPendingSheetTarget, step]);
-
-  const queueManagerAddFocus = useCallback((afterMutation = false) => {
-    pendingSheetFocusRef.current = {type: 'manager-add'};
-    pendingMutationFocusRef.current = afterMutation;
-  }, []);
 
   // ---------------------------------------------------------------- fields --
 
@@ -592,8 +616,15 @@ export function PowerSearchTouchSurface({
       return;
     }
     shouldRestoreTriggerAfterCloseRef.current = true;
+    if (filters.length === 0 && isInteractive && !hasContentSearch) {
+      fieldPickerOriginRef.current = 'trigger';
+      setFieldQuery('');
+      setStep('fields');
+      return;
+    }
+    fieldPickerOriginRef.current = 'manage';
     setStep('manage');
-  }, [isDisabled]);
+  }, [filters.length, hasContentSearch, isDisabled, isInteractive]);
 
   const clickableWrapper = useClickableContainer({
     containerRef: wrapperRef,
@@ -605,14 +636,22 @@ export function PowerSearchTouchSurface({
     if (!isInteractive) {
       return;
     }
+    fieldPickerOriginRef.current = 'manage';
     setFieldQuery('');
     setStep('fields');
   }, [isInteractive]);
 
+  const queueDraftOriginFocus = useCallback((next: FilterDraft) => {
+    pendingSheetFocusRef.current =
+      next.mode === 'create' && next.returnStep === 'manage'
+        ? {type: 'manager-search'}
+        : {type: 'manager-add'};
+  }, []);
+
   const commitSavedFilter = useCallback(
     (next: FilterDraft, filter: PowerSearchFilter) => {
       if (!isInteractive) {
-        pendingSheetFocusRef.current = {type: 'manager-add'};
+        queueDraftOriginFocus(next);
         setStep('manage');
         return;
       }
@@ -639,12 +678,12 @@ export function PowerSearchTouchSurface({
         updated[filterIndex] = filter;
         onChange(updated, 'edit', filterIndex);
       } else {
-        pendingSheetFocusRef.current = {type: 'manager-add'};
+        queueDraftOriginFocus(next);
         onChange([...filters, filter], 'add', filters.length);
       }
       setStep('manage');
     },
-    [filters, isInteractive, onChange],
+    [filters, isInteractive, onChange, queueDraftOriginFocus],
   );
 
   const commitFilter = useCallback(
@@ -661,8 +700,31 @@ export function PowerSearchTouchSurface({
     [commitSavedFilter],
   );
 
+  // Opening a new filter can come from either the explicit field picker or a
+  // suggestion in the management search. Keep that origin so Back returns to
+  // the control the user actually came from.
+  const openCreateEditor = useCallback(
+    (
+      field: PowerSearchField,
+      operator: PowerSearchOperator,
+      returnStep: 'fields' | 'manage',
+    ) => {
+      const next: FilterDraft = {
+        mode: 'create',
+        returnStep,
+        field: field.key,
+        operator: operator.key,
+        value: operator.value.type === 'empty' ? {type: 'empty'} : undefined,
+      };
+      setDraft(next);
+      setStep('value');
+    },
+    [],
+  );
+
   // Choosing a field opens its editor. Empty-value operators still stage their
-  // sentinel value so every filter is confirmed through the same Save action.
+  // sentinel value so every filter is confirmed through the mode-specific
+  // Add filter or Edit filter action.
   const handleFieldSelect = useCallback(
     (field: PowerSearchField) => {
       if (!isInteractive) {
@@ -675,16 +737,42 @@ export function PowerSearchTouchSurface({
       if (operator == null) {
         return;
       }
-      const next: FilterDraft = {
-        mode: 'create',
-        field: field.key,
-        operator: operator.key,
-        value: operator.value.type === 'empty' ? {type: 'empty'} : undefined,
-      };
-      setDraft(next);
-      setStep('value');
+      openCreateEditor(field, operator, 'fields');
     },
-    [config, isInteractive],
+    [config, isInteractive, openCreateEditor],
+  );
+
+  const handleContentSuggestionSelect = useCallback(
+    (item: PowerSearchItem | null) => {
+      if (!isInteractive || item?.auxiliaryData == null) {
+        return;
+      }
+      const {fieldKey, filterValue, operatorKey} = item.auxiliaryData;
+      const field = config.getField(fieldKey);
+      const operator =
+        operatorKey == null
+          ? config.getDefaultOperator(fieldKey)
+          : config.getOperator(fieldKey, operatorKey);
+      if (field == null || operator == null || !isSupportedOperator(operator)) {
+        return;
+      }
+      if (filterValue != null) {
+        pendingSheetFocusRef.current = {type: 'manager-search'};
+        pendingMutationFocusRef.current = true;
+        onChange(
+          [
+            ...filters,
+            {field: field.key, operator: operator.key, value: filterValue},
+          ],
+          'add',
+          filters.length,
+        );
+        announce(t('@astryx.tokenizer.tokenAdded', {label: item.label}));
+        return;
+      }
+      openCreateEditor(field, operator, 'manage');
+    },
+    [announce, config, filters, isInteractive, onChange, openCreateEditor, t],
   );
 
   const handleFilterEdit = useCallback(
@@ -767,9 +855,9 @@ export function PowerSearchTouchSurface({
     if (firstRemovedIndex < 0) {
       return;
     }
-    queueManagerAddFocus(true);
     onChange(kept, 'remove', firstRemovedIndex);
-  }, [filters, onChange, queueManagerAddFocus]);
+    closeSheet();
+  }, [closeSheet, filters, onChange]);
 
   const handleOperatorSelect = useCallback(
     (operator: PowerSearchOperator) => {
@@ -824,6 +912,11 @@ export function PowerSearchTouchSurface({
         preferredIndex:
           resolveDraftFilterIndex(filters, draft) ?? draft.filterIndex,
       };
+      setStep('manage');
+      return;
+    }
+    if (draft.mode === 'create' && draft.returnStep === 'manage') {
+      pendingSheetFocusRef.current = {type: 'manager-search'};
       setStep('manage');
       return;
     }
@@ -1138,6 +1231,23 @@ export function PowerSearchTouchSurface({
                   <Heading level={3}>{manageFiltersTitle}</Heading>
                 </div>
               </div>
+              {hasContentSearch && isInteractive && (
+                <Typeahead
+                  ref={managerSearchRef}
+                  label={searchLabel}
+                  isLabelHidden
+                  searchSource={contentSearchSource}
+                  value={null}
+                  onChange={handleContentSuggestionSelect}
+                  placeholder={contentSearchPlaceholder}
+                  hasEntriesOnFocus
+                  maxMenuItems={MAX_BROWSE_MENU_ITEMS}
+                  debounceMs={0}
+                  hasClear={false}
+                  startIcon={<Icon icon="search" size="sm" color="secondary" />}
+                  width="100%"
+                />
+              )}
             </div>
             <div {...stylex.props(styles.body)}>
               {filterRows.length === 0 ? (
@@ -1245,6 +1355,10 @@ export function PowerSearchTouchSurface({
                   size="sm"
                   xstyle={styles.touchIconAction}
                   onClick={() => {
+                    if (fieldPickerOriginRef.current === 'trigger') {
+                      closeSheet();
+                      return;
+                    }
                     pendingSheetFocusRef.current = {type: 'manager-add'};
                     setStep('manage');
                   }}
@@ -1354,7 +1468,7 @@ export function PowerSearchTouchSurface({
                         if (draft.mode === 'edit') {
                           handleDelete();
                         } else {
-                          pendingSheetFocusRef.current = {type: 'manager-add'};
+                          queueDraftOriginFocus(draft);
                           setStep('manage');
                         }
                         return;

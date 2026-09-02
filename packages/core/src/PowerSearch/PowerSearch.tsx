@@ -380,9 +380,8 @@ export interface PowerSearchProps extends Omit<
   /** Visually hide the label. @default true */
   isLabelHidden?: boolean;
   /**
-   * Placeholder text. On the touch-management surface it labels the empty
-   * field-wide trigger; content-search configurations retain the typeahead input.
-   * @default 'Search...'
+   * Placeholder text. On the touch surface it labels the empty field-wide trigger
+   * and the suggestion-backed content-search input. @default 'Search...'
    */
   placeholder?: string;
   /** Auto-focus on mount. @default false */
@@ -435,7 +434,8 @@ export interface PowerSearchProps extends Omit<
   maxSearchResults?: number;
   /**
    * Label for the confirmation button. Defaults to 'Apply' in the pointer
-   * popover and 'Save' in the touch sheet.
+   * popover and to the mode-specific 'Add filter' or 'Edit filter' action in
+   * the touch sheet.
    */
   popoverSaveButtonLabel?: string;
   /** Timezone ID for date formatting. */
@@ -495,11 +495,12 @@ type PopoverState =
  * Structured filter bar where each token represents a filter (field + operator + value).
  *
  * On fine pointers, users select fields from a typeahead and configure them in
- * an edit popover. On supported coarse-pointer configurations, the same
- * component renders an in-field “Add filters…” button and uses a bottom-sheet
- * flow for adding and editing. Content search, nested filters, and configured
- * token overflow retain the typeahead surface so their capabilities stay
- * available. Existing token remove buttons delete directly on either surface.
+ * an edit popover. Supported coarse-pointer configurations instead use the whole
+ * field as a filter-management trigger and open a bottom-sheet flow. Touch
+ * capsules are display-only; editing and removal live in management rows. A
+ * supported content-search field appears inside management with the standard
+ * PowerSearch suggestion list. Nested filters and configured token overflow
+ * retain the typeahead surface.
  *
  * @example
  * ```
@@ -562,11 +563,22 @@ type PopoverState =
  */
 function canUseTouchSurface(props: PowerSearchProps): boolean {
   const {config, tokenOverflowBehavior} = props;
-  if (
-    config.contentSearchFieldKey != null ||
-    (tokenOverflowBehavior != null && tokenOverflowBehavior !== 'none')
-  ) {
+  if (tokenOverflowBehavior != null && tokenOverflowBehavior !== 'none') {
     return false;
+  }
+  if (config.contentSearchFieldKey != null) {
+    const contentField = config.fields.find(
+      field => field.key === config.contentSearchFieldKey,
+    );
+    const contentOperator =
+      contentField?.defaultOperator != null
+        ? contentField.operators.find(
+            operator => operator.key === contentField.defaultOperator,
+          )
+        : contentField?.operators[0];
+    if (contentOperator?.value.type !== 'string') {
+      return false;
+    }
   }
   return !config.fields.some(field =>
     field.operators.some(operator => operator.value.type === 'nested'),

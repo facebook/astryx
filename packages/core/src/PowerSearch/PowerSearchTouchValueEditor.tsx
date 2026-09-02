@@ -14,7 +14,7 @@
  * as the sheet's own list: a staged single-select list and a CheckboxList,
  * both confirmed from the footer. Every other type is a real input rather than
  * a menu, so it falls through to the shared PowerSearchValueEditor while still
- * requiring Save.
+ * requiring the sheet's Add filter or Edit filter confirmation.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
@@ -72,7 +72,8 @@ export function PowerSearchTouchValueEditor({
   const handleFallbackChange = useCallback(
     (value: FilterValue) => {
       // Even editors that are complete on selection stay staged here. The
-      // touch sheet always asks for explicit confirmation through Save.
+      // touch sheet always asks for explicit confirmation through its
+      // mode-specific Add filter or Edit filter action.
       onChange(value);
     },
     [onChange],
