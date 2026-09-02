@@ -296,6 +296,11 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--tree-list-indent',
   '--_tree-indent',
   '--tree-list-row-gap',
+  // Clipped on the ONE side each on-track connector segment faces the
+  // indicator from — trailing above the node, leading below it, mirrored
+  // again per axis. No standard property maps onto this purpose-based seam:
+  // one clip must cover the segment and its pseudo-element fill together.
+  '--step-connector-gap',
   // Composed into a single box-shadow list on the card, so neither maps 1:1
   // onto boxShadow — setting one through a derived entry would clobber the
   // other.

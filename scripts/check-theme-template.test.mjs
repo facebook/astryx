@@ -246,7 +246,11 @@ describe('theme template stays in sync with the theme system', () => {
     const {publicVars} = themingTargets();
     // Domain tokens (syntax, data-viz) live outside tokens.stylex.ts and are
     // referenced by prefix in the inventory, not by full name.
-    const domainPrefixes = ['--color-syntax-', '--color-data-'];
+    const domainPrefixes = [
+      '--color-syntax-',
+      '--color-data-',
+      '--astryx-theme-my-theme-',
+    ];
     const bogus = templateVars().filter(
       v =>
         !known.has(v) &&

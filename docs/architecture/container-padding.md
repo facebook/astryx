@@ -82,6 +82,11 @@ The protocol has four layers:
 | Alignment consumer  | Toolbar and edge-compensating child components         | Read the current inline inset to align visible content rather than stacked touch-target padding               |
 | Boundary owner      | Layer surfaces and dialog-based overlay roots          | Apply `overlayPaddingReset` before descendants read inherited page geometry                                   |
 
+The participant list is the shared container system, not a Layout-owned family:
+Section and Layout publish or redistribute insets, Table and Divider consume
+bleed geometry, and Toolbar consumes alignment geometry. Participation here does
+not by itself make Table or Divider a member of `family:layout-regions`.
+
 `--_section-padding-propagated` is separate from the public
 `--astryx-section-padding` property. The private value carries one ancestor
 Section's explicit padding. An overlay can therefore drop ancestor geometry

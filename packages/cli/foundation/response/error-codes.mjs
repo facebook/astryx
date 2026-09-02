@@ -79,6 +79,8 @@
  *   | 'ERR_FETCH_FAILED'
  *   | 'ERR_LAYOUT_PARSE'
  *   | 'ERR_LAYOUT_INVALID'
+ *   | 'ERR_UNCLASSIFIED_EXIT'
+ *   | 'ERR_SIGNAL_TERMINATED'
  * )} ErrorCode
  */
 
@@ -194,6 +196,19 @@ export const ERROR_CODES = Object.freeze({
   ERR_LAYOUT_PARSE: 'ERR_LAYOUT_PARSE',
   /** A layout expression parsed but failed validation (unknown component/prop/enum/block). */
   ERR_LAYOUT_INVALID: 'ERR_LAYOUT_INVALID',
+
+  // ── Debug log ────────────────────────────────────────────────────
+  /**
+   * Recorded (never printed): a command exited non-zero without going through
+   * cliError/jsonError, so no stable code was available. Marks a bypass of the
+   * error funnel rather than a user-facing condition.
+   */
+  ERR_UNCLASSIFIED_EXIT: 'ERR_UNCLASSIFIED_EXIT',
+  /**
+   * Recorded (never printed): the process was ended by a signal, so the
+   * command never reached a terminal path of its own.
+   */
+  ERR_SIGNAL_TERMINATED: 'ERR_SIGNAL_TERMINATED',
 });
 
 /**

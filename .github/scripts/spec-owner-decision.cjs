@@ -208,16 +208,19 @@ function newestGateRun(statuses, repository) {
   return newest;
 }
 
-function isDesignVersion(content, filePath) {
-  return parseKind(content, filePath) === 'design';
+function approvalGroupFor(content, filePath) {
+  const kind = parseKind(content, filePath);
+  if (kind === 'design') return 'design';
+  if (kind === 'theme') return 'theme';
+  return 'spec';
 }
 
 function requiredApprovalGroups(
   records,
   {complete = true, touchesDesignAssets = false} = {},
 ) {
-  if (!complete) return {spec: true, design: true};
-  const groups = {spec: false, design: touchesDesignAssets};
+  if (!complete) return {spec: true, design: true, theme: true};
+  const groups = {spec: false, design: touchesDesignAssets, theme: false};
   for (const record of records) {
     const versions = [
       {content: record.baseContent, path: record.previousPath ?? record.path},
@@ -225,9 +228,7 @@ function requiredApprovalGroups(
     ];
     for (const version of versions) {
       if (parseAuthority(version.content, version.path) !== 'current') continue;
-      groups[
-        isDesignVersion(version.content, version.path) ? 'design' : 'spec'
-      ] = true;
+      groups[approvalGroupFor(version.content, version.path)] = true;
     }
   }
   return groups;
@@ -235,7 +236,7 @@ function requiredApprovalGroups(
 
 function requiresOwnerApproval(records, options = {}) {
   const groups = requiredApprovalGroups(records, options);
-  return groups.spec || groups.design;
+  return groups.spec || groups.design || groups.theme;
 }
 
 module.exports = {

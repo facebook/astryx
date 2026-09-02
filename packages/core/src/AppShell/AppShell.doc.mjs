@@ -10,7 +10,7 @@ export const docs = {
   keywords: ["appshell","layout","scaffold","sidebar","sidenav","topnav","header","navigation","dashboard","shell","page","frame"],
   usage: {
     description:
-      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on SideNav with its collapsible prop.',
+      'AppShell is the page shell for an application. It provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on SideNav with its collapsible prop.',
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
@@ -21,6 +21,7 @@ export const docs = {
       {guidance: false, description: 'Add your own skip link or <main> element. AppShell already renders both, and a second main landmark makes the first ambiguous.'},
     ],
     anatomy: [
+      {name: 'Page shell', required: true, description: 'Outermost application frame that owns page-level navigation, responsive shell behavior, and the main content landmark.'},
       {name: 'Skip link', required: true, description: 'First focusable element on the page. Visually hidden until focused, then moves focus to the main content area.'},
       {name: 'Banner', required: false, description: 'The banner slot, for system-wide announcements. Renders above the top nav, inside the banner landmark.'},
       {name: 'Top navigation', required: false, description: 'The topNav slot, typically TopNav. Below the mobile breakpoint it becomes a compact bar carrying the nav toggle.'},
@@ -137,7 +138,7 @@ export const docsZh = {
   displayName: 'App Shell',
   usage: {
     description:
-      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on SideNav with its collapsible prop.',
+      'AppShell is the page shell for an application. It provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on SideNav with its collapsible prop.',
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
@@ -199,7 +200,7 @@ export const docsDense = {
     'app-level layout shell w/ header, side nav, main content; composes Layout internally, replaces Page+PageLayout',
   usage: {
     description:
-      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on SideNav with its collapsible prop.',
+      'AppShell is the page shell for an application. It provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on SideNav with its collapsible prop.',
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},

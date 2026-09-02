@@ -55,9 +55,10 @@ if (!isNodeVersionSupported(process.versions.node)) {
 
 // Imports that transitively load `styleText` must happen AFTER the gate above,
 // so they are dynamically imported here rather than at the top of the module.
-const {program} = await importSrc('index.mjs');
+const {program, loadProjectDebugHandler} = await importSrc('index.mjs');
 const {isJsonMode, toErrorEnvelope} = await importSrc('../../foundation/response/json.mjs');
 const {handleCommanderError} = await importSrc('lib/json-shim.mjs');
+const {setOutcome} = await importSrc('../../foundation/debug/index.mjs');
 
 /**
  * Top-level error boundary (contract guarantee #4): an uncaught throw must
@@ -81,6 +82,11 @@ function handleFatal(err) {
   // calls process.exit when it owns the error.
   if (handleCommanderError(err)) return;
 
+  // Anything still here is an uncaught throw or an unhandled rejection —
+  // a bug rather than a user error, and the class of failure most worth
+  // having a record of.
+  setOutcome('fatal', {exitCode: 1, error: err});
+
   if (inJsonMode()) {
     // Only emit if a command didn't already produce an envelope.
     if (!process.__xdsJsonHandled) {
@@ -96,6 +102,10 @@ function handleFatal(err) {
 
 process.on('unhandledRejection', handleFatal);
 process.on('uncaughtException', handleFatal);
+
+// Pick up the project's `debug` function before parsing, so parse errors and
+// `--help` — which short-circuit before any hook runs — are reported too.
+await loadProjectDebugHandler();
 
 try {
   await program.parseAsync(process.argv);

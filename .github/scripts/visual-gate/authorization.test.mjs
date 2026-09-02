@@ -5,6 +5,7 @@ import {describe, expect, it} from 'vitest';
 import {
   isVisualAcceptanceEndpointMaintainer,
   isVisualAcceptanceRecordMaintainer,
+  visualAcceptanceEvidencePath,
   visualAcceptanceIdentity,
 } from './authorization.mjs';
 
@@ -17,6 +18,28 @@ const payload = (permission, permissions, roleName = 'Custom role') => ({
   user: {permissions},
 });
 
+describe('visual acceptance evidence path', () => {
+  it('addresses the exact immutable run attempt', () => {
+    expect(
+      visualAcceptanceEvidencePath({
+        pr: 42,
+        head: 'a'.repeat(40),
+        run: 123456,
+        attempt: 2,
+      }),
+    ).toBe(`pr/42/visual/${'a'.repeat(40)}/123456/2/evidence.json`);
+  });
+
+  it.each([
+    [{pr: 0, head: 'a'.repeat(40), run: 1, attempt: 1}, /pr/],
+    [{pr: 1, head: 'short', run: 1, attempt: 1}, /head/],
+    [{pr: 1, head: 'a'.repeat(40), run: -1, attempt: 1}, /run/],
+    [{pr: 1, head: 'a'.repeat(40), run: 1, attempt: 0}, /attempt/],
+  ])('refuses an invalid identity', (identity, error) => {
+    expect(() => visualAcceptanceEvidencePath(identity)).toThrow(error);
+  });
+});
+
 describe('visual acceptance endpoint authorization', () => {
   it.each([
     [
@@ -26,7 +49,11 @@ describe('visual acceptance endpoint authorization', () => {
     ],
     ['effective maintainer', payload('write', {maintain: true}), true],
     ['effective administrator', payload('write', {admin: true}), true],
-    ['ordinary writer', payload('write', {admin: false, maintain: false}), false],
+    [
+      'ordinary writer',
+      payload('write', {admin: false, maintain: false}),
+      false,
+    ],
     [
       'top-level admin overridden by nested false capabilities',
       payload('admin', {admin: false, maintain: false}),

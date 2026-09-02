@@ -6,10 +6,10 @@
  * @file Layout.tsx
  * @input Uses React, stack/stackItem utilities, LayoutAreaContext, LayoutSlotsContext
  * @output Exports Layout component and LayoutProps, LayoutHeight types
- * @position Page shell and app layout — use for any page with a header, sidebar, or content area.
- *   Building a page with a sidebar? Use Layout with start/end slots.
+ * @position General five-slot layout primitive for arranging header, start, content, end, and footer regions.
+ *   Building a page area with a side panel? Use Layout with start/end slots.
  *   Need a header + scrollable content? Use Layout with header + content slots.
- *   Manages padding collapse, scroll containment, and responsive slot sizing automatically.
+ *   AppShell owns the page shell and app-wide navigation behavior.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Layout/Layout.doc.mjs
@@ -178,11 +178,10 @@ function AreaProvider({
 }
 
 /**
- * Page shell with header, sidebar(s), content, and footer slots.
- * Use this for full-page layouts, app shells, dashboard layouts, or any UI
- * that needs a header bar, side navigation, scrollable content area, or action footer.
- * Can be used standalone for page-level layouts, or inside a container
- * (Card, Section) for content-level layouts.
+ * General layout primitive with header, start, content, end, and footer slots.
+ * Use it to arrange regions within a page or bounded container. AppShell owns
+ * the page shell, app-wide navigation, responsive shell behavior, skip link,
+ * and main landmark.
  *
  * Handles padding collapse between adjacent slots, scroll containment in the
  * content area, and automatic RTL support via CSS logical properties.

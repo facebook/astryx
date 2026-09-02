@@ -345,7 +345,10 @@ export function generateThemeRules(theme: DefinedTheme): string[] {
   const val = (key: string): string => tokens[key] || `var(${key})`;
 
   // 1. Token block — CSS custom properties on :scope
-  const tokenEntries = Object.entries(tokens);
+  const tokenEntries = [
+    ...Object.entries(tokens),
+    ...Object.entries(theme.localTokens ?? {}),
+  ];
   if (tokenEntries.length > 0) {
     const declarations = tokenEntries
       .map(([prop, value]) => `    ${prop}: ${value};`)

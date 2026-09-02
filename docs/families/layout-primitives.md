@@ -58,11 +58,14 @@ its parent when it changes one child's participation in that arrangement.
   StackItem style utilities; `padding.stylex.ts`; the container-padding
   architecture; component `.doc.mjs` theming metadata and runtime
   `themeProps()` emission.
-- **Excluded:** Section, Layout and its regions, and Toolbar own structural
-  regions rather than general composition. FormLayout owns field arrangement
-  and form-level optionality. AspectRatio constrains one child's box rather than
-  arranging arbitrary children. Card and Dialog are surfaces. AppShell and
-  navigation components compose higher-level structure.
+- **Excluded:** Section, Layout, its named regions, and Toolbar own structural
+  region contracts rather than this family's arbitrary-child flow, grid, and
+  centering vocabulary. Layout is a general-purpose primitive, but its public
+  model is five named slots rather than unrestricted child arrangement.
+  FormLayout owns field arrangement and form-level optionality. AspectRatio
+  constrains one child's box rather than arranging arbitrary children. Card and
+  Dialog are surfaces. AppShell owns the page shell and application navigation
+  composition.
 
 Membership follows public responsibility, not implementation mechanism. A
 component does not join merely because its source uses flexbox or grid.

@@ -506,8 +506,38 @@ describe('visual acceptance', () => {
           componentPath: '../../packages/core/src/Button/index.ts',
           tags: [],
         },
+        separator: {
+          type: 'story',
+          id: 'core-button--separator',
+          title: 'Core/Button',
+          name: 'Separator',
+          componentPath: '../../packages/core/src/Button/index.ts',
+          tags: ['visual-baseline'],
+        },
+        fixture: {
+          type: 'story',
+          id: 'core-button--interaction-fixture',
+          title: 'Core/Button',
+          name: 'Interaction Fixture',
+          componentPath: '../../packages/core/src/Button/index.ts',
+          tags: [],
+        },
       },
     });
+    const baselineFile = path.join(
+      pages,
+      'visual-gate',
+      'baseline',
+      'manifest.json',
+    );
+    const baseline = JSON.parse(fs.readFileSync(baselineFile, 'utf8'));
+    baseline.shots['core-button--default__y2k-light'] = {
+      ...baseline.shots[KEY],
+      key: 'core-button--default__y2k-light',
+      theme: 'y2k',
+      mode: 'light',
+    };
+    writeJSON(baselineFile, baseline);
     const scope = path.join(root, 'scope.json');
     writeJSON(scope, {
       hasStableVisual: true,
@@ -527,6 +557,10 @@ describe('visual acceptance', () => {
     ).toEqual([
       'core-button--default__neutral-light',
       'core-button--default__neutral-dark',
+      'core-button--default__y2k-light',
+      'core-button--default__y2k-dark',
+      'core-button--separator__neutral-light',
+      'core-button--separator__neutral-dark',
     ]);
   });
 

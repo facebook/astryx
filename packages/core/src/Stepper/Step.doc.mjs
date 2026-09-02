@@ -10,7 +10,7 @@ export const docs = {
   category: 'Navigation',
   isHiddenFromOverview: true,
   description:
-    'Individual step within a Stepper. Renders a progress-bar segment, an indicator, and a label with optional description. Progress (completed/active/not-started) is derived from the parent Stepper\'s activeStep and this step\'s step index.',
+    "Individual step within a Stepper. Renders a progress-bar segment, an indicator, and a label with optional description. Progress (completed/active/not-started) is derived from the parent Stepper's activeStep and this step's step index.",
   props: [
     {
       name: 'step',

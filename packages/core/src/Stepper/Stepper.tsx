@@ -85,6 +85,14 @@ const styles = stylex.create({
     listStyleType: 'none',
     margin: 0,
     padding: 0,
+    // Public, and declared HERE because component vars are root-owned: a theme
+    // writes `stepper: {base: {'--step-connector-gap': '4px'}}`, which lands on
+    // this element in `@layer astryx-theme` and beats this declaration. The
+    // connectors inherit it. Declaring it on each connector instead — where it
+    // started — made every one of them re-declare 0px on itself, and a value
+    // declared on an element always beats an inherited one, so the generated
+    // override compiled and changed nothing.
+    '--step-connector-gap': '0px',
   },
   horizontal: {
     flexDirection: 'row',

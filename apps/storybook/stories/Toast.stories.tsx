@@ -1024,3 +1024,49 @@ export const CustomContent: StoryObj = {
     },
   },
 };
+
+// =============================================================================
+// Logical placement
+// =============================================================================
+
+/**
+ * The viewport is rendered IN THE STORY TREE, not through the provider-less
+ * fallback the other stories use, and `isTopLayer` keeps its default.
+ *
+ * Both details are load-bearing for the RTL audit:
+ *
+ * - the fallback container is appended to `<body>`, outside the decorator that
+ *   sets `dir`, so a toast raised there can never flip and reads as a false
+ *   not-RTL;
+ * - `isTopLayer={false}` drops the `popover` attribute, and with it the UA
+ *   `width: fit-content` this placement has to survive — a story without the
+ *   popover would pass whether or not the viewport can span the inline axis.
+ */
+export const LogicalPlacement: StoryObj = {
+  name: 'Logical placement follows direction',
+  render: function LogicalPlacementStory() {
+    return (
+      <ToastViewport position="bottomEnd" maxVisible={1}>
+        <LogicalPlacementTrigger />
+      </ToastViewport>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`bottomEnd` is a logical placement: the toast sits on the inline END edge, which is the right in LTR and the left in RTL. The viewport spans the inline axis and aligns the card within itself, so the card follows the document direction with no per-direction styling.',
+      },
+    },
+  },
+};
+
+function LogicalPlacementTrigger() {
+  const toast = useToast();
+  return (
+    <Button
+      label="Show toast"
+      onClick={() => toast({body: 'Placement follows the document direction.'})}
+    />
+  );
+}

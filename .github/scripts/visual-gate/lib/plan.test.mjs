@@ -116,6 +116,26 @@ describe('buildPlan', () => {
     expect(plan.some(shot => shot.theme === 'y2k' && shot.component === 'Button')).toBe(true);
   });
 
+  it('limits touched components to representative and opted-in stories', () => {
+    const componentStories = [
+      ...stories,
+      story({id: 'core-button--separator', title: 'Core/Button', name: 'Separator', component: 'Button', tags: ['visual-baseline']}),
+      story({id: 'core-button--fixture', title: 'Core/Button', name: 'Fixture', component: 'Button'}),
+    ];
+    const plan = buildPlan({
+      stories: componentStories,
+      targets,
+      themeOverrides,
+      defaultTheme: 'neutral',
+      tiers: ['component'],
+      components: ['Button'],
+    });
+    expect(new Set(plan.map(shot => shot.storyId))).toEqual(
+      new Set(['core-button--default', 'core-button--separator']),
+    );
+    expect(plan).toHaveLength(6);
+  });
+
   it('records why a shot is in the plan, merging the reasons of a shot both tiers want', () => {
     const plan = buildPlan({stories, targets, themeOverrides, defaultTheme: 'neutral', tiers: ['surface', 'theme-matrix']});
     const shot = plan.find(candidate => candidate.key === 'core-button--default__neutral-light');
@@ -178,6 +198,7 @@ describe('readStoryIndex package metadata', () => {
       lab: {type: 'story', id: 'lab-thing--default', title: 'Lab/Thing', name: 'Default', importPath: './stories/Lab.stories.tsx'},
       mixed: {type: 'story', id: 'core-layer--default', title: 'Core/Layer', name: 'Default', importPath: './stories/CoreMixed.stories.tsx'},
       probe: {type: 'story', id: 'core-probe--default', title: 'Core/Themes/Probe Theme', name: 'Default', importPath: './stories/Probe.stories.tsx'},
+      prOnly: {type: 'story', id: 'core-new--default', title: 'Core/New', name: 'Default', importPath: './stories/NewPrOnly.stories.tsx'},
       skipped: {type: 'story', id: 'core-skip--default', title: 'Core/Skip', name: 'Default', tags: ['no-visual']},
     }}));
     return {root, dist};
@@ -193,6 +214,7 @@ describe('readStoryIndex package metadata', () => {
       expect(indexed.find(value => value.id === 'lab-thing--default')).toMatchObject({packageName: '@astryxdesign/lab', stableVisual: false});
       expect(indexed.find(value => value.id === 'core-layer--default')).toMatchObject({packageName: '@astryxdesign/core', stableVisual: true});
       expect(indexed.find(value => value.id === 'core-probe--default')).toMatchObject({packageName: '@astryxdesign/theme-probe', stableVisual: false});
+      expect(indexed.find(value => value.id === 'core-new--default')).toMatchObject({packageName: '@astryxdesign/core', packageNames: ['@astryxdesign/core'], stableVisual: true});
       expect(indexed.some(value => value.id === 'core-skip--default')).toBe(false);
     } finally {
       fs.rmSync(root, {recursive: true, force: true});

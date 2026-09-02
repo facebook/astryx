@@ -22,9 +22,11 @@ import {canonicalizePng} from './lib/canonical-png.mjs';
 import {
   readStoryIndex,
   readThemeCatalog,
+  representativeStories,
   shotKey,
   stableBaseline,
   storiesInPackages,
+  VISUAL_BASELINE_TAG,
   withThemeMetadata,
 } from './lib/plan.mjs';
 import {renderReport} from './lib/report.mjs';
@@ -749,13 +751,27 @@ function trustedPlan() {
     };
 
     const componentStories = new Map();
+    const representatives = representativeStories(indexed);
     for (const story of indexedStories.values()) {
-      if (scope.stableComponents.includes(story.component)) {
-        componentStories.set(story.storyId ?? story.id, story);
+      const isRepresentative =
+        representatives.get(story.component)?.id === story.id;
+      if (
+        scope.stableComponents.includes(story.component) &&
+        (isRepresentative ||
+          (story.tags ?? []).includes(VISUAL_BASELINE_TAG))
+      ) {
+        componentStories.set(story.storyId ?? story.id, {
+          isRepresentative,
+          story,
+        });
       }
     }
-    for (const story of componentStories.values()) {
-      for (const theme of baselineThemes) add(story, theme);
+    for (const {isRepresentative, story} of componentStories.values()) {
+      add(story, config.defaultTheme);
+      if (!isRepresentative) continue;
+      for (const theme of baselineThemes) {
+        if (theme !== config.defaultTheme) add(story, theme);
+      }
     }
 
     for (const theme of scope.stableThemes) {
