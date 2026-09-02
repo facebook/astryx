@@ -9,10 +9,12 @@
  * SYNC: When modified, update /packages/vega/README.md
  */
 
-import React, {useEffect, useEffectEvent, useRef} from 'react';
+import React, {useEffect, useEffectEvent, useMemo, useRef} from 'react';
 import {parse, View} from 'vega';
 import {compile} from 'vega-lite';
+import {useTheme} from '@astryxdesign/core/theme';
 import {parseSchema} from './schema';
+import {withAstryxConfig} from './vegaLiteConfig';
 import type {VegaChartProps, VegaSpec, VegaLiteSpec} from './types';
 
 /**
@@ -28,6 +30,14 @@ import type {VegaChartProps, VegaSpec, VegaLiteSpec} from './types';
  *
  *   vega.parse(spec, parseConfig, parseOptions)
  *   new vega.View(runtime, { ...viewOptions, container })
+ *
+ * Vega-Lite specs are themed out of the box: the Astryx config from
+ * `buildVegaLiteConfig` (axis/legend/mark/title chrome plus the shared
+ * `@astryxdesign/charts` categorical palette) is compiled in as the base
+ * config, resolved from the active `<Theme>`. Anything passed in
+ * `compileOptions.config` is merged on top and wins, and a spec's own inline
+ * `config` wins over both. Native Vega specs are not themed — they bypass
+ * compilation; use `parseConfig` for those.
  *
  * Initial dataset values can be provided via `data`. They are loaded once
  * during View initialization, before the first render, and are not reactive.
@@ -87,6 +97,16 @@ export function VegaChart({
 }: VegaChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Vega-Lite specs are compiled with the Astryx theme underneath the caller's
+  // own compile options, so a chart is themed out of the box. Depend on the
+  // memoized `tokens` map rather than `token` (a fresh closure every render),
+  // which would rebuild the config — and tear down the View — on every render.
+  const {tokens} = useTheme();
+  const themedCompileOptions = useMemo(
+    () => withAstryxConfig(name => tokens[name] ?? '', compileOptions),
+    [tokens, compileOptions],
+  );
+
   // The Effect fires these callbacks without treating them as reactive
   // dependencies, so the View isn't torn down and rebuilt when a parent
   // passes fresh inline callbacks on every render.
@@ -123,7 +143,7 @@ export function VegaChart({
       // Compile Vega-Lite -> Vega if needed; otherwise use the spec directly.
       const vegaSpec: VegaSpec =
         schemaResult.library === 'vega-lite'
-          ? compile(spec as VegaLiteSpec, compileOptions).spec
+          ? compile(spec as VegaLiteSpec, themedCompileOptions).spec
           : (spec as VegaSpec);
 
       // parse(spec, config?, options?) -> Runtime
@@ -164,7 +184,14 @@ export function VegaChart({
       cancelled = true;
       view?.finalize();
     };
-  }, [spec, data, compileOptions, parseConfig, parseOptions, viewOptions]);
+  }, [
+    spec,
+    data,
+    themedCompileOptions,
+    parseConfig,
+    parseOptions,
+    viewOptions,
+  ]);
 
   return (
     <div

@@ -42,11 +42,15 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup && tsc --project tsconfig.json --emitDeclarationOnly --declaration --noEmit false --outDir dist",
+    "build": "tsup && tsc --project tsconfig.build.json --emitDeclarationOnly --declaration --noEmit false --outDir dist",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@astryxdesign/charts": "0.1.9"
+  },
   "peerDependencies": {
+    "@astryxdesign/core": "0.3.0",
     "react": ">=19.2.0",
     "react-dom": ">=19.2.0",
     "vega": ">=6.0.0",
