@@ -92,24 +92,24 @@
   },
   {
     "component": "Typeahead",
-    "storyId": "core-typeahead--logical-order",
+    "storyId": "core-typeahead--rtl-end-lane",
     "dims": [
-      "D2"
+      "D4"
     ],
     "selectors": {
-      "prev": ".astryx-token",
-      "next": ".astryx-input-clear-button"
+      "overlay": "button[aria-label=\"Clear selection\"]",
+      "overlayRoot": ".astryx-typeahead"
     }
   },
   {
     "component": "Tokenizer",
-    "storyId": "core-tokenizer--logical-order",
+    "storyId": "core-tokenizer--rtl-end-lane",
     "dims": [
-      "D2"
+      "D4"
     ],
     "selectors": {
-      "prev": ".astryx-token",
-      "next": ".astryx-input-clear-button"
+      "overlay": "button[aria-label=\"Clear all\"]",
+      "overlayRoot": ".astryx-tokenizer"
     }
   }
 ]
