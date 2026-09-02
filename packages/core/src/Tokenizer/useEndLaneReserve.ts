@@ -27,7 +27,7 @@
 
 import {useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {observeResize} from '../utils/sharedResizeObserver';
 
 /**
  * The measured lane width, published on the field wrapper and read by the
@@ -98,7 +98,7 @@ export function useEndLaneReserve(
       // of the input either way, which is what inheritance needs.
       const host = node.parentElement;
 
-      observeResize(node, () => {
+      const unobserve = observeResize(node, () => {
         // `offsetWidth`, not `getBoundingClientRect().width`. The rect is in
         // VIEWPORT space — it carries every CSS transform between this element
         // and the root — while the padding it feeds is in the element's own
@@ -132,7 +132,7 @@ export function useEndLaneReserve(
       // React 19 runs a ref callback's return value as its cleanup, so the
       // observer is released exactly when the lane unmounts.
       return () => {
-        unobserveResize(node);
+        unobserve();
         // The room the lane claimed goes back to the input. Removing beats
         // setting 0px: the rule's fallback is already that, and this leaves no
         // stale property behind on the DOM.

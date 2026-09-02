@@ -198,6 +198,7 @@ describe('readStoryIndex package metadata', () => {
       lab: {type: 'story', id: 'lab-thing--default', title: 'Lab/Thing', name: 'Default', importPath: './stories/Lab.stories.tsx'},
       mixed: {type: 'story', id: 'core-layer--default', title: 'Core/Layer', name: 'Default', importPath: './stories/CoreMixed.stories.tsx'},
       probe: {type: 'story', id: 'core-probe--default', title: 'Core/Themes/Probe Theme', name: 'Default', importPath: './stories/Probe.stories.tsx'},
+      prOnly: {type: 'story', id: 'core-new--default', title: 'Core/New', name: 'Default', importPath: './stories/NewPrOnly.stories.tsx'},
       skipped: {type: 'story', id: 'core-skip--default', title: 'Core/Skip', name: 'Default', tags: ['no-visual']},
     }}));
     return {root, dist};
@@ -213,6 +214,7 @@ describe('readStoryIndex package metadata', () => {
       expect(indexed.find(value => value.id === 'lab-thing--default')).toMatchObject({packageName: '@astryxdesign/lab', stableVisual: false});
       expect(indexed.find(value => value.id === 'core-layer--default')).toMatchObject({packageName: '@astryxdesign/core', stableVisual: true});
       expect(indexed.find(value => value.id === 'core-probe--default')).toMatchObject({packageName: '@astryxdesign/theme-probe', stableVisual: false});
+      expect(indexed.find(value => value.id === 'core-new--default')).toMatchObject({packageName: '@astryxdesign/core', packageNames: ['@astryxdesign/core'], stableVisual: true});
       expect(indexed.some(value => value.id === 'core-skip--default')).toBe(false);
     } finally {
       fs.rmSync(root, {recursive: true, force: true});

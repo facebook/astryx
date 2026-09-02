@@ -53,7 +53,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps, isRenderable} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
-import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {observeResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {AppShellVariantMap} from './index';
@@ -593,8 +593,7 @@ export function AppShell({
       shellEl.style.setProperty('--_app-shell-header-height', `${height}px`);
     };
 
-    observeResize(headerEl, () => updateHeight());
-    return () => unobserveResize(headerEl);
+    return observeResize(headerEl, () => updateHeight());
   }, [isAuto]);
 
   // =========================================================================
