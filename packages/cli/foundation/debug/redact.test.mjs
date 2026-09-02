@@ -33,6 +33,22 @@ describe('isSensitiveKey', () => {
       expect(isSensitiveKey(key)).toBe(false);
     },
   );
+
+  it.each(['key', 'pwd', 'sig', 'pat', 'pw', 'creds'])(
+    'treats %s as sensitive only when the name was given, not guessed from text',
+    key => {
+      expect(isSensitiveKey(key, true)).toBe(true);
+      expect(isSensitiveKey(key, false)).toBe(false);
+    },
+  );
+
+  it.each(['token', 'password', 'apiKey', 'auth'])(
+    'treats %s as sensitive either way — nothing ordinary is called that',
+    key => {
+      expect(isSensitiveKey(key, true)).toBe(true);
+      expect(isSensitiveKey(key, false)).toBe(true);
+    },
+  );
 });
 
 describe('path scrubbing', () => {
@@ -212,6 +228,34 @@ describe('credential scrubbing', () => {
       );
     },
   );
+
+  it.each([
+    ['a React key prop', '<Avatar key={user.id} src={user.src} />'],
+    ['the help text describing key: value output', 'shape: aligned "key: value" lines'],
+    ['a JSON key field', '{"key":"listItem"}'],
+    ['a signature note', 'sig=(a: string) => void'],
+  ])('leaves %s alone — a bare word is not a name someone chose', (_l, input) => {
+    // The whole-word names (`key`, `pwd`, `sig`…) are sensitive when someone
+    // DECLARED them — an option, an object field, a `--flag`. Applied to bare
+    // text they eat the CLI's own answers: every React example it prints
+    // contains `key={…}`, and `--help` documents its output as `key: value`.
+    // Found by scrubbing 1.1MB of real command output, not by imagination.
+    expect(String(scrub(input))).toBe(input);
+  });
+
+  it('leaves shell pwd output readable', () => {
+    // The path is still collapsed, as any path is — but the value is not
+    // thrown away wholesale for being called `pwd`.
+    expect(String(scrub('pwd=/srv/www/build'))).toBe('pwd=/…/www/build');
+  });
+
+  it('still drops a bare assignment whose name is unambiguous', () => {
+    // The substring list is not affected: nothing ordinary is called `token`.
+    expect(String(scrub('token=shhSECRETVALUE'))).toBe(`token=${REDACTED}`);
+    expect(String(scrub('{"password":"shhSECRETVALUE"}'))).toBe(
+      `{"password":"${REDACTED}"}`,
+    );
+  });
 
   it.each(['--keyboard', '--path', '--sortkey', '--pattern', '--signal'])(
     'leaves %s alone — a whole-word rule must not eat ordinary flags',

@@ -67,6 +67,10 @@ const SENSITIVE_KEY_PARTS = [
 /**
  * Names that are sensitive on their own but are substrings of ordinary words,
  * so they are matched WHOLE (again after stripping `-`/`_`).
+ *
+ * These apply only where a name was GIVEN to us — an object field, a declared
+ * option, a `--flag` — never to a bare `word=value` found in text. See
+ * {@link isSensitiveKey}'s `flagged` parameter for why.
  */
 const SENSITIVE_KEY_EXACT = new Set([
   'creds',
@@ -218,13 +222,25 @@ const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 
 /**
  * Does this key name mean "the value is a secret"?
+ *
  * @param {string | undefined} key
+ * @param {boolean} [named] - Was this name GIVEN to us — an object field, a
+ *   declared option, an explicit `--flag` — rather than guessed from text?
+ *   The short whole-word names only apply when it was.
+ *
+ *   `key` is the one that forces the distinction. As a declared option name it
+ *   plausibly holds a credential, but as a bare `key=` in captured output it is
+ *   overwhelmingly ordinary: every React example the CLI prints contains
+ *   `<Avatar key={user.id}>`, and `astryx --help` documents its own output
+ *   format as aligned `key: value` lines. Applying the whole-word set to text
+ *   redacted both — the feature eating the answers it exists to record. `pwd`
+ *   is the same story with shell output.
  * @returns {boolean}
  */
-export function isSensitiveKey(key) {
+export function isSensitiveKey(key, named = true) {
   if (!key) return false;
   const lower = String(key).toLowerCase().replace(/[-_]/g, '');
-  if (SENSITIVE_KEY_EXACT.has(lower)) return true;
+  if (named && SENSITIVE_KEY_EXACT.has(lower)) return true;
   return SENSITIVE_KEY_PARTS.some(part => lower.includes(part));
 }
 
@@ -336,8 +352,13 @@ function scrubString(value, ctx) {
   // neither skips the scan entirely.
   if (out.includes('=') || out.includes(':')) {
     out = out.replace(ASSIGNMENT_RE, (whole, key, sep, value) => {
-      const name = String(key).replace(/^--?/, '').replace(/^"|"$/g, '');
-      if (!isSensitiveKey(name)) return whole;
+      const raw = String(key);
+      const flagged = raw.startsWith('-');
+      const name = raw.replace(/^--?/, '').replace(/^"|"$/g, '');
+      // A `--flag=` is a name someone chose for an option; a bare `word=` is
+      // whatever the text happened to contain. Only the first earns the short
+      // whole-word names.
+      if (!isSensitiveKey(name, flagged)) return whole;
       // Keep the value's quoting so the surrounding shape — a JSON blob, a
       // quoted shell argument — still parses as what it was.
       const q = /^["']/.test(value) ? value[0] : '';
