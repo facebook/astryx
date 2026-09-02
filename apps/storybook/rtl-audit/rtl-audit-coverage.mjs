@@ -260,6 +260,48 @@ function resultIsApplicable(result) {
   return result?.verdict === 'pass' || result?.verdict === 'fail';
 }
 
+function componentName(component) {
+  return component.split('/').at(-1)?.toLowerCase() ?? component.toLowerCase();
+}
+
+/**
+ * Build the component roster for a scoped audit.
+ *
+ * Storybook can expose an umbrella story whose name matches the PR analyzer's
+ * module name even when no source component has that exact name. Chat is the
+ * canonical example: the source directory contains ChatComposer, ChatMessage,
+ * and related components, while Storybook also has a `Core/Chat` surface. A
+ * matching story must satisfy the filter so the roster does not invent a
+ * second `unknown/chat` coverage entry for the same surface.
+ */
+export function buildAuditedComponentRoster({
+  sourceComponents = [],
+  storyComponents = [],
+  filters = [],
+}) {
+  const normalizedFilters = filters.map(filter => filter.toLowerCase());
+  const knownComponents = [...sourceComponents, ...storyComponents];
+  const unmatchedFilters = normalizedFilters
+    .filter(
+      filter =>
+        !knownComponents.some(component => componentName(component) === filter),
+    )
+    .map(filter => `unknown/${filter}`);
+
+  return Array.from(
+    new Map(
+      [...knownComponents, ...unmatchedFilters].map(component => [
+        component.toLowerCase(),
+        component,
+      ]),
+    ).values(),
+  ).filter(
+    component =>
+      normalizedFilters.length === 0 ||
+      normalizedFilters.includes(componentName(component)),
+  );
+}
+
 /**
  * Classify every component in the audited roster. An unexplained all-N/A result
  * is a coverage gap; a verified-N/A declaration is stale if a detector later
