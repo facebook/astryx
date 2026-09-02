@@ -30,20 +30,18 @@ An evicted toast that resurfaces once the stack drains therefore mounts clipped
 and runs its own entry transition, instead of releasing the clip over a row
 that is still opening.
 
-Two further lifecycle guards: only the row's own transition is read, since
+One further lifecycle guard: only the row's own transition is read, since
 `grid-template-rows` is not private to the wrapper and `transitionend` bubbles
-from any descendant animating its own grid; and a row that resolves to no
-transition at all settles and exits without waiting for an event that will
-never arrive. Reduced motion keeps a 0.01ms transition so the event still
-fires, but a host stylesheet, a print or forced-colors context can resolve the
-wrapper to `transition-duration: 0s`, and without the fallback the clip would
-never be released and a dismissed toast would never unmount.
+from any descendant animating its own grid. Reading a descendant's event as the
+row's own releases the clip before the row has finished opening, and during
+exit it unmounts the toast mid-collapse.
 
-Below a settled stock toast on a white page, per pixel row: `255,255,255` at
-every offset before; `237 → 245 → 250 → 254` over the shadow's 14px reach
-after. During exit the row clips again, so anything outside the shrinking row
-is neither painted nor hit-testable — while the wrapper itself keeps the
-ordinary pointer boundary it has always had, and still absorbs a click aimed
-at a toast that is still on screen.
+Below a settled stock toast on a white page, sampling straight down from the
+card's bottom border box: `255,255,255` at every offset before; after, the
+shadow paints `223` at +0px and fades `237 → 243 → 247 → 250 → 253 → 254`,
+reaching white again at +12px. During exit the row clips again, so anything
+outside the shrinking row is neither painted nor hit-testable — while the
+wrapper itself keeps the ordinary pointer boundary it has always had, and
+still absorbs a click aimed at a toast that is still on screen.
 
 @freddymeta

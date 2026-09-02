@@ -203,24 +203,6 @@ const withoutId =
     return next;
   };
 
-/**
- * A row with no transition never emits `transitionend`, so the event-driven
- * settle and exit paths would both stall on it. Treated as transitionless only
- * when every declared duration resolves to zero: an unresolved value — a
- * custom property an engine or test environment does not compute — reads as
- * animated, leaving the normal event path in charge.
- */
-function isTransitionless(el: HTMLElement): boolean {
-  const {transitionDuration} = getComputedStyle(el);
-  if (!transitionDuration) {
-    return false;
-  }
-  return transitionDuration.split(',').every(part => {
-    const seconds = parseFloat(part);
-    return Number.isFinite(seconds) && seconds === 0;
-  });
-}
-
 interface ToastRowProps {
   entry: ToastEntry;
   isExiting: boolean;
@@ -256,34 +238,9 @@ function ToastRow({
   const isAutoHide = o.isAutoHide ?? (type === 'error' ? false : true);
   const dur = o.autoHideDuration ?? 5000;
   const [isSettled, setIsSettled] = useState(false);
-  const rowRef = useRef<HTMLDivElement>(null);
-
-  // transitionend drives both halves of the row's lifecycle, and it does not
-  // fire when the row resolves to no transition at all. Reduced motion keeps
-  // 0.01ms precisely so the event still arrives, but that is not the only
-  // supported path to a still row: a host stylesheet, a print or forced-colors
-  // context, or a test environment can resolve the wrapper to
-  // `transition-duration: 0s`. Without this an entering row would never release
-  // its clip — the shadow stays cut, which is the whole point of the release —
-  // and a dismissed row would never unmount.
-  useLayoutEffect(() => {
-    const row = rowRef.current;
-    if (!row || !isTransitionless(row)) {
-      return;
-    }
-    if (isExiting) {
-      onExited(entry.id);
-      return;
-    }
-    // Whether the row transitions at all is only readable from the committed
-    // DOM, so this fallback cannot run any earlier than a layout effect.
-    // eslint-disable-next-line @eslint-react/set-state-in-effect
-    setIsSettled(true);
-  }, [entry.id, isExiting, onExited]);
 
   return (
     <div
-      ref={rowRef}
       data-toast-id={entry.id}
       {...stylex.props(
         styles.toastWrapper,

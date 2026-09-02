@@ -820,54 +820,6 @@ describe('Toast native motion contract', () => {
     expect(screen.queryByText('Bubbled transition')).not.toBeInTheDocument();
   });
 
-  it('settles and exits without a transitionend when the row has no transition', () => {
-    // Reduced motion keeps a 0.01ms transition precisely so the event still
-    // fires, but that is not the only supported no-transition path: a host
-    // stylesheet, a print or forced-colors context, or a test environment can
-    // resolve the wrapper to `transition-duration: 0s`, and then transitionend
-    // never fires at all. Without a fallback the clip is never released (the
-    // shadow bug this PR fixes returns) and a dismissed toast never unmounts.
-    const realGetComputedStyle = window.getComputedStyle.bind(window);
-    const spy = vi
-      .spyOn(window, 'getComputedStyle')
-      .mockImplementation((el: Element, pseudo?: string | null) => {
-        const style = realGetComputedStyle(el, pseudo ?? undefined);
-        if (!(el instanceof HTMLElement) || !el.hasAttribute('data-toast-id')) {
-          return style;
-        }
-        return new Proxy(style, {
-          // eslint-disable-next-line @typescript-eslint/promise-function-async -- a Proxy get trap, not an async boundary
-          get(target, prop): unknown {
-            if (prop === 'transitionDuration' || prop === 'transitionDelay') {
-              return '0s';
-            }
-            const value: unknown = Reflect.get(target, prop);
-            if (typeof value === 'function') {
-              return (value as (...args: unknown[]) => unknown).bind(target);
-            }
-            return value;
-          },
-        });
-      });
-
-    try {
-      const {wrapper} = renderMotionToast('bottomEnd', 'No transition');
-      const inner = wrapper.firstElementChild as HTMLElement;
-
-      // No transitionend is ever fired in this test.
-      expect(realGetComputedStyle(inner).overflow).toBe('visible');
-
-      act(() => {
-        fireEvent.click(
-          within(wrapper).getByRole('button', {name: 'Dismiss notification'}),
-        );
-      });
-      expect(screen.queryByText('No transition')).not.toBeInTheDocument();
-    } finally {
-      spy.mockRestore();
-    }
-  });
-
   it('keeps reduced motion transitions eventful for exit cleanup', () => {
     const toastSource = readFileSync(
       'packages/core/src/Toast/Toast.tsx',
