@@ -61,6 +61,12 @@ const styles = stylex.create({
       ':has(> [data-size="lg"])': `calc(${sizeVars['--size-element-lg']} / 2)`,
     },
   },
+  attachedStatusLayer: {
+    // Keep the overlapping background below both Astryx inputs and custom
+    // controls. The isolated wrapper contains this negative stacking layer.
+    position: 'relative',
+    zIndex: -1,
+  },
 });
 
 // Dynamic style for the consumer-controlled field width. Numbers are treated
@@ -258,6 +264,9 @@ export function Field({
         message={status.message}
         id={resolvedMessageID}
         variant={statusVariant}
+        xstyle={
+          statusVariant === 'attached' ? styles.attachedStatusLayer : undefined
+        }
       />
     ) : null;
 
