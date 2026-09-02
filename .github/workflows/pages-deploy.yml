@@ -1,0 +1,89 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Deploy the latest serialized gh-pages snapshot after a workflow that can write
+# it settles. The legacy branch-source deployment starts once per queue commit
+# and cancels an in-progress deployment whenever a newer commit arrives. Under
+# normal PR traffic that can leave the public site permanently behind even
+# though every publisher succeeded.
+#
+# This workflow deliberately keeps the active deployment running. GitHub may
+# replace an older pending run with a newer one, but the current deployment
+# finishes and the newest queued run then deploys the latest branch snapshot.
+# Until the repository's Pages source is set to GitHub Actions, the source
+# check exits successfully and the deployment job stays skipped.
+
+name: Deploy GitHub Pages
+
+on:
+  workflow_run:
+    workflows:
+      - 'Deploy'
+      - 'PR Comment'
+      - 'Re-deploy Preview'
+      - 'Cleanup Preview Deployments'
+      - 'Release Gate'
+      - 'Visual Baseline'
+      - 'Visual acceptance'
+      - 'Visual acceptance promotion'
+      - 'Vibe Test Screenshots'
+      - 'Compact GitHub Pages History'
+    types: [completed]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: github-pages-deployment
+  cancel-in-progress: false
+
+jobs:
+  source:
+    runs-on: ubuntu-slim
+    permissions:
+      pages: read
+    outputs:
+      workflow: ${{ steps.source.outputs.workflow }}
+    steps:
+      - name: Check Pages deployment source
+        id: source
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const {data} = await github.rest.repos.getPages(context.repo);
+            const enabled = data.build_type === 'workflow';
+            core.setOutput('workflow', String(enabled));
+            if (!enabled) {
+              core.notice('GitHub Pages still uses the legacy branch source; switch the source to GitHub Actions, then dispatch this workflow.');
+            }
+
+  deploy:
+    needs: source
+    if: needs.source.outputs.workflow == 'true'
+    runs-on: ubuntu-slim
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout latest published site
+        uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload latest published site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: .
+
+      - name: Deploy latest published site
+        id: deployment
+        uses: actions/deploy-pages@v5
