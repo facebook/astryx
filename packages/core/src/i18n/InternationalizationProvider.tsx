@@ -23,7 +23,8 @@ import {useMemo, type ReactNode} from 'react';
 import {InternationalizationContext} from './InternationalizationContext';
 import {getLocaleDirection} from './getLocaleDirection';
 import type {Locale, MessagesByLocale, Overrides} from './types';
-import {getResolve} from './resolve';
+import {getIntlContextValue, getResolve} from './resolve';
+import {IntlProvider} from '../intl';
 
 export interface InternationalizationProviderProps {
   /**
@@ -95,9 +96,19 @@ export function InternationalizationProvider({
     }),
     [locale, direction, messages, overrides],
   );
+  const {intlMessages, intlOverrides} = useMemo(
+    () => getIntlContextValue(locale, messages ?? {}, overrides),
+    [locale, messages, overrides],
+  );
   return (
     <InternationalizationContext value={value}>
-      {children}
+      <IntlProvider
+        locale={locale}
+        messages={intlMessages}
+        overrides={intlOverrides}
+        dir={dir}>
+        {children}
+      </IntlProvider>
     </InternationalizationContext>
   );
 }

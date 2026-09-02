@@ -44,6 +44,23 @@ function getFormatter(message: string, locale: Locale): IntlMessageFormat {
   return f;
 }
 
+export function formatter(
+  message: string,
+  locale: string,
+  values?: Record<string, unknown>,
+) {
+  if (!values) {
+    // Static string — skip the parser entirely for the common case
+    return message;
+  }
+
+  const formatted = getFormatter(message, locale).format(values);
+  // IntlMessageFormat.format returns string | (string | React elements) — we
+  // only ever pass string values so it will be a string; assert for the type
+  // system.
+  return formatted as string;
+}
+
 /**
  * Walk a BCP 47 tag from most-specific to least-specific.
  * Input is canonicalized via `Intl.Locale.baseName` so `pt-br` and `PT-BR`
@@ -105,6 +122,27 @@ function getLookup(
   return lookup;
 }
 
+export function getIntlContextValue(
+  locale: Locale,
+  messages: MessagesByLocale,
+  overrides?: Overrides,
+) {
+  const lookup = getLookup(locale, messages, overrides);
+  const intlMessages: Record<string, unknown> = {};
+  const intlOverrides: Partial<typeof enSource> = {};
+  for (const [key, value] of Object.entries(lookup)) {
+    if (key in enSource) {
+      intlOverrides[key as keyof typeof intlOverrides] = {
+        defaultMessage: value,
+        description: '',
+      };
+    } else {
+      intlMessages[key] = value;
+    }
+  }
+  return {intlMessages, intlOverrides};
+}
+
 export function getResolve(
   locale: Locale,
   messages: MessagesByLocale,
@@ -126,17 +164,7 @@ export function getResolve(
       );
       return key;
     }
-
-    if (values === undefined) {
-      // Static string — skip the parser entirely for the common case
-      return result;
-    }
-
-    const formatted = getFormatter(result, locale).format(values);
-    // IntlMessageFormat.format returns string | (string | React elements) — we
-    // only ever pass string values so it will be a string; assert for the type
-    // system.
-    return formatted as string;
+    return formatter(result, locale, values);
   };
 }
 
