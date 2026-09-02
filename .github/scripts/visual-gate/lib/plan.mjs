@@ -102,22 +102,30 @@ function titlePackage(title, catalog, candidates = null) {
 
 function storyPackageNames(entry, storybookDir, repoRoot, catalog) {
   const fromComponent = packageFromComponentPath(entry.componentPath);
+  const titleOwner = titlePackage(entry.title, catalog);
   let names = fromComponent ? [fromComponent] : [];
   if (!fromComponent) {
     const relative = entry.importPath?.replace(/^\.\//, '');
     const source = relative && path.resolve(path.dirname(storybookDir), relative);
-    if (!source || !fs.existsSync(source)) {
+    if (source && fs.existsSync(source)) {
+      const text = fs.readFileSync(source, 'utf8');
+      names = [...new Set([...text.matchAll(/(?:from\s+|import\s*)['"](@astryxdesign\/[^/'"]+)/g)].map(match => match[1]))].sort();
+    } else if (titleOwner) {
+      // Trusted workflow_run jobs inspect PR-built Storybook artifacts from a
+      // default-branch checkout. A new PR-only story has no local source yet,
+      // so use its package-scoped Storybook title when that title names one
+      // known workspace package.
+      names = [titleOwner];
+    } else {
       throw new Error(`Story ${entry.id} has no resolvable package metadata.`);
     }
-    const text = fs.readFileSync(source, 'utf8');
-    names = [...new Set([...text.matchAll(/(?:from\s+|import\s*)['"](@astryxdesign\/[^/'"]+)/g)].map(match => match[1]))].sort();
   }
-  const titleOwner = titlePackage(entry.title, catalog, names);
-  const themeOwner = titlePackage(entry.title, catalog);
+  const scopedTitleOwner = titlePackage(entry.title, catalog, names);
+  const themeOwner = titleOwner?.startsWith('@astryxdesign/theme-') ? titleOwner : null;
   const owner =
     fromComponent ??
-    (themeOwner?.startsWith('@astryxdesign/theme-') ? themeOwner : null) ??
-    titleOwner ??
+    themeOwner ??
+    scopedTitleOwner ??
     (names.length === 1 ? names[0] : null);
   if (!owner) throw new Error(`Story ${entry.id} has ambiguous package ownership: ${names.join(', ')}.`);
   for (const name of new Set([...names, owner])) {
