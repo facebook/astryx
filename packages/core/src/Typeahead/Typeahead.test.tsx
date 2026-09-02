@@ -1612,8 +1612,8 @@ describe('end controls stay in flow', () => {
   it('never reserves room with a measured width', () => {
     // The custom property is Tokenizer's mechanism and must not reappear
     // here: a width measured in viewport space and spent as local padding is
-    // wrong under any CSS transform (scale(.5) overlapped the query by
-    // 22.83px, scale(2) left a 202.69px gap).
+    // wrong under any CSS transform (measured on Tokenizer's 123px lane,
+    // scale(.5) covered 14px of the query and scale(2) left a 125.95px gap).
     const {container} = render(
       <Typeahead
         label="Fruit"
@@ -1623,7 +1623,7 @@ describe('end controls stay in flow', () => {
       />,
     );
     expect(
-      container.querySelector('[style*="--_astryx-end-lane-width"]'),
+      container.querySelector('[style*="--_tokenizer-end-lane-width"]'),
     ).toBeNull();
   });
 
@@ -1632,8 +1632,9 @@ describe('end controls stay in flow', () => {
     // than by leaning on the input to absorb the free space, because it
     // collapses that input to nothing while a token shows. Without it the
     // clear button sat against the token in mid-field instead of in the
-    // corner (measured: x=39 in a 300px field, against TextInput's 281).
-    const {container} = render(
+    // corner: measured in Chromium at a 300px field width, x=49.7 with the
+    // margin removed against x=271 with it.
+    render(
       <Typeahead
         label="Fruit"
         searchSource={fruitSource}

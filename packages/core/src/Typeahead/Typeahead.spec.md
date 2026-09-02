@@ -68,6 +68,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   `token` target.
 - The Clear button — rendered by Field's InputClearButton and themed through
   Field's current `input-clear-button` target.
+- Loading-indicator presentation — owned by `component:Spinner`. Typeahead
+  decides only where the indicator sits.
 - General Icon presentation for an Icon-rendered start icon.
 - Arbitrary ReactNode start or item content supplied by the caller.
 - A target/state for the outer Result row, Result group heading, or selected-row
@@ -89,7 +91,7 @@ public component documentation.
 | FR3 | Every result, whether default or caller-rendered, sits inside the same stable outer Result row that owns option semantics, highlight, selected styling, pointer interaction, and keyboard indexing.                                                                                                       | Current source and tests        | Verified current behavior; no new behavior decided |
 | FR4 | `typeahead-item` reaches only the standard TypeaheadItem label/supporting-content branch inside a Result row. A custom `renderItem` branch or caller-provided `item.element` does not receive that target, and no branch gives the outer Result row a Typeahead target.                                   | Current source and owner tests  | Verified current asymmetry; no normalization       |
 | FR5 | Result group heading and Selected result state are stable visible concepts but no current Typeahead target reaches them. The selected check uses a generic Icon, which does not expose a Typeahead-specific selected-row selector.                                                                        | Current source                  | Verified factual reachability gaps                 |
-| FR6 | When present, Field, Selected token, Clear button, and Icon-rendered start icon retain their Field, Token, and Icon theming owners; arbitrary ReactNode start and item content stays caller-owned.                                                                                                        | Current composition and owners  | Verified current behavior; no target change        |
+| FR6 | When present, Field, Selected token, Clear button, Spinner, and Icon-rendered start icon retain their Field, Token, Spinner, and Icon theming owners; arbitrary ReactNode start and item content stays caller-owned.                                                                                      | Current composition and owners  | Verified current behavior; no target change        |
 
 ### Allowed variation
 
@@ -140,6 +142,7 @@ listbox, option, live-region, focus, or dismissal behavior.
 | Icon-rendered start icon      | Presents a semantic or component icon through Icon.                                                    | Icon component                 | Supporting        | FR6                |
 | Caller-rendered start content | Presents arbitrary caller content directly in the input surface's start slot.                          | Caller-supplied content        | Context-dependent | FR6                |
 | Selected token                | Presents the selected value outside edit mode through Token.                                           | Token component                | Prominent         | FR1, FR6           |
+| Spinner                       | Indicates a search in flight, at the end of the input surface.                                         | Spinner component              | Supporting        | FR6                |
 | Clear button                  | Removes the selected value through the shared field clear action.                                      | Field component                | Supporting        | FR6                |
 | Dropdown                      | Paints the anchored listbox surface containing results or Empty state.                                 | Current source and public docs | Prominent         | FR2                |
 | Empty state                   | Presents the no-results message after a completed empty search.                                        | Current source and public docs | Prominent         | FR2                |
@@ -173,6 +176,9 @@ normalize targets.
   },
   "Selected token": {
     "delegatesTo": {"owner": "component:Token", "target": "token"}
+  },
+  "Spinner": {
+    "delegatesTo": {"owner": "component:Spinner", "target": "spinner"}
   },
   "Clear button": {
     "delegatesTo": {

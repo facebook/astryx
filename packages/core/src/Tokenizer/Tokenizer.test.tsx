@@ -1468,7 +1468,9 @@ describe('Tokenizer end-lane reserve', () => {
   };
 
   const laneHost = (container: HTMLElement) =>
-    container.querySelector<HTMLElement>('[style*="--_astryx-end-lane-width"]');
+    container.querySelector<HTMLElement>(
+      '[style*="--_tokenizer-end-lane-width"]',
+    );
 
   it('reserves the lane\u2019s untransformed width, not its on-screen width', () => {
     // The regression. A CSS transform anywhere above the field scales what
@@ -1487,7 +1489,9 @@ describe('Tokenizer end-lane reserve', () => {
       />,
     );
     expect(
-      laneHost(container)?.style.getPropertyValue('--_astryx-end-lane-width'),
+      laneHost(container)?.style.getPropertyValue(
+        '--_tokenizer-end-lane-width',
+      ),
     ).toBe(`${LANE_LOCAL_WIDTH}px`);
   });
 
@@ -1514,7 +1518,9 @@ describe('Tokenizer end-lane reserve', () => {
 
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(
-      laneHost(container)?.style.getPropertyValue('--_astryx-end-lane-width'),
+      laneHost(container)?.style.getPropertyValue(
+        '--_tokenizer-end-lane-width',
+      ),
     ).toBe(`${LANE_LOCAL_WIDTH}px`);
   });
 

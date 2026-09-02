@@ -35,7 +35,7 @@ import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
  * carries a measurement into CSS without carrying it through React, so a lane
  * that grows or shrinks repaints without re-rendering the field.
  */
-const LANE_WIDTH_VAR = '--_astryx-end-lane-width';
+const LANE_WIDTH_VAR = '--_tokenizer-end-lane-width';
 
 // Keep the input's text and caret out from under the lane.
 //
@@ -99,10 +99,13 @@ export function useEndLaneReserve(
       // LOCAL space. Under `scale(.5)` the rect reads half the lane's real
       // width and the input reserves half of what it needs, so the query runs
       // under the controls again; under `scale(2)` it reads double and the
-      // caret sits in a gap twice the lane's width. Measured in Chromium:
-      // 22.83px of overlap and 202.69px of excess gap on a 98px lane.
-      // `offsetWidth` is the untransformed border-box width, so it reports 98
-      // at every scale — the number this padding is actually denominated in.
+      // caret sits in a gap twice the lane's width. Measured in Chromium on a
+      // 123px lane in a 280px field: at `scale(.5)` the rect published 61.48px
+      // and the spinner covered 14px of the input's content box; at `scale(2)`
+      // it published 245.91px, leaving a 125.95px gap and growing the field
+      // from 32px to 55px tall. `offsetWidth` is the untransformed border-box
+      // width, so it reports 123 at every scale — the number this padding is
+      // actually denominated in.
       //
       // It is already an integer, which is the rounding the old `Math.ceil`
       // was there for: a fractional width left as-is reserves a hair too
