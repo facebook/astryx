@@ -4,6 +4,7 @@
 
 import {useState} from 'react';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
+import {colorVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   Layout,
   LayoutHeader,
@@ -17,26 +18,35 @@ import {
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Token} from '@astryxdesign/core/Token';
+import {Tokenizer} from '@astryxdesign/core/Tokenizer';
+import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {AvatarGroup} from '@astryxdesign/core/AvatarGroup';
 import {Button} from '@astryxdesign/core/Button';
 import {IconButton} from '@astryxdesign/core/IconButton';
+import {MoreMenu} from '@astryxdesign/core/MoreMenu';
 import {Link} from '@astryxdesign/core/Link';
 import {Icon} from '@astryxdesign/core/Icon';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import {Divider} from '@astryxdesign/core/Divider';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
 import {Card} from '@astryxdesign/core/Card';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
 import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {CheckboxListItem} from '@astryxdesign/core/CheckboxList';
 import {ProgressBar} from '@astryxdesign/core/ProgressBar';
 import {Selector} from '@astryxdesign/core/Selector';
 import {TextArea} from '@astryxdesign/core/TextArea';
-import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 import {Timestamp} from '@astryxdesign/core/Timestamp';
 import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {
   ArrowLeftIcon,
-  PaperClipIcon,
   LinkIcon,
   DocumentTextIcon,
+  PencilIcon,
+  TrashIcon,
+  PhotoIcon,
   ViewColumnsIcon,
   ArrowUpTrayIcon,
   BellIcon,
@@ -47,11 +57,86 @@ import {
 
 // ─── Task data ──────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = [
-  {value: 'todo', label: 'To Do'},
-  {value: 'in_progress', label: 'In Progress'},
-  {value: 'in_review', label: 'In Review'},
-  {value: 'done', label: 'Done'},
+  {
+    value: 'todo',
+    label: 'To Do',
+    icon: <StatusDot variant="neutral" label="To Do" />,
+  },
+  {
+    value: 'in_progress',
+    label: 'In Progress',
+    icon: <StatusDot variant="accent" label="In Progress" />,
+  },
+  {
+    value: 'in_review',
+    label: 'In Review',
+    icon: <StatusDot variant="warning" label="In Review" />,
+  },
+  {
+    value: 'done',
+    label: 'Done',
+    icon: <StatusDot variant="success" label="Done" />,
+  },
 ];
+
+const ASSIGNEE_OPTIONS = [
+  {
+    value: 'priya-shah',
+    label: 'Priya Shah',
+    icon: <Avatar name="Priya Shah" size="xsm" />,
+  },
+  {
+    value: 'marcus-chen',
+    label: 'Marcus Chen',
+    icon: <Avatar name="Marcus Chen" size="xsm" />,
+  },
+  {
+    value: 'sofia-alvarez',
+    label: 'Sofia Alvarez',
+    icon: <Avatar name="Sofia Alvarez" size="xsm" />,
+  },
+];
+
+const PRIORITY_OPTIONS = [
+  {value: 'high', label: 'High'},
+  {value: 'mid', label: 'Mid'},
+  {value: 'low', label: 'Low'},
+  {value: 'none', label: 'None'},
+];
+
+type LabelOption = SearchableItem & {
+  color: 'blue' | 'green' | 'purple';
+};
+
+const LABEL_OPTIONS: LabelOption[] = [
+  {id: 'onboarding', label: 'Onboarding', color: 'purple'},
+  {id: 'q1-goal', label: 'Q1 goal', color: 'blue'},
+  {id: 'growth', label: 'Growth', color: 'green'},
+];
+
+const LABEL_SEARCH_SOURCE: SearchSource<LabelOption> = {
+  search: query =>
+    LABEL_OPTIONS.filter(option =>
+      option.label.toLowerCase().includes(query.toLowerCase()),
+    ),
+  bootstrap: () => LABEL_OPTIONS,
+};
+
+function PriorityBadge({priority}: {priority: string}) {
+  const label =
+    PRIORITY_OPTIONS.find(option => option.value === priority)?.label ?? 'None';
+
+  switch (priority) {
+    case 'high':
+      return <Badge variant="red" label={label} />;
+    case 'mid':
+      return <Badge variant="orange" label={label} />;
+    case 'low':
+      return <Badge variant="yellow" label={label} />;
+    default:
+      return <Badge variant="neutral" label={label} />;
+  }
+}
 
 const SUBTASKS = [
   {
@@ -185,46 +270,55 @@ const ACTIVITY: ActivityEntry[] = [
 function PageHeader({
   status,
   onStatusChange,
+  assignee,
+  onAssigneeChange,
+  priority,
+  onPriorityChange,
+  labels,
+  onLabelsChange,
   isPanelOpen,
   onTogglePanel,
   isNarrow,
 }: {
   status: string;
   onStatusChange: (value: string) => void;
+  assignee: string;
+  onAssigneeChange: (value: string) => void;
+  priority: string;
+  onPriorityChange: (value: string) => void;
+  labels: LabelOption[];
+  onLabelsChange: (labels: LabelOption[]) => void;
   isPanelOpen: boolean;
   onTogglePanel: () => void;
   isNarrow: boolean;
 }) {
   return (
-    <LayoutHeader hasDivider padding={4}>
-      <VStack gap={3}>
-        <HStack gap={3} vAlign="start">
-          <StackItem size="fill">
-            <VStack gap={1}>
-              <Link href="#" color="secondary">
-                <HStack gap={1} vAlign="center">
-                  <Icon icon={ArrowLeftIcon} size="sm" color="inherit" />
-                  All tasks
+    <LayoutHeader padding={4} hasDivider>
+      <VStack gap={4}>
+        <HStack gap={3} vAlign="start" hAlign="between">
+          <VStack gap={2}>
+            <HStack gap={3} vAlign="center" wrap="wrap">
+              <Link type="supporting" color="secondary">
+                <HStack as="span" gap={1} vAlign="center">
+                  <Icon icon={ArrowLeftIcon} size="sm" />
+                  All Tasks
                 </HStack>
               </Link>
-              <HStack gap={2} vAlign="center" wrap="wrap">
-                <Text type="supporting" color="secondary">
-                  PLT-247
-                </Text>
-                <Text type="supporting" color="secondary">
-                  ·
-                </Text>
-                <Text type="supporting" color="secondary">
-                  Platform / Onboarding
-                </Text>
-              </HStack>
-              <Heading level={1} maxLines={2}>
-                Refresh the onboarding flow for new workspaces
-              </Heading>
-            </VStack>
-          </StackItem>
+              <Divider orientation="vertical" style={{height: 12}} />
+              <Text type="supporting" color="secondary">
+                PLT-247
+              </Text>
+              <Divider orientation="vertical" style={{height: 12}} />
+              <Text type="supporting" color="secondary">
+                Platform / Onboarding
+              </Text>
+            </HStack>
+            <Heading level={1} maxLines={2}>
+              Refresh onboarding flow for workspaces
+            </Heading>
+          </VStack>
           {!isNarrow && (
-            <HStack gap={2}>
+            <HStack gap={1}>
               <IconButton
                 label="Watch"
                 variant="secondary"
@@ -250,37 +344,49 @@ function PageHeader({
           )}
         </HStack>
 
-        <HStack gap={3} vAlign="center" wrap="wrap">
-          <Selector
-            label="Status"
-            isLabelHidden
-            variant="ghost"
-            size="md"
-            value={status}
-            onChange={onStatusChange}
-            options={STATUS_OPTIONS}
-          />
-          <Divider orientation="vertical" />
-          <HStack gap={2} vAlign="center">
-            <Avatar name="Priya Shah" size="sm" />
-            <Text type="body">Priya Shah</Text>
-          </HStack>
-          <Divider orientation="vertical" />
-          <HStack gap={2} vAlign="center">
-            <Text type="body" color="secondary">
-              Due
-            </Text>
-            <Timestamp
-              value="2026-03-18"
-              format="date"
-              type="body"
-              color="primary"
+        <HStack gap={4} vAlign="center" wrap="wrap">
+          <HStack gap={1} vAlign="center" wrap="wrap">
+            <Selector
+              label="Status"
+              isLabelHidden
+              value={status}
+              onChange={onStatusChange}
+              options={STATUS_OPTIONS}
+            />
+            <Selector
+              label="Assignee"
+              isLabelHidden
+              hasSearch
+              searchPlaceholder="Search assignees..."
+              value={assignee}
+              onChange={onAssigneeChange}
+              options={ASSIGNEE_OPTIONS}
+            />
+            <Selector
+              label="Priority"
+              isLabelHidden
+              value={priority}
+              onChange={onPriorityChange}
+              options={PRIORITY_OPTIONS}
+              renderValue={option => <PriorityBadge priority={option.value} />}
+              renderOption={option => <PriorityBadge priority={option.value} />}
+            />
+            <Tokenizer
+              label="Labels"
+              isLabelHidden
+              searchSource={LABEL_SEARCH_SOURCE}
+              value={labels}
+              onChange={onLabelsChange}
+              renderToken={(label, onRemove) => (
+                <Token
+                  label={label.label}
+                  color={label.color}
+                  size="sm"
+                  onRemove={onRemove}
+                />
+              )}
             />
           </HStack>
-          <Divider orientation="vertical" />
-          <Badge variant="warning" label="High priority" />
-          <Token color="purple" label="Onboarding" size="sm" />
-          <Token color="blue" label="Q1 goal" size="sm" />
         </HStack>
       </VStack>
     </LayoutHeader>
@@ -291,7 +397,7 @@ function PageHeader({
 function DescriptionSection() {
   return (
     <Section>
-      <VStack gap={3}>
+      <VStack gap={4}>
         <Heading level={2}>Description</Heading>
         <VStack gap={2}>
           <Text type="body">
@@ -306,22 +412,13 @@ function DescriptionSection() {
             percentage of workspaces that reach three completed actions in the
             first three days.
           </Text>
-          <VStack gap={1}>
-            <Text type="body" weight="semibold">
-              Success criteria
-            </Text>
-            <VStack gap={0.5}>
-              <Text type="body">
-                · Day-seven activation rises from 42 to 55 percent for new
-                workspaces in the variant.
-              </Text>
-              <Text type="body">
-                · Median time to first completed action drops below eight
-                minutes.
-              </Text>
-              <Text type="body">· No regression in day-thirty retention.</Text>
-            </VStack>
-          </VStack>
+          <Text type="body">&nbsp;</Text>
+          <Heading level={4}>Success criteria</Heading>
+          <List listStyle="disc" density="compact">
+            <ListItem label="Day-seven activation rises from 42 to 55 percent for new workspaces in the variant." />
+            <ListItem label="Median time to first completed action drops below eight minutes." />
+            <ListItem label="No regression in day-thirty retention." />
+          </List>
         </VStack>
       </VStack>
     </Section>
@@ -345,53 +442,33 @@ function SubtasksSection({
   const doneCount = subtasks.filter(s => s.isDone).length;
   return (
     <Section>
-      <VStack gap={3}>
-        <HStack vAlign="center" gap={2} wrap="wrap">
-          <StackItem size="fill">
-            <Heading level={2}>Subtasks</Heading>
-          </StackItem>
-          <Button label="Add subtask" variant="ghost" size="sm" />
+      <VStack gap={4}>
+        <HStack vAlign="center" gap={2} hAlign="between" wrap="wrap">
+          <Heading level={2}>Subtasks</Heading>
+          <Button label="Add subtask" />
         </HStack>
-        <VStack gap={2}>
-          <HStack gap={3} vAlign="center">
-            <Text type="supporting" color="secondary">
-              {doneCount} of {subtasks.length} complete
-            </Text>
-            <StackItem size="fill">
-              <ProgressBar
-                label="Subtask progress"
-                isLabelHidden
-                value={(doneCount / subtasks.length) * 100}
-                variant="success"
-              />
-            </StackItem>
-          </HStack>
-          <VStack gap={0}>
-            {subtasks.map((task, i) => (
-              <VStack key={task.id} gap={0}>
-                {i > 0 && <Divider />}
-                <HStack gap={3} vAlign="center" padding={2}>
-                  <Button
-                    label={task.isDone ? 'Mark incomplete' : 'Mark complete'}
-                    isIconOnly
-                    variant="ghost"
-                    size="sm"
-                    icon={
-                      task.isDone ? (
-                        <Badge variant="success" label="✓" />
-                      ) : (
-                        <Badge variant="neutral" label=" " />
-                      )
-                    }
-                    onClick={() => onToggle(task.id)}
-                  />
-                  <StackItem size="fill">
-                    <Text
-                      type="body"
-                      color={task.isDone ? 'secondary' : 'primary'}>
-                      {task.title}
-                    </Text>
-                  </StackItem>
+        <HStack gap={3} vAlign="center">
+          <Text type="supporting" color="secondary">
+            {doneCount} of {subtasks.length} complete
+          </Text>
+          <StackItem size="fill">
+            <ProgressBar
+              label="Subtask progress"
+              isLabelHidden
+              value={(doneCount / subtasks.length) * 100}
+              variant="success"
+            />
+          </StackItem>
+        </HStack>
+        <List>
+          {subtasks.map(task => (
+            <CheckboxListItem
+              key={task.id}
+              label={task.title}
+              isChecked={task.isDone}
+              onCheck={() => onToggle(task.id)}
+              endContent={
+                <HStack gap={2} vAlign="center">
                   <Timestamp
                     value={task.due}
                     format="date"
@@ -400,10 +477,10 @@ function SubtasksSection({
                   />
                   <Avatar name={task.assignee} size="sm" />
                 </HStack>
-              </VStack>
-            ))}
-          </VStack>
-        </VStack>
+              }
+            />
+          ))}
+        </List>
       </VStack>
     </Section>
   );
@@ -413,59 +490,73 @@ function SubtasksSection({
 function AttachmentsSection() {
   return (
     <Section>
-      <VStack gap={3}>
-        <HStack vAlign="center" gap={2} wrap="wrap">
-          <StackItem size="fill">
-            <Heading level={2}>Attachments</Heading>
-          </StackItem>
-          <Button
-            label="Add attachment"
-            variant="ghost"
-            size="sm"
-            icon={<Icon icon={ArrowUpTrayIcon} size="sm" />}
-          />
+      <VStack gap={4}>
+        <HStack vAlign="center" gap={2} wrap="wrap" hAlign="between">
+          <Heading level={2}>Attachments</Heading>
+          <Button label="Add attachment" />
         </HStack>
-        <VStack gap={2}>
+        <VStack gap={1}>
           {ATTACHMENTS.map((a, i) => (
-            <Card key={i} variant="muted" padding={3}>
-              <HStack gap={3} vAlign="center">
-                {a.kind === 'image' ? (
-                  <Thumbnail src={a.src} alt={a.title} label={a.title} />
-                ) : (
+            <ClickableCard
+              key={i}
+              label={`Open ${a.title}`}
+              href={a.kind === 'link' ? a.href : '#'}
+              variant="default"
+              padding={3}>
+              <HStack gap={4} vAlign="center">
+                <AspectRatio
+                  ratio={1}
+                  fit="center"
+                  style={{
+                    width: 40,
+                    backgroundColor: colorVars['--color-background-muted'],
+                    borderRadius: radiusVars['--radius-element'],
+                  }}>
                   <Icon
-                    icon={a.kind === 'link' ? LinkIcon : DocumentTextIcon}
+                    icon={
+                      a.kind === 'link'
+                        ? LinkIcon
+                        : a.kind === 'image'
+                          ? PhotoIcon
+                          : DocumentTextIcon
+                    }
                     size="lg"
                     color="secondary"
                   />
-                )}
+                </AspectRatio>
                 <StackItem size="fill">
                   <VStack gap={0}>
-                    {a.kind === 'link' ? (
-                      <Link href={a.href}>{a.title}</Link>
-                    ) : (
-                      <Text type="body" weight="semibold">
-                        {a.title}
-                      </Text>
-                    )}
+                    <Text type="body" weight="semibold">
+                      {a.title}
+                    </Text>
                     <Text type="supporting" color="secondary">
                       {a.subtitle}
                     </Text>
                   </VStack>
                 </StackItem>
-                <IconButton
-                  label="More"
-                  variant="ghost"
-                  size="sm"
-                  icon={<Icon icon={PaperClipIcon} size="sm" />}
+                <MoreMenu
+                  presentation="adaptive"
+                  label={`Actions for ${a.title}`}
+                  items={[
+                    {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+                    {
+                      label: 'Delete',
+                      icon: TrashIcon,
+                      variant: 'destructive',
+                      onClick: () => {},
+                    },
+                  ]}
                 />
               </HStack>
-            </Card>
+            </ClickableCard>
           ))}
         </VStack>
       </VStack>
     </Section>
   );
 }
+
+// ─── Activity
 
 // ─── Activity ───────────────────────────────────────────────────────────────
 function ActivitySection({
@@ -477,92 +568,65 @@ function ActivitySection({
 }) {
   return (
     <Section>
-      <VStack gap={3}>
+      <VStack gap={6}>
         <Heading level={2}>Comments and activity</Heading>
-        <HStack gap={3} vAlign="start">
-          <Avatar name="You" size="md" />
-          <StackItem size="fill">
-            <VStack gap={2} hAlign="stretch">
-              <TextArea
-                label="Add a comment"
-                isLabelHidden
-                placeholder="Write a comment…"
-                value={comment}
-                onChange={onCommentChange}
-                rows={3}
-              />
-              <HStack gap={2}>
-                <StackItem size="fill" />
-                <Button label="Cancel" variant="ghost" size="sm" />
-                <Button
-                  label="Comment"
-                  variant="primary"
-                  size="sm"
-                  isDisabled={comment.trim().length === 0}
-                />
-              </HStack>
-            </VStack>
-          </StackItem>
-        </HStack>
-        <Divider />
-        <VStack gap={4}>
-          {ACTIVITY.map((entry, i) =>
-            entry.kind === 'comment' ? (
-              <HStack key={i} gap={3} vAlign="start">
-                <Avatar name={entry.author} size="md" />
-                <StackItem size="fill">
-                  <VStack gap={1}>
-                    <HStack gap={2} vAlign="center" wrap="wrap">
-                      <Text type="body" weight="semibold">
-                        {entry.author}
+        <VStack gap={6}>
+          {ACTIVITY.map((entry, i) => (
+            <HStack key={i} gap={3} vAlign="start">
+              <Avatar name={entry.author} size="sm" />
+              <StackItem size="fill">
+                <VStack gap={1}>
+                  <HStack gap={2} vAlign="center">
+                    <Text type="body" weight="semibold">
+                      {entry.author}
+                    </Text>
+                    {entry.kind !== 'comment' && (
+                      <Text type="supporting" color="secondary">
+                        {entry.body}
                       </Text>
-                      <Timestamp
-                        value={entry.time}
-                        format="relative"
-                        type="supporting"
-                        color="secondary"
-                      />
-                    </HStack>
-                    <Card variant="muted" padding={3}>
-                      <Text type="body">{entry.body}</Text>
-                    </Card>
-                    <HStack gap={3} vAlign="center">
-                      <HStack gap={1} vAlign="center">
-                        <Icon
-                          icon={FaceSmileIcon}
-                          size="xsm"
-                          color="secondary"
-                        />
-                        <Text type="supporting" color="secondary">
-                          {entry.reactions ?? 0}
-                        </Text>
-                      </HStack>
+                    )}
+                    <StackItem size="fill" />
+                    <Timestamp
+                      value={entry.time}
+                      format="relative"
+                      type="supporting"
+                      color="secondary"
+                    />
+                  </HStack>
+                  {entry.kind === 'comment' && (
+                    <>
+                      <Card variant="muted" padding={3}>
+                        <Text type="body">{entry.body}</Text>
+                      </Card>
                       <Link href="#" color="secondary">
                         Reply
                       </Link>
-                    </HStack>
-                  </VStack>
-                </StackItem>
-              </HStack>
-            ) : (
-              <HStack key={i} gap={3} vAlign="center">
-                <Avatar name={entry.author} size="sm" />
-                <Text type="supporting" color="secondary">
-                  <Text type="supporting" color="primary" weight="semibold">
-                    {entry.author}
-                  </Text>{' '}
-                  {entry.body}
-                </Text>
-                <StackItem size="fill" />
-                <Timestamp
-                  value={entry.time}
-                  format="relative"
-                  type="supporting"
-                  color="secondary"
-                />
-              </HStack>
-            ),
-          )}
+                    </>
+                  )}
+                </VStack>
+              </StackItem>
+            </HStack>
+          ))}
+        </VStack>
+        <Divider />
+        <VStack gap={2} hAlign="stretch">
+          <TextArea
+            width="100%"
+            label="Add a comment"
+            isLabelHidden
+            placeholder="Write a comment…"
+            value={comment}
+            onChange={onCommentChange}
+            rows={3}
+          />
+          <HStack gap={2} hAlign="end">
+            <Button label="Cancel" variant="ghost" />
+            <Button
+              label="Comment"
+              variant="primary"
+              isDisabled={comment.trim().length === 0}
+            />
+          </HStack>
         </VStack>
       </VStack>
     </Section>
@@ -570,22 +634,41 @@ function ActivitySection({
 }
 
 // ─── Rail (details) ─────────────────────────────────────────────────────────
-function PanelContent() {
+function PanelContent({
+  status,
+  priority,
+  assignee,
+  labels,
+}: {
+  status: string;
+  priority: string;
+  assignee: string;
+  labels: LabelOption[];
+}) {
+  const statusOption =
+    STATUS_OPTIONS.find(option => option.value === status) ?? STATUS_OPTIONS[0];
+  const assigneeOption =
+    ASSIGNEE_OPTIONS.find(option => option.value === assignee) ??
+    ASSIGNEE_OPTIONS[0];
+
   return (
-    <VStack gap={5}>
-      <VStack gap={2}>
-        <Heading level={4}>Details</Heading>
+    <VStack gap={10}>
+      <VStack gap={4}>
+        <Heading level={3}>Details</Heading>
         <MetadataList>
           <MetadataListItem label="Status">
-            <Badge variant="info" label="In Progress" />
+            <HStack gap={2} vAlign="center">
+              {statusOption.icon}
+              <Text type="body">{statusOption.label}</Text>
+            </HStack>
           </MetadataListItem>
           <MetadataListItem label="Priority">
-            <Badge variant="warning" label="High" />
+            <PriorityBadge priority={priority} />
           </MetadataListItem>
           <MetadataListItem label="Assignee">
             <HStack gap={2} vAlign="center">
-              <Avatar name="Priya Shah" size="xsm" />
-              <Text type="body">Priya Shah</Text>
+              {assigneeOption.icon}
+              <Text type="body">{assigneeOption.label}</Text>
             </HStack>
           </MetadataListItem>
           <MetadataListItem label="Reporter">
@@ -618,9 +701,14 @@ function PanelContent() {
           </MetadataListItem>
           <MetadataListItem label="Labels">
             <HStack gap={1} wrap="wrap">
-              <Token color="purple" label="Onboarding" size="sm" />
-              <Token color="blue" label="Q1 goal" size="sm" />
-              <Token color="green" label="Growth" size="sm" />
+              {labels.map(label => (
+                <Token
+                  key={label.id}
+                  color={label.color}
+                  label={label.label}
+                  size="sm"
+                />
+              ))}
             </HStack>
           </MetadataListItem>
           <MetadataListItem label="Team">
@@ -629,32 +717,37 @@ function PanelContent() {
         </MetadataList>
       </VStack>
 
-      <VStack gap={2}>
-        <HStack vAlign="center" gap={2}>
-          <StackItem size="fill">
-            <Heading level={4}>Watchers</Heading>
-          </StackItem>
-          <Button label="Add" variant="ghost" size="sm" />
+      <VStack gap={4}>
+        <HStack vAlign="center" gap={2} hAlign="between">
+          <Heading level={3}>Watchers</Heading>
+          <Button label="Add" />
         </HStack>
-        <AvatarGroup size="sm">
+        <AvatarGroup size="md">
           {WATCHERS.map(w => (
             <Avatar key={w.name} name={w.name} />
           ))}
         </AvatarGroup>
       </VStack>
 
-      <VStack gap={2}>
-        <Heading level={4}>Linked items</Heading>
-        <VStack gap={2}>
+      <VStack gap={4}>
+        <Heading level={3}>Linked items</Heading>
+        <VStack gap={1}>
           {LINKED_ITEMS.map(item => (
-            <Card key={item.id} variant="muted" padding={3}>
+            <ClickableCard
+              key={item.id}
+              label={`Open ${item.id}: ${item.title}`}
+              href="#"
+              variant="default"
+              padding={3}>
               <VStack gap={0}>
                 <Text type="supporting" color="secondary">
                   {item.id}
                 </Text>
-                <Link href="#">{item.title}</Link>
+                <Text type="body" weight="semibold">
+                  {item.title}
+                </Text>
               </VStack>
-            </Card>
+            </ClickableCard>
           ))}
         </VStack>
       </VStack>
@@ -662,10 +755,25 @@ function PanelContent() {
   );
 }
 
-function RightPanel() {
+function RightPanel({
+  status,
+  priority,
+  assignee,
+  labels,
+}: {
+  status: string;
+  priority: string;
+  assignee: string;
+  labels: LabelOption[];
+}) {
   return (
-    <LayoutPanel width={340} padding={4} role="complementary">
-      <PanelContent />
+    <LayoutPanel width={340} padding={4} hasDivider role="complementary">
+      <PanelContent
+        status={status}
+        priority={priority}
+        assignee={assignee}
+        labels={labels}
+      />
     </LayoutPanel>
   );
 }
@@ -673,6 +781,9 @@ function RightPanel() {
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function TaskDetailTemplate() {
   const [status, setStatus] = useState('in_progress');
+  const [assignee, setAssignee] = useState('priya-shah');
+  const [priority, setPriority] = useState('high');
+  const [labels, setLabels] = useState<LabelOption[]>(LABEL_OPTIONS);
   const [comment, setComment] = useState('');
   const [subtasks, setSubtasks] = useState(SUBTASKS);
   const isNarrow = useMediaQuery('(max-width: 1024px)');
@@ -694,12 +805,18 @@ export default function TaskDetailTemplate() {
     <>
       <Layout
         height="fill"
-        contentWidth={1000}
+        contentWidth={1260}
         defaultHasDividers
         header={
           <PageHeader
             status={status}
             onStatusChange={setStatus}
+            assignee={assignee}
+            onAssigneeChange={setAssignee}
+            priority={priority}
+            onPriorityChange={setPriority}
+            labels={labels}
+            onLabelsChange={setLabels}
             isPanelOpen={isPanelShown}
             onTogglePanel={togglePanel}
             isNarrow={isNarrow}
@@ -707,15 +824,25 @@ export default function TaskDetailTemplate() {
         }
         content={
           <LayoutContent role="main">
-            <VStack gap={4}>
+            <VStack gap={10}>
               <DescriptionSection />
               <SubtasksSection subtasks={subtasks} onToggle={toggleSubtask} />
               <AttachmentsSection />
+              <Divider />
               <ActivitySection comment={comment} onCommentChange={setComment} />
             </VStack>
           </LayoutContent>
         }
-        end={!isNarrow && showSidePanel ? <RightPanel /> : undefined}
+        end={
+          !isNarrow && showSidePanel ? (
+            <RightPanel
+              status={status}
+              priority={priority}
+              assignee={assignee}
+              labels={labels}
+            />
+          ) : undefined
+        }
       />
       <Dialog
         variant="fullscreen"
@@ -730,7 +857,12 @@ export default function TaskDetailTemplate() {
           }
           content={
             <LayoutContent padding={4}>
-              <PanelContent />
+              <PanelContent
+                status={status}
+                priority={priority}
+                assignee={assignee}
+                labels={labels}
+              />
             </LayoutContent>
           }
         />
