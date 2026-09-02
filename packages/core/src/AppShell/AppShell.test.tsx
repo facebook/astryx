@@ -579,6 +579,27 @@ describe('AppShell', () => {
     ).toBeDefined();
   });
 
+  it('renders an opaque section header only in auto mode', () => {
+    const {rerender} = render(
+      <AppShell height="auto" variant="section" topNav={<div>Nav</div>}>
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    expect(
+      getComputedStyle(screen.getByRole('banner')).backgroundColor,
+    ).not.toBe('rgba(0, 0, 0, 0)');
+
+    rerender(
+      <AppShell height="fill" variant="section" topNav={<div>Nav</div>}>
+        <div>Content</div>
+      </AppShell>,
+    );
+    expect(getComputedStyle(screen.getByRole('banner')).backgroundColor).toBe(
+      'rgba(0, 0, 0, 0)',
+    );
+  });
+
   it('does not apply sticky wrapper in fill mode', () => {
     render(
       <AppShell
