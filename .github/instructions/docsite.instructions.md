@@ -104,8 +104,8 @@ for how it degrades on mobile, and flag the common failure modes:
   (Level AA) requires targets to be at least 24×24 CSS px, or to satisfy its
   spacing or other exceptions. The 44×44 CSS px threshold belongs to enhanced
   [criterion 2.5.5](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html)
-  (Level AAA). Recommend 44×44 for mobile when appropriate, but do not report a
-  target below that size as an AA failure.
+  (Level AAA). Do not substitute the AAA threshold when evaluating or reporting
+  AA conformance.
 - **Prefer CSS-first responsiveness.** The docsite leans on `useMediaQuery` /
   `isMobile` JS in places; for _layout_ that CSS can express, prefer
   `@container` queries, `Grid` `minChildWidth`, `flex-wrap`, and
