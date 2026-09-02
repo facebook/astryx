@@ -208,13 +208,11 @@ interface Conversation extends Record<string, unknown> {
   priority: Priority;
   category: Category;
   assignee: string | null;
-  /** Locked threads are mid-escalation and cannot be bulk-actioned. */
-  isLocked?: boolean;
   body: string[];
   attachments: Attachment[];
   /**
    * Earlier messages, oldest first. Optional because most of a triage queue is
-   * single messages — matching `isLocked` rather than `attachments`.
+   * single messages.
    */
   replies?: ThreadMessage[];
 }
@@ -246,7 +244,6 @@ const CONVERSATIONS: Conversation[] = [
     isUnread: true,
     priority: 'urgent',
     assignee: null,
-    isLocked: true,
     body: [
       'Started around 09:40 UTC. Roughly one in five card payments fails at the confirm step, and only for customers billing to an EU address — US and APAC look untouched.',
       'The response is a bare 502 with no body, so our retry logic treats it as transient and re-submits. Two customers have now been charged twice.',
@@ -1426,17 +1423,11 @@ function ConversationPane({
             page. Padding again here would double it, so the pane only pays for
             its own gutters when it is the panel beside the list. */}
         <VStack
-          // 24px, matching the header above. The pane is the reading surface
+          // An even 24px on all four sides. The pane is the reading surface
           // and was wearing the same 16px as the list beside it, which left
           // the message crowded against both edges of the wider of the two.
           paddingInline={isFullWidth ? 0 : 6}
-          paddingBlockEnd={isFullWidth ? 0 : 6}
-          // Tighter at the top than the other three sides. The tags qualify
-          // the subject — priority, then what it is about — and the subject is
-          // now up in the header, so a full inset here read as the gap between
-          // two unrelated blocks rather than the gap between a title and its
-          // own tags.
-          paddingBlockStart={isFullWidth ? 0 : 3}
+          paddingBlock={isFullWidth ? 0 : 6}
           gap={4}
           isScrollable
           height="100%">
@@ -1959,7 +1950,6 @@ export default function SupportInboxTemplate() {
     idKey: 'id',
     selectedKeys,
     setSelectedKeys,
-    getIsItemEnabled: item => !item.isLocked,
   });
 
   const reveal = useContainerReveal();
