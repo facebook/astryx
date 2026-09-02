@@ -119,7 +119,6 @@ import {
   HStack,
   Layout,
   LayoutContent,
-  LayoutHeader,
   StackItem,
   VStack,
 } from '@astryxdesign/core/Layout';
@@ -777,20 +776,6 @@ export default function InvoiceLineItemsTemplate() {
     <Layout
       height="fill"
       contentWidth={960}
-      header={
-        <LayoutHeader padding={4}>
-          <HStack gap={3} vAlign="center" wrap="wrap">
-            <StackItem size="fill">
-              <Heading level={1}>Invoice INV-2043</Heading>
-            </StackItem>
-            <Button
-              label="Download PDF"
-              variant="secondary"
-              icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
-            />
-          </HStack>
-        </LayoutHeader>
-      }
       content={
         // `padding={0}` is load-bearing, not a style choice. LayoutContent
         // publishes its padding as --container-padding-inline-*, and Table
@@ -800,9 +785,25 @@ export default function InvoiceLineItemsTemplate() {
         // publishes nothing.
         <LayoutContent padding={0}>
           <VStack padding={4} gap={8}>
-            {/* Extra block padding sets the document facts apart from the
-                controls and the table without needing a rule to do it. */}
-            <VStack paddingBlock={4}>
+            {/* Title, actions and document facts are one masthead, and it
+                scrolls. The Layout `header` slot would pin it: with
+                `height="fill"` the content area is the scroll container, so a
+                slotted header stays put while the controls slide underneath
+                it. A document's own title is not chrome — it belongs to the
+                page it names, and reading down past it is the normal thing to
+                do. Keep the slot for what stays useful mid-scroll: an app bar,
+                a toolbar, a sticky action row. */}
+            <VStack gap={6} paddingBlockEnd={4}>
+              <HStack gap={3} vAlign="center" wrap="wrap">
+                <StackItem size="fill">
+                  <Heading level={1}>Invoice INV-2043</Heading>
+                </StackItem>
+                <Button
+                  label="Download PDF"
+                  variant="secondary"
+                  icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
+                />
+              </HStack>
               <MetadataList
                 columns="multi"
                 orientation="vertical"
