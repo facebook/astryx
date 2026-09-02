@@ -33,6 +33,15 @@ export const docs = {
     ],
   },
 
+  playground: {
+    defaults: {
+      calls: [
+        {name: 'read_file', status: 'complete', target: 'Button.tsx', duration: '120ms'},
+        {name: 'run_tests', status: 'complete', target: 'yarn test', duration: '1.2s', additions: 12, deletions: 3},
+      ],
+    },
+  },
+
   props: [
     {
       name: 'calls',
