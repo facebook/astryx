@@ -54,8 +54,30 @@ const SENSITIVE_KEY_PARTS = [
   'token',
 ];
 
-/** `--flag=value` / `KEY=value` where the key half looks sensitive. */
-const ASSIGNMENT_RE = /^(--?[\w-]*(?:auth|credential|cookie|jwt|passwd|password|private|secret|session|signature|token)[\w-]*|[\w.]*(?:AUTH|CREDENTIAL|COOKIE|JWT|PASSWD|PASSWORD|PRIVATE|SECRET|SESSION|SIGNATURE|TOKEN)[\w.]*)=(.*)$/i;
+/**
+ * `--flag=value` / `KEY=value` where the key half looks sensitive.
+ *
+ * Global and unanchored, because the same text arrives twice: once as its own
+ * argv element, and again quoted inside an error message, a stack frame and
+ * the captured stderr — `error: unknown option '--token=…'`. An anchored rule
+ * scrubs the first and leaves the other three, which is the same secret,
+ * written to the same record.
+ *
+ * The key halves are BOUNDED. Unbounded `[\w-]*` either side of the keyword
+ * makes an unanchored scan quadratic, and this runs over captured output that
+ * can be tens of kilobytes — a 500KB option value took the whole thing from
+ * microseconds to minutes. See {@link SENSITIVE_ANYWHERE_RE} for the cheap
+ * pre-check that keeps the common case free.
+ */
+const ASSIGNMENT_RE = /(--?[\w-]{0,64}(?:auth|credential|cookie|jwt|passwd|password|private|secret|session|signature|token)[\w-]{0,64}|[\w.]{0,64}(?:AUTH|CREDENTIAL|COOKIE|JWT|PASSWD|PASSWORD|PRIVATE|SECRET|SESSION|SIGNATURE|TOKEN)[\w.]{0,64})=([^\s'"`]*)/gi;
+
+/**
+ * Is it even worth running {@link ASSIGNMENT_RE}? A plain substring scan is
+ * linear and rules out almost every string; the assignment rule only earns its
+ * cost once both an `=` and a sensitive-looking word are present.
+ */
+const SENSITIVE_ANYWHERE_RE =
+  /auth|credential|cookie|jwt|passwd|password|private|secret|session|signature|token/i;
 
 /** Well-known credential formats worth catching wherever they appear. */
 const CREDENTIAL_PATTERNS = [
@@ -113,11 +135,19 @@ function scrubPaths(value, ctx) {
 
   // Any absolute path still standing is outside both anchors — keep the tail
   // so the shape of the operation survives, drop the machine-specific prefix.
-  out = out.replace(/(^|\s)(\/[^\s:;,"']{2,})/g, (match, lead, abs) => {
-    const parts = String(abs).split('/').filter(Boolean);
-    if (parts.length <= 2) return match;
-    return `${lead}${path.posix.join('/…', ...parts.slice(-2))}`;
-  });
+  //
+  // The lead alternation matters as much as the path itself: the paths that
+  // carry a username are the ones in a stack frame, and those arrive wrapped —
+  // `at cliError (file:///Users/someone/…/redact.mjs:12:5)`. Anchoring on
+  // whitespace alone leaves every one of them intact.
+  out = out.replace(
+    /(^|[\s"'`([{<=,;]|file:\/\/)(\/[^\s:;,"'`)\]}>]{2,})/g,
+    (match, lead, abs) => {
+      const parts = String(abs).split('/').filter(Boolean);
+      if (parts.length <= 2) return match;
+      return `${lead}${path.posix.join('/…', ...parts.slice(-2))}`;
+    },
+  );
 
   return out;
 }
@@ -139,9 +169,8 @@ function scrubString(value, ctx) {
 
   // `--token=abc` / `GITHUB_TOKEN=abc` survive the patterns above when the
   // value is an unrecognized format, so drop the right-hand side by key name.
-  const assignment = out.match(ASSIGNMENT_RE);
-  if (assignment) {
-    out = `${assignment[1]}=${REDACTED}`;
+  if (out.includes('=') && SENSITIVE_ANYWHERE_RE.test(out)) {
+    out = out.replace(ASSIGNMENT_RE, (_m, key) => `${key}=${REDACTED}`);
   }
 
   return scrubPaths(out, ctx);

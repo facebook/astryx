@@ -12,6 +12,9 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {spawnSync} from 'node:child_process';
+import * as path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {
   begin,
   finish,
@@ -406,5 +409,86 @@ describe('captured output — what the CLI answered', () => {
     expect(process.stdout.write).not.toBe(before);
     finish({exitCode: 0});
     expect(process.stdout.write).toBe(before);
+  });
+});
+
+describe('signals — the runs that never reach `exit`', () => {
+  // `process.on('exit')` does not fire for a signal, so this seam is the only
+  // thing standing between "the user gave up on a watch command" and no record
+  // at all. It cannot be exercised in-process: raising a real signal ends the
+  // worker, so each case is a child that signals itself and reports what its
+  // handler was given.
+  const debugDir = path.dirname(fileURLToPath(import.meta.url));
+
+  /**
+   * @param {{owner?: boolean, handlerFirst?: boolean}} [options]
+   * @returns {{status: number | null, signal: string | null, event: any, raw: string}}
+   */
+  function signalledRun({owner = false, handlerFirst = false} = {}) {
+    const install = `d.setEventHandler(e => process.stdout.write('EVENT ' + JSON.stringify(e) + '\\n'));`;
+    const source = `
+      const d = await import(${JSON.stringify(path.join(debugDir, 'index.mjs'))});
+      ${handlerFirst ? install : ''}
+      d.begin({argv: ['theme', 'build', '--watch'], cliVersion: '0.0.0'});
+      d.setCommand('theme build');
+      ${handlerFirst ? '' : install}
+      ${owner ? `process.on('SIGINT', () => process.exit(0));` : ''}
+      process.kill(process.pid, 'SIGINT');
+      // Only reached if the signal was swallowed, which is itself a failure.
+      setTimeout(() => process.exit(7), 2000);
+    `;
+    const res = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
+      encoding: 'utf8',
+      timeout: 30_000,
+    });
+    const line = (res.stdout || '')
+      .split('\n')
+      .find(l => l.startsWith('EVENT '));
+    return {
+      status: res.status,
+      signal: res.signal,
+      event: line ? JSON.parse(line.slice(6)) : null,
+      raw: res.stdout || '',
+    };
+  }
+
+  it('records a Ctrl-C nobody else was listening for', () => {
+    const {event} = signalledRun();
+    expect(event).toBeTruthy();
+    expect(event.signal).toBe('SIGINT');
+    expect(event.outcome).toBe('error');
+    expect(event.exitCode).toBe(130);
+    expect(event.error.code).toBe('ERR_SIGNAL_TERMINATED');
+  });
+
+  it('still lets the signal kill the process', () => {
+    // Adding a listener suppresses Node's default disposition, so the handler
+    // has to hand termination back. A parent must still see signal death.
+    const {status, signal} = signalledRun();
+    expect(signal).toBe('SIGINT');
+    expect(status).toBe(null);
+  });
+
+  it('leaves the outcome to the command that owns the signal', () => {
+    // Watch mode traps SIGINT, prints "Stopped watching." and returns 0.
+    // Sealing an error here would file the ordinary way out of `--watch` as a
+    // failure, with an exit code the process never returned.
+    const {status, event} = signalledRun({owner: true});
+    expect(status).toBe(0);
+    expect(event.outcome).toBe('ok');
+    expect(event.exitCode).toBe(0);
+    expect(event.error).toBe(null);
+    // The signal is still on the record — that is how you find these runs.
+    expect(event.signal).toBe('SIGINT');
+  });
+
+  it('arms the signal handlers whichever order the lifecycle runs in', () => {
+    // The bin calls begin() first and supplies the handler once the config is
+    // read. A caller that already has one must not silently lose every
+    // signal-terminated run.
+    const {event} = signalledRun({handlerFirst: true});
+    expect(event).toBeTruthy();
+    expect(event.signal).toBe('SIGINT');
+    expect(event.error.code).toBe('ERR_SIGNAL_TERMINATED');
   });
 });

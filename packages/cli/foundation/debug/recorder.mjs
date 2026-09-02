@@ -215,6 +215,11 @@ export function begin({argv = process.argv.slice(2), cliVersion} = {}) {
     // of the record as the arguments it was given, and the earliest output
     // (the setup nudge, Commander's own errors) happens before any hook runs.
     captureOutput();
+    // Normally the handler arrives after this (config is read later) and
+    // setEventHandler arms the signals. Arm here too, so a caller that already
+    // had one does not silently lose every signal-terminated run to lifecycle
+    // ordering.
+    if (_handler) armSignalHandlers();
     started = true;
   });
   return started;
@@ -363,22 +368,43 @@ function handleExit(code) {
  * listening. A command with its own handler (watch mode) keeps owning the
  * signal, and Ctrl-C keeps working either way.
  *
+ * Whether anyone else is listening also decides WHAT to record. If we are the
+ * last listener the process is about to die from the signal, `exit` will never
+ * fire, and sealing here is the only chance to record anything. If the command
+ * is still listening it is about to shut itself down on its own terms — a
+ * `theme build --watch` printing "Stopped watching." and returning 0 — so
+ * sealing here would file the most ordinary way to leave watch mode as a
+ * failure, with an exit code the process never returned. Defer to the exit
+ * listener instead; the signal is still recorded on the event either way.
+ *
  * @param {keyof typeof SIGNAL_EXIT_CODES} signal
  */
 function handleSignal(signal) {
   const exitCode = SIGNAL_EXIT_CODES[signal];
-  guard(() => {
-    setOutcome('error', {exitCode, code: ERROR_CODES.ERR_SIGNAL_TERMINATED});
-    if (_event) _event.signal = signal;
-    finish({exitCode});
-  });
+
+  // Step down FIRST: `listenerCount` only means "does the command own this
+  // signal too" once we are no longer counted ourselves.
+  let last = true;
   try {
     process.removeListener(signal, _signalHandlers[signal]);
-    if (process.listenerCount(signal) === 0) {
-      process.kill(process.pid, signal);
-    }
+    last = process.listenerCount(signal) === 0;
   } catch {
-    /* re-raising failed — let the process continue as it would have */
+    /* if we cannot step down, behave as though we were the only listener */
+  }
+
+  guard(() => {
+    if (_event) _event.signal = signal;
+    if (!last) return;
+    setOutcome('error', {exitCode, code: ERROR_CODES.ERR_SIGNAL_TERMINATED});
+    finish({exitCode});
+  });
+
+  if (last) {
+    try {
+      process.kill(process.pid, signal);
+    } catch {
+      /* re-raising failed — let the process continue as it would have */
+    }
   }
 }
 
