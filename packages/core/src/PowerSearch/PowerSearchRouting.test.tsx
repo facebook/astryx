@@ -10,7 +10,7 @@
  */
 
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {PowerSearch} from './PowerSearch';
 import type {PowerSearchConfig} from './types';
 
@@ -80,7 +80,7 @@ describe('PowerSearch pointer routing', () => {
     expect(screen.queryByRole('button', {name: 'Add filters…'})).toBeNull();
   });
 
-  it('renders hybrid content search on a coarse pointer', () => {
+  it('keeps the content-search suggestion popover on a coarse pointer', async () => {
     setCoarsePointer(true);
     render(
       <PowerSearch
@@ -90,11 +90,16 @@ describe('PowerSearch pointer routing', () => {
       />,
     );
 
-    const trigger = screen.getByRole('button', {name: 'Manage filters'});
-    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
-    expect(screen.queryByRole('searchbox')).toBeNull();
-    expect(screen.queryByRole('button', {name: 'Add filters…'})).toBeNull();
-    expect(screen.queryByRole('combobox')).toBeNull();
+    const input = screen.getByRole('combobox', {name: 'Search'});
+    expect(screen.queryByRole('button', {name: 'Manage filters'})).toBeNull();
+    fireEvent.focus(input);
+    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
+    const resultsID = input.getAttribute('aria-controls');
+    const results =
+      resultsID == null ? null : document.getElementById(resultsID);
+    expect(results).toHaveAttribute('role', 'listbox');
+    expect(results).toHaveTextContent('Title');
+    expect(results).toHaveTextContent('Status');
   });
 
   it('keeps the typeahead surface for unsupported content-search values', () => {

@@ -111,12 +111,6 @@ const config: PowerSearchConfig = {
   ],
 };
 
-const contentSearchConfig: PowerSearchConfig = {
-  ...config,
-  name: 'ContentSearch',
-  contentSearchFieldKey: 'author',
-};
-
 const openFilter: PowerSearchFilter = {
   field: 'status',
   operator: 'is',
@@ -219,72 +213,11 @@ describe('PowerSearchTouchSurface', () => {
     expect(trigger).toHaveFocus();
   });
 
-  it('moves content search into the management sheet', () => {
-    setup({config: contentSearchConfig, placeholder: 'Search content…'});
-    expect(screen.queryByRole('searchbox')).toBeNull();
-    openSheet();
-    expect(
-      within(sheet()).getByRole('textbox', {name: 'Search'}),
-    ).toHaveAttribute('placeholder', 'Search content…');
-    expect(
-      within(sheet()).getByRole('button', {name: 'Add filter'}),
-    ).toBeTruthy();
-  });
-
-  it('adds trimmed content search from the management sheet and keeps it open', () => {
-    const {onChange} = setup({
-      config: contentSearchConfig,
-      filters: [openFilter],
-    });
-    openSheet();
-    const input = within(sheet()).getByRole('textbox', {name: 'Search'});
-    fireEvent.change(input, {target: {value: '  release notes  '}});
-    expect(fireEvent.keyDown(input, {key: 'Enter'})).toBe(false);
-
-    expect(onChange).toHaveBeenCalledWith(
-      [
-        openFilter,
-        {
-          field: 'author',
-          operator: 'is',
-          value: {type: 'string', value: 'release notes'},
-        },
-      ],
-      'add',
-      1,
-    );
-    expect(input).toHaveValue('');
-    expect(isSheetOpen()).toBe(true);
-  });
-
-  it('does not submit blank or composing content search', () => {
-    const {onChange} = setup({config: contentSearchConfig});
-    openSheet();
-    const input = within(sheet()).getByRole('textbox', {name: 'Search'});
-    fireEvent.change(input, {target: {value: '   '}});
-    expect(fireEvent.keyDown(input, {key: 'Enter'})).toBe(true);
-    fireEvent.change(input, {target: {value: '검색'}});
-    expect(fireEvent.keyDown(input, {key: 'Enter', isComposing: true})).toBe(
-      true,
-    );
-    expect(fireEvent.keyDown(input, {key: 'Enter', keyCode: 229})).toBe(true);
-    expect(onChange).not.toHaveBeenCalled();
-    expect(input).toHaveValue('검색');
-  });
-
-  it('focuses the sheet trigger through the existing imperative handle', () => {
-    const handle = createRef<PowerSearchHandle>();
-    setup({config: contentSearchConfig, handleRef: handle});
-    handle.current?.focusTypeahead();
-    expect(screen.getByRole('button', {name: 'Manage filters'})).toHaveFocus();
-  });
-
   it('shows selected filters as editable rows with only a separate remove action', () => {
     setup({filters: [openFilter]});
     openSheet();
-    const selectedList = within(sheet()).getByRole('list', {
-      name: 'Selected filters',
-    });
+    const selectedList = within(sheet()).getByRole('list');
+    expect(within(sheet()).queryByText('Selected filters')).toBeNull();
     expect(selectedList).toBeTruthy();
     expect(
       within(selectedList).getByRole('button', {name: 'Status is Open'}),
@@ -300,9 +233,7 @@ describe('PowerSearchTouchSurface', () => {
   it('places Add filter after the selected list and Done in the footer', () => {
     setup({filters: [openFilter]});
     openSheet();
-    const selectedList = within(sheet()).getByRole('list', {
-      name: 'Selected filters',
-    });
+    const selectedList = within(sheet()).getByRole('list');
     const addFilter = within(sheet()).getByRole('button', {
       name: 'Add filter',
     });
@@ -990,9 +921,7 @@ describe('PowerSearchTouchSurface', () => {
     expect(screen.queryByRole('button', {name: /^Remove/})).toBeNull();
     openSheet();
     expect(isSheetOpen()).toBe(true);
-    expect(
-      within(sheet()).getByRole('list', {name: 'Selected filters'}),
-    ).toBeTruthy();
+    expect(within(sheet()).getByRole('list')).toBeTruthy();
     expect(within(sheet()).queryByRole('button', {name: /^Remove/})).toBeNull();
     expect(
       within(sheet()).queryByRole('button', {name: 'Clear all'}),

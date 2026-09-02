@@ -380,8 +380,9 @@ export interface PowerSearchProps extends Omit<
   /** Visually hide the label. @default true */
   isLabelHidden?: boolean;
   /**
-   * Placeholder text on fine-pointer input surfaces. On coarse pointers, the
-   * field instead shows the “Add filters…” button. @default 'Search...'
+   * Placeholder text. On the touch-management surface it labels the empty
+   * field-wide trigger; content-search configurations retain the typeahead input.
+   * @default 'Search...'
    */
   placeholder?: string;
   /** Auto-focus on mount. @default false */
@@ -561,22 +562,11 @@ type PopoverState =
  */
 function canUseTouchSurface(props: PowerSearchProps): boolean {
   const {config, tokenOverflowBehavior} = props;
-  if (tokenOverflowBehavior != null && tokenOverflowBehavior !== 'none') {
+  if (
+    config.contentSearchFieldKey != null ||
+    (tokenOverflowBehavior != null && tokenOverflowBehavior !== 'none')
+  ) {
     return false;
-  }
-  if (config.contentSearchFieldKey != null) {
-    const contentField = config.fields.find(
-      field => field.key === config.contentSearchFieldKey,
-    );
-    const contentOperator =
-      contentField?.defaultOperator != null
-        ? contentField.operators.find(
-            operator => operator.key === contentField.defaultOperator,
-          )
-        : contentField?.operators[0];
-    if (contentOperator?.value.type !== 'string') {
-      return false;
-    }
   }
   return !config.fields.some(field =>
     field.operators.some(operator => operator.value.type === 'nested'),
