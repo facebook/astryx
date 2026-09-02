@@ -48,10 +48,10 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {discoverComponents} from '../../../packages/cli/foundation/discovery/component-discovery.mjs';
 import {
+  buildAuditedComponentRoster,
   buildComponentCoverage,
   collectDirectionalDecorations,
   evaluateDirectionalDecorations,
-  findUnmatchedComponentFilters,
 } from './rtl-audit-coverage.mjs';
 
 const args = process.argv.slice(2);
@@ -132,8 +132,14 @@ const storyUrl = (port, id, rtl) =>
 async function settle(page) {
   // Wait for the story to render (load event + fonts), but do NOT block on
   // `networkidle` — some stories keep long-lived connections open and would
-  // stall the whole run. A short fixed settle is enough for RTL to apply.
+  // stall the whole run. Wait for Storybook to mount the story root, then use
+  // a short fixed settle for fonts, direction globals, and layout to apply.
   await page.waitForLoadState('load').catch(() => {});
+  await page
+    .locator('#storybook-root > *')
+    .first()
+    .waitFor({state: 'attached', timeout: 10000})
+    .catch(() => {});
   await page.evaluate(() => document.fonts?.ready).catch(() => {});
   await page
     .addStyleTag({
@@ -202,6 +208,7 @@ async function revealInteractionGated(page) {
 
 async function boxOf(page, sel, nth = 0) {
   const loc = page.locator(sel).nth(nth);
+  await loc.waitFor({state: 'visible', timeout: 2500}).catch(() => {});
   if ((await loc.count()) === 0) return null;
   const b = await loc.first().boundingBox().catch(() => null);
   return b ? {cx: b.x + b.width / 2, cy: b.y + b.height / 2, ...b} : null;
@@ -791,17 +798,11 @@ async function mapPool(items, pages, fn) {
       console.error(`WARN: cannot discover ${packageName} component roster: ${String(error).slice(0, 120)}`);
     }
   }
-  const storyComponents = storyIds.map(componentFromId);
-  const unmatchedFilters = findUnmatchedComponentFilters({
-    filters: FILTER,
+  const auditedComponents = buildAuditedComponentRoster({
     sourceComponents,
-    storyComponents,
+    storyComponents: storyIds.map(componentFromId),
+    filters: FILTER,
   });
-  const auditedComponents = Array.from(
-    new Map(
-      [...sourceComponents, ...storyComponents, ...unmatchedFilters].map(component => [component.toLowerCase(), component]),
-    ).values(),
-  ).filter(matchesFilter);
 
   // ---- (A) auto-discovery over every audited-package story ----
   const autoResults = []; // D1 icon-mirror

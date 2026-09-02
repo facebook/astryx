@@ -1,9 +1,5 @@
 [
   {
-    "component": "core/Chat",
-    "reason": "The Core/Chat stories compose a vertically scrolling ChatMessageList from message rows, bubbles, metadata and system messages. Sender placement is expressed with flex row/row-reverse, logical text alignment and logical corner radii, so CSS mirrors it with the writing direction. The stories' icons are thumbs, copy and vertical or symmetric status marks; there is no directional glyph, physical inset plus transform, horizontal drag, or left/right control for the component to invert."
-  },
-  {
     "component": "core/Spinner",
     "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG — two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
   },

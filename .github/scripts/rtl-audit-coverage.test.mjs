@@ -7,10 +7,10 @@
 import {JSDOM} from 'jsdom';
 import {describe, expect, it} from 'vitest';
 import {
+  buildAuditedComponentRoster,
   buildComponentCoverage,
   classifyDirectionalDecorationPair,
   collectDirectionalDecorations,
-  findUnmatchedComponentFilters,
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 
 const IDENTITY = [1, 0, 0, 1];
@@ -100,18 +100,6 @@ describe('classifyDirectionalDecorationPair', () => {
   });
 });
 
-describe('findUnmatchedComponentFilters', () => {
-  it('accepts a story-only component without synthesizing an unknown gap', () => {
-    expect(
-      findUnmatchedComponentFilters({
-        filters: ['chat', 'missing'],
-        sourceComponents: ['core/Button'],
-        storyComponents: ['core/Chat'],
-      }),
-    ).toEqual(['unknown/missing']);
-  });
-});
-
 describe('buildComponentCoverage', () => {
   it('classifies measured, verified N/A, unexplained gaps, and stale declarations', () => {
     const coverage = buildComponentCoverage({
@@ -194,5 +182,27 @@ describe('buildComponentCoverage', () => {
       'lab/Chat',
     ]);
     expect(coverage.gaps).toBe(2);
+  });
+});
+
+describe('buildAuditedComponentRoster', () => {
+  it('uses an umbrella Storybook surface without adding an unknown duplicate', () => {
+    expect(
+      buildAuditedComponentRoster({
+        sourceComponents: ['core/ChatComposer', 'core/ChatMessage'],
+        storyComponents: ['core/chat', 'core/chatcomposer'],
+        filters: ['chat'],
+      }),
+    ).toEqual(['core/chat']);
+  });
+
+  it('retains an unknown entry when neither source nor stories match', () => {
+    expect(
+      buildAuditedComponentRoster({
+        sourceComponents: ['core/Button'],
+        storyComponents: ['core/button'],
+        filters: ['missing'],
+      }),
+    ).toEqual(['unknown/missing']);
   });
 });

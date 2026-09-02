@@ -66,6 +66,17 @@
     }
   },
   {
+    "component": "Chat",
+    "storyId": "core-chat--mixed-content",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-chat-message-bubble[data-sender=\"assistant\"]",
+      "next": ".astryx-chat-message-bubble[data-sender=\"user\"]"
+    }
+  },
+  {
     "component": "Lightbox",
     "storyId": "core-lightbox--gallery",
     "dims": [
