@@ -214,6 +214,12 @@ export const categories: SandboxCategory[] = [
         description:
           'Compare experimental OKLCH and HCT-like ramps with profiles, anchors, custom stops, and separate dark-mode generation',
       },
+      {
+        name: 'Mobile Spacing',
+        href: '/pages/mobile-spacing/',
+        description:
+          'Draft mobile semantic spacing preview with real component scale comparisons',
+      },
     ],
   },
   {
