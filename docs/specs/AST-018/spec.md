@@ -90,11 +90,13 @@ This record uses the vocabulary already established by the Neutral remap:
   component context already passes accessibility. Sharing a palette stop does not
   prove that every foreground/background or interaction-state pairing meets its
   required contrast.
-- **FR6 — Extension is deterministic by family.** A child theme MUST inherit its
-  base theme's resolved palette families and MAY replace a family by restating
-  its exact family name. Family replacement is shallow; stops from two versions
-  of one family MUST NOT be combined into an unreviewed ramp. Family names are
-  local to their owning theme; independently imported `neutralPalettes.red` and
+- **FR6 — Source-theme extension is deterministic by family.** A child extending
+  a source theme MUST inherit its base theme's resolved palette families and MAY
+  replace a family by restating its exact family name. Family replacement is
+  shallow; stops from two versions of one family MUST NOT be combined into an
+  unreviewed ramp. Choosing a source theme as an authoring base includes accepting
+  responsibility for its inherited palette decisions. Family names are local to
+  their owning theme; independently imported `neutralPalettes.red` and
   `stonePalettes.red` do not share a global namespace. Tooling MUST NOT combine
   unrelated palette artifact sets into an unqualified global family map.
 - **FR7 — Runtime and artifact boundaries are explicit.** Source themes retain
@@ -213,12 +215,28 @@ Rejected: making complete component-level contrast conformance a prerequisite fo
 defining the palette. That would confuse the measurement baseline with the
 follow-up work the baseline is intended to enable.
 
+### DEC-4 — Source inheritance includes palette responsibility
+
+**Reference:** `spec:AST-018/DEC-4`
+
+**Decider:** `rubyycheung`, `2026-09-02`
+
+Extending a source theme means selecting it as a complete authoring foundation,
+including its palette metadata. The derived-theme author assumes responsibility
+for inherited and replaced palette decisions. Extending the built theme receives
+the finished runtime styling without palette metadata; authors who need both may
+import the built theme and its `/palette` artifact explicitly.
+
+No palette-removal operation is added. Authors who do not want inherited palette
+metadata use the built theme as their base instead.
+
+Rejected: adding `palettes: null`, per-family deletion markers, or palette
+metadata to every built runtime theme. Those options add merge complexity or
+runtime weight when the existing source, built, and `/palette` entry points
+already express the intended choice.
+
 ## Open questions
 
-- **OQ4 — Is palette inheritance intentionally limited to source themes, and can
-  a child remove an inherited family?** (`human-api`) Built runtime themes omit
-  palette metadata, while source themes retain it; the contract must state
-  whether that asymmetry and the lack of a family-removal operation are intended.
 - **OQ5 — Should an explicitly declared empty palette map be rejected or treated
   as omitted?** (`human-api`) The terminology says a palette map contains at least
   one family, while the current validator accepts `{}` and emits no artifacts.
