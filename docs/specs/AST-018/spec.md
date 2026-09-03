@@ -158,15 +158,24 @@ rather than implying that direct colors are always prohibited.
 
 ## Decision log
 
-No decisions are authoritative while this record remains a draft. The proposed
-contract intentionally keeps palette adoption optional and permits explicit
-theme-owned deviations rather than enforcing palette-only authoring.
+### DEC-1 — Palette adoption guides consistency without requiring it
+
+**Reference:** `spec:AST-018/DEC-1`
+
+**Decider:** `rubyycheung`, `2026-09-02`
+
+The palette helps theme authors create consistent color expression. Declaring a
+palette and selecting its stops remain optional; themes that do not need the
+contract continue to work unchanged. Semantic tokens remain the preferred
+interface, and intentional theme-owned deviations remain valid.
+
+Rejected: requiring every theme to declare a palette or rejecting every direct
+color that does not match a palette stop. Those approaches would turn guidance
+into enforcement and force legitimate overlays, brand colors, and
+contrast-specific values into misleading palette entries.
 
 ## Open questions
 
-- **OQ1 — Do the owners approve optional, non-enforced palette adoption as the
-  public contract?** (`human-api`) Promotion requires explicit approval of the
-  boundary in FR3–FR5, including intentional deviations.
 - **OQ2 — Are JavaScript, JSON, and TypeScript declarations the supported palette
   artifact set?** (`human-api`) Promotion requires agreement that these opt-in
   outputs are useful enough to become maintained package and CLI contracts.
