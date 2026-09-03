@@ -4,8 +4,9 @@
 
 /**
  * @file useResizable.ts
- * @input Resize configuration (defaultSize, minSizePx, maxSizePx, snaps) and
- *   collapse configuration (collapsible, defaultIsCollapsed, isCollapsed)
+ * @input Resize configuration (defaultSize, minSize, maxSize, legacy pixel
+ *   aliases, snaps) and collapse configuration (collapsible,
+ *   defaultIsCollapsed, isCollapsed)
  * @output Hook return: size, isCollapsed, collapse/expand/resize methods, props for handle
  * @position Public hook; consumed by layout components via `resizable` prop
  */
@@ -21,6 +22,7 @@ import {
 import {observeResize} from '../utils/sharedResizeObserver';
 import {devWarn} from '../utils/devWarning';
 import type {SizeValue} from '../utils/types';
+import type {ResizableSize} from './utils';
 
 // =============================================================================
 // Types
@@ -32,26 +34,30 @@ import type {SizeValue} from '../utils/types';
  * deprecated value shadowing the new one (AST-010 API4).
  */
 export type ResizableMinConfig =
-  | {minSize?: SizeValue; minSizePx?: never}
+  | {minSize?: ResizableSize; minSizePx?: never}
   | {minSize?: never; minSizePx?: number};
 
 /** The maximum, in one of two spellings. See {@link ResizableMinConfig}. */
 export type ResizableMaxConfig =
-  | {maxSize?: SizeValue; maxSizePx?: never}
+  | {maxSize?: ResizableSize; maxSizePx?: never}
   | {maxSize?: never; maxSizePx?: number};
 
 export type ResizableDirection = 'horizontal' | 'vertical';
 
 export interface ResizableRegionSizing {
   /**
-   * Initial size. A number is pixels, `'Npx'` is pixels, and `'N%'` (0–100) is
-   * a share of the basis: the container when `containerRef` is supplied, the
-   * viewport otherwise.
+   * Initial size. A number is pixels, exact `Npx` is pixels, exact `N%` is a
+   * share of the basis, and the structured percent form in
+   * {@link ResizableSize} adds exactly one pixel floor or ceiling to that percentage. The public type retains the released
+   * {@link SizeValue} (`number | string`) for compatibility, so runtime
+   * validation remains authoritative for strings.
    *
-   * A percentage is resolved ONCE into a pixel size. It configures the initial
-   * selection; it does not make the region track its basis afterwards.
+   * A basis-dependent value resolves ONCE into a pixel size — against the
+   * container when `containerRef` is supplied, against the viewport otherwise.
+   * It configures the initial selection; it does not make the region track its
+   * basis afterwards.
    */
-  defaultSize?: SizeValue;
+  defaultSize?: ResizableSize | SizeValue;
   /** Whether this region can collapse to 0. @default false */
   collapsible?: boolean;
   /** Size in px at which dragging triggers collapse. @default 40 */
@@ -304,42 +310,32 @@ function persistState(key: string, state: PersistedResizableState): void {
 /** The released compatibility basis when there is no window to measure. */
 const SERVER_BASIS = 1200;
 const DEFAULT_SIZE_FALLBACK = 250;
+const RESIZABLE_SIZE_GUIDANCE =
+  'Use a non-negative number of pixels, an exact "Npx" string, an exact ' +
+  '"N%" string from 0% to 100%, pixel(value), or ' +
+  'percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}).';
+const LEGACY_PIXEL_GUIDANCE = 'Use a non-negative number of pixels.';
+const LEGACY_MAX_PIXEL_GUIDANCE =
+  'Use a non-negative number of pixels or explicit Infinity.';
 
-/**
- * A configured size, parsed. `null` means the input was not accepted — the
- * caller applies its own role-specific fallback, because an invalid default
- * (250px), minimum (50px) and maximum (Infinity) each repair to something
- * different (AST-010 FR12).
- *
- * Parsing is exact and matches the COMPLETE input: `'50 px'`, `'50%%'`,
- * `'50rem'`, `'120%'` and `'-1px'` are all rejected rather than partially
- * parsed into a number that happens to look plausible.
- */
+/** Parsed, validated input. */
 type ParsedSize =
-  {kind: 'px'; value: number} | {kind: 'percent'; value: number};
+  | {kind: 'px'; value: number}
+  | {kind: 'percent'; value: number; min?: number; max?: number};
 
 const PX_PATTERN = /^(\d+(?:\.\d+)?)px$/;
 const PERCENT_PATTERN = /^(\d+(?:\.\d+)?)%$/;
 
-function isPercentage(value: SizeValue | undefined): boolean {
-  return typeof value === 'string' && PERCENT_PATTERN.test(value);
-}
-
-function parseSize(value: SizeValue | undefined): ParsedSize | null {
-  if (value == null) {
-    return null;
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value) && value >= 0 ? {kind: 'px', value} : null;
-  }
+function parseSizeString(value: string): ParsedSize | null {
+  // Preserve the released atomic fast path exactly.
   const px = PX_PATTERN.exec(value);
   if (px) {
     const parsed = Number(px[1]);
     return Number.isFinite(parsed) ? {kind: 'px', value: parsed} : null;
   }
-  const percent = PERCENT_PATTERN.exec(value);
-  if (percent) {
-    const parsed = Number(percent[1]);
+  const percentValue = PERCENT_PATTERN.exec(value);
+  if (percentValue) {
+    const parsed = Number(percentValue[1]);
     return Number.isFinite(parsed) && parsed <= 100
       ? {kind: 'percent', value: parsed}
       : null;
@@ -347,11 +343,92 @@ function parseSize(value: SizeValue | undefined): ParsedSize | null {
   return null;
 }
 
-/**
- * A parsed size in pixels, or `null` when it is a percentage and the basis is
- * not measurable yet. Percentages round, because a fractional pixel basis
- * would otherwise leak into ARIA and persistence.
- */
+function parsePixelSize(value: unknown): number | null {
+  if (typeof value !== 'object' || value == null || Array.isArray(value)) {
+    return null;
+  }
+  const candidate = value as {type?: unknown; value?: unknown};
+  return candidate.type === 'pixel' &&
+    typeof candidate.value === 'number' &&
+    Number.isFinite(candidate.value) &&
+    candidate.value >= 0
+    ? candidate.value
+    : null;
+}
+
+function parsePercentSize(value: object): ParsedSize | null {
+  if (Array.isArray(value)) {
+    return null;
+  }
+  const candidate = value as {
+    type?: unknown;
+    value?: unknown;
+    min?: unknown;
+    max?: unknown;
+  };
+  if (
+    candidate.type !== 'percent' ||
+    typeof candidate.value !== 'number' ||
+    !Number.isFinite(candidate.value) ||
+    candidate.value < 0 ||
+    candidate.value > 100
+  ) {
+    return null;
+  }
+
+  const hasMin = candidate.min !== undefined;
+  const hasMax = candidate.max !== undefined;
+  // Exactly one bound is required. The helper's public type enforces this for
+  // typed callers; this branch preserves it for JavaScript and `any`.
+  if (hasMin === hasMax) {
+    return null;
+  }
+  if (hasMin) {
+    const min = parsePixelSize(candidate.min);
+    return min == null ? null : {kind: 'percent', value: candidate.value, min};
+  }
+  const max = parsePixelSize(candidate.max);
+  return max == null ? null : {kind: 'percent', value: candidate.value, max};
+}
+
+function parseSize(value: unknown): ParsedSize | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value >= 0 ? {kind: 'px', value} : null;
+  }
+  if (typeof value === 'string') {
+    return parseSizeString(value);
+  }
+  if (typeof value === 'object' && value != null) {
+    const pixelValue = parsePixelSize(value);
+    return pixelValue == null
+      ? parsePercentSize(value)
+      : {kind: 'px', value: pixelValue};
+  }
+  return null;
+}
+
+function parseLegacyPixel(
+  value: unknown,
+  allowInfinity: boolean,
+): ParsedSize | null {
+  if (allowInfinity && value === Infinity) {
+    return {kind: 'px', value};
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value >= 0 ? {kind: 'px', value} : null;
+  }
+  // Preserve the released runtime compatibility for untyped callers. The
+  // public aliases remain number-only, but exact atomic strings worked before
+  // they were deprecated and continue to resolve through the same fast path.
+  return typeof value === 'string' ? parseSizeString(value) : null;
+}
+
+/** Whether this parsed value must be recomputed when its basis changes. */
+function dependsOnBasis(parsed: ParsedSize | null): boolean {
+  return parsed?.kind === 'percent';
+}
+
+/** Resolve a parsed size against its basis, then apply its one pixel bound. */
 function toPixels(parsed: ParsedSize, basis: number | null): number | null {
   if (parsed.kind === 'px') {
     return parsed.value;
@@ -359,44 +436,99 @@ function toPixels(parsed: ParsedSize, basis: number | null): number | null {
   if (basis == null) {
     return null;
   }
-  return Math.round((parsed.value / 100) * basis);
+  const percentagePx = Math.round((parsed.value / 100) * basis);
+  if (parsed.min !== undefined) {
+    return Math.max(percentagePx, parsed.min);
+  }
+  if (parsed.max !== undefined) {
+    return Math.min(percentagePx, parsed.max);
+  }
+  return percentagePx;
+}
+
+function describeUnknown(value: unknown): string {
+  if (typeof value === 'number' && !Number.isFinite(value)) {
+    return String(value);
+  }
+  try {
+    return JSON.stringify(value) ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function describePixelCandidate(value: unknown): string {
+  if (typeof value !== 'object' || value == null || Array.isArray(value)) {
+    return describeUnknown(value);
+  }
+  const candidate = value as {type?: unknown; value?: unknown};
+  return candidate.type === 'pixel'
+    ? `{"type":"pixel","value":${describeUnknown(candidate.value)}}`
+    : describeUnknown(value);
+}
+
+function describeSize(value: unknown): string {
+  if (typeof value === 'object' && value != null && !Array.isArray(value)) {
+    const candidate = value as {
+      type?: unknown;
+      value?: unknown;
+      min?: unknown;
+      max?: unknown;
+    };
+    if (candidate.type === 'pixel') {
+      return describePixelCandidate(value);
+    }
+    if (candidate.type === 'percent') {
+      const fields = [
+        '"type":"percent"',
+        `"value":${describeUnknown(candidate.value)}`,
+      ];
+      if (candidate.min !== undefined) {
+        fields.push(`"min":${describePixelCandidate(candidate.min)}`);
+      }
+      if (candidate.max !== undefined) {
+        fields.push(`"max":${describePixelCandidate(candidate.max)}`);
+      }
+      return `{${fields.join(',')}}`;
+    }
+  }
+  return describeUnknown(value);
 }
 
 /**
- * Resolve one configured bound, applying its role's fallback when the input is
- * not accepted. Warns once per invalid input in development only: production
- * takes the identical fallback silently, so behaviour never differs by build.
+ * Resolves one configured value, applying its role's fallback when the input is
+ * not accepted. The warning remains development-only through `devWarn`; every
+ * build takes the same deterministic fallback.
  */
 function resolveBound(
-  raw: SizeValue | undefined,
+  raw: unknown,
+  parsed: ParsedSize | null,
   basis: number | null,
   fallback: number,
   label: string,
+  accepted: string,
   didWarnRef: {current: boolean},
 ): number {
   if (raw === undefined) {
     return fallback;
   }
-  // Explicit `Infinity` is legal for `maxSizePx` alone — a shipped template
-  // uses it — and reaches here already normalized to the same fallback.
+  // Preserve the released explicit unbounded maximum on both the unified and
+  // deprecated spellings. Other roles still reject non-finite numbers.
   if (raw === Infinity && fallback === Infinity) {
     return Infinity;
   }
-  const parsed = parseSize(raw);
   if (parsed == null) {
     if (!didWarnRef.current) {
       didWarnRef.current = true;
       devWarn(
         'useResizable',
-        `${label}: ${JSON.stringify(raw)} is not a size. Use a non-negative ` +
-          'number of pixels, an exact "Npx" string, or an exact "N%" string ' +
-          `from 0% to 100%. Falling back to ${fallback}.`,
+        `${label}: ${describeSize(raw)} is not a size. ${accepted} ` +
+          `Falling back to ${fallback}.`,
       );
     }
     return fallback;
   }
-  const px = toPixels(parsed, basis);
-  return px ?? fallback;
+  return toPixels(parsed, basis) ?? fallback;
 }
 
 /**
@@ -463,16 +595,39 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // both an error, so reaching here means untyped JavaScript, an `any`, or a
   // spread — exactly the case where a stale alias hidden in an object would
   // otherwise silently beat the explicit migration target.
-  const minConflict = minSize !== undefined && minSizePx !== undefined;
-  const maxConflict = maxSize !== undefined && maxSizePx !== undefined;
-  const rawMin = minSize ?? minSizePx;
-  const rawMax = maxSize ?? maxSizePx;
+  const hasUnifiedMin = minSize !== undefined;
+  const hasUnifiedMax = maxSize !== undefined;
+  const minConflict = hasUnifiedMin && minSizePx !== undefined;
+  const maxConflict = hasUnifiedMax && maxSizePx !== undefined;
+  const rawMin = hasUnifiedMin ? minSize : minSizePx;
+  const rawMax = hasUnifiedMax ? maxSize : maxSizePx;
 
-  // Whether any percentage is in play at all. A region configured entirely in
-  // pixels subscribes to nothing and behaves exactly as it did before.
-  const usesPercentage =
-    isPercentage(defaultSize) || isPercentage(rawMin) || isPercentage(rawMax);
+  const parsedDefault = parseSize(defaultSize);
+  const parsedMin = hasUnifiedMin
+    ? parseSize(minSize)
+    : parseLegacyPixel(minSizePx, false);
+  const parsedMax = hasUnifiedMax
+    ? parseSize(maxSize)
+    : parseLegacyPixel(maxSizePx, true);
   const hasContainer = containerRef != null;
+  const persisted = autoSaveId ? loadPersistedState(autoSaveId) : null;
+  const initialDefaultRef = useRef<{px: number; isFinal: boolean} | null>(null);
+  const [, setDefaultBasisCleanupTick] = useState(0);
+
+  const defaultDependsOnBasis = dependsOnBasis(parsedDefault);
+  const boundsDependOnBasis =
+    dependsOnBasis(parsedMin) || dependsOnBasis(parsedMax);
+  // A default needs a live container only until its initial pixel choice is
+  // final. A persisted pixel choice wins without measuring the unused default.
+  // Bounds are different: percentages keep following the basis so they can
+  // re-clamp the selected pixel size.
+  const defaultNeedsInitialBasis =
+    persisted?.size == null &&
+    defaultDependsOnBasis &&
+    initialDefaultRef.current?.isFinal !== true;
+  const observeContainerBasis =
+    hasContainer && (boundsDependOnBasis || defaultNeedsInitialBasis);
+  const observeViewportBasis = !hasContainer && boundsDependOnBasis;
 
   // The container basis, read through the shared observer. `useSyncExternalStore`
   // rather than an effect: the store IS the measurement, so there is no render
@@ -509,7 +664,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
 
   const subscribeToContainer = useCallback(
     (onStoreChange: () => void) => {
-      if (!usesPercentage || containerElement == null) {
+      if (!observeContainerBasis || containerElement == null) {
         return () => {};
       }
       // Unsubscribe by callback: several regions share one container, and any
@@ -523,10 +678,15 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
         onStoreChange();
       });
     },
-    [containerElement, usesPercentage, direction],
+    [containerElement, observeContainerBasis, direction],
   );
   const readContainerBasis = useCallback(() => {
-    if (!usesPercentage || containerElement == null) {
+    if (!observeContainerBasis || containerElement == null) {
+      // An inactive subscription owns no current measurement. Clearing this is
+      // important when a percentage bound is added later: the first active
+      // render must measure the container as it is now, not clamp against the
+      // last basis seen by a default-only subscription.
+      containerBasisRef.current = null;
       return null;
     }
     // Cached in a ref so the snapshot is referentially stable between resizes;
@@ -538,25 +698,29 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
       );
     }
     return containerBasisRef.current;
-  }, [containerElement, usesPercentage, direction]);
+  }, [containerElement, observeContainerBasis, direction]);
   const containerBasis = useSyncExternalStore(
     subscribeToContainer,
     readContainerBasis,
     () => null,
   );
 
-  // The viewport basis, for the no-container compatibility path. Percentage
-  // BOUNDS follow it (FR6); the percentage default does not, because it is
-  // latched once below.
+  // The viewport basis is always readable synchronously. Percentage-dependent
+  // BOUNDS subscribe to later resizes (FR6); a default reads the initial
+  // snapshot only, because it becomes a pixel choice immediately.
   const subscribeToViewport = useCallback(
     (onStoreChange: () => void) => {
-      if (hasContainer || !usesPercentage || typeof window === 'undefined') {
+      if (
+        hasContainer ||
+        !observeViewportBasis ||
+        typeof window === 'undefined'
+      ) {
         return () => {};
       }
       window.addEventListener('resize', onStoreChange);
       return () => window.removeEventListener('resize', onStoreChange);
     },
-    [hasContainer, usesPercentage],
+    [hasContainer, observeViewportBasis],
   );
   const viewportBasis = useSyncExternalStore(
     subscribeToViewport,
@@ -574,7 +738,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // the panel collapsed and, with `autoSaveId`, that 0 was written over a
   // perfectly good saved width. Treating 0 as unmeasured keeps the temporary
   // basis until the container is actually laid out (AST-010 Platform support).
-  const needsContainerBasis = hasContainer && usesPercentage;
+  const needsContainerBasis = observeContainerBasis;
   const hasPositiveMeasurement = containerBasis != null && containerBasis > 0;
   const liveBasis = hasContainer
     ? hasPositiveMeasurement
@@ -603,38 +767,42 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // point of a percentage bound — and clamp the pixel selection below.
   const resolvedMin = resolveBound(
     rawMin,
+    parsedMin,
     basis,
     DEFAULT_MIN,
-    'minSize',
+    hasUnifiedMin ? 'minSize' : 'minSizePx',
+    hasUnifiedMin ? RESIZABLE_SIZE_GUIDANCE : LEGACY_PIXEL_GUIDANCE,
     didWarnMinRef,
   );
   const resolvedMax = resolveBound(
     rawMax,
+    parsedMax,
     basis,
     Infinity,
-    'maxSize',
+    hasUnifiedMax ? 'maxSize' : 'maxSizePx',
+    hasUnifiedMax ? RESIZABLE_SIZE_GUIDANCE : LEGACY_MAX_PIXEL_GUIDANCE,
     didWarnMaxRef,
   );
 
-  const persisted = autoSaveId ? loadPersistedState(autoSaveId) : null;
-
-  // The percentage default is resolved ONCE into a pixel size. Latched in a ref
-  // (React's sanctioned lazy-init shape) rather than recomputed, because a
+  // A basis-dependent default is resolved ONCE into a pixel size. Latched in a
+  // ref (React's sanctioned lazy-init shape) rather than recomputed, because a
   // default that kept tracking its basis would be a second, responsive sizing
   // mode — the thing this API deliberately does not have.
   //
   // Not final while a supplied container is still unmeasured: that render used
   // the temporary 1200px stand-in, and the first real measurement replaces it.
-  // That correction is not a user interaction, so it neither persists nor
-  // fires `onSizeChange`.
-  const initialDefaultRef = useRef<{px: number; isFinal: boolean} | null>(null);
+  // Once final, a default-only subscription is removed. The correction is not a
+  // user interaction, so it neither persists the placeholder nor fires
+  // `onSizeChange`.
   if (initialDefaultRef.current == null || !initialDefaultRef.current.isFinal) {
     initialDefaultRef.current = {
       px: resolveBound(
         defaultSize,
+        parsedDefault,
         basis,
         DEFAULT_SIZE_FALLBACK,
         'defaultSize',
+        RESIZABLE_SIZE_GUIDANCE,
         didWarnDefaultRef,
       ),
       isFinal: isBasisMeasured,
@@ -663,6 +831,19 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
       ? clampSize(initialDefaultPx, resolvedMin, resolvedMax, snaps)
       : null;
   });
+
+  if (
+    hasContainer &&
+    !boundsDependOnBasis &&
+    isBasisMeasured &&
+    defaultNeedsInitialBasis &&
+    chosenSize != null
+  ) {
+    // A programmatic resize may have selected pixels while the container was
+    // still unmeasured, so chosenSize can already be non-null here. Force the
+    // render that re-evaluates and removes the now-finished default subscription.
+    setDefaultBasisCleanupTick(tick => tick + 1);
+  }
 
   if (isBasisMeasured && chosenSize == null) {
     // The supplied container has now been measured, so the selection latched

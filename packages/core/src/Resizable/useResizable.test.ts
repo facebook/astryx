@@ -11,11 +11,15 @@
  * SYNC: When useResizable changes, update tests to match new behavior
  */
 
-import {useLayoutEffect} from 'react';
+import {createElement, useLayoutEffect, useRef} from 'react';
+import {hydrateRoot} from 'react-dom/client';
+import {renderToString} from 'react-dom/server';
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {renderHook, act} from '@testing-library/react';
+import {renderHook, act, waitFor} from '@testing-library/react';
 import {useResizable} from './useResizable';
-import type {ResizableProps} from './useResizable';
+import type {ResizableProps, UseResizableSingleConfig} from './useResizable';
+import {percent, pixel} from './utils';
+import type {ResizableSize} from './utils';
 
 const AUTO_SAVE_ID = 'test-panel';
 const KEY = `astryx-resizable:${AUTO_SAVE_ID}`;
@@ -490,6 +494,7 @@ describe('useResizable percentage configuration (AST-010)', () => {
   beforeEach(() => {
     content = 400;
     contentBlock = 300;
+    StubResizeObserver.instances = [];
     vi.stubGlobal('ResizeObserver', StubResizeObserver);
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({
       paddingTop: '0px',
@@ -532,11 +537,23 @@ describe('useResizable percentage configuration (AST-010)', () => {
   });
 
   describe('FR2 — direction selects the axis', () => {
-    it('measures the block axis when resizing vertically', () => {
+    it('keeps the atomic percentage on the block axis', () => {
       const containerRef = makeContainer();
       const {result} = renderHook(() =>
         useResizable({
           defaultSize: '50%',
+          containerRef,
+          direction: 'vertical',
+        }),
+      );
+      expect(result.current.size).toBe(150);
+    });
+
+    it('measures a structured percentage on the block axis', () => {
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: percent(50, {min: pixel(1)}),
           containerRef,
           direction: 'vertical',
         }),
@@ -646,6 +663,435 @@ describe('useResizable percentage configuration (AST-010)', () => {
     });
   });
 
+  describe('structured percent sizes', () => {
+    const observedTargets = () =>
+      StubResizeObserver.instances.flatMap(observer => observer.targets);
+
+    it('accepts Table pixel as a structured static value', () => {
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: pixel(333),
+          minSize: pixel(100),
+          maxSize: pixel(500),
+        }),
+      );
+      expect(result.current.size).toBe(333);
+      expect(result.current.props._minSizePx).toBe(100);
+      expect(result.current.props._maxSizePx).toBe(500);
+    });
+
+    it('applies the canonical percentage floor', () => {
+      content = 500;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 0,
+          minSize: percent(40, {min: pixel(333)}),
+          containerRef,
+        }),
+      );
+
+      expect(result.current.props._minSizePx).toBe(333);
+      expect(result.current.size).toBe(333);
+      act(() => {
+        content = 1000;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.props._minSizePx).toBe(400);
+      expect(result.current.size).toBe(400);
+    });
+
+    it('applies the canonical percentage ceiling', () => {
+      content = 1000;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 500,
+          maxSize: percent(10, {max: pixel(400)}),
+          containerRef,
+        }),
+      );
+
+      expect(result.current.props._maxSizePx).toBe(100);
+      expect(result.current.size).toBe(100);
+      act(() => {
+        content = 500;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.props._maxSizePx).toBe(50);
+      expect(result.current.size).toBe(50);
+    });
+
+    it('resolves a structured default once, then keeps the selected pixels', () => {
+      content = 1000;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: percent(40, {min: pixel(333)}),
+          containerRef,
+        }),
+      );
+
+      expect(result.current.size).toBe(400);
+      expect(observedTargets()).not.toContain(containerRef.current);
+      act(() => {
+        content = 500;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.size).toBe(400);
+    });
+
+    it('uses the initial viewport for a structured default without subscribing', () => {
+      window.innerWidth = 1000;
+      const addEventListener = vi.spyOn(window, 'addEventListener');
+      const {result} = renderHook(() =>
+        useResizable({defaultSize: percent(40, {min: pixel(333)})}),
+      );
+
+      expect(result.current.size).toBe(400);
+      expect(
+        addEventListener.mock.calls.some(([type]) => type === 'resize'),
+      ).toBe(false);
+      act(() => {
+        window.innerWidth = 500;
+        window.dispatchEvent(new Event('resize'));
+      });
+      expect(result.current.size).toBe(400);
+    });
+
+    it('uses the deterministic 1200px server basis', () => {
+      const originalWindow = globalThis.window;
+      vi.stubGlobal('window', undefined);
+      try {
+        const html = renderToString(
+          createElement(() => {
+            const region = useResizable({
+              defaultSize: percent(40, {min: pixel(333)}),
+            });
+            return createElement('output', null, String(region.size));
+          }),
+        );
+        expect(html).toContain('480');
+      } finally {
+        vi.stubGlobal('window', originalWindow);
+      }
+    });
+
+    it('hydrates a container default without persisting the temporary basis', async () => {
+      content = 500;
+      const clientWidth = vi
+        .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+        .mockImplementation(() => content);
+      const clientHeight = vi
+        .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+        .mockImplementation(() => contentBlock);
+      const setItem = vi.spyOn(Storage.prototype, 'setItem');
+      const onSizeChange = vi.fn();
+
+      function Probe() {
+        const containerRef = useRef<HTMLDivElement>(null);
+        const region = useResizable({
+          defaultSize: percent(40, {min: pixel(333)}),
+          containerRef,
+          autoSaveId: 'structured-hydration',
+          onSizeChange,
+        });
+        return createElement(
+          'div',
+          {ref: containerRef},
+          createElement('output', {'data-size': region.size}, region.size),
+        );
+      }
+
+      const serverHTML = renderToString(createElement(Probe));
+      expect(serverHTML).toContain('data-size="480"');
+      const container = document.createElement('div');
+      container.innerHTML = serverHTML;
+      document.body.appendChild(container);
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      const recoverableErrors: unknown[] = [];
+      let root: ReturnType<typeof hydrateRoot>;
+
+      await act(async () => {
+        root = hydrateRoot(container, createElement(Probe), {
+          onRecoverableError: error => recoverableErrors.push(error),
+        });
+      });
+      await waitFor(() =>
+        expect(container.querySelector('output')).toHaveAttribute(
+          'data-size',
+          '333',
+        ),
+      );
+
+      expect(recoverableErrors).toEqual([]);
+      expect(
+        consoleError.mock.calls.filter(call =>
+          String(call[0] ?? '')
+            .toLowerCase()
+            .includes('hydrat'),
+        ),
+      ).toEqual([]);
+      expect(onSizeChange).not.toHaveBeenCalled();
+      expect(
+        setItem.mock.calls.some(([, value]) => value.includes('"size":480')),
+      ).toBe(false);
+      expect(
+        localStorage.getItem('astryx-resizable:structured-hydration'),
+      ).toBe(JSON.stringify({size: 333, isCollapsed: false}));
+
+      await act(async () => root.unmount());
+      consoleError.mockRestore();
+      setItem.mockRestore();
+      clientWidth.mockRestore();
+      clientHeight.mockRestore();
+      container.remove();
+    });
+
+    it('waits for a positive basis and then removes a default-only observer', () => {
+      content = 0;
+      const containerRef = makeContainer();
+      const onSizeChange = vi.fn();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: percent(40, {min: pixel(333)}),
+          containerRef,
+          autoSaveId: 'structured-zero',
+          onSizeChange,
+        }),
+      );
+
+      expect(result.current.size).toBe(480);
+      expect(
+        localStorage.getItem('astryx-resizable:structured-zero'),
+      ).toBeNull();
+      expect(observedTargets()).toContain(containerRef.current);
+      act(() => {
+        content = 500;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.size).toBe(333);
+      expect(localStorage.getItem('astryx-resizable:structured-zero')).toBe(
+        JSON.stringify({size: 333, isCollapsed: false}),
+      );
+      expect(onSizeChange).not.toHaveBeenCalled();
+      expect(observedTargets()).not.toContain(containerRef.current);
+    });
+
+    it('removes the default observer when resize selects pixels before layout', () => {
+      content = 0;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: percent(40, {min: pixel(333)}),
+          containerRef,
+        }),
+      );
+
+      expect(observedTargets()).toContain(containerRef.current);
+      act(() => result.current.resize(275));
+      act(() => {
+        content = 500;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.size).toBe(275);
+      expect(observedTargets()).not.toContain(containerRef.current);
+    });
+
+    it('lets a persisted pixel choice win without measuring the unused default', () => {
+      localStorage.setItem(
+        'astryx-resizable:structured-persisted',
+        JSON.stringify({size: 321, isCollapsed: false}),
+      );
+      content = 1000;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: percent(40, {min: pixel(333)}),
+          containerRef,
+          autoSaveId: 'structured-persisted',
+        }),
+      );
+
+      expect(result.current.size).toBe(321);
+      expect(observedTargets()).not.toContain(containerRef.current);
+    });
+
+    it('measures the current basis before a newly added bound can clamp', () => {
+      content = 500;
+      const containerRef = makeContainer();
+      const initialProps: {maxSize?: ResizableSize} = {};
+      const {result, rerender} = renderHook(
+        ({maxSize}: {maxSize?: ResizableSize}) =>
+          useResizable({
+            defaultSize: percent(40, {min: pixel(333)}),
+            maxSize,
+            containerRef,
+          }),
+        {initialProps},
+      );
+
+      expect(result.current.size).toBe(333);
+      act(() => result.current.resize(450));
+      content = 1000;
+      rerender({maxSize: percent(50, {max: pixel(800)})});
+
+      expect(result.current.props._maxSizePx).toBe(500);
+      expect(result.current.size).toBe(450);
+      expect(observedTargets()).toContain(containerRef.current);
+    });
+
+    it('matches an atomic percentage default render count and drops both observers', () => {
+      content = 1000;
+      const atomicRef = makeContainer();
+      let atomicPasses = 0;
+      const atomic = renderHook(() => {
+        atomicPasses += 1;
+        return useResizable({defaultSize: '40%', containerRef: atomicRef});
+      });
+      expect(atomic.result.current.size).toBe(400);
+      expect(observedTargets()).not.toContain(atomicRef.current);
+      atomic.unmount();
+
+      const structuredRef = makeContainer();
+      let structuredPasses = 0;
+      const structured = renderHook(() => {
+        structuredPasses += 1;
+        return useResizable({
+          defaultSize: percent(40, {min: pixel(333)}),
+          containerRef: structuredRef,
+        });
+      });
+      expect(structured.result.current.size).toBe(400);
+      expect(structuredPasses).toBe(atomicPasses);
+      expect(observedTargets()).not.toContain(structuredRef.current);
+    });
+
+    it('treats an explicitly undefined opposite bound as absent', () => {
+      content = 500;
+      const containerRef = makeContainer();
+      const floor = percent(40, {min: pixel(333), max: undefined});
+      const ceiling = percent(80, {min: undefined, max: pixel(350)});
+
+      const minimum = renderHook(() =>
+        useResizable({defaultSize: floor, containerRef}),
+      );
+      expect(minimum.result.current.size).toBe(333);
+      minimum.unmount();
+
+      const maximum = renderHook(() =>
+        useResizable({defaultSize: ceiling, containerRef}),
+      );
+      expect(maximum.result.current.size).toBe(350);
+      maximum.unmount();
+    });
+
+    it.each([
+      ['negative', pixel(-1)],
+      ['NaN', pixel(Number.NaN)],
+      ['Infinity', pixel(Infinity)],
+    ])('rejects an invalid direct PixelWidth: %s', (_label, invalid) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const {result} = renderHook(() =>
+        useResizable({defaultSize: invalid as never}),
+      );
+      expect(result.current.size).toBe(250);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Falling back to 250'),
+      );
+      if (_label === 'Infinity') {
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('{"type":"pixel","value":Infinity}'),
+        );
+      }
+      warn.mockRestore();
+    });
+
+    it('rejects the removed CSS-like grammar', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 10,
+          minSize: 'max(40%, 333px)' as never,
+          maxSize: 'min(400px, 10%)' as never,
+        } as never),
+      );
+
+      expect(result.current.size).toBe(50);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('minSize: "max(40%, 333px)"'),
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('maxSize: "min(400px, 10%)"'),
+      );
+      warn.mockRestore();
+    });
+
+    it('applies role-specific fallbacks to invalid structured bounds', () => {
+      const invalid = {
+        type: 'percent',
+        value: 40,
+        min: pixel(100),
+        max: pixel(500),
+      };
+      const minimum = renderHook(() =>
+        useResizable({defaultSize: 10, minSize: invalid as never}),
+      );
+      expect(minimum.result.current.size).toBe(50);
+      minimum.unmount();
+
+      const maximum = renderHook(() =>
+        useResizable({defaultSize: 10_000, maxSize: invalid as never}),
+      );
+      expect(maximum.result.current.size).toBe(10_000);
+      maximum.unmount();
+    });
+
+    it.each([
+      [
+        'wrong discriminator',
+        {type: 'proportional', value: 40, min: pixel(100)},
+      ],
+      ['missing bound', {type: 'percent', value: 40}],
+      [
+        'both bounds',
+        {type: 'percent', value: 40, min: pixel(100), max: pixel(500)},
+      ],
+      ['negative percentage', {type: 'percent', value: -1, min: pixel(100)}],
+      ['high percentage', {type: 'percent', value: 101, min: pixel(100)}],
+      [
+        'non-finite percentage',
+        {type: 'percent', value: Infinity, min: pixel(100)},
+      ],
+      [
+        'negative pixel helper',
+        {type: 'percent', value: 40, min: {type: 'pixel', value: -1}},
+      ],
+      [
+        'non-finite pixel helper',
+        {type: 'percent', value: 40, max: {type: 'pixel', value: Infinity}},
+      ],
+      ['raw numeric bound', {type: 'percent', value: 40, min: 100}],
+    ])('rejects an invalid structured value: %s', (_label, invalid) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const {result} = renderHook(() =>
+        useResizable({defaultSize: invalid as never}),
+      );
+      expect(result.current.size).toBe(250);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Falling back to 250'),
+      );
+      if (_label === 'non-finite pixel helper') {
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('"max":{"type":"pixel","value":Infinity}'),
+        );
+      }
+      warn.mockRestore();
+    });
+  });
+
   describe('FR5 — state, ARIA and paint describe one geometry', () => {
     it('publishes the clamped size and the resolved bounds', () => {
       const containerRef = makeContainer();
@@ -723,6 +1169,28 @@ describe('useResizable percentage configuration (AST-010)', () => {
       expect(result.current.size).toBe(180);
     });
 
+    it('keeps explicit maxSize: Infinity valid without warning', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const {result} = renderHook(() =>
+        useResizable({defaultSize: 900, maxSize: Infinity}),
+      );
+      expect(result.current.size).toBe(900);
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
+    it('names a non-finite invalid input in its warning', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const {result} = renderHook(() =>
+        useResizable({defaultSize: Number.NaN}),
+      );
+      expect(result.current.size).toBe(250);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('defaultSize: NaN is not a size'),
+      );
+      warn.mockRestore();
+    });
+
     it('keeps explicit maxSizePx: Infinity valid', () => {
       // A shipped template uses this spelling.
       const {result} = renderHook(() =>
@@ -772,6 +1240,21 @@ describe('useResizable percentage configuration (AST-010)', () => {
       warn.mockRestore();
     });
 
+    it('preserves exact atomic strings from untyped legacy aliases', () => {
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 1000,
+          containerRef,
+          ...({minSizePx: '180px', maxSizePx: '50%'} as object),
+        } as never),
+      );
+
+      expect(result.current.props._minSizePx).toBe(180);
+      expect(result.current.props._maxSizePx).toBe(200);
+      expect(result.current.size).toBe(200);
+    });
+
     it('leaves an old-only caller exactly as it was', () => {
       const {result} = renderHook(() =>
         useResizable({defaultSize: 260, minSizePx: 180, maxSizePx: 480}),
@@ -796,7 +1279,7 @@ describe('useResizable percentage configuration (AST-010)', () => {
   });
 
   describe('FR11 — multi-region shares one container and axis', () => {
-    it('gives every region the same basis without coupling their sizes', () => {
+    it('keeps atomic percentage regions independent', () => {
       const containerRef = makeContainer();
       const {result} = renderHook(() =>
         useResizable({
@@ -804,6 +1287,24 @@ describe('useResizable percentage configuration (AST-010)', () => {
           regions: {
             left: {defaultSize: '25%'},
             right: {defaultSize: '50%'},
+          },
+        }),
+      );
+      expect(result.current.left.size).toBe(100);
+      expect(result.current.right.size).toBe(200);
+      act(() => result.current.left.resize(160));
+      expect(result.current.left.size).toBe(160);
+      expect(result.current.right.size).toBe(200);
+    });
+
+    it('gives every structured region the same basis without coupling sizes', () => {
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          containerRef,
+          regions: {
+            left: {defaultSize: percent(25, {min: pixel(80)})},
+            right: {defaultSize: percent(50, {max: pixel(300)})},
           },
         }),
       );
@@ -984,6 +1485,44 @@ describe('useResizable percentage configuration (AST-010)', () => {
       expect(result.current.props._maxSizePx).toBe(100);
       expect(result.current.size).toBe(100);
     });
+  });
+});
+
+describe('Resizable size source compatibility (AST-010 API3/API4)', () => {
+  it('keeps the released broad default type and adds structured values', () => {
+    const computed: string = 'runtime-validated-string';
+    const configs = [
+      {defaultSize: computed},
+      {defaultSize: 333},
+      {defaultSize: '333px'},
+      {defaultSize: '40%'},
+      {defaultSize: pixel(333)},
+      {defaultSize: percent(40, {min: pixel(333)})},
+      {defaultSize: 0, minSize: percent(40, {min: pixel(333)})},
+      {defaultSize: 500, maxSize: percent(10, {max: pixel(400)})},
+      {defaultSize: 260, minSizePx: 180, maxSizePx: 480},
+    ] satisfies UseResizableSingleConfig[];
+    expect(configs).toHaveLength(9);
+  });
+
+  it('rejects unsupported bound strings and alias conflicts', () => {
+    // @ts-expect-error bound strings are exact px/% only
+    const rem: UseResizableSingleConfig = {minSize: '10rem'};
+    const cssMath: UseResizableSingleConfig = {
+      // @ts-expect-error CSS functions are not part of ResizableSize
+      minSize: 'max(40%, 333px)',
+    };
+    // @ts-expect-error unified minimum and legacy alias are mutually exclusive
+    const duplicateMin: UseResizableSingleConfig = {
+      minSize: '40%',
+      minSizePx: 100,
+    };
+    // @ts-expect-error unified maximum and legacy alias are mutually exclusive
+    const duplicateMax: UseResizableSingleConfig = {
+      maxSize: percent(10, {max: pixel(400)}),
+      maxSizePx: 500,
+    };
+    expect([rem, cssMath, duplicateMin, duplicateMax]).toHaveLength(4);
   });
 });
 

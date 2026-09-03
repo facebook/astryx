@@ -50,6 +50,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Use percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) when a percentage needs exactly one pixel floor or ceiling. Reuse Table’s pixel() helper; numbers, exact Npx, and pixel(value) remain pixels. State, persistence, callbacks, paint, and ARIA remain resolved pixels.',
+      },
+      {
+        guidance: true,
+        description:
           'Use useResizable() with existing Astryx layout components. ' +
           'Pass the returned props to the resizable prop on LayoutPanel or SideNav.',
       },
@@ -80,24 +85,77 @@ export const docs = {
       description:
         'Hook that manages resize state for one or more panel regions. ' +
         'Returns size, isCollapsed, collapse/expand/resize methods, and props to pass to handles.',
+      examples: [
+        {
+          label: 'Structured fixed pixels',
+          code: `const region = useResizable({
+  defaultSize: pixel(333),
+  containerRef,
+});`,
+        },
+        {
+          label: 'One-time structured default',
+          code: `import {useRef} from 'react';
+import {useResizable} from '@astryxdesign/core/Resizable';
+import {percent, pixel} from '@astryxdesign/core/Resizable/utils';
+
+const containerRef = useRef<HTMLDivElement>(null);
+
+const region = useResizable({
+  defaultSize: percent(40, {min: pixel(333)}),
+  containerRef,
+});`,
+        },
+        {
+          label: 'Live percentage floor',
+          code: `const region = useResizable({
+  defaultSize: 0,
+  minSize: percent(40, {min: pixel(333)}),
+  containerRef,
+});`,
+        },
+        {
+          label: 'Live percentage ceiling',
+          code: `const region = useResizable({
+  defaultSize: 500,
+  maxSize: percent(10, {max: pixel(400)}),
+  containerRef,
+});`,
+        },
+      ],
       props: [
         {
           name: 'defaultSize',
-          type: 'number | string',
+          type: 'SizeValue | ResizableSize',
           description:
-            'Initial size in pixels or percentage string (e.g. "20%").',
+            'Initial size. Numbers, exact Npx, and pixel(value) are pixels; exact N% has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one and resolves once.',
           default: '250',
+        },
+        {
+          name: 'minSize',
+          type: 'ResizableSize',
+          description:
+            'Live minimum. Numbers, exact Npx, and pixel(value) remain pixels; exact N% has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one.',
+          default: '50',
+        },
+        {
+          name: 'maxSize',
+          type: 'ResizableSize',
+          description:
+            'Live maximum. Numbers, exact Npx, and pixel(value) remain pixels; exact N% has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one.',
+          default: 'Infinity',
         },
         {
           name: 'minSizePx',
           type: 'number',
-          description: 'Minimum size in pixels.',
+          description: 'Deprecated pixel-only alias for minSize.',
           default: '50',
         },
         {
           name: 'maxSizePx',
           type: 'number',
-          description: 'Maximum size in pixels.',
+          description:
+            'Deprecated pixel-only alias for maxSize. Explicit Infinity remains valid.',
           default: 'Infinity',
         },
         {
@@ -242,9 +300,12 @@ export const docsDense = {
       description:
         'Hook managing resize state for one or more panel regions. Returns size, isCollapsed, collapse/expand/resize methods, + props to pass to handles.',
       propDescriptions: {
-        defaultSize: 'initial size: px number, "Npx", or "N%" of the basis',
-        minSize: 'minimum size: px number, "Npx", or "N%" of the basis',
-        maxSize: 'maximum size: px number, "Npx", or "N%" of the basis',
+        defaultSize:
+          'initial pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}); resolves once',
+        minSize:
+          'live minimum: pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)})',
+        maxSize:
+          'live maximum: pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)})',
         collapsible: 'region can collapse to size 0?',
         collapsedSize: 'px threshold triggering collapse during drag',
         snaps: 'px values to snap to during resize',

@@ -18,23 +18,23 @@ export const docs = {
   params: [
     {
       name: 'defaultSize',
-      type: 'number | string',
+      type: 'SizeValue | ResizableSize',
       description:
-        'Initial size: a number of pixels, an exact "Npx" string, or an exact "N%" string from 0% to 100%. A percentage resolves ONCE into pixels — against the container when containerRef is supplied, against the viewport otherwise — and does not track its basis afterwards.',
+        'Initial size. Numbers, exact "Npx", and pixel(value) are pixels. Exact "N%" has no additional pixel bound. percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds one pixel floor or ceiling. A percentage resolves ONCE into pixels — against containerRef when supplied, against the viewport otherwise — and does not track its basis afterwards. The released broad number | string type remains compatible; runtime validation is authoritative.',
       default: '250',
     },
     {
       name: 'minSize',
-      type: 'number | string',
+      type: 'ResizableSize',
       description:
-        'Minimum size, in the same vocabulary as defaultSize. A percentage minimum re-resolves when its basis changes and clamps the current pixel size.',
+        'Minimum size. Numbers, exact "Npx", and pixel(value) remain pixels; exact "N%" has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one. Percentage minimums re-resolve when their basis changes and clamp the current pixel selection.',
       default: '50',
     },
     {
       name: 'maxSize',
-      type: 'number | string',
+      type: 'ResizableSize',
       description:
-        'Maximum size, in the same vocabulary as defaultSize. A percentage maximum re-resolves when its basis changes and clamps the current pixel size.',
+        'Maximum size. Numbers, exact "Npx", and pixel(value) remain pixels; exact "N%" has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one. Percentage maximums re-resolve when their basis changes and clamp the current pixel selection.',
       default: 'Infinity',
     },
     {
@@ -140,6 +140,21 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Use percent(40, {min: pixel(333)}) for a 40% size with a 333px floor, or percent(10, {max: pixel(400)}) for a 10% size with a 400px ceiling. The options argument is required and carries a floor XOR a ceiling.',
+      },
+      {
+        guidance: true,
+        description:
+          'A structured default is an initial choice only; a structured minSize or maxSize remains live. State, persistence, callbacks, resize(), paint, and ARIA all use resolved pixel numbers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Import percent and Table’s same pixel binding from @astryxdesign/core/Resizable/utils when constructing configuration in a Server Component; the root package exposes one pixel symbol and one percent symbol without collision.',
+      },
+      {
+        guidance: true,
+        description:
           'Use with Layout or AppShell sidebar for resizable navigation panels.',
       },
       {
@@ -165,9 +180,12 @@ export const docsDense = {
   description:
     'Adds drag-to-resize behavior to layout regions. Supports single-/multi-region configs w/ snap points, collapsible panels, localStorage persistence, cascade resize ordering.',
   paramDescriptions: {
-    defaultSize: 'initial size: px number, "Npx", or "N%" of the basis.',
-    minSize: 'min size: px number, "Npx", or "N%" of the basis.',
-    maxSize: 'max size: px number, "Npx", or "N%" of the basis.',
+    defaultSize:
+      'initial pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}); resolves once.',
+    minSize:
+      'live minimum: pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}).',
+    maxSize:
+      'live maximum: pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}).',
     containerRef: 'the element a percentage is a share of.',
     direction: 'which axis to resize along.',
     collapsible:
