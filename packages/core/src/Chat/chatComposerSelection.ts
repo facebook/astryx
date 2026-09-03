@@ -63,9 +63,9 @@ export function ensureCaretInside(editable: HTMLElement): Selection | null {
  *
  * Used by the composer to decide when ArrowUp should recall message
  * history versus move the caret up a line: history is only recalled
- * when the caret is at the very start of the draft. Range boundary
- * comparison treats offset 0 of the leading text node as equivalent to
- * the start of the editable, without cloning the draft's contents.
+ * when the caret is at the very start of the draft. This handles both
+ * the editable root and offset 0 of its leading text node without
+ * cloning the draft's contents.
  *
  * Returns `false` when there is no selection, the range is not inside
  * `editable`, or the boundary APIs are unavailable — callers treat
@@ -77,18 +77,12 @@ export function isSelectionAtStart(editable: HTMLElement): boolean {
     return false;
   }
   const range = selection.getRangeAt(0);
-  if (!editable.contains(range.startContainer)) {
-    return false;
-  }
-  const editableContents = document.createRange();
-  editableContents.selectNodeContents(editable);
-  try {
-    return (
-      range.compareBoundaryPoints(Range.START_TO_START, editableContents) === 0
-    );
-  } catch {
-    return false;
-  }
+  return isBoundaryAtEdge(
+    editable,
+    range.startContainer,
+    range.startOffset,
+    'start',
+  );
 }
 
 /**
@@ -106,18 +100,75 @@ export function isSelectionAtEnd(editable: HTMLElement): boolean {
     return false;
   }
   const range = selection.getRangeAt(0);
-  if (!editable.contains(range.endContainer)) {
+  return isBoundaryAtEdge(
+    editable,
+    range.endContainer,
+    range.endOffset,
+    'end',
+  );
+}
+
+/**
+ * Check whether a Range boundary is at an edge of `editable` without
+ * materializing the content before or after it. Chromium represents a caret
+ * at the start of non-empty contenteditables as the first text node at offset
+ * zero (and likewise uses the last text node's length at the end). Those are
+ * distinct DOM boundary points from the editable's child offsets, so
+ * `compareBoundaryPoints` cannot be used here.
+ */
+function isBoundaryAtEdge(
+  editable: HTMLElement,
+  container: Node,
+  offset: number,
+  edge: 'start' | 'end',
+): boolean {
+  if (!editable.contains(container) || !isAtNodeEdge(container, offset, edge)) {
     return false;
   }
-  const editableContents = document.createRange();
-  editableContents.selectNodeContents(editable);
-  try {
-    return (
-      range.compareBoundaryPoints(Range.END_TO_END, editableContents) === 0
-    );
-  } catch {
-    return false;
+
+  for (let node: Node | null = container; node && node !== editable; ) {
+    if (hasContentSibling(node, edge)) {
+      return false;
+    }
+    node = node.parentNode;
   }
+
+  return true;
+}
+
+function isAtNodeEdge(
+  node: Node,
+  offset: number,
+  edge: 'start' | 'end',
+): boolean {
+  if (
+    node.nodeType === Node.TEXT_NODE ||
+    node.nodeType === Node.CDATA_SECTION_NODE
+  ) {
+    return edge === 'start'
+      ? offset === 0
+      : offset === (node.nodeValue?.length ?? 0);
+  }
+
+  return edge === 'start' ? offset === 0 : offset === node.childNodes.length;
+}
+
+function hasContentSibling(node: Node, edge: 'start' | 'end'): boolean {
+  for (
+    let sibling = edge === 'start' ? node.previousSibling : node.nextSibling;
+    sibling;
+    sibling = edge === 'start' ? sibling.previousSibling : sibling.nextSibling
+  ) {
+    // Elements (including <br> and tokens) represent a content boundary even
+    // when they have no text. Empty text nodes and comments do not.
+    if (
+      sibling.nodeType === Node.ELEMENT_NODE ||
+      (sibling.nodeType === Node.TEXT_NODE && sibling.nodeValue !== '')
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**

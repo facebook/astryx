@@ -385,7 +385,7 @@ describe('ChatComposerInput', () => {
       expect(textbox.textContent).toBe('second');
     });
 
-    it('does not clone draft contents while checking history boundaries', () => {
+    it('recalls from a first-text-node caret without cloning draft contents', () => {
       render(<ChatComposerInput onSubmit={() => {}} />);
       const textbox = screen.getByRole('textbox');
       submit(textbox, 'previous message');
@@ -393,7 +393,8 @@ describe('ChatComposerInput', () => {
       textbox.textContent = 'pending draft';
       fireEvent.input(textbox);
       textbox.focus();
-      placeCaret(textbox, 0);
+      // Chromium places this caret in the first text node, not on the root.
+      placeCaret(textbox.firstChild!, 0);
       const cloneContents = vi.spyOn(Range.prototype, 'cloneContents');
 
       const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
@@ -404,7 +405,7 @@ describe('ChatComposerInput', () => {
       cloneContents.mockRestore();
     });
 
-    it('does not clone draft contents while checking an ArrowDown boundary', () => {
+    it('steps forward from a final-text-node caret without cloning draft contents', () => {
       render(<ChatComposerInput onSubmit={() => {}} />);
       const textbox = screen.getByRole('textbox');
       submit(textbox, 'previous message');
@@ -413,14 +414,14 @@ describe('ChatComposerInput', () => {
       textbox.textContent = draft;
       fireEvent.input(textbox);
       textbox.focus();
-      placeCaret(textbox, 0);
+      placeCaret(textbox.firstChild!, 0);
       fireEvent.keyDown(textbox, {key: 'ArrowUp'});
 
       // The prior ArrowUp selected a recalled message. Put the pending
-      // draft back in place, then navigate forward from the editable's end.
+      // draft back in place, then navigate forward from the final text node.
       textbox.textContent = draft;
       fireEvent.input(textbox);
-      placeCaret(textbox, textbox.childNodes.length);
+      placeCaret(textbox.firstChild!, draft.length);
       const cloneContents = vi.spyOn(Range.prototype, 'cloneContents');
 
       const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowDown'});
