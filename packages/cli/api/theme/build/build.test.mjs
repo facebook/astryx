@@ -212,7 +212,7 @@ describe('themeBuild() — receipt', () => {
 
   it('emits approved palettes separately from the built runtime theme', async () => {
     const themeFile = path.join(tmpDir, 'palette-theme.mjs');
-    const tones = Object.fromEntries(
+    const stops = Object.fromEntries(
       Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
     );
     fs.writeFileSync(
@@ -220,7 +220,7 @@ describe('themeBuild() — receipt', () => {
       `export default ${JSON.stringify({
         name: 'palette-theme',
         tokens: {'--color-accent': '#123456'},
-        palettes: {blue: {semantic: 'info', light: tones}},
+        palettes: {blue: {semantic: 'info', light: stops}},
       })};\n`,
     );
 
@@ -279,7 +279,7 @@ describe('themeBuild() — receipt', () => {
       tmpDir,
       'palette-lifecycle-without.mjs',
     );
-    const tones = Object.fromEntries(
+    const stops = Object.fromEntries(
       Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
     );
     fs.writeFileSync(
@@ -287,7 +287,7 @@ describe('themeBuild() — receipt', () => {
       `export default ${JSON.stringify({
         name: 'palette-lifecycle',
         tokens: {'--color-accent': '#123456'},
-        palettes: {blue: {light: tones}},
+        palettes: {blue: {light: stops}},
       })};\n`,
     );
     await themeBuild('palette-lifecycle-with.mjs', {}, {cwd: tmpDir});
@@ -325,7 +325,7 @@ describe('themeBuild() — receipt', () => {
   });
 
   it('keeps palette metadata out of the default runtime bundle', async () => {
-    const tones = Object.fromEntries(
+    const stops = Object.fromEntries(
       Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
     );
     fs.writeFileSync(
@@ -333,7 +333,7 @@ describe('themeBuild() — receipt', () => {
       `export default ${JSON.stringify({
         name: 'same-runtime',
         tokens: {'--color-accent': '#123456'},
-        palettes: {blue: {semantic: 'info', light: tones}},
+        palettes: {blue: {semantic: 'info', light: stops}},
       })};\n`,
     );
     fs.writeFileSync(
@@ -412,7 +412,7 @@ describe('themeBuild() — receipt', () => {
           'Theme palettes must contain at least one named palette family.',
       },
       {
-        file: 'invalid-palette-tone.mjs',
+        file: 'invalid-palette-stop.mjs',
         family: {
           light: {
             ...Object.fromEntries(

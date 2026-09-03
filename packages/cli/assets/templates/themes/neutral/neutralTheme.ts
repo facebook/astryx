@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** Neutral theme with a grayscale foundation and approved OKLCH color ramps. */
-
 import {
   defineTheme,
   defineSyntaxTheme,
@@ -10,7 +8,7 @@ import {
 } from '@astryxdesign/core/theme';
 import {neutralIconRegistry} from './icons';
 
-/** Approved tonal palette. Prefer semantic tokens before selecting a stop. */
+/** Neutral's approved tonal palette metadata. */
 export const neutralPalettes = defineTonalPalettes({
   neutral: {
     light: {
@@ -545,7 +543,6 @@ export const neutralPalettes = defineTonalPalettes({
   },
 });
 
-/** Syntax colors are selected from the same palette stops as categorical icons. */
 const neutralSyntax = defineSyntaxTheme({
   name: 'astryx-neutral',
   tokens: {
@@ -627,13 +624,8 @@ export const neutralTheme = defineTheme({
 
   syntax: neutralSyntax,
 
-  // Core and categorical tokens retain explicit colors selected from the
-  // approved palette. Theme-local component status fills remain independently
-  // approved semantic colors.
   tokens: {
-    // =========================================================================
-    // Core — explicit colors selected from neutralPalettes.neutral.
-    // =========================================================================
+    // Core neutrals
 
     // Dark cards and popovers match the body and rely on elevation; interactive
     // surfaces use the next lighter neutral stop.
@@ -663,7 +655,6 @@ export const neutralTheme = defineTheme({
     '--color-text-accent': ['#262626', '#e7e7e7'],
     '--color-on-dark': '#ffffff',
     '--color-on-light': '#1b1b1b',
-    // Contrast: neutral accent is near-black (L) / near-white (D)
     '--color-on-accent': ['#ffffff', '#1b1b1b'],
     '--color-on-success': ['#ffffff', '#1b1b1b'],
     '--color-on-error': ['#ffffff', '#1b1b1b'],

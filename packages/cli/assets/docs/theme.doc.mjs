@@ -231,7 +231,7 @@ const myTheme = defineTheme({
     },
     {
       title: 'Approved Tonal Palettes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -262,9 +262,9 @@ export const brandTheme = defineTheme({
   name: 'brand',
   palettes: brandPalettes,
   tokens: {
-    // Selected from blue light stop 40 / stop 60 and retained explicitly.
+    // blue.light[40] / blue.light[60]
     '--color-accent': ['#0073c3', '#60adfa'],
-    // Selected from blue light stop 100 / stop 10 and retained explicitly.
+    // blue.light[100] / blue.light[10]
     '--color-on-accent': ['#ffffff', '#001f3d'],
   },
 });`,
@@ -277,7 +277,7 @@ export const brandTheme = defineTheme({
     },
     {
       title: 'Extending a Theme',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',

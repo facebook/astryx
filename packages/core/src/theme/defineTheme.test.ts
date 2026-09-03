@@ -243,6 +243,7 @@ describe('defineTheme', () => {
   it('works with no tokens', () => {
     const theme = defineTheme({name: 'bare'});
     expect(Object.keys(theme.tokens)).toHaveLength(0);
+    expect(theme).not.toHaveProperty('palettes');
   });
 
   it('preserves approved palette metadata without emitting palette tokens', () => {

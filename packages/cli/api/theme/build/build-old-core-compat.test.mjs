@@ -34,7 +34,7 @@ describe('themeBuild() — older core compatibility', () => {
   });
 
   it('requires palette support only when the resolved theme has palettes', async () => {
-    const tones = Object.fromEntries(
+    const stops = Object.fromEntries(
       Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
     );
     fs.writeFileSync(
@@ -42,7 +42,7 @@ describe('themeBuild() — older core compatibility', () => {
       `export default ${JSON.stringify({
         name: 'palette-helper-theme',
         tokens: {'--color-accent': '#123456'},
-        palettes: {blue: {light: tones}},
+        palettes: {blue: {light: stops}},
       })};\n`,
     );
 

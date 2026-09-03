@@ -13,10 +13,9 @@
  * - Separate .palette.js/.palette.json/.palette.d.ts artifacts when the source
  *   theme carries approved tonal palettes
  *
- * It performs the writes and returns a `theme.build` receipt — its `warnings`
- * carry override problems and any fonts the theme names but does not load
- * (font-warning.mjs) — or `null` when the theme produced no CSS (nothing to
- * build). Errors throw AstryxError (with
+ * It performs the writes and returns a `theme.build` receipt. Its `warnings`
+ * carry override problems, and its `notices` carry font-loading guidance. It
+ * returns `null` when the theme produces no CSS. Errors throw AstryxError (with
  * a stable code). Human progress is emitted through the shared `logger`
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
@@ -49,7 +48,10 @@ import {
   collectThemingTargets,
   targetsByKey,
 } from '../../../foundation/discovery/theming-targets.mjs';
-import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
+import {
+  collectUnloadedFonts,
+  formatFontLoadingHelp,
+} from './font-warning.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -343,6 +345,7 @@ function readComponentDeclarations(pascalName) {
   return contents;
 }
 
+
 /** @type {Map<string, Array<{moduleName: string, interfacePrefix: string}>>} */
 const _augmentationTargetCache = new Map();
 
@@ -401,8 +404,7 @@ async function resolveAugmentationTargetCandidates(componentName) {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '__tests__')
-          continue;
+        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
         await scan(full);
         continue;
       }
@@ -539,13 +541,12 @@ async function generateVariantDeclarationsAsync(themeDef) {
       if (values.size === 0) continue;
 
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const target = (
-        await resolveAugmentationTargetCandidates(component)
-      ).find(candidate =>
-        componentHasAugmentableInterface(
-          candidate.moduleName,
-          `${candidate.interfacePrefix}${propPascal}Map`,
-        ),
+      const target = (await resolveAugmentationTargetCandidates(component)).find(
+        candidate =>
+          componentHasAugmentableInterface(
+            candidate.moduleName,
+            `${candidate.interfacePrefix}${propPascal}Map`,
+          ),
       );
 
       // Only augment interfaces that actually exist as an extension point in
@@ -913,6 +914,7 @@ function generatePaletteModule(themeDef) {
 }
 
 /**
+ * Generate TypeScript declarations for the palette artifact.
  * @param {any} themeDef
  * @returns {string}
  */

@@ -20,7 +20,7 @@ export const doc = {
     {
       value: 'init.run',
       description:
-        'The install receipt: the `mode` (`default` | `features`), the features run, agent-doc files written, any soft `docsError`, whether theme guidance was emitted, the template outcome (`workflow` | `created` | `skipped`) plus its path, and whether the next-steps were emitted.',
+        "The install receipt: the `mode` (`default` | `features`), the features run, agent-doc files written, any soft `docsError`, whether theme guidance was emitted, the template outcome (`workflow` | `created` | `skipped`) plus its path, and whether the next-steps were emitted.",
     },
     {
       value: 'init.remove',
@@ -182,7 +182,7 @@ export const doc = {
     {
       value: 'theme.build',
       description:
-        'A theme build receipt: name, token- and component-override counts, output size, the written outputs {css, js, dts, optional variantsDts, and opt-in palette artifacts when applicable}, and any validation warnings.',
+        'A theme build receipt: name, token- and component-override counts, output size, the written outputs {css, js, dts, optional variantsDts, and opt-in palette artifacts when applicable}, plus validation warnings and notices.',
     },
     {
       value: 'theme.build.check',
@@ -192,7 +192,7 @@ export const doc = {
     {
       value: 'theme.build.batch',
       description:
-        "Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme's theme.build (or theme.build.check) envelope, or null when it produced no CSS.",
+        'Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme\'s theme.build (or theme.build.check) envelope, or null when it produced no CSS.',
     },
     {
       value: 'theme.list',

@@ -731,7 +731,7 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
           __localTokenLineage: localTokenContract.lineage,
         }
       : {}),
-    palettes,
+    ...(palettes ? {palettes} : {}),
     components,
     icons,
     indicators,

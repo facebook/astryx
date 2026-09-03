@@ -75,7 +75,7 @@ export const doc = {
     {
       type: 'theme.build',
       description:
-        'Build receipt: theme name, token- and component-override counts, output size in KB, the written outputs {css, js, dts, optional variantsDts, and optional paletteJs/paletteJson/paletteDts}, and any validation warnings. Resolves to null instead when the theme produced no CSS (nothing to build).',
+        'Build receipt: theme name, token- and component-override counts, output size in KB, the written outputs {css, js, dts, optional variantsDts, and optional paletteJs/paletteJson/paletteDts}, plus validation warnings and notices. Resolves to null instead when the theme produced no CSS (nothing to build).',
     },
     {
       type: 'theme.build.check',
@@ -89,7 +89,10 @@ export const doc = {
       code: 'ERR_THEME_LOAD',
       when: 'the file cannot be loaded or parsed into a defineTheme() result',
     },
-    {code: 'ERR_THEME_INVALID', when: 'the resolved theme has no name'},
+    {
+      code: 'ERR_THEME_INVALID',
+      when: 'the resolved theme has no name, its palette metadata is invalid, or its palettes require a newer Core version',
+    },
     {
       code: 'ERR_PATH_TRAVERSAL',
       when: 'the theme name contains a path separator or traversal marker',

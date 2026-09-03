@@ -190,7 +190,7 @@ color that does not match a palette stop. Those approaches would turn guidance
 into enforcement and force legitimate overlays, brand colors, and
 contrast-specific values into misleading palette entries.
 
-### DEC-2 — Emit one palette artifact set in JavaScript and JSON
+### DEC-2 — Emit one palette artifact set in JavaScript, JSON, and declarations
 
 **Reference:** `spec:AST-018/DEC-2`
 
