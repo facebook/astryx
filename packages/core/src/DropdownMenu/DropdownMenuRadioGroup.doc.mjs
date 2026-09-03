@@ -9,6 +9,21 @@ export const docs = {
   isHiddenFromOverview: true,
   description:
     'A single-select group of radio menu items (role="group" of menuitemradio). Owns the selected value and lays its items out with the menu\'s inter-item gap.',
+  playground: {
+    // Standalone the group renders an empty container with no items. Seed a
+    // required label, an initial selected value, and a few radio-item children
+    // so the properties-tab preview shows a working single-select group on
+    // first load and the value control visibly moves the selection.
+    defaults: {
+      label: 'Sort by',
+      value: 'name',
+      children: [
+        {__element: 'DropdownMenuRadioItem', props: {value: 'name', label: 'Name'}},
+        {__element: 'DropdownMenuRadioItem', props: {value: 'date', label: 'Date modified'}},
+        {__element: 'DropdownMenuRadioItem', props: {value: 'size', label: 'Size'}},
+      ],
+    },
+  },
   props: [
     {
       name: 'value',

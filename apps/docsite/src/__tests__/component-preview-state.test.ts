@@ -165,6 +165,48 @@ describe('component detail preview state', () => {
     expect(getMissingRequiredProps(knobs, state)).toEqual([]);
   });
 
+  it('seeds DropdownMenuRadioGroup label, value, and radio-item children from playground defaults so the preview is not empty (#5888)', () => {
+    const knobs = pickPrimaryProps('DropdownMenuRadioGroup', [
+      prop({name: 'label', type: 'string', required: true}),
+      prop({name: 'value', type: 'string | undefined'}),
+      prop({name: 'children', type: 'ReactNode'}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {
+        label: 'Sort by',
+        value: 'name',
+        children: [
+          {__element: 'DropdownMenuRadioItem', props: {value: 'name', label: 'Name'}},
+          {__element: 'DropdownMenuRadioItem', props: {value: 'date', label: 'Date modified'}},
+          {__element: 'DropdownMenuRadioItem', props: {value: 'size', label: 'Size'}},
+        ],
+      },
+    });
+
+    expect(state.label).toBe('Sort by');
+    expect(state.value).toBe('name');
+    expect(Array.isArray(state.children)).toBe(true);
+    expect((state.children as unknown[]).length).toBe(3);
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
+  it('seeds LayoutFooter children from playground defaults so the preview is not empty (#5895)', () => {
+    const knobs = pickPrimaryProps('LayoutFooter', [
+      prop({name: 'children', type: 'ReactNode'}),
+      prop({name: 'hasDivider', type: 'boolean'}),
+      prop({name: 'height', type: 'SizeValue'}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {children: 'Showing 1–10 of 24', hasDivider: true},
+    });
+
+    expect(state.children).toBe('Showing 1–10 of 24');
+    expect(state.hasDivider).toBe(true);
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
   it("satisfies Icon's required, non-generatable icon prop via playground defaults", () => {
     const knobs = pickPrimaryProps('Icon', [
       prop({
