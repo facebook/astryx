@@ -31,6 +31,21 @@ Palette stops are an authoring fallback for defining those semantic tokens,
 theme-owned component mappings, visualizations, and other cases where the
 portable vocabulary does not express the required color.
 
+“Approved” means that a palette is intentionally maintained and reviewed by its
+owning theme. `defineTonalPalettes()` validates the data contract; it does not
+grant design approval or certify accessibility.
+
+## Terminology
+
+This record uses the vocabulary already established by the Neutral remap:
+
+- A theme has one **palette map**.
+- The map contains one or more named **families**, such as `neutral` or `red`.
+- A family contains a required light **ramp** and an optional dark ramp.
+- A ramp contains the complete set of numbered **stops**.
+- A palette-bearing build emits one **palette artifact set** for the theme in
+  JavaScript, JSON, and TypeScript declaration formats.
+
 ## Non-goals
 
 - Enforcing that every theme color comes from a declared palette.
@@ -46,9 +61,9 @@ portable vocabulary does not express the required color.
 ## Requirements
 
 - **FR1 — Palette metadata is optional and additive.** The `defineTheme()`
-  configuration MAY accept an optional named palette map. A theme that omits it retains its
-  existing runtime, build, inheritance, and package behavior. Palette metadata
-  MUST NOT alter CSS merely because it is declared.
+  configuration MAY accept an optional named palette map. A theme that omits it
+  retains its existing runtime, build, inheritance, and package behavior.
+  Palette metadata MUST NOT alter CSS merely because it is declared.
 - **FR2 — Declared ramps are complete and validated.** Every declared family
   MUST provide a complete light ramp for the approved numbered stop set and MAY
   provide a separately tuned dark ramp. There is no required family set: a theme
@@ -79,25 +94,26 @@ portable vocabulary does not express the required color.
   of one family MUST NOT be combined into an unreviewed ramp. Family names are
   local to their owning theme; independently imported `neutralPalettes.red` and
   `stonePalettes.red` do not share a global namespace. Tooling MUST NOT combine
-  unrelated sidecars into an unqualified global family map.
+  unrelated palette artifact sets into an unqualified global family map.
 - **FR7 — Runtime and artifact boundaries are explicit.** Source themes retain
   resolved palette metadata for authoring and source-theme extension. The default
   built runtime module MUST omit it. A palette-bearing static build MUST emit
-  opt-in JavaScript, JSON, and declaration sidecars containing the same resolved
-  metadata. Those three files are representations of one logical, atomic palette
-  sidecar per theme, not independent sidecars for individual color families.
+  exactly one logical palette artifact set containing the same resolved metadata
+  in JavaScript, JSON, and TypeScript declaration formats. The formats are not
+  independent palettes, and color families MUST NOT be emitted as separate
+  artifact sets.
 - **FR8 — Optional artifacts have a complete lifecycle.** Build and `--check`
-  behavior MUST create, compare, report, and remove palette sidecars as the
-  source adds, changes, or removes palette metadata. Palette-free themes MUST
-  remain buildable when the installed Core version predates this optional
-  contract; a palette-bearing theme MUST fail clearly when that Core support is
-  unavailable.
+  behavior MUST create, compare, report, and remove every file in the palette
+  artifact set as the source adds, changes, or removes palette metadata.
+  Palette-free themes MUST remain buildable when the installed Core version
+  predates this optional contract; a palette-bearing theme MUST fail clearly
+  when that Core support is unavailable.
 - **FR9 — Published palette removal is compatibility work.** Local and
   unpublished builds MAY remove obsolete palette artifacts automatically. Once a
   published package exposes a `/palette` subpath, removing its palette MUST also
   remove the package export through an explicitly reviewed breaking Changeset and
   migration note. A published export MUST NOT remain pointed at a deleted
-  sidecar.
+  palette artifact.
 
 ### Platform support
 
@@ -116,17 +132,19 @@ inventory for complete approved ramps. Theme authors either repeat literal
 colors or maintain palette knowledge outside the theme contract.
 
 This proposal adds optional `palettes` metadata to the normalized source theme,
-validates complete ramps, inherits families, and emits opt-in palette sidecars.
-It does not change the meaning or accepted values of `tokens`, `localTokens`, or
-component overrides. Neutral is the first proposed adopter; its exact ramps,
+validates complete ramps, inherits families, and emits an opt-in palette artifact
+set. It does not change the meaning or accepted values of `tokens`, `localTokens`,
+or component overrides. Neutral is the first proposed adopter; its exact ramps,
 mappings, deviations, contrast receipts, and visual approval remain owned by
 `theme:neutral`.
 
 A focused `check:theme-palettes` repository check is planned as follow-up tooling,
 not as an additional requirement for the initial implementation PR. It should
-fail for package-export/sidecar mismatches, orphan artifacts, and malformed
+fail for package-export/artifact mismatches, orphan artifacts, and malformed
 families; warn about unusually large palette output and direct colors that match
-an existing stop; and preserve intentional deviations allowed by FR4.
+an existing stop; and preserve intentional deviations allowed by FR4. Consumer
+guidance should say to use an approved stop when one satisfies the requirement,
+rather than implying that direct colors are always prohibited.
 
 ## Verification
 
@@ -135,8 +153,8 @@ an existing stop; and preserve intentional deviations allowed by FR4.
 | FR1–FR2  | `packages/core/src/theme/palettes.test.ts` and `defineTheme.test.ts`    | omitted metadata; complete and incomplete ramps; invalid colors, order, and fields                       | An omitted palette changes a theme, or malformed metadata is accepted.                                                    |
 | FR3–FR5  | Neutral source, theme spec, token tests, and rendered contrast evidence | semantic mapping; direct color; alpha overlay; light/dark component pairing                              | Palette declaration becomes mandatory, a justified direct value is rejected, or a stop is treated as accessibility proof. |
 | FR6      | Core theme-extension tests                                              | inherited families; exact family replacement; omitted dark ramp                                          | A child loses unrelated families or accidentally merges partial ramps.                                                    |
-| FR7–FR8  | CLI palette build and older-Core compatibility tests                    | source and built bases; JS/JSON/declaration outputs; add/change/remove; `--check`; palette-free old Core | Runtime output gains unused metadata, sidecars drift or remain stale, or an unrelated older-Core build fails.             |
-| FR9      | Package-export and Changeset checks                                     | unpublished cleanup; published `/palette` retention and removal                                          | An exported sidecar disappears without compatibility treatment, or an export points to a deleted file.                    |
+| FR7–FR8  | CLI palette build and older-Core compatibility tests                    | source and built bases; JS/JSON/declaration outputs; add/change/remove; `--check`; palette-free old Core | Runtime output gains unused metadata, palette artifacts drift or remain stale, or an unrelated older-Core build fails.    |
+| FR9      | Package-export and Changeset checks                                     | unpublished cleanup; published `/palette` retention and removal                                          | An exported palette artifact disappears without compatibility treatment, or an export points to a deleted file.           |
 
 ## Decision log
 
@@ -149,9 +167,9 @@ theme-owned deviations rather than enforcing palette-only authoring.
 - **OQ1 — Do the owners approve optional, non-enforced palette adoption as the
   public contract?** (`human-api`) Promotion requires explicit approval of the
   boundary in FR3–FR5, including intentional deviations.
-- **OQ2 — Are JavaScript, JSON, and declaration sidecars the supported artifact
-  set?** (`human-api`) Promotion requires agreement that these opt-in outputs are
-  useful enough to become maintained package and CLI contracts.
+- **OQ2 — Are JavaScript, JSON, and TypeScript declarations the supported palette
+  artifact set?** (`human-api`) Promotion requires agreement that these opt-in
+  outputs are useful enough to become maintained package and CLI contracts.
 - **OQ3 — Is Neutral's exact palette and remapping evidence complete?**
   (`human-design`) This does not block evaluation of the generic contract, but
   Neutral adoption requires separate exact-head theme approval.
