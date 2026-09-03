@@ -126,8 +126,13 @@ function serve(root) {
   });
 }
 
-const storyUrl = (port, id, rtl) =>
-  `http://127.0.0.1:${port}/iframe.html?id=${id}&viewMode=story${rtl ? '&globals=direction:rtl' : ''}`;
+const storyUrl = (port, id, rtl, args = {}) => {
+  const argQuery = Object.entries(args)
+    .map(([name, value]) => `${name}:${value}`)
+    .join(';');
+  const argsParam = argQuery ? `&args=${encodeURIComponent(argQuery)}` : '';
+  return `http://127.0.0.1:${port}/iframe.html?id=${id}&viewMode=story${rtl ? '&globals=direction:rtl' : ''}${argsParam}`;
+};
 
 async function settle(page) {
   // Wait for the story to render (load event + fonts), but do NOT block on
@@ -711,58 +716,80 @@ async function checkD4(page, port, t, card) {
 }
 
 async function checkD7CoarseHit(page, port, t, card) {
-  const inputSel = t.selectors?.inputSelector || 'input[type="checkbox"], input[type="radio"]';
   const wrapperSel = t.selectors?.wrapperSelector;
+  const sizes = t.sizes || ['md'];
 
-  const testDir = async rtl => {
-    await page.goto(storyUrl(port, t.storyId, rtl), {waitUntil: 'domcontentloaded'});
+  const testDir = async (rtl, size) => {
+    const inputSel = t.selectors?.inputSelectorBySize?.[size] ||
+      t.selectors?.inputSelector || 'input[type="checkbox"], input[type="radio"]';
+    await page.goto(storyUrl(port, t.storyId, rtl, {size}), {waitUntil: 'domcontentloaded'});
     await settle(page);
     await doSetup(page, t);
 
-    return page.evaluate(({inputSel, wrapperSel}) => {
+    return page.evaluate(({inputSel, wrapperSel, size, rtl}) => {
+      const coarse = window.matchMedia('(pointer: coarse)').matches;
+      const touchPoints = navigator.maxTouchPoints;
       const inputs = Array.from(document.querySelectorAll(inputSel));
-      if (inputs.length === 0) return null;
+      if (inputs.length === 0) return {coarse, touchPoints, size, rtl, count: 0, allHitsOk: false};
 
       let allHitsOk = true;
       let count = 0;
+      const centers = [];
       for (const input of inputs) {
         const wrapper = wrapperSel ? input.closest(wrapperSel) : input.parentElement;
         if (!wrapper) continue;
         const b = wrapper.getBoundingClientRect();
+        const inputBox = input.getBoundingClientRect();
         if (b.width < 1 || b.height < 1) continue;
         const cx = b.x + b.width / 2;
         const cy = b.y + b.height / 2;
         const hit = document.elementFromPoint(cx, cy);
         const isHit = hit === input || input.contains(hit);
-        if (!isHit) allHitsOk = false;
+        const isCentered = Math.abs(inputBox.x + inputBox.width / 2 - cx) < 0.5 &&
+          Math.abs(inputBox.y + inputBox.height / 2 - cy) < 0.5;
+        if (!isHit || !isCentered) allHitsOk = false;
+        centers.push({
+          wrapper: {x: b.x, y: b.y, width: b.width, height: b.height},
+          hit: isHit,
+          centered: isCentered,
+        });
         count++;
       }
-      return count === 0 ? null : allHitsOk;
-    }, {inputSel, wrapperSel}).catch(() => null);
+      return {coarse, touchPoints, size, rtl, count, allHitsOk, centers};
+    }, {inputSel, wrapperSel, size, rtl}).catch(() => null);
   };
 
-  const ltrOk = await testDir(false);
-  const rtlOk = await testDir(true);
+  const results = [];
+  for (const size of sizes) {
+    results.push(await testDir(false, size));
+    results.push(await testDir(true, size));
+  }
 
-  if (ltrOk === null || rtlOk === null) {
+  if (results.some(result => result === null || !result.coarse || result.touchPoints < 1 || result.count === 0)) {
     card.dims.D7 = 'N-A';
-    card.notes.push('D7: input/wrapper targets not found');
+    card.notes.push('D7: coarse-pointer context or input/wrapper targets not verified');
     return;
   }
 
-  const pass = ltrOk && rtlOk;
+  const pass = results.every(result => result.allHitsOk);
   card.dims.D7 = pass ? 'pass' : 'fail';
-  card.notes.push(`D7 coarse hit-target center: LTR ${ltrOk ? 'pass' : 'fail'}; RTL ${rtlOk ? 'pass' : 'fail'}`);
+  const formatTarget = target => {
+    const {width, height} = target.wrapper;
+    const cx = target.wrapper.x + width / 2;
+    const cy = target.wrapper.y + height / 2;
+    return `${width}x${height}@(${cx.toFixed(0)},${cy.toFixed(0)})->${target.hit && target.centered ? 'HIT' : 'MISS'}`;
+  };
+  card.notes.push(`D7 coarse hit-target center: ${results.map(result => `${result.rtl ? 'RTL' : 'LTR'} ${result.size}:${result.centers.map(formatTarget).join(',')}`).join('; ')}`);
 }
 
-async function scoreCurated(page, port, t) {
+async function scoreCurated(page, coarsePage, port, t) {
   const card = {component: t.component, storyId: t.storyId, dims: {}, notes: []};
   for (const dim of t.dims) {
     try {
       if (dim === 'D2') await checkD2(page, port, t, card);
       else if (dim === 'D3') await checkD3Scroll(page, port, t, card);
       else if (dim === 'D4') await checkD4(page, port, t, card);
-      else if (dim === 'D7') await checkD7CoarseHit(page, port, t, card);
+      else if (dim === 'D7') await checkD7CoarseHit(coarsePage, port, t, card);
       // D1 is handled by auto-discovery; ignore any stray D1 in curated entries.
     } catch (e) {
       card.dims[dim] = 'ERROR';
@@ -816,6 +843,13 @@ async function mapPool(items, pages, fn) {
     ),
   );
   const page = pages[0]; // curated dims run serially on the first page
+  const coarseContext = await browser.newContext({
+    viewport: {width: 1100, height: 760},
+    deviceScaleFactor: 1,
+    hasTouch: true,
+    isMobile: true,
+  });
+  const coarsePage = await coarseContext.newPage();
 
   let entries = {};
   try {
@@ -936,7 +970,7 @@ async function mapPool(items, pages, fn) {
       const dims = (t.dims || []).filter(d => d !== 'D1');
       if (dims.length === 0) continue;
       try {
-        const card = await scoreCurated(page, port, {...t, component, dims});
+        const card = await scoreCurated(page, coarsePage, port, {...t, component, dims});
         curatedResults.push(card);
         console.error(`CUR  ${card.rollup.padEnd(10)} ${component.padEnd(20)} ${JSON.stringify(card.dims)}`);
       } catch (e) {
@@ -969,6 +1003,7 @@ async function mapPool(items, pages, fn) {
   if (verifiedNaError) coverage.registryError = verifiedNaError;
 
   await Promise.all(pages.map(p => p.close().catch(() => {})));
+  await coarseContext.close().catch(() => {});
   await browser.close();
   server.close();
 

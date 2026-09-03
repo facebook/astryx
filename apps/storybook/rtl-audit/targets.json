@@ -23,12 +23,16 @@
   },
   {
     "component": "CheckboxInput",
-    "storyId": "core-checkboxinput--default",
+    "storyId": "core-checkboxinput--size-comparison",
     "dims": [
       "D7"
     ],
+    "sizes": ["sm", "md"],
     "selectors": {
-      "inputSelector": "input[type=\"checkbox\"]"
+      "inputSelectorBySize": {
+        "sm": "[data-testid=\"checkbox-sm\"]",
+        "md": "[data-testid=\"checkbox-md\"]"
+      }
     }
   },
   {
@@ -49,6 +53,7 @@
       "D2",
       "D7"
     ],
+    "sizes": ["sm", "md"],
     "selectors": {
       "prev": "input[aria-label=\"Pro\"]",
       "next": "[data-testid=\"radio-end-content\"]",
@@ -61,6 +66,7 @@
     "dims": [
       "D7"
     ],
+    "sizes": ["sm", "md"],
     "selectors": {
       "inputSelector": "input[type=\"checkbox\"]"
     }
