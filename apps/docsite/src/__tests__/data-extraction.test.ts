@@ -981,6 +981,19 @@ describe('Card playground defaults', () => {
   });
 });
 
+describe('CheckIndicator playground defaults (#5890)', () => {
+  it('starts the Properties preview in its visible checked state', () => {
+    const checkIndicator = Object.values(components)
+      .flat()
+      .find(component => component.name === 'CheckIndicator');
+
+    expect(checkIndicator).toBeDefined();
+    expect(checkIndicator!.playground?.defaults).toMatchObject({
+      state: 'checked',
+    });
+  });
+});
+
 describe('DropdownMenu adaptive-presentation example', () => {
   it('documents the presentation choice for the Properties tab', () => {
     const dropdownMenu = Object.values(components)
