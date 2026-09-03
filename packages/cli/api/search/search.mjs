@@ -274,7 +274,7 @@ export function scoreQuery(term, tokens, candidate) {
   // of Table-related templates each match "table" and "contents" separately
   // and accumulate a higher raw score (#5239).
   if (full && full.score >= 90) {
-    return {score: full.score + 100, reason: full.reason};
+    return asFull({score: full.score + 100, reason: full.reason});
   }
 
   // Multi-word natural language: score each content token, counting only
