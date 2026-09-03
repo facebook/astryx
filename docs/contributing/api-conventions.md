@@ -100,6 +100,55 @@ valid only when its name, type, and behavior across every combination form an
 explicit coherent contract, with invalid or conflicting states prevented under
 [FR15](../specs/AST-002/spec.md#requirements).
 
+## Name public module and utility functions by their result
+
+Choose a function's verb from its primary caller-observable result and side
+effects. Distinguish construction, inspection, lookup, conversion, registration,
+and guaranteed state. Do not name the public function after one internal step.
+Keep one callable role per public capability.
+
+This section covers exported standalone functions that form module or utility
+APIs. It does not reinterpret component names, callback `on<Verb>` names, or
+transition Action names. CLI command verbs and their programmatic command twins
+have separate ownership in the
+[CLI surface architecture](../architecture/cli-surface.md) and CLI conventions.
+
+The repository-wide export audit supports these roles:
+
+| Verb                  | Public module or utility role                                                                      | Boundary                                                                                          |
+| --------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `define*`             | Construct or normalize and return a durable typed value used by a supported consumer.              | Validation may be a precondition; inspection or unchanged identity alone is not definition.       |
+| `validate*`, `check*` | Inspect input and return structured results.                                                       | State which failures are returned and which conditions throw.                                     |
+| `create*`             | Construct or initialize a caller-used runtime value, state object, source, configuration, or view. | The result may be normalized; inspection alone is not creation.                                   |
+| `build*`              | Assemble a composite configuration or artifact from parts.                                         | This row covers module utilities, not CLI command naming.                                         |
+| `generate*`           | Derive a new aggregate or serialized output from supplied input.                                   | Name the generated result; do not hide unrelated mutation.                                        |
+| `resolve*`            | Choose and return a concrete value from inputs, options, context, or a registry.                   | Document fallback and missing-value behavior.                                                     |
+| `parse*`              | Convert an external or string representation into a typed or structured representation.            | The public contract states whether invalid input returns `null`, returns a result, or throws.     |
+| `format*`             | Serialize a value or produce display text without changing the source value.                       | Include locale, mode, or fallback behavior when it affects output.                                |
+| `get*`                | Read or project a requested value without mutating its source.                                     | Current APIs include both registry lookup and deterministic projection; do not imply persistence. |
+| `is*`, `has*`         | Return a boolean predicate or type guard.                                                          | Use a structured check when callers need reasons, warnings, or multiple findings.                 |
+| `register*`           | Add or replace shared registry state.                                                              | Registration is an explicit side effect.                                                          |
+| `ensure*`             | Idempotently establish required state when it is absent.                                           | The name must disclose the state or resource the function may create or mutate.                   |
+| `use*`                | Expose a React hook that may read context/state and own React lifecycle or effects.                | Follow the Rules of Hooks; a non-hook utility must not use `use*`.                                |
+| `reset*`              | Clear or restore shared state to its documented baseline.                                          | The affected state and intended consumer scope must be explicit.                                  |
+| `expand*`             | Convert a compact configuration or representation into its fuller derived form.                    | Expansion does not imply persistence.                                                             |
+| `merge*`              | Combine compatible inputs into one returned value or composed behavior.                            | State precedence and conflict behavior.                                                           |
+
+If construction, validation, registration, or another capability is public,
+expose each capability through its own callable function. A constructor may reuse
+the same internal validation primitive, but it still returns the constructed
+value and does not absorb a separately public role.
+
+These are roles supported by current repository evidence, not permission to pick
+a familiar verb first and make the implementation fit later. Check the exported
+signature, implementation, tests, consumer docs, supported callsites, and release
+history. Scope a documented exception to the owning module instead of weakening a
+verb across the repository.
+
+Do not silently rename a released mismatch. Preserve compatibility through an
+explicit deprecation and migration, then remove or change the old contract only at
+the approved compatibility boundary.
+
 ## Callbacks and Actions
 
 A callback reports an event synchronously. An Action starts transition-aware

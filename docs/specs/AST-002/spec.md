@@ -124,6 +124,23 @@ A public API proposal is admitted only when it passes both gates:
   naming the input after one mechanism. Parallel inputs do not create hidden
   conditional precedence: an override is valid only when its name, type, and
   behavior across every combination form an explicit coherent contract.
+- **FR17 — Public module and utility function names disclose one atomic role.**
+  Choose a verb from the function's primary caller-observable result and side
+  effects, not from an internal implementation step. Distinguish construction,
+  inspection, lookup, conversion, registration, and guaranteed state. `define*`
+  constructs or normalizes and returns a durable typed value used by a supported
+  consumer. It may reuse validation as a precondition, but a function that only
+  inspects input or returns the same input unchanged is not `define*`. `validate*`
+  and `check*` inspect input and return structured results; their contracts state
+  which failures are returned and which conditions throw. If construction,
+  validation, registration, or another capability is public, expose it as its own
+  callable function rather than hiding two public roles behind one name. A released
+  mismatch is deprecated and migrated under the compatibility contract, not
+  silently renamed. Other verbs receive rules only when shipped repository
+  evidence supports them. Component prop and event naming remains separate. CLI
+  command verbs and their programmatic command twins belong to the
+  [CLI surface architecture](../../architecture/cli-surface.md) and CLI
+  conventions; this requirement does not define their command semantics.
 
 ### Platform support
 
@@ -152,6 +169,11 @@ A public API proposal is admitted only when it passes both gates:
   remains the consumer syntax and reference authority.
 - Component specs inherit current family contracts and record only local public
   concepts, additions, and explicit exceptions; they do not copy shared rules.
+- Public module and utility function review compares the verb with the function's
+  returned value, validation contract, side effects, and supported consumers.
+  Component prop/event naming and CLI command semantics keep their separate owners.
+  Existing released mismatches remain compatible while an explicit deprecation and
+  migration is designed; this rule does not silently rename or change them.
 
 ### Staged contract coverage
 
@@ -210,19 +232,20 @@ rejected now even when its canonical component owner is draft or missing.
 
 ## Verification
 
-| Contract   | Verification                                                                       | Representative states                                                      | Mutation or failure expectation                                                                                                       |
-| ---------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1, FR5   | Blinded historical API review benchmark                                            | recent utility, mid-range, and composition API additions                   | Reviewer accepts a prop without identifying caller-owned semantic variation                                                           |
-| FR2, FR3   | Component tests and real-browser layout evidence                                   | content, container, viewport, parent context, and platform variation       | Public API exposes a value the component can derive reliably                                                                          |
-| FR4, FR6   | API surface review for utility, mid-range, and composition components              | existing slot, theme, style, layout, and behavior seams                    | High-level component accumulates one-off tuning props instead of using its owning layer                                               |
-| FR7, FR8   | Consumer examples and behavior tests                                               | default, each public value, composed use, and unsupported use              | Meaning depends on implementation knowledge or tests assert only classes/data attributes                                              |
-| FR9, FR10  | Component ownership and accessibility review                                       | owned content, external sibling content, missing or incorrect context      | A state is correct only when the caller fulfills a promise the component cannot verify                                                |
-| FR11       | Public and package-internal operation inventory; PR #5373                          | one component module and one semantic action                               | One semantic action gains parallel operation names distinguished only by implementation needs                                         |
-| FR12, FR13 | PR delta/canonical-owner update check, staged owner routing, and blinded benchmark | missing delta/update, draft or current authority, and owner-ready delta    | Missing delta/owner update passes, missing current authority dead-ends rollout, draft becomes policy, or automation decides semantics |
-| FR14       | Focused regression tests against the current contract or standard                  | defect state and representative unchanged states                           | A restoration invents a new decision or lacks evidence that the regression stays fixed                                                |
-| FR15       | Type-level constraints plus runtime validation and behavior tests                  | invalid values, unsupported combinations, and legitimate composition       | The API silently renders a broken state or prevents a valid composition                                                               |
-| FR16       | Full value-domain, input-shape, and parallel-combination contract review           | semantic variants, raw or palette values, explicit overrides, and defaults | One value or shape switches the controlled axis, or a parallel input silently changes precedence                                      |
-| Burden     | Benchmark classification: allow, correct pause, false block, not applicable        | recent accepted and rejected API changes                                   | Clearly justified APIs are repeatedly paused or blocked without surfacing a real decision                                             |
+| Contract   | Verification                                                                                           | Representative states                                                                         | Mutation or failure expectation                                                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR1, FR5   | Blinded historical API review benchmark                                                                | recent utility, mid-range, and composition API additions                                      | Reviewer accepts a prop without identifying caller-owned semantic variation                                                                            |
+| FR2, FR3   | Component tests and real-browser layout evidence                                                       | content, container, viewport, parent context, and platform variation                          | Public API exposes a value the component can derive reliably                                                                                           |
+| FR4, FR6   | API surface review for utility, mid-range, and composition components                                  | existing slot, theme, style, layout, and behavior seams                                       | High-level component accumulates one-off tuning props instead of using its owning layer                                                                |
+| FR7, FR8   | Consumer examples and behavior tests                                                                   | default, each public value, composed use, and unsupported use                                 | Meaning depends on implementation knowledge or tests assert only classes/data attributes                                                               |
+| FR9, FR10  | Component ownership and accessibility review                                                           | owned content, external sibling content, missing or incorrect context                         | A state is correct only when the caller fulfills a promise the component cannot verify                                                                 |
+| FR11       | Public and package-internal operation inventory; PR #5373                                              | one component module and one semantic action                                                  | One semantic action gains parallel operation names distinguished only by implementation needs                                                          |
+| FR12, FR13 | PR delta/canonical-owner update check, staged owner routing, and blinded benchmark                     | missing delta/update, draft or current authority, and owner-ready delta                       | Missing delta/owner update passes, missing current authority dead-ends rollout, draft becomes policy, or automation decides semantics                  |
+| FR14       | Focused regression tests against the current contract or standard                                      | defect state and representative unchanged states                                              | A restoration invents a new decision or lacks evidence that the regression stays fixed                                                                 |
+| FR15       | Type-level constraints plus runtime validation and behavior tests                                      | invalid values, unsupported combinations, and legitimate composition                          | The API silently renders a broken state or prevents a valid composition                                                                                |
+| FR16       | Full value-domain, input-shape, and parallel-combination contract review                               | semantic variants, raw or palette values, explicit overrides, and defaults                    | One value or shape switches the controlled axis, or a parallel input silently changes precedence                                                       |
+| FR17       | Public module/utility export inventory plus implementation, test, consumer, and release-history review | construction, inspection, lookup, conversion, registration, hooks, and released compatibility | A verb hides the returned value or side effect, two public roles are fused, a non-hook utility uses `use*`, or a released mismatch is silently renamed |
+| Burden     | Benchmark classification: allow, correct pause, false block, not applicable                            | recent accepted and rejected API changes                                                      | Clearly justified APIs are repeatedly paused or blocked without surfacing a real decision                                                              |
 
 ## Decision log
 
@@ -338,6 +361,32 @@ while `success`, `warning`, and `error` mean tone plus a default themed icon, wi
 an optional `icon` that conditionally overrides representation. That shape would
 not pass current API review pending a canonical `component:Table` contract. This
 decision does not prescribe the replacement API.
+
+### DEC-7 — Public module and utility verbs disclose atomic roles
+
+**Reference:** `spec:AST-002/DEC-7`
+**Decider:** `cixzhang`, `2026-09-03`
+
+Choose a public module or utility function's verb from its primary
+caller-observable result and side effects, not from an internal implementation
+step. Distinguish construction, inspection, lookup, conversion, registration,
+and guaranteed state. `define*` constructs or normalizes and returns a durable
+typed value used by a supported consumer. Validation may be its precondition, but
+inspection or an unchanged identity result alone is not definition. `validate*`
+and `check*` inspect input and return structured results; their contracts state
+which failures are returned and which conditions throw.
+
+When construction, validation, registration, or another capability is public,
+each has its own callable role. A released mismatch follows an explicit
+deprecation and migration instead of a silent rename or behavior change. Other
+verbs receive repository-wide rules only when shipped evidence supports them.
+Component prop and event naming remains separate. CLI command verbs and their
+programmatic command twins remain with the CLI surface owner.
+
+Rejected: treating a function that only validates and returns its input as a
+`define*` function, returning a bare predicate from a public `validate*` or
+`check*` function, using `use*` for a non-hook utility, or hiding separately
+public registration inside a constructor without a compatibility plan.
 
 ## Open questions
 
