@@ -42,6 +42,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
 import {generateThemeCSS, type DefinedTheme} from './defineTheme';
+import {generateDataTokenDefaultsCSS} from './generateThemeRules';
 import {registerTheme} from './themeRegistry';
 import {dataAttr} from '../naming';
 import {ThemeContext} from './useTheme';
@@ -99,6 +100,16 @@ ThemeNestingContext.displayName = 'ThemeNestingContext';
 const injectedThemes = new Set<string>();
 
 /**
+ * How many mounted `Theme`s are relying on the injected data-token defaults.
+ *
+ * The defaults are one document-wide `:root` block, shared by every theme, so
+ * they are injected once and removed only when the last theme that took a
+ * reference unmounts — tearing them down with whichever provider happened to
+ * inject them would strip the palette from the providers still mounted.
+ */
+let dataTokenDefaultsRefCount = 0;
+
+/**
  * Hook to inject theme CSS into the document.
  * Built themes (from `astryx theme build`) skip injection — their CSS
  * is in a separate file imported by the consumer.
@@ -112,6 +123,8 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
       return;
     }
 
+    // Second and later `Theme`s using this theme do no work at all —
+    // generation included. Its CSS is document-wide and identical for each.
     const themeKey = `astryx-theme-${theme.name}`;
     if (injectedThemes.has(themeKey)) {
       return;
@@ -130,8 +143,26 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
     );
 
     const {prose, component} = generateThemeCSS(theme);
-    if (!prose && !component) {
-      return;
+    const base = generateDataTokenDefaultsCSS();
+    injectedThemes.add(themeKey);
+    const cleanups: (() => void)[] = [() => injectedThemes.delete(themeKey)];
+
+    // Data token defaults go into @layer astryx-base, where StyleX puts the
+    // core token defaults, so a theme's own `--color-data-*` outranks them by
+    // layer. Appended (never prepended) so it cannot register `astryx-base`
+    // ahead of `reset` and invert the layer order.
+    if (base) {
+      if (dataTokenDefaultsRefCount++ === 0) {
+        const baseStyle = document.createElement('style');
+        baseStyle.setAttribute(dataAttr('theme-base'), '');
+        baseStyle.textContent = `@layer astryx-base {\n${base}\n}`;
+        document.head.appendChild(baseStyle);
+      }
+      cleanups.push(() => {
+        if (--dataTokenDefaultsRefCount === 0) {
+          document.querySelector(`style[${dataAttr('theme-base')}]`)?.remove();
+        }
+      });
     }
 
     // Prose defaults go into @layer reset — lowest priority, scoped to
@@ -154,20 +185,24 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
       document.head.appendChild(compStyle);
     }
 
-    injectedThemes.add(themeKey);
+    if (prose || component) {
+      cleanups.push(() => {
+        // Matched by the astryx id marker, which is always written above.
+        const proseEl = document.querySelector(
+          `style[${dataAttr('theme-prose')}="${theme.name}"][${dataAttr('id')}="${id}"]`,
+        );
+        const compEl = document.querySelector(
+          `style[${dataAttr('theme')}="${theme.name}"][${dataAttr('id')}="${id}"]`,
+        );
+        proseEl?.remove();
+        compEl?.remove();
+      });
+    }
 
     return () => {
-      // Remove both prose and component style tags (matched by the new
-      // astryx id marker, which is always written above).
-      const proseEl = document.querySelector(
-        `style[${dataAttr('theme-prose')}="${theme.name}"][${dataAttr('id')}="${id}"]`,
-      );
-      const compEl = document.querySelector(
-        `style[${dataAttr('theme')}="${theme.name}"][${dataAttr('id')}="${id}"]`,
-      );
-      proseEl?.remove();
-      compEl?.remove();
-      injectedThemes.delete(themeKey);
+      for (const cleanup of cleanups) {
+        cleanup();
+      }
     };
   }, [theme, id]);
 }

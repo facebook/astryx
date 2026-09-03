@@ -31,6 +31,40 @@ ruleTester.run('no-physical-properties', rule, {
     {code: inStylex(`paddingInlineEnd: 12`)},
     // Logical inset is fine
     {code: inStylex(`insetInlineStart: 0`)},
+    // A variable-position logical anchor may pair with an explicit RTL transform.
+    {
+      code: inStylex(`
+        insetInlineStart: '50%',
+        transform: {
+          default: 'translate(-50%, -50%)',
+          ':is([dir="rtl"] *)': 'translate(50%, -50%)',
+        }
+      `),
+    },
+    // The same compensation may live inside the media branch that activates it.
+    {
+      code: inStylex(`
+        insetInlineStart: { default: null, '@media (pointer: coarse)': '50%' },
+        transform: {
+          default: null,
+          '@media (pointer: coarse)': {
+            default: 'translate(-50%, -50%)',
+            ':is([dir="rtl"] *)': 'translate(50%, -50%)',
+          },
+        }
+      `),
+    },
+    // A block-only translation does not create the logical-anchor mismatch.
+    {code: inStylex(`insetInlineStart: '50%', transform: 'translate(0, -50%)'`)},
+    {
+      // A narrow config exception may defer this relationship diagnostic while
+      // retaining every key/value check in this rule.
+      code: inStylex(`
+        insetInlineStart: { default: null, '@media (pointer: coarse)': '50%' },
+        transform: { default: null, '@media (pointer: coarse)': 'translate(-50%, -50%)' }
+      `),
+      options: [{allowLogicalCentering: true}],
+    },
     // Logical border longhands are fine
     {code: inStylex(`borderInlineStartWidth: 1, borderInlineEndColor: 'red'`)},
     // Logical corner radii are fine
@@ -149,6 +183,15 @@ ruleTester.run('no-physical-properties', rule, {
       ],
     },
     {
+      // The temporary relationship exemption does not weaken physical-key checks.
+      code: inStylex(`left: 0`),
+      options: [{allowLogicalCentering: true}],
+      output: inStylex(`insetInlineStart: 0`),
+      errors: [
+        {messageId: 'physicalKey', data: {physical: 'left', logical: 'insetInlineStart'}},
+      ],
+    },
+    {
       code: inStylex(`right: 0`),
       output: inStylex(`insetInlineEnd: 0`),
       errors: [
@@ -189,6 +232,87 @@ ruleTester.run('no-physical-properties', rule, {
       output: inStylex(`insetInlineStart: '50%'`),
       errors: [
         {messageId: 'physicalKey', data: {physical: 'left', logical: 'insetInlineStart'}},
+      ],
+    },
+    {
+      // Conditional physical centering must also point at centerInline rather
+      // than being autofixed into the broken logical-anchor form.
+      code: inStylex(`
+        left: { default: null, '@media (pointer: coarse)': '50%' },
+        transform: { default: null, '@media (pointer: coarse)': 'translate(-50%, -50%)' }
+      `),
+      output: null,
+      errors: [{messageId: 'inlineCentering', data: {value: '50%'}}],
+    },
+    // --- LOGICAL-CENTERING MISMATCH: a logical 50% anchor flips in RTL but a
+    // physical horizontal translate does not. These are non-fixing errors. ---
+    {
+      code: inStylex(`insetInlineStart: '50%', transform: 'translate(-50%, -50%)'`),
+      output: null,
+      errors: [
+        {
+          messageId: 'logicalCenteringTransform',
+          data: {property: 'insetInlineStart', value: '50%'},
+        },
+      ],
+    },
+    {
+      code: inStylex(`insetInlineEnd: '50%', transform: 'translateX(50%)'`),
+      output: null,
+      errors: [
+        {
+          messageId: 'logicalCenteringTransform',
+          data: {property: 'insetInlineEnd', value: '50%'},
+        },
+      ],
+    },
+    {
+      // An RTL branch must actually reverse the horizontal translation.
+      code: inStylex(`
+        insetInlineStart: '50%',
+        transform: {
+          default: 'translate(-50%, -50%)',
+          ':is([dir="rtl"] *)': 'translate(-50%, -50%)',
+        }
+      `),
+      output: null,
+      errors: [
+        {
+          messageId: 'logicalCenteringTransform',
+          data: {property: 'insetInlineStart', value: '50%'},
+        },
+      ],
+    },
+    {
+      // This is the production shape from CheckboxInput, RadioListItem, and
+      // Switch: the bug exists only inside the coarse-pointer branch.
+      code: inStylex(`
+        insetInlineStart: { default: null, '@media (pointer: coarse)': '50%' },
+        transform: { default: null, '@media (pointer: coarse)': 'translate(-50%, -50%)' }
+      `),
+      output: null,
+      errors: [
+        {
+          messageId: 'logicalCenteringTransform',
+          data: {property: 'insetInlineStart', value: '50%'},
+        },
+      ],
+    },
+    {
+      // A nested default transform without an RTL sibling is still broken.
+      code: inStylex(`
+        insetInlineStart: { default: null, '@media (pointer: coarse)': '50%' },
+        transform: {
+          default: null,
+          '@media (pointer: coarse)': { default: 'translate(-50%, -50%)' },
+        }
+      `),
+      output: null,
+      errors: [
+        {
+          messageId: 'logicalCenteringTransform',
+          data: {property: 'insetInlineStart', value: '50%'},
+        },
       ],
     },
     // --- KEY-BASED: corner radii (verify the diagonal mapping) ---

@@ -111,6 +111,7 @@ const UTIL_SUBPATH_DIRS = [
   'Calendar',
   'Markdown',
   'PowerSearch',
+  'Resizable',
   'Selector',
   'Table',
   'Typeahead',

@@ -278,4 +278,120 @@ describe('BottomSheetPanel', () => {
     expect(handleBar![1]).toContain('linear-gradient(to bottom');
     expect(handleBar![1]).toContain("colorVars['--color-background-surface']");
   });
+
+  // In dark mode the surface fill and the scrim sit a few RGB steps apart and
+  // the drop shadow is black on near-black, so the fill alone leaves the
+  // sheet's left and right edges invisible against the scrim. A hairline on
+  // the scrim-facing edges is what draws them. Asserted on the style
+  // definition for the same reason as the test above.
+  it('draws a hairline on the three edges that face the scrim', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const source = fs.readFileSync(
+      path.resolve(__dirname, './BottomSheetPanel.tsx'),
+      'utf-8',
+    );
+
+    const sheet = source.match(/\n {2}sheet: \{([\s\S]*?)\n {2}\},/);
+    expect(sheet).not.toBeNull();
+    for (const edge of [
+      'borderBlockStart',
+      'borderInlineStart',
+      'borderInlineEnd',
+    ]) {
+      expect(sheet![1]).toContain(`${edge}Width: borderVars['--border-width']`);
+      expect(sheet![1]).toContain(`${edge}Style: 'solid'`);
+      expect(sheet![1]).toContain(`${edge}Color: colorVars['--color-border']`);
+    }
+    // The block-end edge sits below the viewport, under the overscroll
+    // padding, so it carries no hairline to draw.
+    expect(sheet![1]).not.toContain('borderBlockEndWidth');
+  });
+
+  // A theme that packs an inset ring into --shadow-high (the bundled themes all
+  // add one in dark mode) draws it just inside the sheet, where an opaque
+  // content wrapper such as Section paints over it -- so it showed only in the
+  // gap below the content and the side edges appeared to change width partway
+  // down. The scrolling body paints the surface across the whole inner box to
+  // hide the ring evenly.
+  it('paints the surface across the scrolling body so the edge stays uniform', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const source = fs.readFileSync(
+      path.resolve(__dirname, './BottomSheetPanel.tsx'),
+      'utf-8',
+    );
+
+    const body = source.match(/\n {2}body: \{([\s\S]*?)\n {2}\},/);
+    expect(body).not.toBeNull();
+    expect(body![1]).toContain(
+      "backgroundColor: colorVars['--color-background-surface']",
+    );
+  });
+
+  /**
+   * The exit is not the entrance played backwards.
+   *
+   * `--ease-standard` is a decelerate curve: on it the sheet was half gone in
+   * 59ms of a 410ms transition and 90% gone in 163ms, so the close was over
+   * before it could be seen. The closing state therefore carries its own
+   * accelerating curve, and only the closing state does.
+   */
+  it('closes on an accelerating curve of its own, not the entrance timing', () => {
+    const declarationsFor = (element: HTMLElement) => {
+      const classes = new Set(element.className.split(/\s+/));
+      const out: string[] = [];
+      for (const styleSheet of Array.from(document.styleSheets)) {
+        let rules: CSSRuleList;
+        try {
+          rules = styleSheet.cssRules;
+        } catch {
+          continue;
+        }
+        for (const rule of Array.from(rules)) {
+          const selector = (rule as CSSStyleRule).selectorText;
+          const owner = selector?.match(/^\.([\w-]+)/)?.[1];
+          if (owner != null && classes.has(owner)) {
+            out.push(rule.cssText);
+          }
+        }
+      }
+      return out.join('\n');
+    };
+
+    const {container: closing} = render(
+      <BottomSheetPanel
+        state={{kind: 'exiting'}}
+        height="hug"
+        onDismiss={() => {}}
+        onScrimOpacity={() => {}}>
+        Panel content
+      </BottomSheetPanel>,
+    );
+    const closingRules = declarationsFor(
+      closing.querySelector('.astryx-bottom-sheet') as HTMLElement,
+    );
+    // An accelerating curve: no vertical rise at the start (y1 = 0), so the
+    // travel lands inside the duration instead of ahead of it.
+    expect(closingRules).toContain(
+      'transition-timing-function: cubic-bezier(.3,0,.6,.6)',
+    );
+
+    const {container: resting} = render(
+      <BottomSheetPanel
+        state={{kind: 'open', entering: false}}
+        height="hug"
+        onDismiss={() => {}}
+        onScrimOpacity={() => {}}>
+        Panel content
+      </BottomSheetPanel>,
+    );
+    const restingRules = declarationsFor(
+      resting.querySelector('.astryx-bottom-sheet') as HTMLElement,
+    );
+    expect(restingRules).toContain(
+      'transition-timing-function: var(--ease-standard)',
+    );
+    expect(restingRules).not.toContain('cubic-bezier(.3,0,.6,.6)');
+  });
 });

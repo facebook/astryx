@@ -24,8 +24,10 @@
  * per-command spawn suite (that flakiness is exactly what the rollout removed).
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, afterAll} from 'vitest';
 import {spawnSync} from 'node:child_process';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -71,11 +73,13 @@ describe('e2e smoke: real binary error boundary + exit codes', () => {
     expect(stderr).toMatch(/unknown command/i);
   });
 
-  it('init --json is rejected with a real exit 1 + JSON error envelope on stdout', () => {
+  it('an unsupported --json command is rejected with a real exit 1 + envelope on stdout', () => {
     // Proves the whole chain across the process boundary: bin boots → Commander
-    // runs → preAction --json gate rejects init → error envelope on stdout →
-    // process really exits 1 (not merely process.exitCode set in-process).
-    const {status, stdout} = spawnCli(['init', '--json']);
+    // runs → preAction --json gate rejects the command → error envelope on
+    // stdout → process really exits 1 (not merely process.exitCode set
+    // in-process). `theme` is a command group with no output of its own, so it
+    // stays off the allowlist.
+    const {status, stdout} = spawnCli(['theme', '--json']);
     expect(status).toBe(1);
     const parsed = JSON.parse(stdout);
     expect(parsed).toHaveProperty('error');
@@ -92,5 +96,58 @@ describe('e2e smoke: real binary error boundary + exit codes', () => {
     const parsed = JSON.parse(stdout);
     expect(parsed).toHaveProperty('error');
     expect(parsed.code).toMatch(/^ERR_/);
+  });
+});
+
+describe('e2e smoke: the bin does not run a project config it was not asked to', () => {
+  // The debug handler is loaded before Commander parses, which means
+  // `Project.load` — and that EVALUATES the project's config module and loads
+  // its integrations. Most commands never did either. Running a project's own
+  // code on `astryx --version`, for a project that never opted in, is a cost
+  // this feature does not get to impose, so the bin reads the config as text
+  // and only loads it when `debug` appears. Only a real process can show this.
+  const projects = [];
+
+  function project(configBody) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-cfg-'));
+    projects.push(dir);
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({name: 'p', version: '1.0.0', type: 'module', private: true}),
+    );
+    const marker = path.join(dir, 'evaluated');
+    fs.writeFileSync(
+      path.join(dir, 'astryx.config.mjs'),
+      `import {writeFileSync} from 'node:fs';\n` +
+        `writeFileSync(${JSON.stringify(marker)}, '1');\n` +
+        configBody,
+    );
+    return {dir, evaluated: () => fs.existsSync(marker)};
+  }
+
+  afterAll(() => {
+    for (const dir of projects) fs.rmSync(dir, {recursive: true, force: true});
+  });
+
+  it('leaves a config without the key unevaluated', () => {
+    const p = project('export default { integrations: [] };\n');
+    const res = spawnSync(process.execPath, [CLI_BIN, '--version'], {
+      cwd: p.dir,
+      encoding: 'utf8',
+      timeout: 30_000,
+    });
+    expect(res.status).toBe(0);
+    expect(p.evaluated()).toBe(false);
+  });
+
+  it('still loads a config that opts in', () => {
+    const p = project('export default { debug: () => {} };\n');
+    const res = spawnSync(process.execPath, [CLI_BIN, '--version'], {
+      cwd: p.dir,
+      encoding: 'utf8',
+      timeout: 30_000,
+    });
+    expect(res.status).toBe(0);
+    expect(p.evaluated()).toBe(true);
   });
 });

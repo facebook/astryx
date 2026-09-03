@@ -1,7 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {StorybookConfig} from '@storybook/react-vite';
-import {astryxStylex} from '@astryxdesign/build/vite';
+// Source, not the `@astryxdesign/build/vite` export: Storybook evaluates this
+// file with Node's ESM resolver before any alias below it applies, and that
+// export map points at `dist/vite.mjs`, which does not exist until
+// `@astryxdesign/build` is built. Importing the source keeps `pnpm install &&
+// pnpm dev` working from a cold clone (#5128) and matches what this app's
+// tsconfig already resolves for typecheck.
+import {astryxStylex} from '../../../packages/build/src/vite.ts';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -98,8 +104,23 @@ const config: StorybookConfig = {
               '@astryxdesign/richtext': [
                 path.join(rootDir, 'packages/richtext/src'),
               ],
+              '@astryxdesign/theme-butter/*': [
+                path.join(rootDir, 'packages/themes/butter/src/*'),
+              ],
+              '@astryxdesign/theme-chocolate/*': [
+                path.join(rootDir, 'packages/themes/chocolate/src/*'),
+              ],
+              '@astryxdesign/theme-gothic/*': [
+                path.join(rootDir, 'packages/themes/gothic/src/*'),
+              ],
+              '@astryxdesign/theme-matcha/*': [
+                path.join(rootDir, 'packages/themes/matcha/src/*'),
+              ],
               '@astryxdesign/theme-neutral/*': [
                 path.join(rootDir, 'packages/themes/neutral/src/*'),
+              ],
+              '@astryxdesign/theme-probe/*': [
+                path.join(rootDir, 'packages/themes/probe/src/*'),
               ],
               '@astryxdesign/theme-stone/*': [
                 path.join(rootDir, 'packages/themes/stone/src/*'),
@@ -130,9 +151,29 @@ const config: StorybookConfig = {
             rootDir,
             'packages/richtext/src',
           ),
+          '@astryxdesign/theme-butter': path.resolve(
+            rootDir,
+            'packages/themes/butter/src/source.ts',
+          ),
+          '@astryxdesign/theme-chocolate': path.resolve(
+            rootDir,
+            'packages/themes/chocolate/src/source.ts',
+          ),
+          '@astryxdesign/theme-gothic': path.resolve(
+            rootDir,
+            'packages/themes/gothic/src/source.ts',
+          ),
+          '@astryxdesign/theme-matcha': path.resolve(
+            rootDir,
+            'packages/themes/matcha/src/source.ts',
+          ),
           '@astryxdesign/theme-neutral': path.resolve(
             rootDir,
             'packages/themes/neutral/src/source.ts',
+          ),
+          '@astryxdesign/theme-probe': path.resolve(
+            rootDir,
+            'packages/themes/probe/src/source.ts',
           ),
           '@astryxdesign/theme-stone': path.resolve(
             rootDir,

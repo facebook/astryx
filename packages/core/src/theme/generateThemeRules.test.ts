@@ -7,7 +7,13 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {defineTheme, generateThemeCSS, generateThemeRules} from './index';
+import {
+  dataTokenDefaults,
+  defineTheme,
+  generateThemeCSS,
+  generateThemeRules,
+} from './index';
+import {generateDataTokenDefaultsCSS} from './generateThemeRules';
 
 const defaultInput = {
   name: 'default',
@@ -700,5 +706,97 @@ describe('physical padding longhands', () => {
     const rule = ruleFor('dropdown-menu', {paddingTop: '14px'});
     expect(rule).toContain('padding-top: 14px');
     expect(rule).not.toContain('--_dropdown-menu-padding');
+  });
+});
+
+describe('renamed theme targets', () => {
+  // The renamed targets emit both classes, so a rule written against either
+  // key selects the element. What is easy to miss is the derived-var half: a
+  // key the registry does not know still emits a rule, minus every var the
+  // component actually reads — the same silent nothing a misspelled key gives.
+  it('expands derived vars for a renamed key and its deprecated spelling', () => {
+    const rules = (component: string, styles: Record<string, string>) =>
+      generateThemeRules(
+        defineTheme({
+          name: `test-renamed-${component}`,
+          components: {[component]: {base: styles}},
+        }),
+      ).join('\n');
+
+    const hoverCard = rules('hover-card', {borderRadius: '9px'});
+    expect(hoverCard).toContain('.astryx-hover-card');
+    expect(hoverCard).toContain('--_hovercard-radius: 9px');
+    expect(rules('hovercard', {borderRadius: '9px'})).toContain(
+      '--_hovercard-radius: 9px',
+    );
+
+    const textArea = rules('text-area', {paddingInline: '11px'});
+    expect(textArea).toContain('.astryx-text-area');
+    expect(textArea).toContain('--_textarea-inline-padding: 11px');
+    expect(rules('textarea', {paddingInline: '11px'})).toContain(
+      '--_textarea-inline-padding: 11px',
+    );
+
+    const mark = rules('progress-bar-mark', {width: '3px'});
+    expect(mark).toContain('.astryx-progress-bar-mark');
+    expect(mark).toContain('--_progressbar-mark-width: 3px');
+    expect(rules('progressbar-mark', {width: '3px'})).toContain(
+      '--_progressbar-mark-width: 3px',
+    );
+  });
+});
+
+describe('data visualization tokens', () => {
+  const scopeBlock = (theme: Parameters<typeof generateThemeRules>[0]) =>
+    generateThemeRules(theme).find(r => r.includes(':scope'));
+
+  it('seeds the whole palette once, at :root', () => {
+    const css = generateDataTokenDefaultsCSS();
+
+    expect(css.startsWith(':root {')).toBe(true);
+    for (const [name, value] of Object.entries(dataTokenDefaults)) {
+      expect(css).toContain(`${name}: ${value};`);
+    }
+  });
+
+  it('leaves the defaults out of a theme scope block', () => {
+    // A scope block that re-declared them would shadow a parent theme's
+    // override in every nested <Theme>, which no other token family does.
+    expect(scopeBlock(defineTheme({name: 'data-bare'}))).toBeUndefined();
+  });
+
+  it("puts only the theme's own data token in its scope block", () => {
+    const block = scopeBlock(
+      defineTheme({
+        name: 'data-override',
+        tokens: {'--color-data-categorical-blue': ['#123456', '#654321']},
+      }),
+    )!;
+
+    expect(block).toContain(
+      '--color-data-categorical-blue: light-dark(#123456, #654321);',
+    );
+    expect(block.match(/--color-data-/g)).toHaveLength(1);
+    expect(block).not.toContain('--color-data-categorical-orange');
+  });
+
+  it('keeps the palette out of the scoped stylesheet', () => {
+    // The palette's own contents are asserted once, against
+    // `dataTokenDefaults`, in `seeds the whole palette once, at :root` above.
+    const {component, prose} = generateThemeCSS(
+      defineTheme({name: 'data-css'}),
+    );
+
+    expect(component).not.toContain('--color-data-');
+    expect(prose).not.toContain('--color-data-');
+  });
+
+  it('keeps generateThemeCSS to its two scoped blocks', () => {
+    // The defaults are theme-independent, so they are not part of the theme
+    // CSS contract: `astryx theme build` formats them from the public
+    // `dataTokenDefaults` export instead.
+    expect(
+      Object.keys(generateThemeCSS(defineTheme({name: 'data-shape'}))).sort(),
+    ).toEqual(['component', 'prose']);
   });
 });

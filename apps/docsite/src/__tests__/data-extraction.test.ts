@@ -21,7 +21,9 @@ import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
+import {eagerShowcases} from '../components/eagerShowcases';
 import {exampleRegistry} from '../generated/exampleRegistry';
+import {normalizeComponentCategory} from '../lib/componentCategories';
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -296,6 +298,42 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('PowerSearch supplies representative config and filters playground defaults', () => {
+    const core = components['@astryxdesign/core'];
+    const powerSearch = core.find(c => c.name === 'PowerSearch');
+    expect(powerSearch).toBeDefined();
+    expect(powerSearch!.playground?.defaults).toMatchObject({
+      config: {
+        name: 'IssueSearch',
+        fields: [
+          {
+            key: 'status',
+            operators: [
+              {
+                key: 'is',
+                value: {
+                  type: 'enum',
+                  values: [
+                    {value: 'open', label: 'Open'},
+                    {value: 'closed', label: 'Closed'},
+                  ],
+                },
+              },
+            ],
+          },
+          {key: 'title'},
+        ],
+      },
+      filters: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: {type: 'enum', value: 'open'},
+        },
+      ],
+    });
+  });
+
   it('MetadataListItem declares a playground wrapper for realistic preview structure', () => {
     const core = components['@astryxdesign/core'];
     const metadataListItem = core.find(c => c.name === 'MetadataListItem');
@@ -306,6 +344,74 @@ describe('componentRegistry', () => {
     });
     expect(metadataListItem!.playground?.wrapper).toMatchObject({
       component: 'MetadataList',
+    });
+  });
+
+  it('LayoutHeader declares a playground wrapper and default content so preview is not empty', () => {
+    const core = components['@astryxdesign/core'];
+    const layoutHeader = core.find(c => c.name === 'LayoutHeader');
+    expect(layoutHeader).toBeDefined();
+    expect(layoutHeader!.playground?.defaults).toMatchObject({
+      children: expect.any(String),
+    });
+    expect(layoutHeader!.playground?.wrapper).toMatchObject({
+      component: 'Layout',
+    });
+  });
+
+  it('Grid declares playground children so the preview is not empty (#5892)', () => {
+    const core = components['@astryxdesign/core'];
+    const grid = core.find(c => c.name === 'Grid');
+    expect(grid).toBeDefined();
+    expect(grid!.playground?.defaults).toMatchObject({
+      columns: 3,
+      gap: 2,
+      children: expect.arrayContaining([
+        expect.objectContaining({__element: 'Card'}),
+      ]),
+    });
+  });
+
+  it('GridSpan declares a playground wrapper for realistic preview geometry (#5893)', () => {
+    const core = components['@astryxdesign/core'];
+    const gridSpan = core.find(c => c.name === 'GridSpan');
+    expect(gridSpan).toBeDefined();
+    expect(gridSpan!.playground?.wrapper).toMatchObject({
+      component: 'Grid',
+      props: {columns: 3, gap: 2},
+    });
+    expect(gridSpan!.playground?.defaults).toMatchObject({
+      columns: 2,
+      children: expect.any(String),
+    });
+  });
+
+  it.each(['Stack', 'HStack', 'VStack'])(
+    '%s declares playground children so the preview is not empty (#5894, #5898, #5900)',
+    name => {
+      const core = components['@astryxdesign/core'];
+      const entry = core.find(c => c.name === name);
+      expect(entry).toBeDefined();
+      expect(entry!.playground?.defaults).toMatchObject({
+        gap: 2,
+        children: expect.arrayContaining([
+          expect.objectContaining({__element: 'Card'}),
+        ]),
+      });
+    },
+  );
+
+  it('StackItem declares a playground wrapper for realistic preview geometry (#5899)', () => {
+    const core = components['@astryxdesign/core'];
+    const stackItem = core.find(c => c.name === 'StackItem');
+    expect(stackItem).toBeDefined();
+    expect(stackItem!.playground?.wrapper).toMatchObject({
+      component: 'HStack',
+      props: {gap: 2, width: 300},
+    });
+    expect(stackItem!.playground?.defaults).toMatchObject({
+      size: 'fill',
+      children: expect.objectContaining({__element: 'Card'}),
     });
   });
 
@@ -967,6 +1073,137 @@ describe('Card playground defaults', () => {
   });
 });
 
+describe('CheckIndicator playground defaults (#5890)', () => {
+  it('starts the Properties preview in its visible checked state', () => {
+    const checkIndicator = Object.values(components)
+      .flat()
+      .find(component => component.name === 'CheckIndicator');
+
+    expect(checkIndicator).toBeDefined();
+    expect(checkIndicator!.playground?.defaults).toMatchObject({
+      state: 'checked',
+    });
+  });
+});
+
+describe('DropdownMenu adaptive-presentation example', () => {
+  it('documents the presentation choice for the Properties tab', () => {
+    const dropdownMenu = Object.values(components)
+      .flat()
+      .find(component => component.name === 'DropdownMenu');
+    const presentation = dropdownMenu?.props.find(
+      prop => prop.name === 'presentation',
+    );
+
+    expect(presentation?.type).toBe("'popover' | 'bottom-sheet' | 'adaptive'");
+    expect(presentation?.default).toBe("'popover'");
+
+    const defaults = dropdownMenu?.playground?.defaults as
+      Record<string, unknown> | undefined;
+    const items = defaults?.items as
+      Array<{label?: unknown; icon?: unknown}> | undefined;
+    expect(items).toHaveLength(4);
+    expect(items?.every(item => typeof item.icon === 'string')).toBe(true);
+  });
+
+  it('registers the responsive presentation example on the related component pages', () => {
+    const dropdownExamples = exampleRegistry['DropdownMenu'] ?? [];
+    const bottomSheetExample = dropdownExamples.find(example =>
+      /Adaptive presentation/i.test(example.name),
+    );
+
+    expect(bottomSheetExample).toBeDefined();
+    expect(bottomSheetExample!.source).toContain('useMediaQuery');
+    expect(bottomSheetExample!.source).toContain("'bottom-sheet' : 'popover'");
+    expect(bottomSheetExample!.source).toContain('<DropdownMenu');
+
+    const bottomSheetExamples = exampleRegistry['BottomSheet'] ?? [];
+    expect(
+      bottomSheetExamples.some(
+        example => example.source === bottomSheetExample!.source,
+      ),
+    ).toBe(true);
+
+    const mediaQueryExamples = exampleRegistry['useMediaQuery'] ?? [];
+    expect(
+      mediaQueryExamples.some(
+        example => example.source === bottomSheetExample!.source,
+      ),
+    ).toBe(true);
+  });
+
+  it('registers the ContextMenu BottomSheet example', () => {
+    const contextMenuExamples = exampleRegistry['ContextMenu'] ?? [];
+    const bottomSheetExample = contextMenuExamples.find(example =>
+      /Bottom Sheet/i.test(example.name),
+    );
+
+    expect(bottomSheetExample).toBeDefined();
+    expect(bottomSheetExample!.source).toContain('presentation="bottom-sheet"');
+    expect(bottomSheetExample!.source).toContain(
+      'Long-press on touch or right-click',
+    );
+    expect(bottomSheetExample!.source).not.toContain("type: 'divider'");
+  });
+
+  it('uses adaptive presentation in the primary ContextMenu example', () => {
+    const contextMenuExamples = exampleRegistry['ContextMenu'] ?? [];
+    const basicExample = contextMenuExamples.find(example =>
+      /Basic/i.test(example.name),
+    );
+
+    expect(basicExample).toBeDefined();
+    expect(basicExample!.source).toContain('presentation="adaptive"');
+    expect(basicExample!.source).toContain('Long-press or right-click');
+  });
+
+  it('registers the MoreMenu BottomSheet example', () => {
+    const moreMenuExamples = exampleRegistry['MoreMenu'] ?? [];
+    const bottomSheetExample = moreMenuExamples.find(example =>
+      /Bottom Sheet/i.test(example.name),
+    );
+
+    expect(bottomSheetExample).toBeDefined();
+    expect(bottomSheetExample!.source).toContain('presentation="bottom-sheet"');
+    expect(bottomSheetExample!.source).toContain('label="Project actions"');
+    expect(bottomSheetExample!.source).not.toContain("type: 'divider'");
+  });
+});
+
+describe('Selector bottom-sheet examples', () => {
+  it.each(['Selector', 'MultiSelector'])(
+    'documents the %s presentation choice',
+    componentName => {
+      const component = Object.values(components)
+        .flat()
+        .find(entry => entry.name === componentName);
+      const presentation = component?.props.find(
+        prop => prop.name === 'presentation',
+      );
+
+      expect(presentation?.type).toBe(
+        "'popover' | 'bottom-sheet' | 'adaptive'",
+      );
+      expect(presentation?.default).toBe("'popover'");
+    },
+  );
+
+  it.each(['Selector', 'MultiSelector'])(
+    'registers the %s BottomSheet example',
+    componentName => {
+      const examples = exampleRegistry[componentName] ?? [];
+      const bottomSheetExample = examples.find(example =>
+        /Bottom Sheet/i.test(example.name),
+      );
+
+      expect(bottomSheetExample).toBeDefined();
+      expect(bottomSheetExample!.source).toContain(
+        'presentation="bottom-sheet"',
+      );
+    },
+  );
+});
+
 // ── Vertical ToggleButtonGroup example (#2707) ─────────────────────────────
 // ToggleButtonGroup supports orientation="vertical", but no docsite example
 // demonstrated it — the prop was undiscoverable without reading the API
@@ -1023,5 +1260,111 @@ describe('LinkProvider utility page', () => {
     const examples = exampleRegistry['LinkProvider'] ?? [];
     expect(examples.length).toBeGreaterThanOrEqual(1);
     expect(examples[0].source).toContain('<LinkProvider component=');
+  });
+});
+
+// ── Gallery Showcase Registry ──────────────────────────────────────────
+
+/**
+ * The eagerly imported showcases have to stay in step with what the
+ * /components gallery actually renders first — an eager set pointing at
+ * tiles further down the page would ship the chunk cost without removing
+ * any loading state. These tests recompute the gallery's render order from
+ * the same inputs the page uses and pin the eager set to the top of it.
+ */
+describe('galleryEagerShowcases', () => {
+  /**
+   * The gallery's category order lives in the page itself. Reading it back
+   * out of the source keeps this test honest without putting a second copy
+   * of the order anywhere — if the page is reordered, the expectations below
+   * follow it, and the eager list is what has to catch up.
+   */
+  const GALLERY_PAGE = path.join(
+    REPO_ROOT,
+    'apps/docsite/src/app/(docs)/components/page.tsx',
+  );
+  const pageSource = fs.readFileSync(GALLERY_PAGE, 'utf-8');
+  const categories = [
+    ...pageSource
+      .slice(
+        pageSource.indexOf('const CATEGORIES = ['),
+        pageSource.indexOf('] as const;'),
+      )
+      .matchAll(/'([^']+)'/g),
+  ].map(m => m[1]);
+
+  /** Mirrors the tile filtering in the same page. */
+  const isGalleryComponent = (comp: ComponentEntry) =>
+    !comp.isHiddenFromOverview &&
+    !comp.hidden &&
+    !comp.name.startsWith('use') &&
+    Boolean(comp.category) &&
+    comp.group !== 'Utilities';
+
+  /** Gallery render order: categories in display order, then registry order. */
+  const galleryOrder = categories.flatMap(cat =>
+    (components['@astryxdesign/core'] ?? []).filter(
+      c =>
+        normalizeComponentCategory(c.category ?? '') === cat &&
+        isGalleryComponent(c),
+    ),
+  );
+
+  it('reads the gallery category order out of the page', () => {
+    expect(categories.length).toBeGreaterThan(5);
+    expect(categories).toContain('Action');
+    expect(categories).toContain('Form Controls');
+    expect(categories).not.toContain('Data Input');
+    expect(galleryOrder.length).toBeGreaterThan(50);
+  });
+
+  it('renders every category some component declares', () => {
+    const declared = new Set(
+      (components['@astryxdesign/core'] ?? [])
+        .filter(isGalleryComponent)
+        .map(c => normalizeComponentCategory(c.category ?? '')),
+    );
+    for (const cat of declared) {
+      expect(
+        categories,
+        `category "${cat}" has no section on the page`,
+      ).toContain(cat);
+    }
+  });
+
+  /**
+   * The point of the eager set is that those tiles are the ones a visitor
+   * sees first. If the gallery is reordered and this list isn't, the page
+   * pays the chunk cost for tiles that are no longer on top and still shows
+   * a skeleton for the ones that are.
+   */
+  it('eagerly imports exactly the tiles at the top of the gallery', () => {
+    const expected = galleryOrder
+      .filter(c => showcaseRegistry[c.name] != null)
+      .slice(0, Object.keys(eagerShowcases).length)
+      .map(c => c.name);
+    expect(Object.keys(eagerShowcases)).toEqual(expected);
+  });
+
+  it('eager entries are components, not lazy loaders', () => {
+    for (const [name, Component] of Object.entries(eagerShowcases)) {
+      expect(Component, name).toBeTypeOf('function');
+      // A lazy loader would resolve to a promise; an eager showcase is the
+      // component itself and must render synchronously on the server.
+      expect((Component as {$$typeof?: symbol}).$$typeof).toBeUndefined();
+    }
+  });
+
+  it('every eager component also has a lazy loader', () => {
+    for (const name of Object.keys(eagerShowcases)) {
+      expect(showcaseRegistry[name], name).toBeDefined();
+    }
+  });
+
+  it('keeps the eager set small enough to stay off the critical path', () => {
+    // 12 covers a 2560x1440 viewport. Well past that and the page chunk is
+    // carrying components nobody sees before they scroll.
+    expect(Object.keys(eagerShowcases).length).toBeGreaterThanOrEqual(6);
+    expect(Object.keys(eagerShowcases).length).toBeLessThanOrEqual(16);
   });
 });

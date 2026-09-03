@@ -22,11 +22,11 @@
 #   /index.html    — landing page
 #   /latest        — short hash of latest deploy
 #
-# Publish model — cheap clean-slate via git plumbing (see "Publish" step):
+# Publish model — cheap clean-slate via the shared gh-pages publisher:
 # Every deploy replaces ONLY the regenerated stable paths (storybook/, sandbox/,
 # assets/, index.html, latest, .nojekyll) and carries /pr/ and /reports/ forward
 # untouched, then pushes the result as a single ORPHAN commit (no history). This
-# keeps three properties at once:
+# `.github/scripts/gh-pages-publisher.mjs stable-site` keeps three properties at once:
 #   A. Deploy time is O(1) in preview count. Earlier this job did
 #      `git clone` of all of gh-pages + `cp -r` the whole /pr/ tree forward on
 #      every push; once previews grew to ~1GB / tens of thousands of files that
@@ -45,13 +45,13 @@ name: Deploy
 
 on:
   push:
-    branches: ["main"]
+    branches: ['main']
   workflow_dispatch:
 
 permissions: {}
 
 concurrency:
-  group: "pages-deploy"
+  group: 'pages-deploy'
   cancel-in-progress: false
 
 jobs:
@@ -66,7 +66,6 @@ jobs:
 
       - name: Check package.json exports are in sync
         run: node scripts/sync-exports.js --check
-
 
   test:
     runs-on: 2-core-ubuntu-arm
@@ -169,6 +168,7 @@ jobs:
           # otherwise its root-absolute asset URLs (/sandbox/_next/...) drop the
           # /<repo> segment and 404. Derived from the repo name so it survives renames.
           SANDBOX_BASE_PATH: /${{ github.event.repository.name }}/sandbox
+          SANDBOX_TEMPLATE_ASSETS_BASE_PATH: /${{ github.event.repository.name }}/sandbox/template-assets
           NODE_OPTIONS: '--max-old-space-size=4096'
 
       # The landing page (assembled in `deploy`) links these straight out of
@@ -206,8 +206,12 @@ jobs:
     if: always() && !cancelled() && needs.test.result == 'success' && needs.build.result == 'success'
     runs-on: ubuntu-slim
     permissions:
+      actions: read
       contents: write
     steps:
+      - name: Checkout publisher
+        uses: actions/checkout@v7
+
       - name: Download Storybook artifact
         uses: actions/download-artifact@v8
         with:
@@ -332,75 +336,4 @@ jobs:
       - name: Publish to gh-pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Carry /pr/ and /reports/ forward WITHOUT downloading or copying them
-          # (>1GB / tens of thousands of files). See the header comment for the
-          # full rationale:
-          #   --filter=blob:none  → clone fetches trees but NO file contents
-          #   sparse-checkout     → only the stable paths are materialized;
-          #                         /pr/ & /reports/ stay in the index as
-          #                         skip-worktree entries (never written out)
-          #   git write-tree      → rebuilds the full tree from the index, so
-          #                         /pr/ & /reports/ are reused by SHA
-          #   commit-tree (no -p) → one ORPHAN commit == force_orphan, produced
-          #                         without a full local copy of gh-pages
-          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
-          WORK_DIR="$PWD"
-          MAX_ATTEMPTS=5
-
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          for attempt in $(seq 1 $MAX_ATTEMPTS); do
-            echo "::group::Publish attempt $attempt of $MAX_ATTEMPTS"
-            cd "$WORK_DIR"
-            rm -rf /tmp/ghp
-
-            # Partial + no-checkout clone: fetches commits and trees, but no blobs.
-            git clone --filter=blob:none --no-checkout --depth=1 \
-              --single-branch --branch gh-pages "$REPO_URL" /tmp/ghp
-            cd /tmp/ghp
-            OLD_HEAD="$(git rev-parse HEAD)"
-
-            # Materialize ONLY the stable paths (cone mode also keeps root files
-            # like index.html/latest/.nojekyll). /pr/ & /reports/ are left as
-            # skip-worktree index entries — never fetched, never written.
-            git sparse-checkout init --cone
-            git sparse-checkout set storybook sandbox assets
-            git checkout gh-pages
-
-            # Clean-replace the stable paths so superseded content-hashed assets
-            # don't accumulate (the bug keep_files:false originally fixed).
-            rm -rf storybook sandbox assets index.html latest
-            cp -r "$WORK_DIR"/staged/. ./
-            touch .nojekyll
-
-            # git add -A respects skip-worktree, so /pr/ & /reports/ are NOT
-            # staged for deletion — they stay in the index and are carried
-            # forward by write-tree.
-            git add -A
-            if git diff --cached --quiet; then
-              echo "Nothing to publish"; echo "::endgroup::"; exit 0
-            fi
-
-            TREE="$(git write-tree)"
-            COMMIT="$(git commit-tree "$TREE" -m "Deploy ${GITHUB_SHA:0:7} to GitHub Pages")"
-
-            # force-with-lease guards against a concurrent gh-pages writer
-            # (another main deploy or a PR-preview push); on a lost race we
-            # re-clone the fresh tip and replay, so no update is clobbered.
-            if git push origin \
-                 "--force-with-lease=refs/heads/gh-pages:${OLD_HEAD}" \
-                 "${COMMIT}:refs/heads/gh-pages"; then
-              echo "Published on attempt $attempt (orphan ${COMMIT:0:7})"
-              echo "::endgroup::"
-              exit 0
-            fi
-
-            echo "Push rejected (concurrent gh-pages update) — retrying in $((attempt * 2))s"
-            echo "::endgroup::"
-            sleep $((attempt * 2))
-          done
-
-          echo "::error::Failed to publish to gh-pages after ${MAX_ATTEMPTS} attempts"
-          exit 1
+        run: node .github/scripts/gh-pages-publisher.mjs stable-site --source staged

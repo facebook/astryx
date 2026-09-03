@@ -17,6 +17,16 @@ export const doc = {
   description:
     'The `type` discriminant present on every --json success envelope. Consumers switch on it to narrow `data`.',
   members: [
+    {
+      value: 'init.run',
+      description:
+        'The install receipt: the `mode` (`default` | `features`), the features run, agent-doc files written, any soft `docsError`, whether theme guidance was emitted, the template outcome (`workflow` | `created` | `skipped`) plus its path, and whether the next-steps were emitted.',
+    },
+    {
+      value: 'init.remove',
+      description:
+        'Confirmation that the managed agent-docs block was removed (`data.removed: true`) — returned when --remove-agents is set.',
+    },
     // component
     {
       value: 'component.list',
@@ -113,7 +123,7 @@ export const doc = {
     {
       value: 'build.kit',
       description:
-        'The grouped composition kit: echoed query, hasResults/directMatch flags, the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.',
+        'The grouped composition kit: echoed query, hasResults/matchCount/directMatch fields, the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.',
     },
 
     // swizzle
@@ -153,7 +163,7 @@ export const doc = {
     {
       value: 'template.cdn',
       description:
-        'A write receipt for the no-build-step CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
+        'A write receipt for the no-build-step CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not. `exists` when a file was already there, which is a success.',
     },
 
     // hook
@@ -182,7 +192,7 @@ export const doc = {
     {
       value: 'theme.build.batch',
       description:
-        'Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme\'s theme.build (or theme.build.check) envelope, or null when it produced no CSS.',
+        "Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme's theme.build (or theme.build.check) envelope, or null when it produced no CSS.",
     },
     {
       value: 'theme.list',
@@ -197,7 +207,12 @@ export const doc = {
     {
       value: 'theme.template',
       description:
-        'A write receipt for the annotated theme template: the path (relative to cwd), whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
+        'A write receipt for the annotated theme template: the path (relative to cwd), whether it was written, and the reason it was not. `exists` when a file was already there, which is a success.',
+    },
+    {
+      value: 'theme.targets',
+      description:
+        'The whole themeable surface: the echoed filter, the component count, and one entry per theming target — {key, className, component, props, states}, where props and states are its legal override keys.',
     },
 
     // upgrade

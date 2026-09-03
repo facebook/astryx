@@ -37,10 +37,12 @@ import {Icon} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useSideNavCollapse} from './SideNavCollapseContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
@@ -59,7 +61,7 @@ const styles = stylex.create({
     minHeight: spacingVars['--spacing-8'],
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
-      ':has(.astryx-navicon)': 0,
+      ':has(.astryx-nav-icon)': 0,
     },
     paddingInlineEnd: spacingVars['--spacing-2'],
     paddingBlock: 0,
@@ -73,7 +75,10 @@ const styles = stylex.create({
     paddingInline: 0,
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -91,7 +96,10 @@ const styles = stylex.create({
   // Menu trigger: like interactive but no hover background.
   // Only cursor:pointer signals interactivity; the popover provides context.
   menuTrigger: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -205,14 +213,17 @@ const styles = stylex.create({
     minHeight: spacingVars['--spacing-8'],
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
-      ':has(.astryx-navicon)': 0,
+      ':has(.astryx-nav-icon)': 0,
     },
     paddingInlineEnd: spacingVars['--spacing-2'],
     paddingBlock: 0,
     marginBlockStart: spacingVars['--spacing-1'],
     marginBlockEnd: spacingVars['--spacing-2'],
     marginInline: spacingVars['--spacing-1'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // Chevron inside the popover heading — same as chevron but rotated up
   popoverChevron: {
@@ -390,10 +401,17 @@ export function SideNavHeading({
   // setTriggerEl belongs on the chevron button, not this root: it is the
   // focus-restore target and a <div> cannot take focus. triggerRef stays here
   // because the panel anchors to the whole heading.
-  const setRef = mergeRefs<HTMLDivElement>(
+  const setRef = useMergedRefs<HTMLDivElement>(
     rootRef,
     ref,
     menu ? popover.triggerRef : undefined,
+  );
+  const collapsedSetRef = useMergedRefs<HTMLElement>(
+    collapsedItemRef,
+    ref,
+    // Collapsed, this button is the trigger, so it takes both roles.
+    menu ? popover.triggerRef : undefined,
+    menu ? setTriggerEl : undefined,
   );
 
   // In collapsed mode: hide if no icon, show icon-only if has icon
@@ -402,14 +420,6 @@ export function SideNavHeading({
   }
   if (isCollapsed && icon) {
     const collapsedIcon = <span {...stylex.props(styles.icon)}>{icon}</span>;
-
-    const collapsedSetRef = mergeRefs<HTMLElement>(
-      collapsedItemRef,
-      ref,
-      // Collapsed, this button is the trigger, so it takes both roles.
-      menu ? popover.triggerRef : undefined,
-      menu ? setTriggerEl : undefined,
-    );
 
     let collapsedElement: ReactNode;
 
@@ -424,6 +434,7 @@ export function SideNavHeading({
             themeProps('side-nav-heading'),
             focusOutlineProps.focusVisible(
               navItemStyles.item,
+              interactionOverlayStyles.backgroundColor,
               styles.rootCollapsed,
               xstyle,
             ),
@@ -447,6 +458,7 @@ export function SideNavHeading({
               themeProps('side-nav-heading'),
               focusOutlineProps.focusVisible(
                 navItemStyles.item,
+                interactionOverlayStyles.backgroundColor,
                 styles.rootCollapsed,
                 styles.menuTrigger,
                 xstyle,

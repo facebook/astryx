@@ -47,6 +47,8 @@ export {
   DATE_FORMAT_SHORT_WITH_WEEKDAY,
   DATE_FORMAT_LONG,
   DATE_FORMAT_MONTH_YEAR,
+  DATE_FORMAT_MONTH_ONLY,
+  DATE_FORMAT_WEEKDAY_ONLY,
   DATE_FORMAT_SHORT,
   DATE_FORMAT_SHORT_WITH_YEAR,
   SHARED_DATE_FORMAT_OPTIONS,
@@ -84,7 +86,7 @@ export type {
   ThemeProps,
 } from './themeProps';
 export {groupItems, getItemGroup} from './groupItems';
-export type {ItemGroup} from './groupItems';
+export type {ItemGroup, GroupItemsOptions} from './groupItems';
 export {observeResize, unobserveResize} from './sharedResizeObserver';
 export {isRenderable} from './isRenderable';
 export {getInputARIA} from './inputAria';

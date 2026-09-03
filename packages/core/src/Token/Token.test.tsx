@@ -521,3 +521,98 @@ describe('Token focus outline', () => {
     expect(container.tagName).toBe('SPAN');
   });
 });
+
+describe('Token pass-through props', () => {
+  it('forwards pass-through props to the token element', () => {
+    render(
+      <Token
+        label="Design"
+        aria-label="Design tag"
+        id="design-token"
+        data-source="filters"
+        data-testid="token"
+      />,
+    );
+    const token = screen.getByTestId('token');
+    expect(token).toHaveAttribute('aria-label', 'Design tag');
+    expect(token).toHaveAttribute('id', 'design-token');
+    expect(token).toHaveAttribute('data-source', 'filters');
+  });
+
+  it('forwards pass-through props on the clickable and link variants', () => {
+    const {rerender} = render(
+      <Token
+        label="Design"
+        onClick={() => {}}
+        id="clickable"
+        data-testid="token"
+      />,
+    );
+    expect(screen.getByTestId('token')).toHaveAttribute('id', 'clickable');
+
+    rerender(
+      <Token label="Design" href="/tags" id="link" data-testid="token" />,
+    );
+    expect(screen.getByTestId('token')).toHaveAttribute('id', 'link');
+  });
+
+  it('keeps its own label when the label is visually hidden', () => {
+    render(
+      <Token
+        label="Design"
+        isLabelHidden
+        aria-label="Caller label"
+        data-source="filters"
+        data-testid="token"
+      />,
+    );
+    const token = screen.getByTestId('token');
+    expect({
+      ariaLabel: token.getAttribute('aria-label'),
+      dataSource: token.getAttribute('data-source'),
+    }).toEqual({ariaLabel: 'Design', dataSource: 'filters'});
+  });
+});
+
+describe('Token — owned handlers on the link+remove container', () => {
+  it("composes a caller's onMouseUp with the container's link delegation", () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const handleMouseUp = vi.fn();
+    render(
+      <Token
+        label="Tag"
+        href="/test"
+        onRemove={() => {}}
+        onMouseUp={handleMouseUp}
+        icon={<span data-testid="icon">★</span>}
+      />,
+    );
+
+    fireEvent.mouseUp(screen.getByTestId('icon'), {button: 1});
+
+    expect(handleMouseUp).toHaveBeenCalledOnce();
+    expect(openSpy).toHaveBeenCalledWith('/test', '_blank', 'noopener');
+    openSpy.mockRestore();
+  });
+
+  it("does not fire the container's delegation when disabled, but still forwards the caller's onMouseUp", () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const handleMouseUp = vi.fn();
+    render(
+      <Token
+        label="Tag"
+        href="/test"
+        onRemove={() => {}}
+        onMouseUp={handleMouseUp}
+        isDisabled
+        icon={<span data-testid="icon">★</span>}
+      />,
+    );
+
+    fireEvent.mouseUp(screen.getByTestId('icon'), {button: 1});
+
+    expect(handleMouseUp).toHaveBeenCalledOnce();
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
+});

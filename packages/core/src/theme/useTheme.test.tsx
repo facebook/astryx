@@ -108,6 +108,16 @@ describe('useTheme', () => {
     expect(result.current.token('--color-text-primary')).toBe('#DFE2E5');
   });
 
+  it('keeps the token resolver and return object stable across rerenders', () => {
+    const {result, rerender} = renderHook(() => useTheme());
+    const first = result.current;
+
+    rerender();
+
+    expect(result.current.token).toBe(first.token);
+    expect(result.current).toBe(first);
+  });
+
   it('returns empty string for unknown tokens', () => {
     const {result} = renderHook(() => useTheme(), {
       wrapper: ({children}) => wrapper({children, mode: 'light'}),

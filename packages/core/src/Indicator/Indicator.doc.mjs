@@ -6,7 +6,7 @@ export const docs = {
   name: 'Indicator',
   displayName: 'Indicator',
   group: 'Indicator',
-  category: 'Data Input',
+  category: 'Form Controls',
   isHiddenFromOverview: true,
   keywords: [
     'indicator',
@@ -89,6 +89,9 @@ export const docs = {
             'Rendered INSTEAD of the mark, in every state: a host showing a pending Spinner passes it through whether or not the row is chosen.',
         },
       ],
+      playground: {
+        defaults: {state: 'checked'},
+      },
     },
     {
       name: 'RadioIndicator',
@@ -132,6 +135,8 @@ export const docs = {
         visualProps: ['size'],
         states: ['checked', 'disabled'],
       },
+      {className: 'astryx-checkbox-indicator-check', visualProps: ['size']},
+      {className: 'astryx-checkbox-indicator-dash', visualProps: ['size']},
       {
         className: 'astryx-radio-indicator',
         visualProps: ['size'],

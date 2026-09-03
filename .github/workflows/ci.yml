@@ -9,65 +9,95 @@ name: CI
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ['main']
   merge_group:
 
 permissions: {}
 
 concurrency:
-  group: "ci-${{ github.event.merge_group.head_sha || github.head_ref }}"
+  group: 'ci-${{ github.event.merge_group.head_sha || github.head_ref }}'
   cancel-in-progress: true
 
 jobs:
-
-  # Detect docsite-only changes — lets docsite PRs skip heavy jobs
+  # Detect lightweight changes. Missing merge-base data fails closed.
   check-scope:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-slim
     permissions:
       contents: read
     outputs:
       docsite_only: ${{ steps.scope.outputs.docsite_only }}
+      spec_only: ${{ steps.scope.outputs.spec_only }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 50
 
       - name: Fetch base branch
+        if: github.event_name == 'pull_request'
         run: git fetch origin ${{ github.base_ref }} --depth=50
 
       - name: Determine change scope
         id: scope
         run: |
-          MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }} 2>/dev/null || echo "")
-          if [ -z "$MERGE_BASE" ]; then
-            echo "docsite_only=false" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            printf 'docsite_only=false\nspec_only=false\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          CHANGED=$(git diff --name-only "$MERGE_BASE"...HEAD)
-          NON_DOCSITE=$(echo "$CHANGED" | grep -v '^apps/docsite/' | head -1)
-          if [ -z "$NON_DOCSITE" ]; then
-            echo "docsite_only=true" >> $GITHUB_OUTPUT
+          MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }} 2>/dev/null || echo "")
+          if [ -z "$MERGE_BASE" ]; then
+            printf 'docsite_only=false\nspec_only=false\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CLASSIFIER_DIR="$RUNNER_TEMP/change-scope"
+          mkdir -p "$CLASSIFIER_DIR"
+          CLASSIFIER="$CLASSIFIER_DIR/change-scope.cjs"
+          MATCHER="$CLASSIFIER_DIR/knowledge-paths.cjs"
+          if git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs" > "$CLASSIFIER" 2>/dev/null \
+            && git show "origin/${{ github.base_ref }}:.github/scripts/knowledge-paths.cjs" > "$MATCHER" 2>/dev/null; then
+            git diff --name-status "$MERGE_BASE"...HEAD \
+              | node "$CLASSIFIER" --github-output
           else
-            echo "docsite_only=false" >> $GITHUB_OUTPUT
+            # Bootstrap fallback: before the trusted classifier exists on main,
+            # no PR can receive the spec-only fast path.
+            CHANGED=$(git diff --name-only "$MERGE_BASE"...HEAD)
+            NON_DOCSITE=$(printf '%s\n' "$CHANGED" | grep -v '^apps/docsite/' | head -1)
+            printf 'docsite_only=%s\nspec_only=false\n' \
+              "$( [ -z "$NON_DOCSITE" ] && echo true || echo false )" \
+              >> "$GITHUB_OUTPUT"
           fi
   # Docsite data extraction tests — always runs, fast (~2s)
   docsite-test:
+    needs: [check-scope]
+    if: ${{ always() && !cancelled() }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
+      - name: Require successful scope classification
+        if: needs.check-scope.result != 'success'
+        run: |
+          echo "Change scope could not be classified; refusing to skip required work."
+          exit 1
+
       - uses: actions/checkout@v7
 
+      # Spec validation imports the canonical CLI discovery path, so the
+      # lightweight docs path needs workspace dependencies too.
       - uses: ./.github/actions/setup
+
+      - name: Validate spec records
+        if: needs.check-scope.outputs.spec_only == 'true'
+        run: node scripts/check-knowledge.mjs
 
       # docsite `generate` runs `astryx theme build`, which imports the compiled
       # @astryxdesign/core/theme entry (dist/theme/index.js). Build core first so that
       # entry exists — otherwise generate fails with "Cannot find module".
       - name: Build core package
+        if: needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/core build
 
       - name: Generate and test docsite data
+        if: needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/docsite generate && pnpm -F @astryxdesign/docsite test
 
   # Lightweight check — does the PR touch any published components?
@@ -80,12 +110,15 @@ jobs:
   # job learned about packages/lab/src.
   check-components:
     needs: [check-scope]
-    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
+    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
     runs-on: ubuntu-slim
     permissions:
       contents: read
     outputs:
       has_components: ${{ steps.check.outputs.has_components }}
+      # Stable visual scope is separate from component scope: Core and the
+      # non-private shipped themes participate; canaryOnly packages do not.
+      has_stable_visual: ${{ steps.check.outputs.has_stable_visual }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -104,53 +137,79 @@ jobs:
         run: |
           if ! git merge-base HEAD origin/${{ github.base_ref }} >/dev/null 2>&1; then
             echo "::warning::No merge base between HEAD and origin/${{ github.base_ref }} (clone too shallow) — assuming components changed so pr-a11y still runs"
-            echo "has_components=true" >> $GITHUB_OUTPUT
+            echo "has_components=true" >> "$GITHUB_OUTPUT"
+            # Fail closed for the stable lane too: without a merge base we do
+            # not know whether a stable package changed.
+            echo "has_stable_visual=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ packages/lab/src/ | grep -v -E '(hooks|theme|utils|i18n|__tests__)/' | head -1)
-          echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          CHANGED=$(printf '%s\n' "$FILES" | grep -E '^packages/(core|lab)/src/' | grep -v -E '(hooks|theme|utils|i18n|__tests__)/' | head -1 || true)
+          echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+
+          # One classifier owns the release-channel rule. It reads each
+          # package's `astryx.canaryOnly` metadata rather than hard-coding
+          # today's Lab/charts/richtext/vega list.
+          printf '%s\n' "$FILES" \
+            | node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT"
 
   # Run tests (parallel with build)
   test:
     needs: [check-scope]
+    if: ${{ always() && !cancelled() }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
-      - name: Skip for docsite-only changes
-        if: needs.check-scope.outputs.docsite_only == 'true'
-        run: echo "Docsite-only PR — skipping full test suite"
+      - name: Require successful scope classification
+        if: needs.check-scope.result != 'success'
+        run: |
+          echo "Change scope could not be classified; refusing to skip required work."
+          exit 1
+
+      - name: Skip heavy work for lightweight docs
+        if: needs.check-scope.outputs.docsite_only == 'true' || needs.check-scope.outputs.spec_only == 'true'
+        run: echo "Lightweight documentation PR — skipping full test suite"
 
       - uses: actions/checkout@v7
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
       - uses: ./.github/actions/setup
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
+
+      - name: Check knowledge schema history
+        if: >-
+          github.event_name == 'pull_request' &&
+          needs.check-scope.outputs.docsite_only != 'true' &&
+          needs.check-scope.outputs.spec_only != 'true'
+        run: |
+          git fetch origin "${{ github.event.pull_request.base.sha }}" --depth=1
+          node scripts/check-knowledge.mjs --base "${{ github.event.pull_request.base.sha }}"
 
       - name: Check copyright headers
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: ./scripts/add-copyright.sh --check
 
       - name: Check package.json exports are in sync
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: node scripts/sync-exports.js --check
 
       - name: Verify the published CLI ./api type surface
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: node .github/scripts/cli-api-types-verify.mjs
 
       - name: Check token docs are in sync
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: node scripts/generate-token-docs.mjs --check
 
       # Fails when the lab readiness manifest claims a check the source tree
       # contradicts — the report is derived, never hand-maintained.
       - name: Check lab readiness manifest is current
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm lab:readiness:check
 
       - run: pnpm test
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
   # Build storybook + typecheck + analyze components (parallel with test and
   # build-sandbox). Uploads the storybook preview and analysis artifacts for
@@ -160,6 +219,7 @@ jobs:
   # `build` join below folds their results into the historical check name.
   build-storybook:
     needs: [check-scope]
+    if: ${{ always() && !cancelled() }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -169,12 +229,18 @@ jobs:
       sandbox_url: ${{ steps.urls.outputs.sandbox_url }}
       pr_number: ${{ steps.urls.outputs.pr_number }}
     steps:
-      - name: Skip for docsite-only changes
-        if: needs.check-scope.outputs.docsite_only == 'true'
-        run: echo "Docsite-only PR — skipping full build"
+      - name: Require successful scope classification
+        if: needs.check-scope.result != 'success'
+        run: |
+          echo "Change scope could not be classified; refusing to skip required work."
+          exit 1
+
+      - name: Skip heavy work for lightweight docs
+        if: needs.check-scope.outputs.docsite_only == 'true' || needs.check-scope.outputs.spec_only == 'true'
+        run: echo "Lightweight documentation PR — skipping full build"
 
       - name: Checkout
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         uses: actions/checkout@v7
         with:
           # Depth 50 (same as check-scope) so analyze-pr.js's three-dot diff
@@ -183,58 +249,58 @@ jobs:
           fetch-depth: 50
 
       - name: Fetch base branch for PR analysis
-        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && github.event_name == 'pull_request'
         run: git fetch origin ${{ github.base_ref }} --depth=50
 
       - name: Setup Node and pnpm
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         uses: ./.github/actions/setup
 
       - name: Build core package
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm build
 
       - name: Verify package exports
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: node scripts/verify-exports.mjs
 
       - name: Typecheck component docs
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/core typecheck:docs
 
       - name: Typecheck lab docs
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/lab typecheck:docs
 
       - name: Typecheck charts docs
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/charts typecheck:docs
 
       - name: Typecheck template docs
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/cli typecheck:template-docs
 
       # Full-package strict checkJs over the CLI (src, bin, scripts, docs, and
       # the emitted templates). Requires the `pnpm build` above so the template
       # .tsx sources can resolve the built @astryxdesign/{core,charts,lab} types.
       - name: Typecheck CLI (strict)
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/cli typecheck:strict
 
       - name: Typecheck storybook
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/storybook typecheck
 
       - name: Typecheck core (including tests)
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/core typecheck
 
       - name: Build Storybook
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/storybook build
 
       - name: Compute PR preview path
-        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && github.event_name == 'pull_request'
         id: urls
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
@@ -249,15 +315,36 @@ jobs:
           echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/sandbox/" >> $GITHUB_OUTPUT
 
       - name: Upload Storybook artifact
-        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: storybook-${{ steps.urls.outputs.short_hash }}
           path: apps/storybook/dist/
           retention-days: 30
 
+      # pr-visual reads each theme's built source to learn which targets that
+      # theme styles — a theme's component map is what defineTheme returns, not
+      # a literal in its source. This job has already built them; shipping the
+      # artifact keeps that job on a download instead of a second full build.
+      #
+      # core's dist ships with them because importing a built theme executes
+      # `import {defineTheme} from '@astryxdesign/core/theme'`, which pnpm
+      # resolves through the workspace link into packages/core/dist.
+      #
+      # Two paths, so the artifact is rooted at their common ancestor
+      # (packages/) — the download below unpacks it there.
+      - name: Upload built themes and core
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dists-${{ steps.urls.outputs.short_hash }}
+          path: |
+            packages/themes/*/dist/
+            packages/core/dist/
+          retention-days: 1
+
       - name: Analyze components
-        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && github.event_name == 'pull_request'
         run: |
           node .github/scripts/analyze-pr.js \
             --base origin/${{ github.base_ref }} \
@@ -265,7 +352,7 @@ jobs:
             --output analysis.json
 
       - name: Write PR comment metadata
-        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && github.event_name == 'pull_request'
         run: |
           # The pr-comment and deploy-preview workflows run on workflow_run
           # (privileged token), so they can comment on and deploy previews for
@@ -279,15 +366,17 @@ jobs:
           {
             "prNumber": "${{ steps.urls.outputs.pr_number }}",
             "shortHash": "${{ steps.urls.outputs.short_hash }}",
-            "storybookUrl": "${{ steps.urls.outputs.storybook_url }}",
-            "sandboxUrl": "${{ steps.urls.outputs.sandbox_url }}",
+            "headSha": "${{ github.event.pull_request.head.sha }}",
+            "headRepository": "${{ github.event.pull_request.head.repo.full_name }}",
+            "baseRepository": "${{ github.event.pull_request.base.repo.full_name }}",
             "runId": "${{ github.run_id }}",
+            "runAttempt": "${{ github.run_attempt }}",
             "runUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           }
           EOF
 
       - name: Upload analysis artifact
-        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: pr-analysis
@@ -302,7 +391,7 @@ jobs:
   # preview builds entirely.
   build-sandbox:
     needs: [check-scope]
-    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
+    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -318,7 +407,7 @@ jobs:
       - name: Build core package
         run: pnpm build
 
-      - name: Compute sandbox preview path
+      - name: Compute sandbox preview paths
         id: urls
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
@@ -326,8 +415,11 @@ jobs:
           SHORT_HASH="${COMMIT_HASH:0:7}"
           REPO_NAME="${{ github.event.repository.name }}"
 
-          echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
-          echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox" >> $GITHUB_OUTPUT
+          {
+            echo "short_hash=${SHORT_HASH}"
+            echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox"
+            echo "template_assets_base_path=/${REPO_NAME}/sandbox/template-assets"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Cache Next.js build
         uses: actions/cache@v6
@@ -358,7 +450,11 @@ jobs:
           # Built without the /<repo> prefix, the sandbox's root-absolute asset URLs
           # drop that segment and 404 — breaking all styles/JS on the preview.
           SANDBOX_BASE_PATH: ${{ steps.urls.outputs.sandbox_base_path }}
+          SANDBOX_TEMPLATE_ASSETS_BASE_PATH: ${{ steps.urls.outputs.template_assets_base_path }}
           NODE_OPTIONS: '--max-old-space-size=8192'
+
+      - name: Remove shared assets from preview artifact
+        run: rm -rf apps/sandbox/out/template-assets
 
       - name: Upload Sandbox artifact
         uses: actions/upload-artifact@v7
@@ -463,13 +559,223 @@ jobs:
       - name: Run modal close visibility guard
         run: node .github/scripts/modal-close-visibility.js --storybook-dir apps/storybook/dist
 
+      # A public component var can be documented, read, and emitted into the
+      # theme CSS and still be unreachable — an inline write or an unlayered
+      # declaration outranks `@layer astryx-theme` (#4530). jsdom resolves no
+      # cascade, so the unit suites assert on the generated CSS text, which
+      # proves emission and not effect. Chromium is where the promise is
+      # checkable. The source-side wiring half lives in
+      # packages/cli/foundation/discovery/theming-targets.test.mjs.
+      - name: Run theme var reachability guard
+        run: node .github/scripts/theme-var-reachability.js --storybook-dir apps/storybook/dist
+
+  # The layer order Astryx promises is Astryx < theme < product, and which
+  # declaration paints is a cascade fact no jsdom test can settle: the build has
+  # been wrong in both directions inside one week — unsplit, so StyleX outranked
+  # every theme, then wrapped instead of split, so an app's own styles lost to
+  # one. vite.build.test.ts reads the built stylesheet; this renders it.
+  #
+  # Its own job on purpose. pr-a11y, where the sibling Chromium guards live,
+  # runs only when packages/core or packages/lab changed, and what this guards
+  # is packages/build — so hosting it there would skip it on exactly the PRs
+  # that can break it. Gated like `test` instead: everything but docsite-only.
+  theme-layers:
+    needs: [check-scope]
+    if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      # The guard imports the plugin's build artifact, the same one a consumer
+      # installs.
+      - name: Build the Vite plugin
+        run: pnpm -F @astryxdesign/build build
+
+      - name: Run theme layer cascade guard
+        run: node .github/scripts/theme-layer-cascade.js
+
+  # Guest token boundaries cross portals and the host light/dark cascade. This
+  # requires a production browser render; source and jsdom checks cannot prove
+  # which custom properties paint the portaled surfaces.
+  fixture-contrast:
+    needs: [check-scope]
+    if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      - name: Verify canonical setup compositions
+        env:
+          ASTRYX_CANONICAL_SETUP_BROWSER: '1'
+        run: pnpm vitest run internal/vibe-tests/setup-test/setup-canonical.test.ts --project node --maxWorkers=1
+
+      - name: Verify guest fixture contrast
+        run: pnpm -F @astryxdesign/vibe-tests fixtures:contrast
+
+  # Stable-package visual regression. Core component changes compare only
+  # representative or explicitly tagged story keys already present in the
+  # accepted baseline. A changed shipped theme gets its relevant matrix, but PR
+  # acceptance cannot add or remove baseline keys. Packages marked
+  # `astryx.canaryOnly` (Lab, richtext, vega) do not compare pixels and do not
+  # own a baseline.
+  #
+  # Deeper than the daily gate only where the component declares it: audit and
+  # interaction fixtures stay available to their dedicated checks without
+  # multiplying the pixel baseline.
+  #
+  # SKIPS ITSELF WHEN COMPONENT OR SHARED-INFRASTRUCTURE SCOPE IS TOO BROAD.
+  # Theme-only matrices are release evidence and are not charged against the
+  # focused component review ceiling. A token or shared-hook change puts
+  # hundreds of diffs in front of a reviewer who cannot judge them
+  # one by one, and a per-PR check is the wrong instrument for that change —
+  # the daily gate reviews it against the whole baseline instead. The skip
+  # states its reason in the PR comment rather than vanishing.
+  #
+  # SOFT / NON-BLOCKING (continue-on-error) while the suite earns trust: the
+  # verdict surfaces in the job summary and the PR comment, and the release
+  # gate is the blocking one. To promote: drop continue-on-error.
+  pr-visual:
+    name: Stable visual regression
+    needs: [build-storybook, check-components]
+    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_stable_visual == 'true'
+    runs-on: 2-core-ubuntu-arm
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-analysis
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      # Non-fatal: if this artifact is ever missing, renamed, or produced under
+      # a different key, the gate builds the themes itself. A crash here would
+      # be before the gate ever runs, which is how an artifact-wiring change
+      # reddened every open component PR twice in one day.
+      - name: Download built themes and core
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: dists-${{ needs.build-storybook.outputs.short_hash }}
+          path: packages
+
+      - name: Install Playwright
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      # The downloaded theme builds import Core's consumer-facing dist files.
+      # Rebuild only Core here so those imports resolve without repeating the
+      # full workspace build that produced the theme artifact.
+      - name: Build Core dependency for theme inspection
+        run: pnpm -F @astryxdesign/core build
+
+      - name: Fetch visual baseline from gh-pages
+        run: |
+          set -eu
+          rm -rf /tmp/gh-pages
+          git clone --depth=1 --filter=blob:none --sparse --single-branch --branch gh-pages \
+            "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
+          git -C /tmp/gh-pages sparse-checkout set visual-gate/baseline
+          mkdir -p .visual-baseline
+          if [ -d /tmp/gh-pages/visual-gate/baseline ]; then
+            cp -r /tmp/gh-pages/visual-gate/baseline/. .visual-baseline/
+          fi
+
+      - name: Run the visual gate for the touched components
+        id: visual
+        env:
+          ASTRYX_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ASTRYX_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -eu
+          # Component names are not globally unique, so filter by the package
+          # recorded in componentStats — never infer stability from a name.
+          COMPONENTS=$(jq -r '. as $root | [(.newComponents + .modifiedComponents)[] | select($root.componentStats[.].package == "@astryxdesign/core")] | unique | join(",")' analysis.json)
+          THEMES=$(jq -r '(.changedStableThemes // []) | join(",")' analysis.json)
+
+          if [ -n "$COMPONENTS" ] && [ -n "$THEMES" ]; then
+            TIERS="component,theme-matrix"
+            SCOPE_ARGS=(--components "$COMPONENTS" --themes "$THEMES")
+          elif [ -n "$COMPONENTS" ]; then
+            TIERS="component"
+            SCOPE_ARGS=(--components "$COMPONENTS" --no-scout)
+          elif [ -n "$THEMES" ]; then
+            TIERS="theme-matrix"
+            SCOPE_ARGS=(--themes "$THEMES")
+          else
+            # Shared Core theming/tokens/hooks are stable but broad. Let the
+            # gate plan the full stable surface and decline visibly at the shot
+            # budget; the daily stable gate owns the exhaustive comparison.
+            TIERS="surface,theme-matrix,probe"
+            SCOPE_ARGS=()
+          fi
+
+          echo "Stable Core components: ${COMPONENTS:-none}"
+          echo "Stable themes: ${THEMES:-none}"
+          set +e
+          node .github/scripts/visual-gate/gate.mjs check \
+            --storybook-dir apps/storybook/dist \
+            --baseline .visual-baseline \
+            --out .visual-run \
+            --tiers "$TIERS" \
+            "${SCOPE_ARGS[@]}" \
+            --summary-output visual-summary.md
+          code=$?
+          [ -f visual-summary.md ] && cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"
+          # Exit 2 is "changed", which is a question for the reviewer, not a
+          # broken job. Only a crash (1) is a failure.
+          [ "$code" -eq 1 ] && exit 1
+          exit 0
+
+      - name: Upload visual verdict and report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-pr-report
+          path: |
+            .visual-run/verdict.json
+            .visual-run/manifest.json
+            .visual-run/shots/
+            .visual-run/report/
+          retention-days: 7
+          if-no-files-found: ignore
+
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
   # analysis.json scoping, so a PR only pays for the components it touched.
   # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that
   # covers untouched components runs in rtl-weekly.yml.
   #
-  # Two layers: (A) auto-discovery — D1 icon-mirror + D5 positional-mirror, no
-  # curated selectors; (B) curated D2/D3/D4 from targets.json.
+  # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
+  # contextual directional decorations. Curated D2/D3/D4 adds behavior that
+  # needs selectors. The applicability rollup treats unexplained all-N/A as a
+  # coverage gap for both new and existing components.
   #
   # SOFT / NON-BLOCKING (continue-on-error): findings surface a scorecard in the
   # job summary but don't block the merge, while the suite is observed for
@@ -541,9 +847,9 @@ jobs:
                 const a = r.autoDiscovery;
                 const known = new Set(r.knownNotRtl || []);
                 const out = [];
-                out.push("### Auto-discovery (D1 icon-mirror, all core stories)");
+                out.push("### Auto-discovery (D1 icon-mirror, one representative story per scoped component)");
                 out.push("");
-                out.push(`**${a.pass} pass · ${a.fail} not-RTL · ${a.na} N-A** (of ${a.total} core components). Surprises (not pre-labelled): **${a.surprises.length}**${a.surprises.length ? " — " + a.surprises.join(", ") : ""}.`);
+                out.push(`**${a.pass} pass · ${a.fail} not-RTL · ${a.na} N-A** (of ${a.total} scoped components). Surprises (not pre-labelled): **${a.surprises.length}**${a.surprises.length ? ": " + a.surprises.join(", ") : ""}.`);
                 out.push("");
                 const fails = a.results.filter(x => x.verdict === "fail" || x.verdict === "ERROR");
                 if (fails.length) {
@@ -562,11 +868,11 @@ jobs:
                 out.push("");
                 const pm = r.positionalMirror;
                 if (pm) {
-                  out.push("### Positional-mirror (D5, all core stories)");
+                  out.push("### Positional-mirror (D5, all scoped stories)");
                   out.push("");
                   out.push("Catches a logical anchor (insetInlineStart/End) paired with an UNFLIPPED physical transform (translate/translateX) → element lands on the wrong side in RTL. Lint can\u2019t see this (each prop is individually fine). Tolerance " + pm.tolerancePx + "px, degenerate-parent guard (<8px) applied.");
                   out.push("");
-                  out.push(`**${pm.pass} pass · ${pm.fail} FAIL · ${pm.na} N-A** (of ${pm.total} core stories scanned).`);
+                  out.push(`**${pm.pass} pass · ${pm.fail} FAIL · ${pm.na} N-A** (of ${pm.total} scoped stories scanned).`);
                   out.push("");
                   const pmFails = pm.results.filter(x => x.verdict === "fail" || x.verdict === "ERROR");
                   if (pmFails.length) {
@@ -581,6 +887,36 @@ jobs:
                     out.push("");
                   } else {
                     out.push("_No positional-mirror FAILs._");
+                    out.push("");
+                  }
+                }
+                const decorations = r.directionalDecorations;
+                if (decorations) {
+                  out.push("### Contextual directional decorations (D6, all stories)");
+                  out.push("");
+                  out.push(`**${decorations.pass} pass · ${decorations.fail} FAIL · ${decorations.na} N-A** (of ${decorations.total} stories scanned).`);
+                  out.push("");
+                  const decorationFails = decorations.results.filter(x => x.verdict === "fail" || x.verdict === "ERROR");
+                  if (decorationFails.length) {
+                    out.push("| Story | D6 | Detail |");
+                    out.push("|-------|----|--------|");
+                    for (const c of decorationFails) out.push(`| ${c.storyId} | ${c.verdict} | ${(c.notes||[]).join("; ")} |`);
+                  } else {
+                    out.push("_No directional-decoration FAILs._");
+                  }
+                  out.push("");
+                }
+                const coverage = r.coverage;
+                if (coverage) {
+                  out.push("### Applicability coverage");
+                  out.push("");
+                  out.push(`**${coverage.measured} measured · ${coverage.verifiedNa} verified N-A · ${coverage.gaps} coverage gap · ${coverage.staleVerifiedNa} stale verified N-A.**`);
+                  out.push("");
+                  const gaps = coverage.results.filter(x => x.status === "coverage-gap" || x.status === "stale-verified-na");
+                  if (gaps.length) {
+                    out.push("| Component | Status | Detail |");
+                    out.push("|-----------|--------|--------|");
+                    for (const c of gaps) out.push(`| ${c.component} | ${c.status} | ${c.note || c.reason || "unexplained all-N/A result"} |`);
                     out.push("");
                   }
                 }

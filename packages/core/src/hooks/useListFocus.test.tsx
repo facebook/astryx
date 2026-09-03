@@ -3,14 +3,14 @@
 /**
  * @file useListFocus.test.tsx
  * @input Uses vitest, @testing-library/react, useListFocus hook
- * @output Unit tests for useListFocus disabled-item skipping, navigation, and
- *   RTL auto-detection
+ * @output Unit tests for useListFocus disabled-item skipping, navigation,
+ *   Escape consumption, and RTL auto-detection
  * @position Testing; validates useListFocus.ts keyboard navigation
  *
  * SYNC: When useListFocus.ts changes, update tests to match new behavior
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import type {KeyboardEvent as ReactKeyboardEvent} from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {useListFocus} from './useListFocus';
@@ -523,5 +523,67 @@ describe('useListFocus boundarySelector (nested lists)', () => {
     const innerProbe = screen.getByTestId('inner-probe');
     fireEvent.keyDown(innerProbe, {key: 'ArrowDown'});
     expect(innerProbe).toHaveAttribute('data-owns', 'false');
+  });
+});
+
+// A list inside a host that dismisses on Escape. The host's guard mirrors
+// `useFocusTrap`: it acts only on a key no inner handler has consumed.
+function EscapeHost({
+  onEscape,
+  onHostEscape,
+}: {
+  onEscape?: () => void;
+  onHostEscape: () => void;
+}) {
+  const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({onEscape});
+  return (
+    <div
+      data-testid="host"
+      onKeyDown={e => {
+        if (e.key === 'Escape' && !e.defaultPrevented) {
+          onHostEscape();
+        }
+      }}>
+      <div ref={listRef} role="menu" onKeyDown={handleKeyDown}>
+        <div role="menuitem" tabIndex={-1} data-testid="One">
+          One
+        </div>
+        <div role="menuitem" tabIndex={-1} data-testid="Two">
+          Two
+        </div>
+      </div>
+    </div>
+  );
+}
+
+describe('useListFocus Escape', () => {
+  it('leaves Escape to the host when no onEscape is supplied', () => {
+    const onHostEscape = vi.fn();
+    render(<EscapeHost onHostEscape={onHostEscape} />);
+
+    fireEvent.keyDown(screen.getByRole('menu'), {key: 'Escape'});
+    expect(onHostEscape).toHaveBeenCalledTimes(1);
+  });
+
+  it('consumes Escape and runs onEscape when one is supplied', () => {
+    const onEscape = vi.fn();
+    const onHostEscape = vi.fn();
+    render(<EscapeHost onEscape={onEscape} onHostEscape={onHostEscape} />);
+
+    fireEvent.keyDown(screen.getByRole('menu'), {key: 'Escape'});
+    expect(onEscape).toHaveBeenCalledTimes(1);
+    expect(onHostEscape).not.toHaveBeenCalled();
+  });
+
+  it('still consumes arrow keys with no onEscape (page-scroll suppression)', () => {
+    render(<EscapeHost onHostEscape={() => {}} />);
+    screen.getByTestId('One').focus();
+
+    // fireEvent returns false when a handler cancelled the event.
+    const wasCancelled = !fireEvent.keyDown(screen.getByRole('menu'), {
+      key: 'ArrowDown',
+    });
+    expect(wasCancelled).toBe(true);
+    expect(screen.getByTestId('Two')).toHaveFocus();
   });
 });

@@ -15,7 +15,7 @@ export const docs = {
   name: 'TransferListSelector',
   displayName: 'Transfer List Selector',
   group: 'Selector',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'transfer list',
     'dual list',

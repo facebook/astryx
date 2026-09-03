@@ -1,5 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Tooltip surface',
+    required: true,
+    description: 'Painted overlay surface that presents the tooltip.',
+  },
+  {
+    name: 'Tooltip text',
+    required: true,
+    description: 'Tooltip content rendered within the surface.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -70,7 +84,7 @@ export const docs = {
           name: 'touchTrigger',
           type: "'auto' | 'tap' | 'none'",
           description:
-            'What a tap does where there is no hover. auto opens on tap unless the trigger performs an action of its own (a button, link, or form control), whose tap belongs to the control. tap always opens — use it for an info icon rendered as a button, whose only job is to reveal the tooltip. none never opens on touch.',
+            'What a tap does where there is no hover. auto opens on tap unless the trigger performs an action of its own (a button, link, or form control), whose tap belongs to the control. tap always opens; use it for an info icon rendered as a button, whose only job is to reveal the tooltip. none never opens on touch.',
           default: "'auto'",
         },
         {
@@ -96,6 +110,11 @@ export const docs = {
           type: 'boolean',
           description: 'Whether the tooltip should be shown on mount. Still dismissible.',
         },
+        {
+          name: 'isOpen',
+          type: 'boolean',
+          description: 'Controlled open state for the tooltip.',
+        },
       ],
     },
   ],
@@ -105,6 +124,7 @@ export const docs = {
     ],
   },
   usage: {
+    anatomy,
     description:
       'A short text hint that appears on hover or focus, anchored to a trigger element. Use it to describe icon-only buttons, show the full text of truncated labels, or provide supplementary context without cluttering the UI.',
     bestPractices: [
@@ -212,6 +232,7 @@ export const docsZh = {
     ],
   },
   usage: {
+    anatomy,
     description:
       'A short text hint that appears on hover or focus, anchored to a trigger element. Use it to describe icon-only buttons, show the full text of truncated labels, or provide supplementary context without cluttering the UI.',
     bestPractices: [
@@ -228,6 +249,7 @@ export const docsZh = {
 export const docsDense = {
   description: 'Hover/focus triggered tooltip for displaying short, non-interactive text anchored to trigger element.',
   usage: {
+    anatomy,
     description:
       'A short text hint that appears on hover or focus, anchored to a trigger element. Use it to describe icon-only buttons, show the full text of truncated labels, or provide supplementary context without cluttering the UI.',
     bestPractices: [

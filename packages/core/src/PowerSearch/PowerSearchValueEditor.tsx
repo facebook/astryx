@@ -12,7 +12,13 @@
  * - /packages/core/src/PowerSearch/index.ts
  */
 
-import React, {useCallback, useMemo} from 'react';
+import React, {
+  useCallback,
+  useMemo,
+  useRef,
+  type FormEvent,
+  type KeyboardEvent,
+} from 'react';
 import type {
   OperatorValue,
   FilterValue,
@@ -27,12 +33,16 @@ import type {ISOTimeString} from '../utils';
 // Lazy import to avoid circular deps — these are all from the same package
 import {TextInput} from '../TextInput';
 import {NumberInput} from '../NumberInput';
+import {
+  resolveNumberInputCommit,
+  type NumberInputCommitDecision,
+} from '../NumberInput/numberInputCommit';
 import {DateInput} from '../DateInput';
 import {TimeInput} from '../TimeInput';
 import {Selector} from '../Selector';
 import {Tokenizer} from '../Tokenizer';
 import {Typeahead} from '../Typeahead';
-import {useTranslator} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 
 export interface PowerSearchValueEditorProps {
   operatorValue: OperatorValue;
@@ -40,6 +50,8 @@ export interface PowerSearchValueEditorProps {
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
   onEnter?: () => void;
   config: InternalConfig;
+  /** Max suggestions in string and entity value typeaheads. */
+  maxMenuItems?: number;
   isDisabled?: boolean;
   timezoneID?: string;
 }
@@ -80,11 +92,13 @@ function StringEditor({
   filterValue,
   onChange,
   onEnter: _onEnter,
+  maxMenuItems,
 }: {
   operatorValue: OperatorValue & {type: 'string'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
   onEnter?: () => void;
+  maxMenuItems?: number;
 }) {
   const t = useTranslator();
   const currentValue = filterValue?.type === 'string' ? filterValue.value : '';
@@ -111,6 +125,7 @@ function StringEditor({
         }}
         placeholder={t('@astryx.powersearch.valueEditor.searchPlaceholder')}
         debounceMs={150}
+        maxMenuItems={maxMenuItems}
       />
     );
   }
@@ -132,10 +147,12 @@ function StringListEditor({
   operatorValue,
   filterValue,
   onChange,
+  maxMenuItems,
 }: {
   operatorValue: OperatorValue & {type: 'string_list'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
+  maxMenuItems?: number;
 }) {
   const t = useTranslator();
   const currentValue: SearchableItem[] = useMemo(() => {
@@ -176,31 +193,107 @@ function StringListEditor({
       placeholder={t('@astryx.powersearch.valueEditor.addValuesPlaceholder')}
       debounceMs={operatorValue.searchSource ? 150 : 0}
       hasCreate={hasCreate}
+      maxMenuItems={maxMenuItems}
     />
   );
+}
+
+function useNumberEditorHandlers({
+  valueType,
+  min,
+  max,
+  isIntegerOnly,
+  onChange,
+  onEnter,
+}: {
+  valueType: 'integer' | 'float';
+  min?: number;
+  max?: number;
+  isIntegerOnly: boolean;
+  onChange: (value: FilterValue, shouldSave?: boolean) => void;
+  onEnter?: () => void;
+}) {
+  const locale = useLocale();
+  const pendingDecisionRef = useRef<NumberInputCommitDecision | null>(null);
+  const toFilterValue = useCallback(
+    (value: number): FilterValue =>
+      valueType === 'integer'
+        ? {type: 'integer', value}
+        : {type: 'float', value},
+    [valueType],
+  );
+  const handleChange = useCallback(
+    (value: number) => {
+      onChange(toFilterValue(value));
+    },
+    [onChange, toFilterValue],
+  );
+  const handleFocus = useCallback(() => {
+    pendingDecisionRef.current = null;
+  }, []);
+  const handleInput = useCallback(
+    (event: FormEvent<HTMLElement>) => {
+      pendingDecisionRef.current = resolveNumberInputCommit(
+        (event.currentTarget as HTMLInputElement).value,
+        {min, max, isIntegerOnly, locale, hasClear: false},
+      );
+    },
+    [isIntegerOnly, locale, max, min],
+  );
+  const handleEnter = useCallback(() => {
+    const decision = pendingDecisionRef.current;
+    pendingDecisionRef.current = null;
+    if (decision === null) {
+      onEnter?.();
+    } else if (decision.type === 'commit') {
+      onChange(toFilterValue(decision.value), true);
+    }
+  }, [onChange, onEnter, toFilterValue]);
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Enter') {
+        event.stopPropagation();
+      }
+    },
+    [],
+  );
+
+  return {handleChange, handleEnter, handleFocus, handleInput, handleKeyDown};
 }
 
 function IntegerEditor({
   operatorValue,
   filterValue,
   onChange,
+  onEnter,
 }: {
   operatorValue: OperatorValue & {type: 'integer'};
   filterValue: FilterValue | undefined;
-  onChange: (value: FilterValue) => void;
+  onChange: (value: FilterValue, shouldSave?: boolean) => void;
+  onEnter?: () => void;
 }) {
   const t = useTranslator();
   const currentValue =
     filterValue?.type === 'integer' ? filterValue.value : undefined;
+  const handlers = useNumberEditorHandlers({
+    valueType: 'integer',
+    min: operatorValue.minValue,
+    max: operatorValue.maxValue,
+    isIntegerOnly: true,
+    onChange,
+    onEnter,
+  });
 
   return (
     <NumberInput
       label={t('@astryx.powersearch.valueEditor.value')}
       isLabelHidden
       value={currentValue ?? null}
-      onChange={(value: number) => {
-        onChange({type: 'integer', value});
-      }}
+      onChange={handlers.handleChange}
+      onFocus={handlers.handleFocus}
+      onInput={handlers.handleInput}
+      onEnter={handlers.handleEnter}
+      onKeyDown={handlers.handleKeyDown}
       min={operatorValue.minValue}
       max={operatorValue.maxValue}
       units={operatorValue.units}
@@ -214,23 +307,35 @@ function FloatEditor({
   operatorValue,
   filterValue,
   onChange,
+  onEnter,
 }: {
   operatorValue: OperatorValue & {type: 'float'};
   filterValue: FilterValue | undefined;
-  onChange: (value: FilterValue) => void;
+  onChange: (value: FilterValue, shouldSave?: boolean) => void;
+  onEnter?: () => void;
 }) {
   const t = useTranslator();
   const currentValue =
     filterValue?.type === 'float' ? filterValue.value : undefined;
+  const handlers = useNumberEditorHandlers({
+    valueType: 'float',
+    min: operatorValue.minValue,
+    max: operatorValue.maxValue,
+    isIntegerOnly: false,
+    onChange,
+    onEnter,
+  });
 
   return (
     <NumberInput
       label={t('@astryx.powersearch.valueEditor.value')}
       isLabelHidden
       value={currentValue ?? null}
-      onChange={(value: number) => {
-        onChange({type: 'float', value});
-      }}
+      onChange={handlers.handleChange}
+      onFocus={handlers.handleFocus}
+      onInput={handlers.handleInput}
+      onEnter={handlers.handleEnter}
+      onKeyDown={handlers.handleKeyDown}
       min={operatorValue.minValue}
       max={operatorValue.maxValue}
       units={operatorValue.units}
@@ -537,10 +642,12 @@ function EntityListEditor({
   operatorValue,
   filterValue,
   onChange,
+  maxMenuItems,
 }: {
   operatorValue: OperatorValue & {type: 'entity_list'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
+  maxMenuItems?: number;
 }) {
   const t = useTranslator();
   const source = useMemo<SearchSource<SearchableItem>>(() => {
@@ -588,6 +695,7 @@ function EntityListEditor({
       renderItem={operatorValue.renderItem}
       placeholder={t('@astryx.powersearch.valueEditor.searchPlaceholder')}
       debounceMs={operatorValue.searchSource ? 150 : 0}
+      maxMenuItems={maxMenuItems}
     />
   );
 }
@@ -631,6 +739,7 @@ export function PowerSearchValueEditor({
   filterValue,
   onChange,
   onEnter,
+  maxMenuItems,
   isDisabled,
 }: PowerSearchValueEditorProps) {
   switch (operatorValue.type) {
@@ -644,6 +753,7 @@ export function PowerSearchValueEditor({
           filterValue={filterValue}
           onChange={onChange}
           onEnter={onEnter}
+          maxMenuItems={maxMenuItems}
         />
       );
 
@@ -653,6 +763,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          maxMenuItems={maxMenuItems}
         />
       );
 
@@ -662,6 +773,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          onEnter={onEnter}
         />
       );
 
@@ -671,6 +783,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          onEnter={onEnter}
         />
       );
 
@@ -734,6 +847,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          maxMenuItems={maxMenuItems}
         />
       );
 

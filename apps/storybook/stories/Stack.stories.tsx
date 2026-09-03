@@ -752,6 +752,12 @@ export const Scrollable: Story = {
     padding: 2,
     isScrollable: true,
     height: 160,
+    // A scrollable stack of non-interactive content needs a tab stop and an
+    // accessible name so keyboard users can scroll it (axe:
+    // scrollable-region-focusable). Stack forwards these through BaseProps.
+    tabIndex: 0,
+    role: 'region',
+    'aria-label': 'Scrollable stack',
   },
   render: args => (
     <Stack {...args} xstyle={styles.container}>

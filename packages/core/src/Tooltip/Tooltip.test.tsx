@@ -18,8 +18,15 @@ import {
   beforeEach,
   afterAll,
 } from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  renderHook,
+  screen,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react';
 import {Tooltip} from './Tooltip';
+import {useTooltip} from './useTooltip';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 // Store original matches to restore later
@@ -52,6 +59,19 @@ beforeAll(() => {
 afterAll(() => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (HTMLElement.prototype as any).matches = originalMatches;
+});
+
+describe('useTooltip identity', () => {
+  it('keeps callback refs stable across unchanged rerenders', () => {
+    const {result, rerender} = renderHook(() => useTooltip());
+    const firstRef = result.current.ref;
+    const firstInteractionRef = result.current.interactionRef;
+
+    rerender();
+
+    expect(result.current.ref).toBe(firstRef);
+    expect(result.current.interactionRef).toBe(firstInteractionRef);
+  });
 });
 
 describe('Tooltip', () => {
@@ -274,6 +294,38 @@ describe('Tooltip', () => {
       // Give any (incorrect) async hide a chance to run.
       await new Promise(r => setTimeout(r, 20));
       expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    });
+  });
+
+  describe('controlled', () => {
+    // Escape asks a controlled tooltip to close by calling this same handler,
+    // so a consumer who complies sees the request and then this echo. Pinning
+    // the echo here keeps the two straight.
+    it('echoes the close through onOpenChange when the consumer flips isOpen', async () => {
+      const onOpenChange = vi.fn();
+      const {rerender} = render(
+        <Tooltip content="Pinned" isOpen onOpenChange={onOpenChange} delay={0}>
+          <button type="button">Trigger</button>
+        </Tooltip>,
+      );
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+      onOpenChange.mockClear();
+
+      rerender(
+        <Tooltip
+          content="Pinned"
+          isOpen={false}
+          onOpenChange={onOpenChange}
+          delay={0}>
+          <button type="button">Trigger</button>
+        </Tooltip>,
+      );
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
     });
   });
   describe('touch', () => {

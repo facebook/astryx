@@ -30,6 +30,7 @@ import React, {
   useMemo,
   type ReactNode,
   type MouseEvent,
+  type FocusEvent,
 } from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -52,6 +53,11 @@ import type {ChatComposerInputControl} from './ChatContext';
 import {ChatSendButton} from './ChatSendButton';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 
 // =============================================================================
 // Types
@@ -88,8 +94,8 @@ export interface ChatComposerProps extends Omit<
   /**
    * Resting elevation of the composer body. `low` (the default) keeps today's
    * raised look — low at rest, bumping to med on hover / focus. `none` flattens
-   * it and draws a border with the same rest / hover / focus treatment as a
-   * text input (emphasized border → accent on focus, with matching inset rings).
+   * it and draws a border. Keyboard focus in the editor adds the shared focus
+   * ring in either presentation; pointer focus does not add that ring.
    * @default 'low'
    */
   elevation?: 'none' | 'low';
@@ -152,7 +158,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     borderRadius: 'var(--_chat-composer-radius)',
     backgroundColor: colorVars['--color-background-popover'],
-    cursor: 'text',
+    cursor: {
+      default: 'text',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transition: `box-shadow ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}, border-color ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
   },
   header: {
@@ -261,7 +270,8 @@ const styles = stylex.create({
 
 // Resting elevation for the composer body, narrowed to two steps.
 // - `low` (default) preserves today's look: low at rest, bumping to med on
-//   hover / focus-within (a CSS-only interaction state the component owns).
+//   hover / focus-within. The WCAG focus indicator is a separate shared ring,
+//   gated to keyboard focus in the editor; the shadow change remains depth.
 // - `none` is flat; depth comes from a border + inset rings instead. The
 //   border is drawn *inside* the padding — its width is subtracted from every
 //   side (like Card) so total inset (border + padding) equals the elevated
@@ -302,6 +312,15 @@ const elevationStyles = stylex.create({
     },
   },
 });
+
+function isComposerEditor(target: EventTarget | null): target is HTMLElement {
+  return (
+    target instanceof HTMLElement &&
+    target.matches(
+      'textarea, [contenteditable="true"], [role="textbox"], input:not([type]), input[type="text"], input[type="search"], input[type="email"], input[type="url"], input[type="tel"], input[type="password"]',
+    )
+  );
+}
 
 // =============================================================================
 // Component
@@ -350,6 +369,9 @@ export function ChatComposer(props: ChatComposerProps) {
     placeholderFromProps ?? t('@astryx.chat.composer.placeholder');
 
   const [internalValue, setInternalValue] = useState('');
+  const [hasKeyboardEditorFocus, setHasKeyboardEditorFocus] = useState(false);
+
+  useInteractionModalityTracking();
 
   const isControlled = controlledValue !== undefined;
   const currentValue = isControlled ? controlledValue : internalValue;
@@ -406,6 +428,25 @@ export function ChatComposer(props: ChatComposerProps) {
     );
     editable?.focus();
   }, []);
+
+  const handleBodyFocusCapture = useCallback(
+    (event: FocusEvent<HTMLDivElement>) => {
+      setHasKeyboardEditorFocus(
+        isComposerEditor(event.target) &&
+          getInteractionModality() === 'keyboard',
+      );
+    },
+    [],
+  );
+
+  const handleBodyBlurCapture = useCallback(
+    (event: FocusEvent<HTMLDivElement>) => {
+      if (!event.currentTarget.contains(event.relatedTarget)) {
+        setHasKeyboardEditorFocus(false);
+      }
+    },
+    [],
+  );
 
   const statusEl = status ? (
     <div
@@ -466,9 +507,13 @@ export function ChatComposer(props: ChatComposerProps) {
         <div
           ref={bodyRef}
           onClick={handleBodyClick}
+          onPointerDownCapture={() => setHasKeyboardEditorFocus(false)}
+          onFocusCapture={handleBodyFocusCapture}
+          onBlurCapture={handleBodyBlurCapture}
           {...stylex.props(
             styles.body,
             elevationStyles[elevation],
+            hasKeyboardEditorFocus && focusOutlineStyles.focusWithin,
             density === 'compact' && styles.compact,
             xstyle,
           )}>

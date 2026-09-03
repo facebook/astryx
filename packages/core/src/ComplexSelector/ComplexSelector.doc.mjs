@@ -9,13 +9,53 @@
  * SYNC: When modified, update ComplexSelector.tsx, tests, and stories.
  */
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Field',
+    required: true,
+    description:
+      'Field shell that provides the label and optional supporting field content.',
+  },
+  {
+    name: 'Trigger',
+    required: true,
+    description:
+      'Control that displays the current value or placeholder and opens the popup.',
+  },
+  {
+    name: 'Icon-rendered start icon',
+    required: false,
+    description:
+      'Optional leading semantic icon or icon component rendered through Icon.',
+  },
+  {
+    name: 'Caller-rendered start content',
+    required: false,
+    description:
+      'Optional arbitrary React content rendered directly at the start of the trigger.',
+  },
+  {
+    name: 'Indicator icon',
+    required: true,
+    description:
+      'Trailing chevron that rotates to reflect whether the popup is open.',
+  },
+  {
+    name: 'Popup',
+    required: true,
+    description:
+      'Mounted dialog surface that is painted and shown while open and hidden while closed.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ComplexSelector',
   displayName: 'Complex Selector',
   group: 'Selector',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'selector',
     'picker',
@@ -144,6 +184,12 @@ export const docs = {
             'Imperative handle for programmatic control. Exposes open(), close(), toggle(), and isOpen().',
         },
         {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description:
+            'Called whenever the surface opens or closes, however it happened — trigger, keyboard, light dismiss, Escape, close(), or the imperative handle.',
+        },
+        {
           name: 'contentXstyle',
           type: 'StyleXStyles',
           description: 'StyleX styles for the popup content container.',
@@ -152,6 +198,7 @@ export const docs = {
     },
   ],
   usage: {
+    anatomy,
     description:
       'Use ComplexSelector when a selection needs richer custom content than a Selector option row. It is intentionally one component: ComplexSelector owns the field, trigger, popover, focus restore, and changeAction flow, while the content render prop owns the selector-specific accessible structure.',
     bestPractices: [
@@ -208,13 +255,24 @@ export const docsDense = {
   name: 'ComplexSelector',
   displayName: 'Complex Selector',
   group: 'Selector',
-  category: 'Data Input',
+  category: 'Form Controls',
   description:
     'Input/ghost trigger + dialog-popover shell for rich custom selectors. Content gets value/onChange/close/state; content owns semantics. Use focus hooks and evaluate custom content against WCAG 2.2.',
   usage: {
+    anatomy,
     description:
       'Use when a selection needs richer custom content than a Selector row. One component: it owns field, trigger, popover, focus restore, and changeAction; the render prop owns the selector-specific accessible structure.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          'Use variant="ghost" with a startIcon for a toolbar trigger. Use alignment="end" when a wide surface should align its end edge to the trigger.',
+      },
+      {
+        guidance: true,
+        description:
+          'For staged editors, keep draft state in the composed content and call the provided onChange helper only from Apply. Cancel or dismiss without committing.',
+      },
       {
         guidance: true,
         description:
@@ -264,6 +322,7 @@ export const docsDense = {
     placement: 'Popup placement.',
     alignment: 'Popup alignment.',
     handleRef: 'Imperative open/close/toggle handle.',
+    onOpenChange: 'Notified on every open and close, whatever caused it.',
     accessibility:
       'Custom content must provide its own accessible structure. Use focus hooks and evaluate against WCAG 2.2.',
   },

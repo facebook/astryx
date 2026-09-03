@@ -48,6 +48,8 @@ Probes at turns 0, 6, 8, 10 to measure quality degradation. Results show a line 
 }
 ```
 
+Runners may also write an optional `<promptId>.provenance.json` sidecar beside the result metadata. The versioned, executor-neutral contract and fallback behavior are documented in `internal/vibe-tests/docs/execution-provenance.md`.
+
 ## AI Context
 
 For architectural context, decisions, and research, see the **[GitHub Wiki](https://github.com/facebook/astryx/wiki)**:
@@ -67,6 +69,8 @@ Documentation lives in two places:
 2. **Component Docs** — `{Name}.doc.mjs` files in each component directory (props, features, examples)
 
 **Update Protocol**: When modifying code, update the file's header comment. Look for `SYNC:` comments as reminders.
+
+**Audience**: every `.doc.mjs`, and everything under `packages/cli/assets/docs/`, is written for people **building with** Astryx — not for people building Astryx. Rubrics, readiness gates, audit checklists and lab→core criteria belong in the wiki. [`packages/cli/assets/docs/README.md`](packages/cli/assets/docs/README.md) has the test and the page each kind of material goes to.
 
 ## Quick Reference
 

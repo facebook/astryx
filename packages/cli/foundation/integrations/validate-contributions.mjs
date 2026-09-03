@@ -23,6 +23,7 @@ import * as fs from 'node:fs';
 import {discoverIntegrationCodemods} from '../../assets/codemods/integration-discovery.mjs';
 import {discoverIntegrationTemplatesForOne} from '../discovery/template-adapter.mjs';
 import * as componentDiscovery from '../discovery/component-discovery.mjs';
+import {discoverIntegrationDocs} from '../discovery/docs-discovery.mjs';
 
 /**
  * @typedef {import('./issue').AstryxIntegrationIssue} Issue
@@ -34,15 +35,49 @@ export function issueError(code, message) {
   return {code, severity: 'error', message};
 }
 
+/** @param {string} code @param {string} message @returns {Issue} */
+export function issueWarning(code, message) {
+  return {code, severity: 'warning', message};
+}
+
+/**
+ * Report the manifest keys this CLI does not know.
+ *
+ * A WARNING, deliberately: an integration is published once and installed
+ * against many CLI versions, so a key introduced by a later CLI arrives here
+ * routinely and means only that this CLI cannot act on it. It used to be fatal
+ * — `.strict()` rejected the manifest, and a manifest that fails to parse
+ * contributes nothing at all, so one added field took the package's
+ * components, templates and codemods down with it on every older consumer
+ * (#5119). The fix is upgrading the CLI, which is what the message says.
+ *
+ * @param {LoadedIntegration} integration
+ * @param {Issue[]} issues
+ */
+function checkUnknownKeys(integration, issues) {
+  const keys = integration.__unknownKeys ?? [];
+  if (keys.length === 0) return;
+  issues.push(
+    issueWarning(
+      'unknown_manifest_key',
+      `This CLI does not know the manifest ${keys.length === 1 ? 'key' : 'keys'} ` +
+        `${keys.map(key => `"${key}"`).join(', ')}, so ${keys.length === 1 ? 'it is' : 'they are'} ` +
+        `ignored — everything else in the manifest still applies. This usually ` +
+        `means the integration was published against a newer Astryx CLI than ` +
+        `this project resolves; upgrading @astryxdesign/cli picks it up.`,
+    ),
+  );
+}
+
 /**
  * Verify each declared contribution root exists on disk. A declared-but-missing
  * root is a `missing_root` error.
- * @param {{components?: string, templates?: string, codemods?: string}} resolved
+ * @param {{components?: string, templates?: string, codemods?: string, docs?: string}} resolved
  *   absolute resolved roots (undefined when not declared)
  * @param {Issue[]} issues
  */
 function checkRoots(resolved, issues) {
-  const kinds = /** @type {const} */ (['components', 'templates', 'codemods']);
+  const kinds = /** @type {const} */ (['components', 'templates', 'codemods', 'docs']);
   for (const kind of kinds) {
     const root = resolved[kind];
     if (root == null) continue;
@@ -125,6 +160,31 @@ async function checkComponents(integration, issues) {
 }
 
 /**
+ * Validate the integration's doc topics via the landed discovery. A doc that
+ * cannot be loaded, is not a usable topic, or collides with a sibling is
+ * reported as an `invalid_doc` error.
+ *
+ * Only per-file problems are visible here: a topic that collides with another
+ * PACKAGE's, or names a `replaces`/`extends` target that does not exist, can
+ * only be judged once every integration is resolved together, so those are
+ * raised by `Project.docs()` instead.
+ *
+ * @param {LoadedIntegration} integration loaded-integration-shaped object
+ * @param {Issue[]} issues
+ */
+async function checkDocs(integration, issues) {
+  if (!integration.docs || !fs.existsSync(integration.docs)) return;
+  try {
+    const {errors} = await discoverIntegrationDocs(integration);
+    for (const e of errors) {
+      issues.push(issueError('invalid_doc', e.message));
+    }
+  } catch (err) {
+    issues.push(issueError('invalid_doc', /** @type {any} */ (err).message));
+  }
+}
+
+/**
  * Run every contribution validator against a loaded-integration-shaped object.
  * @param {LoadedIntegration} integration
  * @param {Issue[]} issues
@@ -133,6 +193,7 @@ async function runContributionChecks(integration, issues) {
   await checkCodemods(integration, issues);
   await checkTemplates(integration, issues);
   await checkComponents(integration, issues);
+  await checkDocs(integration, issues);
 }
 
 /**
@@ -156,11 +217,13 @@ export async function validateLoadedIntegration(loaded) {
   if (loaded.__loadError) {
     return [issueError('integration_error', loaded.__loadError)];
   }
+  checkUnknownKeys(loaded, issues);
   checkRoots(
     {
       components: loaded.components,
       templates: loaded.templates,
       codemods: loaded.codemods,
+      docs: loaded.docs,
     },
     issues,
   );

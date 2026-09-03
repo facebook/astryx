@@ -198,7 +198,7 @@ const overrides = stylex.create({
   content: { gap: 'var(--spacing-4)' },
 });
 
-<Dialog isOpen={isOpen} onClose={close} xstyle={overrides.dialog}>
+<Dialog isOpen={isOpen} onOpenChange={close} xstyle={overrides.dialog}>
   <Layout
     header={
       <LayoutHeader hasDivider>

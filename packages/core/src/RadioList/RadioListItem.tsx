@@ -23,7 +23,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {RadioListContext} from './RadioList';
-import {mergeProps, isRenderable} from '../utils';
+import {mergeProps, isRenderable, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {useIndicator} from '../Indicator';
@@ -41,34 +41,24 @@ const styles = stylex.create({
   },
   input: {
     position: 'absolute',
+    top: '50%',
     margin: 0,
     padding: 0,
     opacity: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
-    minInlineSize: {
-      default: null,
-      '@media (pointer: coarse)': '24px',
-    },
-    minBlockSize: {
-      default: null,
-      '@media (pointer: coarse)': '24px',
-    },
-    insetBlockStart: {
-      default: null,
-      '@media (pointer: coarse)': '50%',
-    },
-    insetInlineStart: {
-      default: null,
-      '@media (pointer: coarse)': '50%',
-    },
-    transform: {
-      default: null,
-      '@media (pointer: coarse)': 'translate(-50%, -50%)',
+  },
+  inputCoarse: {
+    '@media (pointer: coarse)': {
+      minInlineSize: 24,
+      minBlockSize: 24,
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   // Holds only the indicator, so the focus ring has one unambiguous target.
   indicatorSlot: {
@@ -110,17 +100,42 @@ const rowStyles = stylex.create({
 export interface RadioListItemProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
-   * Label text for the radio item.
+   * Primary label for the radio item.
+   *
+   * Accepts a plain string or a ReactNode for rich content. Links and buttons
+   * in the label keep their own behavior; only non-interactive row clicks
+   * delegate to the radio. The radio points at the rendered label for its
+   * accessible name, so a rich label still names it from its own text — pass
+   * `aria-label` when that text is absent or too noisy to announce.
    */
-  label: string;
+  label: ReactNode;
+  /**
+   * Plain-text accessible name for the radio, applied to the control rather
+   * than the row. It replaces the name the label would otherwise supply — a
+   * plain string label included — so reach for it when a rich label's own
+   * text is absent or reads badly, not as a routine addition.
+   *
+   * @example
+   * ```
+   * <RadioListItem
+   *   label={<span>Pro plan <Badge label="Recommended" /></span>}
+   *   aria-label="Pro plan"
+   *   value="pro"
+   * />
+   * ```
+   */
+  'aria-label'?: string;
   /**
    * Value of this radio item.
    */
   value: string;
   /**
-   * Description text displayed below the label.
+   * Secondary content displayed below the label. Accepts a plain string or a
+   * ReactNode. Links and buttons anywhere in the row keep their own click
+   * behaviour — the row only delegates clicks from its non-interactive
+   * surface to the radio.
    */
-  description?: string;
+  description?: ReactNode;
   /**
    * Whether this individual radio item is disabled.
    * @default false
@@ -152,6 +167,7 @@ export interface RadioListItemProps extends BaseProps<HTMLDivElement> {
 export function RadioListItem({
   ref,
   label,
+  'aria-label': ariaLabel,
   value,
   description,
   isDisabled: isItemDisabled = false,
@@ -169,6 +185,7 @@ export function RadioListItem({
   }
 
   const id = useId();
+  const labelID = useId();
   const descriptionID = useId();
   const isDisabled = context.isDisabled || isItemDisabled;
   // When the whole group is disabled with a disabledMessage, radios stay
@@ -178,6 +195,10 @@ export function RadioListItem({
   const keepsFocusableForMessage =
     context.hasDisabledMessage && !isItemDisabled;
   const isChecked = context.value === value;
+  // One predicate for both the rendered element and the aria-describedby that
+  // points at it. A ReactNode description can be `false` or `''`, which render
+  // nothing — a `!= null` check would leave the link dangling.
+  const hasDescription = isRenderable(description);
   const size = context.size;
   // The radio visual is an indicator: a theme can restyle it through the
   // `radio` / `radio-dot` targets or replace the component outright.
@@ -208,7 +229,6 @@ export function RadioListItem({
         name={context.name}
         value={value}
         checked={isChecked}
-        aria-label={label}
         disabled={isDisabled && !keepsFocusableForMessage}
         aria-disabled={keepsFocusableForMessage ? 'true' : undefined}
         // A focusable-disabled radio is not natively disabled, so detach it
@@ -226,9 +246,17 @@ export function RadioListItem({
         // both direct control clicks and row-surface clicks the row delegates
         // to the input — the same routing CheckboxListItem uses.
         onClick={onClick}
-        aria-describedby={description ? descriptionID : undefined}
+        // The radio names itself from the visible label element, which works
+        // for a rich label as well as a plain string. `aria-label` replaces
+        // that name rather than adding to it, so the two are mutually
+        // exclusive — aria-labelledby would otherwise win over it.
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabel == null ? labelID : undefined}
+        aria-describedby={hasDescription ? descriptionID : undefined}
         {...stylex.props(
           styles.input,
+          rtlStyles.centerInline('-50%'),
+          styles.inputCoarse,
           wrapperSizeStyles[size],
           isDisabled && styles.inputDisabled,
         )}
@@ -261,9 +289,9 @@ export function RadioListItem({
       // focusable control, so the row adds no second tab stop.
       interactiveRef={radioRef}
       isDisabled={isDisabled}
-      label={<span>{label}</span>}
+      label={<span id={labelID}>{label}</span>}
       description={
-        isRenderable(description) ? (
+        hasDescription ? (
           <span id={descriptionID}>{description}</span>
         ) : undefined
       }

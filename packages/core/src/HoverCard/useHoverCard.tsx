@@ -31,6 +31,7 @@ import {
   type LayerTouchTrigger,
 } from '../Layer/useTouchTrigger';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {
   colorVars,
   shadowVars,
@@ -135,6 +136,11 @@ export interface HoverCardOptions {
    * - `true`: force-show the hover card (hover/focus hide is suppressed)
    * - `false`: force-hide the hover card
    * - `undefined`: uncontrolled — hover/focus triggers manage visibility
+   *
+   * A controlled hover card still takes Escape when it is the top-most layer,
+   * and answers by calling `onHide` without hiding itself — closing is your
+   * update's decision, exactly as for a controlled Dialog. Ignore the call and
+   * the card stays, and so does the press: nothing underneath dismisses.
    */
   isOpen?: boolean;
 
@@ -184,10 +190,24 @@ export interface HoverCardReturn {
   anchorId: string;
 
   /**
-   * ID for aria-describedby on the trigger element.
-   * Caller should compose with other IDs using mergeIds utility.
+   * Unique ID for the hover card container.
+   * Useful for `aria-controls` or `aria-owns` on the trigger.
+   */
+  id: string;
+
+  /**
+   * Deprecated alias of `id`. Kept for backwards compatibility; prefer `id`.
    */
   describedBy: string;
+
+  /**
+   * Whether the hover card is currently open.
+   * Useful for driving `aria-expanded` on the trigger — but only when the
+   * trigger's role permits it (`button`, `link`, `combobox`, …). On a role-less
+   * trigger `aria-expanded` is invalid; use `aria-haspopup`/`aria-controls`
+   * alone there.
+   */
+  isOpen: boolean;
 
   /**
    * Render function for hover card content.
@@ -409,19 +429,71 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     [layer.id, scheduleHide],
   );
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        // Stop propagation so parent components don't react to the same Escape
-        e.stopPropagation();
-        // Hide immediately without refocusing (we're already on trigger)
-        clearTimeouts();
-        touch.clearTapOpen();
-        layer.hide();
+  // Escape dismissal (WCAG 1.4.13) goes through the shared layer stack: a
+  // visible card is the top-most layer, so it takes the press and consumes it.
+  //
+  // This replaces a keydown listener on the TRIGGER that called
+  // stopPropagation() on any Escape while the trigger merely had focus — open
+  // card or not — so focusing a HoverCard trigger inside a Dialog silently ate
+  // the press that should have closed the Dialog. Presence is now answered from
+  // the DOM, so a closed card never claims a press.
+  // A controlled hover card stays on the stack and takes the press like any
+  // other layer, but answers it by reporting instead of hiding: `isOpen` is
+  // the consumer's value, so only their update may change it. Same contract as
+  // a controlled Dialog.
+  useLayerDismissal({
+    // Registered for the hook's lifetime rather than gated on `layer.isOpen`:
+    // that state can lag a frame behind the DOM, so a press arriving right after
+    // the layer appears would find nothing registered. Because this layer
+    // CONSUMES the press, a stale registration would be worse than a missed one
+    // — it would silently eat Escapes meant for the dialog underneath — so
+    // presence is answered from the DOM at press time instead of from state.
+    isActive: true,
+    isPresent: () => {
+      const el =
+        typeof document === 'undefined'
+          ? null
+          : document.getElementById(layer.id);
+      if (el == null) {
+        return false;
+      }
+      try {
+        return el.matches(':popover-open');
+      } catch {
+        // Browsers without the Popover API (and some test environments) cannot
+        // answer the selector; fall back to the hook's own state.
+        return layer.isOpen;
       }
     },
-    [touch, clearTimeouts, layer],
-  );
+    onDismiss: () => {
+      clearTimeouts();
+      touch.clearTapOpen();
+      // Controlled: report and stop. The close — and the focus restore that
+      // goes with it — happens in the controlled effect if and when the
+      // consumer flips `isOpen`.
+      if (isOpen !== undefined) {
+        onHide?.();
+        return;
+      }
+      // Only when the card itself held focus, which is the one case the
+      // content-level handler this replaced could run in. Refocusing
+      // unconditionally would drag the caret out of a field the user was
+      // typing in while a hover card happened to be up; arming the re-show
+      // guard unconditionally would swallow their next focus on the trigger,
+      // because a focus() on the already-focused trigger fires no focusin to
+      // clear it.
+      const card =
+        typeof document === 'undefined'
+          ? null
+          : document.getElementById(layer.id);
+      const hadFocus = card?.contains(document.activeElement) ?? false;
+      layer.hide();
+      if (hadFocus) {
+        isEscapeDismissingRef.current = true;
+        triggerRef.current?.focus();
+      }
+    },
+  });
 
   // Interaction ref that handles event listeners only
   const {handlePointerEnter} = touch;
@@ -436,7 +508,6 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
           'focusout',
           handleFocusOut as EventListener,
         );
-        triggerRef.current.removeEventListener('keydown', handleKeyDown);
         triggerRef.current.removeEventListener(
           'pointerenter',
           handlePointerEnter,
@@ -465,9 +536,6 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
           el.addEventListener('focusin', handleFocusIn);
           el.addEventListener('focusout', handleFocusOut as EventListener);
         }
-
-        // Attach keydown for Escape handling
-        el.addEventListener('keydown', handleKeyDown);
       }
 
       triggerRef.current = el;
@@ -478,7 +546,6 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       handleMouseLeave,
       handleFocusIn,
       handleFocusOut,
-      handleKeyDown,
       handlePointerEnter,
       handlePointerDown,
     ],
@@ -518,7 +585,19 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       layer.show();
     } else {
       clearTimeouts();
+      // A consumer closing the card while it holds focus would strand focus on
+      // <body>. Arming the re-show guard is what keeps the refocus from
+      // reopening the card through `handleFocusIn`, which shows on any focusin.
+      const card =
+        typeof document === 'undefined'
+          ? null
+          : document.getElementById(layer.id);
+      const hadFocus = card?.contains(document.activeElement) ?? false;
       layer.hide();
+      if (hadFocus) {
+        isEscapeDismissingRef.current = true;
+        triggerRef.current?.focus();
+      }
     }
   }, [isOpen, clearTimeouts, layer]);
 
@@ -529,7 +608,11 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       props?: Omit<ContextRenderProps, 'positioning'>,
     ): ReactNode => {
       const renderPlacement = props?.placement ?? placement;
-      const themeClassName = themeProps('hovercard').className;
+      const themeClassName = themeProps('hover-card', undefined, {
+        // `hovercard` ran the compound name together; themes styling it keep
+        // working until the next major.
+        legacyNames: ['hovercard'],
+      }).className;
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
@@ -576,20 +659,6 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
             isHoveringContentRef.current = false;
             scheduleHide();
           }}
-          onKeyDown={e => {
-            if (e.key === 'Escape') {
-              // Stop propagation so parent components don't react to the same Escape
-              e.stopPropagation();
-              // Set flag to prevent re-show when we refocus trigger
-              isEscapeDismissingRef.current = true;
-              // Hide immediately
-              clearTimeouts();
-              touch.clearTapOpen();
-              layer.hide();
-              // Refocus the trigger
-              triggerRef.current?.focus();
-            }
-          }}
           onBlur={e => {
             // Check if focus is moving back to the trigger or staying within content
             const relatedTarget = e.relatedTarget as HTMLElement | null;
@@ -630,7 +699,9 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     positionRef: layer.ref,
     interactionRef,
     anchorId: layer.anchorId,
+    id: layer.id,
     describedBy: layer.id,
+    isOpen: layer.isOpen,
     renderHoverCard,
     show: layer.show,
     hide: layer.hide,

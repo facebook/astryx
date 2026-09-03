@@ -4,13 +4,14 @@
 
 /**
  * @file TimeInput.tsx
- * @input Uses React, useId, useState, useCallback, useRef, Field, Icon, InputGroupContext, useAnnounce
- * @output Exports TimeInput component, TimeInputProps
+ * @input Uses React, Field, NativeTimeSegment, InputGroupContext, pointer media queries, and shared time utilities
+ * @output Exports TimeInput, TimeInputProps, and TimeInputNativePicker
  * @position Core implementation; consumed by index.ts, tested by TimeInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TimeInput/TimeInput.doc.mjs (props table, features, implementation notes)
- * - /packages/core/src/TimeInput/TimeInput.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/TimeInput/TimeInput.test.tsx (typed-field tests)
+ * - /packages/core/src/TimeInput/NativeTimeInput.test.tsx (native-picker tests)
  * - /packages/core/src/TimeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TimeInput.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/TimeInput/ (showcase blocks)
@@ -58,7 +59,6 @@ import {
   isImeKeyEvent,
   isTimeInRange,
   mergeProps,
-  mergeRefs,
   getInputARIA,
 } from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -66,6 +66,7 @@ import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -73,6 +74,11 @@ import {groupStyles} from '../InputGroup/groupStyles';
 import {useTooltip} from '../Tooltip';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {NativeTimeSegment} from '../DateTimeInput/NativeTimeSegment';
+
+const TOUCH_POINTER_QUERY = '(pointer: coarse)';
 
 const styles = stylex.create({
   icon: {
@@ -102,7 +108,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
@@ -127,6 +133,9 @@ const sizeStyles = stylex.create({
 export type TimeInputSize = keyof typeof sizeStyles;
 
 export type TimeInputHourFormat = '12h' | '24h';
+
+/** Which surface TimeInput uses for time selection. */
+export type TimeInputNativePicker = 'touch' | 'always' | 'never';
 
 // Re-export shared types for convenience
 
@@ -263,6 +272,20 @@ export interface TimeInputProps extends Omit<
   increment?: number;
 
   /**
+   * Which time-selection surface to use.
+   *
+   * - `'touch'`: browser/OS picker on coarse pointers, Astryx's typed field on
+   *   fine pointers
+   * - `'always'`: browser/OS picker wherever `<input type="time">` is supported
+   * - `'never'`: Astryx's typed field everywhere
+   *
+   * Native time pickers cannot preserve seconds or Astryx's arrow-key cadence,
+   * so `hasSeconds` or `increment !== 1` keeps the typed field.
+   * @default 'touch'
+   */
+  nativePicker?: TimeInputNativePicker;
+
+  /**
    * Placeholder text shown when no time is selected.
    * @default "Select a time"
    */
@@ -336,6 +359,7 @@ export function TimeInput({
   hasAutoFocus = false,
   hourFormat = '12h',
   increment = 1,
+  nativePicker = 'touch',
   placeholder: placeholderFromProps,
   size: sizeProp,
   status,
@@ -352,12 +376,20 @@ export function TimeInput({
   const placeholder =
     placeholderFromProps ?? t('@astryx.timeInput.placeholder');
   const size = useSize(sizeProp, 'md');
+  const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
+  const requestsNativePicker =
+    nativePicker === 'always' || (nativePicker === 'touch' && isTouch);
+  // iOS has no seconds wheel and treats step as validation rather than wheel
+  // cadence. Preserve those explicit Astryx contracts instead of degrading them.
+  const usesNativeTimePicker =
+    requestsNativePicker && !hasSeconds && increment === 1;
 
   const id = useId();
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const mergedInputRef = useMergedRefs(ref, inputRef);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputGroup = useInputGroup();
 
@@ -592,8 +624,11 @@ export function TimeInput({
   // Handle clear button click
   const handleClear = useCallback(() => {
     fireChange(undefined);
-    inputRef.current?.focus();
-  }, [fireChange]);
+    // Focusing a native time control reopens the OS picker on iOS.
+    if (!usesNativeTimePicker) {
+      inputRef.current?.focus();
+    }
+  }, [fireChange, usesNativeTimePicker]);
 
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
@@ -612,8 +647,8 @@ export function TimeInput({
         // unconditionally is safe.
         disabledMessageTooltip.ref(el);
       }}
-      onClick={handleWrapperClick}
-      onMouseUp={handleWrapperMouseUp}
+      onClick={usesNativeTimePicker ? undefined : handleWrapperClick}
+      onMouseUp={usesNativeTimePicker ? undefined : handleWrapperMouseUp}
       {...mergeProps(
         themeProps('time-input', {
           size,
@@ -633,9 +668,6 @@ export function TimeInput({
         className,
         style,
       )}>
-      <div {...stylex.props(styles.icon)}>
-        <Icon icon="clock" size="sm" color="secondary" />
-      </div>
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       {inputGroup && description && (
         <VisuallyHidden as="div" id={descriptionID}>
@@ -647,47 +679,74 @@ export function TimeInput({
           {status.message}
         </VisuallyHidden>
       )}
-      <input
-        ref={mergeRefs(ref, inputRef)}
-        id={id}
-        type="text"
-        value={displayValue}
-        onChange={handleInputChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        onKeyDown={handleInputKeyDown}
-        placeholder={displayPlaceholder}
-        // With a disabledMessage the input keeps focusability via
-        // aria-disabled so the reason is focus-discoverable; typing and
-        // arrow-key adjustment are blocked with readOnly and the guards.
-        disabled={isDisabled && !showsDisabledMessage}
-        aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        readOnly={showsDisabledMessage || undefined}
-        autoFocus={hasAutoFocus}
-        data-autofocus={hasAutoFocus || undefined}
-        aria-describedby={ariaDescribedBy}
-        aria-required={isEffectivelyRequired ? 'true' : undefined}
-        aria-invalid={
-          status?.type === 'error' || !isInputValid ? 'true' : undefined
-        }
-        aria-busy={isBusy || undefined}
-        aria-labelledby={ariaLabelledBy}
-        {...stylex.props(
-          styles.input,
-          isDisabled && styles.inputDisabled,
-          !isInputValid && styles.inputInvalid,
-        )}
-      />
-      {/*
-          Live region announcing invalid typed input to assistive technology.
-          The value silently reverts on blur, so without this a screen-reader
-          user would get no feedback that their entry was rejected (WCAG 3.3.1).
-        */}
-      <VisuallyHidden as="div" role="alert" aria-live="assertive">
-        {!isInputValid ? t('@astryx.timeInput.invalidTime') : ''}
-      </VisuallyHidden>
+      {usesNativeTimePicker ? (
+        <NativeTimeSegment
+          id={id}
+          inputRef={mergedInputRef}
+          value={optimisticValue}
+          onChange={fireChange}
+          placeholder={placeholder}
+          openPickerLabel={t('@astryx.timeInput.openPicker', {label})}
+          ariaLabelledBy={ariaLabelledBy}
+          hasAutoFocus={hasAutoFocus}
+          min={min}
+          max={max}
+          hourFormat={hourFormat}
+          isEffectivelyDisabled={isDisabled}
+          hasDisabledMessage={showsDisabledMessage}
+          isEffectivelyRequired={isEffectivelyRequired}
+          isBusy={isBusy}
+          statusType={status?.type}
+          ariaDescribedBy={ariaDescribedBy}
+        />
+      ) : (
+        <>
+          <div {...stylex.props(styles.icon)}>
+            <Icon icon="clock" size="sm" color="secondary" />
+          </div>
+          <input
+            ref={mergedInputRef}
+            id={id}
+            type="text"
+            value={displayValue}
+            onChange={handleInputChange}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onKeyDown={handleInputKeyDown}
+            placeholder={displayPlaceholder}
+            // With a disabledMessage the input keeps focusability via
+            // aria-disabled so the reason is focus-discoverable; typing and
+            // arrow-key adjustment are blocked with readOnly and the guards.
+            disabled={isDisabled && !showsDisabledMessage}
+            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            readOnly={showsDisabledMessage || undefined}
+            autoFocus={hasAutoFocus}
+            data-autofocus={hasAutoFocus || undefined}
+            aria-describedby={ariaDescribedBy}
+            aria-required={isEffectivelyRequired ? 'true' : undefined}
+            aria-invalid={
+              status?.type === 'error' || !isInputValid ? 'true' : undefined
+            }
+            aria-busy={isBusy || undefined}
+            aria-labelledby={ariaLabelledBy}
+            {...stylex.props(
+              styles.input,
+              isDisabled && styles.inputDisabled,
+              !isInputValid && styles.inputInvalid,
+            )}
+          />
+          {/*
+              Live region announcing invalid typed input to assistive technology.
+              The value silently reverts on blur, so without this a screen-reader
+              user would get no feedback that their entry was rejected (WCAG 3.3.1).
+            */}
+          <VisuallyHidden as="div" role="alert" aria-live="assertive">
+            {!isInputValid ? t('@astryx.timeInput.invalidTime') : ''}
+          </VisuallyHidden>
+        </>
+      )}
       {isBusy && <Spinner size="sm" />}
-      {hasClear && value && !isDisabled && (
+      {hasClear && optimisticValue && !isDisabled && (
         <InputClearButton
           label={t('@astryx.timeInput.clearLabel', {label})}
           onClick={handleClear}

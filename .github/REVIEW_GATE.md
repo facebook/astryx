@@ -20,6 +20,45 @@ neutral yellow "waiting" signal, not a red failure).
   but does not block the merge.
 - An entitled owner's **approval clears the gate automatically** (no manual step).
 
+## Spec records
+
+Any PR that creates, changes, or archives a `current` architecture, component,
+family, design, or system spec waits on `spec-owner-approval` for its exact
+current head. `cixzhang` or `imdreamrunner` can approve every record kind.
+Current design records and normative design assets may also be approved by any
+handle in `.github/DESIGNOWNERS`. Mixed PRs still require `cixzhang` or
+`imdreamrunner` for non-design current records. Same-repository owner reviews
+update the exact-head approval automatically. Fork review events cannot write
+with their read-only token, so an approver uses an issue comment containing
+`/approve-spec <full-head-sha>` instead; that command runs from the trusted
+default branch and a new commit invalidates it.
+
+When a DESIGNOWNER authors a PR, marking it ready for review attests that exact
+head for the design-approval group. That evidence also counts when the PR
+contains non-design current records, but every other applicable code or
+spec-owner group remains separately required.
+
+The attestation does not grant auto-merge by itself. The existing gate may enable
+squash auto-merge only when every changed path is a recognized spec record,
+every required owner group has approved the exact head, and all branch checks
+pass. Normative assets and indexes are outside that scope; adding any code path
+also prevents the spec-only auto-merge path.
+
+A PR changes only spec records when every changed path is one of:
+
+- `docs/specs/<id>/spec.md` or `plan.md`;
+- a family or design spec (excluding indexes, templates, schemas, and assets);
+- a colocated Core/Lab `<Name>.spec.md`.
+
+Draft-only spec records can merge after validation without owner approval.
+Pure spec-record PRs do not add Changesets because they do not release packages;
+CI rejects a PR containing only spec records and `.changeset` entries.
+That classification fails closed on an empty or truncated file list and checks
+both sides of a rename. Pure spec-record PRs run knowledge validation, skip
+runtime/build/visual work with successful required-status acknowledgements, and
+enable squash auto-merge after owner approval. Mixed code/spec changes keep full
+CI and never gain this auto-merge path.
+
 ## Sources of truth
 
 | File                                                 | Meaning                                                          |
