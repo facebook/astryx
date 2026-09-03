@@ -1050,6 +1050,21 @@ describe('TreeList', () => {
     expect(treeitems[1]).toHaveFocus();
   });
 
+  it('still delivers keydowns from the header slot to the consumer onKeyDown (#5853)', () => {
+    const handleKeyDown = vi.fn();
+    render(
+      <TreeList
+        items={flatItems}
+        header={<input data-testid="header-input" />}
+        onKeyDown={handleKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByTestId('header-input'), {key: 'Escape'});
+
+    expect(handleKeyDown).toHaveBeenCalledTimes(1);
+    expect(handleKeyDown.mock.calls[0][0]).toMatchObject({key: 'Escape'});
+  });
+
   // ===========================================================================
   // APG keyboard navigation
   // ===========================================================================

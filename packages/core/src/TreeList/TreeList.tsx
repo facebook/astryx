@@ -271,24 +271,23 @@ export function TreeList({
     hasRovingTabIndex: true,
   });
 
-  // Run the consumer's handler first so `event.preventDefault()` reliably
-  // cancels the built-in arrow-key/expand-collapse behavior. Attached
-  // directly to the `<ul>` rather than left on the outer `<div>` (where
-  // `restProps` lands): the native keydown event starts at the focused
-  // treeitem and bubbles outward, so a handler left on the ancestor `<div>`
-  // would always run after `handleKeyDown` already moved focus. The event's
-  // `currentTarget` type differs from the declared `HTMLDivElement` here,
-  // but every property a consumer handler actually reads off it (key,
-  // preventDefault, etc.) is identical.
+  // The consumer's own onKeyDown stays on the root `<div>` (below, via
+  // onKeyDownCapture) rather than moving to the `<ul>`: the root is also
+  // where the `header` slot mounts, as a sibling of the `<ul>`, so a handler
+  // living only on the `<ul>` would never see keydowns from inside `header`.
+  // Capture phase (top-down) is what lets it still run before the built-in
+  // handler below, which stays in its original bubble-phase spot on the
+  // `<ul>` — capture on an ancestor always precedes bubble on a descendant,
+  // regardless of listener registration order. `handleTreeKeyDown` just
+  // bails once the consumer has already called `preventDefault()`.
   const handleTreeKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLUListElement>) => {
-      consumerOnKeyDown?.(e as unknown as React.KeyboardEvent<HTMLDivElement>);
       if (e.defaultPrevented) {
         return;
       }
       handleKeyDown(e);
     },
-    [consumerOnKeyDown, handleKeyDown],
+    [handleKeyDown],
   );
 
   const hasExpandableItems = items.some(
@@ -371,6 +370,7 @@ export function TreeList({
         className,
         style,
       )}
+      onKeyDownCapture={consumerOnKeyDown}
       {...restProps}>
       {header != null && (
         <div id={headerId} {...stylex.props(styles.header)}>
