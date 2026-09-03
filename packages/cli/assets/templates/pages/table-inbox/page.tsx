@@ -620,21 +620,35 @@ const STACK_ROWS_BELOW = 560;
 const TIGHTEN_COLUMNS_BELOW = 900;
 
 /**
- * What the list is worth on arrival.
+ * What the pane is worth on arrival: two thirds, leaving the list a third.
  *
- * 480 rather than a share of the window, because the list is the index and the
- * pane is the thing being read: the list needs enough width to tell nine
- * threads apart and no more, and that is a pixel quantity, not a percentage.
- * It is also deliberately under `STACK_ROWS_BELOW`, so the first thing anyone
- * sees is the stacked layout on a page wide enough to have used columns —
- * which is the point being made, that the row layout answers to the space the
- * table has rather than to the size of the window.
+ * A share rather than a pixel width. The list is the index and the pane is the
+ * thing being read, so the ratio between them is the constant — a fixed 480px
+ * list is a third of a 1440px page but well over half of the surface the
+ * docsite gives a preview, where it read as a table with a pane tacked on.
  *
- * A starting position, not a constraint. The handle overrides it immediately
- * and `maxSizePx` outranks it on very wide screens, where the pane hits its
- * readable-line-length ceiling and the surplus goes to the list instead.
+ * A starting position, not a constraint. The handle overrides it immediately,
+ * `PANE_MAX_WIDTH` outranks it on very wide screens where the pane hits its
+ * readable-line-length ceiling and the surplus goes to the list instead, and
+ * `LIST_MIN_WIDTH` outranks it going the other way.
  */
-const LIST_DEFAULT_WIDTH = 480;
+const PANE_DEFAULT_SHARE = 2 / 3;
+
+/**
+ * The narrowest the list may be dragged.
+ *
+ * Enforced as a ceiling on the pane rather than a floor on the list, because
+ * the list is not a sized region — it is whatever `LayoutContent` has left.
+ * At this width rows have long since stacked, so what it protects is a stacked
+ * row that can still name a sender and a subject.
+ */
+const LIST_MIN_WIDTH = 300;
+
+/**
+ * The widest the pane may be dragged. A reading pane is a column of prose, and
+ * past roughly this the line length stops being readable.
+ */
+const PANE_MAX_WIDTH = 1040;
 
 /**
  * The tab strip's height, borrowed by the bulk-selection bar that replaces it.
@@ -1382,18 +1396,16 @@ function ConversationPane({
           <Toolbar
             label="Conversation"
             startContent={
-              /* `accessibilityLevel={2}` for the outline — this is the pane's
-                 title and belongs directly under the page's h1 — while
-                 `type="display-3"` sets the size off the display scale rather
-                 than the heading scale, so the subject reads as the thing the
-                 pane is about without an h2's page-header weight. */
+              /* A plain h2: the pane's title, directly under the page's h1.
+                 It was on the display scale, which is built for hero copy and
+                 renders at a size the docsite's own type ramp does not use
+                 anywhere else — beside the rest of the page it read as a
+                 different document. The heading scale is the one the subject
+                 belongs on. */
               <Heading
-                level={3}
-                type="display-3"
-                accessibilityLevel={2}
-                // Two lines, then truncate. Display-3 is large enough that a
-                // long subject no longer fits on one, and cutting it at the
-                // first line hid most of what the pane is about. Three would
+                level={2}
+                // Two lines, then truncate. Cutting a long subject at the
+                // first line hid most of what the pane is about; three would
                 // start moving the message down far enough to notice between
                 // threads, so the tooltip covers the rest.
                 maxLines={2}
@@ -2005,21 +2017,24 @@ export default function SupportInboxTemplate() {
    * `snaps`, which are not magnetism but the only positions the panel may rest
    * at, and no `collapsible`, because both halves have to stay on screen.
    *
-   * `defaultSize` is a percentage and not the pixel arithmetic that would land
-   * the list exactly on `LIST_DEFAULT_WIDTH`, because at this point there is
-   * nothing to do that arithmetic against: the hook takes its default once, on
-   * the first render, before the surface has been measured. The pixel answer
-   * arrives just below, as soon as there is a width to subtract from.
+   * `defaultSize` is a rough first guess and not the real split. The hook
+   * takes its default once, on the first render, before the surface has been
+   * measured — and a percentage there is no better, because the hook resolves
+   * one against `window.innerWidth`, which is the very measurement this
+   * template cannot trust. The real answer arrives just below, as soon as
+   * there is a surface width to take a share of.
    */
   const pane = useResizable({
     defaultSize: '58%',
     minSizePx: 440,
-    // A reading pane is a column of prose, and past roughly this the line
-    // length stops being readable. Wide screens spend the surplus on the list.
-    maxSizePx: 1040,
+    // Whichever binds first: the pane's own readable ceiling, or the width at
+    // which the list would be squeezed under `LIST_MIN_WIDTH`.
+    maxSizePx: isMeasured
+      ? Math.min(PANE_MAX_WIDTH, surfaceWidth - LIST_MIN_WIDTH)
+      : PANE_MAX_WIDTH,
   });
 
-  // Land the list on its default width, once, as soon as the surface is known.
+  // Land the pane on its share, once, as soon as the surface is known.
   //
   // Not on every measurement: this is a starting position, and re-running it
   // on resize would drag the boundary back under the user every time the
@@ -2031,7 +2046,7 @@ export default function SupportInboxTemplate() {
       return;
     }
     hasPlacedPane.current = true;
-    resizePane(surfaceWidth - LIST_DEFAULT_WIDTH);
+    resizePane(Math.round(surfaceWidth * PANE_DEFAULT_SHARE));
   }, [isMeasured, surfaceWidth, resizePane]);
 
   // Whether the rows stack is a question about the table, not the surface and
