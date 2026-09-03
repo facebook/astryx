@@ -4,7 +4,6 @@
  * @file Component doc loader — load and merge translations
  */
 
-import {pathToFileURL} from 'node:url';
 import {importUserModule} from '../fs/module-loader.mjs';
 import {parseDoc} from '../../authoring/doctypes/parse.mjs';
 
@@ -77,7 +76,8 @@ export function mergeTranslation(docs, translation) {
   }
 
   // Legacy top-level fields (for docsZh that are full ComponentDoc clones)
-  if (translation.description && !merged.usage) merged.description = translation.description;
+  if (translation.description && !merged.usage)
+    merged.description = translation.description;
 
   // Merge prop descriptions for single-component docs
   if (translation.propDescriptions && merged.props) {
@@ -109,21 +109,25 @@ export function mergeTranslation(docs, translation) {
 
   // Merge sub-component translations
   if (translation.components && merged.components) {
-    merged.components = merged.components.map((/** @type {any} */ comp, /** @type {any} */ i) => {
-      const trans = translation.components.find((/** @type {any} */ t) => t.name === comp.name)
-        || translation.components[i];
-      if (!trans) return comp;
+    merged.components = merged.components.map(
+      (/** @type {any} */ comp, /** @type {any} */ i) => {
+        const trans =
+          translation.components.find(
+            (/** @type {any} */ t) => t.name === comp.name,
+          ) || translation.components[i];
+        if (!trans) return comp;
 
-      const mergedComp = {...comp};
-      if (trans.description) mergedComp.description = trans.description;
-      if (trans.propDescriptions && comp.props) {
-        mergedComp.props = comp.props.map((/** @type {any} */ prop) => {
-          const desc = trans.propDescriptions[prop.name];
-          return desc != null ? {...prop, description: desc} : prop;
-        });
-      }
-      return mergedComp;
-    });
+        const mergedComp = {...comp};
+        if (trans.description) mergedComp.description = trans.description;
+        if (trans.propDescriptions && comp.props) {
+          mergedComp.props = comp.props.map((/** @type {any} */ prop) => {
+            const desc = trans.propDescriptions[prop.name];
+            return desc != null ? {...prop, description: desc} : prop;
+          });
+        }
+        return mergedComp;
+      },
+    );
   }
 
   return merged;
@@ -138,17 +142,24 @@ export function mergeTranslation(docs, translation) {
  * @param {{zh?: boolean, dense?: boolean, lang?: string}} [opts]
  * @returns {Promise<any>}
  */
-export async function loadDocs(readmePath, {zh = false, dense = false, lang} = {}) {
-  const mod = await import(pathToFileURL(readmePath).href);
+export async function loadDocs(
+  readmePath,
+  {zh = false, dense = false, lang} = {},
+) {
+  // Through the gated loader: doc modules from a checkout execute on import,
+  // and this path must honor ASTRYX_NO_PROJECT_CODE like loadComponentDoc.
+  const mod = await importUserModule(readmePath);
   const docs = mod.docs;
 
   // Resolve which translation to use (--lang takes priority over legacy flags)
   const locale = lang || (dense ? 'dense' : zh ? 'zh' : null);
   if (!locale) return docs;
 
-  const translationKey = locale === 'zh' ? 'docsZh' : locale === 'dense' ? 'docsDense' : null;
+  const translationKey =
+    locale === 'zh' ? 'docsZh' : locale === 'dense' ? 'docsDense' : null;
   if (!translationKey || !mod[translationKey]) return docs;
 
+  /** @type {any} */
   const translation = mod[translationKey];
 
   // A full ComponentDoc-shaped translation (legacy docsZh shape) used to be
@@ -158,7 +169,10 @@ export async function loadDocs(readmePath, {zh = false, dense = false, lang} = {
   // `isIconOnly`. A reader of the translated docs cannot discover a prop that
   // is not there. Overlay it instead, so an untranslated prop falls back to
   // its English entry. (Same principle as the reference-doc overlays, #2182.)
-  if (translation.props || translation.components?.some((/** @type {any} */ c) => c.props)) {
+  if (
+    translation.props ||
+    translation.components?.some((/** @type {any} */ c) => c.props)
+  ) {
     return overlayComponentDoc(docs, translation);
   }
 
@@ -185,7 +199,9 @@ function overlayComponentDoc(docs, translation) {
    */
   const overlayProps = (baseProps, tProps) => {
     if (!baseProps) return baseProps;
-    const byName = new Map((tProps ?? []).map((/** @type {any} */ p) => [p.name, p]));
+    const byName = new Map(
+      (tProps ?? []).map((/** @type {any} */ p) => [p.name, p]),
+    );
     return baseProps.map((/** @type {any} */ prop) => {
       const t = byName.get(prop.name);
       // Take the translated text, but never let it drop the prop's contract

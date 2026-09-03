@@ -30,10 +30,11 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL, fileURLToPath} from 'node:url';
+import {fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {CLI_ROOT, findCoreDir} from '../../../foundation/fs/paths.mjs';
+import {importUserModule} from '../../../foundation/fs/module-loader.mjs';
 import {
   assertWithin,
   sanitizeName,
@@ -47,10 +48,7 @@ import {
   collectThemingTargets,
   targetsByKey,
 } from '../../../foundation/discovery/theming-targets.mjs';
-import {
-  collectUnloadedFonts,
-  formatFontLoadingHelp,
-} from './font-warning.mjs';
+import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -232,8 +230,8 @@ async function loadKnownValues(componentName) {
   if (!fs.existsSync(docPath)) return {};
 
   try {
-    const docModule = await import(pathToFileURL(docPath).href);
-    const doc = docModule.docs;
+    const docModule = await importUserModule(docPath);
+    const doc = /** @type {any} */ (docModule.docs);
     if (!doc?.theming?.targets) return {};
 
     // Collect all props — from doc.props or doc.components[].props
@@ -343,7 +341,6 @@ function readComponentDeclarations(pascalName) {
   return contents;
 }
 
-
 /** @type {Map<string, Array<{moduleName: string, interfacePrefix: string}>>} */
 const _augmentationTargetCache = new Map();
 
@@ -402,7 +399,8 @@ async function resolveAugmentationTargetCandidates(componentName) {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+        if (entry.name === 'node_modules' || entry.name === '__tests__')
+          continue;
         await scan(full);
         continue;
       }
@@ -539,12 +537,13 @@ async function generateVariantDeclarationsAsync(themeDef) {
       if (values.size === 0) continue;
 
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const target = (await resolveAugmentationTargetCandidates(component)).find(
-        candidate =>
-          componentHasAugmentableInterface(
-            candidate.moduleName,
-            `${candidate.interfacePrefix}${propPascal}Map`,
-          ),
+      const target = (
+        await resolveAugmentationTargetCandidates(component)
+      ).find(candidate =>
+        componentHasAugmentableInterface(
+          candidate.moduleName,
+          `${candidate.interfacePrefix}${propPascal}Map`,
+        ),
       );
 
       // Only augment interfaces that actually exist as an extension point in

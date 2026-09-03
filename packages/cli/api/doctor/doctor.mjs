@@ -24,11 +24,25 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
 
-import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
+import {
+  MIN_NODE_VERSION,
+  isNodeVersionSupported,
+} from '../../foundation/env/node-version.mjs';
+import {
+  importUserModule,
+  projectCodeAllowed,
+} from '../../foundation/fs/module-loader.mjs';
 import {CLI_ROOT, findCoreDir} from '../../foundation/fs/paths.mjs';
-import {detectPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {
+  detectPackageManager,
+  getCliInvocation,
+} from '../../foundation/env/package-manager.mjs';
 import {findConfigPath, Project} from '../../foundation/config/project.mjs';
-import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
+import {
+  semverCompare,
+  isValidSemver,
+  satisfiesRange,
+} from '../../foundation/env/semver.mjs';
 
 const _require = createRequire(import.meta.url);
 
@@ -145,11 +159,13 @@ function findThemePackages(cwd) {
  * @returns {{wired: boolean, source: string|null}}
  */
 function detectThemeWiring(cwd) {
-  if (process.env.ASTRYX_THEME) return {wired: true, source: 'ASTRYX_THEME env var'};
+  if (process.env.ASTRYX_THEME)
+    return {wired: true, source: 'ASTRYX_THEME env var'};
   const nm = findNodeModules(cwd);
   const projectDir = nm ? path.dirname(nm) : cwd;
   const pkg = readPkg(path.join(projectDir, 'package.json'));
-  if (pkg?.astryx?.theme) return {wired: true, source: 'package.json astryx.theme'};
+  if (pkg?.astryx?.theme)
+    return {wired: true, source: 'package.json astryx.theme'};
   return {wired: false, source: null};
 }
 
@@ -192,7 +208,9 @@ export function checkCoreInstalled(ctx) {
       : '@astryxdesign/core could not be resolved from this project.',
     ...(found
       ? {}
-      : {fix: 'Install the design system: `npm install @astryxdesign/core` (or yarn/pnpm/bun).'}),
+      : {
+          fix: 'Install the design system: `npm install @astryxdesign/core` (or yarn/pnpm/bun).',
+        }),
   };
 }
 
@@ -211,7 +229,8 @@ export function checkVersionAlignment(ctx) {
       id: 'version-alignment',
       label: '@astryxdesign/core <-> @astryxdesign/cli alignment',
       status: 'info',
-      message: 'Skipped — could not read both @astryxdesign/core and @astryxdesign/cli versions.',
+      message:
+        'Skipped — could not read both @astryxdesign/core and @astryxdesign/cli versions.',
     };
   }
 
@@ -320,14 +339,28 @@ export async function checkConfig(ctx) {
     };
   }
 
+  // Under the project-code gate the config must not run, doctor included —
+  // report the state instead of executing the file it just said it ignored.
+  if (!projectCodeAllowed()) {
+    return {
+      id: 'config',
+      label: 'astryx.config.mjs',
+      status: 'info',
+      message:
+        'ASTRYX_NO_PROJECT_CODE=1 — config present but not loaded; running on built-in data only.',
+    };
+  }
+
   // Project.load swallows nothing — it surfaces a genuine load failure — but
   // the config check wants to report a bad default export precisely, so we
   // re-import directly to surface a genuine load failure as a FAIL.
   try {
-    const {pathToFileURL} = await import('node:url');
-    const mod = await import(pathToFileURL(ctx.configPath).href);
+    const mod = await importUserModule(ctx.configPath);
     const config = mod.default;
-    if (config !== undefined && (typeof config !== 'object' || config === null)) {
+    if (
+      config !== undefined &&
+      (typeof config !== 'object' || config === null)
+    ) {
       return {
         id: 'config',
         label: 'astryx.config.mjs',
@@ -365,7 +398,9 @@ export function checkAgentDocs(ctx) {
     path.join('.claude', 'CLAUDE.md'),
     '.cursorrules',
   ];
-  const present = candidates.filter(rel => fs.existsSync(path.join(ctx.cwd, rel)));
+  const present = candidates.filter(rel =>
+    fs.existsSync(path.join(ctx.cwd, rel)),
+  );
 
   if (present.length === 0) {
     return {
@@ -381,8 +416,10 @@ export function checkAgentDocs(ctx) {
     try {
       const content = fs.readFileSync(path.join(ctx.cwd, rel), 'utf-8');
       return (
-        (content.includes('<!-- ASTRYX:START -->') || content.includes('<!-- XDS:START -->')) &&
-        (content.includes('<!-- ASTRYX:END -->') || content.includes('<!-- XDS:END -->'))
+        (content.includes('<!-- ASTRYX:START -->') ||
+          content.includes('<!-- XDS:START -->')) &&
+        (content.includes('<!-- ASTRYX:END -->') ||
+          content.includes('<!-- XDS:END -->'))
       );
     } catch {
       return false;
@@ -442,7 +479,9 @@ export function checkPeerDeps(ctx) {
     const want = peers[name];
     let pkgJsonPath;
     try {
-      pkgJsonPath = _require.resolve(`${name}/package.json`, {paths: [ctx.cwd]});
+      pkgJsonPath = _require.resolve(`${name}/package.json`, {
+        paths: [ctx.cwd],
+      });
     } catch {
       // package.json isn't exported — fall back to entry resolution for
       // presence only (we then can't read the version to range-check it).
@@ -475,8 +514,12 @@ export function checkPeerDeps(ctx) {
     // Pin the required range for anything wrong so the hint fixes it even when a
     // stale consumer range would otherwise resolve an incompatible version.
     // Quote targets containing shell metacharacters (e.g. `react@>=19.0.0`).
-    const quote = (/** @type {string} */ s) => (/[<>|() ]/.test(s) ? `'${s}'` : s);
-    const targets = [...missing, ...mismatched.map(m => `${m.name}@${m.want}`)].map(quote);
+    const quote = (/** @type {string} */ s) =>
+      /[<>|() ]/.test(s) ? `'${s}'` : s;
+    const targets = [
+      ...missing,
+      ...mismatched.map(m => `${m.name}@${m.want}`),
+    ].map(quote);
     return {
       id: 'peer-deps',
       label: '@astryxdesign/core peer dependencies',

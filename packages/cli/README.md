@@ -526,6 +526,22 @@ The config is validated against a strict schema when the CLI loads it, so an
 unknown field is a hard error rather than a silent no-op. `astryx doctor`
 reports whether the config loads cleanly.
 
+### Running in checkouts you don't trust
+
+Loading a config executes it, and so does loading the integration manifests
+and doc modules it leads to — which is what makes the config useful, and also
+means discovery-backed commands run code from whatever checkout they're
+invoked in. For CI, triage, and agent runs over arbitrary checkouts, set:
+
+```bash
+ASTRYX_NO_PROJECT_CODE=1 astryx component Button
+```
+
+Under this gate the CLI runs on built-in data only: a present
+`astryx.config.*` is acknowledged on stderr and skipped, and any command that
+would have to import a workspace module fails with an error naming the
+variable instead of executing it.
+
 ## Core codemod authoring
 
 Core codemods live under `packages/cli/assets/codemods/transforms/`. Released

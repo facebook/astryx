@@ -13,7 +13,9 @@ import {
 let tmpDir;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-module-loader-test-'));
+  tmpDir = fs.mkdtempSync(
+    path.join(process.cwd(), '.astryx-module-loader-test-'),
+  );
 });
 
 afterEach(() => {
@@ -61,6 +63,24 @@ describe('importUserModule', () => {
     expect(mod.default).toEqual({answer: 42});
     expect(mod.named).toBe('hi');
   });
+
+  it('refuses to import (and so execute) anything under ASTRYX_NO_PROJECT_CODE=1', async () => {
+    const file = path.join(tmpDir, 'mod.mjs');
+    fs.writeFileSync(
+      file,
+      `globalThis.__astryxGateProbe = true;\nexport default {};\n`,
+    );
+    process.env.ASTRYX_NO_PROJECT_CODE = '1';
+    try {
+      await expect(importUserModule(file)).rejects.toThrow(
+        /ASTRYX_NO_PROJECT_CODE/,
+      );
+      expect(globalThis.__astryxGateProbe).toBeUndefined();
+    } finally {
+      delete process.env.ASTRYX_NO_PROJECT_CODE;
+      delete globalThis.__astryxGateProbe;
+    }
+  });
 });
 
 describe('loadModuleWithParser', () => {
@@ -84,7 +104,9 @@ describe('loadModuleWithParser', () => {
     const result = schema.safeParse(input);
     if (!result.success) {
       const issues = result.error.issues
-        .map(i => `${i.path.length ? i.path.join('.') : '(root)'}: ${i.message}`)
+        .map(
+          i => `${i.path.length ? i.path.join('.') : '(root)'}: ${i.message}`,
+        )
         .join('; ');
       throw new Error(`${label} is invalid: ${issues}`);
     }

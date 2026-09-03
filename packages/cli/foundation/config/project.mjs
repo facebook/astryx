@@ -32,7 +32,22 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {findPresentFiles, loadModuleWithParser} from '../fs/module-loader.mjs';
+import {
+  findPresentFiles,
+  loadModuleWithParser,
+  projectCodeAllowed,
+} from '../fs/module-loader.mjs';
+
+/** Say once per process why a present config is being ignored. */
+let configSkipNoted = false;
+/** @param {string} configPath */
+function noteConfigSkipped(configPath) {
+  if (configSkipNoted) return;
+  configSkipNoted = true;
+  console.error(
+    `astryx: ASTRYX_NO_PROJECT_CODE=1 — ignoring ${configPath}; running on built-in data only`,
+  );
+}
 import {parseConfig} from '../../authoring/config/parse.mjs';
 import {loadIntegrations} from '../integrations/integrations.mjs';
 import {
@@ -203,7 +218,14 @@ export class Project {
    */
   static async load(cwd = process.cwd(), {cache} = {}) {
     const resolvedCache = cache ?? new InMemoryConfigCache();
-    const configPath = findConfigPath(cwd);
+    let configPath = findConfigPath(cwd);
+    // Loading the config executes it (and every integration it names).
+    // Under the project-code gate the whole invocation runs on built-ins:
+    // present config acknowledged once on stderr, never imported.
+    if (configPath && !projectCodeAllowed()) {
+      noteConfigSkipped(configPath);
+      configPath = null;
+    }
     const hash = configContentHash(configPath);
 
     /** @type {import('../../authoring/config/type').AstryxConfig} */

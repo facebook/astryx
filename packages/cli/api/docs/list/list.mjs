@@ -14,7 +14,7 @@
  * @position Leaf under api/docs. Sibling of detail; both share _adapter.mjs.
  */
 
-import {pathToFileURL} from 'node:url';
+import {importUserModule} from '../../../foundation/fs/module-loader.mjs';
 import {loadDocsCatalog} from '../_adapter.mjs';
 
 /**
@@ -30,7 +30,7 @@ export async function list({cwd} = {}) {
     let description = entry.description ?? '';
     if (entry.description == null) {
       try {
-        const mod = await import(pathToFileURL(entry.path).href);
+        const mod = /** @type {any} */ (await importUserModule(entry.path));
         description = (mod.docs ?? mod.default)?.description ?? '';
       } catch {
         description = '';

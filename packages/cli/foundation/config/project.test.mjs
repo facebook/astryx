@@ -124,7 +124,9 @@ function topicDoc(fields) {
     name: 'deploying',
     title: 'Deploying',
     description: 'How to ship it.',
-    sections: [{title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]}],
+    sections: [
+      {title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]},
+    ],
     ...fields,
   };
 }
@@ -174,6 +176,32 @@ describe('Project.load', () => {
     );
     await expect(Project.load(tmpDir)).rejects.toThrow(/integrations/);
   });
+
+  it('skips a present config (never executing it) under ASTRYX_NO_PROJECT_CODE=1', async () => {
+    scaffold();
+    // Loading a config executes it — plant a probe so "skipped" is
+    // observable as "never ran", not just "not reflected in the result".
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.config.mjs'),
+      `globalThis.__astryxConfigProbe = true;\nexport default {integrations: []};\n`,
+    );
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    process.env.ASTRYX_NO_PROJECT_CODE = '1';
+    try {
+      const project = await Project.load(tmpDir);
+      expect(project.config).toEqual({integrations: []});
+      expect(project.integrations).toEqual([]);
+      expect(project.loadedIntegrations).toEqual([]);
+      expect(globalThis.__astryxConfigProbe).toBeUndefined();
+      expect(error).toHaveBeenCalledWith(
+        expect.stringContaining('ASTRYX_NO_PROJECT_CODE'),
+      );
+    } finally {
+      delete process.env.ASTRYX_NO_PROJECT_CODE;
+      delete globalThis.__astryxConfigProbe;
+      error.mockRestore();
+    }
+  });
 });
 
 describe('findConfigPath', () => {
@@ -190,7 +218,9 @@ describe('findConfigPath', () => {
       path.join(tmpDir, 'astryx.config.js'),
       `module.exports = {};\n`,
     );
-    expect(() => findConfigPath(tmpDir)).toThrow(/Multiple Astryx config files/);
+    expect(() => findConfigPath(tmpDir)).toThrow(
+      /Multiple Astryx config files/,
+    );
   });
 });
 
@@ -261,7 +291,9 @@ describe('Project discovery', () => {
     const catalog = await project.docs();
     expect(catalog.resolve('deploying')).toBeUndefined();
     const issues = await project.issues();
-    expect(issues.some(i => i.code === 'invalid_doc' && i.severity === 'error')).toBe(true);
+    expect(
+      issues.some(i => i.code === 'invalid_doc' && i.severity === 'error'),
+    ).toBe(true);
   });
 
   it('memoizes components() — the second call does not re-walk', async () => {
@@ -308,7 +340,9 @@ describe('Project issues (skip + warn)', () => {
     const b = await project.issues();
     expect(a).toEqual(b);
     // No duplicate (package, code, message) tuples.
-    const seen = new Set(a.map(i => `${i.package}\u0000${i.code}\u0000${i.message}`));
+    const seen = new Set(
+      a.map(i => `${i.package}\u0000${i.code}\u0000${i.message}`),
+    );
     expect(seen.size).toBe(a.length);
   });
 

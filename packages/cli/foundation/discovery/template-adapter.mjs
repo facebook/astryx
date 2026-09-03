@@ -24,7 +24,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createJiti} from 'jiti';
-import {loadModuleWithParser} from '../fs/module-loader.mjs';
+import {
+  isCliShippedPath,
+  loadModuleWithParser,
+  projectCodeAllowed,
+} from '../fs/module-loader.mjs';
 import {parseTemplate} from '../../authoring/doctypes/template/parse.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../fs/paths.mjs';
 import {Project} from '../config/project.mjs';
@@ -223,6 +227,11 @@ export function stripTemplateAssetRefs(source) {
  */
 async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
+  // Importing executes the spec. Shipped template specs stay loadable under
+  // the project-code gate; checkout/integration ones are skipped like a
+  // missing file. (The JSX-capable jiti here is why this doesn't route
+  // through importUserModule wholesale.)
+  if (!projectCodeAllowed() && !isCliShippedPath(docPath)) return null;
   const docModule = docPath.endsWith('.ts')
     ? await getJiti().import(docPath)
     : await import(`file://${docPath}`);
@@ -322,7 +331,9 @@ async function discoverBlocks() {
     const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
     if (!fs.existsSync(tsxPath)) continue;
     const doc = await loadDocModule(docPath);
-    const relPath = toPosixPath(path.relative(BLOCKS_DIR, path.dirname(docPath)));
+    const relPath = toPosixPath(
+      path.relative(BLOCKS_DIR, path.dirname(docPath)),
+    );
     blocks.push({
       type: 'block',
       dirName: basename,
@@ -339,7 +350,6 @@ async function discoverBlocks() {
   }
   return blocks;
 }
-
 
 /**
  * Discover blocks from external packages that declare `astryx.blocks` in
@@ -362,7 +372,9 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
       const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
       if (!fs.existsSync(tsxPath)) continue;
       const doc = await loadDocModule(docPath);
-      const relPath = toPosixPath(path.relative(ext.blocksDir, path.dirname(docPath)));
+      const relPath = toPosixPath(
+        path.relative(ext.blocksDir, path.dirname(docPath)),
+      );
       blocks.push({
         type: 'block',
         dirName: basename,
@@ -449,7 +461,9 @@ function findIntegrationDocFiles(root) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
-      } else if (ALL_TEMPLATE_SUFFIXES.some(suffix => entry.name.endsWith(suffix))) {
+      } else if (
+        ALL_TEMPLATE_SUFFIXES.some(suffix => entry.name.endsWith(suffix))
+      ) {
         results.push(full);
       }
     }
@@ -604,7 +618,9 @@ export async function discoverIntegrationTemplatesForOne(integration) {
 export async function findRelatedBlocks(componentName, cwd) {
   const blocks = await discoverAllBlocks(cwd);
   return blocks.filter(b =>
-    (b.componentsUsed ?? []).some(c => c.toLowerCase() === componentName.toLowerCase()),
+    (b.componentsUsed ?? []).some(
+      c => c.toLowerCase() === componentName.toLowerCase(),
+    ),
   );
 }
 
