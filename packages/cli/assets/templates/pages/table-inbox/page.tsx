@@ -69,14 +69,7 @@
  *
  */
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import {useCallback, useLayoutEffect, useMemo, useRef, useState} from 'react';
 
 import * as stylex from '@stylexjs/stylex';
 
@@ -1676,8 +1669,10 @@ function ComposeWindow({
 
   // Fill the header from the thread that asked for this. A draft survives
   // closing and reopening the same thread, but none of its recipient-specific
-  // state crosses conversations.
-  useEffect(() => {
+  // state crosses conversations. This must finish before paint: a regular effect
+  // would briefly reveal the previous thread's recipients and body while the
+  // newly opened sheet waits for its reset.
+  useLayoutEffect(() => {
     if (draft == null) {
       return;
     }
