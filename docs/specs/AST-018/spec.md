@@ -73,6 +73,9 @@ This record uses the vocabulary already established by the Neutral remap:
 - **FR1 — Palette metadata is optional and additive.** The `defineTheme()`
   configuration MAY accept an optional named palette map. A theme that omits it
   retains its existing runtime, build, inheritance, and package behavior.
+  Authors MUST supply adopted palette values explicitly through the `palettes`
+  field. The map MAY be declared inline or imported from a theme-owned module;
+  this contract MUST NOT require a particular source-file layout.
   `defineTheme()` MUST validate and retain declared palette metadata for source
   authoring. It MUST NOT generate a palette, find nearest stops, change `color`
   expansion, rewrite token values, or otherwise alter CSS merely because a
