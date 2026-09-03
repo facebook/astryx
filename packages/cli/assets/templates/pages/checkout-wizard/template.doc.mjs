@@ -6,7 +6,7 @@ export const doc = {
   name: 'Checkout Wizard',
   displayName: 'Checkout Wizard',
   description:
-    'Multi-step wizard paired with a running summary that recalculates as answers change and stays pinned while the steps advance. For flows where a total, quota, or price has to stay visible; the summary moves inline and collapses on narrow widths.',
+    'Multi-step checkout, cart, order, and payment wizard with a running summary that recalculates as answers change. It adapts to its host width, renders the summary first on narrow surfaces, validates every forward path, and completes locally without sending payment.',
   isReady: true,
-  category: 'Form - Checkout Wizard',
+  category: 'Form - Checkout',
 };

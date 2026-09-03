@@ -46,15 +46,17 @@
  * state the form writes, so it updates as the user types rather than on step
  * change. Do not snapshot the total into state on Next.
  *
- * **Below the two-column breakpoint the same Card leads, collapsed.** A 360px
- * column beside the form would leave neither usable on a phone, so the summary
- * stacks above the stepper and closes, with the total still in the trigger row
- * — the number survives even when the line items do not.
+ * **Below the two-column breakpoint the summary renders first.** A 360px
+ * column beside the form would leave neither usable in a narrow host, so the
+ * summary becomes a collapsed card before the stepper in both DOM and visual
+ * order. The breakpoint follows the width this template actually receives,
+ * not the viewport around an embedded preview or application shell.
  *
  * **Payment fields are placeholders, not an integration.** A real checkout
  * mounts a PCI-compliant iframe from the payment provider here; a raw card
- * number input would put your page in scope for PCI DSS. The fields below exist
- * so the layout is honest about the space that iframe needs.
+ * number input would put your page in scope for PCI DSS. Pay validates these
+ * placeholders and records a local completion state so the example has a
+ * complete outcome without claiming that a payment was sent.
  *
  * **Keep the step count at four or fewer.** Cart, address, delivery, payment is
  * already the ceiling for how much friction a checkout can carry. Anything else
@@ -62,7 +64,14 @@
  * step as progressive disclosure, not as a fifth step.
  */
 
-import {useMemo, useState, type CSSProperties} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Banner} from '@astryxdesign/core/Banner';
 import {Button} from '@astryxdesign/core/Button';
@@ -83,7 +92,6 @@ import {Heading, Text} from '@astryxdesign/core/Text';
 import {TextArea} from '@astryxdesign/core/TextArea';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Thumbnail} from '@astryxdesign/core/Thumbnail';
-import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {
   CreditCardIcon,
   LockClosedIcon,
@@ -185,7 +193,33 @@ const PROMOS: Record<string, {label: string; rate: number}> = {
 
 const TAX_RATE = 0.08;
 const FREE_SHIPPING_THRESHOLD = 300;
+const NARROW_HOST_WIDTH = 900;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+const POSTAL_CODE_RULES: Record<
+  string,
+  {label: string; placeholder: string; pattern: RegExp; error: string}
+> = {
+  us: {
+    label: 'ZIP code',
+    placeholder: '10001',
+    pattern: /^\d{5}(?:-\d{4})?$/,
+    error: 'Enter a 5-digit ZIP code, with an optional 4-digit suffix.',
+  },
+  ca: {
+    label: 'Postal code',
+    placeholder: 'K1A 0B1',
+    pattern:
+      /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d$/i,
+    error: 'Enter a Canadian postal code, for example K1A 0B1.',
+  },
+  uk: {
+    label: 'Postcode',
+    placeholder: 'SW1A 1AA',
+    pattern: /^(?:GIR\s?0AA|[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})$/i,
+    error: 'Enter a UK postcode, for example SW1A 1AA.',
+  },
+};
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 // Plain inline styles over Astryx token CSS variables, so the template compiles
@@ -193,7 +227,8 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 // The summary column holds its width while the form column takes the rest, and
 // pins itself as the form scrolls past — the sticky offset is the page inset,
-// so a stuck card sits where an unstuck one would.
+// so a stuck card sits where an unstuck one would. The narrow summary needs no
+// order override because it is rendered before the form in the DOM.
 const summaryColumn: CSSProperties = {
   width: 360,
   flexShrink: 0,
@@ -201,9 +236,6 @@ const summaryColumn: CSSProperties = {
   top: 'var(--spacing-6)',
   alignSelf: 'flex-start',
 };
-// Stacked, the summary leads: order comes before the stepper in the visual
-// column without moving it ahead of the form in the DOM.
-const summaryStacked: CSSProperties = {order: -1};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -217,19 +249,43 @@ const blockedMessage = (count: number) =>
 const money = (n: number) => `$${n.toFixed(2)}`;
 
 export default function CheckoutWizardPage() {
-  // One threshold, and only because two columns is a page-level decision:
-  // below 900 the summary would leave the form unusably narrow, so it moves
-  // inline. The stepper is not measured here — it answers to the width of the
-  // column it lands in, which is its own business and not the window's.
-  const isNarrow = useMediaQuery('(max-width: 900px)');
+  // The responsive variant changes rendered order, not only paint, so measure
+  // the host directly. A viewport query would leave an embedded 600px preview
+  // in the desktop split whenever the browser window happened to be wide.
+  const hostRef = useRef<HTMLElement | null>(null);
+  const [isNarrow, setIsNarrow] = useState(false);
+  const attachHost = useCallback((element: HTMLElement | null) => {
+    hostRef.current = element;
+    if (element && element.clientWidth > 0) {
+      setIsNarrow(element.clientWidth <= NARROW_HOST_WIDTH);
+    }
+  }, []);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new ResizeObserver(entries => {
+      const width = entries[0]?.contentRect.width ?? host.clientWidth;
+      if (width > 0) {
+        setIsNarrow(width <= NARROW_HOST_WIDTH);
+      }
+    });
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, []);
 
   const [step, setStep] = useState(0);
   const [attempted, setAttempted] = useState<ReadonlySet<number>>(new Set());
+  const [isComplete, setIsComplete] = useState(false);
 
   const [quantities, setQuantities] = useState<Record<string, number>>(() =>
     Object.fromEntries(CART_ITEMS.map(item => [item.id, item.qty])),
   );
   const [promoInput, setPromoInput] = useState('');
+  const [promoWasChecked, setPromoWasChecked] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
 
   const [email, setEmail] = useState('');
@@ -239,7 +295,7 @@ export default function CheckoutWizardPage() {
   const [apartment, setApartment] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
-  const [zip, setZip] = useState('');
+  const [postalCode, setPostalCode] = useState('');
   const [country, setCountry] = useState('us');
 
   const [delivery, setDelivery] = useState('standard');
@@ -274,6 +330,8 @@ export default function CheckoutWizardPage() {
   const total = subtotal - discount + shipping + tax;
   const itemCount = items.reduce((sum, item) => sum + item.qty, 0);
 
+  const postalRule = POSTAL_CODE_RULES[country] ?? POSTAL_CODE_RULES.us;
+
   const errorsByStep = useMemo<Array<Record<string, string>>>(() => {
     const cart: Record<string, string> = {};
     if (items.length === 0) {
@@ -299,8 +357,8 @@ export default function CheckoutWizardPage() {
     if (country === 'us' && !state) {
       shippingStep.state = 'Required';
     }
-    if (!/^\d{5}(-\d{4})?$/.test(zip.trim())) {
-      shippingStep.zip = 'Enter a 5-digit ZIP code.';
+    if (!postalRule.pattern.test(postalCode.trim())) {
+      shippingStep.postalCode = postalRule.error;
     }
 
     const deliveryStep: Record<string, string> = {};
@@ -331,8 +389,9 @@ export default function CheckoutWizardPage() {
     address,
     city,
     state,
-    zip,
+    postalCode,
     country,
+    postalRule,
     delivery,
     cardNumber,
     cardName,
@@ -345,22 +404,86 @@ export default function CheckoutWizardPage() {
   const currentErrors = shownErrors(step);
   const isLastStep = step === STEPS.length - 1;
 
-  const goNext = () => {
-    setAttempted(prev => new Set(prev).add(step));
-    if (Object.keys(errorsByStep[step]).length === 0 && !isLastStep) {
-      setStep(s => s + 1);
+  // Navigation queues focus until React has rendered the destination step and
+  // its error state. The first aria-invalid control is also the first field in
+  // DOM order; grouped controls forward focus to their first usable child.
+  const stepContentRef = useRef<HTMLElement | null>(null);
+  const pendingFocusStepRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (pendingFocusStepRef.current !== step) {
+      return;
     }
+    pendingFocusStepRef.current = null;
+
+    const root = stepContentRef.current;
+    const invalid = root?.matches('[aria-invalid="true"]')
+      ? root
+      : (root?.querySelector<HTMLElement>('[aria-invalid="true"]') ?? null);
+    const focusTarget = invalid?.matches(
+      'input, button, select, textarea, [tabindex]',
+    )
+      ? invalid
+      : invalid?.querySelector<HTMLElement>(
+          'input:not(:disabled), button:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+        );
+    focusTarget?.focus();
+  }, [attempted, step]);
+
+  const markAttempted = (indices: ReadonlyArray<number>) => {
+    setAttempted(previous => {
+      const next = new Set(previous);
+      indices.forEach(index => next.add(index));
+      return next;
+    });
+  };
+
+  const goNext = () => {
+    markAttempted([step]);
+    if (Object.keys(errorsByStep[step]).length > 0) {
+      pendingFocusStepRef.current = step;
+      return;
+    }
+    if (isLastStep) {
+      setIsComplete(true);
+      return;
+    }
+    setStep(current => current + 1);
   };
 
   const goTo = (index: number) => {
-    if (index > step) {
-      setAttempted(prev => new Set(prev).add(step));
+    if (index <= step) {
+      setStep(index);
+      return;
+    }
+
+    const checked: number[] = [];
+    let firstInvalid: number | null = null;
+    for (let candidate = step; candidate < index; candidate += 1) {
+      checked.push(candidate);
+      if (Object.keys(errorsByStep[candidate]).length > 0) {
+        firstInvalid = candidate;
+        break;
+      }
+    }
+    markAttempted(checked);
+
+    if (firstInvalid != null) {
+      pendingFocusStepRef.current = firstInvalid;
+      setStep(firstInvalid);
+      return;
     }
     setStep(index);
   };
 
+  const handlePromoInputChange = (value: string) => {
+    setPromoInput(value);
+    setPromoWasChecked(false);
+    setAppliedPromo(null);
+  };
+
   const applyPromo = () => {
     const code = promoInput.trim().toUpperCase();
+    setPromoWasChecked(code.length > 0);
     setAppliedPromo(PROMOS[code] ? code : null);
   };
 
@@ -547,7 +670,7 @@ export default function CheckoutWizardPage() {
       contentWidth={1000}
       content={
         <LayoutContent>
-          <VStack gap={6}>
+          <VStack ref={attachHost} gap={6}>
             <HStack gap={3} vAlign="center">
               <StackItem size="fill">
                 <Heading level={1}>Checkout</Heading>
@@ -564,14 +687,37 @@ export default function CheckoutWizardPage() {
               direction={isNarrow ? 'vertical' : 'horizontal'}
               gap={6}
               vAlign="start">
+              {/* When stacked, summary comes first in DOM as well as visual and
+                  keyboard order. */}
+              {isNarrow && <StackItem>{summaryCard}</StackItem>}
+
               {/* The form column owns the sequence end to end: progress at the
                   top, the step in the middle, the way out at the bottom. */}
               <StackItem size="fill">
                 <VStack gap={6}>
-                  {progress}
+                  {isComplete ? (
+                    <VStack gap={4}>
+                      <Banner
+                        status="success"
+                        title="Order confirmed"
+                        description={`This local example completed an order for ${money(total)}. No payment was sent.`}
+                      />
+                      <Heading level={2}>Thanks for your order</Heading>
+                      <Text type="body" color="secondary">
+                        The completion is stored in this page's component state
+                        so the template ends in a real, reviewable outcome.
+                      </Text>
+                    </VStack>
+                  ) : (
+                    progress
+                  )}
 
-                  {step === 0 && (
-                    <VStack gap={5}>
+                  {!isComplete && step === 0 && (
+                    <VStack
+                      ref={stepContentRef}
+                      gap={5}
+                      aria-invalid={currentErrors.items ? true : undefined}
+                      tabIndex={-1}>
                       <Heading level={2}>Review your cart</Heading>
                       <VStack gap={4}>
                         {items.map(item => (
@@ -662,7 +808,7 @@ export default function CheckoutWizardPage() {
                           <TextInput
                             label="Promo code"
                             value={promoInput}
-                            onChange={setPromoInput}
+                            onChange={handlePromoInputChange}
                             placeholder="WELCOME10"
                             status={
                               appliedPromo
@@ -670,13 +816,18 @@ export default function CheckoutWizardPage() {
                                     type: 'success',
                                     message: `${PROMOS[appliedPromo].label} applied.`,
                                   }
-                                : promoInput.trim() && appliedPromo === null
+                                : promoInput.trim() && promoWasChecked
                                   ? {
                                       type: 'warning',
-                                      message:
-                                        'Press Apply to check this code.',
+                                      message: 'That promo code is not valid.',
                                     }
-                                  : undefined
+                                  : promoInput.trim()
+                                    ? {
+                                        type: 'warning',
+                                        message:
+                                          'Press Apply to check this code.',
+                                      }
+                                    : undefined
                             }
                           />
                         </StackItem>
@@ -689,8 +840,8 @@ export default function CheckoutWizardPage() {
                     </VStack>
                   )}
 
-                  {step === 1 && (
-                    <VStack gap={5}>
+                  {!isComplete && step === 1 && (
+                    <VStack ref={stepContentRef} gap={5}>
                       <VStack gap={1}>
                         <Heading level={2}>Where should it go?</Heading>
                         <Text type="supporting" color="secondary">
@@ -759,7 +910,10 @@ export default function CheckoutWizardPage() {
                           placeholder="123 Main Street"
                           status={
                             currentErrors.address
-                              ? {type: 'error', message: currentErrors.address}
+                              ? {
+                                  type: 'error',
+                                  message: currentErrors.address,
+                                }
                               : undefined
                           }
                         />
@@ -801,13 +955,16 @@ export default function CheckoutWizardPage() {
                             />
                           )}
                           <TextInput
-                            label="ZIP code"
-                            value={zip}
-                            onChange={setZip}
-                            placeholder="10001"
+                            label={postalRule.label}
+                            value={postalCode}
+                            onChange={setPostalCode}
+                            placeholder={postalRule.placeholder}
                             status={
-                              currentErrors.zip
-                                ? {type: 'error', message: currentErrors.zip}
+                              currentErrors.postalCode
+                                ? {
+                                    type: 'error',
+                                    message: currentErrors.postalCode,
+                                  }
                                 : undefined
                             }
                           />
@@ -816,8 +973,8 @@ export default function CheckoutWizardPage() {
                     </VStack>
                   )}
 
-                  {step === 2 && (
-                    <VStack gap={5}>
+                  {!isComplete && step === 2 && (
+                    <VStack ref={stepContentRef} gap={5}>
                       <VStack gap={1}>
                         <Heading level={2}>How fast do you need it?</Heading>
                         <Text type="supporting" color="secondary">
@@ -832,7 +989,10 @@ export default function CheckoutWizardPage() {
                           onChange={setDelivery}
                           status={
                             currentErrors.delivery
-                              ? {type: 'error', message: currentErrors.delivery}
+                              ? {
+                                  type: 'error',
+                                  message: currentErrors.delivery,
+                                }
                               : undefined
                           }>
                           {DELIVERY_OPTIONS.map(option => {
@@ -884,13 +1044,13 @@ export default function CheckoutWizardPage() {
                     </VStack>
                   )}
 
-                  {step === 3 && (
-                    <VStack gap={5}>
+                  {!isComplete && step === 3 && (
+                    <VStack ref={stepContentRef} gap={5}>
                       <VStack gap={1}>
                         <Heading level={2}>Payment</Heading>
                         <Text type="supporting" color="secondary">
-                          You will see one final confirmation before the card is
-                          charged {money(total)}.
+                          This template validates payment details and completes
+                          locally. No card is charged.
                         </Text>
                       </VStack>
                       <FormLayout defaultOptionality="required">
@@ -915,7 +1075,10 @@ export default function CheckoutWizardPage() {
                           onChange={setCardName}
                           status={
                             currentErrors.cardName
-                              ? {type: 'error', message: currentErrors.cardName}
+                              ? {
+                                  type: 'error',
+                                  message: currentErrors.cardName,
+                                }
                               : undefined
                           }
                         />
@@ -933,7 +1096,10 @@ export default function CheckoutWizardPage() {
                             placeholder="MM/YY"
                             status={
                               currentErrors.expiry
-                                ? {type: 'error', message: currentErrors.expiry}
+                                ? {
+                                    type: 'error',
+                                    message: currentErrors.expiry,
+                                  }
                                 : undefined
                             }
                           />
@@ -960,22 +1126,22 @@ export default function CheckoutWizardPage() {
                         {!billingMatches && (
                           <Banner
                             status="info"
-                            title="Add a billing address on the next screen"
-                            description="We ask for it after payment details so the card form stays in one place."
+                            title="Connect a billing-address step"
+                            description="This local example does not collect a separate billing address or send payment. Add that flow with your payment provider."
                           />
                         )}
                       </FormLayout>
                     </VStack>
                   )}
 
-                  {actions}
+                  {!isComplete && actions}
                 </VStack>
               </StackItem>
 
-              {/* Sticky beside the form, first and collapsed when stacked. */}
-              <StackItem style={isNarrow ? summaryStacked : summaryColumn}>
-                {summaryCard}
-              </StackItem>
+              {/* Sticky beside the form on wide hosts only. */}
+              {!isNarrow && (
+                <StackItem style={summaryColumn}>{summaryCard}</StackItem>
+              )}
             </Stack>
           </VStack>
         </LayoutContent>
