@@ -272,11 +272,7 @@ export function InteractivePreviewStage({
       : {};
 
     const activeValue =
-      state.value !== undefined
-        ? state.value
-        : wrapperValue !== undefined
-          ? wrapperValue
-          : resolved.value;
+      wrapperValue !== undefined ? wrapperValue : resolved.value;
 
     return {
       ...resolved,

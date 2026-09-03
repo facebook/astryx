@@ -4,6 +4,6 @@
 
 [fix] DropdownMenuRadioItem: add playground wrapper and wire wrapper selection state for docsite preview
 
-Wraps DropdownMenuRadioItem in DropdownMenuRadioGroup wrapper and binds wrapper selection state to active item value so aria-checked updates accurately on knob changes and click selection.
+Wraps DropdownMenuRadioItem in DropdownMenuRadioGroup wrapper and keeps the wrapper's selection independent from the item's value knob, so aria-checked stays false until the item is activated and updates on click.
 
 @Geervan
