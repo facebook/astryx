@@ -48,13 +48,13 @@ export type {
 export {
   defineTonalPalettes,
   getTonalPaletteRamp,
-  TONAL_PALETTE_TONES,
+  TONAL_PALETTE_STOPS,
 } from './palettes';
 export type {
   ThemePaletteFamily,
   ThemePalettes,
   TonalPaletteRamp,
-  TonalPaletteTone,
+  TonalPaletteStop,
 } from './palettes';
 
 export type {

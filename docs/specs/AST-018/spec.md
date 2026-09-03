@@ -21,15 +21,16 @@ affects_consumer_docs: [theme, color]
 
 ## Intent
 
-Give maintained themes a typed, validated inventory of approved numbered color
-stops. Theme authors and tooling can reference exact approved colors without
-turning every stop into a portable semantic token or adding the palette to the
-default runtime theme module.
+Give maintained themes a typed, validated reference inventory of approved
+numbered color stops. Theme authors and tooling can use that inventory to select
+and verify explicit theme colors without turning every stop into a portable
+semantic token or adding the palette to the default runtime theme module.
 
 Semantic tokens remain the primary interface for components and applications.
-Palette stops are an authoring fallback for defining those semantic tokens,
-theme-owned component mappings, visualizations, and other cases where the
-portable vocabulary does not express the required color.
+Theme definitions continue to store their selected color values explicitly.
+Palette stops provide a consistent reference for those decisions, visualizations,
+and other cases where the portable vocabulary does not express the required
+color; they are not live dependencies that automatically rewrite theme output.
 
 “Approved” means that a palette is intentionally maintained and reviewed by its
 owning theme. `defineTonalPalettes()` validates the data contract; it does not
@@ -55,6 +56,7 @@ This record uses the vocabulary already established by the Neutral remap:
 - Exposing numbered palette stops as portable Core tokens for component or
   application code.
 - Generating semantic tokens automatically from hue, chroma, or stop numbers.
+- Replacing explicit theme color values with live palette references.
 - Approving any particular theme's palette values, mappings, or visual result.
 - Adding repository-wide palette linting in the initial contract implementation.
 
@@ -74,11 +76,12 @@ This record uses the vocabulary already established by the Neutral remap:
   lighter by relative luminance. Unknown family and ramp fields MUST be rejected.
   Hue, chroma, semantic labels, and descriptions are optional metadata rather
   than generators.
-- **FR3 — Semantic tokens remain first.** Components and applications SHOULD use
-  portable semantic tokens. Maintained theme source MAY select an exact palette
-  stop when defining semantic tokens or theme-owned component mappings. The
-  existence of a palette MUST NOT make numbered stops part of the portable token
-  contract.
+- **FR3 — Semantic tokens remain first and mappings remain explicit.** Components
+  and applications SHOULD use portable semantic tokens. Maintained theme source
+  MAY select a color by consulting an exact palette stop, but the resulting token
+  or theme-owned component mapping MUST retain its explicit resolved color value
+  rather than a live palette lookup. The existence of a palette MUST NOT make
+  numbered stops part of the portable token contract.
 - **FR4 — Palette usage is not hard-enforced.** Existing token and component
   value contracts MUST continue to accept direct CSS colors. Intentional
   deviations MAY be used for alpha overlays, composited colors, externally
@@ -91,7 +94,8 @@ This record uses the vocabulary already established by the Neutral remap:
   stable base for subsequent contrast testing; it does not claim that every
   component context already passes accessibility. Sharing a palette stop does not
   prove that every foreground/background or interaction-state pairing meets its
-  required contrast.
+  required contrast. Changing palette metadata MUST NOT silently change an
+  existing rendered theme value; remapping remains an explicit reviewed edit.
 - **FR6 — Source-theme extension is deterministic by family.** A child extending
   a source theme MUST inherit its base theme's resolved palette families and MAY
   replace a family by restating its exact family name. Family replacement is
@@ -144,25 +148,28 @@ set. It does not change the meaning or accepted values of `tokens`, `localTokens
 or component overrides. Neutral is the first proposed adopter; its exact ramps,
 mappings, deviations, and visual approval remain owned by `theme:neutral`. The
 Neutral remap creates the consistent base needed to run systematic contrast
-tests; it does not claim that all existing component combinations pass.
+tests; its mappings retain explicit resolved color values and do not change when
+palette metadata changes. The remap does not claim that all existing component
+combinations pass.
 
 A focused `check:theme-palettes` repository check is planned as follow-up tooling,
 not as an additional requirement for the initial implementation PR. It should
 fail for package-export/artifact mismatches, orphan artifacts, and malformed
-families; warn about unusually large palette output and direct colors that match
-an existing stop; and preserve intentional deviations allowed by FR4. Consumer
+families; identify which explicit theme colors match palette families and stops;
+warn about unusually large palette output and values that no longer match an
+intended stop; and preserve intentional deviations allowed by FR4. Consumer
 guidance should say to use an approved stop when one satisfies the requirement,
 rather than implying that direct colors are always prohibited.
 
 ## Verification
 
-| Contract | Verification                                                           | Representative states                                                                                    | Mutation or failure expectation                                                                                                      |
-| -------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| FR1–FR2  | `packages/core/src/theme/palettes.test.ts` and `defineTheme.test.ts`   | omitted metadata; complete and incomplete ramps; invalid colors, order, and fields                       | An omitted palette changes a theme, or malformed metadata is accepted.                                                               |
-| FR3–FR5  | Neutral source, theme spec, token tests, and rendered palette evidence | semantic mapping; direct color; alpha overlay; light/dark baseline mapping                               | Palette declaration becomes mandatory, a justified direct value is rejected, or the remap is treated as accessibility certification. |
-| FR6      | Core theme-extension tests                                             | inherited families; exact family replacement; omitted dark ramp                                          | A child loses unrelated families or accidentally merges partial ramps.                                                               |
-| FR7–FR8  | CLI palette build and older-Core compatibility tests                   | source and built bases; JS/JSON/declaration outputs; add/change/remove; `--check`; palette-free old Core | Runtime output gains unused metadata, palette artifacts drift or remain stale, or an unrelated older-Core build fails.               |
-| FR9      | Package-export and Changeset checks                                    | unpublished cleanup; published `/palette` retention and removal                                          | An exported palette artifact disappears without compatibility treatment, or an export points to a deleted file.                      |
+| Contract | Verification                                                           | Representative states                                                                                    | Mutation or failure expectation                                                                                                             |
+| -------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR2  | `packages/core/src/theme/palettes.test.ts` and `defineTheme.test.ts`   | omitted metadata; complete and incomplete ramps; invalid colors, order, and fields                       | An omitted palette changes a theme, or malformed metadata is accepted.                                                                      |
+| FR3–FR5  | Neutral source, theme spec, token tests, and rendered palette evidence | explicit semantic mapping; matching palette value; intentional deviation; light/dark baseline mapping    | A palette edit silently changes theme output, a justified direct value is rejected, or the remap is treated as accessibility certification. |
+| FR6      | Core theme-extension tests                                             | inherited families; exact family replacement; omitted dark ramp                                          | A child loses unrelated families or accidentally merges partial ramps.                                                                      |
+| FR7–FR8  | CLI palette build and older-Core compatibility tests                   | source and built bases; JS/JSON/declaration outputs; add/change/remove; `--check`; palette-free old Core | Runtime output gains unused metadata, palette artifacts drift or remain stale, or an unrelated older-Core build fails.                      |
+| FR9      | Package-export and Changeset checks                                    | unpublished cleanup; published `/palette` retention and removal                                          | An exported palette artifact disappears without compatibility treatment, or an export points to a deleted file.                             |
 
 ## Decision log
 
@@ -251,6 +258,23 @@ informational rather than rejecting it.
 Rejected: treating `palettes: {}` as a placeholder or as equivalent to omission.
 An empty map communicates no palette intent and can conceal accidental removal of
 every family.
+
+### DEC-6 — Theme mappings retain explicit resolved colors
+
+**Reference:** `spec:AST-018/DEC-6`
+
+**Decider:** `rubyycheung`, `2026-09-02`
+
+The palette is a reference and verification tool, not a live dependency for
+rendered theme values. Theme token and component mappings retain their selected
+resolved colors explicitly. Agents and tooling may identify the matching family
+and stop, while palette changes and theme remaps remain separate reviewable
+decisions.
+
+Rejected: resolving maintained theme mappings through live palette lookups. That
+would allow a palette edit or family rename to silently recolor or break the theme
+and would couple runtime behavior to authoring metadata that is intentionally
+optional.
 
 ## Open questions
 

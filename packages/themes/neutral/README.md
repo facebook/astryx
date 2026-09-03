@@ -32,7 +32,7 @@ function App() {
 | ------------------------------------------ | ----------------------------------------------------------- |
 | `@astryxdesign/theme-neutral`              | Source build (StyleX compilation via `@astryxdesign/build`) |
 | `@astryxdesign/theme-neutral/built`        | Pre-built dist (Tailwind, plain CSS, or no build step)      |
-| `@astryxdesign/theme-neutral/palette`      | Opt-in approved palette for application and audit code      |
+| `@astryxdesign/theme-neutral/palette`      | Opt-in palette reference for authoring and audit tooling    |
 | `@astryxdesign/theme-neutral/palette.json` | Machine-readable palette for agents and tooling             |
 | `@astryxdesign/theme-neutral/theme.css`    | Pre-built CSS file (import in your stylesheet)              |
 
@@ -49,10 +49,11 @@ labels identify approved entries rather than guaranteeing that each hex value
 measures at that exact HCT coordinate.
 
 Use semantic theme tokens for components. When a new semantic token or audit
-tool needs a raw color, select an exact family, mode, and numbered stop from
-this palette rather than inventing or approximating a hex value. For example,
-`blue.light[45]` means blue, the light-mode ramp, stop 45. Alpha overlays should
-be derived from a numbered stop and documented at the token that uses them.
+tool needs a raw color, consult an exact family, mode, and numbered stop from
+this palette. For example, `blue.light[45]` means blue, the light-mode ramp,
+stop 45. Theme mappings retain the selected hex explicitly so later palette
+changes do not silently recolor the theme. Alpha overlays and other intentional
+deviations should be documented at the token that uses them.
 
 ```tsx
 import {neutralPalettes} from '@astryxdesign/theme-neutral';
@@ -60,8 +61,8 @@ import {neutralPalettes} from '@astryxdesign/theme-neutral';
 const auditedInfo = neutralPalettes.blue.light[45];
 ```
 
-Production and audit code can import the generated palette without adding it to
-the default runtime theme:
+Authoring and audit tooling can import the generated palette without adding it
+to the default runtime theme:
 
 ```tsx
 import {neutralPalettes} from '@astryxdesign/theme-neutral/palette';

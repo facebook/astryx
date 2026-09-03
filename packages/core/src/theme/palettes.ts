@@ -4,19 +4,19 @@ import {parseColor} from '../utils/color';
 import {relativeLuminance} from './contrast';
 
 /** Canonical numeric stop labels used as Astryx palette keys. */
-export const TONAL_PALETTE_TONES = [
+export const TONAL_PALETTE_STOPS = [
   0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
   100,
 ] as const;
 
-export type TonalPaletteTone = (typeof TONAL_PALETTE_TONES)[number];
+export type TonalPaletteStop = (typeof TONAL_PALETTE_STOPS)[number];
 
 /**
  * One complete, opaque ramp ordered from dark to light. Numbered keys identify
  * approved stops rather than exact measured HCT coordinates.
  */
 export type TonalPaletteRamp = Readonly<
-  Record<TonalPaletteTone, string> & {
+  Record<TonalPaletteStop, string> & {
     /** Hue angle from 0 (inclusive) to 360 (exclusive). */
     hue?: number;
     /** Non-negative chroma value. */
@@ -42,7 +42,7 @@ export type ThemePalettes = Readonly<Record<string, ThemePaletteFamily>>;
 
 const OPAQUE_HEX = /^#[0-9a-f]{6}$/i;
 const TONAL_PALETTE_KEYS = new Set<string>([
-  ...TONAL_PALETTE_TONES.map(String),
+  ...TONAL_PALETTE_STOPS.map(String),
   'hue',
   'chroma',
 ]);
@@ -71,7 +71,7 @@ function validateRamp(
   }
 
   let previousLuminance = -1;
-  for (const stop of TONAL_PALETTE_TONES) {
+  for (const stop of TONAL_PALETTE_STOPS) {
     const value = ramp[stop];
     if (typeof value !== 'string' || !OPAQUE_HEX.test(value)) {
       throw new Error(

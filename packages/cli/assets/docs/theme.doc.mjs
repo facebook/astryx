@@ -235,17 +235,14 @@ const myTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'Define approved tonal palettes when agents, audit tools, custom components, or data visualization need colors beyond the semantic token surface. Components still use semantic tokens first. If no semantic token fits, select an exact numbered stop and record its family, mode, stop, purpose, and measured contrast; do not invent a nearby hex value. Production theme builds keep this metadata out of the default runtime module and emit separate opt-in palette artifacts.',
+          text: 'Define approved tonal palettes when agents, audit tools, custom components, or data visualization need a consistent color reference beyond the semantic token surface. Components still use semantic tokens first. Theme mappings retain explicit resolved color values; agents and authors can use the palette to select or verify those values without making rendered output a live dependency of the palette. Production theme builds keep this metadata out of the default runtime module and emit a separate opt-in palette artifact set.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Define an approved palette and build it separately',
           code: `import {defineTheme} from '@astryxdesign/core/theme';
-import {
-  defineTonalPalettes,
-  getTonalPaletteRamp,
-} from '@astryxdesign/core/theme/palettes';
+import {defineTonalPalettes} from '@astryxdesign/core/theme/palettes';
 
 export const brandPalettes = defineTonalPalettes({
   blue: {
@@ -261,25 +258,20 @@ export const brandPalettes = defineTonalPalettes({
   },
 });
 
-const blueLight = getTonalPaletteRamp(brandPalettes.blue, 'light');
-// No separate dark ramp is defined above, so this currently falls back to the
-// light ramp. Adding an approved dark ramp later updates this selection.
-const blueDark = getTonalPaletteRamp(brandPalettes.blue, 'dark');
-
 export const brandTheme = defineTheme({
   name: 'brand',
   palettes: brandPalettes,
   tokens: {
-    // Select and audit both modes as a pair. Do not change one side
-    // independently: primary Button labels need 4.5:1 in each mode.
-    '--color-accent': [blueLight[40], blueDark[60]],
-    '--color-on-accent': [blueLight[100], blueDark[10]],
+    // Selected from blue light stop 40 / stop 60 and retained explicitly.
+    '--color-accent': ['#0073c3', '#60adfa'],
+    // Selected from blue light stop 100 / stop 10 and retained explicitly.
+    '--color-on-accent': ['#ffffff', '#001f3d'],
   },
 });`,
         },
         {
           type: 'prose',
-          text: 'Each family requires all 21 numeric stop labels from 0 through 100 in increments of 5. Read `blue.light[40]` as “blue, light-mode ramp, stop 40.” Lower labels identify darker stops and higher labels lighter stops in both modes. These labels identify approved palette stops; validation does not promise that a hex value measures at the exact corresponding HCT coordinate. Add a dark ramp when the theme uses separately tuned dark-mode colors; otherwise `getTonalPaletteRamp(family, "dark")` intentionally falls back to the light ramp. `astryx theme build` validates attached metadata, excludes it from the runtime theme module, and emits `<name>.palette.js`, `<name>.palette.json`, and `<name>.palette.d.ts` for explicit use by tools and agents.',
+          text: 'Each family requires all 21 numeric stop labels from 0 through 100 in increments of 5. Read `blue.light[40]` as “blue, light-mode ramp, stop 40.” Lower labels identify darker stops and higher labels lighter stops in both modes. These labels identify approved palette stops; validation does not promise that a hex value measures at the exact corresponding HCT coordinate. Add a dark ramp when the theme uses separately tuned dark-mode colors; otherwise tools intentionally reuse the light ramp. `astryx theme build` validates attached metadata, excludes it from the runtime theme module, and emits `<name>.palette.js`, `<name>.palette.json`, and `<name>.palette.d.ts` as one artifact set for explicit use by tools and agents.',
         },
       ],
     },
@@ -289,7 +281,7 @@ export const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: '`extends` lets you derive a new theme from an existing one, inheriting its tokens, component overrides, icons, and fonts. Source-theme bases also carry approved palette families. Built themes intentionally omit palette metadata; import the matching palette sidecar explicitly when a child needs those families. Only specify what you want to change; everything else available on the chosen base carries over.',
+          text: '`extends` lets you derive a new theme from an existing one, inheriting its tokens, component overrides, icons, and fonts. Source-theme bases also carry palette metadata as part of the authoring foundation. Built themes intentionally omit it; import the matching `/palette` artifact and pass it explicitly when a child needs that metadata. Palette changes do not rewrite the explicit color values already stored in theme mappings.',
         },
         {
           type: 'code',
@@ -318,7 +310,7 @@ const brandTheme = defineTheme({
             ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
             [
               'palettes',
-              'Source bases only: shallow-merged by family. Built bases omit palettes, so a child must attach an explicitly imported palette sidecar.',
+              'Source bases only: shallow-merged by family as reference metadata. Built bases omit palettes, so a child must attach an explicitly imported `/palette` artifact.',
             ],
             ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
             ['typography, motion, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],

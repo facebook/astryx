@@ -27,8 +27,9 @@ references:
 This draft is a theme-record example and a factual inventory. It does not decide
 cross-theme local-token, palette-generation, compiler, or artifact APIs;
 current `spec:AST-006` owns the accepted local-token contract. This record keeps
-Neutral's package adoption separate: no value, mapping, rendered evidence, or
-implementation is approved while this record remains draft.
+Neutral's package adoption separate. DEC-2 approves the palette and baseline
+remap as a decision anchor; the proposed local-token roles and additional
+component mappings remain unapproved while this record is draft.
 
 ## Intent and audience
 
@@ -102,7 +103,10 @@ Candidate source work contains complete light and separately tuned dark ramps fo
 neutral, red, orange, yellow, green, teal, cyan, blue, purple, and pink. This is
 useful theme-owned inventory and evidence. Draft `spec:AST-018` separately owns
 the proposed cross-theme palette contract, optional artifact behavior, and the
-boundary between approved stops and intentional deviations.
+boundary between approved stops and intentional deviations. Neutral's token and
+component mappings retain their selected color values explicitly; the palette is
+the stable reference used to select and verify those values, not a live dependency
+that automatically changes rendered output.
 
 ## Component and state mappings
 
@@ -144,7 +148,7 @@ light mode and `#6d9cfe` in dark mode, but those values are not an accessibility
 claim by themselves. Adoption requires the actual Badge informational foreground
 and background pairing to meet its threshold in rendered light and dark states;
 every later mapping needs receipts for its foreground, graphical-object,
-interaction, and disabled states. No palette tone is accessible by itself, and
+interaction, and disabled states. No palette stop is accessible by itself, and
 color cannot replace another signal required by the component contract. This
 record will own those pairings, exceptions, measurements, and known gaps after
 the shared methodology is current; it will not copy the methodology or shared
@@ -152,9 +156,10 @@ measurement-tool implementation.
 
 ## Build and artifact contract
 
-The package manifest and existing build tests define Neutral's current runtime,
-CSS, declaration, and export outputs. This record does not require new generated
-palette or local-token artifacts.
+The package manifest and build tests define Neutral's runtime, CSS, declaration,
+and export outputs. The proposed palette metadata remains outside the default
+runtime theme and is published through one palette artifact set: `/palette` for
+JavaScript and TypeScript consumers and `/palette.json` for data-only tooling.
 
 ## Verification map
 
@@ -168,10 +173,11 @@ palette or local-token artifacts.
 
 ## Decision log
 
-The decision below records settled cross-theme ownership input from `cixzhang`.
-The final Neutral value, mappings, and rendered-evidence ratification belong to
-`rubyycheung`. This record remains `authority: draft`, `approved_by: null`, and
-`approved_at: null` until OQ1 passes and Ruby gives exact-head approval.
+The decisions below record settled input for the portions they name. The final
+Neutral local-token values, mappings, and rendered-evidence ratification remain
+separate from the approved palette baseline. This record remains
+`authority: draft`, `approved_by: null`, and `approved_at: null` until its
+remaining open questions are resolved.
 
 ### DEC-1 — Own one exact Neutral filled-accent-status role
 
@@ -194,6 +200,22 @@ Neither the proposed value nor any mapping is authorized until OQ1 passes and
 
 Rejected: treating the role as global, treating it as disposable private output,
 or applying it merely because two contexts currently share a color.
+
+### DEC-2 — Approve the Neutral palette as a decision anchor
+
+**Reference:** `theme:neutral/DEC-2`
+
+**Decider:** `rubyycheung`, `2026-09-02`
+
+Neutral's exact palette values and baseline mappings are approved as the stable
+starting point for subsequent color and contrast decisions. Theme mappings retain
+their selected explicit values so palette changes cannot silently recolor the
+theme. This approval does not claim that every component context already passes
+its applicable contrast requirement.
+
+Rejected: treating the palette as a live source that automatically rewrites theme
+mappings, or requiring complete component-level contrast conformance before the
+palette can serve as the baseline for measuring and improving those mappings.
 
 ## Open questions
 

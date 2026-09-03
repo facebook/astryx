@@ -6,7 +6,6 @@ import {
   defineTheme,
   defineSyntaxTheme,
   defineTonalPalettes,
-  type TonalPaletteTone,
   type TokenValue,
 } from '@astryxdesign/core/theme';
 import {neutralIconRegistry} from './icons';
@@ -546,65 +545,26 @@ export const neutralPalettes = defineTonalPalettes({
   },
 });
 
-function getPaletteStop(
-  family: keyof typeof neutralPalettes,
-  stop: TonalPaletteTone,
-  mode: 'light' | 'dark' = 'light',
-): string {
-  return neutralPalettes[family][mode][stop];
-}
-
-function withAlpha(
-  color: string,
-  alpha: '0D' | '0F' | '14' | '1A' | '33' | '3D' | '4D' | '80' | 'CC',
-): string {
-  return `${color}${alpha}`;
-}
-
-/** Syntax colors use the same palette stops as categorical icons. */
+/** Syntax colors are selected from the same palette stops as categorical icons. */
 const neutralSyntax = defineSyntaxTheme({
   name: 'astryx-neutral',
   tokens: {
-    keyword: [
-      getPaletteStop('purple', 30),
-      getPaletteStop('purple', 80, 'dark'),
-    ],
-    string: [getPaletteStop('green', 30), getPaletteStop('green', 80, 'dark')],
-    comment: [
-      getPaletteStop('neutral', 50),
-      getPaletteStop('neutral', 65, 'light'),
-    ],
-    number: [
-      getPaletteStop('orange', 30),
-      getPaletteStop('orange', 80, 'dark'),
-    ],
-    function: [getPaletteStop('blue', 30), getPaletteStop('blue', 80, 'dark')],
-    type: [getPaletteStop('purple', 30), getPaletteStop('purple', 80, 'dark')],
-    variable: [
-      getPaletteStop('neutral', 10),
-      getPaletteStop('neutral', 90, 'light'),
-    ],
-    operator: [
-      getPaletteStop('neutral', 50),
-      getPaletteStop('neutral', 65, 'light'),
-    ],
-    constant: [
-      getPaletteStop('orange', 30),
-      getPaletteStop('orange', 80, 'dark'),
-    ],
-    tag: [getPaletteStop('red', 30), getPaletteStop('red', 80, 'dark')],
-    attribute: [
-      getPaletteStop('yellow', 30),
-      getPaletteStop('yellow', 80, 'dark'),
-    ],
-    property: [getPaletteStop('teal', 30), getPaletteStop('teal', 80, 'dark')],
+    keyword: ['#6f0782', '#e6c9ec'],
+    string: ['#005711', '#bedfbe'],
+    comment: ['#777777', '#9e9e9e'],
+    number: ['#673a00', '#f4cca7'],
+    function: ['#00458c', '#b8d7ff'],
+    type: ['#6f0782', '#e6c9ec'],
+    variable: ['#1b1b1b', '#e2e2e2'],
+    operator: ['#777777', '#9e9e9e'],
+    constant: ['#673a00', '#f4cca7'],
+    tag: ['#8a0011', '#fac5c0'],
+    attribute: ['#584400', '#f4d170'],
+    property: ['#005348', '#a8e2d6'],
     // #a3a3a3/#525252 (this pair's own disabled-text stop) failed WCAG AA
     // against the syntax background: 2.42:1 light, 2.53:1 dark. #5386.
     punctuation: ['#6e6e6e', '#a0a0a0'], // neutral, 4.89:1 / 7.57:1
-    background: [
-      getPaletteStop('neutral', 95, 'light'),
-      getPaletteStop('neutral', 0),
-    ],
+    background: ['#f1f1f1', '#000000'],
   },
 });
 
@@ -667,342 +627,127 @@ export const neutralTheme = defineTheme({
 
   syntax: neutralSyntax,
 
-  // Core and categorical tokens use exact numbered palette stops. Theme-local
-  // component status fills remain independently approved semantic colors.
+  // Core and categorical tokens retain explicit colors selected from the
+  // approved palette. Theme-local component status fills remain independently
+  // approved semantic colors.
   tokens: {
     // =========================================================================
-    // Core — exact numbered stops from neutralPalettes.neutral.
+    // Core — explicit colors selected from neutralPalettes.neutral.
     // =========================================================================
 
     // Dark cards and popovers match the body and rely on elevation; interactive
     // surfaces use the next lighter neutral stop.
-    '--color-background-surface': [
-      getPaletteStop('neutral', 100),
-      getPaletteStop('neutral', 10, 'dark'),
-    ],
-    '--color-background-body': [
-      getPaletteStop('neutral', 95),
-      getPaletteStop('neutral', 5, 'dark'),
-    ],
-    '--color-background-card': [
-      getPaletteStop('neutral', 100),
-      getPaletteStop('neutral', 5, 'dark'),
-    ],
-    '--color-background-popover': [
-      getPaletteStop('neutral', 100),
-      getPaletteStop('neutral', 5, 'dark'),
-    ],
-    '--color-background-muted': [
-      getPaletteStop('neutral', 95),
-      getPaletteStop('neutral', 5, 'dark'),
-    ],
+    '--color-background-surface': ['#ffffff', '#262626'],
+    '--color-background-body': ['#f1f1f1', '#1b1b1b'],
+    '--color-background-card': ['#ffffff', '#1b1b1b'],
+    '--color-background-popover': ['#ffffff', '#1b1b1b'],
+    '--color-background-muted': ['#f1f1f1', '#1b1b1b'],
 
     // Accent + neutral surface tints (sit alongside backgrounds)
-    '--color-accent': [
-      getPaletteStop('neutral', 15),
-      getPaletteStop('neutral', 90, 'dark'),
-    ],
-    '--color-accent-muted': [
-      getPaletteStop('neutral', 95),
-      getPaletteStop('neutral', 10, 'dark'),
-    ],
-    '--color-neutral': [
-      withAlpha(getPaletteStop('neutral', 0), '0F'),
-      withAlpha(getPaletteStop('neutral', 100), '1A'),
-    ],
+    '--color-accent': ['#262626', '#e7e7e7'],
+    '--color-accent-muted': ['#f1f1f1', '#262626'],
+    '--color-neutral': ['#0000000F', '#ffffff1A'],
 
     // Overlays (modal scrims, hover/pressed tints)
-    '--color-overlay': [
-      withAlpha(getPaletteStop('neutral', 0), '80'),
-      withAlpha(getPaletteStop('neutral', 0), 'CC'),
-    ],
-    '--color-overlay-hover': [
-      withAlpha(getPaletteStop('neutral', 0), '0D'),
-      withAlpha(getPaletteStop('neutral', 100), '0D'),
-    ],
-    '--color-overlay-pressed': [
-      withAlpha(getPaletteStop('neutral', 0), '1A'),
-      withAlpha(getPaletteStop('neutral', 100), '1A'),
-    ],
+    '--color-overlay': ['#00000080', '#000000CC'],
+    '--color-overlay-hover': ['#0000000D', '#ffffff0D'],
+    '--color-overlay-pressed': ['#0000001A', '#ffffff1A'],
 
     // Text
-    '--color-text-primary': [
-      getPaletteStop('neutral', 10),
-      getPaletteStop('neutral', 95),
-    ],
+    '--color-text-primary': ['#1b1b1b', '#f1f1f1'],
     // Light secondary is stop 35 (#525252), not stop 50 (#777777): stop 50 only
     // reaches 4.19:1 on the stop 95 body (#f1f1f1), just under WCAG AA 4.5:1.
     // 600 clears it (6.9:1 on body, 7.8:1 on card). Dark stays neutral-400.
-    '--color-text-secondary': [
-      getPaletteStop('neutral', 35),
-      getPaletteStop('neutral', 65),
-    ],
-    '--color-text-disabled': [
-      getPaletteStop('neutral', 65),
-      getPaletteStop('neutral', 35),
-    ],
-    '--color-text-accent': [
-      getPaletteStop('neutral', 15),
-      getPaletteStop('neutral', 90, 'dark'),
-    ],
-    '--color-on-dark': getPaletteStop('neutral', 100),
-    '--color-on-light': getPaletteStop('neutral', 10),
+    '--color-text-secondary': ['#525252', '#9e9e9e'],
+    '--color-text-disabled': ['#9e9e9e', '#525252'],
+    '--color-text-accent': ['#262626', '#e7e7e7'],
+    '--color-on-dark': '#ffffff',
+    '--color-on-light': '#1b1b1b',
     // Contrast: neutral accent is near-black (L) / near-white (D)
-    '--color-on-accent': [
-      getPaletteStop('neutral', 100),
-      getPaletteStop('neutral', 10),
-    ],
-    '--color-on-success': [
-      getPaletteStop('neutral', 100),
-      getPaletteStop('neutral', 10),
-    ],
-    '--color-on-error': [
-      getPaletteStop('neutral', 100),
-      getPaletteStop('neutral', 10),
-    ],
-    '--color-on-warning': getPaletteStop('neutral', 10),
+    '--color-on-accent': ['#ffffff', '#1b1b1b'],
+    '--color-on-success': ['#ffffff', '#1b1b1b'],
+    '--color-on-error': ['#ffffff', '#1b1b1b'],
+    '--color-on-warning': '#1b1b1b',
 
     // Icon
-    '--color-icon-accent': [
-      getPaletteStop('neutral', 15),
-      getPaletteStop('neutral', 90, 'dark'),
-    ],
-    '--color-icon-primary': [
-      getPaletteStop('neutral', 10),
-      getPaletteStop('neutral', 95),
-    ],
-    '--color-icon-secondary': [
-      getPaletteStop('neutral', 50),
-      getPaletteStop('neutral', 65),
-    ],
-    '--color-icon-disabled': [
-      getPaletteStop('neutral', 65),
-      getPaletteStop('neutral', 35),
-    ],
+    '--color-icon-accent': ['#262626', '#e7e7e7'],
+    '--color-icon-primary': ['#1b1b1b', '#f1f1f1'],
+    '--color-icon-secondary': ['#777777', '#9e9e9e'],
+    '--color-icon-disabled': ['#9e9e9e', '#525252'],
 
     // Status colors pair dark foregrounds with pastel surfaces in light mode,
     // and light foregrounds with translucent hue surfaces in dark mode.
-    '--color-success': [
-      getPaletteStop('green', 30),
-      getPaletteStop('green', 80, 'dark'),
-    ],
+    '--color-success': ['#005711', '#bedfbe'],
     // Error uses stronger stops to preserve contrast through pressed overlays.
-    '--color-error': [
-      getPaletteStop('red', 25),
-      getPaletteStop('red', 85, 'dark'),
-    ],
-    '--color-warning': [
-      getPaletteStop('yellow', 30),
-      getPaletteStop('yellow', 80, 'dark'),
-    ],
-    '--color-success-muted': [
-      getPaletteStop('green', 85),
-      withAlpha(getPaletteStop('green', 70, 'dark'), '3D'),
-    ],
-    '--color-error-muted': [
-      getPaletteStop('red', 85),
-      withAlpha(getPaletteStop('red', 70, 'dark'), '3D'),
-    ],
-    '--color-warning-muted': [
-      getPaletteStop('yellow', 90),
-      withAlpha(getPaletteStop('yellow', 70, 'dark'), '3D'),
-    ],
+    '--color-error': ['#76000c', '#fbd3cf'],
+    '--color-warning': ['#584400', '#f4d170'],
+    '--color-success-muted': ['#bbe1bb', '#8ecb8f3D'],
+    '--color-error-muted': ['#ffc4be', '#f99c943D'],
+    '--color-warning-muted': ['#f9e19e', '#e1b3003D'],
 
-    // Borders retain the released Neutral appearance while referencing exact
+    // Borders retain the released Neutral appearance with colors selected from
     // approved stops. Components that require a 3:1 identifying boundary
     // should provide that treatment through a component-specific mapping.
-    '--color-border': [
-      withAlpha(getPaletteStop('neutral', 0), '14'),
-      withAlpha(getPaletteStop('neutral', 100), '1A'),
-    ],
-    '--color-border-emphasized': [
-      getPaletteStop('neutral', 85),
-      getPaletteStop('neutral', 30, 'dark'),
-    ],
+    '--color-border': ['#00000014', '#ffffff1A'],
+    '--color-border-emphasized': ['#d4d4d4', '#525252'],
 
     // Effects
-    '--color-skeleton': [
-      getPaletteStop('neutral', 90),
-      getPaletteStop('neutral', 30, 'dark'),
-    ],
-    '--color-shadow': [
-      withAlpha(getPaletteStop('neutral', 0), '1A'),
-      withAlpha(getPaletteStop('neutral', 0), '4D'),
-    ],
+    '--color-skeleton': ['#e2e2e2', '#525252'],
+    '--color-shadow': ['#0000001A', '#0000004D'],
     '--color-tint-hover': ['black', 'white'],
 
     // Categorical roles use pastel surfaces and dark text in light mode, then
     // translucent hue surfaces and light text in dark mode.
-    '--color-background-red': [
-      getPaletteStop('red', 85),
-      withAlpha(getPaletteStop('red', 70, 'dark'), '3D'),
-    ],
-    '--color-border-red': [
-      getPaletteStop('red', 80),
-      getPaletteStop('red', 60, 'dark'),
-    ],
-    '--color-icon-red': [
-      getPaletteStop('red', 30),
-      getPaletteStop('red', 70, 'dark'),
-    ],
-    '--color-text-red': [
-      getPaletteStop('red', 25),
-      getPaletteStop('red', 85, 'dark'),
-    ],
+    '--color-background-red': ['#ffc4be', '#f99c943D'],
+    '--color-border-red': ['#ffaea7', '#f76a65'],
+    '--color-icon-red': ['#8a0011', '#f99c94'],
+    '--color-text-red': ['#76000c', '#fbd3cf'],
 
-    '--color-background-orange': [
-      getPaletteStop('orange', 85),
-      withAlpha(getPaletteStop('orange', 70, 'dark'), '3D'),
-    ],
-    '--color-border-orange': [
-      getPaletteStop('orange', 80),
-      getPaletteStop('orange', 60, 'dark'),
-    ],
-    '--color-icon-orange': [
-      getPaletteStop('orange', 30),
-      getPaletteStop('orange', 70, 'dark'),
-    ],
-    '--color-text-orange': [
-      getPaletteStop('orange', 30),
-      getPaletteStop('orange', 80, 'dark'),
-    ],
+    '--color-background-orange': ['#f8cba0', '#eea75f3D'],
+    '--color-border-orange': ['#f7b87a', '#df8600'],
+    '--color-icon-orange': ['#673a00', '#eea75f'],
+    '--color-text-orange': ['#673a00', '#f4cca7'],
 
-    '--color-background-yellow': [
-      getPaletteStop('yellow', 90),
-      withAlpha(getPaletteStop('yellow', 70, 'dark'), '3D'),
-    ],
-    '--color-border-yellow': [
-      getPaletteStop('yellow', 80),
-      getPaletteStop('yellow', 60, 'dark'),
-    ],
-    '--color-icon-yellow': [
-      getPaletteStop('yellow', 30),
-      getPaletteStop('yellow', 70, 'dark'),
-    ],
-    '--color-text-yellow': [
-      getPaletteStop('yellow', 30),
-      getPaletteStop('yellow', 80, 'dark'),
-    ],
+    '--color-background-yellow': ['#f9e19e', '#e1b3003D'],
+    '--color-border-yellow': ['#f1c000', '#c09800'],
+    '--color-icon-yellow': ['#584400', '#e1b300'],
+    '--color-text-yellow': ['#584400', '#f4d170'],
 
-    '--color-background-green': [
-      getPaletteStop('green', 85),
-      withAlpha(getPaletteStop('green', 70, 'dark'), '3D'),
-    ],
-    '--color-border-green': [
-      getPaletteStop('green', 80),
-      getPaletteStop('green', 60, 'dark'),
-    ],
-    '--color-icon-green': [
-      getPaletteStop('green', 30),
-      getPaletteStop('green', 70, 'dark'),
-    ],
-    '--color-text-green': [
-      getPaletteStop('green', 30),
-      getPaletteStop('green', 80, 'dark'),
-    ],
+    '--color-background-green': ['#bbe1bb', '#8ecb8f3D'],
+    '--color-border-green': ['#a1d7a1', '#53b75a'],
+    '--color-icon-green': ['#005711', '#8ecb8f'],
+    '--color-text-green': ['#005711', '#bedfbe'],
 
-    '--color-background-teal': [
-      getPaletteStop('teal', 85),
-      withAlpha(getPaletteStop('teal', 70, 'dark'), '3D'),
-    ],
-    '--color-border-teal': [
-      getPaletteStop('teal', 80),
-      getPaletteStop('teal', 60, 'dark'),
-    ],
-    '--color-icon-teal': [
-      getPaletteStop('teal', 30),
-      getPaletteStop('teal', 70, 'dark'),
-    ],
-    '--color-text-teal': [
-      getPaletteStop('teal', 30),
-      getPaletteStop('teal', 80, 'dark'),
-    ],
+    '--color-background-teal': ['#a2e4d6', '#55d1bb3D'],
+    '--color-border-teal': ['#76dcc9', '#00b7a1'],
+    '--color-icon-teal': ['#005348', '#55d1bb'],
+    '--color-text-teal': ['#005348', '#a8e2d6'],
 
-    '--color-background-cyan': [
-      getPaletteStop('cyan', 85),
-      withAlpha(getPaletteStop('cyan', 70, 'dark'), '3D'),
-    ],
-    '--color-border-cyan': [
-      getPaletteStop('cyan', 80),
-      getPaletteStop('cyan', 60, 'dark'),
-    ],
-    '--color-icon-cyan': [
-      getPaletteStop('cyan', 30),
-      getPaletteStop('cyan', 70, 'dark'),
-    ],
-    '--color-text-cyan': [
-      getPaletteStop('cyan', 30),
-      getPaletteStop('cyan', 80, 'dark'),
-    ],
+    '--color-background-cyan': ['#9ee1f1', '#50cbe73D'],
+    '--color-border-cyan': ['#71d7ef', '#00b1ce'],
+    '--color-icon-cyan': ['#00505f', '#50cbe7'],
+    '--color-text-cyan': ['#00505f', '#a7dfed'],
 
-    '--color-background-blue': [
-      getPaletteStop('blue', 85),
-      withAlpha(getPaletteStop('blue', 70, 'dark'), '3D'),
-    ],
-    '--color-border-blue': [
-      getPaletteStop('blue', 80),
-      getPaletteStop('blue', 60, 'dark'),
-    ],
-    '--color-icon-blue': [
-      getPaletteStop('blue', 30),
-      getPaletteStop('blue', 70, 'dark'),
-    ],
-    '--color-text-blue': [
-      getPaletteStop('blue', 30),
-      getPaletteStop('blue', 80, 'dark'),
-    ],
+    '--color-background-blue': ['#b8d7ff', '#87bcff3D'],
+    '--color-border-blue': ['#a0caff', '#529fff'],
+    '--color-icon-blue': ['#00458c', '#87bcff'],
+    '--color-text-blue': ['#00458c', '#b8d7ff'],
 
-    '--color-background-purple': [
-      getPaletteStop('purple', 85),
-      withAlpha(getPaletteStop('purple', 70, 'dark'), '3D'),
-    ],
-    '--color-border-purple': [
-      getPaletteStop('purple', 80),
-      getPaletteStop('purple', 60, 'dark'),
-    ],
-    '--color-icon-purple': [
-      getPaletteStop('purple', 30),
-      getPaletteStop('purple', 70, 'dark'),
-    ],
-    '--color-text-purple': [
-      getPaletteStop('purple', 30),
-      getPaletteStop('purple', 80, 'dark'),
-    ],
+    '--color-background-purple': ['#e8c7ef', '#d7a3e33D'],
+    '--color-border-purple': ['#e1b3ed', '#c979dc'],
+    '--color-icon-purple': ['#6f0782', '#d7a3e3'],
+    '--color-text-purple': ['#6f0782', '#e6c9ec'],
 
-    '--color-background-pink': [
-      getPaletteStop('pink', 85),
-      withAlpha(getPaletteStop('pink', 70, 'dark'), '3D'),
-    ],
-    '--color-border-pink': [
-      getPaletteStop('pink', 80),
-      getPaletteStop('pink', 60, 'dark'),
-    ],
-    '--color-icon-pink': [
-      getPaletteStop('pink', 30),
-      getPaletteStop('pink', 70, 'dark'),
-    ],
-    '--color-text-pink': [
-      getPaletteStop('pink', 30),
-      getPaletteStop('pink', 80, 'dark'),
-    ],
+    '--color-background-pink': ['#f9c4d6', '#ee9cbd3D'],
+    '--color-border-pink': ['#f7adc9', '#e86ea3'],
+    '--color-icon-pink': ['#82004b', '#ee9cbd'],
+    '--color-text-pink': ['#82004b', '#f4c6d6'],
 
     // Gray uses the neutral categorical surface rather than a chromatic ramp.
-    '--color-background-gray': [
-      getPaletteStop('neutral', 90),
-      'var(--color-neutral)',
-    ],
-    '--color-border-gray': [
-      getPaletteStop('neutral', 85),
-      getPaletteStop('neutral', 10, 'dark'),
-    ],
-    '--color-icon-gray': [
-      getPaletteStop('neutral', 35),
-      getPaletteStop('neutral', 65),
-    ],
-    '--color-text-gray': [
-      getPaletteStop('neutral', 15),
-      getPaletteStop('neutral', 90, 'dark'),
-    ],
+    '--color-background-gray': ['#e2e2e2', 'var(--color-neutral)'],
+    '--color-border-gray': ['#d4d4d4', '#262626'],
+    '--color-icon-gray': ['#525252', '#9e9e9e'],
+    '--color-text-gray': ['#262626', '#e7e7e7'],
 
     // =========================================================================
     // Radius — slightly larger than default (kept as-is)
@@ -1047,11 +792,11 @@ export const neutralTheme = defineTheme({
       '0 4px 6px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 50%)), ' +
       '0 12px 24px light-dark(oklch(0 0 0 / 15%), oklch(0 0 0 / 70%)), ' +
       'inset 0 0 0 1px light-dark(transparent, oklch(1 0 0 / 15%))',
-    '--shadow-inset-hover': `inset 0px 0px 0px 2px ${withAlpha(getPaletteStop('blue', 45), '4D')}`,
-    '--shadow-inset-selected': `inset 0px 0px 0px 2px ${withAlpha(getPaletteStop('blue', 45), '80')}`,
-    '--shadow-inset-success': `inset 0px 0px 0px 2px ${withAlpha(getPaletteStop('green', 45), '4D')}`,
-    '--shadow-inset-warning': `inset 0px 0px 0px 2px ${withAlpha(getPaletteStop('yellow', 85), '4D')}`,
-    '--shadow-inset-error': `inset 0px 0px 0px 2px ${withAlpha(getPaletteStop('red', 50), '4D')}`,
+    '--shadow-inset-hover': `inset 0px 0px 0px 2px ${'#0068cc4D'}`,
+    '--shadow-inset-selected': `inset 0px 0px 0px 2px ${'#0068cc80'}`,
+    '--shadow-inset-success': `inset 0px 0px 0px 2px ${'#0081204D'}`,
+    '--shadow-inset-warning': `inset 0px 0px 0px 2px ${'#f9d05b4D'}`,
+    '--shadow-inset-error': `inset 0px 0px 0px 2px ${'#d628304D'}`,
   },
 
   components: {

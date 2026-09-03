@@ -21,7 +21,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Theme packages may expose approved tonal palettes as authoring metadata. Agents and application code should still choose semantic tokens first. Numbered palette stops are a controlled fallback for theme definitions, custom visualizations, and gaps where no semantic role fits—not permission to choose arbitrary colors.',
+          text: 'Theme packages may expose approved tonal palettes as reference metadata. Agents and theme authors can use numbered stops to select or verify explicit theme values, while component and application code continues to use semantic tokens first. Palette metadata does not automatically rewrite rendered theme colors.',
         },
       ],
     },
@@ -73,7 +73,7 @@ const styles = stylex.create({
           style: 'do',
           items: [
             'Use semantic tokens (--color-text-primary) instead of raw hex values.',
-            'When authoring a theme and no semantic token fits, use an exact numbered stop from its approved palette and record the family, mode, stop, and contrast relationship (for example, blue light-mode stop 45 via `palette.blue.light[45]`).',
+            'When authoring a theme, consult an exact numbered stop, retain the selected resolved value explicitly, and record its family, mode, stop, and contrast relationship (for example, blue light-mode stop 45 via `palette.blue.light[45]`).',
             'Rely on the surface hierarchy (body → surface → card → popover) for layering.',
             'Use status colors (success, error, warning) only for their semantic meaning.',
           ],
@@ -82,8 +82,8 @@ const styles = stylex.create({
           type: 'list',
           style: 'dont',
           items: [
-            "Hardcode hex values, since they won't adapt to dark mode or custom themes.",
-            'Invent or approximate a color when the active theme exposes an approved numbered stop for that role.',
+            "Hardcode hex values in component or application code, since they won't adapt to dark mode or custom themes.",
+            'Treat a palette edit as permission to silently change existing theme mappings.',
             'Mix accent colors with status colors in the same context.',
             'Use --color-on-accent on non-accent backgrounds.',
           ],

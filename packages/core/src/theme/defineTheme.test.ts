@@ -7,7 +7,7 @@ import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
 import {resolveThemeToken} from './tokens';
 import {
   defineTonalPalettes,
-  TONAL_PALETTE_TONES,
+  TONAL_PALETTE_STOPS,
   type TonalPaletteRamp,
 } from './palettes';
 
@@ -247,7 +247,7 @@ describe('defineTheme', () => {
 
   it('preserves approved palette metadata without emitting palette tokens', () => {
     const light = Object.fromEntries(
-      TONAL_PALETTE_TONES.map(tone => [tone, '#123456']),
+      TONAL_PALETTE_STOPS.map(stop => [stop, '#123456']),
     ) as unknown as TonalPaletteRamp;
     const palettes = defineTonalPalettes({blue: {light}});
     const theme = defineTheme({name: 'palette-theme', palettes});
@@ -1413,7 +1413,7 @@ describe('defineTheme extends', () => {
   it('inherits palette families and lets the child replace one family', () => {
     const makeRamp = (color: string) =>
       Object.fromEntries(
-        TONAL_PALETTE_TONES.map(tone => [tone, color]),
+        TONAL_PALETTE_STOPS.map(stop => [stop, color]),
       ) as unknown as TonalPaletteRamp;
     const base = defineTheme({
       name: 'base',

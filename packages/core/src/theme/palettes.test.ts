@@ -4,20 +4,20 @@ import {describe, expect, it} from 'vitest';
 import {
   defineTonalPalettes,
   getTonalPaletteRamp,
-  TONAL_PALETTE_TONES,
+  TONAL_PALETTE_STOPS,
   type ThemePalettes,
   type TonalPaletteRamp,
 } from './palettes';
 
 function ramp(color = '#123456'): TonalPaletteRamp {
   return Object.fromEntries(
-    TONAL_PALETTE_TONES.map(tone => [tone, color]),
+    TONAL_PALETTE_STOPS.map(stop => [stop, color]),
   ) as unknown as TonalPaletteRamp;
 }
 
 describe('defineTonalPalettes', () => {
-  it('uses canonical numeric tone labels from 0 through 100', () => {
-    expect(TONAL_PALETTE_TONES).toEqual([
+  it('uses canonical numeric stop labels from 0 through 100', () => {
+    expect(TONAL_PALETTE_STOPS).toEqual([
       0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
       95, 100,
     ]);
@@ -68,7 +68,7 @@ describe('defineTonalPalettes', () => {
     );
   });
 
-  it('rejects ramps whose luminance decreases as tone labels increase', () => {
+  it('rejects ramps whose luminance decreases as stop labels increase', () => {
     const invalid = {
       ...ramp('#123456'),
       0: '#ffffff',
