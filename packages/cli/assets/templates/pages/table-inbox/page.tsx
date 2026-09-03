@@ -62,9 +62,10 @@
  * a modal act, which is the opposite of what an inbox is for.
  *
  * **Reply drafts are scoped to their thread.** Closing the composer preserves an
- * unfinished body, and reopening Reply on the same conversation restores it.
- * Starting a reply on a different conversation clears that body before changing
- * recipients, so text written to one customer cannot be sent to another.
+ * unfinished draft, and reopening Reply on the same conversation restores it.
+ * Starting a reply on a different conversation clears the body, Cc, and Bcc
+ * state before changing recipients, so no part of one customer's draft can be
+ * sent to another.
  *
  */
 
@@ -1673,9 +1674,9 @@ function ComposeWindow({
   const [body, setBody] = useState('');
   const draftConversationId = useRef<string | null>(null);
 
-  // Fill the header from the thread that asked for this. A body survives closing
-  // and reopening the same thread, but not switching recipients: carrying text
-  // across conversations can send one customer's message to another.
+  // Fill the header from the thread that asked for this. A draft survives
+  // closing and reopening the same thread, but none of its recipient-specific
+  // state crosses conversations.
   useEffect(() => {
     if (draft == null) {
       return;
@@ -1683,6 +1684,10 @@ function ComposeWindow({
     setRecipients(draft.recipients);
     setSubject(draft.subject);
     if (draftConversationId.current !== draft.conversationId) {
+      setCc([]);
+      setBcc([]);
+      setHasCc(false);
+      setHasBcc(false);
       setBody('');
     }
     draftConversationId.current = draft.conversationId;
