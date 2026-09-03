@@ -710,6 +710,51 @@ async function checkD4(page, port, t, card) {
   card.notes.push(`D4 overlay side frac: LTR ${sideL.toFixed(2)} RTL ${sideR.toFixed(2)} flipped=${flipped}`);
 }
 
+async function checkD7CoarseHit(page, port, t, card) {
+  const inputSel = t.selectors?.inputSelector || 'input[type="checkbox"], input[type="radio"]';
+  const wrapperSel = t.selectors?.wrapperSelector;
+
+  const testDir = async rtl => {
+    await page.goto(storyUrl(port, t.storyId, rtl), {waitUntil: 'domcontentloaded'});
+    await settle(page);
+    await doSetup(page, t);
+
+    return page.evaluate(({inputSel, wrapperSel}) => {
+      const inputs = Array.from(document.querySelectorAll(inputSel));
+      if (inputs.length === 0) return null;
+
+      let allHitsOk = true;
+      let count = 0;
+      for (const input of inputs) {
+        const wrapper = wrapperSel ? input.closest(wrapperSel) : input.parentElement;
+        if (!wrapper) continue;
+        const b = wrapper.getBoundingClientRect();
+        if (b.width < 1 || b.height < 1) continue;
+        const cx = b.x + b.width / 2;
+        const cy = b.y + b.height / 2;
+        const hit = document.elementFromPoint(cx, cy);
+        const isHit = hit === input || input.contains(hit);
+        if (!isHit) allHitsOk = false;
+        count++;
+      }
+      return count === 0 ? null : allHitsOk;
+    }, {inputSel, wrapperSel}).catch(() => null);
+  };
+
+  const ltrOk = await testDir(false);
+  const rtlOk = await testDir(true);
+
+  if (ltrOk === null || rtlOk === null) {
+    card.dims.D7 = 'N-A';
+    card.notes.push('D7: input/wrapper targets not found');
+    return;
+  }
+
+  const pass = ltrOk && rtlOk;
+  card.dims.D7 = pass ? 'pass' : 'fail';
+  card.notes.push(`D7 coarse hit-target center: LTR ${ltrOk ? 'pass' : 'fail'}; RTL ${rtlOk ? 'pass' : 'fail'}`);
+}
+
 async function scoreCurated(page, port, t) {
   const card = {component: t.component, storyId: t.storyId, dims: {}, notes: []};
   for (const dim of t.dims) {
@@ -717,6 +762,7 @@ async function scoreCurated(page, port, t) {
       if (dim === 'D2') await checkD2(page, port, t, card);
       else if (dim === 'D3') await checkD3Scroll(page, port, t, card);
       else if (dim === 'D4') await checkD4(page, port, t, card);
+      else if (dim === 'D7') await checkD7CoarseHit(page, port, t, card);
       // D1 is handled by auto-discovery; ignore any stray D1 in curated entries.
     } catch (e) {
       card.dims[dim] = 'ERROR';

@@ -22,6 +22,16 @@
     }
   },
   {
+    "component": "CheckboxInput",
+    "storyId": "core-checkboxinput--default",
+    "dims": [
+      "D7"
+    ],
+    "selectors": {
+      "inputSelector": "input[type=\"checkbox\"]"
+    }
+  },
+  {
     "component": "CheckboxList",
     "storyId": "core-checkboxlist--rich-descriptions",
     "dims": [
@@ -36,11 +46,23 @@
     "component": "RadioList",
     "storyId": "core-radiolist--rich-content",
     "dims": [
-      "D2"
+      "D2",
+      "D7"
     ],
     "selectors": {
       "prev": "input[aria-label=\"Pro\"]",
-      "next": "[data-testid=\"radio-end-content\"]"
+      "next": "[data-testid=\"radio-end-content\"]",
+      "inputSelector": "input[type=\"radio\"]"
+    }
+  },
+  {
+    "component": "Switch",
+    "storyId": "core-switch--default",
+    "dims": [
+      "D7"
+    ],
+    "selectors": {
+      "inputSelector": "input[type=\"checkbox\"]"
     }
   },
   {
