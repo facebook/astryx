@@ -44,8 +44,8 @@ portable vocabulary does not express the required color.
 
 ## Requirements
 
-- **FR1 — Palette metadata is optional and additive.** `DefineThemeInput` MAY
-  accept an optional named palette map. A theme that omits it retains its
+- **FR1 — Palette metadata is optional and additive.** The `defineTheme()`
+  configuration MAY accept an optional named palette map. A theme that omits it retains its
   existing runtime, build, inheritance, and package behavior. Palette metadata
   MUST NOT alter CSS merely because it is declared.
 - **FR2 — Declared ramps are complete and validated.** Every declared family
