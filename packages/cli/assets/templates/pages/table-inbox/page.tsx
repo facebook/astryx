@@ -632,10 +632,9 @@ const TIGHTEN_COLUMNS_BELOW = 900;
  * list is a third of a 1440px page but well over half of the surface the
  * docsite gives a preview, where it read as a table with a pane tacked on.
  *
- * A starting position, not a constraint. The handle overrides it immediately,
- * `PANE_MAX_WIDTH` outranks it on very wide screens where the pane hits its
- * readable-line-length ceiling and the surplus goes to the list instead, and
- * `LIST_MIN_WIDTH` outranks it going the other way.
+ * A starting position, not a constraint: the handle overrides it immediately,
+ * and `LIST_MIN_WIDTH` outranks it on surfaces too narrow to give the list its
+ * third.
  */
 const PANE_DEFAULT_SHARE = 2 / 3;
 
@@ -655,11 +654,24 @@ const LIST_MIN_WIDTH = 300;
  */
 const PANE_MIN_WIDTH = 440;
 
-/**
- * The widest the pane may be dragged. A reading pane is a column of prose, and
- * past roughly this the line length stops being readable.
- */
-const PANE_MAX_WIDTH = 1040;
+/* The pane has no width ceiling of its own. `LIST_MIN_WIDTH` is the only
+   thing above it, which makes the ceiling `surfaceWidth - LIST_MIN_WIDTH` —
+   a figure that grows with the screen instead of freezing at one.
+
+   It used to be a flat 1040, on the reasoning that a reading pane is a column
+   of prose and stops being readable past about there. True of the prose, and
+   `MESSAGE_MEASURE` is where that belongs — it caps the text and lets the pane
+   around it be whatever it needs to be. Spent on the pane instead it bought
+   nothing and cost the list its whole range: on a 1900px surface it pinned the
+   list at 860px, so the stacked rows — which need it under 560 — could not be
+   reached by dragging at all.
+
+   A share would not fix that either, which is the thing worth noticing. Any
+   constant share leaves the list a constant fraction, so its floor climbs with
+   the screen and overtakes the stacking threshold again on a big enough one:
+   at 80% the list bottoms out at 380px on a 1900px surface but 600px on a
+   3000px one, and stacking is out of reach a second time. A pixel floor on the
+   list is the scale-free version of the same intent. */
 
 /**
  * The tab strip's height, borrowed by the bulk-selection bar that replaces it.
@@ -2090,8 +2102,9 @@ export default function SupportInboxTemplate() {
   const pane = useResizable({
     defaultSize: '58%',
     minSizePx: PANE_MIN_WIDTH,
-    // Whichever binds first: the pane's own readable ceiling, or the width at
-    // which the list would be squeezed under `LIST_MIN_WIDTH`.
+    // Everything the surface has, less the list's floor — so the ceiling
+    // tracks the screen and the list keeps its whole range on any of them,
+    // stacked rows included.
     //
     // Floored at the minimum, because a ceiling below the floor is not a
     // narrower range but an inverted one, and the hook clamps low then high —
@@ -2101,11 +2114,8 @@ export default function SupportInboxTemplate() {
     // there is the single-surface one, which `isPaneFullWidth` takes over
     // before this is on screen.
     maxSizePx: isMeasured
-      ? Math.max(
-          PANE_MIN_WIDTH,
-          Math.min(PANE_MAX_WIDTH, surfaceWidth - LIST_MIN_WIDTH),
-        )
-      : PANE_MAX_WIDTH,
+      ? Math.max(PANE_MIN_WIDTH, surfaceWidth - LIST_MIN_WIDTH)
+      : undefined,
     onSizeChange: onPaneSizeChange,
   });
 
@@ -2436,15 +2446,25 @@ export default function SupportInboxTemplate() {
                    what separates it from the rows, which is why nothing draws
                    a rule under it.
 
-                   Height is pinned to `SELECTION_BAR_HEIGHT` so the swap costs
-                   the table nothing. That makes the band shorter than
-                   `table-filter`'s, which is free to size to its own content;
-                   here the strip it replaces sets the budget. */
-                <VStack height={SELECTION_BAR_HEIGHT} vAlign="center">
+                   The *slot* is pinned to `SELECTION_BAR_HEIGHT`, and only the
+                   slot: that is the part the table can feel, so that is the
+                   part that must not move. The band inside it is free to be
+                   taller than the strip it replaces — 8px above and below the
+                   buttons, which is what stops a bar made of ghost buttons
+                   from reading as a row of loose glyphs — and the surplus is
+                   sent upward by aligning it to the bottom of the slot, so it
+                   laps into the header's own padding rather than over the
+                   first row. Bottom-aligned rather than centred for that
+                   reason alone; centring would split the overflow and put half
+                   of it on the table. */
+                <VStack
+                  height={SELECTION_BAR_HEIGHT}
+                  vAlign="end"
+                  paddingBlockEnd={0.5}>
                   <Section
                     variant="muted"
                     paddingInline={3}
-                    paddingBlock={0.5}
+                    paddingBlock={2}
                     xstyle={[styles.bulkBand, styles.bulkBandEnter]}>
                     <HStack gap={3} vAlign="center" minHeight={28}>
                       <StackItem size="fill">
