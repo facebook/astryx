@@ -110,7 +110,6 @@ import {Tokenizer} from '@astryxdesign/core/Tokenizer';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
-import {mergeProps} from '@astryxdesign/core/utils';
 import {useContainerReveal, useMediaQuery} from '@astryxdesign/core/hooks';
 import type {UseContainerRevealReturn} from '@astryxdesign/core/hooks';
 import {
@@ -575,8 +574,14 @@ function unreadByCategory(): Record<Category, number> {
 /**
  * Dwell before the row actions appear. Without it a cursor travelling down the
  * list lights up every row it crosses; keyboard focus and touch ignore it.
+ *
+ * Short enough to read as immediate on a row the pointer stopped on, which is
+ * the ceiling worth spending here: the dwell buys quiet during a sweep, and
+ * the fade that follows it costs its own frames on top, so a gate long enough
+ * to notice separately reads as the row being slow rather than the list being
+ * calm.
  */
-const HOVER_INTENT_MS = 140;
+const HOVER_INTENT_MS = 90;
 
 /** Matches the wash the selection plugin paints, so both states look native. */
 const OPEN_CELL_STYLE = {backgroundColor: 'var(--color-accent-muted)'};
@@ -645,6 +650,12 @@ const PANE_DEFAULT_SHARE = 2 / 3;
 const LIST_MIN_WIDTH = 300;
 
 /**
+ * The narrowest the pane may be dragged — below this the thread is a column of
+ * broken lines and the reply pair stops fitting on one row.
+ */
+const PANE_MIN_WIDTH = 440;
+
+/**
  * The widest the pane may be dragged. A reading pane is a column of prose, and
  * past roughly this the line length stops being readable.
  */
@@ -694,6 +705,16 @@ const MESSAGE_MEASURE = 680;
  * do. So the box is measured instead. The first read is synchronous and inside
  * `useLayoutEffect`, before paint, so the opening frame is already laid out for
  * the real width rather than snapping to it afterwards.
+ *
+ * Both reads have to be in the same units, which rules out
+ * `getBoundingClientRect` for the first one: it reports the box as *painted*,
+ * so an ancestor `transform: scale()` is baked into it, while a
+ * ResizeObserver reports the box as *laid out* and ignores the same
+ * transform. The template catalog draws every card through `scale(0.5)`, so
+ * mixing the two there opened on half the real width and corrected to the
+ * full one an instant later — and anything that read the width in between,
+ * like the pane's opening position, kept the halved answer. `offsetWidth` is
+ * the laid-out width, minus the padding the observer also excludes.
  */
 function useSurfaceWidth() {
   const ref = useRef<HTMLDivElement>(null);
@@ -704,7 +725,12 @@ function useSurfaceWidth() {
     if (!node) {
       return;
     }
-    setWidth(node.getBoundingClientRect().width);
+    const {paddingInlineStart, paddingInlineEnd} = getComputedStyle(node);
+    setWidth(
+      node.offsetWidth -
+        parseFloat(paddingInlineStart) -
+        parseFloat(paddingInlineEnd),
+    );
 
     const observer = new ResizeObserver(entries => {
       const entry = entries[0];
@@ -960,11 +986,8 @@ function ReceivedCell({
           a side effect of it. Layout-preserved content stays in flow at rest,
           which reserves exactly the width this layout exists to remove. */}
       <HStack
-        {...(isOverlaid
-          ? mergeProps(reveal.getContentRevealProps(), {
-              style: ACTIONS_CLAIM_CELL,
-            })
-          : reveal.getContentRevealProps())}
+        {...reveal.getContentRevealProps()}
+        style={isOverlaid ? ACTIONS_CLAIM_CELL : undefined}
         gap={0.5}
         vAlign="center"
         hAlign="end">
@@ -999,15 +1022,13 @@ function ReceivedCell({
             buttons. In here it is squeezed to nothing by the same declaration
             that takes the date away, and comes back with it. */}
         <HStack
-          {...mergeProps(
-            isOverlaid
-              ? {}
-              : reveal.getContentRevealProps({isRevealInverted: true}),
-            /* Squeezing this box to zero width does not stop a 16px glyph
-               from painting outside it — `maxLines` is the date's own
-               overflow rule and covers only the date. */
-            {style: HIDE_SQUEEZED_CONTENT},
-          )}
+          {...(isOverlaid
+            ? {}
+            : reveal.getContentRevealProps({isRevealInverted: true}))}
+          /* Squeezing this box to zero width does not stop a 16px glyph from
+             painting outside it — `maxLines` is the date's own overflow rule
+             and covers only the date. */
+          style={HIDE_SQUEEZED_CONTENT}
           gap={1}
           vAlign="center"
           hAlign="end">
@@ -1391,8 +1412,17 @@ function ConversationPane({
            is a button. The title is a Heading with no side bearing at all, so
            it needs the larger share to reach 24px. The close button carries
            its own, so the same amount would push its glyph past the line the
-           text is on. 12 and 8 put both on it. */
-        <VStack paddingInlineStart={3} paddingInlineEnd={2}>
+           text is on. 12 and 8 put both on it.
+
+           The top works the same way and lands on the same 24px: the toolbar
+           already holds 8 of its own, so 16 here tops it up rather than
+           replacing it. The body below starts at 0, so this is the only top
+           inset the pane pays — the two used to stack, which is what put the
+           title and the tags under it that far apart. */
+        <VStack
+          paddingBlockStart={4}
+          paddingInlineStart={3}
+          paddingInlineEnd={2}>
           <Toolbar
             label="Conversation"
             startContent={
@@ -1435,11 +1465,18 @@ function ConversationPane({
             page. Padding again here would double it, so the pane only pays for
             its own gutters when it is the panel beside the list. */}
         <VStack
-          // An even 24px on all four sides. The pane is the reading surface
-          // and was wearing the same 16px as the list beside it, which left
-          // the message crowded against both edges of the wider of the two.
+          // 24px down the sides and along the bottom. The pane is the reading
+          // surface and was wearing the same 16px as the list beside it, which
+          // left the message crowded against both edges of the wider of the
+          // two.
+          //
+          // The top is the header's to pay, not this block's. The header sits
+          // directly above with no rule between them, so an inset on both read
+          // as one gap of their sum and pushed the tags away from the subject
+          // they belong to.
           paddingInline={isFullWidth ? 0 : 6}
-          paddingBlock={isFullWidth ? 0 : 6}
+          paddingBlockStart={0}
+          paddingBlockEnd={isFullWidth ? 0 : 6}
           gap={4}
           isScrollable
           height="100%">
@@ -2038,29 +2075,58 @@ export default function SupportInboxTemplate() {
    * template cannot trust. The real answer arrives just below, as soon as
    * there is a surface width to take a share of.
    */
-  const pane = useResizable({
-    defaultSize: '58%',
-    minSizePx: 440,
-    // Whichever binds first: the pane's own readable ceiling, or the width at
-    // which the list would be squeezed under `LIST_MIN_WIDTH`.
-    maxSizePx: isMeasured
-      ? Math.min(PANE_MAX_WIDTH, surfaceWidth - LIST_MIN_WIDTH)
-      : PANE_MAX_WIDTH,
-  });
-
-  // Land the pane on its share, once, as soon as the surface is known.
-  //
-  // Not on every measurement: this is a starting position, and re-running it
-  // on resize would drag the boundary back under the user every time the
-  // window changed. `hasPlacedPane` is the latch.
-  const {resize: resizePane} = pane;
-  const hasPlacedPane = useRef(false);
-  useLayoutEffect(() => {
-    if (hasPlacedPane.current || !isMeasured) {
+  // Set by the hook whenever the boundary moves, and read to tell the two
+  // reasons it can move apart: the placement below, or the handle. Only the
+  // handle is the user choosing a split, and only that ends the placement.
+  const hasUserMovedPane = useRef(false);
+  const isPlacingPane = useRef(false);
+  const onPaneSizeChange = useCallback(() => {
+    if (isPlacingPane.current) {
       return;
     }
-    hasPlacedPane.current = true;
+    hasUserMovedPane.current = true;
+  }, []);
+
+  const pane = useResizable({
+    defaultSize: '58%',
+    minSizePx: PANE_MIN_WIDTH,
+    // Whichever binds first: the pane's own readable ceiling, or the width at
+    // which the list would be squeezed under `LIST_MIN_WIDTH`.
+    //
+    // Floored at the minimum, because a ceiling below the floor is not a
+    // narrower range but an inverted one, and the hook clamps low then high —
+    // so the max wins and every request lands on it. On a surface too small to
+    // seat both halves that turned the pane into a sliver instead of the
+    // largest pane that still fits. The layout that is actually right down
+    // there is the single-surface one, which `isPaneFullWidth` takes over
+    // before this is on screen.
+    maxSizePx: isMeasured
+      ? Math.max(
+          PANE_MIN_WIDTH,
+          Math.min(PANE_MAX_WIDTH, surfaceWidth - LIST_MIN_WIDTH),
+        )
+      : PANE_MAX_WIDTH,
+    onSizeChange: onPaneSizeChange,
+  });
+
+  // Land the pane on its share of the surface, and keep it there until the
+  // handle is used.
+  //
+  // Following the surface rather than latching on the first measurement is
+  // what makes the opening split survive being measured early: a card in the
+  // catalog, a dialog mid-animation and a pane in a split editor can all
+  // report a width that is real for one frame and wrong for the rest of the
+  // session, and a latch has no way to tell that from a settled one. Once the
+  // handle has moved, the split is the user's answer and nothing here
+  // overrides it — which is the property the latch was there to protect.
+  const {resize: resizePane} = pane;
+  useLayoutEffect(() => {
+    if (hasUserMovedPane.current || !isMeasured) {
+      return;
+    }
+    isPlacingPane.current = true;
     resizePane(Math.round(surfaceWidth * PANE_DEFAULT_SHARE));
+    isPlacingPane.current = false;
   }, [isMeasured, surfaceWidth, resizePane]);
 
   // Whether the rows stack is a question about the table, not the surface and
