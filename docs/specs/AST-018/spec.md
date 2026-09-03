@@ -42,7 +42,7 @@ This record uses the vocabulary already established by the Neutral remap:
 
 - A theme has one **palette map**.
 - The map contains one or more named **families**, such as `neutral` or `red`.
-- A family contains a required light **ramp** and an optional dark ramp.
+- A family contains at least one mode-specific **ramp**: light, dark, or both.
 - A ramp contains the complete set of numbered **stops**.
 - A palette-bearing build emits one **palette artifact set** for the theme in
   JavaScript, JSON, and TypeScript declaration formats.
@@ -65,17 +65,22 @@ This record uses the vocabulary already established by the Neutral remap:
 - **FR1 — Palette metadata is optional and additive.** The `defineTheme()`
   configuration MAY accept an optional named palette map. A theme that omits it
   retains its existing runtime, build, inheritance, and package behavior.
-  Palette metadata MUST NOT alter CSS merely because it is declared.
+  `defineTheme()` MUST validate and retain declared palette metadata for source
+  authoring. It MUST NOT generate a palette, find nearest stops, change `color`
+  expansion, rewrite token values, or otherwise alter CSS merely because a
+  palette is declared.
 - **FR2 — Declared ramps are complete and validated.** Every declared family
-  MUST provide a complete light ramp for the approved numbered stop set and MAY
-  provide a separately tuned dark ramp. When `palettes` is present, it MUST
-  contain at least one family; a theme with no palette omits the field. There is
-  no required family set: a theme such as Stone MAY declare only one family, and
-  an omitted dark ramp means that family intentionally uses its light ramp in
-  both modes. Values MUST be opaque six-digit hex colors ordered from darker to
-  lighter by relative luminance. Unknown family and ramp fields MUST be rejected.
-  Hue, chroma, semantic labels, and descriptions are optional metadata rather
-  than generators.
+  MUST provide at least one complete ramp for the approved numbered stop set:
+  light, dark, or both. A theme such as Gothic MAY declare only dark ramps, and
+  there is no required family set: a theme such as Stone MAY declare only one
+  family. A family supporting both modes MUST declare both ramps. If both modes
+  intentionally share one ramp, the author MUST assign that ramp to both fields;
+  a missing mode MUST NOT silently reuse the other. When `palettes` is present,
+  it MUST contain at least one family; a theme with no palette omits the field.
+  Values MUST be opaque six-digit hex colors ordered from darker to lighter by
+  relative luminance. Unknown family and ramp fields MUST be rejected. Hue,
+  chroma, semantic labels, and descriptions are optional metadata rather than
+  generators.
 - **FR3 — Semantic tokens remain first and mappings remain explicit.** Components
   and applications SHOULD use portable semantic tokens. Maintained theme source
   MAY select a color by consulting an exact palette stop, but the resulting token
@@ -168,7 +173,7 @@ always prohibited.
 | -------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR1–FR2  | `packages/core/src/theme/palettes.test.ts` and `defineTheme.test.ts`   | omitted metadata; complete and incomplete ramps; invalid colors, order, and fields                       | An omitted palette changes a theme, or malformed metadata is accepted.                                                                      |
 | FR3–FR5  | Neutral source, theme spec, token tests, and rendered palette evidence | explicit semantic mapping; matching palette value; intentional deviation; light/dark baseline mapping    | A palette edit silently changes theme output, a justified direct value is rejected, or the remap is treated as accessibility certification. |
-| FR6      | Core theme-extension tests                                             | inherited families; exact family replacement; omitted dark ramp                                          | A child loses unrelated families or accidentally merges partial ramps.                                                                      |
+| FR6      | Core theme-extension tests                                             | inherited families; exact family replacement; light-only, dark-only, and dual-mode families              | A child loses unrelated families, accidentally merges partial ramps, or invents an undeclared mode.                                          |
 | FR7–FR8  | CLI palette build and older-Core compatibility tests                   | source and built bases; JS/JSON/declaration outputs; add/change/remove; `--check`; palette-free old Core | Runtime output gains unused metadata, palette artifacts drift or remain stale, or an unrelated older-Core build fails.                      |
 | FR9      | `scripts/verify-exports.mjs`, package build, and Changeset review      | unpublished cleanup; published `/palette` retention and removal                                          | An exported palette artifact disappears without compatibility treatment, or an export points to a deleted file.                             |
 
@@ -297,6 +302,22 @@ but package-export safety does not wait for that follow-up.
 
 Rejected: coupling the generic theme builder to package layout or adding a
 Neutral-only export test that duplicates the repository-wide verifier.
+
+### DEC-8 — Palette modes are declared explicitly
+
+**Reference:** `spec:AST-018/DEC-8`
+
+**Decider:** `rubyycheung`, `2026-09-03`
+
+A palette family declares the modes its owning theme supports: light, dark, or
+both. At least one complete ramp is required. Missing modes are not inferred,
+which allows dark-only themes such as Gothic without pretending that their ramp
+is a light palette. A theme intentionally using one ramp in both modes assigns
+that ramp to both fields explicitly.
+
+Rejected: requiring every family to provide a light ramp or treating an omitted
+dark ramp as an instruction to reuse the light ramp. Both approaches hide the
+theme's actual mode support.
 
 ## Open questions
 

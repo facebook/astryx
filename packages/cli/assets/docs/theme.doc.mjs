@@ -271,7 +271,7 @@ export const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Each family requires all 21 numeric stop labels from 0 through 100 in increments of 5. Read `blue.light[40]` as “blue, light-mode ramp, stop 40.” Lower labels identify darker stops and higher labels lighter stops in both modes. These labels identify approved palette stops; validation does not promise that a hex value measures at the exact corresponding HCT coordinate. Add a dark ramp when the theme uses separately tuned dark-mode colors; otherwise tools intentionally reuse the light ramp. `astryx theme build` validates attached metadata, excludes it from the runtime theme module, and emits `<name>.palette.js`, `<name>.palette.json`, and `<name>.palette.d.ts` as one artifact set for explicit use by tools and agents.',
+          text: 'Each family requires at least one complete light or dark ramp, with all 21 numeric stop labels from 0 through 100 in increments of 5. Read `blue.light[40]` as “blue, light-mode ramp, stop 40.” Lower labels identify darker stops and higher labels lighter stops in every declared mode. Light-only and dark-only themes declare only the mode they support. Themes supporting both modes declare both ramps; if both intentionally share one ramp, assign it to both fields explicitly. Missing modes are not inferred. These labels identify approved palette stops; validation does not promise that a hex value measures at the exact corresponding HCT coordinate. `astryx theme build` validates attached metadata, excludes it from the runtime theme module, and emits `<name>.palette.js`, `<name>.palette.json`, and `<name>.palette.d.ts` as one artifact set for explicit use by tools and agents.',
         },
       ],
     },

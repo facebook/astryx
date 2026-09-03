@@ -254,7 +254,7 @@ describe('defineTheme', () => {
     const theme = defineTheme({name: 'palette-theme', palettes});
 
     expect(theme.palettes).toBe(palettes);
-    expect(theme.palettes?.blue.light[50]).toBe('#123456');
+    expect(theme.palettes?.blue.light?.[50]).toBe('#123456');
     expect(theme.tokens).toEqual({});
   });
 });
@@ -1420,10 +1420,10 @@ describe('defineTheme extends', () => {
       name: 'base',
       palettes: defineTonalPalettes({
         blue: {light: makeRamp('#0068cc')},
-        green: {light: makeRamp('#098123')},
+        green: {dark: makeRamp('#098123')},
       }),
     });
-    const replacementBlue = {light: makeRamp('#529fff')};
+    const replacementBlue = {dark: makeRamp('#529fff')};
     const child = defineTheme({
       name: 'child',
       extends: base,
@@ -1431,6 +1431,7 @@ describe('defineTheme extends', () => {
     });
 
     expect(child.palettes?.blue).toBe(replacementBlue);
+    expect(child.palettes?.blue.light).toBeUndefined();
     expect(child.palettes?.green).toBe(base.palettes?.green);
   });
 

@@ -24,18 +24,21 @@ export type TonalPaletteRamp = Readonly<
   }
 >;
 
-/**
- * A named palette family. Dark can be omitted when both modes intentionally
- * use the same ramp.
- */
-export interface ThemePaletteFamily {
-  readonly light: TonalPaletteRamp;
-  readonly dark?: TonalPaletteRamp;
+interface ThemePaletteFamilyMetadata {
   /** Optional semantic role, such as "success", "warning", or "error". */
   readonly semantic?: string;
   /** Short author-facing explanation of the palette's intended use. */
   readonly description?: string;
 }
+
+/** A named palette family with at least one explicitly declared mode. */
+export type ThemePaletteFamily = Readonly<
+  ThemePaletteFamilyMetadata &
+    (
+      | {readonly light: TonalPaletteRamp; readonly dark?: TonalPaletteRamp}
+      | {readonly light?: TonalPaletteRamp; readonly dark: TonalPaletteRamp}
+    )
+>;
 
 /** Approved, named color families. */
 export type ThemePalettes = Readonly<Record<string, ThemePaletteFamily>>;
@@ -125,8 +128,8 @@ export function defineTonalPalettes<const T extends ThemePalettes>(
   }
 
   for (const [name, family] of Object.entries(palettes)) {
-    if (!family || typeof family !== 'object' || !family.light) {
-      throw new Error(`Palette "${name}" must define a light tonal ramp.`);
+    if (!family || typeof family !== 'object' || Array.isArray(family)) {
+      throw new Error(`Palette "${name}" must be a palette family.`);
     }
     for (const key of Object.keys(family)) {
       if (!PALETTE_FAMILY_KEYS.has(key)) {
@@ -135,7 +138,19 @@ export function defineTonalPalettes<const T extends ThemePalettes>(
         );
       }
     }
-    validateRamp(name, 'light', family.light);
+    if (family.light === undefined && family.dark === undefined) {
+      throw new Error(
+        `Palette "${name}" must define at least one light or dark tonal ramp.`,
+      );
+    }
+    if (family.light === null) {
+      throw new Error(
+        `Palette "${name}" light must be a tonal ramp when provided.`,
+      );
+    }
+    if (family.light !== undefined) {
+      validateRamp(name, 'light', family.light);
+    }
     if (family.dark === null) {
       throw new Error(
         `Palette "${name}" dark must be a tonal ramp when provided.`,
@@ -161,10 +176,10 @@ export function defineTonalPalettes<const T extends ThemePalettes>(
   return palettes;
 }
 
-/** Resolve the palette ramp used by a color mode. */
+/** Return a palette family's explicitly declared ramp for a color mode. */
 export function getTonalPaletteRamp(
   family: ThemePaletteFamily,
   mode: 'light' | 'dark',
-): TonalPaletteRamp {
-  return mode === 'dark' ? (family.dark ?? family.light) : family.light;
+): TonalPaletteRamp | undefined {
+  return family[mode];
 }

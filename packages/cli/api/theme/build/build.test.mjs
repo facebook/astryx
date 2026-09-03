@@ -220,7 +220,10 @@ describe('themeBuild() — receipt', () => {
       `export default ${JSON.stringify({
         name: 'palette-theme',
         tokens: {'--color-accent': '#123456'},
-        palettes: {blue: {semantic: 'info', light: stops}},
+        palettes: {
+          blue: {semantic: 'info', light: stops},
+          violet: {dark: stops},
+        },
       })};\n`,
     );
 
@@ -248,10 +251,21 @@ describe('themeBuild() — receipt', () => {
     expect(paletteModule).toContain('"50": "#123456"');
     expect(paletteJson.blue.semantic).toBe('info');
     expect(paletteJson.blue.light['50']).toBe('#123456');
+    expect(paletteJson.violet.dark['50']).toBe('#123456');
     expect(paletteTypes).toContain('readonly "blue"');
-    expect(paletteTypes).toContain('readonly light: TonalPaletteRamp');
-    expect(paletteTypes).toContain('readonly semantic: "info"');
-    expect(paletteTypes).not.toContain('readonly dark: TonalPaletteRamp');
+    expect(paletteTypes).toContain('readonly "violet"');
+    const blueTypes = paletteTypes.slice(
+      paletteTypes.indexOf('readonly "blue"'),
+      paletteTypes.indexOf('readonly "violet"'),
+    );
+    const violetTypes = paletteTypes.slice(
+      paletteTypes.indexOf('readonly "violet"'),
+    );
+    expect(blueTypes).toContain('readonly light: TonalPaletteRamp');
+    expect(blueTypes).toContain('readonly semantic: "info"');
+    expect(blueTypes).not.toContain('readonly dark: TonalPaletteRamp');
+    expect(violetTypes).toContain('readonly dark: TonalPaletteRamp');
+    expect(violetTypes).not.toContain('readonly light: TonalPaletteRamp');
     expect(result?.data.outputs).toMatchObject({
       paletteJs: 'palette-theme.palette.js',
       paletteJson: 'palette-theme.palette.json',
@@ -410,6 +424,12 @@ describe('themeBuild() — receipt', () => {
         palettes: {},
         message:
           'Theme palettes must contain at least one named palette family.',
+      },
+      {
+        file: 'invalid-palette-family-empty.mjs',
+        family: {},
+        message:
+          'Palette "blue" must define at least one light or dark tonal ramp.',
       },
       {
         file: 'invalid-palette-stop.mjs',

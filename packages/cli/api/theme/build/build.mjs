@@ -922,7 +922,10 @@ function generatePaletteTypes(themeDef) {
   const exportName = `${toIdentifier(themeDef.name)}Palettes`;
   const families = Object.entries(themeDef.palettes)
     .map(([name, family]) => {
-      const fields = ['    readonly light: TonalPaletteRamp;'];
+      const fields = [];
+      if (family.light !== undefined) {
+        fields.push('    readonly light: TonalPaletteRamp;');
+      }
       if (family.dark !== undefined) {
         fields.push('    readonly dark: TonalPaletteRamp;');
       }

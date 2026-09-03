@@ -29,24 +29,34 @@ describe('defineTonalPalettes', () => {
     });
 
     expect(palettes.blue.light[45]).toBe('#0068cc');
-    expect(getTonalPaletteRamp(palettes.blue, 'dark')[45]).toBe('#529fff');
+    expect(getTonalPaletteRamp(palettes.blue, 'dark')?.[45]).toBe('#529fff');
   });
 
-  it('falls back to the light ramp when no separate dark ramp exists', () => {
-    const palettes = defineTonalPalettes({neutral: {light: ramp('#777777')}});
-
-    expect(getTonalPaletteRamp(palettes.neutral, 'dark')).toBe(
-      palettes.neutral.light,
-    );
-  });
-
-  it('treats an explicitly undefined dark ramp as omitted', () => {
+  it('accepts light-only and dark-only palette families', () => {
     const palettes = defineTonalPalettes({
-      neutral: {light: ramp('#777777'), dark: undefined},
+      lightOnly: {light: ramp('#777777')},
+      darkOnly: {dark: ramp('#222222')},
     });
 
+    expect(getTonalPaletteRamp(palettes.lightOnly, 'light')).toBe(
+      palettes.lightOnly.light,
+    );
+    expect(getTonalPaletteRamp(palettes.lightOnly, 'dark')).toBeUndefined();
+    expect(getTonalPaletteRamp(palettes.darkOnly, 'dark')).toBe(
+      palettes.darkOnly.dark,
+    );
+    expect(getTonalPaletteRamp(palettes.darkOnly, 'light')).toBeUndefined();
+  });
+
+  it('uses an explicitly shared ramp only when both modes declare it', () => {
+    const shared = ramp('#777777');
+    const palettes = defineTonalPalettes({
+      neutral: {light: shared, dark: shared},
+    });
+
+    expect(getTonalPaletteRamp(palettes.neutral, 'light')).toBe(shared);
     expect(getTonalPaletteRamp(palettes.neutral, 'dark')).toBe(
-      palettes.neutral.light,
+      shared,
     );
   });
 
@@ -98,6 +108,11 @@ describe('defineTonalPalettes', () => {
     expect(() => defineTonalPalettes({})).toThrow(
       'Theme palettes must contain at least one named palette family.',
     );
+    expect(() =>
+      defineTonalPalettes({blue: {}} as unknown as ThemePalettes),
+    ).toThrow(
+      'Palette "blue" must define at least one light or dark tonal ramp.',
+    );
   });
 
   it('rejects invalid family metadata', () => {
@@ -136,7 +151,13 @@ describe('defineTonalPalettes', () => {
     ).toThrow('chroma must be a finite non-negative number');
   });
 
-  it('rejects a present but null dark ramp', () => {
+  it('rejects a present but null mode ramp', () => {
+    expect(() =>
+      defineTonalPalettes({
+        blue: {light: null, dark: ramp()},
+      } as unknown as ThemePalettes),
+    ).toThrow('Palette "blue" light must be a tonal ramp when provided.');
+
     expect(() =>
       defineTonalPalettes({
         blue: {light: ramp(), dark: null},
