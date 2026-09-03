@@ -152,14 +152,15 @@ tests; its mappings retain explicit resolved color values and do not change when
 palette metadata changes. The remap does not claim that all existing component
 combinations pass.
 
-A focused `check:theme-palettes` repository check is planned as follow-up tooling,
-not as an additional requirement for the initial implementation PR. It should
-fail for package-export/artifact mismatches, orphan artifacts, and malformed
-families; identify which explicit theme colors match palette families and stops;
-warn about unusually large palette output and values that no longer match an
-intended stop; and preserve intentional deviations allowed by FR4. Consumer
-guidance should say to use an approved stop when one satisfies the requirement,
-rather than implying that direct colors are always prohibited.
+The existing post-build `scripts/verify-exports.mjs` check fails when a published
+package export points to a missing or unloadable palette artifact. A focused
+`check:theme-palettes` repository check remains planned as follow-up tooling for
+palette-specific authoring feedback: identifying which explicit theme colors
+match palette families and stops, warning about unusually large palette output or
+values that no longer match an intended stop, and preserving intentional
+deviations allowed by FR4. Consumer guidance should say to use an approved stop
+when one satisfies the requirement rather than implying that direct colors are
+always prohibited.
 
 ## Verification
 
@@ -169,7 +170,7 @@ rather than implying that direct colors are always prohibited.
 | FR3–FR5  | Neutral source, theme spec, token tests, and rendered palette evidence | explicit semantic mapping; matching palette value; intentional deviation; light/dark baseline mapping    | A palette edit silently changes theme output, a justified direct value is rejected, or the remap is treated as accessibility certification. |
 | FR6      | Core theme-extension tests                                             | inherited families; exact family replacement; omitted dark ramp                                          | A child loses unrelated families or accidentally merges partial ramps.                                                                      |
 | FR7–FR8  | CLI palette build and older-Core compatibility tests                   | source and built bases; JS/JSON/declaration outputs; add/change/remove; `--check`; palette-free old Core | Runtime output gains unused metadata, palette artifacts drift or remain stale, or an unrelated older-Core build fails.                      |
-| FR9      | Package-export and Changeset checks                                    | unpublished cleanup; published `/palette` retention and removal                                          | An exported palette artifact disappears without compatibility treatment, or an export points to a deleted file.                             |
+| FR9      | `scripts/verify-exports.mjs`, package build, and Changeset review      | unpublished cleanup; published `/palette` retention and removal                                          | An exported palette artifact disappears without compatibility treatment, or an export points to a deleted file.                             |
 
 ## Decision log
 
@@ -196,10 +197,10 @@ contrast-specific values into misleading palette entries.
 **Decider:** `rubyycheung`, `2026-09-02`
 
 Each palette-bearing theme emits one logical artifact set. JavaScript supports
-normal application and tooling imports, JSON provides a data-only format for
-agents and non-JavaScript tooling, and a TypeScript declaration accompanies the
+theme-authoring and tooling imports, JSON provides a data-only format for agents
+and non-JavaScript tooling, and a TypeScript declaration accompanies the
 JavaScript export. These are representations of the same resolved palette, not
-independent palette contracts.
+independent palette contracts or application styling APIs.
 
 Rejected: emitting separate artifacts for individual color families or choosing
 only one consumption format. Per-family artifacts would fragment ownership and
@@ -217,8 +218,10 @@ not assert that every existing component, mode, or interaction state already
 passes accessibility requirements. Component-context findings remain separately
 testable and fixable without invalidating the palette contract.
 
-The exact Neutral palette values and baseline mappings present at commit
-`19848f1a54` are approved as the anchor for those subsequent decisions.
+The exact Neutral palette values and resolved baseline colors in this change are
+approved as the anchor for those subsequent decisions. The theme retains those
+colors explicitly, and its tests verify representative values against the
+palette without making the palette their runtime or authoring dependency.
 
 Rejected: making complete component-level contrast conformance a prerequisite for
 defining the palette. That would confuse the measurement baseline with the
@@ -232,7 +235,8 @@ follow-up work the baseline is intended to enable.
 
 Extending a source theme means selecting it as a complete authoring foundation,
 including its palette metadata. The derived-theme author assumes responsibility
-for inherited and replaced palette decisions. Extending the built theme receives
+for inherited and replaced palette reference data. That metadata does not rewrite
+the child's inherited or explicit theme values. Extending the built theme receives
 the finished runtime styling without palette metadata; authors who need both may
 import the built theme and its `/palette` artifact explicitly.
 
@@ -252,8 +256,8 @@ already express the intended choice.
 
 When `palettes` is present, it contains at least one complete named family. A
 theme with no palette omits the field. A real palette may be published before it
-is mapped to tokens because usage is optional; future tooling may report that as
-informational rather than rejecting it.
+is reflected in theme values because usage is optional; future tooling may report
+that as informational rather than rejecting it.
 
 Rejected: treating `palettes: {}` as a placeholder or as equivalent to omission.
 An empty map communicates no palette intent and can conceal accidental removal of
@@ -276,9 +280,24 @@ would allow a palette edit or family rename to silently recolor or break the the
 and would couple runtime behavior to authoring metadata that is intentionally
 optional.
 
+### DEC-7 — Existing package verification owns export parity
+
+**Reference:** `spec:AST-018/DEC-7`
+
+**Decider:** `rubyycheung`, `2026-09-02`
+
+The theme builder owns creating and removing palette artifacts. The existing
+post-build `scripts/verify-exports.mjs` check owns confirming that every published
+package export points to a file that exists and that runtime export targets load.
+Removing a released `/palette` export remains explicit compatibility work with a
+breaking Changeset and migration note.
+
+The planned palette-specific checker may add authoring guidance and drift reports,
+but package-export safety does not wait for that follow-up.
+
+Rejected: coupling the generic theme builder to package layout or adding a
+Neutral-only export test that duplicates the repository-wide verifier.
+
 ## Open questions
 
-- **OQ6 — Must package-export parity be enforced in this implementation or in the
-  planned repository checker?** (`human-api`) The current build removes obsolete
-  files but does not itself prevent a published `/palette` export from pointing
-  to a removed artifact.
+None.
