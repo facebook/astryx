@@ -145,10 +145,8 @@ export function useChatStreamScroll({
   const velocityRef = useRef(0);
   const animatingRef = useRef(false);
   const lastTickRef = useRef<number | undefined>(undefined);
-  // Bumped whenever a jump or a fresh spring supersedes the running loop. A
-  // tick from a superseded generation returns before touching any shared
-  // state, so cancelling an in-flight spring is real rather than advisory.
-  const generationRef = useRef(0);
+  // The spring's pending frame, so a jump can cancel it for real.
+  const rafRef = useRef<number>(0);
   // Set by a reader gesture to vouch for the scroll it produces — see the
   // synthetic-resize guard in onScroll.
   const gestureRef = useRef(false);
@@ -161,55 +159,46 @@ export function useChatStreamScroll({
 
   // --- Spring animation ---
 
-  const animate = useCallback(
-    (generation: number) => {
-      // A superseded loop stops here, before the shared refs below, so it
-      // cannot reset bookkeeping that now belongs to the live one.
-      if (generation !== generationRef.current) {
-        return;
-      }
+  const animate = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || !lockedRef.current) {
+      animatingRef.current = false;
+      lastTickRef.current = undefined;
+      velocityRef.current = 0;
+      return;
+    }
 
-      const el = scrollRef.current;
-      if (!el || !lockedRef.current) {
-        animatingRef.current = false;
-        lastTickRef.current = undefined;
-        velocityRef.current = 0;
-        return;
-      }
+    if (el.scrollHeight <= el.clientHeight) {
+      animatingRef.current = false;
+      lastTickRef.current = undefined;
+      velocityRef.current = 0;
+      return;
+    }
 
-      if (el.scrollHeight <= el.clientHeight) {
-        animatingRef.current = false;
-        lastTickRef.current = undefined;
-        velocityRef.current = 0;
-        return;
-      }
+    const target = el.scrollHeight - el.clientHeight;
+    const diff = target - el.scrollTop;
 
-      const target = el.scrollHeight - el.clientHeight;
-      const diff = target - el.scrollTop;
+    if (Math.abs(diff) < 0.5 && Math.abs(velocityRef.current) < 0.1) {
+      // eslint-disable-next-line react-compiler/react-compiler -- imperative DOM: scrollTop assignment
+      el.scrollTop = target;
+      animatingRef.current = false;
+      lastTickRef.current = undefined;
+      velocityRef.current = 0;
+      return;
+    }
 
-      if (Math.abs(diff) < 0.5 && Math.abs(velocityRef.current) < 0.1) {
-        // eslint-disable-next-line react-compiler/react-compiler -- imperative DOM: scrollTop assignment
-        el.scrollTop = target;
-        animatingRef.current = false;
-        lastTickRef.current = undefined;
-        velocityRef.current = 0;
-        return;
-      }
+    const now = performance.now();
+    const tickDelta = lastTickRef.current
+      ? (now - lastTickRef.current) / SIXTY_FPS_MS
+      : 1;
+    lastTickRef.current = now;
 
-      const now = performance.now();
-      const tickDelta = lastTickRef.current
-        ? (now - lastTickRef.current) / SIXTY_FPS_MS
-        : 1;
-      lastTickRef.current = now;
+    velocityRef.current =
+      (damping * velocityRef.current + stiffness * diff) / mass;
+    el.scrollTop += velocityRef.current * tickDelta;
 
-      velocityRef.current =
-        (damping * velocityRef.current + stiffness * diff) / mass;
-      el.scrollTop += velocityRef.current * tickDelta;
-
-      requestAnimationFrame(() => animate(generation));
-    },
-    [scrollRef, damping, stiffness, mass],
-  );
+    rafRef.current = requestAnimationFrame(animate);
+  }, [scrollRef, damping, stiffness, mass]);
 
   // Jump to the bottom in a single frame — cancels any in-flight spring so
   // a later animation tick can't fight the assignment.
@@ -218,8 +207,8 @@ export function useChatStreamScroll({
     if (!el) {
       return;
     }
+    cancelAnimationFrame(rafRef.current);
     animatingRef.current = false;
-    generationRef.current += 1;
     velocityRef.current = 0;
     lastTickRef.current = undefined;
     el.scrollTop = el.scrollHeight - el.clientHeight;
@@ -243,9 +232,7 @@ export function useChatStreamScroll({
     if (!animatingRef.current) {
       animatingRef.current = true;
       lastTickRef.current = undefined;
-      generationRef.current += 1;
-      const generation = generationRef.current;
-      requestAnimationFrame(() => animate(generation));
+      rafRef.current = requestAnimationFrame(animate);
     }
   }, [animate, jumpToBottom, prefersReducedMotion]);
 
@@ -357,22 +344,17 @@ export function useChatStreamScroll({
       lastScrollHeightRef.current = scrollHeight;
       lastOffsetHeightRef.current = offsetHeight;
 
-      // A resize clamp can only ever land on the new bottom: the browser
-      // pins scrollTop to its maximum and nothing else. A reader scrolling
-      // up never lands there. So a scroll that arrives with changed geometry
-      // and ends at the bottom is the clamp, whether or not a gesture is in
-      // flight — a finger resting on a nested scrollable child still bubbles
-      // touchstart here, and must not turn a clamp into a release.
+      // Synthetic scroll from resize — don't change lock state. A gesture
+      // waives this for the scroll it produced, since arriving content
+      // changes the geometry on nearly every event. The waiver never covers
+      // a scroll that lands on the bottom: a resize clamp can only land
+      // there, and a reader scrolling up never does. (clientHeight, not
+      // dist: offsetHeight includes borders and a horizontal scrollbar.)
       const landedAtBottom = scrollHeight - scrollTop - el.clientHeight < 1;
-
       if (
         (scrollHeightChanged || offsetHeightChanged) &&
         (!gestureRef.current || landedAtBottom)
       ) {
-        // Synthetic scroll from resize — don't change lock state. A gesture
-        // waives this for the scroll it produced: while content is arriving
-        // the geometry changes on nearly every event, which is exactly when
-        // the reader's own scroll must still be read as intent.
         lastScrollTopRef.current = scrollTop;
         return;
       }
@@ -405,11 +387,10 @@ export function useChatStreamScroll({
         return;
       }
       gestureRef.current = true;
-      // Scroll events are dispatched in the frame's scroll steps, which run
-      // before its animation frame callbacks, so a nested frame expires the
-      // waiver after this frame's scroll steps and the next one's — the room
-      // a compositor-thread scroll needs to reach the main thread — and no
-      // later, so a resize clamp cannot inherit it.
+      // Scroll events run in a frame's scroll steps, before its rAF
+      // callbacks, so a nested frame covers this frame's scroll steps and
+      // the next one's — the room a compositor-thread scroll needs to reach
+      // the main thread.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           gestureRef.current = false;

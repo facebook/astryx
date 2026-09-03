@@ -19,14 +19,15 @@ import {
 // manually via Storybook — mocking it here would only test the mock.
 // ---------------------------------------------------------------------------
 
-let rafQueue: FrameRequestCallback[] = [];
+let rafQueue: {id: number; cb: FrameRequestCallback}[] = [];
+let nextRafId = 1;
 
 function flushRaf() {
   // One flush = one frame: callbacks scheduled during a flush run next flush.
   const frame = rafQueue;
   rafQueue = [];
   act(() => {
-    for (const cb of frame) {
+    for (const {cb} of frame) {
       cb(performance.now());
     }
   });
@@ -34,11 +35,15 @@ function flushRaf() {
 
 beforeEach(() => {
   rafQueue = [];
+  nextRafId = 1;
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-    rafQueue.push(cb);
-    return rafQueue.length;
+    const id = nextRafId++;
+    rafQueue.push({id, cb});
+    return id;
   });
-  vi.stubGlobal('cancelAnimationFrame', () => {});
+  vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+    rafQueue = rafQueue.filter(frame => frame.id !== id);
+  });
 });
 
 afterEach(() => {
@@ -315,11 +320,9 @@ describe('useChatStreamScroll — reader gestures', () => {
   });
 
   it('a drag over a nested scroller does not let a resize clamp release', () => {
-    // The reader is holding a nested scrollable child — a code block, a
-    // table — so touchstart bubbles to this scroller, but the drag is not
-    // ours. While their finger is down an earlier block collapses and the
-    // browser clamps the position up. That clamp lands exactly on the new
-    // bottom; the reader never scrolled, so following must survive it.
+    // A finger resting on a nested scrollable child bubbles touchstart here,
+    // but the drag is not ours. A block above collapsing while it is down
+    // clamps the position to the new bottom; that is not the reader scrolling.
     const {api, el} = renderHook();
     settleAtBottom(el);
 
