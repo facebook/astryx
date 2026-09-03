@@ -357,11 +357,22 @@ export function useChatStreamScroll({
       lastScrollHeightRef.current = scrollHeight;
       lastOffsetHeightRef.current = offsetHeight;
 
-      if ((scrollHeightChanged || offsetHeightChanged) && !gestureRef.current) {
+      // A resize clamp can only ever land on the new bottom: the browser
+      // pins scrollTop to its maximum and nothing else. A reader scrolling
+      // up never lands there. So a scroll that arrives with changed geometry
+      // and ends at the bottom is the clamp, whether or not a gesture is in
+      // flight — a finger resting on a nested scrollable child still bubbles
+      // touchstart here, and must not turn a clamp into a release.
+      const landedAtBottom = scrollHeight - scrollTop - el.clientHeight < 1;
+
+      if (
+        (scrollHeightChanged || offsetHeightChanged) &&
+        (!gestureRef.current || landedAtBottom)
+      ) {
         // Synthetic scroll from resize — don't change lock state. A gesture
-        // waives this: while content is arriving the geometry changes on
-        // nearly every event, which is exactly when the reader's own scroll
-        // must still be read as intent.
+        // waives this for the scroll it produced: while content is arriving
+        // the geometry changes on nearly every event, which is exactly when
+        // the reader's own scroll must still be read as intent.
         lastScrollTopRef.current = scrollTop;
         return;
       }

@@ -314,6 +314,27 @@ describe('useChatStreamScroll — reader gestures', () => {
     expect(api.current!.isLocked).toBe(false);
   });
 
+  it('a drag over a nested scroller does not let a resize clamp release', () => {
+    // The reader is holding a nested scrollable child — a code block, a
+    // table — so touchstart bubbles to this scroller, but the drag is not
+    // ours. While their finger is down an earlier block collapses and the
+    // browser clamps the position up. That clamp lands exactly on the new
+    // bottom; the reader never scrolled, so following must survive it.
+    const {api, el} = renderHook();
+    settleAtBottom(el);
+
+    act(() => {
+      el.dispatchEvent(new Event('touchstart'));
+    });
+    setGeometry(el, {scrollHeight: 800, clientHeight: 400});
+    el.scrollTop = 400;
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+
+    expect(api.current!.isLocked).toBe(true);
+  });
+
   it('stops vouching once the drag ends', () => {
     const {api, el} = renderHook();
     settleAtBottom(el);
