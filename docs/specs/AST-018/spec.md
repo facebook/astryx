@@ -54,6 +54,46 @@ This record uses the vocabulary already established by the Neutral remap:
 - A palette-bearing build emits one **palette artifact set** for the theme in
   JavaScript, JSON, and TypeScript declaration formats.
 
+## Authoring and build flow
+
+```mermaid
+flowchart TD
+  Generator["Optional OKLCH palette generator<br/>(separate authoring workflow)"]
+  Imported["Hand-authored or imported palette"]
+  Or((OR))
+  Candidate["Candidate palette"]
+  PaletteReview["Review, adjust, and approve"]
+  PaletteMap["Approved palette map"]
+
+  Generator --> Or
+  Imported --> Or
+  Or --> Candidate
+  Candidate --> PaletteReview
+  PaletteReview --> PaletteMap
+
+  PaletteMap -->|"Palette metadata path"| Validate["defineTonalPalettes()<br/>validates structure"]
+  Validate --> Validated["Validated palette metadata"]
+
+  Validated -.-> Suggestions["Optional mapping path:<br/>suggest palette colors for semantic roles"]
+  Existing["Existing semantic roles<br/>and token values"] --> Suggestions
+  Suggestions --> ColorReview["Author reviews appearance,<br/>intent, and contrast"]
+  ColorReview --> Explicit["Reviewed explicit hex values"]
+
+  Validated -->|"Attach palette metadata"| Define["defineTheme({palettes, tokens, components})"]
+  Explicit -->|"Controls rendered colors"| Define
+
+  Define --> Source["Source theme retains:<br/>palette metadata + explicit colors"]
+  Source --> Build["astryx theme build"]
+  Build --> Runtime["Default runtime theme + CSS<br/>explicit colors only"]
+  Build --> Artifacts["Opt-in palette artifacts<br/>JS + JSON + TypeScript"]
+```
+
+The palette metadata path is used only when a theme chooses to adopt a palette.
+The dashed mapping path represents optional authoring assistance, not automatic
+`defineTheme()` behavior or a required part of this implementation. The approved
+palette remains attached to the source theme whether or not mapping suggestions
+are used.
+
 ## Non-goals
 
 - Enforcing that every theme color comes from a declared palette.
