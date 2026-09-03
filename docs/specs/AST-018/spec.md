@@ -85,9 +85,11 @@ This record uses the vocabulary already established by the Neutral remap:
   reinterpret or reject those values.
 - **FR5 — Theme adoption owns values and exceptions.** Each adopting theme's
   colocated theme spec owns its palette inventory, selected token and component
-  mappings, intentional deviations, visual approval, and accessibility evidence.
-  Sharing a palette stop does not prove that every foreground/background or
-  interaction-state pairing meets its required contrast.
+  mappings, intentional deviations, and visual approval. The remap establishes a
+  stable base for subsequent contrast testing; it does not claim that every
+  component context already passes accessibility. Sharing a palette stop does not
+  prove that every foreground/background or interaction-state pairing meets its
+  required contrast.
 - **FR6 — Extension is deterministic by family.** A child theme MUST inherit its
   base theme's resolved palette families and MAY replace a family by restating
   its exact family name. Family replacement is shallow; stops from two versions
@@ -122,8 +124,9 @@ This record uses the vocabulary already established by the Neutral remap:
 - Unsupported behavior: a consumer MUST NOT infer semantic meaning or accessible
   pairings from stop numbers alone.
 - Browser evidence: palette structure and artifacts are nonvisual; each adopting
-  theme supplies real-browser evidence for its actual light, dark, component, and
-  interaction-state mappings.
+  theme supplies real-browser evidence for the palette and baseline mappings it
+  proposes. Component-context contrast evidence may be added through subsequent
+  accessibility audits and targeted mapping changes.
 
 ## Current-state impact
 
@@ -135,8 +138,9 @@ This proposal adds optional `palettes` metadata to the normalized source theme,
 validates complete ramps, inherits families, and emits an opt-in palette artifact
 set. It does not change the meaning or accepted values of `tokens`, `localTokens`,
 or component overrides. Neutral is the first proposed adopter; its exact ramps,
-mappings, deviations, contrast receipts, and visual approval remain owned by
-`theme:neutral`.
+mappings, deviations, and visual approval remain owned by `theme:neutral`. The
+Neutral remap creates the consistent base needed to run systematic contrast
+tests; it does not claim that all existing component combinations pass.
 
 A focused `check:theme-palettes` repository check is planned as follow-up tooling,
 not as an additional requirement for the initial implementation PR. It should
@@ -148,13 +152,13 @@ rather than implying that direct colors are always prohibited.
 
 ## Verification
 
-| Contract | Verification                                                            | Representative states                                                                                    | Mutation or failure expectation                                                                                           |
-| -------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR2  | `packages/core/src/theme/palettes.test.ts` and `defineTheme.test.ts`    | omitted metadata; complete and incomplete ramps; invalid colors, order, and fields                       | An omitted palette changes a theme, or malformed metadata is accepted.                                                    |
-| FR3–FR5  | Neutral source, theme spec, token tests, and rendered contrast evidence | semantic mapping; direct color; alpha overlay; light/dark component pairing                              | Palette declaration becomes mandatory, a justified direct value is rejected, or a stop is treated as accessibility proof. |
-| FR6      | Core theme-extension tests                                              | inherited families; exact family replacement; omitted dark ramp                                          | A child loses unrelated families or accidentally merges partial ramps.                                                    |
-| FR7–FR8  | CLI palette build and older-Core compatibility tests                    | source and built bases; JS/JSON/declaration outputs; add/change/remove; `--check`; palette-free old Core | Runtime output gains unused metadata, palette artifacts drift or remain stale, or an unrelated older-Core build fails.    |
-| FR9      | Package-export and Changeset checks                                     | unpublished cleanup; published `/palette` retention and removal                                          | An exported palette artifact disappears without compatibility treatment, or an export points to a deleted file.           |
+| Contract | Verification                                                           | Representative states                                                                                    | Mutation or failure expectation                                                                                                      |
+| -------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| FR1–FR2  | `packages/core/src/theme/palettes.test.ts` and `defineTheme.test.ts`   | omitted metadata; complete and incomplete ramps; invalid colors, order, and fields                       | An omitted palette changes a theme, or malformed metadata is accepted.                                                               |
+| FR3–FR5  | Neutral source, theme spec, token tests, and rendered palette evidence | semantic mapping; direct color; alpha overlay; light/dark baseline mapping                               | Palette declaration becomes mandatory, a justified direct value is rejected, or the remap is treated as accessibility certification. |
+| FR6      | Core theme-extension tests                                             | inherited families; exact family replacement; omitted dark ramp                                          | A child loses unrelated families or accidentally merges partial ramps.                                                               |
+| FR7–FR8  | CLI palette build and older-Core compatibility tests                   | source and built bases; JS/JSON/declaration outputs; add/change/remove; `--check`; palette-free old Core | Runtime output gains unused metadata, palette artifacts drift or remain stale, or an unrelated older-Core build fails.               |
+| FR9      | Package-export and Changeset checks                                    | unpublished cleanup; published `/palette` retention and removal                                          | An exported palette artifact disappears without compatibility treatment, or an export points to a deleted file.                      |
 
 ## Decision log
 
@@ -190,8 +194,25 @@ Rejected: emitting separate artifacts for individual color families or choosing
 only one consumption format. Per-family artifacts would fragment ownership and
 versioning; omitting JSON or JavaScript would unnecessarily restrict consumers.
 
+### DEC-3 — Neutral's remap is a contrast-testing baseline
+
+**Reference:** `spec:AST-018/DEC-3`
+
+**Decider:** `rubyycheung`, `2026-09-02`
+
+Neutral's palette remap establishes a consistent, named color foundation from
+which component contrast can be measured and improved. Approving the remap does
+not assert that every existing component, mode, or interaction state already
+passes accessibility requirements. Component-context findings remain separately
+testable and fixable without invalidating the palette contract.
+
+Rejected: making complete component-level contrast conformance a prerequisite for
+defining the palette. That would confuse the measurement baseline with the
+follow-up work the baseline is intended to enable.
+
 ## Open questions
 
-- **OQ3 — Is Neutral's exact palette and remapping evidence complete?**
-  (`human-design`) This does not block evaluation of the generic contract, but
-  Neutral adoption requires separate exact-head theme approval.
+- **OQ3 — Are Neutral's exact palette values and baseline mappings visually
+  approved?** (`human-design`) This asks whether the remap is the right stable
+  starting point for contrast testing. It does not require every component
+  context to pass before the palette can be approved.
