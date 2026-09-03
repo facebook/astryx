@@ -50,10 +50,12 @@ portable vocabulary does not express the required color.
   MUST NOT alter CSS merely because it is declared.
 - **FR2 — Declared ramps are complete and validated.** Every declared family
   MUST provide a complete light ramp for the approved numbered stop set and MAY
-  provide a separately tuned dark ramp. Values MUST be opaque six-digit hex
-  colors ordered from darker to lighter by relative luminance. Unknown family
-  and ramp fields MUST be rejected. Hue, chroma, semantic labels, and
-  descriptions are optional metadata rather than generators.
+  provide a separately tuned dark ramp. There is no required family set: a theme
+  such as Stone MAY declare only one family, and an omitted dark ramp means that
+  family intentionally uses its light ramp in both modes. Values MUST be opaque
+  six-digit hex colors ordered from darker to lighter by relative luminance.
+  Unknown family and ramp fields MUST be rejected. Hue, chroma, semantic labels,
+  and descriptions are optional metadata rather than generators.
 - **FR3 — Semantic tokens remain first.** Components and applications SHOULD use
   portable semantic tokens. Maintained theme source MAY select an exact palette
   stop when defining semantic tokens or theme-owned component mappings. The
