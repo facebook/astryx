@@ -405,3 +405,51 @@ export const ViewportPercentage: Story = {
     );
   },
 };
+
+/**
+ * A bound that is proportional on a wide container and fixed on a narrow one.
+ *
+ * `minSize: 'max(40%, 333px)'` is the CSS spelling and the CSS meaning: the
+ * terms resolve to pixels against the container, and the larger wins. Above a
+ * 832.5px frame that is the 40% arm; below it, the 333px floor holds and the
+ * panel stops shrinking. `maxSize: 'min(400px, 10%)'` is the mirror image — a
+ * 400px cap that tightens to 10% once the frame is under 4000px.
+ *
+ * Narrow the frame and watch the reported minimum change arm. Only the BOUNDS
+ * move; the size you dragged to stays the pixel size you chose.
+ */
+export const ExpressionBounds: Story = {
+  render: () => {
+    const frameRef = useRef<HTMLDivElement>(null);
+    const region = useResizable({
+      defaultSize: '50%',
+      minSize: 'max(40%, 333px)',
+      maxSize: 'min(400px, 10%)',
+      containerRef: frameRef,
+    });
+    return (
+      <div ref={frameRef} {...stylex.props(s.shell)}>
+        <Layout
+          height="fill"
+          start={
+            <>
+              <LayoutPanel width={region.size} hasDivider={false}>
+                <div {...stylex.props(s.card)}>
+                  {Math.round(region.size)}px · min{' '}
+                  {Math.round(region.props._minSizePx)} · max{' '}
+                  {Math.round(region.props._maxSizePx)}
+                </div>
+              </LayoutPanel>
+              <ResizeHandle
+                direction="horizontal"
+                hasDivider
+                resizable={region.props}
+              />
+            </>
+          }
+          content={<LayoutContent>Content</LayoutContent>}
+        />
+      </div>
+    );
+  },
+};

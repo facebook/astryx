@@ -27,17 +27,58 @@ import type {SizeValue} from '../utils/types';
 // =============================================================================
 
 /**
+ * A length a bound may be written as: pixels as a number, an exact `Npx`, or an
+ * exact `N%` of the basis.
+ *
+ * Narrower than the shared `SizeValue` on purpose. `SizeValue` is
+ * `number | string`, so `'40vw'` and `'banana'` type-check and only fail at
+ * runtime; here an unsupported unit is a compile error. The runtime parser
+ * stays authoritative regardless, because a type cannot say "0 through 100" or
+ * "finite".
+ */
+export type ResizableLength = number | `${number}px` | `${number}%`;
+
+/**
+ * A bound: a length, or `min()`/`max()` over lengths — the CSS spelling, with
+ * the CSS meaning. `max(40%, 333px)` is 40% of the container but never less
+ * than 333px; `min(400px, 10%)` caps at 400px until 10% is tighter.
+ *
+ * Two terms, nested one level deep (`max(20%, min(500px, 60%))`). Both limits
+ * are deliberate and the parser enforces exactly the same ones, so a string the
+ * compiler accepts is a string the runtime accepts. They are also what keeps
+ * this union small enough for TypeScript to represent: a wider grammar here
+ * costs a `TS2590` at every call site that combines a bound with its
+ * deprecated pixel alias.
+ *
+ * `calc()`, `clamp()`, arithmetic, `var()` and every other unit are out — an
+ * unrecognized function is invalid input, not something forwarded to CSS
+ * (AST-010 DEC-3).
+ */
+export type ResizableSize = ResizableLength | ResizableSizeFunction;
+
+type ResizableLengthString = `${number}px` | `${number}%`;
+
+/** One level of nesting, so a term may itself be a `min()`/`max()`. */
+type ResizableNestedFunction =
+  `${'min' | 'max'}(${ResizableLengthString}, ${ResizableLengthString})`;
+
+type ResizableSizeTerm = ResizableLengthString | ResizableNestedFunction;
+
+type ResizableSizeFunction =
+  `${'min' | 'max'}(${ResizableSizeTerm}, ${ResizableSizeTerm})`;
+
+/**
  * The minimum, in one of two spellings. Exactly one may be supplied: the union
  * makes passing both a type error, so a migration cannot leave a stale
  * deprecated value shadowing the new one (AST-010 API4).
  */
 export type ResizableMinConfig =
-  | {minSize?: SizeValue; minSizePx?: never}
+  | {minSize?: ResizableSize; minSizePx?: never}
   | {minSize?: never; minSizePx?: number};
 
 /** The maximum, in one of two spellings. See {@link ResizableMinConfig}. */
 export type ResizableMaxConfig =
-  | {maxSize?: SizeValue; maxSizePx?: never}
+  | {maxSize?: ResizableSize; maxSizePx?: never}
   | {maxSize?: never; maxSizePx?: number};
 
 export type ResizableDirection = 'horizontal' | 'vertical';
@@ -314,30 +355,100 @@ const DEFAULT_SIZE_FALLBACK = 250;
  * Parsing is exact and matches the COMPLETE input: `'50 px'`, `'50%%'`,
  * `'50rem'`, `'120%'` and `'-1px'` are all rejected rather than partially
  * parsed into a number that happens to look plausible.
+ *
+ * A bound may also be `min()`/`max()` over those terms (AST-010 FR13), which is
+ * the `fn` node. Nothing else from CSS math is accepted: `calc()`, `clamp()`,
+ * arithmetic and `var()` are non-goals, so an unrecognized function is invalid
+ * input rather than something passed through to CSS.
  */
 type ParsedSize =
-  {kind: 'px'; value: number} | {kind: 'percent'; value: number};
+  | {kind: 'px'; value: number}
+  | {kind: 'percent'; value: number}
+  | {kind: 'fn'; op: 'min' | 'max'; args: ParsedSize[]};
 
 const PX_PATTERN = /^(\d+(?:\.\d+)?)px$/;
 const PERCENT_PATTERN = /^(\d+(?:\.\d+)?)%$/;
+const FN_PATTERN = /^(min|max)\(([\s\S]*)\)$/;
 
-function isPercentage(value: SizeValue | undefined): boolean {
-  return typeof value === 'string' && PERCENT_PATTERN.test(value);
+/**
+ * How deeply `min()`/`max()` may nest, and how many terms each may take. The
+ * public `ResizableSize` type spells out the same two limits, so a string the
+ * compiler accepts is a string this parser accepts.
+ */
+const MAX_EXPRESSION_DEPTH = 2;
+const MAX_EXPRESSION_TERMS = 3;
+
+/**
+ * Split on top-level commas only, so a nested `min()`/`max()` stays one term.
+ * Returns `null` when the parentheses do not balance, which is what makes
+ * `'max(40%, 333px'` invalid rather than silently parsed.
+ */
+function splitTerms(input: string): string[] | null {
+  const terms: string[] = [];
+  let depth = 0;
+  let current = '';
+  for (const char of input) {
+    if (char === '(') {
+      depth++;
+    } else if (char === ')') {
+      depth--;
+      if (depth < 0) {
+        return null;
+      }
+    }
+    if (char === ',' && depth === 0) {
+      terms.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  if (depth !== 0) {
+    return null;
+  }
+  terms.push(current);
+  return terms;
 }
 
-function parseSize(value: SizeValue | undefined): ParsedSize | null {
+function parseSize(value: SizeValue | undefined, depth = 0): ParsedSize | null {
   if (value == null) {
     return null;
   }
   if (typeof value === 'number') {
     return Number.isFinite(value) && value >= 0 ? {kind: 'px', value} : null;
   }
-  const px = PX_PATTERN.exec(value);
+  const input = value.trim();
+  const fn = FN_PATTERN.exec(input);
+  if (fn) {
+    if (depth >= MAX_EXPRESSION_DEPTH) {
+      return null;
+    }
+    const terms = splitTerms(fn[2]);
+    // Two terms minimum: a one-term `max()` is a choice between one thing, so
+    // it is a typo rather than a preference. Three maximum, matching the type.
+    if (
+      terms == null ||
+      terms.length < 2 ||
+      terms.length > MAX_EXPRESSION_TERMS
+    ) {
+      return null;
+    }
+    const args: ParsedSize[] = [];
+    for (const term of terms) {
+      const parsed = parseSize(term.trim(), depth + 1);
+      if (parsed == null) {
+        return null;
+      }
+      args.push(parsed);
+    }
+    return {kind: 'fn', op: fn[1] === 'min' ? 'min' : 'max', args};
+  }
+  const px = PX_PATTERN.exec(input);
   if (px) {
     const parsed = Number(px[1]);
     return Number.isFinite(parsed) ? {kind: 'px', value: parsed} : null;
   }
-  const percent = PERCENT_PATTERN.exec(value);
+  const percent = PERCENT_PATTERN.exec(input);
   if (percent) {
     const parsed = Number(percent[1]);
     return Number.isFinite(parsed) && parsed <= 100
@@ -348,13 +459,55 @@ function parseSize(value: SizeValue | undefined): ParsedSize | null {
 }
 
 /**
- * A parsed size in pixels, or `null` when it is a percentage and the basis is
- * not measurable yet. Percentages round, because a fractional pixel basis
- * would otherwise leak into ARIA and persistence.
+ * Whether a parsed value reads the basis anywhere inside it.
+ *
+ * This decides whether the container is observed, and it is a question about
+ * the PARSED tree, not the source text. A regex for `%` on the raw string would
+ * call `max(40%, 333px)` static: the bound would resolve once against whatever
+ * the basis happened to be and then never track the container again — an
+ * expression that looks supported and quietly is not.
+ */
+function dependsOnBasis(parsed: ParsedSize): boolean {
+  if (parsed.kind === 'percent') {
+    return true;
+  }
+  if (parsed.kind === 'fn') {
+    return parsed.args.some(dependsOnBasis);
+  }
+  return false;
+}
+
+function isPercentage(value: SizeValue | undefined): boolean {
+  const parsed = parseSize(value);
+  return parsed != null && dependsOnBasis(parsed);
+}
+
+/**
+ * A parsed size in pixels, or `null` when it reads a basis that is not
+ * measurable yet. Percentages round, because a fractional pixel basis would
+ * otherwise leak into ARIA and persistence.
+ *
+ * `min()`/`max()` resolve every term first and then select, which is what CSS
+ * does: the comparison is between resolved pixel lengths, so which arm wins
+ * changes with the basis. That is the whole point of `max(40%, 333px)` — the
+ * percentage arm above the crossover, the pixel floor below it.
  */
 function toPixels(parsed: ParsedSize, basis: number | null): number | null {
   if (parsed.kind === 'px') {
     return parsed.value;
+  }
+  if (parsed.kind === 'fn') {
+    const resolved: number[] = [];
+    for (const arg of parsed.args) {
+      const px = toPixels(arg, basis);
+      if (px == null) {
+        return null;
+      }
+      resolved.push(px);
+    }
+    return parsed.op === 'max'
+      ? Math.max(...resolved)
+      : Math.min(...resolved);
   }
   if (basis == null) {
     return null;
@@ -389,8 +542,9 @@ function resolveBound(
       devWarn(
         'useResizable',
         `${label}: ${JSON.stringify(raw)} is not a size. Use a non-negative ` +
-          'number of pixels, an exact "Npx" string, or an exact "N%" string ' +
-          `from 0% to 100%. Falling back to ${fallback}.`,
+          'number of pixels, an exact "Npx" string, an exact "N%" string ' +
+          'from 0% to 100%, or min()/max() over those — for example ' +
+          `"max(40%, 333px)". Falling back to ${fallback}.`,
       );
     }
     return fallback;
@@ -465,8 +619,12 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // otherwise silently beat the explicit migration target.
   const minConflict = minSize !== undefined && minSizePx !== undefined;
   const maxConflict = maxSize !== undefined && maxSizePx !== undefined;
-  const rawMin = minSize ?? minSizePx;
-  const rawMax = maxSize ?? maxSizePx;
+  // Widened back to `SizeValue` deliberately. `ResizableSize` is a large
+  // template-literal union whose job is done at the call site; combining it
+  // with the alias's `number` here makes a union TypeScript refuses to
+  // represent (TS2590), and the runtime parser validates the value anyway.
+  const rawMin: SizeValue | undefined = minSize ?? minSizePx;
+  const rawMax: SizeValue | undefined = maxSize ?? maxSizePx;
 
   // Whether any percentage is in play at all. A region configured entirely in
   // pixels subscribes to nothing and behaves exactly as it did before.

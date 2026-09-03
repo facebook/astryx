@@ -43,7 +43,9 @@ record is updated alongside that implementation.
 - Preserving a percentage ratio after pointer, keyboard, or programmatic resize.
 - Automatically distributing remaining space or requiring independently sized
   regions to total 100%.
-- Supporting arbitrary CSS units such as `rem`, `vw`, or `calc()`.
+- Supporting arbitrary CSS units such as `rem` or `vw`, or arithmetic such as
+  `calc()`, `clamp()`, and `var()`. `min()` and `max()` over the accepted terms
+  are in scope; see DEC-3.
 - Adding percentage snap points or percentage collapse thresholds.
 - Adding controlled size state; current controlled collapse behavior is
   unchanged.
@@ -118,7 +120,8 @@ record is updated alongside that implementation.
   ratio preservation, or a 100% total invariant.
 - **FR12 — Invalid configuration has safe deterministic fallbacks.** Accepted
   configuration is a non-negative finite number, an exact non-negative finite
-  `Npx` string, or an exact `N%` string from 0% through 100%. An invalid,
+  `Npx` string, an exact `N%` string from 0% through 100%, or an exact
+  `min()`/`max()` expression over those terms (FR13). An invalid,
   malformed, negative, or non-finite `defaultSize` MUST use 250px before normal
   bounds clamping; an invalid `minSize` or `minSizePx` MUST use 50px; and an
   invalid `maxSize` or `maxSizePx` MUST use unbounded `Infinity`. Explicit
@@ -127,6 +130,26 @@ record is updated alongside that implementation.
   fallback without warning. After initialization, an invalid raw value MUST NOT
   directly replace a persisted or otherwise legal selected pixel size; a
   fallback-normalized bound may affect that size only through normal clamping.
+- **FR13 — Sizes accept `min()` and `max()` over the accepted terms.** A
+  configured size MAY be an exact `min(a, b)` or `max(a, b)` expression. Each
+  term is a non-negative finite `Npx`, an `N%` from 0% through 100%, or one
+  nested `min()`/`max()` over those. Exactly two terms are required, and nesting
+  is one level deep; an expression breaking either limit is invalid under FR12,
+  as is an unbalanced call, an unsupported unit in any term, or any other CSS
+  function. Terms resolve against the FR1/FR2 basis and are compared as resolved
+  pixel lengths, so `max` selects the largest and `min` the smallest, matching
+  CSS. Which arm wins therefore changes with the basis.
+
+  An expression containing a percentage at ANY depth is a percentage value for
+  every purpose in this spec: it re-resolves when its basis changes (FR4/FR6), it
+  holds one frozen basis for the duration of a gesture (FR7), and it causes the
+  container to be observed. That test MUST be made against the parsed expression,
+  not the source text. An expression whose terms are all pixels is static and
+  observes nothing.
+
+  A percentage `defaultSize` already resolves once (FR1); an expression
+  `defaultSize` resolves once the same way, by the same parser. It gains no
+  crossover behaviour after that first resolution, because no default does.
 
 ### Public API requirements
 
@@ -146,12 +169,21 @@ record is updated alongside that implementation.
 - **API3 — One configuration vocabulary covers both units.** Add `minSize` and
   `maxSize` with the same `number | string` shape as `defaultSize`. Accepted
   numbers are finite and non-negative. Accepted strings match the complete input:
-  a finite non-negative `Npx`, or `N%` from 0% through 100%; partial parses,
+  a finite non-negative `Npx`, `N%` from 0% through 100%, or a `min()`/`max()`
+  expression over those (FR13); partial parses,
   trailing text, other units, negatives, and non-finite values are invalid. The
   deprecated `maxSizePx` alone additionally accepts explicit `Infinity` to
   preserve released usage. Apply FR12's role-specific fallback in development and
   production, warning only in development. Do not add parallel
   `defaultSizePercent`, `minSizePercent`, or `maxSizePercent` props.
+
+  `minSize` and `maxSize` are typed by a Resizable-owned `ResizableSize` rather
+  than the shared `SizeValue`, so an unsupported unit or function is a compile
+  error instead of a runtime fallback. That type encodes the same two-term,
+  one-level limits the parser enforces. It does not replace the parser, which
+  stays authoritative for what a type cannot state — a percentage above 100, a
+  negative, a non-finite. `defaultSize` keeps its released `SizeValue`, because
+  narrowing a shipped prop would reject callers passing a computed string.
 - **API4 — Pixel aliases are exactly mutually exclusive with unified bounds.**
   `minSizePx` and `maxSizePx` remain supported but become deprecated. TypeScript
   MUST encode each old/new pair as an exact union, equivalent to:
@@ -186,12 +218,13 @@ record is updated alongside that implementation.
 
 | Input                                                      | Accepted values                                                                    | Invalid fallback                | Development behavior                                         | Production behavior                |
 | ---------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------ | ---------------------------------- |
-| `defaultSize`                                              | non-negative finite number; exact non-negative finite `Npx`; exact `N%` from 0–100 | 250px, then normal bounds clamp | warn and use fallback                                        | use same fallback without warning  |
-| `minSize` / `minSizePx`                                    | non-negative finite number; unified prop also accepts exact `Npx` and 0–100 `N%`   | 50px                            | warn and use fallback                                        | use same fallback without warning  |
-| `maxSize`                                                  | non-negative finite number; exact non-negative finite `Npx`; exact `N%` from 0–100 | unbounded `Infinity`            | warn and use fallback                                        | use same fallback without warning  |
+| `defaultSize`                                              | non-negative finite number; exact non-negative finite `Npx`; exact `N%` from 0–100; `min()`/`max()` over those, resolved once | 250px, then normal bounds clamp | warn and use fallback                                        | use same fallback without warning  |
+| `minSize` / `minSizePx`                                    | non-negative finite number; unified prop also accepts exact `Npx`, 0–100 `N%`, and `min()`/`max()` over those | 50px                            | warn and use fallback                                        | use same fallback without warning  |
+| `maxSize`                                                  | non-negative finite number; exact non-negative finite `Npx`; exact `N%` from 0–100; `min()`/`max()` over those | unbounded `Infinity`            | warn and use fallback                                        | use same fallback without warning  |
 | `maxSizePx`                                                | non-negative finite number or explicit `Infinity`                                  | unbounded `Infinity`            | warn for invalid values; do not warn for explicit `Infinity` | use same fallback without warning  |
 | old/new bound pair supplied together through untyped input | unified value is authoritative                                                     | ignore deprecated alias         | warn and name the ignored alias                              | unified value wins without warning |
-| resolved minimum above resolved maximum                    | both values are individually valid                                                 | maximum wins                    | warn and use released clamp order                            | use same ordering without warning  |
+| `min()`/`max()` that is not exactly two terms, nests more than one level, is unbalanced, or has an unsupported term | none — the whole expression is invalid | the role's fallback above | warn and use fallback | use same fallback without warning |
+| resolved minimum above resolved maximum, including from an expression | both values are individually valid                                                 | maximum wins                    | warn and use released clamp order                            | use same ordering without warning  |
 
 A fallback repairs configuration; it is not a new user selection. After
 initialization, an invalid raw value never directly replaces persisted or otherwise
@@ -323,6 +356,7 @@ a percentage or relative intent.
 | FR11             | Multi-region and shared-observer tests                        | two regions on one container; another hook observing the same node                                                                | regions use different bases, selected ratios are introduced, or one subscription removes another                                                       |
 | FR12             | Production/development parser and state-preservation tests    | negative/non-finite number; partial/malformed string; wrong unit; invalid rerender; persisted selection; explicit legacy Infinity | fallback differs by build, warning occurs in production, invalid input replaces legal state, or any path produces `NaN`                                |
 | API3, API4, API6 | Type, runtime validation, and development-warning tests       | exact valid strings; old-only aliases; exact-union duplicate rejection; JS/`any`/spread conflicts; `resize('50%')`                | duplicate pairs type-check, deprecated alias overrides unified input, warning omits ignored alias, exact parsing is skipped, or resize accepts strings |
+| FR13             | Expression parser, recursive basis-dependency, and Chromium crossover tests | `max(P%, Npx)` above/below/at crossover; `min(Npx, P%)`; nested; all-pixel expression; percentage nested inside; one term; unsupported term; unbalanced; over-depth; expression vs opposing bound; no-ref; unmeasured container | a crossover picks the wrong arm, an expression stops tracking its basis, an all-pixel expression observes a container, a nested percentage is missed, or an invalid expression replaces legal state |
 | Platform/SSR     | Server render, hydration test, and Chromium evidence          | no ref; ref not measured; hidden/zero container; first positive measurement                                                       | 1200px fallback changes, temporary fallback persists, or correction fires `onSizeChange`                                                               |
 | Compatibility    | Existing Resizable, LayoutPanel, SideNav, and template suites | current pixel-only callsites and no-ref percentage default                                                                        | existing numeric configuration, percentage fallback, output, interaction, or persistence changes                                                       |
 
@@ -343,11 +377,15 @@ This spec moves from `accepted` to `shipped` only when:
   pair is an exact mutually exclusive TypeScript union, and untyped conflicts
   prefer the unified value with a clear ignored-alias warning;
 - exact parsing accepts only non-negative finite numbers, complete `Npx` strings,
-  and 0–100 `N%` strings; invalid values use the documented 250px, 50px, or
+  0–100 `N%` strings, and two-term one-level `min()`/`max()` over those;
+  invalid values use the documented 250px, 50px, or
   `Infinity` fallback in every build without replacing persisted/legal selected
   state, while explicit legacy `maxSizePx: Infinity` remains valid;
+- a value containing a percentage at any depth re-resolves with its basis and
+  observes the container, while an all-pixel expression is static;
 - inverted resolved bounds warn in development, deterministically choose the
-  maximum, and never produce `NaN` or invalid geometry;
+  maximum, and never produce `NaN` or invalid geometry, including when either
+  bound came from an expression;
 - mixed bounds keep effective state, paint, storage, and separator ARIA aligned,
   while controlled-collapse callbacks preserve released intent reporting;
 - single and multi-region subscriptions coexist with every other observer of the
@@ -407,6 +445,59 @@ Astryx template. If a resolved minimum exceeds its maximum, development warns an
 the maximum wins under the released clamp order. These rules keep malformed input,
 conflicts, and inverted bounds from producing `NaN` or replacing persisted/legal
 selected state.
+
+### DEC-3 — Sizes accept `min()` and `max()`, and nothing else from CSS math
+
+**Reference:** `spec:AST-010/DEC-3`
+**Decider:** `cixzhang`, `2026-09-03`
+
+A single scalar cannot express a bound that is relative on a wide container and
+fixed on a narrow one. `max(40%, 333px)` is the ordinary CSS spelling of "40% of
+the container, but never less than 333px", and its inverse `min(400px, 10%)` caps
+a panel at 400px until 10% is the tighter limit. Without them a builder writes
+that constraint in CSS, and CSS clamps paint without clamping hook state — the
+split this spec exists to close (FR5). Measured in Chromium before the change,
+`minSize: 'max(40%, 333px)'` produced a resolved minimum of 50px at every
+container width from 1200px to 400px, because the whole string failed to parse
+and took the invalid-input fallback. In production that fallback is silent.
+
+`min()` and `max()` are therefore accepted over the terms already accepted,
+two terms, one level of nesting (FR13).
+
+Rejected: `calc()` and arithmetic generally, `clamp()`, `var()`, and every other
+unit. Arithmetic needs operator precedence and mixed-unit addition, which is an
+expression language rather than a bounded vocabulary. `clamp(a, b, c)` restates
+the floor-and-ceiling relationship `minSize` and `maxSize` already own, giving a
+second way to write one thing — the ambiguity DEC-2 rejected for percentage
+props. The grammar is closed rather than open: an unrecognized function is
+invalid input under FR12, not a passthrough to CSS.
+
+Rejected: a structured object AST (`{max: [{containerPercent: 40}, {pixels:
+333}]}`). It cannot replace the released `number | string` value, so it would be
+a third spelling beside `333` and `'333px'`, and the `string` member it must
+coexist with re-admits every unvalidated input it was meant to prevent. Compiled
+both ways, the AST caught two error classes (unknown key, non-node element) and
+the narrowed string caught eight (`banana`, `calc()`, `rem`, `vw`, `clamp()`,
+unbalanced, non-finite, over-depth); neither can express numeric range, so both
+still need the runtime parser. The CSS string is also the spelling a builder
+already knows and an assistant already emits.
+
+Rejected: grouping the bounds as `{min, max}`. Every bounded pair in the package
+is flat sibling props — Slider, NumberInput, DateInput, Calendar — and a group
+must be mutually exclusive with both deprecated aliases at once, which would
+forbid migrating one bound while the other keeps its alias.
+
+The two-term, one-level limits are not arbitrary. They are what keeps the public
+`ResizableSize` union small enough for TypeScript to represent: a wider grammar
+raised `TS2590` ("union type that is too complex to represent") where a bound
+meets its deprecated pixel alias. The parser enforces exactly the same limits, so
+the compiler and the runtime accept the same set of strings.
+
+A value is basis-dependent whenever a percentage appears at any depth, and that
+test runs on the parsed expression rather than the source text. A syntactic check
+would classify `max(40%, 333px)` as static and the container would never be
+observed: the bound would resolve once against the initial basis and never track
+the container again — supported-looking and quietly broken.
 
 ## Open questions
 

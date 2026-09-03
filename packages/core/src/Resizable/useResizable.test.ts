@@ -985,6 +985,235 @@ describe('useResizable percentage configuration (AST-010)', () => {
       expect(result.current.size).toBe(100);
     });
   });
+
+  describe('FR13 — min()/max() bound expressions', () => {
+    // `max(40%, 333px)`: the percentage arm wins on a wide container, the
+    // pixel floor below the 832.5px crossover. This is the canonical example.
+    it.each([
+      [1200, 480],
+      [900, 360],
+      [833, 333],
+      [832, 333],
+      [600, 333],
+      [400, 333],
+    ])('resolves max(40%, 333px) at basis $0 to $1', (basis, expected) => {
+      content = basis;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          containerRef,
+          defaultSize: 200,
+          minSize: 'max(40%, 333px)',
+        }),
+      );
+      expect(result.current.props._minSizePx).toBe(expected);
+    });
+
+    it.each([
+      [1200, 120],
+      [4000, 400],
+      [6000, 400],
+    ])('resolves min(400px, 10%) at basis $0 to $1', (basis, expected) => {
+      content = basis;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          containerRef,
+          defaultSize: 100,
+          maxSize: 'min(400px, 10%)',
+        }),
+      );
+      expect(result.current.props._maxSizePx).toBe(expected);
+    });
+
+    it('re-resolves an expression when the basis changes', () => {
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          containerRef,
+          defaultSize: 200,
+          minSize: 'max(40%, 333px)',
+        }),
+      );
+      // 400px container: the pixel arm wins.
+      expect(result.current.props._minSizePx).toBe(333);
+      act(() => {
+        content = 1200;
+        StubResizeObserver.resizeAll();
+      });
+      // Wide enough for the percentage arm to overtake it.
+      expect(result.current.props._minSizePx).toBe(480);
+    });
+
+    it('resolves one level of nesting', () => {
+      content = 1000;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          containerRef,
+          defaultSize: 100,
+          maxSize: 'max(20%, min(500px, 60%))',
+        }),
+      );
+      // min(500, 600) = 500; max(200, 500) = 500.
+      expect(result.current.props._maxSizePx).toBe(500);
+    });
+
+    it('treats an all-pixel expression as static, observing nothing', () => {
+      const containerRef = makeContainer();
+      const before = StubResizeObserver.instances.length;
+      const {result} = renderHook(() =>
+        useResizable({
+          containerRef,
+          defaultSize: 100,
+          maxSize: 'min(400px, 900px)',
+        }),
+      );
+      expect(result.current.props._maxSizePx).toBe(400);
+      // No percentage anywhere in the tree, so there is nothing to observe.
+      const observed = StubResizeObserver.instances
+        .slice(before)
+        .flatMap(o => o.targets);
+      expect(observed).toHaveLength(0);
+    });
+
+    it('observes the container for a percentage nested inside an expression', () => {
+      // The dependency test has to recurse. A syntactic check on the raw
+      // string would call this static and the bound would never re-resolve.
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          containerRef,
+          defaultSize: 100,
+          maxSize: 'max(80px, min(90px, 50%))',
+        }),
+      );
+      expect(result.current.props._maxSizePx).toBe(90);
+      act(() => {
+        content = 100;
+        StubResizeObserver.resizeAll();
+      });
+      // 50% of 100 = 50; min(90, 50) = 50; max(80, 50) = 80.
+      expect(result.current.props._maxSizePx).toBe(80);
+    });
+
+    it.each([
+      ['max(40%)', 'a single term'],
+      ['max()', 'no terms'],
+      ['max(10px, 20px, 30px, 40px)', 'more terms than the grammar allows'],
+      ['max(40%, 333px', 'an unclosed call'],
+      ['max(40%, 20rem)', 'an unsupported unit in a term'],
+      ['max(10%, min(20%, max(30%, 40px)))', 'nesting past the depth limit'],
+      ['calc(100% - 3rem)', 'arithmetic'],
+      ['clamp(100px, 40%, 500px)', 'clamp'],
+      ['var(--w)', 'a custom property'],
+      ['banana', 'nonsense'],
+    ])('rejects %s (%s) and falls back', raw => {
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          containerRef,
+          defaultSize: 10_000,
+          maxSize: raw as never,
+        }),
+      );
+      // The maximum's documented fallback is unbounded, so the default stands.
+      expect(result.current.props._maxSizePx).toBe(Infinity);
+      expect(result.current.size).toBe(10_000);
+    });
+
+    it('keeps a legal selection when an expression is invalid', () => {
+      // FR12: a repair is not a new selection.
+      localStorage.setItem(
+        'astryx-resizable:expr-invalid',
+        JSON.stringify({size: 321, isCollapsed: false}),
+      );
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          containerRef,
+          defaultSize: 200,
+          maxSize: 'max(40%, 20rem)' as never,
+          autoSaveId: 'expr-invalid',
+        }),
+      );
+      expect(result.current.size).toBe(321);
+      localStorage.clear();
+    });
+
+    it('freezes an expression bound for the duration of a gesture', () => {
+      content = 1000;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          containerRef,
+          defaultSize: 200,
+          maxSize: 'min(400px, 50%)',
+        }),
+      );
+      expect(result.current.props._maxSizePx).toBe(400);
+      act(() => {
+        result.current.props._onResizeStart();
+      });
+      act(() => {
+        content = 400;
+        StubResizeObserver.resizeAll();
+      });
+      // Held: the bound must not move under the pointer mid-drag (FR7).
+      expect(result.current.props._maxSizePx).toBe(400);
+      act(() => {
+        result.current.props._onResizeEnd();
+      });
+      // min(400, 200) = 200.
+      expect(result.current.props._maxSizePx).toBe(200);
+    });
+
+    it('keeps the maximum winning when an expression floor exceeds it', () => {
+      // The released clamp order is Math.min(max, Math.max(min, size)), so an
+      // inverted pair resolves to the maximum. Unchanged by expressions; this
+      // pins it rather than inventing a new rule (AST-010 FR4).
+      content = 400;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          containerRef,
+          defaultSize: 300,
+          minSize: 'max(40%, 333px)',
+          maxSize: '50%',
+        }),
+      );
+      expect(result.current.props._minSizePx).toBe(333);
+      expect(result.current.props._maxSizePx).toBe(200);
+      expect(result.current.size).toBe(200);
+      expect(Number.isFinite(result.current.size)).toBe(true);
+    });
+
+    it('uses the released viewport basis for an expression with no container', () => {
+      // No containerRef: percentages keep resolving against window.innerWidth
+      // (FR1), inside an expression exactly as on their own.
+      window.innerWidth = 1000;
+      const {result} = renderHook(() =>
+        useResizable({defaultSize: 100, maxSize: 'min(400px, 10%)'}),
+      );
+      expect(result.current.props._maxSizePx).toBe(100);
+    });
+
+    it('resolves an expression against the server basis with no window measurement', () => {
+      // A container that has not been laid out yet holds the documented
+      // temporary 1200px basis rather than resolving against zero.
+      content = 0;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          containerRef,
+          defaultSize: 100,
+          maxSize: 'min(400px, 10%)',
+        }),
+      );
+      // 10% of the 1200 stand-in is 120; min(400, 120) = 120.
+      expect(result.current.props._maxSizePx).toBe(120);
+    });
+  });
 });
 
 describe('ResizableProps source compatibility (AST-010 API5)', () => {

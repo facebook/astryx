@@ -25,16 +25,16 @@ export const docs = {
     },
     {
       name: 'minSize',
-      type: 'number | string',
+      type: 'ResizableSize',
       description:
-        'Minimum size, in the same vocabulary as defaultSize. A percentage minimum re-resolves when its basis changes and clamps the current pixel size.',
+        'Minimum size. A number of pixels, an exact "Npx", an exact "N%" from 0% to 100%, or min()/max() over those — for example "max(40%, 333px)", a floor that is 40% of the container but never below 333px. Terms are compared as resolved pixels, so which one wins changes with the container: above a 832.5px container 40% wins, below it the 333px floor does. Anything basis-dependent re-resolves when the container resizes and clamps the current pixel size.',
       default: '50',
     },
     {
       name: 'maxSize',
-      type: 'number | string',
+      type: 'ResizableSize',
       description:
-        'Maximum size, in the same vocabulary as defaultSize. A percentage maximum re-resolves when its basis changes and clamps the current pixel size.',
+        'Maximum size, in the same vocabulary as minSize — for example "min(400px, 10%)", a cap of 400px until 10% of the container is tighter. Re-resolves when its basis changes and clamps the current pixel size.',
       default: 'Infinity',
     },
     {
@@ -146,6 +146,16 @@ export const docs = {
         guidance: true,
         description:
           'Set autoSaveId to persist user-chosen sizes across page reloads.',
+      },
+      {
+        guidance: true,
+        description:
+          'Give a bound that must stay usable on small containers a pixel floor with min()/max(): minSize: "max(40%, 333px)" with containerRef stays proportional while there is room and stops at 333px once there is not. The inverse caps growth: maxSize: "min(400px, 10%)".',
+      },
+      {
+        guidance: false,
+        description:
+          'Write a percentage ceiling in CSS (max-width) instead of maxSize. CSS clamps what is painted but not the hook state, so the handle announces a width the panel does not have.',
       },
       {
         guidance: false,
