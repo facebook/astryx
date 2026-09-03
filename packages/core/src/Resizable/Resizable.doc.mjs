@@ -96,7 +96,7 @@ export const docs = {
         {
           label: 'One-time structured default',
           code: `import {useRef} from 'react';
-import {useResizable} from '@astryxdesign/core/Resizable';
+import {ResizeHandle, useResizable} from '@astryxdesign/core/Resizable';
 import {percent, pixel} from '@astryxdesign/core/Resizable/utils';
 
 const containerRef = useRef<HTMLDivElement>(null);
@@ -104,7 +104,9 @@ const containerRef = useRef<HTMLDivElement>(null);
 const region = useResizable({
   defaultSize: percent(40, {min: pixel(333)}),
   containerRef,
-});`,
+});
+
+<ResizeHandle direction="horizontal" resizable={region.props} />;`,
         },
         {
           label: 'Live percentage floor',

@@ -16,7 +16,7 @@ The structured API follows Table's existing shape rather than parsing CSS expres
 
 The defect this closes: a percentage ceiling could previously only be written in CSS, and CSS stops the paint but not the state. `ResizeHandle` publishes the hook's size as `aria-valuenow`, so the separator announced a width the panel did not have — measured at **899.5 against a 434px panel**. Bounds now clamp the state, so paint, persistence and ARIA describe one geometry.
 
-`ResizeHandle` also warns in development when its `direction` disagrees with its region's, which previously failed silently.
+`ResizeHandle` also warns in development when its `direction` disagrees with its region's, which previously failed silently. Existing vertical panels must pass `direction: 'vertical'` to `useResizable` as well as `direction="vertical"` to the handle.
 
 The container basis follows the ref, not the element it first pointed at: replacing the element behind the same `containerRef` re-resolves against the replacement, and the element left behind is unobserved. A container that is not laid out yet — unmounted, `display:none`, detached — measures 0, which is not a measurement: percentages hold the documented temporary 1200px basis until it is real, and nothing is written to `autoSaveId` storage from it. Once the first real basis resolves, the default is committed as a pixel selection with its initial clamp included; a 321px default clamped to 200px therefore stays 200px when the container later grows instead of reviving the raw default.
 
@@ -24,6 +24,6 @@ A gesture that is cancelled rather than completed — `pointercancel`, a lost po
 
 Not in scope, per the spec: SideNav's simplified `defaultWidth`/`minWidth`/`maxWidth` stays pixel-only.
 
-A pixel-only configuration keeps its single render pass. With no percentage anywhere there is no container to measure, so the pixel selection is made at mount rather than corrected on a second pass; only a supplied container defers, because its measurement does not exist until after commit.
+A pixel-only configuration keeps its single render pass even when a `containerRef` is supplied. With no percentage anywhere there is no basis to observe or ref identity to follow, so the pixel selection is made at mount; only a basis-dependent configuration with a supplied container defers until that measurement exists.
 
 @freddymeta

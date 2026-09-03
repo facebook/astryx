@@ -12,10 +12,11 @@
  */
 
 import {createElement, useLayoutEffect, useRef} from 'react';
-import {hydrateRoot} from 'react-dom/client';
+import {createRoot, hydrateRoot} from 'react-dom/client';
+import {flushSync} from 'react-dom';
 import {renderToString} from 'react-dom/server';
-import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {renderHook, act, waitFor} from '@testing-library/react';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {render, renderHook, act, waitFor} from '@testing-library/react';
 import {useResizable} from './useResizable';
 import type {ResizableProps, UseResizableSingleConfig} from './useResizable';
 import {percent, pixel} from './utils';
@@ -39,6 +40,10 @@ function readStored(): StoredEntry {
 
 beforeEach(() => {
   localStorage.clear();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('useResizable persistence', () => {
@@ -424,11 +429,7 @@ describe('useResizable identity', () => {
     expect(result.current.props._snaps).toBe(first.snaps);
   });
 
-  it('settles a pixel-only mount in one render pass', () => {
-    // A configuration with no percentage anywhere needs no container
-    // measurement, so it must reach its final size on the first pass, as it
-    // did before percentages existed. Latching the selection lazily instead
-    // cost every such mount a second pass — 1→2, and 50→100 at fifty mounts.
+  it('settles a pixel-only mount without a ref in one render pass', () => {
     let passes = 0;
     const {result} = renderHook(() => {
       passes += 1;
@@ -438,6 +439,49 @@ describe('useResizable identity', () => {
     expect(passes).toBe(1);
     expect(result.current.size).toBe(200);
   });
+
+  it.each([1, 10, 50])(
+    'settles %i numeric-only mounts with containerRef in one pass each',
+    count => {
+      const resizeObserver = vi.fn();
+      vi.stubGlobal('ResizeObserver', resizeObserver);
+      const element = document.createElement('div');
+      let passes = 0;
+      let refReads = 0;
+      const containerRef = {
+        get current() {
+          refReads += 1;
+          return element;
+        },
+      };
+
+      function Probe() {
+        passes += 1;
+        useResizable({
+          defaultSize: 200,
+          minSizePx: 100,
+          maxSizePx: 400,
+          containerRef,
+        });
+        return null;
+      }
+
+      const view = render(
+        createElement(
+          'div',
+          null,
+          Array.from({length: count}, (_, index) =>
+            createElement(Probe, {key: index}),
+          ),
+        ),
+      );
+
+      expect(passes).toBe(count);
+      expect(refReads).toBe(0);
+      expect(resizeObserver).not.toHaveBeenCalled();
+      view.unmount();
+    },
+  );
 });
 
 describe('useResizable percentage configuration (AST-010)', () => {
@@ -1364,6 +1408,108 @@ describe('useResizable percentage configuration (AST-010)', () => {
       Object.defineProperty(node, 'clientHeight', {get: () => 300});
       return node;
     };
+
+    it('reconciles a live ref replacement before flushSync returns', () => {
+      const first = makeSized(400);
+      const second = makeSized(800);
+      const containerRef: {current: HTMLElement | null} = {current: first};
+      const host = document.createElement('div');
+      document.body.appendChild(host);
+      const root = createRoot(host);
+
+      function Probe() {
+        const region = useResizable({
+          containerRef,
+          defaultSize: 100,
+          minSize: '50%',
+        });
+        return createElement('output', {'data-size': region.size});
+      }
+
+      try {
+        act(() => {
+          // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- test the DOM at the commit boundary before passive effects
+          flushSync(() => root.render(createElement(Probe)));
+          expect(host.querySelector('output')).toHaveAttribute(
+            'data-size',
+            '200',
+          );
+        });
+
+        containerRef.current = second;
+        act(() => {
+          // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- test the DOM at the commit boundary before passive effects
+          flushSync(() => root.render(createElement(Probe)));
+          expect(host.querySelector('output')).toHaveAttribute(
+            'data-size',
+            '400',
+          );
+        });
+      } finally {
+        act(() => {
+          // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- finish this low-level root without leaving async cleanup
+          flushSync(() => root.unmount());
+        });
+        host.remove();
+      }
+    });
+
+    it('starts following the current ref when a pixel-only config gains a percentage bound', () => {
+      const first = makeSized(400);
+      const replacement = makeSized(800);
+      const containerRef: {current: HTMLElement | null} = {current: first};
+      const initialProps: {maxSize?: ResizableSize} = {};
+      const {result, rerender} = renderHook(
+        ({maxSize}: {maxSize?: ResizableSize}) =>
+          useResizable({containerRef, defaultSize: 350, maxSize}),
+        {initialProps},
+      );
+      const observed = () =>
+        StubResizeObserver.instances.flatMap(observer => observer.targets);
+
+      expect(result.current.size).toBe(350);
+      expect(observed()).not.toContain(first);
+
+      act(() => {
+        containerRef.current = replacement;
+      });
+      rerender({maxSize: percent(50, {max: pixel(600)})});
+
+      expect(result.current.props._maxSizePx).toBe(400);
+      expect(result.current.size).toBe(350);
+      expect(observed()).not.toContain(first);
+      expect(observed()).toContain(replacement);
+    });
+
+    it('does not clamp against an old element when a percentage bound returns', () => {
+      const first = makeSized(400);
+      const replacement = makeSized(800);
+      const containerRef: {current: HTMLElement | null} = {current: first};
+      const initialProps: {maxSize?: ResizableSize} = {maxSize: '50%'};
+      const {result, rerender} = renderHook(
+        ({maxSize}: {maxSize?: ResizableSize}) =>
+          useResizable({containerRef, defaultSize: 100, maxSize}),
+        {initialProps},
+      );
+      const observed = () =>
+        StubResizeObserver.instances.flatMap(observer => observer.targets);
+
+      expect(result.current.props._maxSizePx).toBe(200);
+      rerender({maxSize: undefined});
+      act(() => result.current.resize(350));
+      expect(result.current.size).toBe(350);
+      expect(observed()).not.toContain(first);
+
+      act(() => {
+        containerRef.current = replacement;
+      });
+      rerender({maxSize: percent(50, {max: pixel(600)})});
+
+      expect(result.current.props._maxSizePx).toBe(400);
+      expect(result.current.size).toBe(350);
+      expect(observed()).not.toContain(first);
+      expect(observed()).toContain(replacement);
+    });
 
     it('re-resolves against the replacement when the ref changes element', () => {
       // A ref object is stable across an element swap, so nothing about the

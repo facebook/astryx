@@ -20,6 +20,7 @@ import {
   type RefObject,
 } from 'react';
 import {observeResize} from '../utils/sharedResizeObserver';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {devWarn} from '../utils/devWarning';
 import type {SizeValue} from '../utils/types';
 import type {ResizableSize} from './utils';
@@ -640,31 +641,41 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // the old detached node stayed observed (and a detached node measures 0,
   // which is how a replacement zeroed the bounds) and the new one was never
   // observed at all.
-  const [containerElement, setContainerElement] = useState<HTMLElement | null>(
-    null,
-  );
+  const containerElementRef = useRef<HTMLElement | null>(null);
+  // DOM ref changes are invisible to React. This state is only a version tick
+  // while basis observation is active; the element itself lives in a ref so it
+  // can be released without adding a cleanup render.
+  const [, setContainerElementVersion] = useState(0);
   const containerBasisRef = useRef<number | null>(null);
+  const containerElement = observeContainerBasis
+    ? containerElementRef.current
+    : null;
 
-  // Follow the ref to whatever element it points at now. No dependency array:
-  // a ref mutation is invisible to React, and refs are assigned during commit,
-  // so after every commit is the only moment this comparison can be made — the
-  // deps the heuristic suggests ([containerRef]) would run this once and never
-  // notice a swap. State is set only when the element actually changed, so it
-  // settles in one extra render rather than looping.
-  // eslint-disable-next-line @eslint-react/exhaustive-deps -- must run after every commit; a ref swap changes no dependency
-  useEffect(() => {
-    const element = containerRef?.current ?? null;
-    if (element !== containerElement) {
-      // The cached measurement belongs to the element being left behind.
+  // Follow the ref only while some configuration needs its basis. A numeric-only
+  // region never reads the ref. Once observation stops, drop both the element
+  // and its measurement without a state update; a later percentage starts from
+  // the ref's then-current element and a fresh basis.
+  useIsomorphicLayoutEffect(() => {
+    if (!observeContainerBasis) {
+      containerElementRef.current = null;
       containerBasisRef.current = null;
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the observed element is DOM identity, which exists only after commit
-      setContainerElement(element);
+      return;
+    }
+    const element = containerRef?.current ?? null;
+    if (element !== containerElementRef.current) {
+      containerBasisRef.current = null;
+      containerElementRef.current = element;
+      setContainerElementVersion(version => version + 1);
     }
   });
 
   const subscribeToContainer = useCallback(
     (onStoreChange: () => void) => {
-      if (!observeContainerBasis || containerElement == null) {
+      if (
+        !observeContainerBasis ||
+        containerElement == null ||
+        containerElement !== containerRef?.current
+      ) {
         return () => {};
       }
       // Unsubscribe by callback: several regions share one container, and any
@@ -678,7 +689,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
         onStoreChange();
       });
     },
-    [containerElement, observeContainerBasis, direction],
+    [containerElement, observeContainerBasis, direction, containerRef],
   );
   const readContainerBasis = useCallback(() => {
     if (!observeContainerBasis || containerElement == null) {

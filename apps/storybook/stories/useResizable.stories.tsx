@@ -61,6 +61,7 @@ function StructuredPercentProbe({
         ? {defaultSize: 0, minSize: percent(40, {min: pixel(333)})}
         : {defaultSize: 500, maxSize: percent(10, {max: pixel(400)})}),
     containerRef: frameRef,
+    direction: 'horizontal',
     autoSaveId: storageKey,
   });
   const resolvedBound = isDefault
@@ -232,6 +233,7 @@ export const Vertical: Story = {
       defaultSize: 150,
       minSizePx: 60,
       maxSizePx: 250,
+      direction: 'vertical',
     });
     return (
       <div {...stylex.props(s.shell)}>
@@ -317,6 +319,7 @@ export const Nested: Story = {
       defaultSize: 200,
       minSizePx: 80,
       maxSizePx: 250,
+      direction: 'vertical',
     });
     return (
       <div {...stylex.props(s.shell)}>
@@ -418,6 +421,7 @@ export const MixedContainers: Story = {
       defaultSize: 200,
       minSizePx: 80,
       maxSizePx: 250,
+      direction: 'vertical',
     });
     return (
       <div {...stylex.props(s.shell)}>
