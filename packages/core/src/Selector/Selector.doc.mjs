@@ -167,6 +167,16 @@ export const docs = {
     ],
   },
   description: 'Dropdown selector for choosing from a list of options.',
+  playground: {
+    defaults: {
+      label: 'Fruit',
+      options: [
+        {value: 'apple', label: 'Apple'},
+        {value: 'banana', label: 'Banana'},
+        {value: 'orange', label: 'Orange'},
+      ],
+    },
+  },
   props: [
     {
       name: 'label',
