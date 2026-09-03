@@ -1,5 +1,6 @@
 ---
 '@astryxdesign/core': patch
+'@astryxdesign/cli': patch
 ---
 
 [fix] LayoutPanel: add playground wrapper and default children for docsite preview
