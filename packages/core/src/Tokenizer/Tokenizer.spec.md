@@ -18,7 +18,7 @@ verified_by:
     scripts/check-knowledge.mjs,
   ]
 modules: []
-families: [family:overlay-dismissal]
+families: [family:input-fields, family:overlay-dismissal]
 design_specs: []
 architecture:
   [
@@ -222,10 +222,10 @@ This contract adds no target, state, or visual styling contract.
   geometry and package-peer identity out of Tokenizer's public API.
 - The current Typeahead draft records BaseTypeahead's layer delegation but does
   not own Tokenizer's token/input identity or the approved descriptor.
-- The input-field contract at
-  [#5778](https://github.com/facebook/astryx/pull/5778) is unlanded draft evidence
-  that Tokenizer owns its component-local DOM/CSS mechanism. It is not authority
-  for this branch and is intentionally absent from frontmatter.
+- `family:input-fields` owns family-wide state display, behavior, appearance,
+  size, end-control, disabled-reason, and status-placement policy. Tokenizer
+  keeps its component-local token/input and source-loading behavior inside that
+  boundary.
 - The PowerSearch contract at
   [#5804](https://github.com/facebook/astryx/pull/5804) depends on the approved
   descriptor and owns its own editor width policy. It is dependent draft evidence,

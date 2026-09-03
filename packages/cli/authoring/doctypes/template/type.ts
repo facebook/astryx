@@ -86,9 +86,11 @@ export interface PageTemplateDoc extends BaseTemplateDoc {
 export type TemplateCategory =
   // Dashboard
   | 'Dashboard - Analytics'
+  | 'Dashboard - Comparison'
   | 'Dashboard - KPI Summary'
   | 'Dashboard - Monitoring'
   | 'Dashboard - Executive Summary'
+  | 'Dashboard - Scorecard'
   | 'Dashboard - Widget Grid'
   | 'Dashboard - Split'
   | 'Dashboard - Tabbed'
@@ -141,6 +143,7 @@ export type TemplateCategory =
   | 'Content - Card Grid'
   | 'Content - Order Detail'
   | 'Content - Product Detail'
+  | 'Content - Work Item Detail'
   | 'Content - Product List'
   | 'Content - Documentation Catalog'
   | 'Content - Documentation Design'

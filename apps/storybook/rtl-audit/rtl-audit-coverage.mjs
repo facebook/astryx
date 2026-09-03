@@ -3,8 +3,9 @@
 /**
  * @file Shared RTL coverage and directional-decoration helpers.
  * @input Rendered DOM decorations plus D1/D5/D6/curated audit results.
- * @output Contextual decoration candidates, pair verdicts, and per-component
- *   measured / verified-N-A / coverage-gap classifications.
+ * @output Contextual decoration candidates, pair verdicts, component-filter
+ *   reconciliation, and per-component measured / verified-N-A / coverage-gap
+ *   classifications.
  * @position Pure support layer for rtl-audit.mjs and its unit tests.
  */
 

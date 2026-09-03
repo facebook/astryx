@@ -49,6 +49,9 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.6.0(jiti@2.7.0))
+      '@formatjs/icu-messageformat-parser':
+        specifier: ^3.5.12
+        version: 3.5.12
       '@playwright/test':
         specifier: ^1.61.1
         version: 1.61.1

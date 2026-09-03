@@ -25,7 +25,6 @@
 
 import React, {
   useState,
-  useEffect,
   useCallback,
   useRef,
   useMemo,
@@ -57,7 +56,7 @@ import {useTranslator} from '../i18n';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {
   getInteractionModality,
-  trackInteractionModality,
+  useInteractionModalityTracking,
 } from '../utils/interactionModality';
 
 // =============================================================================
@@ -372,9 +371,7 @@ export function ChatComposer(props: ChatComposerProps) {
   const [internalValue, setInternalValue] = useState('');
   const [hasKeyboardEditorFocus, setHasKeyboardEditorFocus] = useState(false);
 
-  useEffect(() => {
-    trackInteractionModality();
-  }, []);
+  useInteractionModalityTracking();
 
   const isControlled = controlledValue !== undefined;
   const currentValue = isControlled ? controlledValue : internalValue;

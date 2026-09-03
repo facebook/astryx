@@ -33,7 +33,12 @@
  * @position packages/cli/foundation/debug — runtime
  */
 
-import {createEvent, toEventError, captureProject, captureEnv} from './event.mjs';
+import {
+  createEvent,
+  toEventError,
+  captureProject,
+  captureEnv,
+} from './event.mjs';
 import {createRedactor, redactArgv} from './redact.mjs';
 import {ERROR_CODES} from '../response/error-codes.mjs';
 
@@ -66,6 +71,7 @@ let _handler = null;
 let _finished = false;
 let _listenerInstalled = false;
 let _signalsArmed = false;
+let _configGateSkipped = false;
 let _startedAt = 0;
 /** @type {string | undefined} */
 let _cliVersion;
@@ -177,8 +183,30 @@ export function currentEvent() {
 export function setEventHandler(handler) {
   guard(() => {
     _handler = typeof handler === 'function' ? handler : null;
-    if (_event && _handler) armSignalHandlers();
+    if (!_event || !_handler) return;
+    armSignalHandlers();
+    if (_configGateSkipped) reportConfigGateMiss();
   });
+}
+
+export function noteConfigGateSkipped() {
+  _configGateSkipped = true;
+}
+
+function reportConfigGateMiss() {
+  _configGateSkipped = false;
+  if (_event?.output.jsonMode) return;
+  try {
+    const write = _originalWrites?.err ?? process.stderr.write;
+    write.call(
+      process.stderr,
+      'astryx: your astryx.config sets `debug`, but the file does not contain ' +
+        'the word, so commands that do not otherwise read the config are not ' +
+        'recorded. Name the key literally in the config file.\n',
+    );
+  } catch {
+    /* best effort */
+  }
 }
 
 /**
@@ -352,7 +380,12 @@ export function setOutcome(outcome, details = {}) {
       _event.error = toEventError(details.error);
       if (_event.error && details.code) _event.error.code = details.code;
     } else if (details.code) {
-      _event.error = {name: 'CliError', message: '', code: details.code, stack: null};
+      _event.error = {
+        name: 'CliError',
+        message: '',
+        code: details.code,
+        stack: null,
+      };
     }
   });
 }
@@ -459,7 +492,8 @@ export function finish({exitCode} = {}) {
     _event.output.stdoutBytes = _stdout.bytes;
     _event.output.stderrBytes = _stderr.bytes;
     _event.output.truncated =
-      _stdout.bytes > MAX_CAPTURED_OUTPUT || _stderr.bytes > MAX_CAPTURED_OUTPUT;
+      _stdout.bytes > MAX_CAPTURED_OUTPUT ||
+      _stderr.bytes > MAX_CAPTURED_OUTPUT;
 
     const endedAt = new Date().toISOString();
     const durationMs = Math.max(0, Date.now() - _startedAt);
@@ -527,14 +561,60 @@ export function finish({exitCode} = {}) {
 
     // A COPY. Handing over the live object would let third-party code mutate
     // the record mid-flight; its errors are swallowed for the same reason.
-    try {
-      _handler(structuredClone(sealed));
-      delivered = true;
-    } catch {
-      /* a broken handler must not fail the command */
-    }
+    delivered = callHandler(_handler, structuredClone(sealed));
   });
   return delivered;
+}
+
+/**
+ * @param {import('../../authoring/debug/type').DebugEventHandler} handler
+ * @param {import('./event.mjs').DebugEvent} event
+ * @returns {boolean}
+ */
+function callHandler(handler, event) {
+  const realExit = process.exit;
+  const realStdoutWrite = process.stdout.write;
+  const realStderrWrite = process.stderr.write;
+  const exitCodeBefore = process.exitCode;
+  let exitAttempt = /** @type {number | string | null | undefined} */ (
+    undefined
+  );
+  let ran = false;
+
+  try {
+    process.exit = /** @type {any} */ (
+      (/** @type {any} */ code) => {
+        exitAttempt = code;
+      }
+    );
+    process.stdout.write = /** @type {any} */ (
+      function (/** @type {any} */ chunk, /** @type {any[]} */ ...rest) {
+        return realStderrWrite.call(process.stderr, chunk, ...rest);
+      }
+    );
+    handler(event);
+    ran = true;
+  } catch {
+    /* handler errors are isolated */
+  } finally {
+    process.exit = realExit;
+    process.stdout.write = realStdoutWrite;
+    process.exitCode = exitCodeBefore;
+  }
+
+  if (exitAttempt !== undefined) {
+    try {
+      realStderrWrite.call(
+        process.stderr,
+        `astryx: the debug handler called process.exit(${String(exitAttempt)}); ` +
+          `ignored so it cannot change what the command returned.\n`,
+      );
+    } catch {
+      /* best effort */
+    }
+  }
+
+  return ran;
 }
 
 /** Reset all recorder state. Tests call this between cases. */
@@ -557,5 +637,6 @@ export function resetRecorder() {
   _event = null;
   _handler = null;
   _finished = false;
+  _configGateSkipped = false;
   _startedAt = 0;
 }

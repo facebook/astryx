@@ -8,6 +8,15 @@ export const docs = {
   displayName: 'Layout Header',
   isHiddenFromOverview: true,
   description: 'Top bar for page titles, app bars, and toolbars.',
+  playground: {
+    defaults: {
+      children: 'Page Title',
+      hasDivider: true,
+    },
+    wrapper: {
+      component: 'Layout',
+    },
+  },
   props: [
     {
       name: 'children',

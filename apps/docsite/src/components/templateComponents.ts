@@ -46,9 +46,9 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/dashboard/page'),
   ),
-  'dashboard-portfolio': lazy(
+  'dashboard-composition': lazy(
     () =>
-      import('../../../../packages/cli/assets/templates/pages/dashboard-portfolio/page'),
+      import('../../../../packages/cli/assets/templates/pages/dashboard-composition/page'),
   ),
   'detail-page': lazy(
     () =>

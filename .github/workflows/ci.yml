@@ -627,17 +627,19 @@ jobs:
         run: pnpm -F @astryxdesign/vibe-tests fixtures:contrast
 
   # Stable-package visual regression. Core components get one representative
-  # story in every shipped theme that styles them, plus explicit
-  # `visual-baseline` stories in the default theme; a changed shipped theme gets
-  # its relevant matrix. Packages marked `astryx.canaryOnly` (Lab, charts,
+  # story in every accepted baseline theme. `visual-baseline` adds default-theme
+  # stories; `visual-theme-matrix` adds all-theme stories. A changed shipped
+  # theme gets its relevant matrix. Packages marked `astryx.canaryOnly` (Lab,
   # richtext, vega) do not compare pixels and do not own a baseline.
   #
   # Deeper than the daily gate only where the component declares it: audit and
   # interaction fixtures stay available to their dedicated checks without
   # multiplying the pixel baseline.
   #
-  # SKIPS ITSELF WHEN A PR IS TOO BROAD (--max-shots). A token or shared-hook
-  # change puts hundreds of diffs in front of a reviewer who cannot judge them
+  # SKIPS ITSELF WHEN COMPONENT OR SHARED-INFRASTRUCTURE SCOPE IS TOO BROAD.
+  # Theme-only matrices are release evidence and are not charged against the
+  # focused component review ceiling. A token or shared-hook change puts
+  # hundreds of diffs in front of a reviewer who cannot judge them
   # one by one, and a per-PR check is the wrong instrument for that change —
   # the daily gate reviews it against the whole baseline instead. The skip
   # states its reason in the PR comment rather than vanishing.
@@ -743,7 +745,6 @@ jobs:
             --out .visual-run \
             --tiers "$TIERS" \
             "${SCOPE_ARGS[@]}" \
-            --max-shots 240 \
             --summary-output visual-summary.md
           code=$?
           [ -f visual-summary.md ] && cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"

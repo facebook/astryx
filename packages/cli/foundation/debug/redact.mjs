@@ -64,10 +64,6 @@ const SENSITIVE_KEY_PARTS = [
   'token',
 ];
 
-/**
- * Names that are sensitive on their own but are substrings of ordinary words,
- * so they are matched WHOLE (again after stripping `-`/`_`).
- */
 const SENSITIVE_KEY_EXACT = new Set([
   'creds',
   'key',
@@ -80,47 +76,77 @@ const SENSITIVE_KEY_EXACT = new Set([
 /** Flags whose NEXT argv element is the value, e.g. `--token hunter2`. */
 const SENSITIVE_FLAG_RE = /^--?([\w-]{1,64})$/;
 
-/**
- * `--flag=value` / `KEY=value`, ANY key. Whether the key is sensitive is
- * decided per match by {@link isSensitiveKey}, not encoded in the pattern —
- * one keyword list, and `--api-key`, `--api_key` and `--apiKey` are all the
- * same entry instead of three alternations to keep in step.
- *
- * Global and unanchored, because the same text arrives twice: once as its own
- * argv element, and again quoted inside an error message, a stack frame and
- * the captured stderr — `error: unknown option '--token=…'`. An anchored rule
- * scrubs the first and leaves the other three, which is the same secret,
- * written to the same record.
- *
- * The key half is BOUNDED. An unbounded `[\w-]*` before a keyword makes an
- * unanchored scan quadratic, and this runs over captured output that can be
- * tens of kilobytes — 500KB of word characters followed by `token=` took over
- * seven minutes.
- *
- * The value half takes an optional matching quote, so `--token="s"` and the
- * JSON spelling `"token":"s"` lose their value like the bare form. Without it
- * the value stops AT the opening quote and the secret survives with quotes
- * around it, which is the shape a config blob or a quoted shell argument
- * arrives in.
- */
 const ASSIGNMENT_RE =
-  /(--?[\w-]{1,64}|"[\w.-]{1,64}"|[\w.]{1,64})(\s*[=:]\s*)("[^"]*"|'[^']*'|[^\s'"`,}\]]*)/g;
+  /(--?[\w-]{1,128}|"[\w.-]{1,128}"|[\w.]{1,128})(\s*[=:]\s*)("[^"]*"|'[^']*'|[^\s'"`,}\]]*)/g;
 
 /** Well-known credential formats worth catching wherever they appear. */
 const CREDENTIAL_PATTERNS = [
-  // GitHub personal access / OAuth / app tokens.
   /\bgh[pousr]_[A-Za-z0-9]{16,}\b/g,
-  // Slack tokens.
+  /\bglpat-[A-Za-z0-9_-]{16,}/g,
   /\bxox[abposr]-[A-Za-z0-9-]{10,}\b/g,
-  // AWS access key ids.
   /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g,
-  // Generic "Bearer <token>".
   /\bBearer\s+[A-Za-z0-9._~+/-]{16,}=*/gi,
-  // JSON Web Tokens.
   /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
-  // OpenAI-style keys.
+  /\bsk-(?:ant|proj|live|test)-[A-Za-z0-9_-]{16,}/g,
   /\bsk-[A-Za-z0-9]{20,}\b/g,
+  /\b[sr]k_(?:live|test)_[A-Za-z0-9]{10,}\b/g,
+  /\bAIza[A-Za-z0-9_-]{35}\b/g,
+  /\bnpm_[A-Za-z0-9]{30,}\b/g,
+  /\bhf_[A-Za-z0-9]{30,}\b/g,
+  /\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}/g,
+  /\b(?:AC|SK)[0-9a-f]{32}\b/g,
+  /-----BEGIN[A-Z ]*PRIVATE KEY-----[\s\S]*?-----END[A-Z ]*PRIVATE KEY-----/g,
 ];
+
+const ENTROPY_MIN_CHARS = 24;
+const HIGH_ENTROPY_CANDIDATE_RE = new RegExp(
+  `[A-Za-z0-9+=_-]{${ENTROPY_MIN_CHARS},512}`,
+  'g',
+);
+
+const ENCODED_PAYLOAD_RE =
+  /(?:;base64,|\bsha(?:256|384|512)-|\bsourceMappingURL=)[A-Za-z0-9+/=_-]+/g;
+
+/**
+ * @param {string} value
+ * @returns {number}
+ */
+function entropyBits(value) {
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  for (const ch of value) counts.set(ch, (counts.get(ch) ?? 0) + 1);
+  let bits = 0;
+  for (const n of counts.values()) {
+    const p = n / value.length;
+    bits -= p * Math.log2(p);
+  }
+  return bits;
+}
+
+/**
+ * @param {string} word
+ * @returns {boolean}
+ */
+function looksLikeSecret(word) {
+  if (isOrdered(word)) return false;
+  return entropyBits(word) >= 0.9 * Math.log2(Math.min(word.length, 32));
+}
+
+/**
+ * @param {string} word
+ * @returns {boolean}
+ */
+function isOrdered(word) {
+  if (word.length < 4) return false;
+  let turns = 0;
+  for (let i = 2; i < word.length; i += 1) {
+    const a = word.charCodeAt(i - 2);
+    const b = word.charCodeAt(i - 1);
+    const c = word.charCodeAt(i);
+    if ((b > a && c < b) || (b < a && c > b)) turns += 1;
+  }
+  return turns / (word.length - 2) < 0.25;
+}
 
 /** Credentials embedded in a URL's userinfo component. */
 const URL_USERINFO_RE = /(\b[a-z][a-z0-9+.-]*:\/\/)[^/\s:@]+(?::[^/\s@]*)?@/gi;
@@ -129,25 +155,18 @@ const URL_USERINFO_RE = /(\b[a-z][a-z0-9+.-]*:\/\/)[^/\s:@]+(?::[^/\s@]*)?@/gi;
 const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 
 /**
- * Does this key name mean "the value is a secret"?
  * @param {string | undefined} key
+ * @param {boolean} [named]
  * @returns {boolean}
  */
-export function isSensitiveKey(key) {
+export function isSensitiveKey(key, named = true) {
   if (!key) return false;
   const lower = String(key).toLowerCase().replace(/[-_]/g, '');
-  if (SENSITIVE_KEY_EXACT.has(lower)) return true;
+  if (named && SENSITIVE_KEY_EXACT.has(lower)) return true;
   return SENSITIVE_KEY_PARTS.some(part => lower.includes(part));
 }
 
 /**
- * Scrub an argv array, where a flag and its value are two separate elements.
- *
- * `redact` walks a plain array element by element with no key context, so
- * `['--token', 'hunter2']` reaches it as two ordinary strings and the second
- * one matches nothing. `--flag value` is the ordinary CLI spelling, and it
- * would be perverse for `options` to redact what `argv` prints in full.
- *
  * @param {string[]} argv
  * @param {Redactor} redact
  * @returns {unknown[]}
@@ -173,7 +192,7 @@ export function redactArgv(argv, redact) {
  * revealing where on the machine it lives.
  *
  * @param {string} value
- * @param {{home: string, cwd: string}} ctx
+ * @param {{home: string, cwd: string, user: RegExp | null}} ctx
  * @returns {string}
  */
 function scrubPaths(value, ctx) {
@@ -204,13 +223,26 @@ function scrubPaths(value, ctx) {
     },
   );
 
+  out = out.replace(
+    /(^|[\s"'`([{<=,;])([A-Za-z]:\\|\\\\)([^\s"'`)\]}>]{2,})/g,
+    (match, lead, root, rest) => {
+      const parts = String(rest).split('\\').filter(Boolean);
+      if (parts.length <= 2) return match;
+      return `${lead}${root}…\\${parts.slice(-2).join('\\')}`;
+    },
+  );
+
+  if (ctx.user) {
+    out = out.replace(ctx.user, (whole, before) => `${before}${REDACTED}`);
+  }
+
   return out;
 }
 
 /**
  * Apply every content rule to a single string.
  * @param {string} value
- * @param {{home: string, cwd: string}} ctx
+ * @param {{home: string, cwd: string, user: RegExp | null}} ctx
  * @returns {string}
  */
 function scrubString(value, ctx) {
@@ -222,22 +254,57 @@ function scrubString(value, ctx) {
   out = out.replace(URL_USERINFO_RE, (_m, scheme) => `${scheme}${REDACTED}@`);
   out = out.replace(EMAIL_RE, REDACTED);
 
-  // `--token=abc` / `GITHUB_TOKEN=abc` / `"token": "abc"` survive the patterns
-  // above when the value is an unrecognized format, so drop the right-hand
-  // side by key name. The separator test is the cheap way out: most strings
-  // have neither and skip the scan entirely.
   if (out.includes('=') || out.includes(':')) {
     out = out.replace(ASSIGNMENT_RE, (whole, key, sep, value) => {
-      const name = String(key).replace(/^--?/, '').replace(/^"|"$/g, '');
-      if (!isSensitiveKey(name)) return whole;
-      // Keep the value's quoting so the surrounding shape — a JSON blob, a
-      // quoted shell argument — still parses as what it was.
+      const raw = String(key);
+      const flagged = raw.startsWith('-');
+      const name = raw.replace(/^--?/, '').replace(/^"|"$/g, '');
+      if (!isSensitiveKey(name, flagged)) return whole;
       const q = /^["']/.test(value) ? value[0] : '';
       return `${key}${sep}${q}${REDACTED}${q}`;
     });
   }
 
-  return scrubPaths(out, ctx);
+  out = scrubPaths(out, ctx);
+
+  if (out.length >= ENTROPY_MIN_CHARS) {
+    const skip = encodedPayloadRanges(out);
+    out = out.replace(HIGH_ENTROPY_CANDIDATE_RE, (word, offset) => {
+      if (inAnyRange(offset, skip)) return word;
+      return looksLikeSecret(word) ? REDACTED : word;
+    });
+  }
+
+  return out;
+}
+
+/**
+ * @param {string} text
+ * @returns {Array<[number, number]>}
+ */
+function encodedPayloadRanges(text) {
+  /** @type {Array<[number, number]>} */
+  const ranges = [];
+  if (!/base64,|sha(?:256|384|512)-|sourceMappingURL=/.test(text))
+    return ranges;
+  ENCODED_PAYLOAD_RE.lastIndex = 0;
+  let m;
+  while ((m = ENCODED_PAYLOAD_RE.exec(text)) !== null) {
+    ranges.push([m.index, m.index + m[0].length]);
+  }
+  return ranges;
+}
+
+/**
+ * @param {number} offset
+ * @param {Array<[number, number]>} ranges
+ * @returns {boolean}
+ */
+function inAnyRange(offset, ranges) {
+  for (const [start, end] of ranges) {
+    if (offset >= start && offset < end) return true;
+  }
+  return false;
 }
 
 /**
@@ -265,6 +332,7 @@ function clamp(value, max) {
  *   rules while still applying the depth and length limits.
  * @param {string} [options.home] - overridable for tests.
  * @param {string} [options.cwd] - overridable for tests.
+ * @param {string} [options.user] - overridable for tests.
  * @param {number} [options.maxLength] - Per-value character cap.
  * @returns {Redactor}
  */
@@ -272,12 +340,14 @@ export function createRedactor({
   enabled = true,
   home,
   cwd,
+  user,
   maxLength = MAX_VALUE_CHARS,
 } = {}) {
-  /** @type {{home: string, cwd: string}} */
+  /** @type {{home: string, cwd: string, user: RegExp | null}} */
   const ctx = {
     home: home ?? safeHomedir(),
     cwd: cwd ?? safeCwd(),
+    user: usernamePattern(user ?? safeUsername()),
   };
 
   /**
@@ -340,3 +410,38 @@ function safeCwd() {
     return '';
   }
 }
+
+/** @returns {string} */
+function safeUsername() {
+  try {
+    return os.userInfo().username || '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * @param {string} name
+ * @returns {RegExp | null}
+ */
+function usernamePattern(name) {
+  const value = String(name ?? '');
+  if (value.length < 3 || COMMON_WORD_USERNAMES.has(value.toLowerCase())) {
+    return null;
+  }
+  const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`([/\\\\~])${escaped}(?![A-Za-z0-9_-])`, 'gi');
+}
+
+const COMMON_WORD_USERNAMES = new Set([
+  'admin',
+  'build',
+  'core',
+  'dev',
+  'docs',
+  'node',
+  'root',
+  'test',
+  'user',
+  'www',
+]);

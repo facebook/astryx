@@ -7,12 +7,16 @@ import * as path from 'node:path';
 import {describe, expect, it} from 'vitest';
 
 import {
+  acceptedVisualThemes,
   accountBaseline,
+  baselineVisualStories,
   buildPlan,
   createReleasePlan,
+  exceedsPrVisualShotLimit,
   readStoryIndex,
   readThemeCatalog,
   representativeStories,
+  resolvePrVisualTotalShotLimit,
   shotKey,
   storiesInPackages,
   summarizeBaselineAccounting,
@@ -71,6 +75,114 @@ describe('representativeStories', () => {
   });
 });
 
+describe('acceptedVisualThemes', () => {
+  it('uses stable baseline themes and always includes the stable default', () => {
+    expect(
+      acceptedVisualThemes(
+        {shots: {a: {theme: 'y2k'}, b: {theme: 'probe'}}},
+        {
+          neutral: {stableVisual: true},
+          probe: {stableVisual: false},
+          y2k: {stableVisual: true},
+        },
+        'neutral',
+      ),
+    ).toEqual(['neutral', 'y2k']);
+  });
+});
+
+describe('baselineVisualStories', () => {
+  it('reuses every current story with an accepted contract for changed themes', () => {
+    const selected = baselineVisualStories(stories, {
+      shots: {
+        button: {storyId: 'core-button--default', theme: 'neutral'},
+        badge: {storyId: 'core-badge--solid', theme: 'y2k'},
+        deleted: {storyId: 'core-gone--default', theme: 'neutral'},
+      },
+    });
+    expect(selected.map(story => story.id)).toEqual([
+      'core-badge--solid',
+      'core-button--default',
+    ]);
+  });
+});
+
+describe('resolvePrVisualTotalShotLimit', () => {
+  it('caps broad plans at the review limit and scoped plans at the safety limit', () => {
+    const base = {
+      configuredLimit: 240,
+      explicitMaxShots: null,
+      safetyLimit: 5000,
+      tiers: [],
+    };
+    expect(
+      resolvePrVisualTotalShotLimit({
+        ...base,
+        components: [],
+        matrixThemes: [],
+      }),
+    ).toBe(240);
+    expect(
+      resolvePrVisualTotalShotLimit({
+        ...base,
+        tiers: ['surface'],
+        components: ['Button'],
+        matrixThemes: [],
+      }),
+    ).toBe(240);
+    expect(
+      resolvePrVisualTotalShotLimit({
+        ...base,
+        tiers: ['component'],
+        components: ['Button'],
+        matrixThemes: [],
+      }),
+    ).toBe(5000);
+    expect(
+      resolvePrVisualTotalShotLimit({
+        ...base,
+        tiers: ['theme-matrix'],
+        components: [],
+        matrixThemes: ['neutral'],
+      }),
+    ).toBe(5000);
+    expect(
+      resolvePrVisualTotalShotLimit({
+        ...base,
+        explicitMaxShots: '17',
+        tiers: ['theme-matrix'],
+        components: [],
+        matrixThemes: ['neutral'],
+      }),
+    ).toBe(17);
+    expect(
+      resolvePrVisualTotalShotLimit({
+        ...base,
+        explicitMaxShots: '6000',
+        tiers: ['theme-matrix'],
+        components: [],
+        matrixThemes: ['neutral'],
+      }),
+    ).toBe(5000);
+    expect(() =>
+      resolvePrVisualTotalShotLimit({
+        ...base,
+        explicitMaxShots: 'not-a-number',
+        tiers: [],
+        components: [],
+        matrixThemes: [],
+      }),
+    ).toThrow(/non-negative integer/);
+  });
+});
+
+describe('exceedsPrVisualShotLimit', () => {
+  it('allows the exact configured ceiling and rejects one more', () => {
+    expect(exceedsPrVisualShotLimit(240, 240)).toBe(false);
+    expect(exceedsPrVisualShotLimit(241, 240)).toBe(true);
+  });
+});
+
 describe('buildPlan', () => {
   it('photographs one story per component in the default theme for the surface tier', () => {
     const plan = buildPlan({stories, targets, themeOverrides, defaultTheme: 'neutral', tiers: ['surface']});
@@ -97,8 +209,12 @@ describe('buildPlan', () => {
       defaultTheme: 'neutral',
       tiers: ['theme-matrix'],
       matrixThemes: ['y2k'],
+      themeStories: stories,
     });
     expect(new Set(plan.map(shot => shot.theme))).toEqual(new Set(['y2k']));
+    expect(new Set(plan.map(shot => shot.storyId))).toEqual(
+      new Set(stories.map(story => story.id)),
+    );
     expect(plan.map(shot => shot.key)).toContain('core-badge--solid__y2k-light');
   });
 
@@ -110,7 +226,9 @@ describe('buildPlan', () => {
       defaultTheme: 'neutral',
       tiers: ['component', 'theme-matrix'],
       components: ['Button'],
+      componentThemes: ['neutral', 'y2k'],
       matrixThemes: ['y2k'],
+      themeStories: stories,
     });
     expect(plan.some(shot => shot.theme === 'neutral' && shot.component === 'Button')).toBe(true);
     expect(plan.some(shot => shot.theme === 'y2k' && shot.component === 'Button')).toBe(true);
@@ -120,6 +238,7 @@ describe('buildPlan', () => {
     const componentStories = [
       ...stories,
       story({id: 'core-button--separator', title: 'Core/Button', name: 'Separator', component: 'Button', tags: ['visual-baseline']}),
+      story({id: 'core-button--variants', title: 'Core/Button', name: 'Variants', component: 'Button', tags: ['visual-theme-matrix']}),
       story({id: 'core-button--fixture', title: 'Core/Button', name: 'Fixture', component: 'Button'}),
     ];
     const plan = buildPlan({
@@ -129,11 +248,42 @@ describe('buildPlan', () => {
       defaultTheme: 'neutral',
       tiers: ['component'],
       components: ['Button'],
+      componentThemes: ['neutral', 'y2k', 'gothic'],
     });
     expect(new Set(plan.map(shot => shot.storyId))).toEqual(
-      new Set(['core-button--default', 'core-button--separator']),
+      new Set([
+        'core-button--default',
+        'core-button--separator',
+        'core-button--variants',
+      ]),
     );
-    expect(plan).toHaveLength(6);
+    expect(plan).toHaveLength(14);
+    expect(
+      plan
+        .filter(shot => shot.storyId === 'core-button--separator')
+        .map(shot => shot.theme),
+    ).toEqual(['neutral', 'neutral']);
+    expect(
+      new Set(
+        plan
+          .filter(shot => shot.storyId === 'core-button--variants')
+          .map(shot => shot.theme),
+      ),
+    ).toEqual(new Set(['gothic', 'neutral', 'y2k']));
+  });
+
+  it('fails closed when a touched component has no stable representative', () => {
+    expect(() =>
+      buildPlan({
+        stories,
+        targets,
+        themeOverrides,
+        defaultTheme: 'neutral',
+        tiers: ['component'],
+        components: ['Button', 'Missing'],
+        componentThemes: ['neutral'],
+      }),
+    ).toThrow(/Missing/);
   });
 
   it('records why a shot is in the plan, merging the reasons of a shot both tiers want', () => {

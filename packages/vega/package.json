@@ -44,6 +44,8 @@
   "scripts": {
     "build": "tsup && tsc --project tsconfig.json --emitDeclarationOnly --declaration --noEmit false --outDir dist",
     "dev": "tsup --watch",
+    "test": "vitest run --root ../..",
+    "test:watch": "vitest --root ../..",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {

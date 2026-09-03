@@ -592,33 +592,63 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     ],
   );
 
-  // Perform bootstrap
-  const performBootstrap = useCallback(async () => {
-    const gen = ++searchGenRef.current;
-    setLoading(true);
-    try {
-      const bootstrapResults = await searchSource.bootstrap();
+  const applyBootstrapResults = useCallback(
+    (bootstrapResults: T[], gen: number) => {
       if (searchGenRef.current !== gen) {
         return;
       }
       resultsGenRef.current = gen;
       const shown = bootstrapResults.slice(0, maxMenuItems);
+      const nextHighlightedIndex = shown.length > 0 ? 0 : -1;
+      if (
+        results.length === 0 &&
+        shown.length === 0 &&
+        highlightedIndex === -1
+      ) {
+        return;
+      }
       setResults(shown);
-      setHighlightedIndex(shown.length > 0 ? 0 : -1);
+      setHighlightedIndex(nextHighlightedIndex);
       if (bootstrapResults.length > 0) {
         showLayer();
       }
+    },
+    [highlightedIndex, maxMenuItems, results.length, showLayer],
+  );
+
+  // Perform bootstrap
+  const performBootstrap = useCallback(async () => {
+    const gen = ++searchGenRef.current;
+    let bootstrapResult: T[] | Promise<T[]>;
+    try {
+      bootstrapResult = searchSource.bootstrap();
     } catch {
-      if (searchGenRef.current !== gen) {
-        return;
+      if (searchGenRef.current === gen) {
+        setResults([]);
+        setLoading(false);
       }
-      setResults([]);
+      return;
+    }
+
+    if (Array.isArray(bootstrapResult)) {
+      setLoading(false);
+      applyBootstrapResults(bootstrapResult, gen);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      applyBootstrapResults(await bootstrapResult, gen);
+    } catch {
+      if (searchGenRef.current === gen) {
+        setResults([]);
+      }
     } finally {
       if (searchGenRef.current === gen) {
         setLoading(false);
       }
     }
-  }, [searchSource, maxMenuItems, showLayer, setLoading]);
+  }, [searchSource, applyBootstrapResults, setLoading]);
 
   // Handle query change
   const handleQueryChange = useCallback(

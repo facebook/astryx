@@ -189,10 +189,7 @@ export interface DebugEvent {
  * reaches the log. Anything the handler throws is swallowed; recording must
  * never fail a command.
  *
- * Two things a handler still CAN do to its own command, because they happen
- * after the CLI has finished and outside anything this module controls:
- * calling `process.exit` from in here replaces the command's exit code, and
- * writing to stdout appends to the command's own output — which will break a
- * `--json` consumer parsing that stream. Don't do either.
+ * `process.exit` is ignored and synchronous stdout writes go to stderr.
+ * Saved writers, deferred writes, and inherited child stdio are not contained.
  */
 export type DebugEventHandler = (event: DebugEvent) => void;

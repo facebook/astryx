@@ -523,3 +523,29 @@ export const LogicalOrder: Story = {
   },
   name: 'Logical order',
 };
+
+/**
+ * The inline-end lane, populated at rest, for the RTL audit's D4 pass.
+ *
+ * Tokenizer's lane is absolutely positioned — it has to be, so it stays on the
+ * field's first row while tokens wrap below it — which makes its side entirely
+ * a matter of the writing mode. The busy Spinner shares that lane, and busy
+ * only exists mid-search, so a selected token with `hasClear` is what puts the
+ * lane on screen for a measurement that can be held still.
+ */
+export const RtlEndLane: Story = {
+  render: args => (
+    <Tokenizer
+      {...args}
+      searchSource={userSource}
+      value={[users[0]]}
+      onChange={() => {}}
+      hasClear
+    />
+  ),
+  args: {
+    label: 'Team Members',
+    placeholder: 'Search people...',
+  },
+  name: 'RTL end lane (token + clear)',
+};

@@ -72,12 +72,15 @@ Exit codes are the contract: `0` pass, `1` crashed, `2` changed.
 
 `pr-visual` compares only the stable published visual surface:
 
-- Core component change → the representative story in the default theme and
-  every shipped theme that styles the component, plus any story explicitly
-  tagged `visual-baseline` in the default theme; all are captured light/dark.
-  Behavioral and audit-only fixtures stay in their dedicated checks without
-  multiplying the pixel baseline.
-- Published theme change → that theme's relevant target/story matrix.
+- Core component change → the representative story in every accepted baseline
+  theme. Additional stories may opt into the default theme with
+  `visual-baseline`, or the same all-theme matrix with `visual-theme-matrix`;
+  all are captured light/dark. Behavioral and audit-only fixtures stay in their
+  dedicated checks without multiplying the pixel baseline.
+- Published theme change → every currently accepted visual story rendered in that
+  theme. This catches a theme beginning to override a component it did not
+  previously target. Theme-only plans are not charged against the focused
+  component review ceiling.
 - Shared stable theming/token infrastructure → the full plan, which declines
   visibly at the 240-shot review budget and defers to the daily gate.
 - A package with `package.json.astryx.canaryOnly: true` → no visual comparison,
@@ -85,6 +88,23 @@ Exit codes are the contract: `0` pass, `1` crashed, `2` changed.
   builds Storybook, and publishes to canary. Experimental pixels are not a
   stable release decision and should not create a red check people learn to
   ignore.
+
+Visual scope is declared directly on the Storybook story object, next to the
+example it controls—not in a separate registry:
+
+```tsx
+export const CustomSeparator: Story = {
+  tags: ['visual-baseline'],
+  render: () => /* ... */,
+};
+```
+
+The representative story (`Default`, `Primary`, and similar conventional names)
+is selected automatically and needs no tag. Use `visual-baseline` for an
+additional default-theme contract, `visual-theme-matrix` only when that story
+must be judged in every accepted theme, and no visual tag for behavioral or
+audit-only fixtures. The existing `no-visual` tag excludes an unstable story
+from visual capture entirely.
 
 The daily gate uses the same boundary: `stableStoryPackages` in
 `visual-gate.config.json` is currently `["Core"]`, so Lab/canary stories cannot

@@ -33,6 +33,7 @@ export {
   setGlobalOptions,
   setProject,
   setEventHandler,
+  noteConfigGateSkipped,
   setOutcome,
   recordEnvelope,
   recordHelp,
@@ -47,4 +48,9 @@ export {
   toEventError,
 } from './event.mjs';
 
-export {createRedactor, isSensitiveKey, redactArgv, REDACTED} from './redact.mjs';
+export {
+  createRedactor,
+  isSensitiveKey,
+  redactArgv,
+  REDACTED,
+} from './redact.mjs';

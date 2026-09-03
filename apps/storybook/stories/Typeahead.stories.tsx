@@ -391,3 +391,26 @@ export const LogicalOrder: Story = {
   },
   name: 'Logical order',
 };
+
+/**
+ * The inline-end lane, populated at rest, for the RTL audit's D4 pass.
+ *
+ * The lane holds the busy Spinner, and the busy state only exists between a
+ * keystroke and its response — nothing the audit can hold still. A selected
+ * value with `hasClear` puts the same lane on screen with no interaction, so
+ * the audit measures the geometry the indicator lands in.
+ */
+export const RtlEndLane: Story = {
+  render: () => (
+    <div style={{width: 320}}>
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+        hasClear
+      />
+    </div>
+  ),
+  name: 'RTL end lane (selected + clear)',
+};

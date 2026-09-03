@@ -54,10 +54,28 @@ export const docs = {
     ],
     anatomy: [
       {
+        name: 'Stepper',
+        required: true,
+        description:
+          'The ordered list holding the steps. Owns the orientation and the indicator placement the whole flow is laid out on.',
+      },
+      {
+        name: 'Step',
+        required: true,
+        description:
+          'One step in the flow, and the element carrying its status. Wraps the indicator, label, description, and the track segments belonging to it.',
+      },
+      {
         name: 'Progress bar',
         required: true,
         description:
           'A 4px segmented bar per step. Filled for completed and active steps. Advancing one step grows the fill along the track it just covered, so the movement reads as progress rather than a bar changing color. Every other change applies at once: going back, jumping forward by more than one step, mounting mid-flow, and any change at all under prefers-reduced-motion. Where a span is drawn by more than one segment (the on-track layouts split it between two steps, three when a content slot sits between them), the segments run in track order at one constant speed, so the fill reads as a single line growing rather than pieces lighting in turn.',
+      },
+      {
+        name: 'Connector',
+        required: false,
+        description:
+          'The track drawn between indicators in the on-track layouts. Each connector paints an unfilled line and, over it, the accent fill covering the progress made. How many pieces a connector is drawn from is an implementation detail of the layout, not a themeable part; use --step-connector-gap to hold the track off the indicator.',
       },
       {
         name: 'Indicator',
@@ -85,8 +103,24 @@ export const docs = {
       },
       {className: 'astryx-step', visualProps: ['progress', 'status']},
       {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
+      {
+        className: 'astryx-step-label',
+        visualProps: ['progress', 'status', 'disabled'],
+      },
+      {
+        className: 'astryx-step-description',
+        visualProps: ['progress', 'status'],
+      },
       {className: 'astryx-step-bar'},
       {className: 'astryx-step-connector'},
+    ],
+    vars: [
+      {
+        name: '--step-connector-gap',
+        description:
+          'Gap a connector leaves where it meets the indicator, spent on the side facing it. Applies to the on-track layouts, whose connector is drawn as one segment either side of the node; 0 leaves the track running unbroken through it.',
+        default: '0px',
+      },
     ],
   },
   components: [
@@ -257,8 +291,24 @@ export const docsZh = {
       },
       {className: 'astryx-step', visualProps: ['progress', 'status']},
       {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
+      {
+        className: 'astryx-step-label',
+        visualProps: ['progress', 'status', 'disabled'],
+      },
+      {
+        className: 'astryx-step-description',
+        visualProps: ['progress', 'status'],
+      },
       {className: 'astryx-step-bar'},
       {className: 'astryx-step-connector'},
+    ],
+    vars: [
+      {
+        name: '--step-connector-gap',
+        description:
+          '连接线与指示器相接处留出的间隙，落在朝向指示器的一侧。适用于 on-track 布局——其连接线由节点两侧各一段绘制；取 0 时轨道将不间断地穿过节点。',
+        default: '0px',
+      },
     ],
   },
   components: [

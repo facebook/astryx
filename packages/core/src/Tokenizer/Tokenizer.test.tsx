@@ -27,6 +27,24 @@ import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InternationalizationProvider} from '../i18n';
+import type * as TokenModule from '../Token';
+
+// Every Token render, in order, by label.
+//
+// A spy that WRAPS the real component rather than replacing it: a stand-in
+// would measure the stand-in, and the number under review is how often the
+// real token subtree re-renders during a search.
+const renderedTokens: string[] = [];
+vi.mock('../Token', async importActual => {
+  const actual = await importActual<typeof TokenModule>();
+  return {
+    ...actual,
+    Token: (props: Parameters<typeof TokenModule.Token>[0]) => {
+      renderedTokens.push(typeof props.label === 'string' ? props.label : '');
+      return actual.Token(props);
+    },
+  };
+});
 
 // Test-supplied announcement strings: the assertions below depend on no
 // catalog, and no hardcoded English in the component can satisfy them.
@@ -1469,7 +1487,17 @@ describe('Tokenizer end-lane reserve', () => {
 
   const laneHost = (container: HTMLElement) =>
     container.querySelector<HTMLElement>(
-      '[style*="--_tokenizer-end-lane-width"]',
+      '[style*="--_tokenizer-end-lane-reserve"]',
+    );
+
+  // The variable carries the whole reserve — the lane's inset plus its
+  // measured width — so its ABSENCE means "no lane", not "a lane of zero
+  // width". That distinction is what lets the input apply the padding rule
+  // unconditionally and still keep its full content box when nothing is in
+  // the lane.
+  const reserveOf = (container: HTMLElement) =>
+    laneHost(container)?.style.getPropertyValue(
+      '--_tokenizer-end-lane-reserve',
     );
 
   it('reserves the lane\u2019s untransformed width, not its on-screen width', () => {
@@ -1488,11 +1516,9 @@ describe('Tokenizer end-lane reserve', () => {
         hasClear
       />,
     );
-    expect(
-      laneHost(container)?.style.getPropertyValue(
-        '--_tokenizer-end-lane-width',
-      ),
-    ).toBe(`${LANE_LOCAL_WIDTH}px`);
+    expect(reserveOf(container)).toBe(
+      `calc(var(--spacing-2) + ${LANE_LOCAL_WIDTH}px)`,
+    );
   });
 
   it('reserves the lane when the spinner is the only thing in it', () => {
@@ -1517,11 +1543,9 @@ describe('Tokenizer end-lane reserve', () => {
     });
 
     expect(screen.getByRole('status')).toBeInTheDocument();
-    expect(
-      laneHost(container)?.style.getPropertyValue(
-        '--_tokenizer-end-lane-width',
-      ),
-    ).toBe(`${LANE_LOCAL_WIDTH}px`);
+    expect(reserveOf(container)).toBe(
+      `calc(var(--spacing-2) + ${LANE_LOCAL_WIDTH}px)`,
+    );
   });
 
   it('does not pad the input on the collapsed paths', () => {
@@ -1584,6 +1608,53 @@ describe('Tokenizer end-lane reserve', () => {
 
     expect(afterStart).toBe(1);
     expect(commits.length).toBe(2);
+  });
+
+  it('re-renders no token when a search starts or settles', async () => {
+    // The regression this guards. The busy state has one owner — the base —
+    // and the field only needs it to decide whether one Spinner is on screen.
+    // Mirrored into the field's own state, every transition re-rendered the
+    // whole field including every selected token: measured at six tokens,
+    // 6 renders at search start and 6 more at settlement, and 20/40 at
+    // twenty. A token contains no part of the indicator, so the correct
+    // number is zero at any count.
+    const {source, settle} = pendingSource();
+    const selected = users.slice(0, 6);
+    renderedTokens.length = 0;
+
+    render(
+      <Tokenizer
+        label="Users"
+        searchSource={source}
+        value={selected}
+        onChange={() => {}}
+        hasClear
+        debounceMs={0}
+      />,
+    );
+    expect(new Set(renderedTokens).size).toBe(selected.length);
+    renderedTokens.length = 0;
+
+    await act(async () => {
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: 'Al'}});
+    });
+    // The indicator is up, so the transition really did happen. Scoped by
+    // name: the announcer for result counts is a role="status" live region
+    // too, and it is not the indicator.
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    // ...and it cost no token a render.
+    expect(renderedTokens).toEqual([]);
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('status', {name: 'Loading'}),
+      ).not.toBeInTheDocument();
+    });
+    expect(renderedTokens).toEqual([]);
   });
 
   it('shares one observer across every field on the page', () => {

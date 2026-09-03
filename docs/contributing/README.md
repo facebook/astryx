@@ -6,3 +6,5 @@ contracts, or component contracts.
 
 - [API conventions](api-conventions.md): shape, propose, implement, and review a
   public component API.
+- [CLI conventions](cli-conventions.md): propose, implement, and review a change
+  to the `packages/cli` command surface.

@@ -112,6 +112,69 @@ Every record is either:
 - **INV9 — Current records have no implicit precedence.** A newer, narrower, or
   more local current record does not silently override another current record.
 
+## Writing specifications and contracts
+
+These rules guide writing. They do not permit semantic compaction. They come from
+directional evidence and project-owner judgment; the agent benchmark did not
+measure human readability, so this is not a quantified readability claim.
+
+- Use familiar words and short, direct sentences.
+- State each rule once, beside the conditions and exceptions that control it.
+- Use readable tables for branches or state matrices when they improve scanning.
+  Never remove contract content merely to shorten a record.
+
+Plain language must preserve normative force, predicates, cardinality, defaults,
+compatibility, authority, owners, IDs, evidence state, and decision status. Do not
+delete, weaken, merge, or hide distinct normative content. Replace a local fact
+with a link only when this record's ownership rules assign that fact to another
+canonical owner.
+
+Qualifiers and authority verbs are contract semantics, not polish. Words such as
+`only`, `every`, `consistently`, `current`, `records`, `owns`, `delegates`, and
+`inherits` MUST NOT be dropped, generalized, weakened, or upgraded during a
+rewrite. When reshaping a rule, keep its action, activating conditions,
+exceptions or non-goals, owner, and evidence state in the same row or bullet as
+the claim they limit.
+
+Aim to keep a single specification record at or below 200 lines. This is a soft
+readability ceiling, not a schema rule, validation gate, deletion target, or
+reason to migrate accepted history. Exceed it when the full contract, exact
+conditions, evidence boundaries, decisions, or required template structure need
+more room. First remove true duplication, shorten prose without changing meaning,
+use readable tables or lists, and link genuinely shared authority as INV2
+requires. If the record still exceeds 200 lines, keep the content and explain why
+in pull-request review. Do not minify tables or paragraphs to game the count;
+human scanability wins.
+
+### Same rule, plainer form
+
+Dense:
+
+> When `items` contains exactly one visible item, the component MUST announce that
+> item exactly once; when `items` contains zero or more than one visible item, it
+> MUST NOT announce an item, and consumers that omit `items` MUST retain the
+> existing silent behavior.
+
+Plain:
+
+| Condition                           | Required behavior                       |
+| ----------------------------------- | --------------------------------------- |
+| `items` is omitted                  | MUST keep the existing silent behavior. |
+| Exactly one visible item is present | MUST announce that item exactly once.   |
+| Zero or more than one is present    | MUST NOT announce an item.              |
+
+The plain version changes the shape, not the meaning.
+
+### Before review
+
+- [ ] Compare the edited text with its source and confirm that every contract
+      property named above remains explicit.
+- [ ] Confirm each rule's action, conditions, qualifiers, exceptions or non-goals,
+      owner, authority verb, and evidence state remain explicit and adjacent to the
+      claim they limit.
+- [ ] Confirm tables and lists improve scanning without hiding content; if the
+      record exceeds 200 lines, explain why it needs the extra space.
+
 ### When current records disagree
 
 1. A draft is context only and cannot conflict with current policy.

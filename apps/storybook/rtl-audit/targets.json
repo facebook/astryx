@@ -77,6 +77,30 @@
     }
   },
   {
+    "component": "DropdownMenu",
+    "storyId": "core-dropdownmenu--alignment-end",
+    "dims": ["D4"],
+    "setup": {
+      "click": "button:has-text(\"Row actions\")"
+    },
+    "selectors": {
+      "overlay": ".astryx-dropdown-menu",
+      "overlayRoot": "body"
+    }
+  },
+  {
+    "component": "Layer",
+    "storyId": "core-layer--placements",
+    "dims": ["D4"],
+    "setup": {
+      "click": ["button:has-text(\"end\")", "button:has-text(\"Trigger\")"]
+    },
+    "selectors": {
+      "overlay": "[popover]:popover-open",
+      "overlayRoot": "body"
+    }
+  },
+  {
     "component": "Lightbox",
     "storyId": "core-lightbox--gallery",
     "dims": [
@@ -91,25 +115,72 @@
     }
   },
   {
-    "component": "Typeahead",
-    "storyId": "core-typeahead--logical-order",
+    "component": "Stepper",
+    "storyId": "core-stepper--default-horizontal",
     "dims": [
       "D2"
     ],
     "selectors": {
-      "prev": ".astryx-token",
-      "next": ".astryx-input-clear-button"
+      "prev": ".astryx-stepper > li:first-child",
+      "next": ".astryx-stepper > li:last-child"
+    }
+  },
+  {
+    "component": "TabList",
+    "storyId": "core-tablist--overflow",
+    "dims": [
+      "D3"
+    ],
+    "selectors": {
+      "scroller": ".astryx-tab-strip",
+      "nextButton": ".astryx-tab-scroll-button"
+    }
+  },
+  {
+    "component": "Typeahead",
+    "storyId": "core-typeahead--rtl-end-lane",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": "button[aria-label=\"Clear selection\"]",
+      "overlayRoot": ".astryx-typeahead"
     }
   },
   {
     "component": "Tokenizer",
-    "storyId": "core-tokenizer--logical-order",
+    "storyId": "core-tokenizer--rtl-end-lane",
     "dims": [
-      "D2"
+      "D4"
     ],
     "selectors": {
-      "prev": ".astryx-token",
-      "next": ".astryx-input-clear-button"
+      "overlay": "button[aria-label=\"Clear all\"]",
+      "overlayRoot": ".astryx-tokenizer"
+    }
+  },
+  {
+    "component": "Tooltip",
+    "storyId": "core-tooltip--rtl-logical-placement",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": ".astryx-tooltip",
+      "overlayRoot": "button:has-text(\"RTL placement target\")"
+    }
+  },
+  {
+    "component": "Toast",
+    "storyId": "core-toast--logical-placement",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": "button:has-text(\"Show toast\")"
+    },
+    "selectors": {
+      "overlay": "[data-toast-id]",
+      "overlayRoot": "body"
     }
   }
 ]

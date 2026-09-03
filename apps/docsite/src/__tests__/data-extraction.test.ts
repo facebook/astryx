@@ -311,6 +311,18 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('LayoutHeader declares a playground wrapper and default content so preview is not empty', () => {
+    const core = components['@astryxdesign/core'];
+    const layoutHeader = core.find(c => c.name === 'LayoutHeader');
+    expect(layoutHeader).toBeDefined();
+    expect(layoutHeader!.playground?.defaults).toMatchObject({
+      children: expect.any(String),
+    });
+    expect(layoutHeader!.playground?.wrapper).toMatchObject({
+      component: 'Layout',
+    });
+  });
+
   it('Lightbox declares an overlay playground with a closed initial state (#3657)', () => {
     const core = components['@astryxdesign/core'];
     const lightbox = core.find(c => c.name === 'Lightbox');

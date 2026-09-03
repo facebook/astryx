@@ -48,8 +48,9 @@ export const doc = {
       name: 'debug',
       type: '(event: DebugEvent) => void',
       description:
-        'Record every astryx command run in this project and hand each one to this function. Setting it is the whole opt-in; leaving it out records nothing. It runs synchronously at process exit, so a returned promise is never awaited — use it for synchronous work only. Write the key literally in the config file: so that a project which has not opted in never pays to evaluate its config, the CLI only loads the config before parsing when the file itself contains the word "debug", which a handler spread in from another module would not.',
-      example: "event => appendFileSync('runs.ndjson', JSON.stringify(event) + '\\n')",
+        'Record every command run. The handler is synchronous; promises are not awaited and output goes to stderr. Declare `debug` directly in this file so early commands can discover it.',
+      example:
+        "event => appendFileSync('runs.ndjson', JSON.stringify(event) + '\\n')",
     },
     {
       name: 'experimental',

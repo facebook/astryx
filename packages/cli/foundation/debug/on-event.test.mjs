@@ -25,6 +25,7 @@ import {
   setGlobalOptions,
   setOutcome,
   setEventHandler,
+  noteConfigGateSkipped,
   recordEnvelope,
   recordHelp,
   resetRecorder,
@@ -32,8 +33,6 @@ import {
 } from './recorder.mjs';
 import {parseDebugEvent} from '../../authoring/debug/parse.mjs';
 import {parseConfig} from '../../authoring/config/parse.mjs';
-
-
 
 /** Collect every event a run delivers. */
 function collect() {
@@ -77,8 +76,6 @@ describe('delivery', () => {
   });
 
   it('accepts a function registered after the run started', () => {
-    // This is the real order: the config is read during the command, not
-    // before it, so a handler always arrives mid-flight.
     begin({argv: ['docs']});
     setCommand('docs');
     const seen = collect();
@@ -130,8 +127,6 @@ describe('what the event carries', () => {
     begin({argv: ['docs']});
     setCommand('docs');
     finish({exitCode: 0});
-    // Drift-locked to the exported type, so this is the same guarantee a
-    // consumer gets from importing DebugEvent.
     expect(() => parseDebugEvent(seen[0])).not.toThrow();
   });
 
@@ -205,7 +200,6 @@ describe('scrubbing', () => {
     expect(JSON.stringify(seen[0])).not.toContain('ghp_abcdef');
   });
 
-
   it('clamps an oversized value instead of dropping the run', () => {
     const seen = collect();
     begin({argv: []});
@@ -217,10 +211,6 @@ describe('scrubbing', () => {
   });
 
   it('scrubs the value after a sensitive flag in argv', () => {
-    // argv is a flat array: `--token` and its value are separate elements, and
-    // scrubbing element by element gives the value no key to match against.
-    // `--flag value` is the ordinary CLI spelling, so redacting it in options
-    // while printing it in argv would be the worst of both.
     const seen = collect();
     begin({argv: ['docs', '--token', 'hunter2SECRETVALUE']});
     finish({exitCode: 0});
@@ -237,15 +227,7 @@ describe('scrubbing', () => {
 });
 
 describe('what a run with no handler costs', () => {
-  // The merge condition for this feature was that nothing changes for a user
-  // who has not set `debug`. These are the two ways that quietly stopped being
-  // true once, so they are pinned.
-
   it('does not probe the environment while collecting', () => {
-    // captureEnv's first Intl.DateTimeFormat().resolvedOptions() initialises
-    // ICU, and detectPackageManager and isCliOneOff touch the filesystem.
-    // Doing that in begin() charged every run for something most runs never
-    // deliver — ~9% of the CLI's startup.
     begin({argv: ['--version']});
     expect(currentEvent()?.env).toBe(null);
   });
@@ -286,7 +268,6 @@ describe('a broken handler cannot break the CLI', () => {
     begin({argv: []});
     setCommand('docs');
     finish({exitCode: 0});
-    // It got a copy; the sealed record is untouched.
     expect(seen[0].command).toBe('MUTATED');
   });
 
@@ -319,9 +300,143 @@ describe('a broken handler cannot break the CLI', () => {
       recordHelp();
     }).not.toThrow();
   });
+
+  it('cannot change the exit code by calling process.exit', () => {
+    const exits = [];
+    const realExit = process.exit;
+    process.exit = /** @type {any} */ (code => exits.push(code));
+    try {
+      setEventHandler(() => {
+        process.exit(7);
+      });
+      begin({argv: []});
+      setCommand('docs');
+      finish({exitCode: 0});
+    } finally {
+      process.exit = realExit;
+    }
+    expect(exits).toEqual([]);
+  });
+
+  it('cannot change the exit code by assigning process.exitCode', () => {
+    const before = process.exitCode;
+    setEventHandler(() => {
+      process.exitCode = 42;
+    });
+    begin({argv: []});
+    finish({exitCode: 0});
+    expect(process.exitCode).toBe(before);
+  });
+
+  it('sends what it prints to stderr, because stdout belongs to the command', () => {
+    const out = [];
+    const err = [];
+    const realOut = process.stdout.write;
+    const realErr = process.stderr.write;
+    process.stdout.write = /** @type {any} */ (
+      c => (out.push(String(c)), true)
+    );
+    process.stderr.write = /** @type {any} */ (
+      c => (err.push(String(c)), true)
+    );
+    try {
+      setEventHandler(() => {
+        process.stdout.write('handler diagnostics\n');
+      });
+      begin({argv: []});
+      finish({exitCode: 0});
+    } finally {
+      process.stdout.write = realOut;
+      process.stderr.write = realErr;
+    }
+    expect(out.join('')).not.toContain('handler diagnostics');
+    expect(err.join('')).toContain('handler diagnostics');
+  });
+
+  it('puts the real writers back after the handler returns', () => {
+    const before = {out: process.stdout.write, err: process.stderr.write};
+    setEventHandler(() => {
+      process.stdout.write('x');
+    });
+    begin({argv: []});
+    finish({exitCode: 0});
+    expect(process.stdout.write).toBe(before.out);
+    expect(process.stderr.write).toBe(before.err);
+  });
 });
 
+describe('the config gate, when it guesses wrong', () => {
+  function withStderr(fn) {
+    const lines = [];
+    const real = process.stderr.write;
+    process.stderr.write = /** @type {any} */ (
+      c => (lines.push(String(c)), true)
+    );
+    try {
+      fn();
+    } finally {
+      process.stderr.write = real;
+    }
+    return lines.join('');
+  }
 
+  it('says so when a handler turns up after the gate declined', () => {
+    const said = withStderr(() => {
+      begin({argv: []});
+      noteConfigGateSkipped();
+      setEventHandler(() => {});
+    });
+    expect(said).toMatch(/astryx\.config sets `debug`/);
+  });
+
+  it('stays quiet when the gate was right', () => {
+    const said = withStderr(() => {
+      begin({argv: []});
+      noteConfigGateSkipped();
+    });
+    expect(said).toBe('');
+  });
+
+  it.each([undefined, null, 'not a function'])(
+    'stays quiet when what arrives is %s rather than a handler',
+    value => {
+      const said = withStderr(() => {
+        begin({argv: []});
+        noteConfigGateSkipped();
+        setEventHandler(/** @type {any} */ (value));
+      });
+      expect(said).toBe('');
+    },
+  );
+
+  it('stays quiet when the gate let the config through', () => {
+    const said = withStderr(() => {
+      begin({argv: []});
+      setEventHandler(() => {});
+    });
+    expect(said).toBe('');
+  });
+
+  it('says it once, not once per lifecycle call', () => {
+    const said = withStderr(() => {
+      begin({argv: []});
+      noteConfigGateSkipped();
+      setEventHandler(() => {});
+      setEventHandler(() => {});
+    });
+    expect(said.match(/astryx\.config sets/g)).toHaveLength(1);
+  });
+
+  it('stays quiet under --json, where stderr is still not the place', () => {
+    const said = withStderr(() => {
+      begin({argv: ['--json']});
+      setGlobalOptions({json: true});
+      noteConfigGateSkipped();
+      setEventHandler(() => {});
+    });
+    expect(said).toBe('');
+  });
+});
 
 describe('config: the whole surface is one function', () => {
   it('accepts a function', () => {
@@ -345,11 +460,6 @@ describe('config: the whole surface is one function', () => {
 });
 
 describe('captured output — what the CLI answered', () => {
-  // Writes go straight to the streams rather than through console.log,
-  // because Vitest replaces console.* with its own collectors and they never
-  // reach process.stdout — the very seam the tee sits on. In a real CLI run
-  // console.log does bottom out here; the subprocess case at the end of this
-  // block proves that path.
   const say = (out = '', err = '') => {
     if (out) process.stdout.write(`${out}\n`);
     if (err) process.stderr.write(`${err}\n`);
@@ -377,7 +487,6 @@ describe('captured output — what the CLI answered', () => {
     begin({argv: []});
     say('12345');
     finish({exitCode: 0});
-    // console.log appends a newline.
     expect(seen[0].output.stdoutBytes).toBe(6);
     expect(seen[0].output.truncated).toBe(false);
   });
@@ -404,8 +513,6 @@ describe('captured output — what the CLI answered', () => {
   });
 
   it('keeps a long answer intact below the cap, unlike other fields', () => {
-    // Ordinary values clamp at ~2KB; an answer is the point of the record, so
-    // it only clamps at MAX_CAPTURED_OUTPUT.
     const seen = collect();
     begin({argv: []});
     say('y'.repeat(8000));
@@ -416,7 +523,6 @@ describe('captured output — what the CLI answered', () => {
   it('still lets the output reach the real stream', () => {
     const written = [];
     const original = process.stdout.write;
-    // @ts-expect-error - test-only monkeypatch, installed before the tee
     process.stdout.write = chunk => {
       written.push(String(chunk));
       return true;
@@ -457,11 +563,6 @@ describe('captured output — what the CLI answered', () => {
 });
 
 describe('signals — the runs that never reach `exit`', () => {
-  // `process.on('exit')` does not fire for a signal, so this seam is the only
-  // thing standing between "the user gave up on a watch command" and no record
-  // at all. It cannot be exercised in-process: raising a real signal ends the
-  // worker, so each case is a child that signals itself and reports what its
-  // handler was given.
   const debugDir = path.dirname(fileURLToPath(import.meta.url));
 
   /**
@@ -469,7 +570,7 @@ describe('signals — the runs that never reach `exit`', () => {
    * @returns {{status: number | null, signal: string | null, event: any, raw: string}}
    */
   function signalledRun({owner = false, handlerFirst = false} = {}) {
-    const install = `d.setEventHandler(e => process.stdout.write('EVENT ' + JSON.stringify(e) + '\\n'));`;
+    const install = `d.setEventHandler(e => process.stderr.write('EVENT ' + JSON.stringify(e) + '\\n'));`;
     const source = `
       const d = await import(${JSON.stringify(path.join(debugDir, 'index.mjs'))});
       ${handlerFirst ? install : ''}
@@ -478,21 +579,24 @@ describe('signals — the runs that never reach `exit`', () => {
       ${handlerFirst ? '' : install}
       ${owner ? `process.on('SIGINT', () => process.exit(0));` : ''}
       process.kill(process.pid, 'SIGINT');
-      // Only reached if the signal was swallowed, which is itself a failure.
       setTimeout(() => process.exit(7), 2000);
     `;
-    const res = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
-      encoding: 'utf8',
-      timeout: 30_000,
-    });
-    const line = (res.stdout || '')
+    const res = spawnSync(
+      process.execPath,
+      ['--input-type=module', '-e', source],
+      {
+        encoding: 'utf8',
+        timeout: 30_000,
+      },
+    );
+    const line = (res.stderr || '')
       .split('\n')
       .find(l => l.startsWith('EVENT '));
     return {
       status: res.status,
       signal: res.signal,
       event: line ? JSON.parse(line.slice(6)) : null,
-      raw: res.stdout || '',
+      raw: `${res.stdout || ''}${res.stderr || ''}`,
     };
   }
 
@@ -506,30 +610,21 @@ describe('signals — the runs that never reach `exit`', () => {
   });
 
   it('still lets the signal kill the process', () => {
-    // Adding a listener suppresses Node's default disposition, so the handler
-    // has to hand termination back. A parent must still see signal death.
     const {status, signal} = signalledRun();
     expect(signal).toBe('SIGINT');
     expect(status).toBe(null);
   });
 
   it('leaves the outcome to the command that owns the signal', () => {
-    // Watch mode traps SIGINT, prints "Stopped watching." and returns 0.
-    // Sealing an error here would file the ordinary way out of `--watch` as a
-    // failure, with an exit code the process never returned.
     const {status, event} = signalledRun({owner: true});
     expect(status).toBe(0);
     expect(event.outcome).toBe('ok');
     expect(event.exitCode).toBe(0);
     expect(event.error).toBe(null);
-    // The signal is still on the record — that is how you find these runs.
     expect(event.signal).toBe('SIGINT');
   });
 
   it('arms the signal handlers whichever order the lifecycle runs in', () => {
-    // The bin calls begin() first and supplies the handler once the config is
-    // read. A caller that already has one must not silently lose every
-    // signal-terminated run.
     const {event} = signalledRun({handlerFirst: true});
     expect(event).toBeTruthy();
     expect(event.signal).toBe('SIGINT');

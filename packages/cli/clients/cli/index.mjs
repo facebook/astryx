@@ -136,7 +136,10 @@ export async function loadProjectDebugHandler() {
     );
     const configPath = findConfigPath(process.cwd());
     if (!configPath) return;
-    if (!fs.readFileSync(configPath, 'utf-8').includes('debug')) return;
+    if (!fs.readFileSync(configPath, 'utf-8').includes('debug')) {
+      debug.noteConfigGateSkipped();
+      return;
+    }
     await Project.load(process.cwd());
   } catch {
     // A broken config is the command's problem to report, not ours.

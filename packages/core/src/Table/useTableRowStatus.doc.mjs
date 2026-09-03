@@ -7,13 +7,13 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableRowStatus',
   description:
-    'Hook that returns a TablePlugin which prepends a narrow column signaling per-row status. Semantic status colors (success, warning, error) use the matching themed semantic icon by default; palette colors and raw CSS values use a colored dot because they do not establish an outcome glyph. getStatus may override either default with an explicit icon and must provide an accessible label (shown in a tooltip on hover and announced to assistive technology, so status is never color-only); return null for no indicator. The column header is visually blank but carries a screen-reader-only localized name ("Row status", i18n key @astryx.table.rowStatus.columnHeader). Memoize getStatus with useCallback for a stable plugin identity.',
+    'Hook that returns a TablePlugin which prepends a narrow column signaling per-row status. Return {status, label} for a semantic success, warning, or error: Table resolves the matching glyph and tone through the active theme. Return {color, icon?, label} for a custom marker: every color is paint-only, an omitted icon renders the stable 8px dot, and an explicit icon renders that caller-selected glyph. Named custom icons keep their released Icon color mapping; raw CSS custom icons inherit the caller\'s exact paint instead of the previous primary fallback. Existing callers require no source migration. label is required and becomes the accessible image name plus supplemental hover tooltip; return null for no indicator. The column header is visually blank but carries a screen-reader-only localized name ("Row status", i18n key @astryx.table.rowStatus.columnHeader). Memoize getStatus with useCallback for a stable plugin identity.',
   props: [
     {
       name: 'getStatus',
-      type: "(item: T) => { color: 'accent' | 'success' | 'error' | 'warning' | 'red' | 'orange' | 'green' | 'yellow' | 'blue' | 'gray' | string; icon?: IconName; label: string } | null",
+      type: "(item: T) => ({ status: 'success' | 'warning' | 'error'; color?: never; icon?: never; label: string } | { status?: never; color: 'accent' | 'success' | 'error' | 'warning' | 'red' | 'orange' | 'green' | 'yellow' | 'blue' | 'gray' | string; icon?: IconName; label: string }) | null",
       description:
-        'Derive the status indicator for a row: a semantic color (success, error, warning) uses its matching themed semantic icon by default; accent, palette colors (red, orange, green, yellow, blue, gray), and raw CSS use a dot unless icon overrides the signifier. Valid icon names: close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone. label is required and is announced via role="img" and shown in a tooltip. Return null for rows with no status. Memoize with useCallback for a stable plugin identity.',
+        'Derive either a semantic outcome or a custom marker. {status, label} accepts the closed success/error/warning vocabulary and resolves its glyph and tone through the active theme. {color, icon?, label} preserves the stable custom-marker path: color always selects paint, no icon renders an 8px dot, and icon renders the explicit caller glyph. Even color values named success/error/warning remain dots without icon. Valid icon names: close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone. The branches are exclusive, label is required and announced via role="img", and null leaves the row status cell empty. Memoize with useCallback for a stable plugin identity.',
       required: true,
     },
   ],
@@ -22,9 +22,9 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Returns a TablePlugin that prepends a narrow per-row status column. success/error/warning use the matching themed semantic icon by default; palette/raw colors use a dot unless icon overrides the signifier. label is required (tooltip + accessible name). Memoize getStatus with useCallback.',
+    'Returns a TablePlugin with a narrow per-row status column. {status,label} resolves themed success/error/warning glyph + tone. Stable {color,icon?,label} stays custom: color is paint-only, no icon = 8px dot, icon = caller glyph. label is required; null leaves the cell empty. Memoize getStatus.',
   propDescriptions: {
     getStatus:
-      'Map a row to {color, icon?, label} or null. success/error/warning default to their themed semantic icon; palette/raw colors default to a dot; icon overrides either. label is required (tooltip + role="img"). Memoize with useCallback.',
+      'Map a row to semantic {status,label}, custom {color,icon?,label}, or null. Semantic status owns themed glyph + tone. Custom color always owns paint; omitted icon = dot, explicit icon = caller glyph. Branches are exclusive and label is required.',
   },
 };
