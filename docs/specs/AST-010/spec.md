@@ -21,11 +21,12 @@ affects_consumer_docs: [Resizable]
 ## Intent
 
 A person resizing a panel should get the same panel size that the handle presents
-and assistive technology announces. Builders may configure an initial size in
-pixels or as a percentage. Bounds additionally accept recursive CSS `min()` and
-`max()` expressions over pixel and percentage leaves, so common fluid floors and
-ceilings do not require CSS-only clamping. Every user-selected size remains pixels
-so pointer, keyboard, persistence, and programmatic behavior stay predictable.
+and assistive technology announces. Builders may configure an initial size or
+bounds with pixels, percentages, and recursive CSS `min()` / `max()` over those
+leaves. A `defaultSize` expression chooses one initial pixel size; a bound
+expression remains live and re-clamps that pixel selection when its basis changes.
+Every user-selected size remains pixels so pointer, keyboard, persistence, and
+programmatic behavior stay predictable.
 
 This spec preserves the released meaning of `defaultSize: 'N%'` when no
 `containerRef` is supplied: resolve once against `window.innerWidth` (or the
@@ -60,34 +61,35 @@ record is updated alongside that implementation.
 
 ## Requirements
 
-- **FR1 — Percentage configuration uses an explicit basis.** Without
-  `containerRef`, a percentage `defaultSize` MUST resolve once against
-  `window.innerWidth`, or 1200px when `window` is unavailable, preserving the
-  released fallback. With `containerRef`, it MUST resolve once against that
-  container's measured content-box active axis. After either resolution, the
-  selected size is pixels and MUST NOT scale when the viewport or container
-  changes.
+- **FR1 — Basis-dependent defaults use an explicit basis once.** Without
+  `containerRef`, a percentage leaf anywhere in `defaultSize` MUST resolve once
+  against `window.innerWidth`, or 1200px when `window` is unavailable, preserving
+  the released fallback. With `containerRef`, it MUST resolve once against that
+  container's first positive measured content-box active axis. A pure-pixel
+  expression needs no basis measurement. After resolution, the selected size is
+  pixels and MUST NOT scale when the viewport or container changes.
 - **FR2 — Direction selects the container basis.** With `containerRef`,
   horizontal resizing MUST use the container's content-box inline size and
   vertical resizing MUST use its content-box block size. RTL may reverse pointer
   delta, but MUST NOT change the percentage basis. Without `containerRef`, the
   compatibility basis remains `window.innerWidth` regardless of direction.
 - **FR3 — Interactions remain pixel-based.** Numeric defaults and every result of
-  a percentage default resolve to pixels. Pointer, keyboard, snap, collapse,
-  expand, persistence, callback, and programmatic resize paths MUST continue to
-  read and write pixel selections exactly as the released API does. No
-  interaction may create or preserve a percentage-selected mode.
-- **FR4 — Mixed and composed bounds remain valid.** Builders MAY combine pixel
-  and percentage values across `defaultSize`, `minSize`, and `maxSize`. Unified
-  bounds MAY recursively compose those leaves with CSS `min()` and `max()` up to
-  eight function levels. Numeric and `Npx` leaves remain pixels. Every percentage
-  leaf resolves against the same viewport or container basis as FR1; basis
-  dependency is recursive, so a percentage nested anywhere in an expression makes
-  that bound re-resolve whenever the basis changes. Re-resolved bounds clamp the
-  existing pixel selection; they MUST NOT scale it proportionally. If the resolved
-  minimum exceeds the resolved maximum, development MUST warn and the maximum MUST
-  win, preserving the released `Math.min(max, Math.max(min, size))` ordering and
-  guaranteeing finite, non-`NaN` geometry.
+  a percentage or CSS math default resolve to pixels. Pointer, keyboard, snap,
+  collapse, expand, persistence, callback, and programmatic resize paths MUST
+  continue to read and write pixel selections exactly as the released API does.
+  No interaction may create or preserve a relative selected mode.
+- **FR4 — Mixed and composed sizes remain valid.** Builders MAY combine pixel and
+  percentage values across `defaultSize`, `minSize`, and `maxSize`. `defaultSize`
+  and unified bounds MAY recursively compose those leaves with CSS `min()` and
+  `max()` up to eight function levels. Numeric and `Npx` leaves remain pixels.
+  Every percentage leaf resolves against the same viewport or container basis as
+  FR1; basis dependency is recursive. A composed default uses that dependency only
+  to obtain its initial pixel choice. A composed bound re-resolves whenever the
+  basis changes and clamps the existing pixel selection; it MUST NOT scale it
+  proportionally. If the resolved minimum exceeds the resolved maximum,
+  development MUST warn and the maximum MUST win, preserving the released
+  `Math.min(max, Math.max(min, size))` ordering and guaranteeing finite,
+  non-`NaN` geometry.
 - **FR5 — Effective geometry stays synchronized.** The effective selected pixel
   size, LayoutPanel or caller-rendered size, persisted expanded value, and
   ResizeHandle's `aria-valuenow`, `aria-valuemin`, and `aria-valuemax` MUST describe
@@ -96,11 +98,11 @@ record is updated alongside that implementation.
   explicit exception: they report a rejected collapse or expand intent without
   claiming that the controlled owner changed the rendered size.
 - **FR6 — Basis changes update only percentage-dependent constraints.** Once a
-  percentage default has initialized the selected pixel size, a viewport or
-  container resize MUST NOT re-resolve that default. Bounds with a percentage leaf
-  at any nesting depth MUST re-resolve and clamp the selected pixel size. A
-  basis-only layout change MUST NOT fire an interaction callback or otherwise claim
-  that a person selected a new size.
+  percentage or CSS math default has initialized the selected pixel size, a
+  viewport or container resize MUST NOT re-resolve that default. Bounds with a
+  percentage leaf at any nesting depth MUST re-resolve and clamp the selected
+  pixel size. A basis-only layout change MUST NOT fire an interaction callback or
+  otherwise claim that a person selected a new size.
 - **FR7 — Pointer gestures preserve released behavior.** Pointer deltas continue
   from the selected pixel size. Percentage-dependent bounds MUST use one stable
   basis during a gesture; a basis change during the gesture takes effect after the
@@ -123,21 +125,23 @@ record is updated alongside that implementation.
   multi-region call MUST use one optional container and axis for all regions.
   Regions remain independently pixel-selected; this change MUST NOT add balancing,
   ratio preservation, or a 100% total invariant.
-- **FR12 — Invalid configuration has safe deterministic fallbacks.** The released
-  `defaultSize` input remains a non-negative finite number, an exact non-negative
-  finite `Npx` string, or an exact `N%` string from 0% through 100%. Unified
-  `minSize` and `maxSize` accept those same leaves plus full-match recursive CSS
-  `min()` and `max()` expressions, bounded to eight function levels. Empty
-  functions, malformed separators or parentheses, trailing input, other units,
-  `calc()`, `clamp()`, arithmetic, `var()`, negatives, out-of-range percentages,
-  and non-finite values are invalid. An invalid `defaultSize` MUST use 250px before
-  normal bounds clamping; an invalid `minSize` or `minSizePx` MUST use 50px; and an
-  invalid `maxSize` or `maxSizePx` MUST use unbounded `Infinity`. Explicit
-  `maxSizePx: Infinity` remains valid for compatibility because a shipped template
-  uses it. Development MUST warn for every fallback; production MUST use the same
-  fallback without warning. After initialization, an invalid raw value MUST NOT
-  directly replace a persisted or otherwise legal selected pixel size; a
-  fallback-normalized bound may affect that size only through normal clamping.
+- **FR12 — Invalid configuration has safe deterministic fallbacks.** Unified
+  runtime configuration accepts a non-negative finite number, an exact
+  non-negative finite `Npx` string, an exact `N%` string from 0% through 100%, or
+  full-match recursive CSS `min()` / `max()` expressions over those leaves,
+  bounded to eight function levels. `defaultSize` keeps its released
+  `number | string` public type, so runtime validation remains authoritative.
+  Empty functions, malformed separators or parentheses, trailing input, other
+  units, `calc()`, `clamp()`, arithmetic, `var()`, negatives, out-of-range
+  percentages, and non-finite values are invalid. An invalid `defaultSize` MUST
+  use 250px before normal bounds clamping; an invalid `minSize` or `minSizePx`
+  MUST use 50px; and an invalid `maxSize` or `maxSizePx` MUST use unbounded
+  `Infinity`. Explicit `maxSizePx: Infinity` remains valid for compatibility
+  because a shipped template uses it. Development MUST warn for every fallback;
+  production MUST use the same fallback without warning. After initialization,
+  an invalid raw value MUST NOT directly replace a persisted or otherwise legal
+  selected pixel size; a fallback-normalized bound may affect that size only
+  through normal clamping.
 
 ### Public API requirements
 
@@ -154,24 +158,28 @@ record is updated alongside that implementation.
   axis. ResizeHandle direction and hook direction MUST agree; the implementation
   MUST make a mismatch detectable in development. Direction affects the
   container basis only when `containerRef` is present.
-- **API3 — Bounds use one restricted Resizable vocabulary.** Add the public
-  `ResizableConstraintValue` type and use it for flat `minSize` and `maxSize`:
+- **API3 — One restricted runtime vocabulary, compatibility-preserving public
+  types.** `defaultSize`, flat `minSize`, and flat `maxSize` accept the same
+  runtime values: a non-negative finite number, exact `Npx`, exact `N%` from
+  0–100, or recursive lowercase CSS `min()` / `max()` over those leaves. Functions
+  accept one or more comma-separated expressions and recurse up to eight function
+  levels. Partial parses, trailing text, malformed separators or parentheses,
+  other units, negatives, non-finite values, `calc()`, `clamp()`, arithmetic,
+  `var()`, and every other function are invalid.
+
+  Add the public `ResizableConstraintValue` type for `minSize` and `maxSize`:
 
   ```ts
   type ResizableConstraintValue =
     number | `${number}px` | `${number}%` | `min(${string})` | `max(${string})`;
   ```
 
-  Runtime parsing remains authoritative for expression interiors and MUST match
-  the complete input. Functions are lowercase CSS `min()` or `max()` only, accept
-  one or more comma-separated expressions, recurse up to eight function levels,
-  and may contain only non-negative finite `Npx` or 0–100 `N%` leaves. Partial
-  parses, trailing text, malformed separators or parentheses, other units,
-  negatives, non-finite values, `calc()`, `clamp()`, arithmetic, `var()`, and
-  every other function are invalid. Keep the released `defaultSize?: SizeValue`
-  type and its existing number / exact `Npx` / exact `N%` runtime behavior; CSS
-  math is constraint-only. Do not add parallel `defaultSizePercent`,
-  `minSizePercent`, or `maxSizePercent` props.
+  Keep `defaultSize?: SizeValue` (`number | string`) exactly as released so
+  computed strings remain source-compatible. The wider type does not widen the
+  runtime grammar: parsing is authoritative for every value the type cannot
+  prove, and invalid strings take FR12's existing 250px fallback and development
+  warning. Do not add parallel `defaultSizePercent`, `minSizePercent`, or
+  `maxSizePercent` props.
 
 - **API4 — Pixel aliases are exactly mutually exclusive with unified bounds.**
   `minSizePx` and `maxSizePx` remain supported but become deprecated. TypeScript
@@ -205,15 +213,15 @@ record is updated alongside that implementation.
 
 ### Invalid configuration behavior
 
-| Input                                                      | Accepted values                                                                                  | Invalid fallback                | Development behavior                                         | Production behavior                |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------- | ------------------------------------------------------------ | ---------------------------------- |
-| `defaultSize`                                              | non-negative finite number; exact non-negative finite `Npx`; exact `N%` from 0–100               | 250px, then normal bounds clamp | warn and use fallback                                        | use same fallback without warning  |
-| `minSize`                                                  | `ResizableConstraintValue`; full-match runtime grammar from API3                                 | 50px                            | warn and use fallback                                        | use same fallback without warning  |
-| `minSizePx`                                                | non-negative finite number                                                                       | 50px                            | warn and use fallback                                        | use same fallback without warning  |
-| `maxSize`                                                  | `ResizableConstraintValue`; full-match runtime grammar from API3                                 | unbounded `Infinity`            | warn and use fallback                                        | use same fallback without warning  |
-| `maxSizePx`                                                | non-negative finite number or explicit `Infinity`                                                | unbounded `Infinity`            | warn for invalid values; do not warn for explicit `Infinity` | use same fallback without warning  |
-| old/new bound pair supplied together through untyped input | unified value is authoritative                                                                   | ignore deprecated alias         | warn and name the ignored alias                              | unified value wins without warning |
-| resolved minimum above resolved maximum                    | both values are individually valid, including after recursive CSS math and percentage resolution | maximum wins                    | warn and use released clamp order                            | use same ordering without warning  |
+| Input                                                      | Accepted values                                                                                                                                     | Invalid fallback                | Development behavior                                         | Production behavior                |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------ | ---------------------------------- |
+| `defaultSize`                                              | released `SizeValue` type; runtime accepts non-negative finite number, exact `Npx`, exact 0–100 `N%`, or recursive `min()` / `max()`; resolves once | 250px, then normal bounds clamp | warn and use fallback                                        | use same fallback without warning  |
+| `minSize`                                                  | `ResizableConstraintValue`; full-match runtime grammar from API3                                                                                    | 50px                            | warn and use fallback                                        | use same fallback without warning  |
+| `minSizePx`                                                | non-negative finite number                                                                                                                          | 50px                            | warn and use fallback                                        | use same fallback without warning  |
+| `maxSize`                                                  | `ResizableConstraintValue`; full-match runtime grammar from API3                                                                                    | unbounded `Infinity`            | warn and use fallback                                        | use same fallback without warning  |
+| `maxSizePx`                                                | non-negative finite number or explicit `Infinity`                                                                                                   | unbounded `Infinity`            | warn for invalid values; do not warn for explicit `Infinity` | use same fallback without warning  |
+| old/new bound pair supplied together through untyped input | unified value is authoritative                                                                                                                      | ignore deprecated alias         | warn and name the ignored alias                              | unified value wins without warning |
+| resolved minimum above resolved maximum                    | both values are individually valid, including after recursive CSS math and percentage resolution                                                    | maximum wins                    | warn and use released clamp order                            | use same ordering without warning  |
 
 A fallback repairs configuration; it is not a new user selection. After
 initialization, an invalid raw value never directly replaces persisted or otherwise
@@ -225,21 +233,24 @@ through normal clamping.
 - Supported feature/engine floor: every browser supported by Astryx Core with
   `ResizeObserver`; the shared observer remains the one runtime owner for a
   supplied container.
-- Before a supplied container has a positive measurement, percentage configuration
-  MAY use the released deterministic 1200px basis as a temporary fallback. The
-  first valid measurement resolves the percentage default to its final initial
-  pixel size and resolves percentage bounds without persisting or announcing the
-  temporary fallback.
+- Before a supplied container has a positive measurement, basis-dependent
+  configuration MAY use the released deterministic 1200px basis as a temporary
+  fallback. The first valid measurement resolves a basis-dependent default to its
+  final initial pixel size and resolves percentage-dependent bounds without
+  persisting or announcing the temporary fallback. When no live bound still needs
+  the basis, the default-only observation MUST be removed after that initial
+  selection.
 - Browser evidence: real Chromium MUST verify nested containers, horizontal and
   vertical axes, pointer and keyboard resizing, live basis changes, both canonical
   expressions (`max(40%, 333px)` and `min(400px, 10%)`) across wide and narrow
   containers, and the unchanged viewport-compatibility and pixel paths. jsdom
   geometry stubs alone are not sufficient.
-- SSR: without `containerRef`, percentage defaults preserve the released 1200px
-  server basis and client viewport initialization behavior. With `containerRef`,
-  the server uses the same temporary 1200px basis until the first client
-  measurement. Hydration MAY make one documented correction, but MUST NOT write the
-  temporary fallback to storage or fire `onSizeChange` for that correction.
+- SSR: without `containerRef`, percentage leaves in atomic or composed defaults
+  preserve the released 1200px server basis and client initialization behavior.
+  With `containerRef`, the server uses the same temporary 1200px basis until the
+  first client measurement. Hydration MAY make one documented correction, but
+  MUST NOT write the temporary fallback to storage or fire `onSizeChange` for
+  that correction.
 
 ## Current-state impact
 
@@ -293,31 +304,35 @@ interface PersistedResizableState {
 }
 ```
 
-A percentage default becomes a pixel selection before it is persisted. A
-persisted pixel selection wins over `defaultSize` on restore and is clamped by the
-currently resolved bounds. A legacy plain `0` remains a collapse marker with no
-expanded size, so expand falls back to the configured default; when collapse is
-disabled it supplies no usable saved size. Pointer, keyboard, collapse, expand, and
-numeric programmatic resize continue to persist pixels. Basis changes never write
-a percentage or relative intent.
+A basis-dependent default becomes a pixel selection before it is persisted. A
+persisted pixel selection wins over `defaultSize` on restore, so an unused default
+expression does not require a basis measurement, and the restored size is clamped
+only by the currently resolved bounds. A legacy plain `0` remains a collapse
+marker with no expanded size, so expand falls back to the configured default; when
+collapse is disabled it supplies no usable saved size. Pointer, keyboard, collapse,
+expand, and numeric programmatic resize continue to persist pixels. Basis changes
+never write an expression, percentage, or relative intent.
 
 ### Implementation requirements
 
-1. Preserve the current no-ref resolver for valid percentage defaults:
+1. Preserve the current no-ref resolver for every percentage leaf in a default:
    `window.innerWidth` on the client and 1200px when `window` is unavailable.
-2. Parse the complete value. Keep `defaultSize` on its released atomic grammar;
-   parse unified bounds with the bounded recursive API3 grammar; validate deprecated
-   aliases as pixel numbers only. Apply FR12's 250px/50px/`Infinity` fallbacks
-   before clamping and warn only in development. Preserve explicit
-   `maxSizePx: Infinity` as valid legacy input.
+2. Parse every unified value with the bounded recursive API3 grammar; validate
+   deprecated aliases as pixel numbers only. Keep `defaultSize`'s released wide
+   public type while applying the same runtime grammar. Apply FR12's
+   250px/50px/`Infinity` fallbacks before clamping and warn only in development.
+   Preserve explicit `maxSizePx: Infinity` as valid legacy input.
 3. Encode each unified/deprecated bound pair as the exact API4 union. At runtime,
    prefer a unified bound over a simultaneously supplied alias and warn in
    development with the ignored alias's name.
 4. When `containerRef` is supplied, measure its content box on the configured axis
    and observe it through Astryx's shared ResizeObserver.
-5. Resolve a percentage default once into selected pixel state. Re-resolve only
+5. Resolve a basis-dependent default once into selected pixel state. Observe a
+   supplied container only until that initial selection has a positive basis, then
+   unsubscribe unless a percentage-dependent bound still needs live updates. A
+   persisted pixel selection skips the unused default measurement. Re-resolve only
    bounds with a percentage dependency anywhere in their parsed expression when
-   the viewport or container basis changes, then clamp the selected pixel state so
+   the viewport or container basis changes, then clamp selected pixel state so
    paint, persistence, and ARIA stay synchronized.
 6. Preserve the released maximum-wins clamp order when a resolved minimum exceeds
    its maximum, warn in development, and never emit `NaN` or invalid geometry.
@@ -337,30 +352,32 @@ a percentage or relative intent.
 
 ## Verification
 
-| Contract         | Verification                                                          | Representative states                                                                                              | Mutation or failure expectation                                                                                                                          |
-| ---------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1, API1        | Focused hook tests plus Chromium geometry                             | no ref at 1200px viewport; nested container; first positive measurement                                            | no-ref default changes semantics, or supplied ref measures viewport/panel/handle ancestor                                                                |
-| FR2, API2        | Axis tests and Chromium interaction                                   | horizontal/vertical; LTR/RTL; reversed handle; no-ref vertical compatibility                                       | vertical container sizing reads width, or compatibility stops using `innerWidth`                                                                         |
-| FR3, FR6-FR8     | Interaction and basis-change tests                                    | percentage default before/after drag; viewport/container resize; Arrow, Shift+Arrow, Home, End; collapse/expand    | selected size preserves a ratio, basis change scales it, or existing pixel interactions change                                                           |
-| FR4              | Mixed-bound, nested-expression, basis-change, and invalid-order tests | canonical `max(40%, 333px)` / `min(400px, 10%)`; variadic nesting; recursive percentage dependency; min above max  | parser drops nested basis dependency, bounds use different bases, selection scales instead of clamps, maximum does not win, or geometry becomes invalid  |
-| FR5              | Hook, LayoutPanel, persistence, and ResizeHandle assertions           | below/at/above max; basis shrink; controlled collapse intent                                                       | effective paint, state, storage, and ARIA diverge, or controlled rejection changes owned state                                                           |
-| FR9              | Persistence compatibility tests                                       | positive number; legacy zero; legacy object; percentage default; corrupt entry                                     | stored shape changes, a percentage is persisted, or old state changes meaning                                                                            |
-| FR10, API5       | Callback tests                                                        | initialization; hydration correction; basis-only re-clamp; pointer/keyboard/programmatic change                    | callback receives a percentage or reports a non-interaction layout correction                                                                            |
-| FR11             | Multi-region and shared-observer tests                                | two regions on one container; another hook observing the same node                                                 | regions use different bases, selected ratios are introduced, or one subscription removes another                                                         |
-| FR12             | Production/development parser and state-preservation tests            | malformed functions; unsupported functions/units/arithmetic; depth 8/9; invalid rerender; explicit legacy Infinity | fallback differs by build, warning occurs in production, invalid input replaces legal state, unbounded recursion, or any path produces `NaN`             |
-| API3, API4, API6 | Type, runtime validation, and development-warning tests               | restricted constraint type; recursive grammar; old-only aliases; exact-union conflicts; `resize('50%')`            | unsupported top-level strings type-check, duplicate pairs type-check, alias overrides unified input, exact parsing is skipped, or resize accepts strings |
-| Platform/SSR     | Server render, hydration test, and Chromium evidence                  | no ref; ref not measured; hidden/zero container; first positive measurement                                        | 1200px fallback changes, temporary fallback persists, or correction fires `onSizeChange`                                                                 |
-| Compatibility    | Existing Resizable, LayoutPanel, SideNav, and template suites         | current pixel-only callsites and no-ref percentage default                                                         | existing numeric configuration, percentage fallback, output, interaction, or persistence changes                                                         |
+| Contract         | Verification                                                          | Representative states                                                                                                             | Mutation or failure expectation                                                                                                                         |
+| ---------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1, API1        | Focused hook tests plus Chromium geometry                             | atomic/composed default; wide/narrow initial container; no ref at 1200px viewport; first positive measurement; later basis resize | default expression uses the wrong initial basis, rescales after initialization, or supplied ref measures viewport/panel/handle ancestor                 |
+| FR2, API2        | Axis tests and Chromium interaction                                   | horizontal/vertical; LTR/RTL; reversed handle; no-ref vertical compatibility                                                      | vertical container sizing reads width, or compatibility stops using `innerWidth`                                                                        |
+| FR3, FR6-FR8     | Interaction and basis-change tests                                    | atomic/composed default before/after initialization; viewport/container resize; Arrow, Shift+Arrow, Home, End; collapse/expand    | selected default preserves a ratio, basis change rescales it, or existing pixel interactions change                                                     |
+| FR4              | Mixed-bound, nested-expression, basis-change, and invalid-order tests | canonical `max(40%, 333px)` / `min(400px, 10%)`; variadic nesting; recursive percentage dependency; min above max                 | parser drops nested basis dependency, bounds use different bases, selection scales instead of clamps, maximum does not win, or geometry becomes invalid |
+| FR5              | Hook, LayoutPanel, persistence, and ResizeHandle assertions           | below/at/above max; basis shrink; controlled collapse intent                                                                      | effective paint, state, storage, and ARIA diverge, or controlled rejection changes owned state                                                          |
+| FR9              | Persistence compatibility tests                                       | positive number; legacy zero; legacy object; composed default; corrupt entry; unmeasured container                                | stored shape changes, an expression is persisted, an unused persisted default measures a basis, or old state changes meaning                            |
+| FR10, API5       | Callback tests                                                        | initialization; hydration correction; basis-only re-clamp; pointer/keyboard/programmatic change                                   | callback receives a percentage or reports a non-interaction layout correction                                                                           |
+| FR11             | Multi-region and shared-observer tests                                | two regions on one container; another hook observing the same node                                                                | regions use different bases, selected ratios are introduced, or one subscription removes another                                                        |
+| FR12             | Production/development parser and state-preservation tests            | default/bound malformed functions; unsupported functions/units/arithmetic; depth 8/9; invalid rerender; explicit legacy Infinity  | fallback differs by role/build, warning occurs in production, invalid input replaces legal state, unbounded recursion, or any path produces `NaN`       |
+| API3, API4, API6 | Type, runtime validation, and development-warning tests               | wide compatible default type; restricted bound type; recursive grammar; aliases/conflicts; `resize('50%')`                        | default type narrows, unsupported bound strings type-check, alias overrides unified input, exact parsing is skipped, or resize accepts strings          |
+| Platform/SSR     | Server render, hydration test, and Chromium evidence                  | no ref; ref not measured; hidden/zero container; first positive measurement                                                       | 1200px fallback changes, temporary fallback persists, or correction fires `onSizeChange`                                                                |
+| Compatibility    | Existing Resizable, LayoutPanel, SideNav, and template suites         | current pixel-only callsites; no-ref atomic percentage default; computed `string` default                                         | existing numeric/percentage defaults, wide default type, output, interaction, or persistence changes                                                    |
 
 ### Completion criteria
 
 This spec moves from `accepted` to `shipped` only when:
 
-- no-ref percentage defaults preserve one-time `window.innerWidth` resolution and
-  the 1200px SSR fallback without tracking viewport resize;
-- supplied-container percentage defaults resolve once against the content-box
-  active axis, then remain pixel selections through basis changes and every
-  interaction path;
+- no-ref basis-dependent defaults preserve one-time `window.innerWidth` resolution
+  and the 1200px SSR fallback without subscribing to later viewport resize;
+- supplied-container basis-dependent defaults resolve once against the first
+  positive content-box active axis, remove default-only observation after that
+  choice, and remain pixel selections through later basis changes and every
+  interaction path; pure-pixel default expressions add no observer or render cost
+  beyond an atomic pixel default; persisted pixels skip unused default measurement;
 - bounds with percentage leaves at any nesting depth re-resolve in both basis modes
   and clamp existing pixel state without proportionally scaling it; pure-pixel
   expressions do not subscribe to basis changes;
@@ -369,13 +386,14 @@ This spec moves from `accepted` to `shipped` only when:
 - old-only `minSizePx` and `maxSizePx` callers remain unchanged, each old/new
   pair is an exact mutually exclusive TypeScript union, and untyped conflicts
   prefer the unified value with a clear ignored-alias warning;
-- exact parsing preserves `defaultSize`'s released atomic grammar and accepts
-  unified bounds only as `ResizableConstraintValue`: non-negative finite numbers,
-  complete `Npx` / 0–100 `N%` strings, or recursive lowercase `min()` / `max()`
-  expressions up to eight levels; every other function, unit, arithmetic form,
-  malformed input, and deeper expression uses the documented 50px or `Infinity`
-  fallback without replacing persisted/legal selected state, while explicit legacy
-  `maxSizePx: Infinity` remains valid;
+- exact runtime parsing accepts all three unified values as non-negative finite
+  numbers, complete `Npx` / 0–100 `N%` strings, or recursive lowercase `min()` /
+  `max()` expressions up to eight levels. `defaultSize` keeps the released
+  `number | string` type while `minSize` / `maxSize` use
+  `ResizableConstraintValue`; every unsupported function, unit, arithmetic form,
+  malformed input, and deeper expression uses the role's documented 250px, 50px,
+  or `Infinity` fallback without replacing persisted/legal selected state, while
+  explicit legacy `maxSizePx: Infinity` remains valid;
 - inverted resolved bounds warn in development, deterministically choose the
   maximum, and never produce `NaN` or invalid geometry;
 - mixed bounds keep effective state, paint, storage, and separator ARIA aligned,
@@ -383,8 +401,10 @@ This spec moves from `accepted` to `shipped` only when:
 - single and multi-region subscriptions coexist with every other observer of the
   same element;
 - focused tests fail against the old implementation and pass against the new one;
-- real Chromium proves both container-basis behavior and unchanged compatibility
-  and pixel paths; and
+- real Chromium proves composed defaults at wide and narrow initial bases remain
+  fixed after later resize, while composed bounds continue to follow the basis;
+  state, panel geometry, persistence, ARIA, and unchanged compatibility/pixel paths
+  all agree; and
 - `component:Resizable` and consumer docs describe the shipped contract in the
   same pull request as the implementation.
 
@@ -419,8 +439,9 @@ caller did not request.
 Add flat `minSize` and `maxSize` alongside `defaultSize`. Numbers remain static
 pixels; atomic strings accept finite non-negative `Npx` or `N%`; and mixing units
 across the initial size and bounds is valid. This gives builders one predictable
-set of flat size props without parallel percentage props. DEC-3 amends only the
-accepted bound-string grammar; `defaultSize` remains unchanged.
+set of flat size props without parallel percentage props. DEC-3 extends the
+accepted runtime string grammar without changing `defaultSize`'s released type or
+one-time-selection semantics.
 
 Preserve `minSizePx` and `maxSizePx` as deprecated compatibility aliases so
 old-only callers behave unchanged. TypeScript encodes each old/new pair as an exact
@@ -439,23 +460,32 @@ the maximum wins under the released clamp order. These rules keep malformed inpu
 conflicts, and inverted bounds from producing `NaN` or replacing persisted/legal
 selected state.
 
-### DEC-3 — Bounds accept bounded CSS min/max composition
+### DEC-3 — Unified sizes accept bounded CSS min/max composition
 
 **Reference:** `spec:AST-010/DEC-3`
 **Amendment author:** `freddymeta`, `2026-09-03`
 **Approval:** exact-head spec-owner approval required before merge
 
-Keep released `defaultSize` typing and runtime behavior unchanged. Restrict flat
-`minSize` and `maxSize` to the Resizable-specific `ResizableConstraintValue`:
-numbers remain static pixels; atomic strings accept finite non-negative `Npx` or
-0–100 `N%`; and bounds additionally accept lowercase, full-match, recursive CSS
+Keep `defaultSize`'s released `number | string` type, but validate it at runtime
+with the same restricted grammar as `minSize` and `maxSize`: non-negative finite
+pixels, exact `Npx`, exact 0–100 `N%`, or lowercase, full-match, recursive CSS
 `min()` / `max()` expressions up to eight function levels. No `calc()`, `clamp()`,
-arithmetic, `var()`, other function, or other unit is accepted.
+arithmetic, `var()`, other function, or other unit is accepted. Runtime validation
+is authoritative for the wide compatibility type; unsupported strings keep the
+existing 250px fallback and development warning.
 
-The template-literal type rejects unrelated top-level strings while the runtime
-parser remains authoritative for non-negativity, finiteness, and recursive
-function interiors. This keeps shared `SizeValue` unchanged and adds only the two
-CSS comparisons needed for fluid constraints.
+The same expression has deliberately different lifecycle meaning by prop:
+`defaultSize: 'max(40%, 333px)'` chooses one initial pixel size from the first
+measurable basis, then stops following that basis. `minSize: 'max(40%, 333px)'`
+is a persistent floor whose percentage leaves continue to re-resolve and re-clamp.
+A default-only container observation ends after the initial choice; a persisted
+pixel choice skips that unused measurement. Pure-pixel default expressions observe
+nothing.
+
+The template-literal bound type rejects unrelated top-level strings while the
+runtime parser remains authoritative for non-negativity, finiteness, recursive
+function interiors, and every `defaultSize`. This keeps shared `SizeValue`
+unchanged and adds only the two CSS comparisons needed for fluid sizing.
 
 ## Open questions
 

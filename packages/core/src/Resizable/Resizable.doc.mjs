@@ -85,7 +85,7 @@ export const docs = {
           name: 'defaultSize',
           type: 'number | string',
           description:
-            'Released initial size: a pixel number, exact "Npx", or exact "N%" from 0% to 100%. Unsupported strings use the documented fallback.',
+            'Released public type remains number | string. Runtime accepts a non-negative pixel number, exact "Npx", exact "N%" from 0% to 100%, or recursive CSS min()/max(). A basis-dependent value resolves once into the initial pixel choice; unsupported strings use the existing 250px fallback and development warning.',
           default: '250',
         },
         {
@@ -144,7 +144,16 @@ export const docs = {
       ],
       examples: [
         {
-          label: 'Container-relative minimum',
+          label: 'One-time initial choice',
+          code: `const containerRef = useRef<HTMLDivElement>(null);
+const region = useResizable({
+  defaultSize: 'max(40%, 333px)',
+  containerRef,
+});
+// Resolves once from the initial basis, then remains pixels.`,
+        },
+        {
+          label: 'Persistent container-relative minimum',
           code: `const containerRef = useRef<HTMLDivElement>(null);
 const region = useResizable({
   defaultSize: 360,
@@ -275,7 +284,8 @@ export const docsDense = {
       description:
         'Hook managing resize state for one or more panel regions. Returns size, isCollapsed, collapse/expand/resize methods, + props to pass to handles.',
       propDescriptions: {
-        defaultSize: 'initial size: px number, "Npx", or "N%" of the basis',
+        defaultSize:
+          'initial px number/string; runtime accepts px, %, min()/max(); resolves once',
         minSize: 'minimum: px number, "Npx", "N%", or nested CSS min()/max()',
         maxSize: 'maximum: px number, "Npx", "N%", or nested CSS min()/max()',
         collapsible: 'region can collapse to size 0?',

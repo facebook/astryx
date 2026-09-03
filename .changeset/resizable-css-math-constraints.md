@@ -2,10 +2,12 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] useResizable: compose minSize and maxSize with CSS min()/max()
+[feat] useResizable: compose defaultSize, minSize, and maxSize with CSS min()/max()
 
-`minSize` and `maxSize` now accept recursive CSS `min()` and `max()` expressions over pixel and percentage leaves, including `max(40%, 333px)` and `min(400px, 10%)`. Percentage leaves follow the configured basis at any nesting depth. Other CSS functions, arithmetic, variables, and units remain invalid; malformed values keep the existing deterministic fallbacks and development warnings. If resolved bounds conflict, the maximum wins.
+`defaultSize`, `minSize`, and `maxSize` now accept recursive CSS `min()` and `max()` expressions over pixel and percentage leaves, including `max(40%, 333px)` and `min(400px, 10%)`. A composed `defaultSize` resolves once against the initial measurable basis and becomes a pixel choice; composed bounds continue following percentage leaves and re-clamp that choice when their basis changes.
 
-The new `ResizableConstraintValue` type documents this Resizable-only input without widening shared `SizeValue`. Released `defaultSize` typing and behavior, and the deprecated `minSizePx` / `maxSizePx` aliases, remain compatible.
+Other CSS functions, arithmetic, variables, and units remain invalid. Malformed values keep the existing role-specific deterministic fallbacks and development warnings. If resolved bounds conflict, the maximum still wins.
+
+The Resizable-specific `ResizableConstraintValue` narrows the new bound props without widening shared `SizeValue`. Released `defaultSize: number | string` typing, pixel-only `resize()`, and deprecated `minSizePx` / `maxSizePx` aliases remain compatible; runtime validation is authoritative for default strings.
 
 @freddymeta

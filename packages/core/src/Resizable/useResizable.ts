@@ -55,14 +55,17 @@ export type ResizableDirection = 'horizontal' | 'vertical';
 
 export interface ResizableRegionSizing {
   /**
-   * Initial size. A number is pixels, `'Npx'` is pixels, and `'N%'` (0–100) is
-   * a share of the basis: the container when `containerRef` is supplied, the
-   * viewport otherwise. This released input intentionally remains broader than
-   * {@link ResizableConstraintValue}; unsupported strings take the documented
-   * fallback at runtime.
+   * Initial size. At runtime, accepts a non-negative pixel number, exact `Npx`,
+   * exact `N%` from 0–100, or the same bounded recursive CSS `min()` / `max()`
+   * grammar as {@link ResizableConstraintValue}. The public type remains the
+   * released {@link SizeValue} (`number | string`) for compatibility, so runtime
+   * validation is authoritative and unsupported strings use the documented
+   * fallback and development warning.
    *
-   * A percentage is resolved ONCE into a pixel size. It configures the initial
-   * selection; it does not make the region track its basis afterwards.
+   * A basis-dependent value resolves ONCE into a pixel size — against the
+   * container when `containerRef` is supplied, against the viewport otherwise.
+   * It configures the initial selection; it does not make the region track its
+   * basis afterwards.
    */
   defaultSize?: SizeValue;
   /** Whether this region can collapse to 0. @default false */
@@ -318,10 +321,7 @@ function persistState(key: string, state: PersistedResizableState): void {
 const SERVER_BASIS = 1200;
 const DEFAULT_SIZE_FALLBACK = 250;
 const MAX_CSS_MATH_DEPTH = 8;
-const ATOMIC_SIZE_GUIDANCE =
-  'Use a non-negative number of pixels, an exact "Npx" string, or an exact ' +
-  '"N%" string from 0% to 100%.';
-const CONSTRAINT_SIZE_GUIDANCE =
+const UNIFIED_SIZE_GUIDANCE =
   'Use a non-negative number of pixels, an exact "Npx" string, an exact ' +
   `"N%" string from 0% to 100%, or a recursive CSS min()/max() expression ` +
   `nested at most ${MAX_CSS_MATH_DEPTH} levels.`;
@@ -341,7 +341,7 @@ const SIZE_TOKEN_PATTERN = /^(\d+(?:\.\d+)?)(px|%)/;
 const CSS_WHITESPACE_PATTERN = /^[\t\n\f\r ]$/;
 
 /**
- * Parses the complete string. Constraint values additionally accept recursive,
+ * Parses the complete string. Unified values additionally accept recursive,
  * comma-separated CSS `min()` and `max()` expressions. Nesting is bounded so a
  * configuration value cannot recurse without limit.
  */
@@ -591,22 +591,32 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   const rawMin = hasUnifiedMin ? minSize : minSizePx;
   const rawMax = hasUnifiedMax ? maxSize : maxSizePx;
 
-  const parsedDefault = parseSize(defaultSize);
+  const parsedDefault = parseSize(defaultSize, true);
   const parsedMin = hasUnifiedMin
     ? parseSize(minSize, true)
     : parseLegacyPixel(minSizePx, false);
   const parsedMax = hasUnifiedMax
     ? parseSize(maxSize, true)
     : parseLegacyPixel(maxSizePx, true);
-
-  // A pure-pixel expression subscribes to nothing. Percentage dependency must
-  // be recursive: `min(400px, max(5%, 10%))` follows the basis even though the
-  // outer function itself carries no percentage token.
-  const usesBasis =
-    dependsOnBasis(parsedDefault) ||
-    dependsOnBasis(parsedMin) ||
-    dependsOnBasis(parsedMax);
   const hasContainer = containerRef != null;
+  const persisted = autoSaveId ? loadPersistedState(autoSaveId) : null;
+  const initialDefaultRef = useRef<{px: number; isFinal: boolean} | null>(null);
+  const [, setDefaultBasisCleanupTick] = useState(0);
+
+  const defaultDependsOnBasis = dependsOnBasis(parsedDefault);
+  const boundsDependOnBasis =
+    dependsOnBasis(parsedMin) || dependsOnBasis(parsedMax);
+  // A default needs a live container only until its initial pixel choice is
+  // final. A persisted pixel choice wins without measuring the unused default.
+  // Bounds are different: percentage leaves at any depth keep following the
+  // basis so they can re-clamp the selected pixel size.
+  const defaultNeedsInitialBasis =
+    persisted?.size == null &&
+    defaultDependsOnBasis &&
+    initialDefaultRef.current?.isFinal !== true;
+  const observeContainerBasis =
+    hasContainer && (boundsDependOnBasis || defaultNeedsInitialBasis);
+  const observeViewportBasis = !hasContainer && boundsDependOnBasis;
 
   // The container basis, read through the shared observer. `useSyncExternalStore`
   // rather than an effect: the store IS the measurement, so there is no render
@@ -643,7 +653,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
 
   const subscribeToContainer = useCallback(
     (onStoreChange: () => void) => {
-      if (!usesBasis || containerElement == null) {
+      if (!observeContainerBasis || containerElement == null) {
         return () => {};
       }
       // Unsubscribe by callback: several regions share one container, and any
@@ -657,10 +667,15 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
         onStoreChange();
       });
     },
-    [containerElement, usesBasis, direction],
+    [containerElement, observeContainerBasis, direction],
   );
   const readContainerBasis = useCallback(() => {
-    if (!usesBasis || containerElement == null) {
+    if (!observeContainerBasis || containerElement == null) {
+      // An inactive subscription owns no current measurement. Clearing this is
+      // important when a percentage bound is added later: the first active
+      // render must measure the container as it is now, not clamp against the
+      // last basis seen by a default-only subscription.
+      containerBasisRef.current = null;
       return null;
     }
     // Cached in a ref so the snapshot is referentially stable between resizes;
@@ -672,25 +687,29 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
       );
     }
     return containerBasisRef.current;
-  }, [containerElement, usesBasis, direction]);
+  }, [containerElement, observeContainerBasis, direction]);
   const containerBasis = useSyncExternalStore(
     subscribeToContainer,
     readContainerBasis,
     () => null,
   );
 
-  // The viewport basis, for the no-container compatibility path. Percentage
-  // BOUNDS follow it (FR6); the percentage default does not, because it is
-  // latched once below.
+  // The viewport basis is always readable synchronously. Percentage-dependent
+  // BOUNDS subscribe to later resizes (FR6); a default reads the initial
+  // snapshot only, because it becomes a pixel choice immediately.
   const subscribeToViewport = useCallback(
     (onStoreChange: () => void) => {
-      if (hasContainer || !usesBasis || typeof window === 'undefined') {
+      if (
+        hasContainer ||
+        !observeViewportBasis ||
+        typeof window === 'undefined'
+      ) {
         return () => {};
       }
       window.addEventListener('resize', onStoreChange);
       return () => window.removeEventListener('resize', onStoreChange);
     },
-    [hasContainer, usesBasis],
+    [hasContainer, observeViewportBasis],
   );
   const viewportBasis = useSyncExternalStore(
     subscribeToViewport,
@@ -708,7 +727,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // the panel collapsed and, with `autoSaveId`, that 0 was written over a
   // perfectly good saved width. Treating 0 as unmeasured keeps the temporary
   // basis until the container is actually laid out (AST-010 Platform support).
-  const needsContainerBasis = hasContainer && usesBasis;
+  const needsContainerBasis = observeContainerBasis;
   const hasPositiveMeasurement = containerBasis != null && containerBasis > 0;
   const liveBasis = hasContainer
     ? hasPositiveMeasurement
@@ -741,7 +760,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     basis,
     DEFAULT_MIN,
     hasUnifiedMin ? 'minSize' : 'minSizePx',
-    hasUnifiedMin ? CONSTRAINT_SIZE_GUIDANCE : LEGACY_PIXEL_GUIDANCE,
+    hasUnifiedMin ? UNIFIED_SIZE_GUIDANCE : LEGACY_PIXEL_GUIDANCE,
     didWarnMinRef,
   );
   const resolvedMax = resolveBound(
@@ -750,22 +769,20 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     basis,
     Infinity,
     hasUnifiedMax ? 'maxSize' : 'maxSizePx',
-    hasUnifiedMax ? CONSTRAINT_SIZE_GUIDANCE : LEGACY_MAX_PIXEL_GUIDANCE,
+    hasUnifiedMax ? UNIFIED_SIZE_GUIDANCE : LEGACY_MAX_PIXEL_GUIDANCE,
     didWarnMaxRef,
   );
 
-  const persisted = autoSaveId ? loadPersistedState(autoSaveId) : null;
-
-  // The percentage default is resolved ONCE into a pixel size. Latched in a ref
-  // (React's sanctioned lazy-init shape) rather than recomputed, because a
+  // A basis-dependent default is resolved ONCE into a pixel size. Latched in a
+  // ref (React's sanctioned lazy-init shape) rather than recomputed, because a
   // default that kept tracking its basis would be a second, responsive sizing
   // mode — the thing this API deliberately does not have.
   //
   // Not final while a supplied container is still unmeasured: that render used
   // the temporary 1200px stand-in, and the first real measurement replaces it.
-  // That correction is not a user interaction, so it neither persists nor
-  // fires `onSizeChange`.
-  const initialDefaultRef = useRef<{px: number; isFinal: boolean} | null>(null);
+  // Once final, a default-only subscription is removed. The correction is not a
+  // user interaction, so it neither persists the placeholder nor fires
+  // `onSizeChange`.
   if (initialDefaultRef.current == null || !initialDefaultRef.current.isFinal) {
     initialDefaultRef.current = {
       px: resolveBound(
@@ -774,7 +791,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
         basis,
         DEFAULT_SIZE_FALLBACK,
         'defaultSize',
-        ATOMIC_SIZE_GUIDANCE,
+        UNIFIED_SIZE_GUIDANCE,
         didWarnDefaultRef,
       ),
       isFinal: isBasisMeasured,
@@ -803,6 +820,19 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
       ? clampSize(initialDefaultPx, resolvedMin, resolvedMax, snaps)
       : null;
   });
+
+  if (
+    hasContainer &&
+    !boundsDependOnBasis &&
+    isBasisMeasured &&
+    defaultNeedsInitialBasis &&
+    chosenSize != null
+  ) {
+    // A programmatic resize may have selected pixels while the container was
+    // still unmeasured, so chosenSize can already be non-null here. Force the
+    // render that re-evaluates and removes the now-finished default subscription.
+    setDefaultBasisCleanupTick(tick => tick + 1);
+  }
 
   if (isBasisMeasured && chosenSize == null) {
     // The supplied container has now been measured, so the selection latched

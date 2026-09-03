@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -91,6 +91,92 @@ function CssMathConstraintProbe({kind}: {kind: 'minimum' | 'maximum'}) {
         }
         content={<LayoutContent>{expression}</LayoutContent>}
       />
+    </div>
+  );
+}
+
+function CssMathDefaultProbe({
+  initialWidth,
+  label,
+}: {
+  initialWidth: number;
+  label: 'wide' | 'narrow';
+}) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const expression = 'max(40%, 333px)';
+  const storageKey = `storybook-css-math-default-${label}`;
+  const region = useResizable({
+    defaultSize: expression,
+    containerRef: frameRef,
+    autoSaveId: storageKey,
+  });
+
+  return (
+    <div
+      ref={frameRef}
+      data-testid={`css-math-default-${label}-frame`}
+      data-expression={expression}
+      data-initial-width={initialWidth}
+      data-size={region.size}
+      data-storage-key={`astryx-resizable:${storageKey}`}
+      {...stylex.props(s.shell, s.constraintFrame)}
+      style={{width: initialWidth}}>
+      <Layout
+        height="fill"
+        start={
+          <>
+            <LayoutPanel
+              width={region.size}
+              hasDivider={false}
+              data-testid={`css-math-default-${label}-panel`}>
+              <div {...stylex.props(s.card)}>
+                <strong>
+                  {label === 'wide' ? 'Wide' : 'Narrow'} initial basis ·{' '}
+                  {initialWidth}px outer / {initialWidth - 2}px content
+                </strong>
+                <div>
+                  <code>defaultSize: &apos;{expression}&apos;</code>
+                </div>
+                <div>{Math.round(region.size)}px initial pixel choice</div>
+              </div>
+            </LayoutPanel>
+            <ResizeHandle
+              direction="horizontal"
+              hasDivider
+              label={`Resize ${label} default expression example`}
+              resizable={region.props}
+            />
+          </>
+        }
+        content={
+          <LayoutContent>
+            Later container resizes do not rescale this initial choice.
+          </LayoutContent>
+        }
+      />
+    </div>
+  );
+}
+
+function CssMathDefaultsStory() {
+  const [storageReady, setStorageReady] = useState(false);
+
+  useEffect(() => {
+    localStorage.removeItem('astryx-resizable:storybook-css-math-default-wide');
+    localStorage.removeItem(
+      'astryx-resizable:storybook-css-math-default-narrow',
+    );
+    setStorageReady(true);
+  }, []);
+
+  if (!storageReady) {
+    return null;
+  }
+
+  return (
+    <div data-testid="css-math-defaults" {...stylex.props(s.constraintStack)}>
+      <CssMathDefaultProbe initialWidth={1000} label="wide" />
+      <CssMathDefaultProbe initialWidth={500} label="narrow" />
     </div>
   );
 }
@@ -429,6 +515,19 @@ export const PercentageSizing: Story = {
       </div>
     );
   },
+};
+
+/**
+ * A CSS math default chooses one initial pixel size, then stops following its basis.
+ *
+ * Both rows use `defaultSize: 'max(40%, 333px)'`. Their different initial
+ * containing blocks select different arms: 399px from the wide 998px content box,
+ * and 333px from the narrow 498px content box. Changing either containing block
+ * later does not rescale the selected size. Use `minSize: 'max(40%, 333px)'`
+ * instead when the expression should remain a persistent responsive floor.
+ */
+export const CssMathDefaults: Story = {
+  render: () => <CssMathDefaultsStory />,
 };
 
 /**

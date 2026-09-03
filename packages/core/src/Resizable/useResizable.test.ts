@@ -11,10 +11,11 @@
  * SYNC: When useResizable changes, update tests to match new behavior
  */
 
-import {createElement, useLayoutEffect} from 'react';
+import {createElement, useLayoutEffect, useRef} from 'react';
+import {hydrateRoot} from 'react-dom/client';
 import {renderToString} from 'react-dom/server';
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {renderHook, act} from '@testing-library/react';
+import {renderHook, act, waitFor} from '@testing-library/react';
 import {useResizable} from './useResizable';
 import type {
   ResizableConstraintValue,
@@ -495,6 +496,7 @@ describe('useResizable percentage configuration (AST-010)', () => {
   beforeEach(() => {
     content = 400;
     contentBlock = 300;
+    StubResizeObserver.instances = [];
     vi.stubGlobal('ResizeObserver', StubResizeObserver);
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({
       paddingTop: '0px',
@@ -648,6 +650,416 @@ describe('useResizable percentage configuration (AST-010)', () => {
       // Inverted on purpose: the maximum wins, as the released clamp order has
       // always done.
       expect(result.current.size).toBe(80);
+    });
+  });
+
+  describe('CSS min()/max() defaults — one initial pixel choice', () => {
+    const observedTargets = () =>
+      StubResizeObserver.instances.flatMap(observer => observer.targets);
+
+    it('resolves against the initial container basis and does not rescale later', () => {
+      content = 1000;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 'max(40%, 333px)',
+          containerRef,
+        }),
+      );
+
+      expect(result.current.size).toBe(400);
+      expect(result.current.props._size).toBe(400);
+      expect(observedTargets()).not.toContain(containerRef.current);
+
+      act(() => {
+        content = 500;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.size).toBe(400);
+      expect(result.current.props._size).toBe(400);
+    });
+
+    it('resolves a narrow initial container independently, then stays pixels', () => {
+      content = 500;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 'max(40%, 333px)',
+          containerRef,
+        }),
+      );
+
+      expect(result.current.size).toBe(333);
+      act(() => {
+        content = 1000;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.size).toBe(333);
+    });
+
+    it('uses the same recursive and variadic grammar as bounds', () => {
+      content = 1000;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 'min(900px, 80%, max(40%, 333px))',
+          containerRef,
+        }),
+      );
+
+      expect(result.current.size).toBe(400);
+    });
+
+    it('uses the initial viewport with no ref and does not follow window resize', () => {
+      window.innerWidth = 1000;
+      const addEventListener = vi.spyOn(window, 'addEventListener');
+      const {result} = renderHook(() =>
+        useResizable({defaultSize: 'max(40%, 333px)'}),
+      );
+
+      expect(result.current.size).toBe(400);
+      expect(
+        addEventListener.mock.calls.some(([type]) => type === 'resize'),
+      ).toBe(false);
+      act(() => {
+        window.innerWidth = 500;
+        window.dispatchEvent(new Event('resize'));
+      });
+      expect(result.current.size).toBe(400);
+    });
+
+    it('uses the deterministic 1200px server basis', () => {
+      const originalWindow = globalThis.window;
+      vi.stubGlobal('window', undefined);
+      try {
+        const html = renderToString(
+          createElement(() => {
+            const region = useResizable({
+              defaultSize: 'max(40%, 333px)',
+            });
+            return createElement('output', null, String(region.size));
+          }),
+        );
+        expect(html).toContain('480');
+      } finally {
+        vi.stubGlobal('window', originalWindow);
+      }
+    });
+
+    it('hydrates the 1200px server choice without a mismatch', async () => {
+      window.innerWidth = 1000;
+      function Probe() {
+        const region = useResizable({
+          defaultSize: 'max(40%, 333px)',
+        });
+        return createElement('output', {'data-size': region.size}, region.size);
+      }
+
+      const serverHTML = renderToString(createElement(Probe));
+      expect(serverHTML).toContain('data-size="480"');
+      const container = document.createElement('div');
+      container.innerHTML = serverHTML;
+      document.body.appendChild(container);
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      const recoverableErrors: unknown[] = [];
+      let root: ReturnType<typeof hydrateRoot>;
+
+      await act(async () => {
+        root = hydrateRoot(container, createElement(Probe), {
+          onRecoverableError: error => recoverableErrors.push(error),
+        });
+      });
+
+      expect(recoverableErrors).toEqual([]);
+      expect(
+        consoleError.mock.calls.filter(call =>
+          String(call[0] ?? '')
+            .toLowerCase()
+            .includes('hydrat'),
+        ),
+      ).toEqual([]);
+      expect(container.querySelector('output')).toHaveAttribute(
+        'data-size',
+        '480',
+      );
+      await act(async () => root.unmount());
+      consoleError.mockRestore();
+      container.remove();
+    });
+
+    it('hydrates a container default from the temporary server basis without persisting it', async () => {
+      content = 500;
+      const clientWidth = vi
+        .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+        .mockImplementation(() => content);
+      const clientHeight = vi
+        .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+        .mockImplementation(() => contentBlock);
+      const setItem = vi.spyOn(Storage.prototype, 'setItem');
+      const onSizeChange = vi.fn();
+
+      function Probe() {
+        const containerRef = useRef<HTMLDivElement>(null);
+        const region = useResizable({
+          defaultSize: 'max(40%, 333px)',
+          containerRef,
+          autoSaveId: 'default-expression-hydration',
+          onSizeChange,
+        });
+        return createElement(
+          'div',
+          {ref: containerRef},
+          createElement('output', {'data-size': region.size}, region.size),
+        );
+      }
+
+      const serverHTML = renderToString(createElement(Probe));
+      expect(serverHTML).toContain('data-size="480"');
+      const container = document.createElement('div');
+      container.innerHTML = serverHTML;
+      document.body.appendChild(container);
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      const recoverableErrors: unknown[] = [];
+      let root: ReturnType<typeof hydrateRoot>;
+
+      await act(async () => {
+        root = hydrateRoot(container, createElement(Probe), {
+          onRecoverableError: error => recoverableErrors.push(error),
+        });
+      });
+      await waitFor(() =>
+        expect(container.querySelector('output')).toHaveAttribute(
+          'data-size',
+          '333',
+        ),
+      );
+
+      expect(recoverableErrors).toEqual([]);
+      expect(
+        consoleError.mock.calls.filter(call =>
+          String(call[0] ?? '')
+            .toLowerCase()
+            .includes('hydrat'),
+        ),
+      ).toEqual([]);
+      expect(onSizeChange).not.toHaveBeenCalled();
+      expect(
+        setItem.mock.calls.some(([, value]) => value.includes('"size":480')),
+      ).toBe(false);
+      expect(
+        localStorage.getItem('astryx-resizable:default-expression-hydration'),
+      ).toBe(JSON.stringify({size: 333, isCollapsed: false}));
+
+      await act(async () => root.unmount());
+      consoleError.mockRestore();
+      setItem.mockRestore();
+      clientWidth.mockRestore();
+      clientHeight.mockRestore();
+      container.remove();
+    });
+
+    it('holds the temporary basis without persisting until a zero container lays out', () => {
+      content = 0;
+      const containerRef = makeContainer();
+      const onSizeChange = vi.fn();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 'max(40%, 333px)',
+          containerRef,
+          autoSaveId: 'default-expression-zero',
+          onSizeChange,
+        }),
+      );
+
+      expect(result.current.size).toBe(480);
+      expect(
+        localStorage.getItem('astryx-resizable:default-expression-zero'),
+      ).toBeNull();
+      expect(observedTargets()).toContain(containerRef.current);
+
+      act(() => {
+        content = 500;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.size).toBe(333);
+      expect(
+        localStorage.getItem('astryx-resizable:default-expression-zero'),
+      ).toBe(JSON.stringify({size: 333, isCollapsed: false}));
+      expect(onSizeChange).not.toHaveBeenCalled();
+      expect(observedTargets()).not.toContain(containerRef.current);
+    });
+
+    it('removes the default observer after resize selects pixels before layout', () => {
+      content = 0;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 'max(40%, 333px)',
+          containerRef,
+        }),
+      );
+
+      expect(observedTargets()).toContain(containerRef.current);
+      act(() => result.current.resize(275));
+      expect(result.current.size).toBe(275);
+
+      act(() => {
+        content = 500;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.size).toBe(275);
+      expect(observedTargets()).not.toContain(containerRef.current);
+    });
+
+    it('lets a persisted pixel choice win without measuring the unused default', () => {
+      localStorage.setItem(
+        'astryx-resizable:default-expression-persisted',
+        JSON.stringify({size: 321, isCollapsed: false}),
+      );
+      content = 1000;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 'max(40%, 333px)',
+          containerRef,
+          autoSaveId: 'default-expression-persisted',
+        }),
+      );
+
+      expect(result.current.size).toBe(321);
+      expect(observedTargets()).not.toContain(containerRef.current);
+      act(() => {
+        content = 500;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.size).toBe(321);
+      expect(
+        localStorage.getItem('astryx-resizable:default-expression-persisted'),
+      ).toBe(JSON.stringify({size: 321, isCollapsed: false}));
+    });
+
+    it('measures the current basis before a newly added bound can clamp', () => {
+      content = 500;
+      const containerRef = makeContainer();
+      const initialProps: {maxSize?: ResizableConstraintValue} = {};
+      const {result, rerender} = renderHook(
+        ({maxSize}: {maxSize?: ResizableConstraintValue}) =>
+          useResizable({
+            defaultSize: 'max(40%, 333px)',
+            maxSize,
+            containerRef,
+          }),
+        {initialProps},
+      );
+
+      expect(result.current.size).toBe(333);
+      expect(observedTargets()).not.toContain(containerRef.current);
+      act(() => result.current.resize(450));
+      expect(result.current.size).toBe(450);
+
+      content = 1000;
+      rerender({maxSize: '50%'});
+
+      expect(result.current.props._maxSizePx).toBe(500);
+      expect(result.current.size).toBe(450);
+      expect(observedTargets()).toContain(containerRef.current);
+    });
+
+    it('keeps bounds responsive after the default becomes pixels', () => {
+      content = 1000;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 'max(40%, 333px)',
+          maxSize: '50%',
+          containerRef,
+        }),
+      );
+
+      expect(result.current.size).toBe(400);
+      expect(result.current.props._maxSizePx).toBe(500);
+      expect(observedTargets()).toContain(containerRef.current);
+      act(() => {
+        content = 600;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.props._maxSizePx).toBe(300);
+      expect(result.current.size).toBe(300);
+      act(() => {
+        content = 1000;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.size).toBe(300);
+    });
+
+    it('gives a pure-pixel default expression no observer or render penalty', () => {
+      const containerRef = makeContainer();
+      let atomicPasses = 0;
+      const atomic = renderHook(() => {
+        atomicPasses += 1;
+        return useResizable({defaultSize: 333, containerRef});
+      });
+      const atomicRenders = atomicPasses;
+      atomic.unmount();
+
+      let expressionPasses = 0;
+      const expression = renderHook(() => {
+        expressionPasses += 1;
+        return useResizable({
+          defaultSize: 'max(40px, 333px)',
+          containerRef,
+        });
+      });
+
+      expect(expression.result.current.size).toBe(333);
+      expect(expressionPasses).toBe(atomicRenders);
+      expect(observedTargets()).not.toContain(containerRef.current);
+    });
+
+    it('matches a plain percentage default render count and drops both subscriptions', () => {
+      content = 1000;
+      const plainRef = makeContainer();
+      let plainPasses = 0;
+      const plain = renderHook(() => {
+        plainPasses += 1;
+        return useResizable({defaultSize: '40%', containerRef: plainRef});
+      });
+      expect(plain.result.current.size).toBe(400);
+      expect(observedTargets()).not.toContain(plainRef.current);
+      plain.unmount();
+
+      const expressionRef = makeContainer();
+      let expressionPasses = 0;
+      const expression = renderHook(() => {
+        expressionPasses += 1;
+        return useResizable({
+          defaultSize: 'max(40%, 333px)',
+          containerRef: expressionRef,
+        });
+      });
+      expect(expression.result.current.size).toBe(400);
+      expect(expressionPasses).toBe(plainPasses);
+      expect(observedTargets()).not.toContain(expressionRef.current);
+    });
+
+    it('keeps unsupported strings on the existing fallback and warning path', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const {result} = renderHook(() =>
+        useResizable({defaultSize: 'calc(100% - 20px)'}),
+      );
+
+      expect(result.current.size).toBe(250);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('useResizable: defaultSize:'),
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Falling back to 250'),
+      );
+      warn.mockRestore();
     });
   });
 
@@ -905,11 +1317,14 @@ describe('useResizable percentage configuration (AST-010)', () => {
       expect(result.current.size).toBe(10_000);
     });
 
-    it('keeps CSS math out of released defaultSize', () => {
-      const {result} = renderHook(() =>
-        useResizable({defaultSize: 'min(400px, 10%)'}),
-      );
-      expect(result.current.size).toBe(250);
+    it('accepts CSS math in defaultSize while preserving its wide public type', () => {
+      const cssMathDefault: UseResizableSingleConfig = {
+        defaultSize: 'max(40%, 333px)',
+      };
+      const computedDefault: UseResizableSingleConfig = {
+        defaultSize: 'runtime-validated-string',
+      };
+      expect([cssMathDefault, computedDefault]).toHaveLength(2);
     });
 
     it('keeps deprecated aliases pixel-only at runtime', () => {

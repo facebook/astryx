@@ -20,7 +20,7 @@ export const docs = {
       name: 'defaultSize',
       type: 'number | string',
       description:
-        'Initial size: a number of pixels, an exact "Npx" string, or an exact "N%" string from 0% to 100%. A percentage resolves ONCE into pixels — against the container when containerRef is supplied, against the viewport otherwise — and does not track its basis afterwards.',
+        'Initial size. Runtime accepts a non-negative pixel number, exact "Npx", exact "N%" from 0% to 100%, or the same recursive CSS min()/max() grammar as the bounds. For example, defaultSize: "max(40%, 333px)" chooses 40% of the initial basis with a 333px floor, resolves ONCE into pixels against containerRef or the viewport, and does not follow later basis changes. The public type remains the released number | string for compatibility; runtime validation is authoritative, and unsupported strings keep the 250px fallback plus a development warning.',
       default: '250',
     },
     {
@@ -145,7 +145,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          "Use minSize: 'max(40%, 333px)' for a fluid floor, or maxSize: 'min(400px, 10%)' for a fluid ceiling. Percentage leaves use containerRef when supplied.",
+          "Use defaultSize: 'max(40%, 333px)' to choose an initial pixel size from the first measurable basis. It does not rescale when the basis later changes.",
+      },
+      {
+        guidance: true,
+        description:
+          "Use minSize: 'max(40%, 333px)' for a persistent fluid floor, or maxSize: 'min(400px, 10%)' for a persistent fluid ceiling. Percentage leaves in bounds re-resolve when their basis changes.",
       },
       {
         guidance: true,
@@ -175,7 +180,8 @@ export const docsDense = {
   description:
     'Adds drag-to-resize behavior to layout regions. Supports single-/multi-region configs w/ snap points, collapsible panels, localStorage persistence, cascade resize ordering.',
   paramDescriptions: {
-    defaultSize: 'initial size: px number, "Npx", or "N%" of the basis.',
+    defaultSize:
+      'initial px number, "Npx", "N%", or nested CSS min()/max(); resolves once.',
     minSize:
       'min constraint: px number, "Npx", "N%", or nested CSS min()/max().',
     maxSize:
@@ -209,6 +215,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use w/ Layout / AppShell sidebar for resizable navigation panels.',
+      },
+      {
+        guidance: true,
+        description:
+          "Use defaultSize: 'max(40%, 333px)' for a one-time initial choice; use minSize with the same expression for a persistent floor.",
       },
       {
         guidance: true,
