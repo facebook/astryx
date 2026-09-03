@@ -2,7 +2,7 @@
 
 /**
  * @file PlaygroundClient.tsx
- * @input URL hash (shared code), user edits, knob edits
+ * @input URL hash or template query, user edits, and knob edits
  * @output Full-page two-panel playground (editor + live preview)
  * @position app/playground — the interactive Astryx code playground.
  *
@@ -37,6 +37,7 @@ import dynamic from 'next/dynamic';
 import * as stylex from '@stylexjs/stylex';
 import {AppShell} from '@astryxdesign/core/AppShell';
 import {compressCode, decompressCode} from '../../lib/compress';
+import {isTrustedPreviewMessage, trustedPreviewOrigin} from './previewChannel';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
@@ -127,25 +128,38 @@ function getInitialCode(): string {
   if (typeof window === 'undefined') {
     return DEFAULT_CODE;
   }
-  const hash = window.location.hash.slice(1);
-  if (!hash) {
-    return DEFAULT_CODE;
+
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  const compressed = hashParams.get('code');
+  if (compressed) {
+    try {
+      return decompressCode(compressed) || DEFAULT_CODE;
+    } catch {
+      return DEFAULT_CODE;
+    }
   }
-  const params = new URLSearchParams(hash);
-  const compressed = params.get('code');
-  if (!compressed) {
-    return DEFAULT_CODE;
-  }
-  try {
-    return decompressCode(compressed) || DEFAULT_CODE;
-  } catch {
-    return DEFAULT_CODE;
-  }
+
+  const templateSlug = new URLSearchParams(window.location.search).get(
+    'template',
+  );
+  const templateSource = templates.find(
+    template => template.slug === templateSlug,
+  )?.source;
+  return templateSource
+    ? stripCodeExampleCopyrightHeader(templateSource)
+    : DEFAULT_CODE;
 }
 
 function updateURL(code: string) {
   const compressed = compressCode(code);
-  window.history.replaceState(null, '', `#code=${compressed}`);
+  const canonicalURL = new URL(window.location.href);
+  canonicalURL.searchParams.delete('template');
+  canonicalURL.hash = `code=${compressed}`;
+  window.history.replaceState(
+    null,
+    '',
+    `${canonicalURL.pathname}${canonicalURL.search}${canonicalURL.hash}`,
+  );
 }
 
 type LeftView = 'code' | 'theme';
@@ -254,7 +268,11 @@ export function PlaygroundClient() {
   const searchParams = useSearchParams();
   const rawThemeParam = searchParams.get('theme');
   const themeParam =
-    rawThemeParam && rawThemeParam in themeByValue ? rawThemeParam : null;
+    // Object.hasOwn (not `in`): the param must match a real playground theme,
+    // not an inherited Object.prototype key like "constructor".
+    rawThemeParam && Object.hasOwn(themeByValue, rawThemeParam)
+      ? rawThemeParam
+      : null;
   const theme = themeParam ?? DEFAULT_PLAYGROUND_THEME;
   // The theme that seeds the Theme editor: the ?theme= theme on first load, then
   // whichever theme the user picks from "Themes". Changing it remounts the
@@ -357,7 +375,7 @@ export function PlaygroundClient() {
   const postToPreview = useCallback((message: unknown) => {
     iframeRef.current?.contentWindow?.postMessage(
       message,
-      window.location.origin,
+      trustedPreviewOrigin(),
     );
   }, []);
 
@@ -407,7 +425,13 @@ export function PlaygroundClient() {
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (e.source !== iframeRef.current?.contentWindow) {
+      if (
+        !isTrustedPreviewMessage(
+          e,
+          trustedPreviewOrigin(),
+          iframeRef.current?.contentWindow,
+        )
+      ) {
         return;
       }
       if (e.data?.type === 'preview-ready') {

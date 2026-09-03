@@ -5,7 +5,8 @@
 /**
  * @file DropdownMenuSubMenu.tsx
  * @input React, stylex, useLayer (context mode), useListFocus, useMenuHover,
- *   useTypeahead, Item, Icon, Spinner, DropdownMenu context + item roles.
+ *   useTypeahead, the shared viewport-safe menu-width resolver, Item, Icon,
+ *   Spinner, and DropdownMenu context + item roles
  * @output Exports DropdownMenuSubMenu — a single menu row that reveals a nested
  *   flyout menu of its own children/items.
  * @position Sub-component; place inside a DropdownMenu (or ContextMenu)
@@ -56,6 +57,8 @@ import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {useTypeahead} from '../hooks/useTypeahead';
+import {useMenuOverflow} from './useMenuOverflow';
+import {resolveMenuWidth} from './menuWidth';
 import {
   colorVars,
   spacingVars,
@@ -66,7 +69,7 @@ import {
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import type {BaseProps} from '../BaseProps';
 import {
@@ -80,6 +83,14 @@ import {
   type DropdownMenuContextValue,
 } from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
+
+const MENU_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
+// `useLayer` adds 4px of anchor clearance. An 8px collision margin resolves
+// to a 4px visible gap after the browser flips the flyout.
+const MENU_MAX_INLINE_SIZE = `calc(100vi - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
+const MENU_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER})`;
+const MENU_MAX_BLOCK_SIZE = `min(300px, calc(100dvb - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))))`;
+const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(300px, calc(100vh - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER}))`;
 
 const triggerStyles = stylex.create({
   root: {
@@ -96,7 +107,10 @@ const triggerStyles = stylex.create({
       ':focus': colorVars['--color-overlay-hover'],
     },
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
     outline: 'none',
   },
@@ -107,7 +121,7 @@ const triggerStyles = stylex.create({
   },
   disabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   caret: {
     display: 'flex',
@@ -132,8 +146,14 @@ const flyoutStyles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
-    maxHeight: '300px',
-    overflowY: 'auto',
+    maxInlineSize: stylex.firstThatWorks(
+      MENU_MAX_INLINE_SIZE,
+      MENU_MAX_INLINE_SIZE_FALLBACK,
+    ),
+    maxHeight: stylex.firstThatWorks(
+      MENU_MAX_BLOCK_SIZE,
+      MENU_MAX_BLOCK_SIZE_FALLBACK,
+    ),
     '--_dropdown-menu-radius': radiusVars['--radius-container'],
     '--_dropdown-menu-padding': spacingVars['--spacing-1'],
     padding: spacingVars['--spacing-1'],
@@ -145,11 +165,33 @@ const flyoutStyles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  popover: {
-    minWidth: '160px',
+  scrollable: {
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    overscrollBehavior: 'contain',
   },
-  popoverCustomWidth: (width: string | number) => ({
-    minWidth: typeof width === 'number' ? `${width}px` : width,
+  popoverViewport: {
+    boxSizing: 'border-box',
+    // Keep the inline viewport cap on the menu surface above. Applying it to
+    // the anchor-positioned popover itself prevents Chromium from selecting
+    // `flip-inline` and instead shifts the flyout back across its parent.
+    maxBlockSize: stylex.firstThatWorks(
+      MENU_MAX_BLOCK_SIZE,
+      MENU_MAX_BLOCK_SIZE_FALLBACK,
+    ),
+  },
+  popover: {
+    minWidth: stylex.firstThatWorks(
+      `min(160px, ${MENU_MAX_INLINE_SIZE})`,
+      `min(160px, ${MENU_MAX_INLINE_SIZE_FALLBACK})`,
+      '160px',
+    ),
+  },
+  popoverCustomWidth: (width: string) => ({
+    minWidth: width,
+  }),
+  popoverCustomIntrinsicWidth: (width: string) => ({
+    inlineSize: width,
   }),
 });
 
@@ -175,7 +217,10 @@ interface DropdownMenuSubMenuBaseProps extends Pick<
    * @default false
    */
   hasSpinner?: boolean;
-  /** Fixed flyout width. Defaults to sizing to its content (min 160px). */
+  /**
+   * Minimum flyout width. The flyout may grow for its content but is capped to
+   * the available viewport space. Defaults to intrinsic sizing (min 160px).
+   */
   menuWidth?: number | string;
   /** Called when the flyout opens or closes. */
   onOpenChange?: (isOpen: boolean) => void;
@@ -286,6 +331,7 @@ export function DropdownMenuSubMenu(
     wrap: false,
     onEscape: () => close({focusTrigger: true}),
   });
+  const hasOverflow = useMenuOverflow(menuRef, children, isOpen);
 
   const typeahead = useTypeahead({
     getItemLabels: () => getItems().map(el => el.textContent),
@@ -299,12 +345,16 @@ export function DropdownMenuSubMenu(
 
   // Hover-intent: entering the trigger opens after a short delay; leaving
   // either surface closes after a delay. Hover-open does not steal focus.
-  const {triggerProps, contentProps} = useMenuHover<HTMLDivElement>({
-    show: showLayer,
-    hide: hideLayer,
-    isOpen,
-    isEnabled: canOpen,
-  });
+  // Hover intent and the shared hover→click guard only: this level owns its own
+  // click handling, roving focus and typeahead. popover="manual", so the
+  // invoker wiring other consumers need does not apply.
+  const {triggerProps, contentProps, confirmHoverOpen} =
+    useMenuHover<HTMLDivElement>({
+      show: showLayer,
+      hide: hideLayer,
+      isOpen,
+      isEnabled: canOpen,
+    });
 
   const open = useCallback(
     (options?: {focusFirst?: boolean}) => {
@@ -313,18 +363,12 @@ export function DropdownMenuSubMenu(
       }
       layer.show();
       if (options?.focusFirst) {
-        requestAnimationFrame(() => {
-          // Move focus into the flyout. When it has no focusable items yet
-          // (e.g. an async submenu showing only a disabled "Loading…" row via
-          // hasSpinner), focusFirst() finds nothing — fall back to focusing the
-          // flyout container itself so keyboard ownership still transfers off
-          // the parent list. Otherwise the parent would keep focus, letting
-          // arrow keys rove the parent while the empty flyout stays open.
-          const focusedItem = focusFirst();
-          if (!focusedItem) {
-            menuRef.current?.focus();
-          }
-        });
+        // Synchronous by design — see the focus note in useMenuHover. A
+        // still-loading flyout has no focusable item, so fall back to the
+        // container: keyboard ownership must leave the parent list either way.
+        if (!focusFirst()) {
+          menuRef.current?.focus();
+        }
       }
     },
     [canOpen, layer, focusFirst, menuRef],
@@ -354,13 +398,19 @@ export function DropdownMenuSubMenu(
     if (isDisabled) {
       return;
     }
-    // Click toggles the flyout, moving focus into it on open.
+    // Toggles, except for the click that follows a hover-open (#3121).
     if (isOpen) {
+      if (confirmHoverOpen()) {
+        if (!focusFirst()) {
+          menuRef.current?.focus();
+        }
+        return;
+      }
       close({focusTrigger: true});
     } else {
       open({focusFirst: true});
     }
-  }, [isDisabled, isOpen, open, close]);
+  }, [isDisabled, isOpen, open, close, confirmHoverOpen, focusFirst, menuRef]);
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -469,25 +519,28 @@ export function DropdownMenuSubMenu(
   );
 
   const endAffordance = hasSpinner ? (
-    <span
-      {...mergeProps(
-        themeProps('dropdown-menu-indicator-icon'),
-        stylex.props(triggerStyles.caret),
-      )}>
+    <span {...stylex.props(triggerStyles.caret)}>
       <Spinner size="sm" />
     </span>
   ) : (
-    <span
-      {...mergeProps(
-        themeProps('dropdown-menu-indicator-icon'),
-        stylex.props(triggerStyles.caret),
-      )}>
-      <Icon icon="chevronRight" size="sm" color="secondary" />
+    <span {...stylex.props(triggerStyles.caret)}>
+      <Icon
+        icon="chevronRight"
+        size="sm"
+        color="secondary"
+        xstyle={rtlStyles.mirror}
+        {...themeProps('dropdown-menu-indicator-icon')}
+      />
     </span>
   );
 
-  const popoverXstyle = menuWidth
-    ? flyoutStyles.popoverCustomWidth(menuWidth)
+  const resolvedMenuWidth = menuWidth
+    ? resolveMenuWidth(menuWidth, MENU_MAX_INLINE_SIZE_FALLBACK)
+    : null;
+  const popoverXstyle = resolvedMenuWidth
+    ? resolvedMenuWidth.property === 'inlineSize'
+      ? flyoutStyles.popoverCustomIntrinsicWidth(resolvedMenuWidth.value)
+      : flyoutStyles.popoverCustomWidth(resolvedMenuWidth.value)
     : flyoutStyles.popover;
 
   return (
@@ -533,11 +586,10 @@ export function DropdownMenuSubMenu(
           ref={menuRef}
           id={contentId}
           role="menu"
-          // Focusable as a fallback target so an empty/loading flyout (e.g.
-          // hasSpinner with only a disabled row) can still receive keyboard
-          // focus and own arrow/Escape keys instead of leaving focus on the
-          // parent list.
-          tabIndex={-1}
+          // Focusable as a fallback target so an empty/loading flyout can own
+          // arrow/Escape keys. An overflowing flyout joins the Tab order so its
+          // scrollable region is keyboard-accessible.
+          tabIndex={hasOverflow ? 0 : -1}
           aria-labelledby={triggerId}
           onKeyDown={handleContentKeyDown}
           onMouseEnter={contentProps.onMouseEnter}
@@ -545,7 +597,10 @@ export function DropdownMenuSubMenu(
           data-testid={menuDataTestId}
           {...mergeProps(
             themeProps('dropdown-menu'),
-            stylex.props(flyoutStyles.menu),
+            stylex.props(
+              flyoutStyles.menu,
+              hasOverflow && flyoutStyles.scrollable,
+            ),
           )}>
           <DropdownMenuContext value={nestedMenuContext}>
             {children}
@@ -555,7 +610,11 @@ export function DropdownMenuSubMenu(
           placement: 'end',
           alignment: 'start',
           offset: spacingVars['--spacing-1'],
-          xstyle: [popoverXstyle, layerAnimations.end],
+          xstyle: [
+            flyoutStyles.popoverViewport,
+            popoverXstyle,
+            layerAnimations.end,
+          ],
         },
       )}
     </>

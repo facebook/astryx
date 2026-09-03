@@ -88,8 +88,8 @@ export default defineConfig({
     execArgv: ['--max-old-space-size=4096'],
     // Test projects (migrated from vitest.workspace.ts). Partitioning rule
     // (nothing can fall through):
-    //   - `ui`   = packages/core + packages/lab + packages/charts + packages/richtext —
-    //              need jsdom, the StyleX babel
+    //   - `ui`   = packages/core + packages/lab + packages/charts + packages/richtext
+    //              + packages/vega — need jsdom, the StyleX babel
     //              transform, and the jest-dom setup; inherit all of that from
     //              the root config via `extends: true`.
     //   - `node` = everything else (CLI, build tooling, scripts, internal
@@ -104,11 +104,19 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'ui',
+          // A jsdom component suite can cost ~1.8s p95 per test where a
+          // comparable file costs ~80ms, so the 5s default leaves almost no
+          // headroom: on a busy machine slow-but-correct runs flake
+          // non-deterministically (every failure was "timed out in 5000ms",
+          // never a wrong value). Same budget as `node`, for the same reason.
+          testTimeout: 30_000,
+          hookTimeout: 30_000,
           include: [
             'packages/core/src/**/*.test.{ts,tsx,mjs}',
             'packages/lab/src/**/*.test.{ts,tsx,mjs}',
             'packages/charts/src/**/*.test.{ts,tsx,mjs}',
             'packages/richtext/src/**/*.test.{ts,tsx,mjs}',
+            'packages/vega/src/**/*.test.{ts,tsx,mjs}',
           ],
         },
       },
@@ -131,8 +139,8 @@ export default defineConfig({
           hookTimeout: 30_000,
           // Build @astryxdesign/core once before workers fork. The build-theme
           // suites need a compiled core; doing it here (not per-suite in
-          // parallel workers) avoids concurrent `rimraf dist && build`
-          // collisions that flake under Vitest 4's reworked pool.
+          // parallel workers) avoids concurrent clean-and-build collisions that
+          // flake under Vitest 4's reworked pool.
           globalSetup: ['./vitest.global-setup.node.mjs'],
           include: [
             'packages/**/src/**/*.test.{ts,tsx,mjs}',
@@ -142,6 +150,9 @@ export default defineConfig({
             'internal/**/*.test.{ts,tsx,mjs}',
             'scripts/**/*.test.{ts,tsx,mjs}',
             '.github/scripts/**/*.test.{ts,tsx,mjs}',
+            // Storybook config invariants (no DOM needed) — e.g. the
+            // workspace source-alias guard in .storybook/main.test.ts.
+            'apps/storybook/.storybook/**/*.test.{ts,tsx,mjs}',
           ],
           exclude: [
             ...configDefaults.exclude,
@@ -149,6 +160,7 @@ export default defineConfig({
             'packages/lab/**',
             'packages/charts/**',
             'packages/richtext/**',
+            'packages/vega/**',
           ],
         },
       },

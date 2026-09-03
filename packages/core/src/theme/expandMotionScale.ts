@@ -18,6 +18,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/theme/expandMotionScale.test.ts
  * - /packages/core/src/theme/defineTheme.ts
+ * - /packages/cli/assets/theme.template.ts (the annotated field reference)
  */
 
 // =============================================================================

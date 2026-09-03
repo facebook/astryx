@@ -18,15 +18,18 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   typographyVars,
+  typeScaleVars,
   fontWeightVars,
-  radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
+import {shapeStyles} from '../Avatar/Avatar';
 import {mergeProps} from '../utils';
+import {resolveSize} from '../Avatar';
 import {useAvatarGroup} from './AvatarGroupContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 
 const BORDER_WIDTH = 2;
@@ -57,10 +60,16 @@ export interface AvatarGroupOverflowProps extends Omit<
 const styles = stylex.create({
   base: {
     position: 'relative',
-    display: 'flex',
+    // inline-flex, not flex: outside an AvatarGroup this span is not a flex
+    // item, and a block-level flex container stretches to its parent's width
+    // instead of staying a circle.
+    display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radiusVars['--radius-full'],
+    // Reads the shape variant's `--_avatar-radius` (set via `shapeStyles`,
+    // shared with Avatar) so the overflow indicator matches the group's
+    // shape instead of always staying a circle.
+    borderRadius: 'var(--_avatar-radius)',
     // Use opaque background to prevent avatar bleed-through
     backgroundColor: colorVars['--color-background-surface'],
     color: colorVars['--color-text-secondary'],
@@ -81,22 +90,22 @@ const styles = stylex.create({
     backgroundImage: `linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
   },
   button: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     // Reset the UA button's block padding only; the inline padding from `base`
     // provides the pill's breathing room and must be preserved.
     paddingBlock: 0,
-    // Interactive overlay states layered on top via backgroundImage
-    backgroundImage: {
-      default: `linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']}), linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']}), linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
-    },
     // Focus ring via focus-visible
   },
   overlap: {
-    marginInlineStart: 'var(--_avatar-group-overlap)',
+    // Matches Avatar's own overlap rule: the first item in the row must not be
+    // pulled outside the group's box.
+    marginInlineStart: {
+      default: null,
+      ':not(:first-child)': 'var(--_avatar-group-overlap)',
+    },
   },
 });
 
@@ -113,7 +122,13 @@ const dynamicStyles = stylex.create({
     height: s + BORDER_WIDTH * 2,
   }),
   fontSize: (s: number) => ({
-    fontSize: s * OVERFLOW_FONT_RATIO,
+    // Scales with the avatar, but never below the supporting-text role token,
+    // which is the 12px legibility floor. At xsm the bare ratio computes 7px,
+    // where the glyph stroke is thinner than a pixel and never reaches its
+    // own text colour (measured 1.63:1 against a 4.5:1 requirement).
+    fontSize: `max(${typeScaleVars['--text-supporting-size']}, ${
+      s * OVERFLOW_FONT_RATIO
+    }px)`,
   }),
   overlap: (offset: number) => ({
     '--_avatar-group-overlap': `${offset}px`,
@@ -146,11 +161,17 @@ export function AvatarGroupOverflow({
 }: AvatarGroupOverflowProps): ReactNode {
   const t = useTranslator();
   const group = useAvatarGroup();
-  const numericSize = group?.numericSize ?? 36;
+  const size = group?.size ?? 'md';
+  const shape = group?.shape ?? 'circle';
+  const numericSize = group?.numericSize ?? resolveSize('md');
   const overlap = group?.overlap ?? 0;
 
-  const label = t('@astryx.avatarGroup.overflow', {count});
-  const content = children ?? `+${count}`;
+  // count is a plain number, and the documented shape for it is
+  // `total - visibleCount`, which goes negative whenever the list is shorter
+  // than the slice. Clamping keeps that from rendering "+-3".
+  const safeCount = Math.max(0, count);
+  const label = t('@astryx.avatarGroup.overflow', {count: safeCount});
+  const content = children ?? `+${safeCount}`;
 
   if (onClick) {
     return (
@@ -162,14 +183,16 @@ export function AvatarGroupOverflow({
         aria-label={label}
         data-avatar-item=""
         {...mergeProps(
-          themeProps('avatar-group-overflow'),
+          themeProps('avatar-group-overflow', {size, shape}),
           focusOutlineProps.focusVisible(
             styles.base,
             styles.button,
+            interactionOverlayStyles.backgroundImageOnNeutral,
             styles.overlap,
             dynamicStyles.size(numericSize),
             dynamicStyles.fontSize(numericSize),
             dynamicStyles.overlap(-overlap),
+            shapeStyles[shape],
             xstyle,
           ),
           className,
@@ -186,13 +209,14 @@ export function AvatarGroupOverflow({
       {...rest}
       aria-label={label}
       {...mergeProps(
-        themeProps('avatar-group-overflow'),
+        themeProps('avatar-group-overflow', {size, shape}),
         stylex.props(
           styles.base,
           styles.overlap,
           dynamicStyles.size(numericSize),
           dynamicStyles.fontSize(numericSize),
           dynamicStyles.overlap(-overlap),
+          shapeStyles[shape],
           xstyle,
         ),
         className,

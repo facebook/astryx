@@ -14,6 +14,8 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
+ * - /packages/core/src/Chat/ChatComposerInput.tsx (token alignment must match,
+ *   or a token moves when the message is sent)
  * - /packages/cli/assets/templates/blocks/components/ChatTokenizedText/ (block examples)
  */
 
@@ -32,6 +34,10 @@ import {themeProps} from '../utils/themeProps';
 const styles = stylex.create({
   root: {
     display: 'inline',
+  },
+  token: {
+    display: 'inline-flex',
+    verticalAlign: 'middle',
   },
 });
 
@@ -74,7 +80,7 @@ function isCustomToken(
 }
 
 function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // =============================================================================
@@ -156,16 +162,17 @@ function renderTokens(text: string, tokens: ChatComposerToken[]): ReactNode[] {
     const token = tokenMap.get(matched);
     if (token) {
       parts.push(
-        isCustomToken(token) ? (
-          <span key={`${matched}-${match.index}`}>{token.render()}</span>
-        ) : (
-          <Badge
-            key={`${matched}-${match.index}`}
-            label={token.label}
-            variant={token.variant}
-            icon={token.icon}
-          />
-        ),
+        <span key={`${matched}-${match.index}`} {...stylex.props(styles.token)}>
+          {isCustomToken(token) ? (
+            token.render()
+          ) : (
+            <Badge
+              label={token.label}
+              variant={token.variant}
+              icon={token.icon}
+            />
+          )}
+        </span>,
       );
     }
 

@@ -9,13 +9,14 @@ differences. It reuses the `@playwright/test` chromium the `pr-a11y` job already
 installs and mirrors that job's build-storybook → serve → drive shape. In CI it
 is the `pr-rtl` job — the RTL sibling of `pr-a11y`.
 
-## Two layers
+## Three layers
 
-### A. Auto-discovery — over every `core-*` story in scope
+### A. Auto-discovery — over every `core-*` and `lab-*` story in scope
 
 The point of the audit is to auto-catch **new or changed** components, so the
-auto-discovery layer runs with **zero curated selectors**. There are two
-independent auto passes: **D1 (icon-mirror)** and **D5 (positional-mirror)**.
+auto-discovery layer runs with **zero curated selectors**. There are three
+independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
+**D6 (directional-decoration)**.
 
 > **Scope in CI.** `pr-rtl` passes `--filter` with the components the PR
 > touched (from `analysis.json`), matching `pr-a11y`. The full unfiltered sweep
@@ -24,7 +25,7 @@ independent auto passes: **D1 (icon-mirror)** and **D5 (positional-mirror)**.
 
 ### A.1 D1 icon-mirror
 
-Directional-icon mirroring. For each core story it:
+Directional-icon mirroring. For each audited story it:
 
 1. Loads the story LTR and RTL.
 2. Finds **directional** icons generically — classifying each icon SVG as
@@ -69,7 +70,7 @@ because their embedded Calendar chevrons mirror once the popover is open.
 
 ### A.2 D5 positional-mirror
 
-A second auto pass, over **every** core story, that catches a bug class D1 and
+A second auto pass, over **every** audited-package story, that catches a bug class D1 and
 the `@astryx/no-physical-properties` **lint both miss**: an element positioned
 with a **logical anchor** (`insetInlineStart` / `insetInlineEnd`, which _does_
 flip under RTL) paired with an **unflipped physical transform**
@@ -161,6 +162,31 @@ flagged. The bug only exists in the **interaction** of the two at layout time,
 which is visible only by comparing the rendered LTR vs RTL geometry — exactly
 what D5 does.
 
+### A.3 D6 directional-decoration
+
+Text can be directional because of its **role in the UI**, not only because of
+the character itself. `/` in prose is neutral; the same `/` rendered as an
+`aria-hidden` separator between repeated breadcrumb items communicates forward
+progress and must mirror.
+
+D6 runs over every story and auto-discovers only strong decoration contexts:
+
+- the element is `aria-hidden="true"`;
+- its trimmed content is one supported glyph; and
+- it belongs to repeated list items or sits between sibling elements.
+
+That context prevents ordinary prose, dates, fractions, and paths from becoming
+false positives. D6 then applies the glyph's actual bidi contract:
+
+- `/`, `\\`, `→`, `←`, `>`, and `<` require exactly one explicit transform
+  mirror or a left/right glyph swap;
+- `›`, `‹`, `»`, and `«` have Unicode `Bidi_Mirrored=Yes`, so the browser
+  mirrors an unchanged glyph. Swapping or transforming them again is a failure.
+
+D6 returns **N-A** when a story contains no contextual decoration. The
+applicability layer below decides whether that N-A is explained; D6 itself does
+not turn absence into a pass.
+
 ### B. Curated precision — D2 / D3 / D4
 
 `targets.json` holds the geometry/behavior dimensions that genuinely need
@@ -172,8 +198,41 @@ hand-written selectors, run **in addition** to auto-discovery:
   axis: "next" makes `scrollLeft` go positive in LTR and negative in RTL.
 - **D4 overlay-side** — a positioned affordance flips side (`boundingBox`).
 
-D1 is intentionally **not** in `targets.json` — auto-discovery covers it
-universally.
+D1 and D6 are intentionally **not** in `targets.json`; auto-discovery covers
+them universally.
+
+### C. Applicability: no unexplained all-N/A components
+
+The report rolls every component in the live Core and Lab source roster into one
+of three states:
+
+- **measured**: at least one D1/D5/D6 or curated dimension was applicable;
+- **verified N-A**: `verified-not-applicable.json` records a specific reason
+  the component has no direction-sensitive visual, layout, or behavior;
+- **coverage gap**: every dimension returned N-A and no reason is recorded.
+
+Coverage gaps are findings. This rule applies to the existing full-library
+weekly sweep and to every new or changed component in PR CI. A component with no
+story is also a gap when it is named by `--filter`; it cannot disappear from the
+report merely because there was nothing to render.
+
+A verified-N/A declaration is not an allowlist. If an automatic or curated
+dimension later becomes applicable, the declaration is reported as
+**stale-verified-na** and must be removed or replaced with real coverage.
+
+Add a declaration only after reading the component's source and every story:
+
+```json
+[
+  {
+    "component": "core/Text",
+    "reason": "No direction-sensitive visual, positioned element, order, scroll, drag, overlay, or keyboard behavior."
+  }
+]
+```
+
+An all-N/A scorecard without such a checked-in reason means **unmeasured**, not
+RTL-ready.
 
 ## Why relationship-based, not pixel baselines
 
@@ -217,8 +276,10 @@ pnpm rtl:audit -- --auto-only
 pnpm rtl:audit -- --curated-only
 ```
 
-Exit code is non-zero if auto-discovery finds any not-RTL component or a curated
-dim fails — but the CI job is soft (see below), so this never hard-blocks.
+Exit code is non-zero if auto-discovery finds a not-RTL component, a curated
+dimension fails, the applicability registry is invalid, or a full-mode run has
+a coverage gap or stale verified-N/A declaration. CI remains soft-gated (see
+below), so the signal does not hard-block yet.
 
 ## Adding a curated target
 

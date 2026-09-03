@@ -7,6 +7,16 @@ export const docs = {
   subComponentOf: 'TopNav',
   displayName: 'Top Nav Menu',
   description: 'Navigation item that displays a hover-triggered popover menu with rich items containing an icon, title, and optional description.',
+  playground: {
+    defaults: {
+      label: 'Products',
+      items: [
+        {title: 'Analytics', description: 'Usage metrics and trends', href: '#'},
+        {title: 'Automation', description: 'Workflows and rules', href: '#'},
+        {title: 'Billing', href: '#'},
+      ],
+    },
+  },
   props: [
     {
       name: 'label',

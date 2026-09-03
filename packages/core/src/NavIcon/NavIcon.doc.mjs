@@ -1,5 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Container',
+    required: true,
+    description: 'Circular painted container for the supplied icon.',
+  },
+  {
+    name: 'Icon',
+    required: true,
+    description: 'Caller-supplied visual content rendered inside the container.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -22,10 +36,14 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-navicon'},
+      {className: 'astryx-nav-icon'},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-navicon', deprecatedFor: 'nav-icon'},
     ],
   },
   usage: {
+    anatomy,
     description:
       'NavIcon is a circular icon container with an accent-colored background. Use it in navigation headers such as TopNavHeading and PageNavHeader to visually identify a section or application.',
     bestPractices: [
@@ -51,10 +69,14 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-navicon'},
+      {className: 'astryx-nav-icon'},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-navicon', deprecatedFor: 'nav-icon'},
     ],
   },
   usage: {
+    anatomy,
     description:
       'NavIcon is a circular icon container with an accent-colored background. Use it in navigation headers such as TopNavHeading and PageNavHeader to visually identify a section or application.',
     bestPractices: [
@@ -70,6 +92,7 @@ export const docsDense = {
   description:
     'Circular icon container w/ accent background for navigation headers.',
   usage: {
+    anatomy,
     description:
       'NavIcon is a circular icon container with an accent-colored background. Use it in navigation headers such as TopNavHeading and PageNavHeader to visually identify a section or application.',
     bestPractices: [

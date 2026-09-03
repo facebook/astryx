@@ -138,51 +138,53 @@ if (isError(result)) {
 
 <!-- BEGIN GENERATED: error-codes -->
 
-| Code                      | Meaning                                                                               |
-| ------------------------- | ------------------------------------------------------------------------------------- |
-| `ERR_UNKNOWN`             | Fallback for any error without a more specific code.                                  |
-| `ERR_UNKNOWN_COMMAND`     | A top-level command name was not recognized (e.g. `astryx bogus`).                    |
-| `ERR_UNKNOWN_SUBCOMMAND`  | A subcommand under a command group was not recognized (e.g. `astryx theme bogus`).    |
-| `ERR_INVALID_OPTION`      | An unknown flag/option was passed (Commander `unknownOption`).                        |
-| `ERR_INVALID_ARGUMENT`    | An option/argument had a value Commander's parser rejected.                           |
-| `ERR_MISSING_ARGUMENT`    | A required positional argument was omitted (Commander `missingArgument`).             |
-| `ERR_INVALID_LANG`        | `--lang` was given a value outside its choices (en, zh, dense).                       |
-| `ERR_INVALID_DETAIL`      | `--detail` was given a value outside its choices (full, compact, brief).              |
-| `ERR_NODE_VERSION`        | The running Node.js version is below the supported minimum.                           |
-| `ERR_CORE_NOT_FOUND`      | `@astryxdesign/core` could not be located (not installed / not in a monorepo).        |
-| `ERR_UNKNOWN_COMPONENT`   | No component matched the requested name.                                              |
-| `ERR_UNKNOWN_HOOK`        | No hook matched the requested name.                                                   |
-| `ERR_UNKNOWN_TOPIC`       | No docs topic matched the requested name.                                             |
-| `ERR_UNKNOWN_SECTION`     | A docs topic exists but the requested section within it does not.                     |
-| `ERR_UNKNOWN_CATEGORY`    | A `--category` filter value did not match any known category.                         |
-| `ERR_UNKNOWN_TEMPLATE`    | No template matched the requested name.                                               |
-| `ERR_AMBIGUOUS_TEMPLATE`  | A template id matched more than one template (narrow with --type/--package).          |
-| `ERR_AMBIGUOUS_COMPONENT` | A component name is owned by more than one package (narrow with --package).           |
-| `ERR_UNKNOWN_THEME`       | No theme matched the requested slug (theme add).                                      |
-| `ERR_UNKNOWN_PACKAGE`     | No package matched the requested name (discover).                                     |
-| `ERR_UNKNOWN_AGENT`       | An unrecognized `--agent` value was passed to agent-docs/init.                        |
-| `ERR_UNKNOWN_FEATURE`     | An unrecognized `--features` value was passed to init.                                |
-| `ERR_UNKNOWN_CODEMOD`     | A `--codemod` value did not match any registered codemod (upgrade).                   |
-| `ERR_CODEMOD_FAILED`      | One or more codemods failed during an upgrade run.                                    |
-| `ERR_NOT_FOUND`           | A generic discover/lookup query matched nothing in any package.                       |
-| `ERR_NO_DOC`              | A component exists but has no typed `.doc.mjs` file.                                  |
-| `ERR_NO_SHOWCASE`         | No showcase exists for the requested component.                                       |
-| `ERR_NO_SOURCE`           | No source file could be located for the requested component/template.                 |
-| `ERR_INVALID_DOC`         | A component's docs failed validation (malformed `.doc.mjs`).                          |
-| `ERR_FILE_NOT_FOUND`      | A required input file did not exist.                                                  |
-| `ERR_FILE_EXISTS`         | Refused to overwrite an existing file in non-interactive mode.                        |
-| `ERR_PATH_TRAVERSAL`      | A path escaped its allowed root, or a name contained traversal markers.               |
-| `ERR_WRITE_FAILED`        | Writing output files failed (and was rolled back).                                    |
-| `ERR_THEME_INVALID`       | A theme definition was missing a required property (e.g. `name`).                     |
-| `ERR_THEME_LOAD`          | A theme file could not be loaded / parsed into a defineTheme result.                  |
-| `ERR_VERSION_DETECT`      | The current `@astryxdesign/core` version could not be detected.                       |
-| `ERR_INVALID_VERSION`     | A `--from`/`--to` value was not a valid semver string.                                |
-| `ERR_DEP_MISSING`         | A required external dependency (e.g. jscodeshift) is missing.                         |
-| `ERR_GH_CLI`              | GitHub CLI (`gh`) is not installed or not authenticated.                              |
-| `ERR_UNKNOWN_POST`        | No blog post matched the requested slug in the feed.                                  |
-| `ERR_FETCH_FAILED`        | A network fetch (RSS feed or post text) failed.                                       |
-| `ERR_LAYOUT_PARSE`        | A layout expression failed to parse (syntax error, with line/col).                    |
-| `ERR_LAYOUT_INVALID`      | A layout expression parsed but failed validation (unknown component/prop/enum/block). |
+| Code                      | Meaning                                                                                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ERR_UNKNOWN`             | Fallback for any error without a more specific code.                                                                                           |
+| `ERR_UNKNOWN_COMMAND`     | A top-level command name was not recognized (e.g. `astryx bogus`).                                                                             |
+| `ERR_UNKNOWN_SUBCOMMAND`  | A subcommand under a command group was not recognized (e.g. `astryx theme bogus`).                                                             |
+| `ERR_INVALID_OPTION`      | An unknown flag/option was passed (Commander `unknownOption`).                                                                                 |
+| `ERR_INVALID_ARGUMENT`    | An option/argument had a value Commander's parser rejected.                                                                                    |
+| `ERR_MISSING_ARGUMENT`    | A required positional argument was omitted (Commander `missingArgument`).                                                                      |
+| `ERR_INVALID_LANG`        | `--lang` was given a value outside its choices (en, zh, dense).                                                                                |
+| `ERR_INVALID_DETAIL`      | `--detail` was given a value outside its choices (full, compact, brief).                                                                       |
+| `ERR_NODE_VERSION`        | The running Node.js version is below the supported minimum.                                                                                    |
+| `ERR_CORE_NOT_FOUND`      | `@astryxdesign/core` could not be located (not installed / not in a monorepo).                                                                 |
+| `ERR_UNKNOWN_COMPONENT`   | No component matched the requested name.                                                                                                       |
+| `ERR_UNKNOWN_HOOK`        | No hook matched the requested name.                                                                                                            |
+| `ERR_UNKNOWN_TOPIC`       | No docs topic matched the requested name.                                                                                                      |
+| `ERR_UNKNOWN_SECTION`     | A docs topic exists but the requested section within it does not.                                                                              |
+| `ERR_UNKNOWN_CATEGORY`    | A `--category` filter value did not match any known category.                                                                                  |
+| `ERR_UNKNOWN_TEMPLATE`    | No template matched the requested name.                                                                                                        |
+| `ERR_AMBIGUOUS_TEMPLATE`  | A template id matched more than one template (narrow with --type/--package).                                                                   |
+| `ERR_AMBIGUOUS_COMPONENT` | A component name is owned by more than one package (narrow with --package).                                                                    |
+| `ERR_UNKNOWN_THEME`       | No theme matched the requested slug (theme add).                                                                                               |
+| `ERR_UNKNOWN_PACKAGE`     | No package matched the requested name (discover).                                                                                              |
+| `ERR_UNKNOWN_AGENT`       | An unrecognized `--agent` value was passed to agent-docs/init.                                                                                 |
+| `ERR_UNKNOWN_FEATURE`     | An unrecognized `--features` value was passed to init.                                                                                         |
+| `ERR_UNKNOWN_CODEMOD`     | A `--codemod` value did not match any registered codemod (upgrade).                                                                            |
+| `ERR_CODEMOD_FAILED`      | One or more codemods failed during an upgrade run.                                                                                             |
+| `ERR_NOT_FOUND`           | A generic discover/lookup query matched nothing in any package.                                                                                |
+| `ERR_NO_DOC`              | A component exists but has no typed `.doc.mjs` file.                                                                                           |
+| `ERR_NO_SHOWCASE`         | No showcase exists for the requested component.                                                                                                |
+| `ERR_NO_SOURCE`           | No source file could be located for the requested component/template.                                                                          |
+| `ERR_INVALID_DOC`         | A component's docs failed validation (malformed `.doc.mjs`).                                                                                   |
+| `ERR_FILE_NOT_FOUND`      | A required input file did not exist.                                                                                                           |
+| `ERR_FILE_EXISTS`         | Refused to overwrite an existing file in non-interactive mode.                                                                                 |
+| `ERR_PATH_TRAVERSAL`      | A path escaped its allowed root, or a name contained traversal markers.                                                                        |
+| `ERR_WRITE_FAILED`        | Writing output files failed (and was rolled back).                                                                                             |
+| `ERR_THEME_INVALID`       | A theme definition was missing a required property (e.g. `name`).                                                                              |
+| `ERR_THEME_LOAD`          | A theme file could not be loaded / parsed into a defineTheme result.                                                                           |
+| `ERR_VERSION_DETECT`      | The current `@astryxdesign/core` version could not be detected.                                                                                |
+| `ERR_INVALID_VERSION`     | A `--from`/`--to` value was not a valid semver string.                                                                                         |
+| `ERR_DEP_MISSING`         | A required external dependency (e.g. jscodeshift) is missing.                                                                                  |
+| `ERR_GH_CLI`              | GitHub CLI (`gh`) is not installed or not authenticated.                                                                                       |
+| `ERR_UNKNOWN_POST`        | No blog post matched the requested slug in the feed.                                                                                           |
+| `ERR_FETCH_FAILED`        | A network fetch (RSS feed or post text) failed.                                                                                                |
+| `ERR_LAYOUT_PARSE`        | A layout expression failed to parse (syntax error, with line/col).                                                                             |
+| `ERR_LAYOUT_INVALID`      | A layout expression parsed but failed validation (unknown component/prop/enum/block).                                                          |
+| `ERR_UNCLASSIFIED_EXIT`   | Recorded in the debug log, never printed: a command exited non-zero without going through cliError/jsonError, so no stable code was available. |
+| `ERR_SIGNAL_TERMINATED`   | Recorded in the debug log, never printed: the process was ended by a signal (Ctrl-C, SIGTERM) before the command reached a terminal path.      |
 
 <!-- END GENERATED: error-codes -->
 <!-- Generated by scripts/generate-cli-readme.mjs from the error-codes EnumDoc (== ERROR_CODES). Run `pnpm -F @astryxdesign/cli readme`. -->
@@ -383,48 +385,54 @@ Every response has a `type` discriminant. The full set is below (generated from 
 
 <!-- BEGIN GENERATED: response-types -->
 
-| Type                        | What `data` carries                                                                                                                                                                                                                  |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `component.list`            | The component catalog grouped by category: `detail` (the level: names \| compact \| full) and `components`, the grouped map of names+package, brief entries, or a full ComponentDoc per entry.                                       |
-| `component.detail`          | One component's authored ComponentDoc plus ownership metadata (owner package, import specifier, and whether source is available).                                                                                                    |
-| `component.detail.props`    | Just one component's props table (ComponentPropDoc[]).                                                                                                                                                                               |
-| `component.detail.source`   | One component's source file, as {component, source}.                                                                                                                                                                                 |
-| `component.detail.showcase` | One component's showcase example, as {component, aspectRatio, source}.                                                                                                                                                               |
-| `component.detail.blocks`   | One component's example blocks, as {component, showcase, examples, related} of BlockEntry.                                                                                                                                           |
-| `docs.list`                 | All reference-doc topics as DocsListEntry[] ({topic, description}), in discovery order.                                                                                                                                              |
-| `docs.detail`               | One topic's full ReferenceDoc, with token-ref blocks inlined.                                                                                                                                                                        |
-| `docs.detail.section`       | A single ReferenceSection of a topic: the first whose title contains the section query.                                                                                                                                              |
-| `blog.list`                 | The feed URL plus every post parsed from the RSS feed, each with slug, title, description, date, type, authors, link, and plaintext URL.                                                                                             |
-| `blog.detail`               | One post's metadata plus the feed URL and the post's full plaintext body.                                                                                                                                                            |
-| `discover.list`             | The configured external packages (name, category, components, version, description); when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".                                                   |
-| `discover.detail`           | A single external package entry, for an @scope/name query.                                                                                                                                                                           |
-| `discover.detail.doc`       | The validated ComponentDoc for one external component: an @scope/name/Component query, or a free-text term resolving to exactly one component.                                                                                       |
-| `discover.search`           | The echoed query plus the matching {package, component} pairs, when a free-text term matches several components.                                                                                                                     |
-| `search`                    | The echoed query plus a ranked SearchResultEntry[] (domain, name, score, reason, description, follow-up command, and import path where relevant).                                                                                    |
-| `build.help`                | A marker (`playbook: true`) that the renderer expands into the how-to-build-a-page workflow; emitted when no query is given.                                                                                                         |
-| `build.kit`                 | The grouped composition kit: echoed query, hasResults/directMatch flags, the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.             |
-| `swizzle.list`              | The names of swizzlable components discoverable from cwd's @astryxdesign/core.                                                                                                                                                       |
-| `swizzle.copy`              | An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer note.                                                       |
-| `template.list`             | Every discovered template (page + block); each entry carries id, name, description, kind, owning package, optional category and componentsUsed, and readiness flags.                                                                 |
-| `template.show`             | The resolved template's raw source plus its description, kind, and the component names it composes.                                                                                                                                  |
-| `template.skeleton`         | A layout skeleton (structural tags with spatial annotations) plus the template's description and the components it composes.                                                                                                         |
-| `template.copy`             | A scaffold receipt: template id, output directory, written file name, and file count.                                                                                                                                                |
-| `hook.list`                 | The hook catalog grouped by category: `detail` (the level: names \| compact \| full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry.                                                    |
-| `hook.detail`               | One hook's full authored HookDoc.                                                                                                                                                                                                    |
-| `hook.detail.params`        | Just one hook's parameters table (HookParamDoc[]).                                                                                                                                                                                   |
-| `theme.build`               | A theme build receipt: name, token- and component-override counts, output size, the written outputs {css, js, dts, and variantsDts when applicable}, and any validation warnings.                                                    |
-| `theme.build.check`         | The --check receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: missing \| outdated}), and the full list of checked paths. Writes nothing.                                                                 |
-| `theme.list`                | Every bundled theme as a ThemeListEntry[]: each with slug, displayName, description, and a maintained flag.                                                                                                                          |
-| `theme.add`                 | A scaffold receipt: resolved slug, displayName, maintained flag, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.                                                                           |
-| `upgrade.list`              | Every available codemod, oldest→newest, as {name, title, version, optional}; returned for --list without running anything.                                                                                                           |
-| `upgrade.status`            | A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.                                                                                                     |
-| `upgrade.run`               | The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and per-codemod errors.                                                          |
-| `manifest`                  | The self-describing CLI capability manifest: name, version, apiVersion, global options, the command tree (args, options, json flag, response types, examples), the jsonSupported allowlist, and the flat responseTypes index.        |
-| `doctor`                    | The health-check report: `checks` (each with id, label, status: pass \| warn \| fail \| info, a message, and a fix when not passing) plus a `summary` of counts per status.                                                          |
-| `integration.validate`      | The validation result: the package name and version (both null when no local manifest is found) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning \| error, message}.                                             |
-| `layout.expand`             | The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, and written (the output path, or null when nothing was written). |
-| `layout.check`              | The validation result: a valid flag, the detected form, errors (each with line/col, message, formatted text, and suggestions), warnings, and the expression re-printed in both canonical surfaces (compact and outline).             |
-| `layout.grammar`            | The XLE/XLO grammar cheatsheet: a text field with the full reference plus an aliases map (short name → canonical component) generated from this install's registry.                                                                  |
+| Type                        | What `data` carries                                                                                                                                                                                                                                                                 |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init.run`                  | The install receipt: the `mode` (`default` \| `features`), the features run, agent-doc files written, any soft `docsError`, whether theme guidance was emitted, the template outcome (`workflow` \| `created` \| `skipped`) plus its path, and whether the next-steps were emitted. |
+| `init.remove`               | Confirmation that the managed agent-docs block was removed (`data.removed: true`) — returned when --remove-agents is set.                                                                                                                                                           |
+| `component.list`            | The component catalog grouped by category: `detail` (the level: names \| compact \| full) and `components`, the grouped map of names+package, brief entries, or a full ComponentDoc per entry.                                                                                      |
+| `component.detail`          | One component's authored ComponentDoc plus ownership metadata (owner package, import specifier, and whether source is available).                                                                                                                                                   |
+| `component.detail.props`    | Just one component's props table (ComponentPropDoc[]).                                                                                                                                                                                                                              |
+| `component.detail.source`   | One component's source file, as {component, source}.                                                                                                                                                                                                                                |
+| `component.detail.showcase` | One component's showcase example, as {component, aspectRatio, source}.                                                                                                                                                                                                              |
+| `component.detail.blocks`   | One component's example blocks, as {component, showcase, examples, related} of BlockEntry.                                                                                                                                                                                          |
+| `docs.list`                 | All reference-doc topics as DocsListEntry[] ({topic, description}), in discovery order.                                                                                                                                                                                             |
+| `docs.detail`               | One topic's full ReferenceDoc, with token-ref blocks inlined.                                                                                                                                                                                                                       |
+| `docs.detail.section`       | A single ReferenceSection of a topic: the first whose title contains the section query.                                                                                                                                                                                             |
+| `blog.list`                 | The feed URL plus every post parsed from the RSS feed, each with slug, title, description, date, type, authors, link, and plaintext URL.                                                                                                                                            |
+| `blog.detail`               | One post's metadata plus the feed URL and the post's full plaintext body.                                                                                                                                                                                                           |
+| `discover.list`             | The configured external packages (name, category, components, version, description); when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".                                                                                                  |
+| `discover.detail`           | A single external package entry, for an @scope/name query.                                                                                                                                                                                                                          |
+| `discover.detail.doc`       | The validated ComponentDoc for one external component: an @scope/name/Component query, or a free-text term resolving to exactly one component.                                                                                                                                      |
+| `discover.search`           | The echoed query plus the matching {package, component} pairs, when a free-text term matches several components.                                                                                                                                                                    |
+| `search`                    | The echoed query plus a ranked SearchResultEntry[] (domain, name, score, reason, description, follow-up command, and import path where relevant).                                                                                                                                   |
+| `build.help`                | A marker (`playbook: true`) that the renderer expands into the how-to-build-a-page workflow; emitted when no query is given.                                                                                                                                                        |
+| `build.kit`                 | The grouped composition kit: echoed query, hasResults/matchCount/directMatch fields, the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.                                                |
+| `swizzle.list`              | The names of swizzlable components discoverable from cwd's @astryxdesign/core.                                                                                                                                                                                                      |
+| `swizzle.copy`              | An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer note.                                                                                                      |
+| `template.list`             | Every discovered template (page + block); each entry carries id, name, description, kind, owning package, optional category and componentsUsed, and readiness flags.                                                                                                                |
+| `template.show`             | The resolved template's raw source plus its description, kind, and the component names it composes.                                                                                                                                                                                 |
+| `template.skeleton`         | A layout skeleton (structural tags with spatial annotations) plus the template's description and the components it composes.                                                                                                                                                        |
+| `template.copy`             | A scaffold receipt: template id, output directory, written file name, and file count.                                                                                                                                                                                               |
+| `template.cdn`              | A write receipt for the no-build-step CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not. `exists` when a file was already there, which is a success.                                  |
+| `hook.list`                 | The hook catalog grouped by category: `detail` (the level: names \| compact \| full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry.                                                                                                   |
+| `hook.detail`               | One hook's full authored HookDoc.                                                                                                                                                                                                                                                   |
+| `hook.detail.params`        | Just one hook's parameters table (HookParamDoc[]).                                                                                                                                                                                                                                  |
+| `theme.build`               | A theme build receipt: name, token- and component-override counts, output size, the written outputs {css, js, dts, and variantsDts when applicable}, and any validation warnings.                                                                                                   |
+| `theme.build.check`         | The --check receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: missing \| outdated}), and the full list of checked paths. Writes nothing.                                                                                                                |
+| `theme.build.batch`         | Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme's theme.build (or theme.build.check) envelope, or null when it produced no CSS.                                                                   |
+| `theme.list`                | Every bundled theme as a ThemeListEntry[]: each with slug, displayName, description, and a maintained flag.                                                                                                                                                                         |
+| `theme.add`                 | A scaffold receipt: resolved slug, displayName, maintained flag, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.                                                                                                                          |
+| `theme.template`            | A write receipt for the annotated theme template: the path (relative to cwd), whether it was written, and the reason it was not. `exists` when a file was already there, which is a success.                                                                                        |
+| `theme.targets`             | The whole themeable surface: the echoed filter, the component count, and one entry per theming target — {key, className, component, props, states}, where props and states are its legal override keys.                                                                             |
+| `upgrade.list`              | Every available codemod, oldest→newest, as {name, title, version, optional}; returned for --list without running anything.                                                                                                                                                          |
+| `upgrade.status`            | A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.                                                                                                                                                    |
+| `upgrade.run`               | The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and per-codemod errors.                                                                                                         |
+| `manifest`                  | The self-describing CLI capability manifest: name, version, apiVersion, global options, the command tree (args, options, json flag, response types, examples), the jsonSupported allowlist, and the flat responseTypes index.                                                       |
+| `doctor`                    | The health-check report: `checks` (each with id, label, status: pass \| warn \| fail \| info, a message, and a fix when not passing) plus a `summary` of counts per status.                                                                                                         |
+| `integration.validate`      | The validation result: the package name and version (both null when no local manifest is found) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning \| error, message}.                                                                                            |
+| `layout.expand`             | The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, and written (the output path, or null when nothing was written).                                                |
+| `layout.check`              | The validation result: a valid flag, the detected form, errors (each with line/col, message, formatted text, and suggestions), warnings, and the expression re-printed in both canonical surfaces (compact and outline).                                                            |
+| `layout.grammar`            | The XLE/XLO grammar cheatsheet: a text field with the full reference plus an aliases map (short name → canonical component) generated from this install's registry.                                                                                                                 |
 
 <!-- END GENERATED: response-types -->
 <!-- Generated by scripts/generate-cli-readme.mjs from the response-types EnumDoc. Run `pnpm -F @astryxdesign/cli readme`. -->
@@ -577,12 +585,13 @@ export default {
 };
 ```
 
-| Field        | Type     | Purpose                                                               |
-| ------------ | -------- | --------------------------------------------------------------------- |
-| `components` | `string` | Directory holding the package's components and their `.doc.*` files.  |
-| `templates`  | `string` | Directory holding the package's page/block templates.                 |
-| `codemods`   | `string` | Directory holding upgrade codemods run by `astryx upgrade`.           |
-| `issuesUrl`  | `string` | Where "report an issue" links for this package's contributions point. |
+| Field        | Type     | Purpose                                                                           |
+| ------------ | -------- | --------------------------------------------------------------------------------- |
+| `components` | `string` | Directory holding the package's components and their `.doc.*` files.              |
+| `templates`  | `string` | Directory holding the package's page/block templates.                             |
+| `codemods`   | `string` | Directory holding upgrade codemods run by `astryx upgrade`.                       |
+| `docs`       | `string` | Directory of reference docs; each `{topic}.doc.*` becomes a topic the CLI serves. |
+| `issuesUrl`  | `string` | Where "report an issue" links for this package's contributions point.             |
 
 Every field is optional; declare only the roots the package ships. There is no
 factory: write a plain object, and annotate it with the `AstryxIntegration` type
@@ -592,9 +601,11 @@ from `@astryxdesign/cli/authoring` for editor autocomplete and type-checking.
 
 Every command loads the consumer's `astryx.config`, resolves each listed
 integration's manifest from `node_modules`, and discovers its contributions.
-Everything is validated against one strict schema at the load boundary, so the
-CLI presents core and integration contributions through a single, uniform
-surface.
+Everything is parsed at the load boundary, so the CLI presents core and
+integration contributions through a single, uniform surface. A field of the
+wrong type fails there; a field this CLI does not know is ignored with a
+warning naming it, so a manifest written against a newer CLI still contributes
+everything this one understands.
 
 Discovery is resilient: a broken or misconfigured integration is skipped with a
 one-line warning on stderr instead of crashing the CLI, and it never corrupts a

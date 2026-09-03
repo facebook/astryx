@@ -26,7 +26,7 @@ import {createRequire} from 'node:module';
 
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
 import {CLI_ROOT, findCoreDir} from '../../foundation/fs/paths.mjs';
-import {detectPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {findConfigPath, Project} from '../../foundation/config/project.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 
@@ -495,20 +495,34 @@ export function checkPeerDeps(ctx) {
 }
 
 /**
- * Check 8 — report the detected package manager (informational).
+ * Check 8 — report the detected package manager, and FAIL when several
+ * lockfiles tie with nothing project-owned to break them. That tie is the one
+ * case where every command the CLI prints can be silently wrong, so it is the
+ * one case worth surfacing rather than guessing past.
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
 export function checkPackageManager(ctx) {
-  const pm = detectPackageManager(ctx.cwd);
-  const detected = pm !== 'npx';
+  const {pm, ambiguous, dir, candidates} = explainPackageManager(ctx.cwd);
+
+  if (ambiguous) {
+    return {
+      id: 'package-manager',
+      label: 'Package manager',
+      status: 'fail',
+      message: `Cannot tell which package manager this project uses: ${candidates.join(' and ')} lockfiles both sit in ${dir}, and nothing the project owns picks between them. Commands are printed with the neutral \`npx\` form until this is resolved.`,
+      fix: `Add a \`packageManager\` field to ${dir}/package.json, or delete the lockfile that does not belong.`,
+    };
+  }
+
   return {
     id: 'package-manager',
     label: 'Package manager',
     status: 'info',
-    message: detected
-      ? `Detected package manager: ${pm}.`
-      : 'No lockfile detected — defaulting to npm/npx.',
+    message:
+      pm !== 'npx'
+        ? `Detected package manager: ${pm}.`
+        : 'No lockfile detected — defaulting to npm/npx.',
   };
 }
 

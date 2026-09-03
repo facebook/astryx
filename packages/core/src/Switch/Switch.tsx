@@ -41,13 +41,15 @@ import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import {switchScope} from './switch.markers.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const wrapperSizeStyles = stylex.create({
   sm: {
     width: 32,
@@ -135,6 +137,12 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
   },
+  // A hidden label is sr-only, so its wrapper is a zero-width flex item — the
+  // row gap would still be painted beside the track, making the field box
+  // wider than the control it contains. Matches CheckboxInput.
+  containerLabelHidden: {
+    gap: 0,
+  },
   containerSpread: {
     justifyContent: 'space-between',
     width: '100%',
@@ -151,14 +159,24 @@ const styles = stylex.create({
   },
   input: {
     position: 'absolute',
+    top: '50%',
     margin: 0,
     padding: 0,
     opacity: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
   },
+  inputCoarse: {
+    '@media (pointer: coarse)': {
+      minInlineSize: 24,
+      minBlockSize: 24,
+    },
+  },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputBusy: {
     pointerEvents: 'none',
@@ -477,6 +495,10 @@ export function Switch({
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  // Announce the effective required state (form default included) while the
+  // native `required` stays bound to the explicit `isRequired` so a layout
+  // default never switches on browser validation.
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -517,7 +539,7 @@ export function Switch({
   const switchElement = (
     <div {...stylex.props(styles.switchWrapper, wrapperSizeStyles[size])}>
       <input
-        ref={mergeRefs(ref, disabledMessageTooltip.positionRef)}
+        ref={useMergedRefs(ref, disabledMessageTooltip.positionRef)}
         id={id}
         type="checkbox"
         role="switch"
@@ -533,6 +555,7 @@ export function Switch({
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
         form={showsDisabledMessage ? '' : undefined}
         required={isRequired}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         onChange={e => {
           if (isDisabled || isBusy) {
             return;
@@ -553,6 +576,8 @@ export function Switch({
         aria-busy={isBusy || undefined}
         {...stylex.props(
           styles.input,
+          rtlStyles.centerInline('-50%'),
+          styles.inputCoarse,
           inputSizeStyles[size],
           isDisabled && styles.inputDisabled,
           isBusy && styles.inputBusy,
@@ -597,6 +622,9 @@ export function Switch({
   const labelElement = (
     <div {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
       <FieldLabel
+        // See CheckboxInput: the control names its own label target rather
+        // than the label guessing at its placement.
+        {...themeProps('switch-label')}
         label={label}
         inputID={id}
         isLabelHidden={isLabelHidden}
@@ -635,6 +663,7 @@ export function Switch({
         }}
         {...stylex.props(
           styles.container,
+          isLabelHidden && styles.containerLabelHidden,
           labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
         )}>

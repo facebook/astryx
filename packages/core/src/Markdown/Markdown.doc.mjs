@@ -1,5 +1,62 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Document',
+    required: true,
+    description:
+      'Root container for block or inline Markdown content.',
+  },
+  {
+    name: 'Heading',
+    required: false,
+    description:
+      'Rendered heading block; a custom heading renderer replaces the default part.',
+  },
+  {
+    name: 'Paragraph',
+    required: false,
+    description:
+      'Rendered paragraph block; a custom paragraph renderer replaces the default part.',
+  },
+  {
+    name: 'List',
+    required: false,
+    description:
+      'Ordered, unordered, or task-list block rendered from Markdown items.',
+  },
+  {
+    name: 'Code block',
+    required: false,
+    description:
+      'Fenced code block; a custom code renderer replaces the default part.',
+  },
+  {
+    name: 'Blockquote',
+    required: false,
+    description:
+      'Quoted block; a custom blockquote renderer replaces the default part.',
+  },
+  {
+    name: 'Table',
+    required: false,
+    description: 'Scrollable table block rendered from Markdown rows and columns.',
+  },
+  {
+    name: 'Divider',
+    required: false,
+    description:
+      'Horizontal rule block; a custom hr renderer replaces the default part.',
+  },
+  {
+    name: 'Image',
+    required: false,
+    description:
+      'Block image or unsafe-URL fallback; a custom image renderer replaces a safe default image.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -97,6 +154,11 @@ export const docs = {
         "Opt-in autolinking of bare URLs and emails. 'gfm' applies GitHub-Flavored Markdown autolink-literal rules: bare https?://..., www...., <scheme:url>, <email>, and user@host all become links. Trailing sentence punctuation and unbalanced trailing close-parens are excluded; matches inside code spans, code blocks, existing links, and image alt text are skipped. Default behavior (option unset) is unchanged.",
     },
     {
+      name: 'components',
+      type: 'MarkdownComponents',
+      description: 'Custom React component overrides for rendered Markdown elements (code, inlineCode, link, heading, paragraph, image, blockquote, hr, citation).',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -163,12 +225,14 @@ export const docs = {
     ],
   },
   usage: {
+    anatomy,
     description:
       'Renders a markdown string as Astryx-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
+      { guidance: true, description: 'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.' },
       { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
     ],
   },
@@ -375,12 +439,14 @@ export const docsZh = {
     ],
   },
   usage: {
+    anatomy,
     description:
       'Renders a markdown string as Astryx-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
+      { guidance: true, description: 'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.' },
       { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
     ],
   },
@@ -390,12 +456,14 @@ export const docsDense = {
   description:
     'Renders markdown string as Astryx-styled components. Use for user-generated content, AI responses, docs. Headings, lists, tables, code, citations w/ consistent styling.',
   usage: {
+    anatomy,
     description:
       'Renders a markdown string as Astryx-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns (issue refs, diff refs, mentions) instead of preprocessing the markdown string.' },
+      { guidance: true, description: 'Headings render id attributes matching useOutlineFromMarkdown ids; pair with Outline for hash navigation.' },
       { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
     ],
   },

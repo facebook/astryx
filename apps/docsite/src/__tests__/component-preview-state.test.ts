@@ -2,8 +2,10 @@
 
 import {describe, expect, it, vi} from 'vitest';
 import {
+  buildAppShellMobilePreviewContext,
   buildInitialState,
   buildRuntimePreviewState,
+  getOverlayPreviewControl,
   getMissingRequiredProps,
   hasInteractivePlayground,
   isOverlayPreviewClosed,
@@ -163,6 +165,61 @@ describe('component detail preview state', () => {
     expect(getMissingRequiredProps(knobs, state)).toEqual([]);
   });
 
+  it('seeds Grid children from playground defaults so the preview is not empty (#5892)', () => {
+    const knobs = pickPrimaryProps('Grid', [
+      prop({name: 'columns', type: 'number | {minWidth: number}'}),
+      prop({name: 'gap', type: '0 | 0.5 | 1 | 1.5 | 2'}),
+      prop({name: 'children', type: 'ReactNode'}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {
+        columns: 3,
+        gap: 2,
+        children: [
+          {__element: 'Card', props: {padding: 4}, children: 'Item 1'},
+          {__element: 'Card', props: {padding: 4}, children: 'Item 2'},
+          {__element: 'Card', props: {padding: 4}, children: 'Item 3'},
+        ],
+      },
+    });
+
+    expect(state.columns).toBe(3);
+    expect(Array.isArray(state.children)).toBe(true);
+    expect((state.children as unknown[]).length).toBe(3);
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
+  it.each([
+    ['Stack', {direction: 'horizontal'}],
+    ['HStack', {}],
+    ['VStack', {}],
+  ])(
+    'seeds %s children from playground defaults so the preview is not empty (#5894, #5898, #5900)',
+    (name, extraDefaults) => {
+      const knobs = pickPrimaryProps(name, [
+        prop({name: 'gap', type: '0 | 0.5 | 1 | 1.5 | 2'}),
+        prop({name: 'children', type: 'ReactNode'}),
+      ]);
+
+      const state = buildInitialState(knobs, {
+        defaults: {
+          gap: 2,
+          ...extraDefaults,
+          children: [
+            {__element: 'Card', props: {padding: 3}, children: 'Item 1'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 2'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 3'},
+          ],
+        },
+      });
+
+      expect(Array.isArray(state.children)).toBe(true);
+      expect((state.children as unknown[]).length).toBe(3);
+      expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+    },
+  );
+
   it("satisfies Icon's required, non-generatable icon prop via playground defaults", () => {
     const knobs = pickPrimaryProps('Icon', [
       prop({
@@ -205,6 +262,75 @@ describe('component detail preview state', () => {
     });
     expect(state.source).toMatchObject({title: 'Astryx Design'});
     expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
+  it('gives PowerSearch a renderable controlled filter fixture', () => {
+    const knobs = pickPrimaryProps('PowerSearch', [
+      prop({name: 'config', type: 'PowerSearchConfig', required: true}),
+      prop({
+        name: 'filters',
+        type: 'ReadonlyArray<PowerSearchFilter>',
+        required: true,
+      }),
+      prop({
+        name: 'onChange',
+        type: "(filters: ReadonlyArray<PowerSearchFilter>, changeType: 'add' | 'edit' | 'remove', index: number) => void",
+        required: true,
+      }),
+    ]);
+    const initialFilters = [
+      {
+        field: 'status',
+        operator: 'is',
+        value: {type: 'enum', value: 'open'},
+      },
+    ];
+    const state = buildInitialState(knobs, {
+      defaults: {
+        config: {
+          name: 'IssueSearch',
+          fields: [
+            {
+              key: 'status',
+              label: 'Status',
+              defaultOperator: 'is',
+              operators: [
+                {
+                  key: 'is',
+                  label: 'is',
+                  value: {
+                    type: 'enum',
+                    values: [
+                      {value: 'open', label: 'Open'},
+                      {value: 'closed', label: 'Closed'},
+                    ],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        filters: initialFilters,
+      },
+    });
+
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+    expect(state.filters).toEqual(initialFilters);
+
+    const onPropChange = vi.fn();
+    const runtimeState = buildRuntimePreviewState(state, onPropChange, {
+      knobs,
+    });
+    const changedFilters = [
+      ...initialFilters,
+      {
+        field: 'status',
+        operator: 'is',
+        value: {type: 'enum', value: 'closed'},
+      },
+    ];
+    (runtimeState.onChange as (filters: unknown) => void)(changedFilters);
+    expect(onPropChange).toHaveBeenCalledWith('filters', changedFilters);
   });
 
   it('gives Timestamp a valid date value via playground defaults', () => {
@@ -491,6 +617,31 @@ describe('component detail preview state', () => {
     expect(isOverlayPreviewClosed(null, {isOpen: false})).toBe(false);
     expect(isOverlayPreviewClosed(undefined, {})).toBe(false);
   });
+
+  it('supports overlays controlled by a non-boolean state prop', () => {
+    const playground = {
+      overlay: true,
+      overlayControl: {stateProp: 'activeSheet', openValue: 'details'},
+    };
+
+    expect(getOverlayPreviewControl(playground)).toEqual({
+      stateProp: 'activeSheet',
+      openValue: 'details',
+    });
+    expect(isOverlayPreviewClosed(playground, {activeSheet: null})).toBe(true);
+    expect(isOverlayPreviewClosed(playground, {activeSheet: 'details'})).toBe(
+      false,
+    );
+  });
+
+  it('ignores overlay controls unless overlay mode is enabled', () => {
+    const playground = {
+      overlayControl: {stateProp: 'activeSheet', openValue: 'details'},
+    };
+
+    expect(getOverlayPreviewControl(playground)).toBeNull();
+    expect(isOverlayPreviewClosed(playground, {activeSheet: null})).toBe(false);
+  });
 });
 
 // ── Simplified layout for provider/utility pages (#2733) ───────────────────
@@ -547,5 +698,37 @@ describe('hasInteractivePlayground', () => {
         playground: {defaults: {mode: 'light'}},
       }),
     ).toBe(true);
+  });
+});
+
+// ── Simulated mobile AppShell context (#4983) ───────────────────────────────
+// MobileNavToggle reads AppShell mobile context and renders null when the
+// context says the viewport is not mobile (the default outside AppShell), so
+// its Properties preview was an empty stage. `playground.appShellMobile`
+// wraps the preview in a provider built from this value.
+describe('buildAppShellMobilePreviewContext', () => {
+  it('simulates an enabled mobile AppShell so context-gated components render', () => {
+    const value = buildAppShellMobilePreviewContext(false, () => {});
+    expect(value.isMobile).toBe(true);
+    expect(value.isMobileNavEnabled).toBe(true);
+    expect(value.isMobileNavOpen).toBe(false);
+    expect(value.hasAutoToggle).toBe(true);
+  });
+
+  it('wires toggle/open/close back to the provided open-state setter', () => {
+    const onOpenChange = vi.fn();
+
+    const closed = buildAppShellMobilePreviewContext(false, onOpenChange);
+    closed.toggleMobileNav();
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    closed.openMobileNav();
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    closed.closeMobileNav();
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+
+    const open = buildAppShellMobilePreviewContext(true, onOpenChange);
+    expect(open.isMobileNavOpen).toBe(true);
+    open.toggleMobileNav();
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 });

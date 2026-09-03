@@ -32,6 +32,7 @@ export type {SchemaDoc} from './doctypes/types'; //       config.doc.mjs (object
 export type {CommandDoc} from './doctypes/types'; //      search.doc.mjs (CLI command)
 export type {EnumDoc} from './doctypes/types'; //         error-codes.doc.mjs (vocabulary)
 export type {AstryxConfig} from './config/type'; //       astryx.config.{ts,mjs}
+export type {DebugEvent} from './debug/type'; //          one recorded CLI run
 export type {AstryxIntegration} from './integration/type'; // astryx.integration.{ts,mjs}
 export type {AstryxCodemod, AstryxConfigCodemod} from './codemod/type'; // codemods/*
 
@@ -51,6 +52,7 @@ export {parseLegacyDoc} from './doctypes/legacy.mjs';
 export {parseConfig} from './config/parse.mjs';
 export {parseIntegration} from './integration/parse.mjs';
 export {parseCodemod} from './codemod/parse.mjs';
+export {parseDebugEvent} from './debug/parse.mjs';
 
 // ═══════════════════════════════════════════════════════════════════════
 // FIELD & SUB-TYPES — the building blocks of the docs above. Import these
@@ -67,6 +69,14 @@ export type {
   ComponentPropDoc,
   ComponentExampleDoc,
   ComponentAnatomyElement,
+  ComponentAccessibilityRequirement,
+  ComponentAccessibilityThemeStatus,
+  ComponentAccessibilityThemeApplicability,
+  ComponentAccessibilityThemeMeasurement,
+  ComponentAccessibilityThemeResult,
+  ComponentAccessibilityThemeMode,
+  ComponentAccessibilityThemeTable,
+  ComponentAccessibilityThemeCoverage,
   ComponentBestPractice,
   ComponentSlotElement,
   ComponentPlaygroundConfig,
@@ -98,7 +108,20 @@ export type {
   // enum
   EnumMemberDoc,
 } from './doctypes/types';
-export type {PostCodemodHook} from './config/type';
+export type {PostCodemodHook, DebugConfig} from './config/type';
+export type {
+  // debug
+  DebugSchemaVersion,
+  DebugOutcome,
+  DebugOptionSource,
+  DebugResultKind,
+  DebugInvocationSource,
+  DebugEventError,
+  DebugEventOutput,
+  DebugEventEnv,
+  DebugEventProject,
+  DebugEventHandler,
+} from './debug/type';
 export type {
   AstryxCodemodDef,
   AstryxConfigCodemodDef,

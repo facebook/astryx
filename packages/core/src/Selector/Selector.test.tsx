@@ -10,7 +10,9 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {readFileSync} from 'node:fs';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -18,17 +20,24 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {useState} from 'react';
+import type {ReactNode} from 'react';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
+import {Item} from '../Item';
+import type {SelectorOptionData} from './types';
 import {Icon} from '../Icon';
 import {RadioIndicator} from '../Indicator';
 import {InputGroup, InputGroupText} from '../InputGroup';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
+import {InternationalizationProvider} from '../i18n';
 import {defineTheme} from '../theme/defineTheme';
 import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {spacingVars} from '../theme/tokens.stylex';
+import {selectorPresentationStyles} from './selectorPresentation.stylex';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -39,6 +48,28 @@ function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
 beforeEach(() => {
   // The live regions are a document-level singleton; start each test clean.
   __resetLiveRegionsForTest();
+  __resetInteractionModalityForTest();
+  HTMLDialogElement.prototype.showModal = vi.fn(function (
+    this: HTMLDialogElement,
+  ) {
+    this.setAttribute('open', '');
+  });
+  HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+    this.removeAttribute('open');
+  });
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     this.setAttribute('popover-open', '');
     const event = new Event('toggle', {bubbles: false});
@@ -222,6 +253,116 @@ function mockSelectorRects({
 }
 
 describe('Selector', () => {
+  it('uses a bottom sheet and closes after a selection when requested', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={onChange}
+        presentation="bottom-sheet"
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+
+    expect(
+      await screen.findByRole('dialog', {name: 'Fruit'}),
+    ).toBeInTheDocument();
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('option', {name: /Banana/}));
+    expect(onChange).toHaveBeenCalledWith('Banana');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('restores touch focus without painting a trigger focus ring', async () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        presentation="bottom-sheet"
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, {pointerType: 'touch'});
+    fireEvent.click(trigger, {detail: 1});
+    const option = await screen.findByRole('option', {name: /Banana/});
+    fireEvent.pointerDown(option, {pointerType: 'touch'});
+    fireEvent.click(option, {detail: 1});
+
+    trigger.focus();
+    expect(trigger).toHaveFocus();
+    expect(trigger.parentElement).toHaveClass(
+      stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
+    );
+  });
+
+  it('uses content-hugging height without extra bottom content padding', () => {
+    const source = readFileSync(
+      'packages/core/src/Selector/SelectorBottomSheet.tsx',
+      'utf8',
+    );
+
+    expect(source).toContain('height="hug"');
+    expect(source).toContain('paddingBlockStart={4}');
+    expect(source).toContain('paddingBlockEnd={0}');
+  });
+
+  it('moves keyboard focus into a bottom-sheet listbox', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector label="Fruit" options={OPTIONS} presentation="bottom-sheet" />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    trigger.focus();
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(screen.getByRole('listbox')).toHaveFocus());
+  });
+
+  it('uses a bottom sheet for adaptive presentation on compact touch', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(max-width: 768px) and (pointer: coarse)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    const user = userEvent.setup();
+    render(
+      <Selector label="Fruit" options={OPTIONS} presentation="adaptive" />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    expect(
+      await screen.findByRole('dialog', {name: 'Fruit'}),
+    ).toBeInTheDocument();
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+  });
+
+  it('keeps adaptive presentation anchored without compact touch', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector label="Fruit" options={OPTIONS} presentation="adaptive" />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+    expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+  });
+
   it('renders with placeholder when no value', () => {
     render(<Selector label="Fruit" options={OPTIONS} placeholder="Pick one" />);
     expect(screen.getByRole('combobox')).toHaveTextContent('Pick one');
@@ -938,6 +1079,227 @@ describe('Selector', () => {
       expect(empty).toHaveAttribute('role', 'presentation');
     });
 
+    it('renders emptySearchText in place of the default message', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      const listbox = screen.getByRole('listbox', h);
+      expect(
+        within(listbox).getByText('Nothing like that here'),
+      ).toBeInTheDocument();
+      expect(
+        within(listbox).queryByText('No results found'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('renders emptyText, not emptySearchText, with no options and no query', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[]}
+          onChange={() => {}}
+          hasSearch
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+
+      const listbox = screen.getByRole('listbox', h);
+      expect(within(listbox).getByText('No options')).toBeInTheDocument();
+      expect(
+        within(listbox).queryByText('Nothing like that here'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('announces emptySearchText, not the catalog default', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      // The panel message is role="presentation", so the live region is the
+      // only thing a screen reader gets — it has to say the same words.
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+      );
+    });
+
+    it('announces the empty state when opened with no options', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[]}
+          onChange={() => {}}
+          emptyText="Add a fruit first"
+        />,
+      );
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Add a fruit first'),
+      );
+    });
+
+    it('shows and announces nothing while isLoading', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector label="Fruit" options={[]} onChange={() => {}} isLoading />,
+      );
+      const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+      expect(trigger).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      // useAnnounce writes on the next animation frame, so an immediate read
+      // would pass whether or not anything was announced.
+      await act(
+        async () =>
+          void (await new Promise(resolve => requestAnimationFrame(resolve))),
+      );
+
+      // The options have not arrived, so "No options" would be a claim the
+      // component cannot make; the trigger's spinner carries the state.
+      const listbox = screen.getByRole('listbox', h);
+      expect(within(listbox).queryByText('No options')).not.toBeInTheDocument();
+      expect(politeRegion()?.textContent ?? '').toBe('');
+    });
+
+    it('announces nothing while isLoading, matching the silent panel', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          isLoading
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      // useAnnounce writes on the next animation frame, so an immediate read
+      // would pass whether or not anything was announced.
+      await act(
+        async () =>
+          void (await new Promise(resolve => requestAnimationFrame(resolve))),
+      );
+
+      // The panel is deliberately blank while loading; the live region is the
+      // only channel left, so a result there would be a claim the screen
+      // refuses to make.
+      const listbox = screen.getByRole('listbox', h);
+      expect(
+        within(listbox).queryByText('Nothing like that here'),
+      ).not.toBeInTheDocument();
+      expect(politeRegion()?.textContent ?? '').toBe('');
+    });
+
+    it('announces the seeded query from type-to-open', async () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      // Typing on the closed trigger opens the popup and seeds the query. That
+      // path bypasses the search input's own change handler, so it has to
+      // announce for itself.
+      const trigger = screen.getByRole('button', {name: 'Fruit'});
+      trigger.focus();
+      fireEvent.keyDown(trigger, {key: 'z'});
+
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+      );
+    });
+
+    it('announces the empty state when a load finishes with no options', async () => {
+      const user = userEvent.setup();
+      function Fetching() {
+        const [isLoading, setIsLoading] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setIsLoading(false)}>
+              land
+            </button>
+            <Selector
+              label="Fruit"
+              options={[]}
+              onChange={() => {}}
+              isLoading={isLoading}
+              emptyText="Add a fruit first"
+            />
+          </>
+        );
+      }
+      render(<Fetching />);
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+      // Open while loading: nothing on screen, nothing spoken.
+      await act(
+        async () =>
+          void (await new Promise(resolve => requestAnimationFrame(resolve))),
+      );
+      expect(politeRegion()?.textContent ?? '').toBe('');
+
+      // The fetch lands empty while the panel is open. The message appears, so
+      // the region owes the same words — an open-only announcement misses this.
+      await user.click(screen.getByRole('button', {name: 'land'}));
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Add a fruit first'),
+      );
+    });
+
+    it('renders emptyText when there are no options and no search input', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[]}
+          onChange={() => {}}
+          emptyText="Add a fruit first"
+        />,
+      );
+      // Without hasSearch the trigger itself is the combobox.
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+      const listbox = screen.getByRole('listbox', h);
+      expect(
+        within(listbox).getByText('Add a fruit first'),
+      ).toBeInTheDocument();
+    });
+
     it('calls onChange when selecting a filtered option', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -956,7 +1318,7 @@ describe('Selector', () => {
       expect(onChange).toHaveBeenCalledWith('Banana');
     });
 
-    it('closes dropdown on Tab without preventing default focus movement', async () => {
+    it('closes the search dropdown on Tab without preventing default focus movement', async () => {
       const user = userEvent.setup();
       render(
         <>
@@ -999,60 +1361,118 @@ describe('Selector', () => {
       ).toBeInTheDocument();
     });
 
+    it('does not select the highlighted option on a composing Enter (IME)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          onChange={onChange}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const search = screen.getByRole('combobox', h);
+      // Filter to Banana and highlight it so an unguarded Enter would commit a
+      // selection.
+      await user.type(search, 'ban');
+      await user.keyboard('{ArrowDown}');
+      expect(search).toHaveAttribute('aria-activedescendant');
+
+      // The browser fires this composing keydown for the Enter that commits an
+      // IME candidate (isComposing: true, or the legacy keyCode 229) before
+      // compositionend writes the syllable. It must NOT be read as "select the
+      // highlighted option".
+      fireEvent.keyDown(search, {key: 'Enter', isComposing: true});
+      expect(onChange).not.toHaveBeenCalled();
+      fireEvent.keyDown(search, {key: 'Enter', keyCode: 229});
+      expect(onChange).not.toHaveBeenCalled();
+
+      // A real, non-composing Enter still selects the highlighted option.
+      fireEvent.keyDown(search, {key: 'Enter'});
+      expect(onChange).toHaveBeenCalledWith('Banana');
+    });
+
     describe('result announcements', () => {
       it('announces the match count politely while searching', async () => {
         const user = userEvent.setup();
         render(
-          <Selector
-            label="Fruit"
-            options={OPTIONS}
-            value="Apple"
-            onChange={() => {}}
-            hasSearch
-          />,
+          <InternationalizationProvider
+            locale="fr"
+            overrides={{
+              fr: {
+                '@astryx.selector.resultCount':
+                  '{count, number} {count, plural, one {résultat} other {résultats}}',
+              },
+            }}>
+            <Selector
+              label="Fruit"
+              options={OPTIONS}
+              value="Apple"
+              onChange={() => {}}
+              hasSearch
+            />
+          </InternationalizationProvider>,
         );
         await user.click(screen.getByRole('button', {name: 'Fruit'}));
         // "a" matches Apple and Banana.
         await user.type(screen.getByRole('combobox', h), 'a');
         await waitFor(() => {
-          expect(politeRegion()).toHaveTextContent('2 results');
+          // The plural branch of a message no catalog supplies.
+          expect(politeRegion()?.textContent).toBe('2 résultats');
         });
       });
 
       it('announces the singular form when one option matches', async () => {
         const user = userEvent.setup();
         render(
-          <Selector
-            label="Fruit"
-            options={OPTIONS}
-            value="Apple"
-            onChange={() => {}}
-            hasSearch
-          />,
+          <InternationalizationProvider
+            locale="fr"
+            overrides={{
+              fr: {
+                '@astryx.selector.resultCount':
+                  '{count, number} {count, plural, one {résultat} other {résultats}}',
+              },
+            }}>
+            <Selector
+              label="Fruit"
+              options={OPTIONS}
+              value="Apple"
+              onChange={() => {}}
+              hasSearch
+            />
+          </InternationalizationProvider>,
         );
         await user.click(screen.getByRole('button', {name: 'Fruit'}));
-        // "ban" matches only Banana. Anchored so it cannot pass on "1 results".
+        // "ban" matches only Banana. Exact, so "1 résultats" would fail.
         await user.type(screen.getByRole('combobox', h), 'ban');
         await waitFor(() => {
-          expect(politeRegion()).toHaveTextContent(/^1 result$/);
+          expect(politeRegion()?.textContent).toBe('1 résultat');
         });
       });
 
-      it('announces "No results found" when nothing matches', async () => {
+      it('announces the empty-results message when nothing matches', async () => {
         const user = userEvent.setup();
         render(
-          <Selector
-            label="Fruit"
-            options={OPTIONS}
-            value="Apple"
-            onChange={() => {}}
-            hasSearch
-          />,
+          <InternationalizationProvider
+            locale="fr"
+            overrides={{
+              fr: {'@astryx.selector.emptySearchResults': 'Aucun résultat'},
+            }}>
+            <Selector
+              label="Fruit"
+              options={OPTIONS}
+              value="Apple"
+              onChange={() => {}}
+              hasSearch
+            />
+          </InternationalizationProvider>,
         );
         await user.click(screen.getByRole('button', {name: 'Fruit'}));
         await user.type(screen.getByRole('combobox', h), 'xyz');
         await waitFor(() => {
-          expect(politeRegion()).toHaveTextContent('No results found');
+          expect(politeRegion()?.textContent).toBe('Aucun résultat');
         });
       });
 
@@ -1190,6 +1610,29 @@ describe('Selector', () => {
   });
 
   describe('keyboard accessibility', () => {
+    it('Tab from the open listbox moves focus to the next control', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            onChange={() => {}}
+          />
+          <button type="button">Next</button>
+        </>,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      await user.keyboard('{Tab}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByRole('button', {name: 'Next'})).toHaveFocus();
+    });
+
     it('trigger is focusable via Tab when enabled', async () => {
       const user = userEvent.setup();
       render(<Selector label="Fruit" options={OPTIONS} />);
@@ -1996,6 +2439,318 @@ describe('Selector', () => {
       expect(trigger).toHaveAttribute('tabIndex', '-1');
     });
   });
+  describe('isReadOnly', () => {
+    const readOnlyCases = [
+      {presentation: 'popover', hasSearch: false},
+      {presentation: 'popover', hasSearch: true},
+      {presentation: 'bottom-sheet', hasSearch: false},
+      {presentation: 'bottom-sheet', hasSearch: true},
+      {presentation: 'adaptive', hasSearch: false},
+      {presentation: 'adaptive', hasSearch: true},
+    ] as const;
+
+    const sheetTransitionCases = [
+      {presentation: 'bottom-sheet', hasSearch: false},
+      {presentation: 'bottom-sheet', hasSearch: true},
+      {presentation: 'adaptive', hasSearch: false},
+      {presentation: 'adaptive', hasSearch: true},
+    ] as const;
+
+    const disabledPrecedenceCases = (
+      ['popover', 'bottom-sheet', 'adaptive'] as const
+    ).flatMap(presentation =>
+      [false, true].flatMap(hasSearch =>
+        [false, true].map(hasDisabledMessage => ({
+          presentation,
+          hasSearch,
+          hasDisabledMessage,
+        })),
+      ),
+    );
+
+    function stubCompactTouch(presentation: 'bottom-sheet' | 'adaptive') {
+      if (presentation !== 'adaptive') {
+        return;
+      }
+      vi.mocked(matchMedia).mockImplementation(
+        (query: string) =>
+          ({
+            matches: query === '(max-width: 768px) and (pointer: coarse)',
+            media: query,
+            onchange: null,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+          }) as MediaQueryList,
+      );
+    }
+
+    it.each(readOnlyCases)(
+      'uses a read-only combobox with no rendered popup ($presentation, search=$hasSearch)',
+      async ({presentation, hasSearch}) => {
+        const user = userEvent.setup();
+        const {container} = render(
+          <form>
+            <Selector
+              label="Fruit"
+              htmlName="fruit"
+              options={OPTIONS}
+              value="Banana"
+              onChange={() => {}}
+              hasClear
+              hasSearch={hasSearch}
+              presentation={presentation}
+              isDefaultOpen
+              isReadOnly
+            />
+          </form>,
+        );
+
+        const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+        expect(trigger.tagName).toBe('BUTTON');
+        expect(trigger).toHaveTextContent('Banana');
+        expect(trigger).toHaveAttribute('aria-readonly', 'true');
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        const readOnlyDescription = screen.getByText('Read only');
+        expect(trigger.getAttribute('aria-describedby')).toContain(
+          readOnlyDescription.id,
+        );
+        expect(trigger).not.toHaveAttribute('aria-controls');
+        expect(trigger).not.toHaveAttribute('aria-haspopup');
+        expect(screen.getAllByRole('combobox', h)).toHaveLength(1);
+        expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog', h)).not.toBeInTheDocument();
+        expect(
+          screen.queryByRole('button', {name: 'Clear Fruit'}),
+        ).not.toBeInTheDocument();
+        expect(
+          container.querySelector('.astryx-selector-indicator-icon'),
+        ).toBeNull();
+        expect(container.querySelector('.astryx-selector')).toHaveAttribute(
+          'data-readonly',
+          'readonly',
+        );
+        expect(
+          new FormData(container.querySelector('form')!).get('fruit'),
+        ).toBe('Banana');
+
+        await user.tab();
+        expect(trigger).toHaveFocus();
+      },
+    );
+
+    it('localizes the accessible read-only description', () => {
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{fr: {'@astryx.input.readOnly': 'Lecture seule'}}}>
+          <Selector label="Fruit" options={OPTIONS} value="Banana" isReadOnly />
+        </InternationalizationProvider>,
+      );
+
+      const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+      const description = screen.getByText('Lecture seule');
+      expect(trigger.getAttribute('aria-describedby')).toContain(
+        description.id,
+      );
+    });
+
+    it('keeps loading feedback while blocking the selection surface', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          isLoading
+          isReadOnly
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+      expect(trigger).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+
+      await user.click(trigger);
+      expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+    });
+
+    it('blocks pointer, keyboard, and typeahead changes', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const changeAction = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={onChange}
+          changeAction={changeAction}
+          isReadOnly
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      trigger.focus();
+      await user.keyboard('{Enter}{ArrowDown}c{Backspace}');
+
+      expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+      expect(onChange).not.toHaveBeenCalled();
+      expect(changeAction).not.toHaveBeenCalled();
+    });
+
+    it.each([false, true])(
+      'restores popover focus when an open selector becomes read-only (search=%s)',
+      async hasSearch => {
+        const user = userEvent.setup();
+        const selector = (isReadOnly: boolean) => (
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            hasSearch={hasSearch}
+            isReadOnly={isReadOnly}
+          />
+        );
+        const {rerender} = render(selector(false));
+        const editableTrigger = screen.getByRole(
+          hasSearch ? 'button' : 'combobox',
+          {name: 'Fruit'},
+        );
+        await user.click(editableTrigger);
+        if (hasSearch) {
+          await waitFor(() =>
+            expect(screen.getByRole('combobox', h)).toHaveFocus(),
+          );
+        }
+
+        rerender(selector(true));
+
+        const readOnlyTrigger = screen.getByRole('combobox', {name: 'Fruit'});
+        await waitFor(() => expect(readOnlyTrigger).toHaveFocus());
+        expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+      },
+    );
+
+    it.each(sheetTransitionCases)(
+      'finishes $presentation close and restores focus when read-only changes (search=$hasSearch)',
+      async ({presentation, hasSearch}) => {
+        stubCompactTouch(presentation);
+        const user = userEvent.setup();
+        const selector = (isReadOnly: boolean) => (
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            hasSearch={hasSearch}
+            presentation={presentation}
+            isReadOnly={isReadOnly}
+          />
+        );
+        const {rerender} = render(selector(false));
+        const editableTrigger = screen.getByRole(
+          hasSearch ? 'button' : 'combobox',
+          {name: 'Fruit'},
+        );
+        await user.click(editableTrigger);
+        const dialog = await screen.findByRole('dialog', {name: 'Fruit'});
+        const panel = dialog.querySelector<HTMLElement>('.astryx-bottom-sheet');
+        expect(panel).not.toBeNull();
+        await waitFor(() =>
+          expect(
+            hasSearch
+              ? screen.getByRole('combobox', h)
+              : screen.getByRole('listbox'),
+          ).toHaveFocus(),
+        );
+
+        rerender(selector(true));
+
+        await waitFor(() => expect(dialog).toHaveAttribute('inert'));
+        fireEvent.transitionEnd(panel!, {propertyName: 'transform'});
+        const readOnlyTrigger = screen.getByRole('combobox', {name: 'Fruit'});
+        await waitFor(() => expect(readOnlyTrigger).toHaveFocus());
+        expect(screen.queryByRole('dialog', h)).not.toBeInTheDocument();
+        expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+      },
+    );
+
+    it.each(disabledPrecedenceCases)(
+      'matches disabled-only semantics for $presentation (search=$hasSearch, reason=$hasDisabledMessage)',
+      async ({presentation, hasSearch, hasDisabledMessage}) => {
+        if (presentation === 'adaptive') {
+          stubCompactTouch(presentation);
+        }
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        const selector = (isReadOnly: boolean) => (
+          <form>
+            <Selector
+              label="Fruit"
+              htmlName="fruit"
+              options={OPTIONS}
+              value="Banana"
+              onChange={onChange}
+              hasClear
+              hasSearch={hasSearch}
+              presentation={presentation}
+              isDisabled
+              isReadOnly={isReadOnly}
+              disabledMessage={
+                hasDisabledMessage ? 'Locked by policy' : undefined
+              }
+            />
+          </form>
+        );
+        const {container, rerender} = render(selector(false));
+        const getTrigger = () =>
+          screen.getByRole(hasSearch ? 'button' : 'combobox', {name: 'Fruit'});
+        const snapshot = () => {
+          const trigger = getTrigger();
+          const root = container.querySelector('.astryx-selector');
+          return {
+            tagName: trigger.tagName,
+            role: trigger.getAttribute('role'),
+            hasPopup: trigger.getAttribute('aria-haspopup'),
+            expanded: trigger.getAttribute('aria-expanded'),
+            controls: trigger.getAttribute('aria-controls'),
+            readOnly: trigger.getAttribute('aria-readonly'),
+            disabled: trigger.matches(':disabled'),
+            ariaDisabled: trigger.getAttribute('aria-disabled'),
+            tabIndex: trigger.tabIndex,
+            rootClassName: root?.className,
+            rootDisabled: root?.getAttribute('data-disabled'),
+            rootReadOnly: root?.getAttribute('data-readonly'),
+            hasIndicator:
+              root?.querySelector('.astryx-selector-indicator-icon') != null,
+            listboxes: screen.queryAllByRole('listbox', h).length,
+            dialogs: screen.queryAllByRole('dialog', h).length,
+            formEntries: [
+              ...new FormData(container.querySelector('form')!).entries(),
+            ],
+          };
+        };
+        const disabledOnly = snapshot();
+
+        rerender(selector(true));
+
+        expect(snapshot()).toEqual(disabledOnly);
+        expect(disabledOnly.rootDisabled).toBe('disabled');
+        expect(disabledOnly.rootReadOnly).toBeNull();
+        expect(disabledOnly.readOnly).toBeNull();
+        expect(disabledOnly.formEntries).toEqual([]);
+        const trigger = getTrigger();
+        await user.click(trigger);
+        trigger.focus();
+        await user.keyboard('{Enter}{ArrowDown}c{Backspace}');
+        expect(onChange).not.toHaveBeenCalled();
+      },
+    );
+  });
+
   describe('form participation', () => {
     it('submits the selected value under htmlName', () => {
       const {container} = render(
@@ -2038,6 +2793,55 @@ describe('Selector', () => {
         ...new FormData(container.querySelector('form')!).keys(),
       ]).toEqual([]);
     });
+  });
+});
+
+describe('Selector caller-supplied id', () => {
+  it('names the listbox with the id the caller put on the trigger', () => {
+    render(<Selector label="Fruit" options={OPTIONS} id="fruit-picker" />);
+
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveAttribute('id', 'fruit-picker');
+
+    const labelledBy = screen
+      .getByRole('listbox', h)
+      .getAttribute('aria-labelledby');
+    expect(document.getElementById(labelledBy!)).toBe(trigger);
+  });
+
+  it('names the search-variant listbox with the caller id', () => {
+    render(
+      <Selector label="Fruit" options={OPTIONS} id="fruit-picker" hasSearch />,
+    );
+
+    const trigger = document.getElementById('fruit-picker');
+    expect(trigger?.tagName).toBe('BUTTON');
+
+    const labelledBy = screen
+      .getByRole('listbox', h)
+      .getAttribute('aria-labelledby');
+    expect(document.getElementById(labelledBy!)).toBe(trigger);
+  });
+
+  it('points the field label at the caller id', () => {
+    render(<Selector label="Fruit" options={OPTIONS} id="fruit-picker" />);
+
+    const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+    expect(trigger).toHaveAttribute('id', 'fruit-picker');
+    expect(screen.getByLabelText('Fruit')).toBe(trigger);
+  });
+
+  it('generates the trigger id when the caller supplies none', () => {
+    render(<Selector label="Fruit" options={OPTIONS} />);
+
+    const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+    expect(trigger.id).not.toBe('');
+    expect(screen.getByLabelText('Fruit')).toBe(trigger);
+
+    const labelledBy = screen
+      .getByRole('listbox', h)
+      .getAttribute('aria-labelledby');
+    expect(document.getElementById(labelledBy!)).toBe(trigger);
   });
 });
 
@@ -2277,7 +3081,7 @@ describe('Selector clear icon theme target', () => {
     expect(css).toContain('.astryx-selector-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-selector-clear-icon:hover {');
+    expect(css).toContain('.astryx-selector-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -2386,7 +3190,186 @@ describe('Selector indicator (chevron) icon theme target', () => {
   });
 });
 
+describe('Selector section headings', () => {
+  it('renders a section title as a plain heading inside the group, not a divider', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={[
+          {
+            type: 'section',
+            title: 'Citrus',
+            options: [
+              {value: 'orange', label: 'Orange'},
+              {value: 'lemon', label: 'Lemon'},
+            ],
+          },
+        ]}
+        value={undefined}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    // A labeled Divider used to stand in for the heading; it rendered a
+    // role="separator" as a direct child of the listbox and stacked a second
+    // rule under the search row's own.
+    expect(document.querySelectorAll('[role="separator"]')).toHaveLength(0);
+
+    const group = screen.getByRole('group', {name: 'Citrus', hidden: true});
+    const heading = group.querySelector('.astryx-selector-section-heading');
+    expect(heading).toBeTruthy();
+    expect(heading).toHaveTextContent('Citrus');
+    // The group already carries the title as its accessible name, so the
+    // visible heading must not announce it a second time.
+    expect(heading).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('hides a standalone divider from the accessibility tree (#4994)', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={['Apple', {type: 'divider'}, 'Banana']}
+        value={undefined}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    // role="listbox" only permits option/group children. The divider still
+    // renders role="separator" (unchanged visual/DOM), but must be excluded
+    // from the accessibility tree so it never reaches the listbox's exposed
+    // children (axe aria-required-children).
+    const divider = document.querySelector('[role="separator"]');
+    expect(divider).toBeTruthy();
+    expect(divider).toHaveAttribute('aria-hidden', 'true');
+  });
+});
+
+describe('Selector search focus ring', () => {
+  // The ring is for keyboard focus only. `:focus-visible` cannot express that
+  // on its own: per CSS Selectors 4 a pointer-focused text input matches it
+  // too (verified in Chromium), which is why a modality gate sits alongside
+  // it. jsdom does not implement `:focus-visible`, so these assert the gate;
+  // the painted ring is verified in real Chromium.
+  //
+  // Focus moves into the search input on the frame after the panel opens, and
+  // the gate is read at that moment: every case must wait for the focus to
+  // land before asserting or typing, or a slow frame reads the modality of
+  // whatever the test did next.
+  beforeEach(() => {
+    __resetInteractionModalityForTest();
+  });
+
+  const field = () =>
+    screen.getByRole('combobox', {hidden: true}).parentElement;
+
+  const waitForSearchFocus = async () =>
+    waitFor(() =>
+      expect(screen.getByRole('combobox', {hidden: true})).toHaveFocus(),
+    );
+
+  it('does not ring when the panel is opened by mouse', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value={undefined}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await waitForSearchFocus();
+    expect(field()).not.toHaveAttribute('data-keyboard-focus');
+  });
+
+  it('does not ring when the query is typed after a mouse open', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value={undefined}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await waitForSearchFocus();
+    await user.keyboard('an');
+    // Typing does not retroactively make a pointer focus a keyboard one; the
+    // caret already shows where the text is going.
+    expect(field()).not.toHaveAttribute('data-keyboard-focus');
+  });
+
+  it('rings when the panel is opened from the keyboard', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value={undefined}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.tab();
+    await user.keyboard('{Enter}');
+    await waitForSearchFocus();
+    expect(field()).toHaveAttribute('data-keyboard-focus', 'true');
+  });
+});
+
 describe('Selector search affordances', () => {
+  it('renders the search row seamlessly — no nested input box, a divider under it', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+
+    const search = screen.getByRole('combobox', {hidden: true});
+    // The row is the outer gutter; the input sits inside the rounded field.
+    const row = search.closest('.astryx-selector-search');
+    const field = search.parentElement;
+    if (!row || !field) {
+      throw new Error('search row not found');
+    }
+    // The panel is already a bordered surface: the field inside it must not be
+    // a second bordered box (this used to render a TextInput).
+    expect(row).not.toHaveClass('astryx-text-input');
+    expect(search.closest('.astryx-text-input')).toBeNull();
+    // The field is a rounded box inset from the panel edge, shaped like the
+    // option rows under it — not a full-bleed header strip.
+    expect(field).not.toBe(row);
+    expect(getComputedStyle(field).borderRadius).not.toBe('');
+    // ...and a divider separates it from the options.
+    const separator =
+      container.ownerDocument.querySelector('[role="separator"]');
+    if (!separator) {
+      throw new Error('divider not found');
+    }
+    // Order: row, then divider, then the listbox.
+    expect(
+      row.compareDocumentPosition(separator) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    const listbox = screen.getByRole('listbox', {hidden: true});
+    expect(
+      separator.compareDocumentPosition(listbox) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('renders a decorative (aria-hidden) magnifier icon whenever hasSearch is on', async () => {
     const user = userEvent.setup();
     render(
@@ -2400,8 +3383,7 @@ describe('Selector search affordances', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
     const search = screen.getByRole('combobox', {hidden: true});
-    // The search field is a TextInput; the magnifier is its startIcon, so it
-    // sits inside the input container as a sibling of the <input>.
+    // The magnifier leads the search row, as a sibling of the <input>.
     const container = search.parentElement;
     const magnifier = container?.querySelector('.astryx-icon');
     expect(magnifier).toBeTruthy();
@@ -2775,4 +3757,560 @@ describe('Selector popup theme target', () => {
       expect(popup?.querySelector('[role="listbox"]')).not.toBeNull();
     },
   );
+
+  it('stays closed when the trigger click follows its own light dismiss (#5004)', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        placement="below"
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The browser dismissed the popup on pointerup and queued the toggle. When
+    // that event lands before the click — WebKit, or any engine under load —
+    // the click used to read a closed popup and reopen it.
+    fireEvent.pointerDown(trigger);
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+    // Synchronously: the click falls inside the one gesture the guard covers,
+    // as it does in a browser a few milliseconds behind the dismissal.
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('Selector option-row theme target', () => {
+  const ROW_OPTIONS = ['Apple', 'Banana', 'Orange'];
+
+  it('renders astryx-selector-option-row, with its size, on every dropdown row', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={ROW_OPTIONS}
+        value=""
+        onChange={() => {}}
+        size="lg"
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const options = screen.getAllByRole('option', h);
+    expect(options).toHaveLength(3);
+    for (const option of options) {
+      expect(option).toHaveClass('astryx-selector-option-row');
+      expect(option).toHaveClass('lg');
+      expect(option).toHaveAttribute('data-size', 'lg');
+    }
+  });
+
+  it('reflects the selected state on the row target', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={ROW_OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const selected = screen.getByRole('option', {name: 'Banana', ...h});
+    expect(selected).toHaveClass('astryx-selector-option-row');
+    expect(selected).toHaveAttribute('data-selected', 'selected');
+  });
+
+  it('leaves the state attributes off an unselected, enabled row', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={ROW_OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const plain = screen.getByRole('option', {name: 'Apple', ...h});
+    expect(plain).toHaveClass('astryx-selector-option-row');
+    // themeProps emits the data-* only when the state is truthy, so a theme's
+    // `.selected` / `.disabled` rules never touch a plain row.
+    expect(plain).not.toHaveAttribute('data-selected');
+    expect(plain).not.toHaveAttribute('data-disabled');
+  });
+
+  it('reflects the disabled state on the row target', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={[{value: 'Apple', disabled: true}, 'Banana']}
+        value=""
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const disabled = screen.getByRole('option', {name: 'Apple', ...h});
+    expect(disabled).toHaveClass('astryx-selector-option-row');
+    expect(disabled).toHaveAttribute('data-disabled', 'disabled');
+  });
+
+  it('keeps the row target when renderOption replaces the content', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={ROW_OPTIONS}
+        value=""
+        onChange={() => {}}
+        renderOption={option => (
+          <span data-testid="custom-row">{option.label ?? option.value}</span>
+        )}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const option = screen.getAllByRole('option', h)[0];
+    // The row owns the padding/density, so custom content is inset the same as
+    // the default row — one row override reaches both.
+    expect(option).toHaveClass('astryx-selector-option-row');
+    expect(within(option).getByTestId('custom-row')).toHaveTextContent('Apple');
+  });
+
+  it('exposes the row target, its states and its size to defineTheme', () => {
+    // jsdom cannot resolve the @layer cascade, so the generated CSS is what
+    // proves a theme can reach the row (padding, state, per-size density).
+    const theme = defineTheme({
+      name: 'selector-option-row-target-test',
+      components: {
+        'selector-option-row': {
+          base: {padding: 'var(--spacing-2)', borderRadius: '8px'},
+          selected: {backgroundColor: 'var(--color-background-muted)'},
+          disabled: {opacity: '0.5'},
+          'size:md': {padding: 'var(--spacing-2)'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-selector-option-row {');
+    expect(css).toContain('.astryx-selector-option-row.selected');
+    expect(css).toContain('.astryx-selector-option-row.disabled');
+    expect(css).toContain('.astryx-selector-option-row.md');
+  });
+});
+
+describe('Selector option descriptions and trigger value', () => {
+  const LOCK = <span data-testid="lock-glyph" />;
+  const GLOBE = <span data-testid="globe-glyph" />;
+  const VISIBILITY = [
+    {
+      value: 'private',
+      label: 'Private',
+      icon: LOCK,
+      description: 'Only members can access this space.',
+    },
+    {
+      value: 'public',
+      label: 'Public',
+      icon: GLOBE,
+      description: 'Anyone at the company can join.',
+    },
+  ];
+
+  it('renders an option description in the dropdown row', () => {
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+
+    const [row] = screen.getAllByRole('option', {hidden: true});
+    expect(row).toHaveTextContent('Private');
+    expect(row).toHaveTextContent('Only members can access this space.');
+  });
+
+  it('keeps the description out of the closed trigger by default', () => {
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveTextContent('Private');
+    expect(trigger).not.toHaveTextContent(
+      'Only members can access this space.',
+    );
+  });
+
+  it("renders the selected option's icon in the closed trigger", () => {
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    expect(within(trigger).getByTestId('lock-glyph')).toBeInTheDocument();
+    expect(
+      within(trigger).queryByTestId('globe-glyph'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders no option icon while showing the placeholder', () => {
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value={undefined}
+        onChange={() => {}}
+        placeholder="Choose..."
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveTextContent('Choose...');
+    expect(within(trigger).queryByTestId('lock-glyph')).not.toBeInTheDocument();
+  });
+
+  it('lets startIcon win over the selected option icon', () => {
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        startIcon={<span data-testid="pinned-icon" />}
+      />,
+    );
+
+    // One leading glyph in the trigger, not two.
+    expect(screen.getByTestId('pinned-icon')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('combobox')).queryByTestId('lock-glyph'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders the selected option through renderValue', () => {
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        renderValue={option => (
+          <SelectorOption
+            icon={option.icon}
+            label={option.label ?? option.value}
+            description={option.description}
+          />
+        )}
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveTextContent('Private');
+    expect(trigger).toHaveTextContent('Only members can access this space.');
+    expect(within(trigger).getByTestId('lock-glyph')).toBeInTheDocument();
+  });
+
+  it('sizes the trigger from what renderValue draws, not from it being passed', () => {
+    // The regression this guards: keying the height off `renderValue != null`
+    // handed a one-line custom value a taller control than the same value in
+    // the default trigger, so `size` quietly stopped meaning its token. The
+    // trigger carries one set of sizing classes for every case — a one-line
+    // value measures the token, and only a second line of content adds a
+    // second line of height.
+    const triggerSizing = () =>
+      new Set(
+        (screen.getByRole('combobox').parentElement?.className ?? '')
+          .split(' ')
+          .filter(Boolean),
+      );
+
+    const plain = render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+      />,
+    );
+    const defaultSizing = triggerSizing();
+    plain.unmount();
+
+    const oneLine = render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        renderValue={option => <span>{option.label}</span>}
+      />,
+    );
+    expect(triggerSizing()).toEqual(defaultSizing);
+    oneLine.unmount();
+
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        renderValue={option => (
+          <SelectorOption
+            icon={option.icon}
+            label={option.label ?? option.value}
+            description={option.description}
+          />
+        )}
+      />,
+    );
+    expect(triggerSizing()).toEqual(defaultSizing);
+  });
+
+  it("follows the caller's SelectorOption layout, but folds inline in a group", () => {
+    // The trigger has no layout prop: the SelectorOption the caller renders
+    // decides, and the trigger's padding sizes it to whatever that draws. The
+    // one exception is an InputGroup, which pins the row height — the value
+    // box is clamped to it, so a stacked row would lose its second line at the
+    // cut. Folding inline keeps the description visible instead.
+    const renderValue = (option: SelectorOptionData) => (
+      <SelectorOption
+        icon={option.icon}
+        label={option.label ?? option.value}
+        description={option.description}
+      />
+    );
+    const classesOf = (label: HTMLElement) =>
+      new Set((label.parentElement?.className ?? '').split(' '));
+    const triggerClasses = () =>
+      classesOf(within(screen.getByRole('combobox')).getByText('Private'));
+
+    const stackedRef = render(<Item label="Private" description="Why" />);
+    const stackedClasses = classesOf(screen.getByText('Private'));
+    stackedRef.unmount();
+
+    const inlineRef = render(
+      <Item label="Private" description="Why" layout="inline" />,
+    );
+    const inlineOnly = [...classesOf(screen.getByText('Private'))].filter(
+      c => c !== '' && !stackedClasses.has(c),
+    );
+    inlineRef.unmount();
+    expect(inlineOnly.length).toBeGreaterThan(0);
+
+    const standalone = render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        renderValue={renderValue}
+      />,
+    );
+    expect(inlineOnly.some(c => triggerClasses().has(c))).toBe(false);
+    standalone.unmount();
+
+    render(
+      <InputGroup label="Space settings">
+        <Selector
+          label="Visibility"
+          options={VISIBILITY}
+          value="private"
+          onChange={() => {}}
+          renderValue={renderValue}
+        />
+      </InputGroup>,
+    );
+    expect(inlineOnly.every(c => triggerClasses().has(c))).toBe(true);
+  });
+
+  it('clamps the trigger value box in a group, whatever renderValue draws', () => {
+    // The hole this guards: the one-line fold a group imposes used to reach
+    // only SelectorOption, which reads the row-layout context. Any other node
+    // ignored it and bled through the trigger's border, over the rows above
+    // and below the group. The clamp is on the trigger's own value box, so it
+    // cannot depend on what the value is.
+    const valueBox = () => {
+      const box = screen.getByRole('combobox').firstElementChild;
+      return new Set((box?.className ?? '').split(' ').filter(Boolean));
+    };
+    const grouped = (
+      renderValue: (option: SelectorOptionData) => ReactNode,
+    ) => (
+      <InputGroup label="Space settings">
+        <Selector
+          label="Visibility"
+          options={VISIBILITY}
+          value="private"
+          onChange={() => {}}
+          renderValue={renderValue}
+        />
+      </InputGroup>
+    );
+
+    const standalone = render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        renderValue={option => <span>{option.label}</span>}
+      />,
+    );
+    const unclamped = valueBox();
+    standalone.unmount();
+
+    const withOption = render(
+      grouped(option => (
+        <SelectorOption
+          icon={option.icon}
+          label={option.label ?? option.value}
+          description={option.description}
+        />
+      )),
+    );
+    const clamped = valueBox();
+    expect(clamped).not.toEqual(unclamped);
+    withOption.unmount();
+
+    // A row the Selector knows nothing about, and a bare element: same box.
+    const withItem = render(
+      grouped(option => (
+        <Item
+          label={option.label ?? option.value}
+          description={option.description}
+        />
+      )),
+    );
+    expect(valueBox()).toEqual(clamped);
+    withItem.unmount();
+
+    render(
+      grouped(option => (
+        <div>
+          <div>{option.label}</div>
+          <div>{option.description}</div>
+        </div>
+      )),
+    );
+    expect(valueBox()).toEqual(clamped);
+  });
+
+  it('does not let a control sized above its group grow the row', () => {
+    // The group's height is the row, so inside one the trigger drops the floor
+    // its own `size` would otherwise assert: <InputGroup size="md"> with a
+    // <Selector size="lg"> stays the group's 32px. The size still reaches the
+    // theme (the trigger keeps its `size` marker class); what it no longer
+    // does is set a height. Standalone, the two sizes still differ.
+    const triggerSizing = () =>
+      new Set(
+        (screen.getByRole('combobox').parentElement?.className ?? '')
+          .split(' ')
+          .filter(Boolean),
+      );
+    // What changes between the two sizes. StyleX keeps a debug class per style
+    // object even where every declaration in it lost, and the theme keeps its
+    // own `size` marker; the atomic classes are what carry the geometry.
+    const geometryDiff = (a: Set<string>, b: Set<string>) => {
+      const atomic = (classes: Set<string>) =>
+        [...classes].filter(c => !c.includes('__') && c !== 'md' && c !== 'lg');
+      return [...atomic(a), ...atomic(b)].filter(c => !(a.has(c) && b.has(c)));
+    };
+    const selector = (size: 'md' | 'lg') => (
+      <Selector
+        label="Visibility"
+        size={size}
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+      />
+    );
+
+    const standaloneMd = render(selector('md'));
+    const standaloneMdSizing = triggerSizing();
+    standaloneMd.unmount();
+
+    const standaloneLg = render(selector('lg'));
+    expect(geometryDiff(standaloneMdSizing, triggerSizing())).not.toEqual([]);
+    standaloneLg.unmount();
+
+    const groupedMd = render(
+      <InputGroup label="Space settings" size="md">
+        {selector('md')}
+      </InputGroup>,
+    );
+    const groupedMdSizing = triggerSizing();
+    groupedMd.unmount();
+
+    render(
+      <InputGroup label="Space settings" size="md">
+        {selector('lg')}
+      </InputGroup>,
+    );
+    expect(geometryDiff(groupedMdSizing, triggerSizing())).toEqual([]);
+  });
+
+  it('does not call renderValue for the placeholder', () => {
+    const renderValue = vi.fn(() => <span>custom</span>);
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value={undefined}
+        onChange={() => {}}
+        placeholder="Choose..."
+        renderValue={renderValue}
+      />,
+    );
+
+    expect(renderValue).not.toHaveBeenCalled();
+    expect(screen.getByRole('combobox')).toHaveTextContent('Choose...');
+  });
+
+  it('matches type-ahead on the label, not the description', () => {
+    // "Anyone" starts the public description; typing "a" must not select it.
+    function Harness() {
+      const [value, setValue] = useState<string | undefined>(undefined);
+      return (
+        <Selector
+          label="Visibility"
+          options={VISIBILITY}
+          value={value}
+          onChange={setValue}
+        />
+      );
+    }
+    render(<Harness />);
+
+    const trigger = screen.getByRole('combobox');
+    trigger.focus();
+    type('pu', trigger);
+    expect(trigger).toHaveTextContent('Public');
+    expect(trigger).not.toHaveTextContent('Anyone at the company can join.');
+  });
 });

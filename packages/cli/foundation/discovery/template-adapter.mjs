@@ -672,7 +672,15 @@ export function extractComponents(pagePath) {
   // (P2380608025), so the `XDS` prefix is optional. Anchoring on the `<`
   // JSX-tag boundary keeps this precise (avoids matching imports/comments/
   // identifiers) while remaining prefix-agnostic.
-  const tagRegex = /<(XDS)?([A-Z]\w+)/g;
+  //
+  // The lookbehind additionally requires that the `<` NOT follow an identifier
+  // character, which is what separates a JSX tag from a TypeScript generic
+  // argument list. `return <Dialog` and `rows.map(r => <ListItem` match;
+  // `useState<ReadonlySet<string>>`, `ComponentType<SVGProps<SVGSVGElement>>`
+  // and `Record<string, Phase>` no longer do. Those were being indexed as
+  // rendered components, putting type names like `Record`, `SVGProps` and
+  // `ReadonlySet` into template keyword and "components used" output.
+  const tagRegex = /(?<![\w$.])<(XDS)?([A-Z]\w+)/g;
   /** @type {string[]} */
   const matches = [];
   let m;

@@ -11,8 +11,10 @@
  * - A JS module that re-exports the built theme (+ icon registry)
  * - A .d.ts (plus an optional .variants.d.ts for custom prop values)
  *
- * It performs the writes and returns a `theme.build` receipt, or `null` when
- * the theme produced no CSS (nothing to build). Errors throw AstryxError (with
+ * It performs the writes and returns a `theme.build` receipt — its `warnings`
+ * carry override problems and any fonts the theme names but does not load
+ * (font-warning.mjs) — or `null` when the theme produced no CSS (nothing to
+ * build). Errors throw AstryxError (with
  * a stable code). Human progress is emitted through the shared `logger`
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
@@ -41,6 +43,14 @@ import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
 import {loadComponentDoc} from '../../../foundation/discovery/component-loader.mjs';
+import {
+  collectThemingTargets,
+  targetsByKey,
+} from '../../../foundation/discovery/theming-targets.mjs';
+import {
+  collectUnloadedFonts,
+  formatFontLoadingHelp,
+} from './font-warning.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -52,12 +62,14 @@ import {loadComponentDoc} from '../../../foundation/discovery/component-loader.m
 /** @type {any} */ let _defineTheme = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
+/** @type {any} */ let _dataTokenDefaults = null;
 /** @type {any} */ let _coreImportError = null;
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
+  _dataTokenDefaults = coreTheme.dataTokenDefaults;
 } catch (e) {
   // Capture the reason so the theme action can surface a precise, actionable
   // error. We don't throw here: this module is imported eagerly by the CLI
@@ -339,8 +351,8 @@ const _augmentationTargetCache = new Map();
  * Resolve a rendered theme class token (the key without `astryx-`) to candidate
  * public core subpaths and interface prefixes that may own its augmentable prop
  * maps. Some tokens are subtargets documented by a parent component
- * (`avatar-status-dot` augments `@astryxdesign/core/Avatar`), and some stable
- * class tokens intentionally omit word separators (`progressbar`, `statusdot`)
+ * (`avatar-status-dot` augments `@astryxdesign/core/Avatar`), and some
+ * deprecated tokens still omit word separators (`progressbar`, `statusdot`)
  * while the public API keeps `ProgressBar`/`StatusDot` casing. Component docs
  * are the source of truth for the target token → owning component relationship.
  *
@@ -418,8 +430,8 @@ async function resolveAugmentationTargetCandidates(componentName) {
 
       // Try the exact rendered token first for documented subtargets such as
       // avatar-status-dot → AvatarStatusDotVariantMap, then the owning public
-      // component name for unhyphenated public casings such as progressbar →
-      // ProgressBarVariantMap/statusdot → StatusDotVariantMap.
+      // component name for the deprecated unhyphenated tokens such as
+      // progressbar → ProgressBarVariantMap/statusdot → StatusDotVariantMap.
       addCandidate(moduleName, toPascalCase(componentName));
       addCandidate(moduleName, moduleName);
       if (Array.isArray(doc?.components)) {
@@ -586,6 +598,30 @@ const themeScopeStart = (/** @type {string} */ name) =>
 const THEME_SCOPE_TO = `[data-astryx-theme]`;
 
 /**
+ * Module extensions the theme loader resolves, source before artifact.
+ *
+ * `theme build` writes `<name>.js` next to `<name>.ts`, and jiti's default
+ * order tries `.js` first — so once a base theme had been built, every sibling
+ * theme that `extends` it resolved to that generated artifact instead of the
+ * source. The artifact carries no `components` and exports a different name,
+ * so the inheritance silently evaporated. Resolving source first is also what
+ * the author's TypeScript sees, which is the point: the CSS the build emits
+ * matches the theme they type-checked.
+ */
+const THEME_MODULE_EXTENSIONS = [
+  '.ts',
+  '.tsx',
+  '.mts',
+  '.cts',
+  '.mtsx',
+  '.ctsx',
+  '.mjs',
+  '.cjs',
+  '.js',
+  '.json',
+];
+
+/**
  * Import a theme module using jiti and find the defineTheme() result.
  * Returns the resolved DefinedTheme object.
  * @param {string} filePath
@@ -595,6 +631,7 @@ async function importThemeModule(filePath) {
   const jiti = createJiti(import.meta.url, {
     moduleCache: false,
     jsx: true,
+    extensions: THEME_MODULE_EXTENSIONS,
   });
 
   const mod = await jiti.import(filePath, {default: true});
@@ -727,6 +764,13 @@ function extractIconInfo(filePath) {
  * Includes the theme name, marker, and re-exports the icon registry.
  * All styling is in the CSS file.
  *
+ * The module carries the theme's resolved `components` and on-media surfaces
+ * alongside its tokens. They are not needed to apply the theme — the CSS holds
+ * all of that — but a built theme is a legitimate base for `extends` (the
+ * shipped themes expose one as their `./built` subpath), and a base that
+ * carries only tokens makes its children silently lose every component
+ * override it had.
+ *
  * The icon registry is imported rather than inlined because it holds React
  * elements, which cannot be serialized. `extractIconInfo` lifts the specifier
  * out of the TypeScript source, where an extensionless `./icons` is resolved by
@@ -768,6 +812,42 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
     .map((line, i) => (i === 0 ? line : '  ' + line))
     .join('\n');
 
+  /**
+   * Serialize a resolved theme field as an indented object literal, or '' when
+   * there is nothing to emit.
+   * @param {string} field
+   * @param {unknown} value
+   * @returns {string}
+   */
+  const serializeField = (field, value) => {
+    if (!value || Object.keys(value).length === 0) return '';
+    const body = JSON.stringify(value, null, 2)
+      .split('\n')
+      .map((line, i) => (i === 0 ? line : '  ' + line))
+      .join('\n');
+    return `  ${field}: ${body},\n`;
+  };
+
+  const inheritableFields =
+    (themeDef.__localTokenLineage !== undefined
+      ? `  localTokens: ${JSON.stringify(themeDef.localTokens ?? {}, null, 2)
+          .split('\n')
+          .map((line, i) => (i === 0 ? line : '  ' + line))
+          .join('\n')},\n` +
+        `  __localTokenOwners: ${JSON.stringify(
+          themeDef.__localTokenOwners ?? {},
+          null,
+          2,
+        )
+          .split('\n')
+          .map((line, i) => (i === 0 ? line : '  ' + line))
+          .join('\n')},\n` +
+        `  __localTokenLineage: ${JSON.stringify(themeDef.__localTokenLineage)},\n`
+      : '') +
+    serializeField('components', themeDef.components) +
+    serializeField('__onDark', themeDef.__onDark) +
+    serializeField('__onLight', themeDef.__onLight);
+
   return `${iconImport}/**
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
  * Import the CSS file alongside this module:
@@ -779,7 +859,7 @@ export const ${toIdentifier(themeDef.name)}Theme = {
   name: '${themeDef.name}',
   __built: true,
   tokens: ${tokensStr},
-${iconsField}
+${inheritableFields}${iconsField}
 };
 ${iconReExport}`;
 }
@@ -823,6 +903,9 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
  * Returns null when docs are unavailable so validation can skip unknown-key
  * warnings rather than guessing from a second registry.
  *
+ * Shares its enumeration with `theme targets`, so what a theme author can list
+ * is exactly what this validator accepts.
+ *
  * @returns {Promise<Record<string, string[]> | null>}
  */
 async function loadKnownComponents() {
@@ -830,44 +913,7 @@ async function loadKnownComponents() {
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return null;
 
-  /** @type {Record<string, string[]>} */
-  const targets = {};
-
-  /** @param {string} dir */
-  async function scan(dir) {
-    const entries = fs.readdirSync(dir, {withFileTypes: true});
-    for (const entry of entries) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
-        await scan(full);
-        continue;
-      }
-      if (!entry.name.endsWith('.doc.mjs')) continue;
-
-      /** @type {any} */
-      let doc;
-      try {
-        doc = await loadComponentDoc(full);
-      } catch {
-        continue;
-      }
-
-      for (const target of doc?.theming?.targets || []) {
-        const className = target?.className;
-        if (typeof className !== 'string') continue;
-        const key = className.replace(/^astryx-/, '');
-        if (!key) continue;
-        const props = [target.visualProps, target.states]
-          .filter(list => Array.isArray(list))
-          .flat()
-          .filter((/** @type {unknown} */ p) => typeof p === 'string');
-        targets[key] = [...new Set([...(targets[key] || []), ...props])];
-      }
-    }
-  }
-
-  await scan(coreSrc);
+  const targets = targetsByKey(await collectThemingTargets(coreSrc));
   return Object.keys(targets).length > 0 ? targets : null;
 }
 
@@ -1055,6 +1101,8 @@ export async function themeBuild(
   // Validate component overrides
   const warnings = await validateComponentOverrides(themeDef);
   const warningMessages = [];
+  /** Advisories about a correct theme — see the `notices` note on the receipt. */
+  const noticeMessages = [];
   for (const w of warnings) {
     warningMessages.push(w);
     logger.warn(`  ⚠ ${w}`);
@@ -1093,20 +1141,29 @@ export async function themeBuild(
   let css;
   let resolvedTheme;
   {
-    // jiti returns an already-resolved theme; legacy eval returns raw input.
-    const isAlreadyResolved =
-      !themeDef.typography && !themeDef.motion && !themeDef.radius;
-    if (isAlreadyResolved) {
-      resolvedTheme = themeDef;
+    // jiti returns an already-resolved theme; a plain object literal (or the
+    // legacy eval path) returns raw defineTheme input, which still has to go
+    // through the resolver. Detect that by the input-only fields — a resolved
+    // theme has none of them — and hand the WHOLE object over: picking fields
+    // by name is how `extends` (and `color`, and `syntax`) used to be dropped
+    // on the way in.
+    const INPUT_ONLY_FIELDS = [
+      'extends',
+      'typography',
+      'motion',
+      'radius',
+      'color',
+      'syntax',
+      'onDark',
+      'onLight',
+    ];
+    const needsResolution =
+      INPUT_ONLY_FIELDS.some(field => themeDef[field] !== undefined) ||
+      ('localTokens' in themeDef && themeDef.__localTokenLineage === undefined);
+    if (needsResolution) {
+      resolvedTheme = _defineTheme({...themeDef});
     } else {
-      resolvedTheme = _defineTheme({
-        name: themeDef.name,
-        typography: themeDef.typography,
-        motion: themeDef.motion,
-        radius: themeDef.radius,
-        tokens: themeDef.tokens,
-        components: themeDef.components,
-      });
+      resolvedTheme = themeDef;
     }
     const scopeSelector = themeScopeStart(themeDef.name);
     const scopeTo = THEME_SCOPE_TO;
@@ -1126,8 +1183,16 @@ export async function themeBuild(
     if (component.length > 0) {
       const componentInner = component.join('\n\n');
       const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
-      // #3658: also emit attribute-specific rules so <Theme mode> can override color-scheme
-      const colorSchemeDecl = componentScope.includes('light-dark(')
+      // #3658: also emit attribute-specific rules so <Theme mode> can override color-scheme.
+      // Decided from the theme's own values, not the generated CSS: that CSS
+      // also carries the data-token defaults, which are light-dark() pairs, so
+      // a substring check on it would fire for every theme.
+      const themeOwnValues = JSON.stringify([
+        resolvedTheme.tokens ?? {},
+        resolvedTheme.localTokens ?? {},
+        resolvedTheme.components ?? {},
+      ]);
+      const colorSchemeDecl = themeOwnValues.includes('light-dark(')
         ? '  :root { color-scheme: light dark; }\n  html[data-theme="light"] { color-scheme: light; }\n  html[data-theme="dark"] { color-scheme: dark; }\n\n'
         : '';
       cssParts.push(
@@ -1144,6 +1209,26 @@ export async function themeBuild(
     if (cssParts.length === 0) {
       logger.log('No overrides found — nothing to build.');
       return null;
+    }
+    // The data-token defaults are theme-independent and go in @layer
+    // astryx-base, below the theme's own overrides. Formatted here from the
+    // public `dataTokenDefaults` export, byte for byte as the `<Theme>`
+    // runtime emits it — build-theme.data-tokens.test.mjs is the drift guard.
+    // Placed after the reset block and before the theme block: a layer's order
+    // is fixed by where it is first declared, so emitting it anywhere else in
+    // the file would invert reset < astryx-base < astryx-theme for a consumer
+    // who imports this stylesheet on its own.
+    const baseCss = _dataTokenDefaults
+      ? `:root {\n${Object.entries(_dataTokenDefaults)
+          .map(([name, value]) => `  ${name}: ${value};`)
+          .join('\n')}\n}`
+      : '';
+    if (baseCss) {
+      cssParts.splice(
+        prose.length > 0 ? 1 : 0,
+        0,
+        `@layer astryx-base {\n${baseCss}\n}`,
+      );
     }
     css = cssParts.join('\n\n') + '\n';
   }
@@ -1171,9 +1256,9 @@ export async function themeBuild(
   }
 
   const displayTheme = resolvedTheme || themeDef;
-  const tokenCount = displayTheme.tokens
-    ? Object.keys(displayTheme.tokens).length
-    : 0;
+  const tokenCount =
+    Object.keys(displayTheme.tokens ?? {}).length +
+    Object.keys(displayTheme.localTokens ?? {}).length;
   const componentCount = displayTheme.components
     ? Object.keys(displayTheme.components).length
     : 0;
@@ -1341,16 +1426,24 @@ Or with a <link> tag:
   </Theme>
 `);
 
-  // Print font declaration warnings (derived from typography roles)
-  if (resolvedTheme && resolvedTheme.fonts && resolvedTheme.fonts.length > 0) {
-    logger.log(
-      `\n⚠ Theme "${themeDef.name}" requires fonts not included in the build:`,
-    );
-    for (const font of resolvedTheme.fonts) {
-      logger.log(`  ${font.family} — add to your document <head>:`);
-      logger.log(`  <link rel="stylesheet" href="${font.url}" />`);
-    }
-    logger.log('');
+  // Fonts the theme names but nothing loads (#5015). Resolved tokens and
+  // component overrides carry the final font-family values on both load
+  // paths, so this sees jiti-resolved and legacy themes alike.
+  //
+  // A NOTICE, not a warning: naming a font a theme file cannot load is how
+  // the API is meant to be used — Astryx sets `--font-family-*` and loading
+  // is the app's job, which no theme can do for it. So this fires on any
+  // theme with a webfont, including a perfect one, and as a warning it made
+  // every such build read as defective (it also put the shipped template
+  // permanently in violation of its own "compiles with no warnings" guard).
+  const unloadedFonts = collectUnloadedFonts(resolvedTheme);
+  for (const family of unloadedFonts) {
+    const msg = `Font "${family}" is named by this theme but not loaded — add a <link> or @font-face in your app (recipe: astryx docs typography)`;
+    noticeMessages.push(msg);
+    logger.log(`  note: ${msg}`);
+  }
+  if (unloadedFonts.length > 0) {
+    logger.log(formatFontLoadingHelp(themeDef.name, unloadedFonts));
   }
 
   return {
@@ -1369,6 +1462,7 @@ Or with a <link> tag:
           : {}),
       },
       warnings: warningMessages,
+      notices: noticeMessages,
     },
   };
 }

@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/cli",
-  "version": "0.4.0",
+  "version": "0.5.2",
   "displayName": "CLI",
   "description": "Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line.",
   "author": "Meta Open Source",
@@ -25,6 +25,9 @@
     "agent-docs"
   ],
   "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "bin": {
     "astryx": "./clients/cli/bin/astryx.mjs",
     "cli": "./clients/cli/bin/astryx.mjs"
@@ -46,6 +49,10 @@
     "./config": {
       "types": "./authoring/config/type.ts",
       "import": "./authoring/config/parse.mjs"
+    },
+    "./debug": {
+      "types": "./authoring/debug/type.ts",
+      "import": "./authoring/debug/parse.mjs"
     },
     "./integration": {
       "types": "./authoring/integration/type.ts",

@@ -1,5 +1,65 @@
 # @xds/theme-y2k
 
+# 0.5.2
+
+---
+
+# 0.5.1
+
+#### Fixes
+
+- Theme packages no longer ship an unused CommonJS `icons.js` artifact. Their root entry keeps its advertised CommonJS and ESM outputs, while the standalone icon companion used by `/built` is emitted only as `icons.mjs`. (#5512)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @jiunshinn
+
+---
+
+# 0.5.0
+
+---
+
+# 0.4.7
+
+---
+
+# 0.4.6
+
+---
+
+# 0.4.5
+
+---
+
+# 0.4.4
+
+---
+
+# 0.4.3
+
+#### Fixes
+
+- The `/built` entry now loads under Node ESM and externalized SSR (Vite `--ssr`, Remix / React Router v7): it imports `./icons.mjs` instead of the extensionless `./icons` Node cannot resolve.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+
+---
+
+# 0.4.2
+
+---
+
+# 0.4.1
+
+---
+
 # 0.4.0
 
 ---

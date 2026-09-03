@@ -9,7 +9,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {mergeTranslation} from './component-loader.mjs';
+import * as path from 'node:path';
+import {loadComponentDoc, loadDocs, mergeTranslation} from './component-loader.mjs';
 
 /** Minimal HookDoc-shaped fixture with params + returns. */
 function hookDocs() {
@@ -103,5 +104,39 @@ describe('mergeTranslation — component prop descriptions (regression)', () => 
     expect(merged.usage.description).toBe('Dense.');
     expect(merged.props.find(p => p.name === 'variant').description).toBe('Vrnt.');
     expect(merged.props.find(p => p.name === 'disabled').description).toBe('Disabled state.');
+  });
+});
+
+describe('loadComponentDoc — full localized doc overlays', () => {
+  it('inherits canonical anatomy when docsZh omits it and matches loadDocs', async () => {
+    const docPath = path.join(
+      import.meta.dirname,
+      '__fixtures__',
+      'component-accessibility-overlay.doc.mjs',
+    );
+
+    const direct = await loadComponentDoc(docPath, {zh: true});
+    const cli = await loadDocs(docPath, {zh: true});
+
+    expect(direct).toEqual(cli);
+    expect(direct.usage.description).toBe('Translated full-doc description.');
+    expect(direct.usage.anatomy).toEqual((await loadComponentDoc(docPath)).usage.anatomy);
+    expect(direct.usage.bestPractices).toBeUndefined();
+  });
+
+  it('keeps explicit localized anatomy and matches loadDocs', async () => {
+    const docPath = path.join(
+      import.meta.dirname,
+      '__fixtures__',
+      'component-anatomy-override.doc.mjs',
+    );
+
+    const direct = await loadComponentDoc(docPath, {zh: true});
+    const cli = await loadDocs(docPath, {zh: true});
+    const canonical = await loadComponentDoc(docPath);
+
+    expect(direct).toEqual(cli);
+    expect(direct.usage.anatomy).not.toEqual(canonical.usage.anatomy);
+    expect(direct.usage.anatomy[0].name).toBe('文本区域');
   });
 });

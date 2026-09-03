@@ -43,7 +43,8 @@ import {
 import {useTruncation} from '../Text/useTruncation';
 import {resolveStyleColor} from '../Text/Text';
 import type {LayerPlacement} from '../Layer';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
@@ -242,13 +243,16 @@ export function Heading({
   // Ref for the heading element (used as tooltip anchor)
   const headingRef = useRef<HTMLHeadingElement>(null);
 
+  // Keep the merged ref stable across rerenders.
+  const mergedRef = useMergedRefs(ref, truncation.ref, headingRef);
+
   // Build inline style for -webkit-line-clamp (dynamic value)
   const inlineStyle = maxLines > 1 ? {WebkitLineClamp: maxLines} : undefined;
 
   return (
     <>
       <Component
-        ref={mergeRefs(ref, truncation.ref, headingRef)}
+        ref={mergedRef}
         {...mergeProps(
           themeProps('heading', {level, color, ...(type && {type})}),
           stylex.props(
@@ -277,7 +281,6 @@ export function Heading({
           className,
           {...style, ...inlineStyle},
         )}
-        title={tooltipEnabled ? truncation.fullText : undefined}
         {...ariaProps}
         {...props}>
         {children}

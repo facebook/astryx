@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -18,11 +19,15 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {MultiSelector} from './MultiSelector';
 import {Icon} from '../Icon';
+import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {selectorPresentationStyles} from '../Selector/selectorPresentation.stylex';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -38,6 +43,28 @@ function politeRegion(): HTMLElement | null {
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
+  __resetInteractionModalityForTest();
+  HTMLDialogElement.prototype.showModal = vi.fn(function (
+    this: HTMLDialogElement,
+  ) {
+    this.setAttribute('open', '');
+  });
+  HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+    this.removeAttribute('open');
+  });
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     this.setAttribute('popover-open', '');
     const event = new Event('toggle', {bubbles: false});
@@ -72,6 +99,108 @@ const h = {hidden: true} as const;
 
 describe('MultiSelector', () => {
   const defaultOptions = ['Apple', 'Banana', 'Orange'];
+
+  it('uses a bottom sheet and stays open while toggling options', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={onChange}
+        presentation="bottom-sheet"
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+
+    expect(
+      await screen.findByRole('dialog', {name: 'Fruit'}),
+    ).toBeInTheDocument();
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('option', {name: 'Banana'}));
+    expect(onChange).toHaveBeenCalledWith(['Banana']);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('uses a bottom sheet for adaptive presentation on compact touch', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(max-width: 768px) and (pointer: coarse)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        presentation="adaptive"
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    expect(
+      await screen.findByRole('dialog', {name: 'Fruit'}),
+    ).toBeInTheDocument();
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+  });
+
+  it('moves keyboard focus into a bottom-sheet listbox', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        presentation="bottom-sheet"
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    trigger.focus();
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(screen.getByRole('listbox')).toHaveFocus());
+  });
+
+  it('restores touch focus without painting a trigger focus ring', async () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        presentation="bottom-sheet"
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, {pointerType: 'touch'});
+    fireEvent.click(trigger, {detail: 1});
+    const dialog = await screen.findByRole('dialog', {name: 'Fruit'});
+    fireEvent.pointerDown(dialog, {pointerType: 'touch'});
+    fireEvent.click(dialog, {detail: 1});
+
+    trigger.focus();
+    expect(trigger).toHaveFocus();
+    expect(trigger.parentElement).toHaveClass(
+      stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
+    );
+  });
 
   it('renders with label', () => {
     render(
@@ -125,6 +254,90 @@ describe('MultiSelector', () => {
       />,
     );
     expect(screen.getByText('2 selected')).toBeInTheDocument();
+  });
+
+  it('formats the count display with formatValue', () => {
+    render(
+      <MultiSelector
+        label="Spaces"
+        options={defaultOptions}
+        value={['Apple', 'Banana']}
+        onChange={() => {}}
+        formatValue={items => `${items.length} spaces selected`}
+      />,
+    );
+    expect(screen.getByText('2 spaces selected')).toBeInTheDocument();
+  });
+
+  it('passes selected values and resolved labels to formatValue', () => {
+    const formatValue = vi.fn(
+      (items: {value: string; label: string}[]) =>
+        `${items[0].label} and ${items.length - 1} more`,
+    );
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[
+          {value: 'a', label: 'Apple'},
+          {value: 'b', label: 'Banana'},
+        ]}
+        value={['a', 'b']}
+        onChange={() => {}}
+        formatValue={formatValue}
+      />,
+    );
+    expect(formatValue).toHaveBeenCalledWith([
+      {value: 'a', label: 'Apple'},
+      {value: 'b', label: 'Banana'},
+    ]);
+    expect(screen.getByText('Apple and 1 more')).toBeInTheDocument();
+  });
+
+  it('formats the labels display with formatValue', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Apple', 'Banana', 'Orange']}
+        onChange={() => {}}
+        triggerDisplay="labels"
+        formatValue={items => items.map(item => item.label).join(' & ')}
+      />,
+    );
+    expect(screen.getByText('Apple & Banana & Orange')).toBeInTheDocument();
+  });
+
+  it('ignores formatValue in badges display', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Apple', 'Banana']}
+        onChange={() => {}}
+        triggerDisplay="badges"
+        formatValue={() => 'formatted'}
+      />,
+    );
+    expect(screen.queryByText('formatted')).not.toBeInTheDocument();
+    const trigger = within(screen.getByRole('combobox'));
+    expect(trigger.getByText('Apple')).toBeInTheDocument();
+    expect(trigger.getByText('Banana')).toBeInTheDocument();
+  });
+
+  it('shows the placeholder rather than calling formatValue when empty', () => {
+    const formatValue = vi.fn(() => 'formatted');
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        placeholder="Pick fruits..."
+        formatValue={formatValue}
+      />,
+    );
+    expect(screen.getByText('Pick fruits...')).toBeInTheDocument();
+    expect(formatValue).not.toHaveBeenCalled();
   });
 
   it('shows labels display', () => {
@@ -352,6 +565,7 @@ describe('MultiSelector', () => {
 
     await user.keyboard('{Tab}');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', {name: 'Next'})).toHaveFocus();
   });
 
   it('supports keyboard navigation with ArrowDown/ArrowUp', async () => {
@@ -413,6 +627,37 @@ describe('MultiSelector', () => {
     await user.click(trigger);
     await user.keyboard('{Enter}');
     expect(onChange).toHaveBeenCalledWith(['Apple']);
+  });
+
+  it('does not toggle the highlighted option on a composing Enter (IME)', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={onChange}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', h);
+    // Filter to Banana and highlight it so an unguarded Enter would toggle it.
+    await user.type(search, 'ban');
+    await user.keyboard('{ArrowDown}');
+    expect(search).toHaveAttribute('aria-activedescendant');
+
+    // The composing keydown (isComposing / legacy keyCode 229) that commits an
+    // IME candidate must not be read as "toggle the highlighted option".
+    fireEvent.keyDown(search, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(search, {key: 'Enter', keyCode: 229});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing Enter still toggles the highlighted option.
+    fireEvent.keyDown(search, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(['Banana']);
   });
 
   it('toggles the correct item when selected items are sorted to top', async () => {
@@ -794,60 +1039,288 @@ describe('MultiSelector', () => {
     expect(empty).toHaveAttribute('role', 'presentation');
   });
 
+  it('renders emptySearchText in place of the default message', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        emptySearchText="Nothing like that here"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    const listbox = screen.getByRole('listbox', h);
+    expect(
+      within(listbox).getByText('Nothing like that here'),
+    ).toBeInTheDocument();
+    expect(
+      within(listbox).queryByText('No results found'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders emptyText, not emptySearchText, with no options and no query', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        emptySearchText="Nothing like that here"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+
+    const listbox = screen.getByRole('listbox', h);
+    expect(within(listbox).getByText('No options')).toBeInTheDocument();
+    expect(
+      within(listbox).queryByText('Nothing like that here'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('announces emptySearchText, not the catalog default', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        emptySearchText="Nothing like that here"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    // The panel message is role="presentation", so the live region is the
+    // only thing a screen reader gets — it has to say the same words.
+    await waitFor(() =>
+      expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+    );
+  });
+
+  it('announces the empty state when opened with no options', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        emptyText="Add a fruit first"
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+    await waitFor(() =>
+      expect(politeRegion()?.textContent).toBe('Add a fruit first'),
+    );
+  });
+
+  it('shows and announces nothing while isLoading', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        isLoading
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // useAnnounce writes on the next animation frame, so an immediate read
+    // would pass whether or not anything was announced.
+    await act(
+      async () =>
+        void (await new Promise(resolve => requestAnimationFrame(resolve))),
+    );
+
+    // The options have not arrived, so "No options" would be a claim the
+    // component cannot make; the trigger's spinner carries the state.
+    const listbox = screen.getByRole('listbox', h);
+    expect(within(listbox).queryByText('No options')).not.toBeInTheDocument();
+    expect(politeRegion()?.textContent ?? '').toBe('');
+  });
+
+  it('announces nothing while isLoading, matching the silent panel', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        isLoading
+        emptySearchText="Nothing like that here"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    // useAnnounce writes on the next animation frame, so an immediate read
+    // would pass whether or not anything was announced.
+    await act(
+      async () =>
+        void (await new Promise(resolve => requestAnimationFrame(resolve))),
+    );
+
+    // The panel is deliberately blank while loading; the live region is the
+    // only channel left, so a result there would be a claim the screen
+    // refuses to make.
+    const listbox = screen.getByRole('listbox', h);
+    expect(
+      within(listbox).queryByText('Nothing like that here'),
+    ).not.toBeInTheDocument();
+    expect(politeRegion()?.textContent ?? '').toBe('');
+  });
+
+  it('renders emptyText when there are no options and no search input', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        emptyText="Add a fruit first"
+      />,
+    );
+
+    // Without hasSearch the trigger itself is the combobox.
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+    const listbox = screen.getByRole('listbox', h);
+    expect(within(listbox).getByText('Add a fruit first')).toBeInTheDocument();
+  });
+
   describe('result announcements', () => {
     it('announces the match count politely while searching', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={defaultOptions}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-          hasSearch
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.resultCount':
+                '{count, number} {count, plural, one {résultat} other {résultats}}',
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSearch
+          />
+        </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
       // "an" matches Banana and Orange.
       await user.type(screen.getByRole('combobox', h), 'an');
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('2 results');
+        // The plural branch of a message no catalog supplies.
+        expect(politeRegion()?.textContent).toBe('2 résultats');
       });
     });
 
     it('announces the singular form when one option matches', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={defaultOptions}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-          hasSearch
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.resultCount':
+                '{count, number} {count, plural, one {résultat} other {résultats}}',
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSearch
+          />
+        </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
-      // "app" matches only Apple. Anchored so it cannot pass on "1 results".
+      // "app" matches only Apple. Exact match, so "1 résultats" would fail.
       await user.type(screen.getByRole('combobox', h), 'app');
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(/^1 result$/);
+        expect(politeRegion()?.textContent).toBe('1 résultat');
       });
     });
 
-    it('announces "No results found" when nothing matches', async () => {
+    it('announces the empty-results message when nothing matches', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={defaultOptions}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-          hasSearch
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {'@astryx.multiSelector.emptySearchResults': 'Aucun résultat'},
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSearch
+          />
+        </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
       await user.type(screen.getByRole('combobox', h), 'xyz');
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('No results found');
+        expect(politeRegion()?.textContent).toBe('Aucun résultat');
+      });
+    });
+
+    it('speaks the result count from a provider catalog (plural)', async () => {
+      const user = userEvent.setup();
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          messages={{
+            fr: {
+              '@astryx.multiSelector.resultCount': {
+                defaultMessage:
+                  '{count, number} {count, plural, one {résultat} other {résultats}}',
+              },
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSearch
+          />
+        </InternationalizationProvider>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      // "an" matches Banana and Orange.
+      await user.type(screen.getByRole('combobox', h), 'an');
+      await waitFor(() => {
+        // Same key through the catalog path rather than `overrides`.
+        expect(politeRegion()?.textContent).toBe('2 résultats');
       });
     });
 
@@ -924,7 +1397,7 @@ describe('MultiSelector', () => {
     expect(group).toHaveAttribute('aria-label', 'Citrus');
   });
 
-  it('shows loading state with aria-busy', () => {
+  it('shows loading state with a spinner and aria-busy', () => {
     render(
       <MultiSelector
         label="Fruit"
@@ -935,6 +1408,7 @@ describe('MultiSelector', () => {
       />,
     );
     expect(screen.getByRole('combobox')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
   });
 
   it('renders with custom selectAllLabel', async () => {
@@ -1159,53 +1633,109 @@ describe('MultiSelector', () => {
     it('announces the selection count politely when toggling an option', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={[...ANNOUNCE_OPTIONS]}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.selectionCount':
+                '{count, number} sur {total, number} sélectionnés',
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={[...ANNOUNCE_OPTIONS]}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+          />
+        </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('combobox'));
       const options = screen.getAllByRole('option', {hidden: true});
       await user.click(options[0]);
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('1 of 3 selected');
+        // Both arguments land, in the order the message asks for them.
+        expect(politeRegion()?.textContent).toBe('1 sur 3 sélectionnés');
       });
     });
 
-    it('announces "All selected" when select-all selects everything', async () => {
+    it('announces the all-selected message when select-all selects everything', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={[...ANNOUNCE_OPTIONS]}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-          hasSelectAll
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {'@astryx.multiSelector.allSelected': 'Tout est là'},
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={[...ANNOUNCE_OPTIONS]}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSelectAll
+          />
+        </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('combobox'));
       await user.click(screen.getByText('Select all'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('All selected');
+        expect(politeRegion()?.textContent).toBe('Tout est là');
       });
     });
 
-    it('announces "Selection cleared" when clearing', async () => {
+    it('announces the selection-cleared message when clearing', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={[...ANNOUNCE_OPTIONS]}
-          value={['Apple', 'Banana']}
-          onChange={() => {}}
-          hasClear
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {'@astryx.multiSelector.selectionCleared': 'Plus rien'},
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={[...ANNOUNCE_OPTIONS]}
+            value={['Apple', 'Banana']}
+            onChange={() => {}}
+            hasClear
+          />
+        </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('button', {name: 'Clear all Fruit'}));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Selection cleared');
+        expect(politeRegion()?.textContent).toBe('Plus rien');
+      });
+    });
+
+    it('prefers a provider override over the provider catalog', async () => {
+      const user = userEvent.setup();
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          messages={{
+            fr: {
+              '@astryx.multiSelector.selectionCount': {
+                defaultMessage: '{count, number} du catalogue',
+              },
+            },
+          }}
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.selectionCount':
+                '{count, number} remplacé',
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={[...ANNOUNCE_OPTIONS]}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+          />
+        </InternationalizationProvider>,
+      );
+      await user.click(screen.getByRole('combobox'));
+      const options = screen.getAllByRole('option', {hidden: true});
+      await user.click(options[0]);
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('1 remplacé');
       });
     });
   });
@@ -1358,6 +1888,306 @@ describe('MultiSelector', () => {
       expect(trigger).toHaveAttribute('tabIndex', '-1');
     });
   });
+  describe('isReadOnly', () => {
+    const readOnlyCases = [
+      {presentation: 'popover', hasSearch: false},
+      {presentation: 'popover', hasSearch: true},
+      {presentation: 'bottom-sheet', hasSearch: false},
+      {presentation: 'bottom-sheet', hasSearch: true},
+      {presentation: 'adaptive', hasSearch: false},
+      {presentation: 'adaptive', hasSearch: true},
+    ] as const;
+
+    const sheetTransitionCases = [
+      {presentation: 'bottom-sheet', hasSearch: false},
+      {presentation: 'bottom-sheet', hasSearch: true},
+      {presentation: 'adaptive', hasSearch: false},
+      {presentation: 'adaptive', hasSearch: true},
+    ] as const;
+
+    const disabledPrecedenceCases = (
+      ['popover', 'bottom-sheet', 'adaptive'] as const
+    ).flatMap(presentation =>
+      [false, true].flatMap(hasSearch =>
+        [false, true].map(hasDisabledMessage => ({
+          presentation,
+          hasSearch,
+          hasDisabledMessage,
+        })),
+      ),
+    );
+
+    function stubCompactTouch(presentation: 'bottom-sheet' | 'adaptive') {
+      if (presentation !== 'adaptive') {
+        return;
+      }
+      vi.mocked(matchMedia).mockImplementation(
+        (query: string) =>
+          ({
+            matches: query === '(max-width: 768px) and (pointer: coarse)',
+            media: query,
+            onchange: null,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+          }) as MediaQueryList,
+      );
+    }
+
+    it.each(readOnlyCases)(
+      'uses a read-only combobox with no rendered popup ($presentation, search=$hasSearch)',
+      async ({presentation, hasSearch}) => {
+        const user = userEvent.setup();
+        const {container} = render(
+          <form>
+            <MultiSelector
+              label="Fruit"
+              htmlName="fruit"
+              options={defaultOptions}
+              value={['Apple', 'Banana']}
+              onChange={() => {}}
+              hasClear
+              hasSearch={hasSearch}
+              presentation={presentation}
+              isDefaultOpen
+              triggerDisplay="labels"
+              isReadOnly
+            />
+          </form>,
+        );
+
+        const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+        expect(trigger.tagName).toBe('BUTTON');
+        expect(trigger).toHaveTextContent('Apple, Banana');
+        expect(trigger).toHaveAttribute('aria-readonly', 'true');
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        const readOnlyDescription = screen.getByText('Read only');
+        expect(trigger.getAttribute('aria-describedby')).toContain(
+          readOnlyDescription.id,
+        );
+        expect(trigger).not.toHaveAttribute('aria-controls');
+        expect(trigger).not.toHaveAttribute('aria-haspopup');
+        expect(screen.getAllByRole('combobox', h)).toHaveLength(1);
+        expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog', h)).not.toBeInTheDocument();
+        expect(
+          screen.queryByRole('button', {name: 'Clear all Fruit'}),
+        ).not.toBeInTheDocument();
+        expect(
+          container.querySelector('.astryx-multi-selector-indicator-icon'),
+        ).toBeNull();
+        expect(
+          container.querySelector('.astryx-multi-selector'),
+        ).toHaveAttribute('data-readonly', 'readonly');
+        expect(
+          new FormData(container.querySelector('form')!).getAll('fruit'),
+        ).toEqual(['Apple', 'Banana']);
+
+        await user.tab();
+        expect(trigger).toHaveFocus();
+      },
+    );
+
+    it('keeps loading feedback while blocking the selection surface', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={['Apple']}
+          onChange={() => {}}
+          isLoading
+          isReadOnly
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+      expect(trigger).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+
+      await user.click(trigger);
+      expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+    });
+
+    it('blocks pointer, keyboard, and typeahead changes', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const changeAction = vi.fn();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={['Apple']}
+          onChange={onChange}
+          changeAction={changeAction}
+          isReadOnly
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      trigger.focus();
+      await user.keyboard('{Enter}{ArrowDown}b{Backspace}');
+
+      expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+      expect(onChange).not.toHaveBeenCalled();
+      expect(changeAction).not.toHaveBeenCalled();
+    });
+
+    it.each([false, true])(
+      'restores popover focus when an open selector becomes read-only (search=%s)',
+      async hasSearch => {
+        const user = userEvent.setup();
+        const selector = (isReadOnly: boolean) => (
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={['Apple']}
+            onChange={() => {}}
+            hasSearch={hasSearch}
+            isReadOnly={isReadOnly}
+          />
+        );
+        const {rerender} = render(selector(false));
+        const editableTrigger = screen.getByRole(
+          hasSearch ? 'button' : 'combobox',
+          {name: 'Fruit'},
+        );
+        await user.click(editableTrigger);
+        if (hasSearch) {
+          await waitFor(() =>
+            expect(screen.getByRole('combobox', h)).toHaveFocus(),
+          );
+        }
+
+        rerender(selector(true));
+
+        const readOnlyTrigger = screen.getByRole('combobox', {name: 'Fruit'});
+        await waitFor(() => expect(readOnlyTrigger).toHaveFocus());
+        expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+      },
+    );
+
+    it.each(sheetTransitionCases)(
+      'finishes $presentation close and restores focus when read-only changes (search=$hasSearch)',
+      async ({presentation, hasSearch}) => {
+        stubCompactTouch(presentation);
+        const user = userEvent.setup();
+        const selector = (isReadOnly: boolean) => (
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={['Apple']}
+            onChange={() => {}}
+            hasSearch={hasSearch}
+            presentation={presentation}
+            isReadOnly={isReadOnly}
+          />
+        );
+        const {rerender} = render(selector(false));
+        const editableTrigger = screen.getByRole(
+          hasSearch ? 'button' : 'combobox',
+          {name: 'Fruit'},
+        );
+        await user.click(editableTrigger);
+        const dialog = await screen.findByRole('dialog', {name: 'Fruit'});
+        const panel = dialog.querySelector<HTMLElement>('.astryx-bottom-sheet');
+        expect(panel).not.toBeNull();
+        await waitFor(() =>
+          expect(
+            hasSearch
+              ? screen.getByRole('combobox', h)
+              : screen.getByRole('listbox'),
+          ).toHaveFocus(),
+        );
+
+        rerender(selector(true));
+
+        await waitFor(() => expect(dialog).toHaveAttribute('inert'));
+        fireEvent.transitionEnd(panel!, {propertyName: 'transform'});
+        const readOnlyTrigger = screen.getByRole('combobox', {name: 'Fruit'});
+        await waitFor(() => expect(readOnlyTrigger).toHaveFocus());
+        expect(screen.queryByRole('dialog', h)).not.toBeInTheDocument();
+        expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+      },
+    );
+
+    it.each(disabledPrecedenceCases)(
+      'matches disabled-only semantics for $presentation (search=$hasSearch, reason=$hasDisabledMessage)',
+      async ({presentation, hasSearch, hasDisabledMessage}) => {
+        if (presentation === 'adaptive') {
+          stubCompactTouch(presentation);
+        }
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        const selector = (isReadOnly: boolean) => (
+          <form>
+            <MultiSelector
+              label="Fruit"
+              htmlName="fruit"
+              options={defaultOptions}
+              value={['Apple', 'Banana']}
+              onChange={onChange}
+              hasClear
+              hasSearch={hasSearch}
+              presentation={presentation}
+              isDisabled
+              isReadOnly={isReadOnly}
+              disabledMessage={
+                hasDisabledMessage ? 'Locked by policy' : undefined
+              }
+            />
+          </form>
+        );
+        const {container, rerender} = render(selector(false));
+        const getTrigger = () =>
+          screen.getByRole(hasSearch ? 'button' : 'combobox', {name: 'Fruit'});
+        const snapshot = () => {
+          const trigger = getTrigger();
+          const root = container.querySelector('.astryx-multi-selector');
+          return {
+            tagName: trigger.tagName,
+            role: trigger.getAttribute('role'),
+            hasPopup: trigger.getAttribute('aria-haspopup'),
+            expanded: trigger.getAttribute('aria-expanded'),
+            controls: trigger.getAttribute('aria-controls'),
+            readOnly: trigger.getAttribute('aria-readonly'),
+            disabled: trigger.matches(':disabled'),
+            ariaDisabled: trigger.getAttribute('aria-disabled'),
+            tabIndex: trigger.tabIndex,
+            rootClassName: root?.className,
+            rootDisabled: root?.getAttribute('data-disabled'),
+            rootReadOnly: root?.getAttribute('data-readonly'),
+            hasIndicator:
+              root?.querySelector('.astryx-multi-selector-indicator-icon') !=
+              null,
+            listboxes: screen.queryAllByRole('listbox', h).length,
+            dialogs: screen.queryAllByRole('dialog', h).length,
+            formEntries: [
+              ...new FormData(container.querySelector('form')!).entries(),
+            ],
+          };
+        };
+        const disabledOnly = snapshot();
+
+        rerender(selector(true));
+
+        expect(snapshot()).toEqual(disabledOnly);
+        expect(disabledOnly.rootDisabled).toBe('disabled');
+        expect(disabledOnly.rootReadOnly).toBeNull();
+        expect(disabledOnly.readOnly).toBeNull();
+        expect(disabledOnly.formEntries).toEqual([]);
+        const trigger = getTrigger();
+        await user.click(trigger);
+        trigger.focus();
+        await user.keyboard('{Enter}{ArrowDown}b{Backspace}');
+        expect(onChange).not.toHaveBeenCalled();
+      },
+    );
+  });
+
   describe('form participation', () => {
     it('submits one entry per selected value under htmlName', () => {
       const {container} = render(
@@ -1646,7 +2476,7 @@ describe('MultiSelector clear icon theme target', () => {
     expect(css).toContain('.astryx-multi-selector-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-multi-selector-clear-icon:hover {');
+    expect(css).toContain('.astryx-multi-selector-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -1774,7 +2604,155 @@ describe('MultiSelector indicator (chevron) icon theme target', () => {
   });
 });
 
+describe('MultiSelector list structure', () => {
+  it('does not draw a divider under select-all', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    // Select-all is the first row of the list, not a section of its own. No
+    // option here declares a divider and there is no search row, so the panel
+    // should contain no rule at all.
+    expect(document.querySelectorAll('[role="separator"]')).toHaveLength(0);
+    const [first] = screen.getAllByRole('option', h);
+    expect(first).toHaveTextContent('Select all');
+  });
+
+  it('renders a section title as a plain heading inside the group, not a divider', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[
+          {
+            type: 'section',
+            title: 'Citrus',
+            options: [
+              {value: 'orange', label: 'Orange'},
+              {value: 'lemon', label: 'Lemon'},
+            ],
+          },
+        ]}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    // A labeled Divider used to stand in for the heading; it rendered a
+    // role="separator" as a direct child of the listbox and stacked a second
+    // rule under the search row's own.
+    expect(document.querySelectorAll('[role="separator"]')).toHaveLength(0);
+
+    const group = screen.getByRole('group', {name: 'Citrus', ...h});
+    const heading = group.querySelector(
+      '.astryx-multi-selector-section-heading',
+    );
+    expect(heading).toBeTruthy();
+    expect(heading).toHaveTextContent('Citrus');
+    // The group already carries the title as its accessible name, so the
+    // visible heading must not announce it a second time.
+    expect(heading).toHaveAttribute('aria-hidden', 'true');
+    // ...and it precedes the options it heads.
+    const [firstOption] = within(group).getAllByRole('option', h);
+    expect(
+      heading!.compareDocumentPosition(firstOption) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('hides a standalone divider from the accessibility tree (#4994)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', {type: 'divider'}, 'Banana']}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    // role="listbox" only permits option/group children. The divider still
+    // renders role="separator" (unchanged visual/DOM), but must be excluded
+    // from the accessibility tree so it never reaches the listbox's exposed
+    // children (axe aria-required-children).
+    const divider = document.querySelector('[role="separator"]');
+    expect(divider).toBeTruthy();
+    expect(divider).toHaveAttribute('aria-hidden', 'true');
+  });
+});
+
 describe('MultiSelector search affordances', () => {
+  it('renders the search row seamlessly — no nested input box, a divider under it', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+
+    const search = screen.getByRole('combobox', h);
+    // The row is the outer gutter; the input sits inside the rounded field.
+    const row = search.closest('.astryx-multi-selector-search');
+    const field = search.parentElement;
+    if (!row || !field) {
+      throw new Error('search row not found');
+    }
+    // The panel is already a bordered surface: the field inside it must not be
+    // a second bordered box (this used to render a TextInput).
+    expect(row).not.toHaveClass('astryx-text-input');
+    expect(search.closest('.astryx-text-input')).toBeNull();
+    // The field is a rounded box inset from the panel edge, shaped like the
+    // option rows under it — not a full-bleed header strip.
+    expect(field).not.toBe(row);
+    // ...and a divider separates it from the options.
+    const separator = document.querySelector('[role="separator"]');
+    if (!separator) {
+      throw new Error('divider not found');
+    }
+    // Order: row, then divider, then the listbox.
+    expect(
+      row.compareDocumentPosition(separator) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    const listbox = screen.getByRole('listbox', h);
+    expect(
+      separator.compareDocumentPosition(listbox) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('keeps the search row outside the scrolling option list', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    // The options scroll under the header rather than carrying it away, so the
+    // field stays reachable in a long list.
+    const search = screen.getByRole('combobox', h);
+    const listbox = screen.getByRole('listbox', h);
+    expect(listbox.contains(search)).toBe(false);
+  });
+
   it('renders a decorative (aria-hidden) magnifier icon whenever hasSearch is on', async () => {
     const user = userEvent.setup();
     render(
@@ -1788,8 +2766,7 @@ describe('MultiSelector search affordances', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
     const search = screen.getByRole('combobox', h);
-    // The search field is a TextInput; the magnifier is its startIcon, so it
-    // sits inside the input container as a sibling of the <input>.
+    // The magnifier leads the search row, as a sibling of the <input>.
     const wrapper = search.parentElement;
     const magnifier = wrapper?.querySelector('.astryx-icon');
     expect(magnifier).toBeTruthy();
@@ -2112,5 +3089,39 @@ describe('MultiSelector popup theme target', () => {
     const layer = document.querySelector('[popover]') as HTMLElement;
     expect(popup).not.toBe(layer);
     expect(layer.contains(popup)).toBe(true);
+  });
+
+  it('stays closed when the trigger click follows its own light dismiss (#5004)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Cherry']}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The browser dismissed the popup on pointerup and queued the toggle. When
+    // that event lands before the click — WebKit, or any engine under load —
+    // the click used to read a closed popup and reopen it.
+    fireEvent.pointerDown(trigger);
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+    // Synchronously: the click falls inside the one gesture the guard covers,
+    // as it does in a browser a few milliseconds behind the dismissal.
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 });

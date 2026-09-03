@@ -27,12 +27,15 @@ import React, {
   type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {useBusyIndicatorLane} from './busyIndicatorLane';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
-import {isImeKeyEvent} from '../hooks/useFocusTrap';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {isImeKeyEvent} from '../utils/ime';
 import {TypeaheadItem} from './TypeaheadItem';
 import {Icon} from '../Icon';
+import {Spinner} from '../Spinner';
 import {
   colorVars,
   spacingVars,
@@ -41,12 +44,13 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {getKey, mergeProps, mergeRefs} from '../utils';
+import {getKey, groupItems, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Types
 // =============================================================================
@@ -93,6 +97,22 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    */
   maxMenuItems?: number;
 
+  /** Fixed dropdown width in pixels. Never shrinks below the anchor width. */
+  menuWidth?: number;
+
+  /**
+   * Minimum query length before the search source is queried. Below it no
+   * search runs and the menu stays closed, so a remote source is not asked
+   * for a result set that cannot be meaningful yet — and the user does not
+   * see "no results" for a query that was never searched.
+   *
+   * Measured with `String.length` (UTF-16 code units), like every other
+   * length check in the library.
+   *
+   * @default 1 — every non-empty query is searched.
+   */
+  minQueryLength?: number;
+
   /**
    * Text shown when no results found.
    * @default 'No results found'
@@ -130,6 +150,28 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * Callback when dropdown opens/closes.
    */
   onOpenChange?: (isOpen: boolean) => void;
+
+  /**
+   * Entries derived from the query text rather than fetched for it — today,
+   * Tokenizer's "Create ...".
+   *
+   * They are appended to whatever the search returned, and they are offered
+   * whatever `minQueryLength` says: that threshold exists to avoid a fetch
+   * that is too broad to be worth making, and these cost no fetch. A field
+   * that can create `QA` should not stop being able to just because a search
+   * for `QA` would match too much.
+   *
+   * Receives the results they will be appended to, so a caller can decline to
+   * offer an entry that duplicates one.
+   *
+   * Underscored and `@internal`: `BaseTypeaheadProps` is re-exported from the
+   * package entry point, so anything named on it ships as public API at the
+   * next cut. This is a wiring detail between Tokenizer and the base — the
+   * same reason `DefinedTheme.__inputTokens` carries its prefix.
+   *
+   * @internal
+   */
+  __queryEntries?: (query: string, results: T[]) => T[];
 
   /**
    * Debounce delay in ms before triggering search after typing.
@@ -215,7 +257,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   dropdown: {
     boxSizing: 'border-box',
@@ -226,6 +268,18 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
+  popoverCustomWidth: (width: number) => ({
+    width: `${width}px`,
+  }),
+  groupHeading: {
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlockStart: spacingVars['--spacing-2'],
+    paddingBlockEnd: spacingVars['--spacing-1'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
+  },
   item: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -233,7 +287,10 @@ const styles = stylex.create({
     width: '100%',
     padding: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
     backgroundColor: 'transparent',
     border: 'none',
@@ -256,10 +313,15 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },
-  loadingSpinner: {
+  // The indicator a direct caller gets. In flow, where it has always been, so
+  // it reserves its own width and the input's text never runs under it.
+  // Typeahead and Tokenizer take the indicator over and paint it in their own
+  // inline-end lane instead; this is what renders for everyone else.
+  loadingStatus: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
     padding: spacingVars['--spacing-1'],
   },
 });
@@ -281,6 +343,19 @@ const itemSizeStyles = stylex.create({
     paddingBlock: spacingVars['--spacing-2'],
   },
 });
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+/**
+ * A query that has been typed but is still shorter than the caller's
+ * threshold. An empty query is not "below the minimum" — it is the
+ * untouched state, and `hasEntriesOnFocus` owns what happens there.
+ */
+function isBelowMinQueryLength(query: string, minQueryLength: number): boolean {
+  return query.length > 0 && query.length < minQueryLength;
+}
 
 // =============================================================================
 // Component
@@ -313,12 +388,15 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   placeholder: placeholderFromProps,
   hasEntriesOnFocus = false,
   maxMenuItems = 10,
+  menuWidth,
+  minQueryLength = 1,
   emptySearchResultsText: emptySearchResultsTextFromProps,
   isDisabled = false,
   isFocusableDisabled = false,
   hasAutoFocus = false,
   onChangeQuery,
   onOpenChange,
+  __queryEntries,
   inputId: externalInputId,
   ariaDescribedBy,
   ariaLabelledBy,
@@ -353,6 +431,40 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Report the busy state to a wrapper that has taken the indicator over.
+  //
+  // Through a ref, and at the call site rather than from an effect: an effect
+  // would run after this component had already committed, so the wrapper's
+  // own state change landed in a second commit — two renders of the whole
+  // field per transition, four across a search. Called here, the wrapper's
+  // setState batches with ours into the one commit that React was already
+  // doing. The ref keeps the identity of a caller's inline arrow from
+  // mattering, and the guard makes the report edge-triggered: the redundant
+  // `false` on every keystroke below the query threshold reports nothing.
+  //
+  // The ref is synced in a layout effect rather than during render, following
+  // `onMotionStartRef` in BottomSheetPanel — a render that React discards
+  // must not leave the ref pointing at the callback from the abandoned pass.
+  // This effect only writes a ref, so it commits nothing and no wrapper
+  // re-renders for it; every caller of `setLoading` runs from an event or an
+  // awaited continuation, long after the first commit.
+  // A wrapper that owns the inline-end lane subscribes through context; see
+  // busyIndicatorLane.tsx for why this is not a prop.
+  const busyLane = useBusyIndicatorLane();
+  const onLoadingChangeRef = useRef(busyLane?.onBusyChange);
+  useIsomorphicLayoutEffect(() => {
+    onLoadingChangeRef.current = busyLane?.onBusyChange;
+  }, [busyLane]);
+  const loadingRef = useRef(false);
+  const setLoading = useCallback((next: boolean) => {
+    if (loadingRef.current === next) {
+      return;
+    }
+    loadingRef.current = next;
+    setIsLoading(next);
+    onLoadingChangeRef.current?.(next);
+  }, []);
 
   // Track active pointer to defer popover.show() past click events.
   // With popover="auto", showing the popover between pointerdown and
@@ -429,7 +541,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       // in-flight response for an older query fails the gen check below
       // instead of overwriting the newer results.
       const gen = ++searchGenRef.current;
-      setIsLoading(true);
+      setLoading(true);
       setHasSearched(true);
       try {
         const searchResults = await searchSource.search(searchQuery);
@@ -437,7 +549,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           return;
         }
         resultsGenRef.current = gen;
-        const shown = searchResults.slice(0, maxMenuItems);
+        const fetched = searchResults.slice(0, maxMenuItems);
+        const shown = [
+          ...fetched,
+          ...(__queryEntries?.(searchQuery, fetched) ?? []),
+        ];
         setResults(shown);
         setHighlightedIndex(shown.length > 0 ? 0 : -1);
         if (searchResults.length > 0 || searchQuery.length > 0) {
@@ -449,7 +565,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           announce(
             shown.length === 0
               ? emptySearchResultsText
-              : `${shown.length} ${shown.length === 1 ? 'result' : 'results'}`,
+              : t('@astryx.typeahead.resultCount', {count: shown.length}),
           );
         }
       } catch {
@@ -460,40 +576,79 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         setHighlightedIndex(-1);
       } finally {
         if (searchGenRef.current === gen) {
-          setIsLoading(false);
+          setLoading(false);
         }
       }
     },
-    [searchSource, maxMenuItems, showLayer, announce, emptySearchResultsText],
+    [
+      searchSource,
+      maxMenuItems,
+      showLayer,
+      announce,
+      emptySearchResultsText,
+      __queryEntries,
+      setLoading,
+      t,
+    ],
   );
 
-  // Perform bootstrap
-  const performBootstrap = useCallback(async () => {
-    const gen = ++searchGenRef.current;
-    setIsLoading(true);
-    try {
-      const bootstrapResults = await searchSource.bootstrap();
+  const applyBootstrapResults = useCallback(
+    (bootstrapResults: T[], gen: number) => {
       if (searchGenRef.current !== gen) {
         return;
       }
       resultsGenRef.current = gen;
       const shown = bootstrapResults.slice(0, maxMenuItems);
+      const nextHighlightedIndex = shown.length > 0 ? 0 : -1;
+      if (
+        results.length === 0 &&
+        shown.length === 0 &&
+        highlightedIndex === -1
+      ) {
+        return;
+      }
       setResults(shown);
-      setHighlightedIndex(shown.length > 0 ? 0 : -1);
+      setHighlightedIndex(nextHighlightedIndex);
       if (bootstrapResults.length > 0) {
         showLayer();
       }
+    },
+    [highlightedIndex, maxMenuItems, results.length, showLayer],
+  );
+
+  // Perform bootstrap
+  const performBootstrap = useCallback(async () => {
+    const gen = ++searchGenRef.current;
+    let bootstrapResult: T[] | Promise<T[]>;
+    try {
+      bootstrapResult = searchSource.bootstrap();
     } catch {
-      if (searchGenRef.current !== gen) {
-        return;
+      if (searchGenRef.current === gen) {
+        setResults([]);
+        setLoading(false);
       }
-      setResults([]);
+      return;
+    }
+
+    if (Array.isArray(bootstrapResult)) {
+      setLoading(false);
+      applyBootstrapResults(bootstrapResult, gen);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      applyBootstrapResults(await bootstrapResult, gen);
+    } catch {
+      if (searchGenRef.current === gen) {
+        setResults([]);
+      }
     } finally {
       if (searchGenRef.current === gen) {
-        setIsLoading(false);
+        setLoading(false);
       }
     }
-  }, [searchSource, maxMenuItems, showLayer]);
+  }, [searchSource, applyBootstrapResults, setLoading]);
 
   // Handle query change
   const handleQueryChange = useCallback(
@@ -505,14 +660,35 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         clearTimeout(searchTimeoutRef.current);
       }
 
-      if (newQuery.length === 0 && !hasEntriesOnFocus) {
+      // Nothing to search: either the field was emptied, or the query is
+      // still shorter than `minQueryLength`. Both drop stale results and
+      // close the menu — showing the empty state for a query that was never
+      // searched would report "no results" that nobody looked for.
+      if (
+        (newQuery.length === 0 && !hasEntriesOnFocus) ||
+        isBelowMinQueryLength(newQuery, minQueryLength)
+      ) {
         searchGenRef.current++;
         searchSource.cancel?.();
-        setResults([]);
+        // A query too short to search can still carry entries derived from
+        // the text itself. `hasSearched` stays false either way, so the menu
+        // never reports "no results" for a query nobody looked for.
+        const derived = __queryEntries?.(newQuery, []) ?? [];
+        setResults(derived);
+        setHighlightedIndex(derived.length > 0 ? 0 : -1);
         setHasSearched(false);
+        // Bumping the generation abandons any in-flight search, which means
+        // its own `finally` will decline to clear this — so clear it here or
+        // the field spins forever. Backspacing below the threshold on a remote
+        // source is the everyday way to hit that.
+        setLoading(false);
         // Clear any lingering result-count / no-results announcement.
         announce('');
-        popover.hide();
+        if (derived.length > 0) {
+          showLayer();
+        } else {
+          popover.hide();
+        }
         return;
       }
 
@@ -533,12 +709,16 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     [
       onChangeQuery,
       hasEntriesOnFocus,
+      minQueryLength,
+      __queryEntries,
+      showLayer,
       performSearch,
       performBootstrap,
       popover,
       debounceMs,
       searchSource,
       announce,
+      setLoading,
     ],
   );
 
@@ -564,10 +744,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       setQuery('');
       setResults([]);
       setHasSearched(false);
+      // Same reason as in handleQueryChange: the invalidated search will not
+      // clear this itself. Selecting a stale result while the next search is
+      // still in flight would otherwise leave the field spinning.
+      setLoading(false);
       popover.hide();
       inputRef.current?.focus();
     },
-    [onChange, popover, searchSource],
+    [onChange, popover, searchSource, setLoading],
   );
 
   // Handle focus
@@ -647,7 +831,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           if (results.length > 0) {
             popover.show();
             setHighlightedIndex(0);
-          } else if (hasEntriesOnFocus) {
+          } else if (
+            hasEntriesOnFocus &&
+            // A below-threshold query was never searched; falling back to the
+            // bootstrap entries here would open a menu of suggestions that
+            // ignore what the user has already typed.
+            !isBelowMinQueryLength(query, minQueryLength)
+          ) {
             void performBootstrap();
           }
         }
@@ -681,6 +871,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           e.preventDefault();
           popover.hide();
           break;
+        case 'Tab':
+          // Dismiss here rather than from the blur this press produces:
+          // hiding a top-layer popover during the focusout makes Chrome
+          // abandon the in-flight focus move and drop focus to <body>, so the
+          // user's Tab appears to do nothing. Selector and MultiSelector
+          // already dismiss on this keydown.
+          popover.hide();
+          break;
         case 'Home':
           if (popover.isOpen) {
             e.preventDefault();
@@ -705,7 +903,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       highlightedIndex,
       handleSelect,
       hasEntriesOnFocus,
-      query.length,
+      query,
+      minQueryLength,
       performBootstrap,
       externalOnKeyDown,
     ],
@@ -750,7 +949,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   return (
     <>
       <input
-        ref={mergeRefs(ref, inputRef, fallbackAnchorRef)}
+        ref={useMergedRefs(ref, inputRef, fallbackAnchorRef)}
         id={inputId}
         type="text"
         role="combobox"
@@ -764,6 +963,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             : undefined
         }
         aria-autocomplete="list"
+        aria-busy={isLoading || undefined}
         aria-describedby={ariaDescribedBy}
         aria-labelledby={ariaLabelledBy}
         aria-disabled={isFocusableDisabled ? 'true' : undefined}
@@ -798,15 +998,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           inputXStyle,
         )}
       />
-      {isLoading && (
-        <span
-          role="status"
-          aria-label={t('@astryx.typeahead.loading')}
-          {...stylex.props(styles.loadingSpinner)}>
-          <Icon icon="clock" size="sm" color="secondary" />
+      {isLoading && busyLane == null && (
+        <span {...stylex.props(styles.loadingStatus)}>
+          <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
         </span>
       )}
-
       {popover.render(
         <div
           id={listboxId}
@@ -825,44 +1021,71 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
               {emptySearchResultsText}
             </div>
           ) : (
-            results.map((item, index) => {
-              const itemKey = getKey(item.id, index);
-              const isSelected = itemKey === selectedKey;
-              return (
-                <div
-                  key={itemKey}
-                  id={getItemId(index)}
-                  role="option"
-                  aria-selected={isSelected}
-                  tabIndex={-1}
-                  onClick={() => handleSelect(item)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  {...stylex.props(
-                    styles.item,
-                    itemSizeStyles[size],
-                    index === highlightedIndex && styles.itemHighlighted,
-                    isSelected && styles.itemSelected,
-                  )}>
-                  <span {...stylex.props(styles.itemContent)}>
-                    {renderItem ? (
-                      renderItem(item)
-                    ) : (
-                      <TypeaheadItem item={item} />
+            (() => {
+              let flatIndex = 0;
+              const renderOption = (item: T) => {
+                const index = flatIndex++;
+                const itemKey = getKey(item.id, index);
+                const isSelected = itemKey === selectedKey;
+                return (
+                  <div
+                    key={itemKey}
+                    id={getItemId(index)}
+                    role="option"
+                    aria-selected={isSelected}
+                    tabIndex={-1}
+                    onClick={() => handleSelect(item)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    {...stylex.props(
+                      styles.item,
+                      itemSizeStyles[size],
+                      index === highlightedIndex && styles.itemHighlighted,
+                      isSelected && styles.itemSelected,
+                    )}>
+                    <span {...stylex.props(styles.itemContent)}>
+                      {renderItem ? (
+                        renderItem(item)
+                      ) : (
+                        <TypeaheadItem item={item} />
+                      )}
+                    </span>
+                    {isSelected && (
+                      <Icon icon="check" size="sm" color="primary" />
                     )}
-                  </span>
-                  {isSelected && (
-                    <Icon icon="check" size="sm" color="primary" />
-                  )}
-                </div>
-              );
-            })
+                  </div>
+                );
+              };
+
+              return groupItems(results, {ungroupedFirst: true}).map(group => {
+                const options = group.items.map(renderOption);
+                if (group.heading == null) {
+                  return options;
+                }
+                return (
+                  <div
+                    key={`group-${group.heading}`}
+                    role="group"
+                    aria-label={group.heading}>
+                    <div
+                      aria-hidden="true"
+                      {...stylex.props(styles.groupHeading)}>
+                      {group.heading}
+                    </div>
+                    {options}
+                  </div>
+                );
+              });
+            })()
           )}
         </div>,
         {
           placement: 'below',
           alignment: 'start',
           offset: spacingVars['--spacing-1'],
-          xstyle: styles.popover,
+          xstyle: [
+            styles.popover,
+            menuWidth != null && styles.popoverCustomWidth(menuWidth),
+          ],
         },
       )}
     </>

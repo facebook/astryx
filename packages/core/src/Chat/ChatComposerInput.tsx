@@ -43,10 +43,15 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, isImeKeyEvent} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
 import {useChatComposerTokens, isCustomToken} from './useChatComposerTokens';
-import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
+import {
+  ensureCaretInside,
+  insertTextAtCursor,
+  isSelectionAtStart,
+  isSelectionAtEnd,
+} from './chatComposerSelection';
 import {ChatPastedTextToken} from './ChatPastedTextToken';
 import {
   useChatPasteAsToken,
@@ -254,6 +259,10 @@ const styles = stylex.create({
   disabled: {
     opacity: 0.5,
     pointerEvents: 'none' as const,
+  },
+  tokenSpan: {
+    display: 'inline-flex',
+    verticalAlign: 'middle',
   },
 });
 
@@ -559,9 +568,8 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
 
       if (e.key === 'Enter' && !e.shiftKey) {
         // Never submit mid-composition — an IME uses Enter to commit a
-        // candidate (e.g. Japanese/Chinese/Korean input), and browsers may
-        // also surface the legacy keyCode 229 for composing keystrokes.
-        if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) {
+        // candidate. See utils/ime.ts for the full rationale.
+        if (isImeKeyEvent(e.nativeEvent)) {
           return;
         }
 
@@ -587,12 +595,30 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         return;
       }
 
-      // History navigation (only when trigger menu is not active)
+      // History navigation (only when trigger menu is not active).
+      // Recall only at the text boundaries so the caret can still move
+      // between lines in a multi-line draft: ArrowUp recalls the
+      // previous message when the caret is at the very start, ArrowDown
+      // steps forward when it's at the very end. A recalled message is
+      // shown fully selected (see `selectAll` below); that spans both
+      // boundaries at once, so repeated presses keep stepping through
+      // history. Mid-text, we bail before `preventDefault` and let the
+      // browser move the caret up/down a line.
       if (hasHistory && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
         if (!editableRef.current) {
           return;
         }
-        const text = serialize(editableRef.current);
+        const editable = editableRef.current;
+        const isCollapsed = window.getSelection()?.isCollapsed ?? true;
+        const atStart = isSelectionAtStart(editable);
+        const atEnd = isSelectionAtEnd(editable);
+        const canRecallPrev = atStart && (isCollapsed || atEnd);
+        const canRecallNext = atEnd && (isCollapsed || atStart);
+        if (e.key === 'ArrowUp' ? !canRecallPrev : !canRecallNext) {
+          return;
+        }
+
+        const text = serialize(editable);
         const history = historyRef.current;
         if (history.length === 0) {
           return;
@@ -750,7 +776,7 @@ export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
       data-astryx-token=""
       data-astryx-token-value={token.value}
       contentEditable={false}
-      style={{display: 'inline-flex', verticalAlign: 'baseline'}}>
+      {...stylex.props(styles.tokenSpan)}>
       {isCustomToken(token) ? (
         token.render()
       ) : (

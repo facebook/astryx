@@ -51,18 +51,11 @@ export const calendarStyles = stylex.create({
   },
   monthsContainer: {
     display: 'flex',
+    // Wraps rather than overflowing: two months side by side need ~488px, so
+    // an unwrapped row scrolls the document sideways below that and puts the
+    // next-month button off-viewport (WCAG 1.4.10). Above 488px nothing moves.
+    flexWrap: 'wrap',
     gap: spacingVars['--spacing-4'],
-  },
-  srOnly: {
-    position: 'absolute',
-    width: '1px',
-    height: '1px',
-    padding: 0,
-    margin: '-1px',
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
   },
   /**
    * Wrapper for the month nav chevrons. RTL mirroring is applied by
@@ -123,6 +116,17 @@ export const monthGridStyles = stylex.create({
 // Day Cell Styles - Structural (layout, sizing, positioning)
 // =============================================================================
 
+// Half the gap between the day button and its cell — (--size-element-md minus
+// --size-element-sm) / 2 — so the band's rounded caps line up with the button
+// and the button's ::before bleeds out to meet its neighbour's. Deliberately a
+// literal and NOT a spacing token: this is a layout value derived from the two
+// size tokens, and pinning it to --spacing-0-5 desynchronises it from them
+// (matcha sets that step to 3px, which overlaps adjacent days' hit targets by
+// 2px). Deriving it with calc() from the size tokens would be better still and
+// would close butter's 4px dead gap; that needs its own measured change.
+const BAND_INSET = '2px';
+const HIT_BLEED = '-2px';
+
 export const dayCellStyles = stylex.create({
   // Cell container
   cell: {
@@ -137,53 +141,53 @@ export const dayCellStyles = stylex.create({
   // Range background - structural positioning
   rangeBg: {
     position: 'absolute',
-    top: '2px',
-    bottom: '2px',
+    top: BAND_INSET,
+    bottom: BAND_INSET,
     insetInlineStart: 0,
     insetInlineEnd: 0,
   },
   rangeBgRadiusStart: {
-    insetInlineStart: '2px',
+    insetInlineStart: BAND_INSET,
     borderStartStartRadius: radiusVars['--radius-full'],
     borderEndStartRadius: radiusVars['--radius-full'],
   },
   rangeBgRadiusEnd: {
-    insetInlineEnd: '2px',
+    insetInlineEnd: BAND_INSET,
     borderStartEndRadius: radiusVars['--radius-full'],
     borderEndEndRadius: radiusVars['--radius-full'],
   },
   rangeInsetStart: {
-    insetInlineStart: '2px',
+    insetInlineStart: BAND_INSET,
   },
   rangeInsetEnd: {
-    insetInlineEnd: '2px',
+    insetInlineEnd: BAND_INSET,
   },
 
   // Preview background - structural positioning
   previewBg: {
     position: 'absolute',
-    top: '2px',
-    bottom: '2px',
+    top: BAND_INSET,
+    bottom: BAND_INSET,
     insetInlineStart: 0,
     insetInlineEnd: 0,
   },
   previewBgRadiusStart: {
-    insetInlineStart: '2px',
+    insetInlineStart: BAND_INSET,
     borderStartStartRadius: radiusVars['--radius-full'],
     borderEndStartRadius: radiusVars['--radius-full'],
   },
   previewBgRadiusEnd: {
-    insetInlineEnd: '2px',
+    insetInlineEnd: BAND_INSET,
     borderStartEndRadius: radiusVars['--radius-full'],
     borderEndEndRadius: radiusVars['--radius-full'],
   },
   previewStart: {
-    insetInlineStart: '2px',
+    insetInlineStart: BAND_INSET,
     borderStartStartRadius: radiusVars['--radius-full'],
     borderEndStartRadius: radiusVars['--radius-full'],
   },
   previewEnd: {
-    insetInlineEnd: '2px',
+    insetInlineEnd: BAND_INSET,
     borderStartEndRadius: radiusVars['--radius-full'],
     borderEndEndRadius: radiusVars['--radius-full'],
   },
@@ -195,10 +199,13 @@ export const dayCellStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: '50%',
+    borderRadius: radiusVars['--radius-full'],
     borderWidth: 0,
     borderStyle: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-body-size'],
     padding: 0,
@@ -210,14 +217,14 @@ export const dayCellStyles = stylex.create({
     },
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    // Expand hit target by 2px on each side to prevent gaps
+    // Expand hit target so adjacent days meet with no gap
     '::before': {
       content: '""',
       position: 'absolute',
-      top: '-2px',
-      insetInlineEnd: '-2px',
-      bottom: '-2px',
-      insetInlineStart: '-2px',
+      top: HIT_BLEED,
+      insetInlineEnd: HIT_BLEED,
+      bottom: HIT_BLEED,
+      insetInlineStart: HIT_BLEED,
     },
   },
 
@@ -229,7 +236,7 @@ export const dayCellStyles = stylex.create({
   dayTodayInRange: {},
   daySelected: {},
   dayDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 });
 
@@ -252,12 +259,6 @@ export const dayCellTheme = stylex.create({
   day: {
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-    },
   },
 
   // Outside days (adjacent months)
@@ -277,13 +278,21 @@ export const dayCellTheme = stylex.create({
 
   // Selected state (single selection or range endpoints)
   daySelected: {
-    backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-on-accent'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
+    // Forced colors (Windows High Contrast) strips the accent fill, which
+    // leaves the selected date looking exactly like every other day.
+    // Highlight/HighlightText is the platform convention for a selected
+    // control (WCAG 1.4.11), and `forced-color-adjust: none` is required
+    // because this is a <button>: the UA otherwise keeps the native
+    // ButtonFace surface and ignores the authored fill, the same trap
+    // ToggleButton documents.
+    forcedColorAdjust: 'none',
+    backgroundColor: {
+      default: colorVars['--color-accent'],
+      '@media (forced-colors: active)': 'Highlight',
+    },
+    color: {
+      default: colorVars['--color-on-accent'],
+      '@media (forced-colors: active)': 'HighlightText',
     },
   },
 
@@ -292,7 +301,7 @@ export const dayCellTheme = stylex.create({
     opacity: 0.3,
     backgroundImage: {
       default: 'none',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': 'none',
       },
     },

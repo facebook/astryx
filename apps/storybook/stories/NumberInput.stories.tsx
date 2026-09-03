@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {HashtagIcon, CurrencyDollarIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof NumberInput> = {
@@ -122,6 +123,44 @@ export const Default: Story = {
   args: {
     label: 'Quantity',
     placeholder: 'Enter quantity',
+  },
+};
+
+export const PasteFormattedNumber: Story = {
+  render: () => {
+    const [enUS, setEnUS] = useState<number | null>(null);
+    const [deDE, setDeDE] = useState<number | null>(null);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+        <div>
+          <NumberInput
+            label="Impressions (en-US)"
+            description="Paste 1,234,234,234 or $1,234.56, then blur"
+            placeholder="Paste a formatted number"
+            value={enUS}
+            onChange={setEnUS}
+            hasClear
+          />
+          <p data-testid="en-committed">Committed: {String(enUS)}</p>
+        </div>
+        <InternationalizationProvider locale="de-DE">
+          <div>
+            <NumberInput
+              label="Impressionen (de-DE)"
+              description="Paste 1.234.234.234 or 1,5"
+              placeholder="Paste a formatted number"
+              value={deDE}
+              onChange={setDeDE}
+              formatValue={value =>
+                new Intl.NumberFormat('de-DE').format(value)
+              }
+              hasClear
+            />
+            <p data-testid="de-committed">Committed: {String(deDE)}</p>
+          </div>
+        </InternationalizationProvider>
+      </div>
+    );
   },
 };
 
@@ -614,7 +653,12 @@ export const WithEventHandlers: Story = {
           onBlur={() => addEvent('onBlur')}
           onEnter={() => addEvent('onEnter')}
         />
-        <div style={{marginTop: '16px', fontSize: '12px', color: '#666'}}>
+        <div
+          style={{
+            marginTop: '16px',
+            fontSize: '12px',
+            color: 'var(--color-text-secondary)',
+          }}>
           <strong>Events:</strong>
           <ul style={{margin: '4px 0', paddingLeft: '20px'}}>
             {events.map((event, i) => (

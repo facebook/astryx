@@ -1,5 +1,37 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Outline',
+    required: true,
+    description:
+      'Navigation container for the same-page heading links and indicator.',
+  },
+  {
+    name: 'Heading link',
+    required: true,
+    description:
+      'Anchor for one heading, indented by level and marked when active.',
+  },
+  {
+    name: 'Label',
+    required: true,
+    description: 'Heading text displayed inside its heading link.',
+  },
+  {
+    name: 'Indicator track',
+    required: true,
+    description: 'Painted vertical rule behind the active indicator.',
+  },
+  {
+    name: 'Active indicator',
+    required: true,
+    description:
+      'Sliding bar positioned beside the currently active heading link.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -166,6 +198,8 @@ import {Outline, useOutlineFromMarkdown} from '@astryxdesign/core/Outline';
 
 function MarkdownOutline({markdown}) {
   // Derives {id, label, level} items from headings in the source.
+  // The Markdown component renders the same generated ids on its
+  // headings, so outline links scroll without any extra wiring.
   const items = useOutlineFromMarkdown(markdown);
   return <Outline items={items} />;
 }
@@ -220,6 +254,7 @@ function FlashOnArrival() {
     },
   ],
   usage: {
+    anatomy,
     description:
       'A table-of-contents sidebar for documentation pages, help centers, wikis, and long settings pages. Use it for navigation within a single page, not for app routes. Features a sliding indicator track that animates to the active heading. The list is a single tab stop: arrow keys move between headings, Home/End jump to the ends, and Enter/Space activate.',
     bestPractices: [
@@ -321,6 +356,7 @@ export const docsZh = {
     },
   ],
   usage: {
+    anatomy,
     description:
       'A table-of-contents sidebar for documentation pages, help centers, wikis, and long settings pages. Use it for navigation within a single page, not for app routes.',
     bestPractices: [
@@ -339,6 +375,7 @@ export const docsDense = {
   description:
     'Document outline/table-of-contents nav with sliding indicator track. Flat items array {id,label,level}; anchor links; density variant (default/compact); uncontrolled scroll-spy by scroll position (last heading past its resting line = offset + its own scroll-margin-top; first item at top, last at bottom); controlled with activeId; smooth-scroll on click that pins the active item until the next manual scroll. Single tab stop (roving tabindex): Arrow keys move, Home/End jump, Enter/Space activate. onNavigateStart/onNavigateEnd fire around the scroll. Scroll scoping via offset / scrollContainerRef / hasScrollOnClick.',
   usage: {
+    anatomy,
     description:
       'A table-of-contents sidebar for documentation pages, help centers, wikis, and long settings pages. Use it for navigation within a single page, not for app routes.',
     bestPractices: [

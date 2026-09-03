@@ -16,7 +16,10 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-hovercard'},
+      {className: 'astryx-hover-card'},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-hovercard', deprecatedFor: 'hover-card'},
     ],
     vars: [
       {name: '--_hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)', private: true},
@@ -74,6 +77,13 @@ export const docs = {
           default: "'auto'",
         },
         {
+          name: 'touchTrigger',
+          type: "'auto' | 'tap' | 'none'",
+          description:
+            'What a tap does where there is no hover. auto opens on tap unless the trigger performs an action of its own (a button, link, or form control), whose tap belongs to the control. tap always opens. none never opens on touch. A tap-opened card is dismissed by a tap outside it.',
+          default: "'auto'",
+        },
+        {
           name: 'isEnabled',
           type: 'boolean',
           description: 'Enables or disables the hover and focus triggers.',
@@ -102,6 +112,11 @@ export const docs = {
           type: 'boolean',
           description: 'Whether the hover card should be shown on mount. Still dismissible.',
         },
+        {
+          name: 'isOpen',
+          type: 'boolean',
+          description: 'Controlled open state for the hover card.',
+        },
       ],
     },
   ],
@@ -111,10 +126,11 @@ export const docs = {
       { guidance: true, description: 'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.' },
       { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
       { guidance: true, description: 'Use the hook API (useHoverCard) when you need more control over timing or placement.' },
+      { guidance: true, description: 'Leave touchTrigger on auto so a tap opens the card on triggers that do nothing else, and stays out of the way on triggers that perform an action.' },
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: false, description: 'Nest a HoverCard whose content has block elements directly inside phrasing-only contexts such as a <p>, <label>, or heading. The card renders inline, so block content there is invalid HTML the browser reparents. Wrap the surrounding text in a block element (e.g. a <div>) instead.' },
+      { guidance: true, description: 'Prefer placing HoverCard in a block context rather than directly in a <p>, heading, or link. Those placements are supported when necessary through a corrective portal, but the DOM and tab order may differ.' },
     ],
     anatomy: [
       {name: 'Trigger', required: true, description: 'The element that opens the hover card on hover or focus: a button, link, or inline text.'},
@@ -131,7 +147,10 @@ export const docsZh = {
   displayName: 'Hover Card',
   theming: {
     targets: [
-      {className: 'astryx-hovercard'},
+      {className: 'astryx-hover-card'},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-hovercard', deprecatedFor: 'hover-card'},
     ],
     vars: [
       {name: '--_hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)', private: true},
@@ -189,6 +208,13 @@ export const docsZh = {
           default: "'auto'",
         },
         {
+          name: 'touchTrigger',
+          type: "'auto' | 'tap' | 'none'",
+          description:
+            '在没有悬停的触摸设备上，轻点的行为。auto：轻点即打开，除非触发元素本身会执行操作（按钮、链接、表单控件），此时轻点归该控件所有。tap：始终轻点打开。none：触摸永不打开。轻点打开的卡片可通过点击卡片外部关闭。',
+          default: "'auto'",
+        },
+        {
           name: 'isEnabled',
           type: 'boolean',
           description: '启用或禁用悬停和聚焦触发器。',
@@ -226,10 +252,11 @@ export const docsZh = {
       { guidance: true, description: 'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.' },
       { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
       { guidance: true, description: 'Use the hook API (useHoverCard) when you need more control over timing or placement.' },
+      { guidance: true, description: 'Leave touchTrigger on auto so a tap opens the card on triggers that do nothing else, and stays out of the way on triggers that perform an action.' },
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: false, description: 'Nest a HoverCard whose content has block elements directly inside phrasing-only contexts such as a <p>, <label>, or heading. The card renders inline, so block content there is invalid HTML the browser reparents. Wrap the surrounding text in a block element (e.g. a <div>) instead.' },
+      { guidance: true, description: 'Prefer placing HoverCard in a block context rather than directly in a <p>, heading, or link. Those placements are supported when necessary through a corrective portal, but the DOM and tab order may differ.' },
     ],
   },
 };
@@ -244,10 +271,11 @@ export const docsDense = {
       { guidance: true, description: 'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.' },
       { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
       { guidance: true, description: 'Use the hook API (useHoverCard) when you need more control over timing or placement.' },
+      { guidance: true, description: 'Leave touchTrigger on auto so a tap opens the card on triggers that do nothing else, and stays out of the way on triggers that perform an action.' },
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: false, description: 'Nest a block-content HoverCard directly inside phrasing-only contexts (<p>, <label>, heading); it renders inline so block content is invalid HTML there. Wrap surrounding text in a block element instead.' },
+      { guidance: true, description: 'Prefer a block context over a direct <p>, heading, or link placement. Those placements work when necessary through a corrective portal, but DOM/tab order may differ.' },
     ],
   },
   components: [
@@ -263,6 +291,7 @@ export const docsDense = {
         delay: 'Show delay in ms.',
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger hover card.',
+        touchTrigger: 'Tap behavior where there is no hover. auto = tap opens unless the trigger acts (button/link/control); tap = always opens; none = never on touch. Tap-opened cards close on a tap outside.',
         isEnabled: 'Enable/disable hover + focus triggers.',
         label: 'Accessible name for the popup. With label: named role="dialog"; without: role="group".',
         onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',

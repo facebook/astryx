@@ -6,6 +6,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {existsCaseExact} from '../fs/paths.mjs';
 
 const SKIP_DIRS = new Set(['hooks', 'utils', '__tests__', 'node_modules']);
 
@@ -243,27 +244,27 @@ export function findComponentReadme(coreDir, name) {
 
   // Direct match: src/{name}/{Name}.doc.mjs or src/{name}/Astryx{Name}.doc.mjs
   const direct = path.join(srcDir, name, exactDoc);
-  if (fs.existsSync(direct)) return direct;
+  if (existsCaseExact(direct, srcDir)) return direct;
   const directXds = path.join(srcDir, name, xdsDoc);
-  if (fs.existsSync(directXds)) return directXds;
+  if (existsCaseExact(directXds, srcDir)) return directXds;
 
   // Nested match: src/*/{name}/{Name}.doc.mjs or src/*/{name}/Astryx{Name}.doc.mjs
   const entries = fs.readdirSync(srcDir, {withFileTypes: true});
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const nested = path.join(srcDir, entry.name, name, exactDoc);
-    if (fs.existsSync(nested)) return nested;
+    if (existsCaseExact(nested, srcDir)) return nested;
     const nestedXds = path.join(srcDir, entry.name, name, xdsDoc);
-    if (fs.existsSync(nestedXds)) return nestedXds;
+    if (existsCaseExact(nestedXds, srcDir)) return nestedXds;
   }
 
   // Per-component doc in a parent directory: src/*/{Name}.doc.mjs or src/*/Astryx{Name}.doc.mjs
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const perComp = path.join(srcDir, entry.name, exactDoc);
-    if (fs.existsSync(perComp)) return perComp;
+    if (existsCaseExact(perComp, srcDir)) return perComp;
     const perCompXds = path.join(srcDir, entry.name, xdsDoc);
-    if (fs.existsSync(perCompXds)) return perCompXds;
+    if (existsCaseExact(perCompXds, srcDir)) return perCompXds;
   }
 
   // Sub-component fallback: find the source file, then walk up
@@ -321,7 +322,7 @@ export function findComponentSource(coreDir, name) {
     // Check for an exact match (prefixed or bare) first
     for (const candidate of candidateFiles) {
       const exact = path.join(dirPath, candidate);
-      if (fs.existsSync(exact)) return exact;
+      if (existsCaseExact(exact, dirPath)) return exact;
     }
 
     // Recurse into subdirectories
@@ -336,7 +337,7 @@ export function findComponentSource(coreDir, name) {
 
   // Search in the component's directory
   const directDir = path.join(srcDir, name);
-  if (fs.existsSync(directDir)) {
+  if (existsCaseExact(directDir, srcDir)) {
     const found = searchDir(directDir);
     if (found) return found;
   }
@@ -346,7 +347,7 @@ export function findComponentSource(coreDir, name) {
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const nestedDir = path.join(srcDir, entry.name, name);
-    if (fs.existsSync(nestedDir)) {
+    if (existsCaseExact(nestedDir, srcDir)) {
       const found = searchDir(nestedDir);
       if (found) return found;
     }

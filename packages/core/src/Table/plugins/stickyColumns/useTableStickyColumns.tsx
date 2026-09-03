@@ -210,8 +210,7 @@ const stickyStyles = stylex.create({
 // ::after gradient strip just past the pinned edge (visible thanks to the cell's
 // overflow: visible). Opacity is gated by the scroll-state variable above.
 const SHADOW_WIDTH = '6px';
-// --color-shadow is only ~10% alpha (too faint here); use a slightly stronger soft tint.
-const SHADOW_TINT = 'light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.32))';
+const SHADOW_TINT = colorVars['--color-shadow'];
 const shadowStyles = stylex.create({
   // start-pinned: shadow falls toward inline-end (over scrolled content).
   // insetInlineEnd anchors the strip to the column's inline-end edge; the strip
