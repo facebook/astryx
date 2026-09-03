@@ -129,6 +129,13 @@ delete, weaken, merge, or hide distinct normative content. Replace a local fact
 with a link only when this record's ownership rules assign that fact to another
 canonical owner.
 
+Qualifiers and authority verbs are contract semantics, not polish. Words such as
+`only`, `every`, `consistently`, `current`, `records`, `owns`, `delegates`, and
+`inherits` MUST NOT be dropped, generalized, weakened, or upgraded during a
+rewrite. When reshaping a rule, keep its action, activating conditions,
+exceptions or non-goals, owner, and evidence state in the same row or bullet as
+the claim they limit.
+
 Aim to keep a single specification record at or below 200 lines. This is a soft
 readability ceiling, not a schema rule, validation gate, deletion target, or
 reason to migrate accepted history. Exceed it when the full contract, exact
@@ -162,7 +169,9 @@ The plain version changes the shape, not the meaning.
 
 - [ ] Compare the edited text with its source and confirm that every contract
       property named above remains explicit.
-- [ ] Confirm each rule appears once, with its conditions and exceptions beside it.
+- [ ] Confirm each rule's action, conditions, qualifiers, exceptions or non-goals,
+      owner, authority verb, and evidence state remain explicit and adjacent to the
+      claim they limit.
 - [ ] Confirm tables and lists improve scanning without hiding content; if the
       record exceeds 200 lines, explain why it needs the extra space.
 
