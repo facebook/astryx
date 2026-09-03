@@ -4,7 +4,18 @@ import {useState, type CSSProperties} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {TabList, Tab, TabMenu} from '@astryxdesign/core/TabList';
 import {Button} from '@astryxdesign/core/Button';
-import {PlusIcon, FunnelIcon} from '@heroicons/react/24/outline';
+import {
+  LayoutHeader,
+  VStack,
+  HStack,
+  StackItem,
+} from '@astryxdesign/core/Layout';
+import {Heading} from '@astryxdesign/core/Text';
+import {
+  PlusIcon,
+  FunnelIcon,
+  ViewColumnsIcon,
+} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof TabList> = {
   title: 'Core/TabList',
@@ -57,6 +68,25 @@ function fullBleedFixtureStyle(padding: number): CSSProperties & {
   };
 }
 
+/**
+ * The header seam the `detail-page` template ships. `padding` publishes the
+ * inline inset through the container-padding protocol and `paddingBlockEnd={0}`
+ * docks the header's last child on its bottom edge, so these two fixtures
+ * exercise the real `LayoutHeader` -> `TabList isFullBleed` wiring rather than
+ * hand-written custom properties. Every expected number below is read back
+ * from the rendered DOM, never restated here.
+ */
+const HEADER_DOCK_PADDING_STEP = 4;
+/**
+ * A step away from `HEADER_DOCK_PADDING_STEP` on purpose. LayoutHeader's inner
+ * wrapper falls back to `--spacing-4` when no padding is published, so a
+ * fixture at step 4 alone could pass on a stale fallback. At step 6 the
+ * published inset and that fallback disagree, and every number below is only
+ * reachable through the variables `padding` actually publishes.
+ */
+const HEADER_FILL_PADDING_STEP = 6;
+const HEADER_FIXTURE_WIDTH = 640;
+
 function assertGeometry(label: string, actual: number, expected: number) {
   if (Math.abs(actual - expected) > 0.5) {
     throw new Error(
@@ -64,6 +94,8 @@ function assertGeometry(label: string, actual: number, expected: number) {
     );
   }
 }
+
+const px = (value: string) => Number.parseFloat(value);
 
 /**
  * Browser geometry guard for `isFullBleed`. The strip must escape the
@@ -73,6 +105,14 @@ function assertGeometry(label: string, actual: number, expected: number) {
  * clamp and no-op fixtures cover the accepted far side: container padding
  * below a stop's own inset preserves that inset, and outside a padded
  * container the prop changes nothing.
+ *
+ * The first four fixtures hand-write the `--container-padding-inline-*`
+ * values on a plain wrapper, which pins TabList's half of the contract but
+ * proves nothing about who publishes those values. The two `header-*`
+ * fixtures close that: they compose a real
+ * `LayoutHeader hasDivider padding paddingBlockEnd={0}` around a real
+ * `TabList isFullBleed` — the shape the `detail-page` template ships — so the
+ * whole seam is measured, publisher included.
  *
  * Enforced by `.github/scripts/story-play-guard.js` in the `pr-a11y` job —
  * the play assertions below fail required CI, not just a local canvas.
@@ -148,6 +188,80 @@ export const FullBleedGeometry: Story = {
             <Tab value="home" label="Home" />
             <Tab value="projects" label="Projects" />
           </TabList>
+        </div>
+        {/* The shipped seam, composed exactly as `detail-page` composes it:
+            a padded LayoutHeader with its divider, its block-end padding
+            docked to 0, and the tab row as the last thing in the header. */}
+        <div
+          data-full-bleed-fixture="header-dock"
+          style={{boxSizing: 'border-box', width: HEADER_FIXTURE_WIDTH}}>
+          <LayoutHeader
+            hasDivider
+            padding={HEADER_DOCK_PADDING_STEP}
+            paddingBlockEnd={0}>
+            <VStack gap={3}>
+              <Heading level={2} maxLines={1}>
+                Order #1001
+              </Heading>
+              <HStack vAlign="center">
+                <StackItem size="fill">
+                  <TabList
+                    value={value}
+                    onChange={setValue}
+                    size="lg"
+                    aria-label="Header dock full-bleed geometry"
+                    isFullBleed>
+                    <Tab value="home" label="Details" />
+                    <Tab value="projects" label="Invoices" />
+                    <Tab value="timeline" label="Timeline" />
+                    <TabMenu
+                      label="More"
+                      options={[
+                        {value: 'customer', label: 'Customer'},
+                        {value: 'analysis', label: 'Analysis'},
+                      ]}
+                    />
+                  </TabList>
+                </StackItem>
+                <Button
+                  label="Show panel"
+                  variant="ghost"
+                  size="md"
+                  icon={<ViewColumnsIcon />}
+                  isIconOnly
+                />
+              </HStack>
+            </VStack>
+          </LayoutHeader>
+        </div>
+        {/* Same header wiring with the strip as the header's only child, so
+            both inline edges are free to reach the header's box and the last
+            stop's far label can be measured against the end inset. */}
+        <div
+          data-full-bleed-fixture="header-fill"
+          style={{boxSizing: 'border-box', width: HEADER_FIXTURE_WIDTH}}>
+          <LayoutHeader
+            hasDivider
+            padding={HEADER_FILL_PADDING_STEP}
+            paddingBlockEnd={0}>
+            <TabList
+              value={value}
+              onChange={setValue}
+              size="lg"
+              layout="fill"
+              aria-label="Header fill full-bleed geometry"
+              isFullBleed>
+              <Tab value="home" label="Details" />
+              <Tab value="projects" label="Invoices" />
+              <TabMenu
+                label="More"
+                options={[
+                  {value: 'customer', label: 'Customer'},
+                  {value: 'analysis', label: 'Analysis'},
+                ]}
+              />
+            </TabList>
+          </LayoutHeader>
         </div>
       </div>
     );
@@ -300,6 +414,190 @@ export const FullBleedGeometry: Story = {
       'no-op strip padding',
       Number.parseFloat(getComputedStyle(noopStrip).paddingInlineStart),
       Number.parseFloat(getComputedStyle(noopControlStrip).paddingInlineStart),
+    );
+
+    // ── The real seam ──────────────────────────────────────────────────────
+    // Everything above runs against hand-written custom properties. What
+    // ships is a LayoutHeader publishing them, so measure that instead.
+
+    /** Resolves one `header-*` fixture's parts, or throws naming the gap. */
+    const headerParts = (name: string) => {
+      const fixture = canvasElement.querySelector<HTMLElement>(
+        `[data-full-bleed-fixture="${name}"]`,
+      );
+      const header = fixture?.querySelector<HTMLElement>(
+        '.astryx-layout-header',
+      );
+      // LayoutHeader's padded inner wrapper: the element that both applies the
+      // padding and publishes the container-padding variables.
+      const inner = header?.firstElementChild as HTMLElement | null;
+      const nav = fixture?.querySelector<HTMLElement>('.astryx-tab-list');
+      const strip = fixture?.querySelector<HTMLElement>('.astryx-tab-strip');
+      const firstStop = fixture?.querySelector<HTMLElement>(
+        '[data-tab-value="home"]',
+      );
+      const indicator = firstStop?.querySelector<HTMLElement>(
+        '.astryx-tab-indicator',
+      );
+      if (!fixture || !header || !inner || !nav || !strip || !firstStop) {
+        throw new Error(`${name} header fixture did not render as expected`);
+      }
+      if (!indicator) {
+        throw new Error(`${name}: selected tab has no indicator to dock`);
+      }
+      const headerStyle = getComputedStyle(header);
+      const innerStyle = getComputedStyle(inner);
+      return {
+        header,
+        headerRect: header.getBoundingClientRect(),
+        dividerWidth: px(headerStyle.borderBlockEndWidth),
+        inner,
+        innerRect: inner.getBoundingClientRect(),
+        padStart: px(innerStyle.paddingInlineStart),
+        padEnd: px(innerStyle.paddingInlineEnd),
+        padBlockEnd: px(innerStyle.paddingBlockEnd),
+        varStart: px(
+          innerStyle.getPropertyValue('--container-padding-inline-start'),
+        ),
+        varEnd: px(
+          innerStyle.getPropertyValue('--container-padding-inline-end'),
+        ),
+        varBlockEnd: px(
+          innerStyle.getPropertyValue('--container-padding-block-end'),
+        ),
+        nav,
+        navRect: nav.getBoundingClientRect(),
+        strip,
+        stripRect: strip.getBoundingClientRect(),
+        stripPadStart: px(getComputedStyle(strip).paddingInlineStart),
+        stripPadEnd: px(getComputedStyle(strip).paddingInlineEnd),
+        firstStop,
+        firstStopRect: firstStop.getBoundingClientRect(),
+        firstStopPad: px(getComputedStyle(firstStop).paddingInlineStart),
+        indicatorRect: indicator.getBoundingClientRect(),
+      };
+    };
+
+    /**
+     * What both header fixtures owe regardless of their contents: the header
+     * publishes the padding it actually applies (the coupling the whole bleed
+     * rests on), the tab row is docked on the header's content bottom edge,
+     * and the selected underline lands on the divider rather than floating
+     * above it. Round 3 measured that underline 7.00px above the divider with
+     * the template's hand-written margins; docked it reads -1.00px — the 2px
+     * indicator's top edge one pixel above the 1px divider's top edge, its
+     * bottom flush with the divider's outer edge.
+     */
+    const assertHeaderSeam = (
+      name: string,
+      p: ReturnType<typeof headerParts>,
+    ) => {
+      assertGeometry(
+        `${name}: published inline-start inset`,
+        p.varStart,
+        p.padStart,
+      );
+      assertGeometry(`${name}: published inline-end inset`, p.varEnd, p.padEnd);
+      assertGeometry(`${name}: block-end padding docked`, p.padBlockEnd, 0);
+      assertGeometry(
+        `${name}: published block-end inset`,
+        p.varBlockEnd,
+        p.padBlockEnd,
+      );
+
+      // paddingBlockEnd={0} is the whole reason the tab row can reach the
+      // rail: its bottom edge is the header's content bottom edge.
+      assertGeometry(
+        `${name}: tab row on the header content edge`,
+        p.navRect.bottom,
+        p.innerRect.bottom,
+      );
+
+      const dividerTop = p.headerRect.bottom - p.dividerWidth;
+      const overhang = p.indicatorRect.height - p.dividerWidth;
+      assertGeometry(
+        `${name}: underline docks on the divider`,
+        p.indicatorRect.bottom,
+        p.headerRect.bottom,
+      );
+      assertGeometry(
+        `${name}: underline top relative to the divider rail`,
+        p.indicatorRect.top - dividerTop,
+        -overhang,
+      );
+
+      // The inline bleed itself, through the published variables: the strip's
+      // box clears the header's inline-start padding, and it pads back by the
+      // part of that inset a stop's own padding does not already supply.
+      assertGeometry(
+        `${name}: strip box start on the header edge`,
+        p.stripRect.left,
+        p.headerRect.left,
+      );
+      assertGeometry(
+        `${name}: strip pad-back start`,
+        p.stripPadStart,
+        Math.max(p.padStart - p.firstStopPad, 0),
+      );
+      assertGeometry(
+        `${name}: first stop content on the start inset`,
+        p.firstStopRect.left + p.firstStopPad,
+        p.headerRect.left + p.padStart,
+      );
+    };
+
+    // Template mirror: tabs share the row with a trailing ghost toggle, so the
+    // strip's end edge stops at that toggle. Its bleed is still measurable —
+    // the box hangs the published end inset past its own StackItem.
+    const dock = headerParts('header-dock');
+    assertHeaderSeam('header-dock', dock);
+
+    const dockLabel = dock.firstStop.querySelector<HTMLElement>('span span');
+    const dockSlot = dock.nav.parentElement;
+    if (!dockLabel || !dockSlot) {
+      throw new Error('header-dock: tab label or stack slot did not render');
+    }
+    assertGeometry(
+      'header-dock: first label on the start inset',
+      dockLabel.getBoundingClientRect().left,
+      dock.headerRect.left + dock.padStart,
+    );
+    assertGeometry(
+      'header-dock: strip end bleeds past its stack slot',
+      dock.navRect.right,
+      dockSlot.getBoundingClientRect().right + dock.padEnd,
+    );
+
+    // Strip alone in the header, and at a different padding step: both inline
+    // edges are free to reach the header's box, and the last stop's content
+    // returns to the end inset.
+    const fill = headerParts('header-fill');
+    assertHeaderSeam('header-fill', fill);
+
+    const fillMenu = fill.strip.querySelector<HTMLElement>('[data-tab-menu]');
+    if (!fillMenu) {
+      throw new Error('header-fill: TabMenu did not render');
+    }
+    if (Math.abs(fill.padStart - dock.padStart) < 0.5) {
+      throw new Error(
+        `header-fill must use a different padding step than header-dock, so a stale fallback cannot satisfy both; both measured ${fill.padStart.toFixed(2)}px`,
+      );
+    }
+    assertGeometry(
+      'header-fill: strip box end on the header edge',
+      fill.stripRect.right,
+      fill.headerRect.right,
+    );
+    const fillMenuPadEnd = px(getComputedStyle(fillMenu).paddingInlineEnd);
+    assertGeometry(
+      'header-fill: strip pad-back end',
+      fill.stripPadEnd,
+      Math.max(fill.padEnd - fillMenuPadEnd, 0),
+    );
+    assertGeometry(
+      'header-fill: last stop content on the end inset',
+      fillMenu.getBoundingClientRect().right - fillMenuPadEnd,
+      fill.headerRect.right - fill.padEnd,
     );
   },
 };

@@ -41,7 +41,9 @@ const TARGETS = [
   {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
-    guards: 'isFullBleed strip/label geometry incl. clamp far side (#2622)',
+    guards:
+      'isFullBleed strip/label geometry incl. clamp far side, and the real ' +
+      'LayoutHeader paddingBlockEnd -> TabList isFullBleed dock (#2622)',
   },
 ];
 
