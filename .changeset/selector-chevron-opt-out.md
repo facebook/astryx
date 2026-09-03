@@ -2,7 +2,8 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] Selector, MultiSelector, ComplexSelector: let the trigger opt out of the chevron
+[feat] Selector, MultiSelector, ComplexSelector: let the trigger opt out of the chevron (#5318)
+@ernestt
 
 The chevron is a sibling of the trigger button, after the optional clear
 button, so a selector with `hasClear` and a value showed both a `×` and a
@@ -23,5 +24,3 @@ selected mark inside an option row.
 ```tsx
 <Selector hasClear hasChevron={false} value={value} onChange={setValue} />
 ```
-
-@ernestt
