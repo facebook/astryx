@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] CLI: record every command run and hand it to a function you supply.
+[feat] CLI: record every command run and hand it to a function you supply. (#4812)
 
 ```js
 // astryx.config.mjs
@@ -17,7 +17,7 @@ Each event carries the command, its arguments and flags (with their Commander so
 
 `event` is a published contract: `DebugEvent` is exported from `@astryxdesign/cli/debug` with a sealed zod validator, `parseDebugEvent`, drift-locked to the type so the recorder cannot add a field without publishing it. `schemaVersion` is a literal, so widening it turns every consumer's branch into a compile error rather than a silent misread.
 
-The handler runs synchronously at exit — a returned promise is never awaited, so network delivery from inside it will not work; write a file or spawn a detached child. It receives a copy, so a handler that throws, or mutates what it was given, can neither fail the command nor affect anything else. Two things it still can do to its own command, because they happen after the CLI has finished: calling `process.exit` replaces the exit code, and writing to stdout appends to the command's own output, which breaks a `--json` consumer parsing that stream. Both are documented on the handler type.
+The handler runs synchronously at exit — a returned promise is never awaited, so network delivery from inside it will not work; write a file or spawn a detached child. It receives a copy, so a handler that throws, or mutates what it was given, can neither fail the command nor affect anything else. Follow-up hardening keeps a handler from replacing the command's exit code and routes handler writes away from stdout so a `--json` envelope stays valid. (#5929)
 
 Nothing changes for a project that has not set `debug`. Startup is unmoved: the environment probe is deferred to delivery rather than run in `begin`, because its first `Intl` call initialises ICU and that alone was ~9% of the CLI's startup for everyone. Nor does the config run: `Project.load` evaluates the config module and loads its integrations, which most commands never did, so the file is read as text first and only loaded when the word `debug` appears in it. Measured across eight commands, no command evaluates a config that did not already.
 
