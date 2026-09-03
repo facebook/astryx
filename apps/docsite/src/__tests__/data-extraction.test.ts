@@ -430,6 +430,20 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('LayoutPanel declares a playground wrapper in start slot so hasDivider preview is not 0px (#5897)', () => {
+    const core = components['@astryxdesign/core'];
+    const layoutPanel = core.find(c => c.name === 'LayoutPanel');
+    expect(layoutPanel).toBeDefined();
+    expect(layoutPanel!.playground?.defaults).toMatchObject({
+      children: expect.any(String),
+      hasDivider: true,
+    });
+    expect(layoutPanel!.playground?.wrapper).toMatchObject({
+      component: 'Layout',
+      slotProp: 'start',
+    });
+  });
+
   it('Lightbox declares an overlay playground with a closed initial state (#3657)', () => {
     const core = components['@astryxdesign/core'];
     const lightbox = core.find(c => c.name === 'Lightbox');
