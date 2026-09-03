@@ -60,6 +60,12 @@
  * rather than covering it — which is why `tags` drops out of the column list
  * while the pane is open. A `Dialog` would trap focus and make triaging a queue
  * a modal act, which is the opposite of what an inbox is for.
+ *
+ * **Reply drafts are scoped to their thread.** Closing the composer preserves an
+ * unfinished body, and reopening Reply on the same conversation restores it.
+ * Starting a reply on a different conversation clears that body before changing
+ * recipients, so text written to one customer cannot be sent to another.
+ *
  */
 
 import {
@@ -1522,6 +1528,7 @@ const OUR_DOMAIN = '@support.example';
 
 /** What the composer opens with when it is opened from somewhere. */
 interface ComposeDraft {
+  conversationId: string;
   recipients: SearchableItem[];
   subject: string;
 }
@@ -1561,6 +1568,7 @@ function replyDraft(
     .map(message => ({id: message.senderEmail, label: message.sender}));
 
   return {
+    conversationId: conversation.id,
     recipients: isReplyAll ? [author, ...others] : [author],
     subject: conversation.subject.startsWith('Re:')
       ? conversation.subject
@@ -1663,16 +1671,21 @@ function ComposeWindow({
   const [hasBcc, setHasBcc] = useState(false);
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const draftConversationId = useRef<string | null>(null);
 
-  // Fill the header from the thread that asked for this. Only the header: the
-  // body is left alone so a half-written message survives being addressed, and
-  // the cursor has somewhere to go that is not already full.
+  // Fill the header from the thread that asked for this. A body survives closing
+  // and reopening the same thread, but not switching recipients: carrying text
+  // across conversations can send one customer's message to another.
   useEffect(() => {
     if (draft == null) {
       return;
     }
     setRecipients(draft.recipients);
     setSubject(draft.subject);
+    if (draftConversationId.current !== draft.conversationId) {
+      setBody('');
+    }
+    draftConversationId.current = draft.conversationId;
   }, [draft]);
 
   // Closing keeps the draft: the sheet stays mounted, so reopening finds the
@@ -1686,6 +1699,7 @@ function ComposeWindow({
     setHasBcc(false);
     setSubject('');
     setBody('');
+    draftConversationId.current = null;
     onOpenChange(false);
   }, [onOpenChange]);
 
