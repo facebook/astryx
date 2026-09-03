@@ -26,6 +26,7 @@ vi.mock('@stylexjs/stylex', () => ({
   props: () => ({}),
 }));
 vi.mock('@astryxdesign/core/theme/syntax', () => ({allSyntaxPresets: []}));
+vi.mock('../generated/themeRegistry', () => ({themeObjectsFull: {}}));
 vi.mock('../components/component-detail/ComponentPreviewTheme', () => ({
   ComponentPreviewTheme: ({children}: {children: ReactNode}) =>
     createElement('div', null, children),
