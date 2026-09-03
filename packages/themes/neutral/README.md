@@ -28,21 +28,19 @@ function App() {
 
 ### Import paths
 
-| Path                                       | Use case                                                    |
-| ------------------------------------------ | ----------------------------------------------------------- |
-| `@astryxdesign/theme-neutral`              | Source build (StyleX compilation via `@astryxdesign/build`) |
-| `@astryxdesign/theme-neutral/built`        | Pre-built dist (Tailwind, plain CSS, or no build step)      |
-| `@astryxdesign/theme-neutral/palette`      | Opt-in palette reference for authoring and audit tooling    |
-| `@astryxdesign/theme-neutral/palette.json` | Machine-readable palette for agents and tooling             |
-| `@astryxdesign/theme-neutral/theme.css`    | Pre-built CSS file (import in your stylesheet)              |
+| Path                                    | Use case                                                    |
+| --------------------------------------- | ----------------------------------------------------------- |
+| `@astryxdesign/theme-neutral`           | Source build (StyleX compilation via `@astryxdesign/build`) |
+| `@astryxdesign/theme-neutral/built`     | Pre-built dist (Tailwind, plain CSS, or no build step)      |
+| `@astryxdesign/theme-neutral/theme.css` | Pre-built CSS file (import in your stylesheet)              |
 
 If you're using `@astryxdesign/build` for StyleX source compilation, import from the bare path. Otherwise, use `/built`.
 
 ## Approved palette
 
-The source package exports `neutralPalettes`. Production builds keep that data
-out of the default theme module and expose it through the opt-in `/palette` and
-`/palette.json` paths. Each family contains exact light- and dark-mode palette
+The repository keeps Neutral's approved palette in `src/neutralPalettes.ts` for
+theme authoring and audits. It is not part of the package API, `defineTheme`, the
+built theme, or runtime CSS. Each family contains exact light- and dark-mode palette
 entries labeled from 0 through 100 in increments of five. By convention, lower
 labels identify darker stops and higher labels lighter stops in both modes. The
 labels identify approved entries rather than guaranteeing that each hex value
@@ -54,21 +52,6 @@ this palette. For example, `blue.light[45]` means blue, the light-mode ramp,
 stop 45. Theme mappings retain the selected hex explicitly so later palette
 changes do not silently recolor the theme. Alpha overlays and other intentional
 deviations should be documented at the token that uses them.
-
-```tsx
-import {neutralPalettes} from '@astryxdesign/theme-neutral';
-
-const auditedInfo = neutralPalettes.blue.light[45];
-```
-
-Authoring and audit tooling can import the generated palette without adding it
-to the default runtime theme:
-
-```tsx
-import {neutralPalettes} from '@astryxdesign/theme-neutral/palette';
-
-const auditedInfo = neutralPalettes.blue.light[45];
-```
 
 ### CSS import
 

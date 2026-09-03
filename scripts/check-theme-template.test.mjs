@@ -39,6 +39,14 @@ const TEMPLATE = path.join(REPO_ROOT, 'packages/cli/assets/theme.template.ts');
 const THEME_SRC = path.join(REPO_ROOT, 'packages/core/src/theme');
 const CORE_SRC = path.join(REPO_ROOT, 'packages/core/src');
 const DOCS_DIR = path.join(REPO_ROOT, 'packages/cli/assets/docs');
+const NEUTRAL_PALETTE = path.join(
+  REPO_ROOT,
+  'packages/themes/neutral/src/neutralPalettes.ts',
+);
+const NEUTRAL_PALETTE_TEMPLATE = path.join(
+  REPO_ROOT,
+  'packages/cli/assets/templates/themes/neutral/neutralPalettes.ts',
+);
 
 const template = fs.readFileSync(TEMPLATE, 'utf-8');
 
@@ -205,6 +213,12 @@ function templateComponentKeys() {
 // ---------------------------------------------------------------------------
 
 describe('theme template stays in sync with the theme system', () => {
+  it('keeps the shipped Neutral palette template aligned with its owner', () => {
+    expect(fs.readFileSync(NEUTRAL_PALETTE_TEMPLATE, 'utf-8')).toBe(
+      fs.readFileSync(NEUTRAL_PALETTE, 'utf-8'),
+    );
+  });
+
   it('documents every defineTheme field', () => {
     const documented = new Set(templateFields());
     const missing = defineThemeFields().filter(f => !documented.has(f));

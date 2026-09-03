@@ -1,8 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {TONAL_PALETTE_STOPS} from '@astryxdesign/core/theme';
+import {
+  TONAL_PALETTE_STOPS,
+  validateTonalPalettes,
+} from '@astryxdesign/core/theme/palettes';
 import {describe, expect, it} from 'vitest';
-import {neutralPalettes, neutralTheme} from './neutralTheme';
+import {neutralPalettes} from './neutralPalettes';
+import {neutralTheme} from './neutralTheme';
 
 const statusFill = {
   accent: 'var(--astryx-theme-neutral-color-status-fill-accent)',
@@ -12,8 +16,12 @@ const statusFill = {
 } as const;
 
 describe('neutral theme palette contract', () => {
-  it('ships every approved palette with the source theme', () => {
-    expect(neutralTheme.palettes).toBe(neutralPalettes);
+  it('keeps the approved palette structurally valid', () => {
+    expect(validateTonalPalettes(neutralPalettes)).toEqual({
+      valid: true,
+      errors: [],
+      warnings: [],
+    });
     expect(Object.keys(neutralPalettes)).toEqual([
       'neutral',
       'red',

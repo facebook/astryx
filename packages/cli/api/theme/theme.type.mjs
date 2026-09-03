@@ -27,14 +27,14 @@
  * `warnings` are defects the theme author should fix. `notices` are advisories
  * about a correct theme — most of them cannot be fixed in a theme file at all,
  * so folding them into `warnings` makes a clean build look dirty.
- * @property {{name: string, tokenCount: number, componentCount: number, sizeKB: number, outputs: {css: string, js: string, dts: string, variantsDts?: string, paletteJs?: string, paletteJson?: string, paletteDts?: string}, warnings: string[], notices: string[]}} data
+ * @property {{name: string, tokenCount: number, componentCount: number, sizeKB: number, outputs: {css: string, js: string, dts: string, variantsDts?: string}, warnings: string[], notices: string[]}} data
  */
 
 /**
  * xds --json theme build <file> --check
  * @typedef {object} ThemeBuildCheckResponse
  * @property {'theme.build.check'} type
- * @property {{name: string, upToDate: boolean, stale: Array<{path: string, reason: 'missing' | 'outdated' | 'obsolete'}>, checked: string[]}} data
+ * @property {{name: string, upToDate: boolean, stale: Array<{path: string, reason: 'missing' | 'outdated'}>, checked: string[]}} data
  */
 
 /**

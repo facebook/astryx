@@ -2,9 +2,8 @@
 
 import {describe, expect, it} from 'vitest';
 import {
-  defineTonalPalettes,
-  getTonalPaletteRamp,
   TONAL_PALETTE_STOPS,
+  validateTonalPalettes,
   type ThemePalettes,
   type TonalPaletteRamp,
 } from './palettes';
@@ -15,7 +14,7 @@ function ramp(color = '#123456'): TonalPaletteRamp {
   ) as unknown as TonalPaletteRamp;
 }
 
-describe('defineTonalPalettes', () => {
+describe('validateTonalPalettes', () => {
   it('uses canonical numeric stop labels from 0 through 100', () => {
     expect(TONAL_PALETTE_STOPS).toEqual([
       0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
@@ -23,145 +22,118 @@ describe('defineTonalPalettes', () => {
     ]);
   });
 
-  it('preserves a complete approved palette with exact key inference', () => {
-    const palettes = defineTonalPalettes({
+  it('accepts a complete approved palette without changing it', () => {
+    const palettes = {
       blue: {semantic: 'info', light: ramp('#0068cc'), dark: ramp('#529fff')},
-    });
+    } satisfies ThemePalettes;
 
+    expect(validateTonalPalettes(palettes)).toEqual({
+      valid: true,
+      errors: [],
+      warnings: [],
+    });
     expect(palettes.blue.light[45]).toBe('#0068cc');
-    expect(getTonalPaletteRamp(palettes.blue, 'dark')?.[45]).toBe('#529fff');
+    expect(palettes.blue.dark[45]).toBe('#529fff');
   });
 
-  it('accepts light-only and dark-only palette families', () => {
-    const palettes = defineTonalPalettes({
+  it('accepts light-only, dark-only, and explicitly shared ramps', () => {
+    const shared = ramp('#777777');
+    const palettes = {
       lightOnly: {light: ramp('#777777')},
       darkOnly: {dark: ramp('#222222')},
-    });
+      shared: {light: shared, dark: shared},
+    } satisfies ThemePalettes;
 
-    expect(getTonalPaletteRamp(palettes.lightOnly, 'light')).toBe(
-      palettes.lightOnly.light,
-    );
-    expect(getTonalPaletteRamp(palettes.lightOnly, 'dark')).toBeUndefined();
-    expect(getTonalPaletteRamp(palettes.darkOnly, 'dark')).toBe(
-      palettes.darkOnly.dark,
-    );
-    expect(getTonalPaletteRamp(palettes.darkOnly, 'light')).toBeUndefined();
+    expect(validateTonalPalettes(palettes).valid).toBe(true);
+    expect('dark' in palettes.lightOnly).toBe(false);
+    expect('light' in palettes.darkOnly).toBe(false);
+    expect(palettes.shared.dark).toBe(shared);
   });
 
-  it('uses an explicitly shared ramp only when both modes declare it', () => {
-    const shared = ramp('#777777');
-    const palettes = defineTonalPalettes({
-      neutral: {light: shared, dark: shared},
+  it('returns all structural errors without throwing', () => {
+    const result = validateTonalPalettes({
+      blue: {
+        light: {...ramp(), 42: '#123456', 50: '#12345680'},
+        semantic: 42,
+      },
     });
 
-    expect(getTonalPaletteRamp(palettes.neutral, 'light')).toBe(shared);
-    expect(getTonalPaletteRamp(palettes.neutral, 'dark')).toBe(
-      shared,
+    expect(result.valid).toBe(false);
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        {path: 'blue.light.42', message: 'Unknown stop or metadata key "42".'},
+        {
+          path: 'blue.light.50',
+          message: 'Must be an opaque six-digit hex color.',
+        },
+        {path: 'blue.semantic', message: 'Must be a string; received 42.'},
+      ]),
     );
   });
 
-  it('rejects an incomplete ramp', () => {
-    const palettes = {
+  it('reports incomplete and out-of-order ramps precisely', () => {
+    const incomplete = validateTonalPalettes({
       blue: {light: {0: '#000000', 100: '#ffffff'}},
-    } as unknown as ThemePalettes;
+    });
+    expect(incomplete.errors).toContainEqual({
+      path: 'blue.light.5',
+      message: 'Must be an opaque six-digit hex color.',
+    });
 
-    expect(() => defineTonalPalettes(palettes)).toThrow(
-      'Palette "blue" light stop 5 must be an opaque six-digit hex color',
-    );
+    const outOfOrder = validateTonalPalettes({
+      blue: {light: {...ramp('#123456'), 0: '#ffffff', 5: '#000000'}},
+    });
+    expect(outOfOrder.errors).toContainEqual({
+      path: 'blue.light.5',
+      message: 'Must not be darker than the previous stop.',
+    });
   });
 
-  it('rejects non-opaque or malformed colors', () => {
-    const invalid = {...ramp(), 50: '#12345680'} as TonalPaletteRamp;
-
-    expect(() => defineTonalPalettes({blue: {light: invalid}})).toThrow(
-      'must be an opaque six-digit hex color',
-    );
+  it('reports malformed containers and families', () => {
+    expect(validateTonalPalettes(null).errors).toContainEqual({
+      path: 'palettes',
+      message: 'Must be a named palette map.',
+    });
+    expect(validateTonalPalettes({}).errors).toContainEqual({
+      path: 'palettes',
+      message: 'Must contain at least one named palette family.',
+    });
+    expect(validateTonalPalettes({blue: {}}).errors).toContainEqual({
+      path: 'blue',
+      message: 'Must define at least one light or dark tonal ramp.',
+    });
+    expect(validateTonalPalettes({blue: {light: null}}).errors).toContainEqual({
+      path: 'blue.light',
+      message: 'Must be a tonal ramp.',
+    });
   });
 
-  it('rejects ramps whose luminance decreases as stop labels increase', () => {
-    const invalid = {
-      ...ramp('#123456'),
-      0: '#ffffff',
-      5: '#000000',
-    } as TonalPaletteRamp;
+  it('reports unknown keys and invalid metadata', () => {
+    const result = validateTonalPalettes({
+      blue: {
+        light: {...ramp(), hue: 360, chroma: -0.1},
+        aliases: ['info'],
+        description: false,
+      },
+    });
 
-    expect(() => defineTonalPalettes({blue: {light: invalid}})).toThrow(
-      'stops must be ordered from darker to lighter',
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        {path: 'blue.aliases', message: 'Unknown family key.'},
+        {
+          path: 'blue.light.hue',
+          message:
+            'Must be a finite number from 0 up to but not including 360; received 360.',
+        },
+        {
+          path: 'blue.light.chroma',
+          message: 'Must be a finite non-negative number; received -0.1.',
+        },
+        {
+          path: 'blue.description',
+          message: 'Must be a string; received false.',
+        },
+      ]),
     );
-  });
-
-  it('rejects unknown ramp keys', () => {
-    const invalid = {...ramp(), 42: '#123456'} as TonalPaletteRamp;
-
-    expect(() => defineTonalPalettes({blue: {light: invalid}})).toThrow(
-      'Palette "blue" light contains unknown stop or metadata key "42".',
-    );
-  });
-
-  it('rejects malformed palette containers', () => {
-    expect(() => defineTonalPalettes(null as unknown as ThemePalettes)).toThrow(
-      'Theme palettes must be a named palette map.',
-    );
-    expect(() => defineTonalPalettes([] as unknown as ThemePalettes)).toThrow(
-      'Theme palettes must be a named palette map.',
-    );
-    expect(() => defineTonalPalettes({})).toThrow(
-      'Theme palettes must contain at least one named palette family.',
-    );
-    expect(() =>
-      defineTonalPalettes({blue: {}} as unknown as ThemePalettes),
-    ).toThrow(
-      'Palette "blue" must define at least one light or dark tonal ramp.',
-    );
-  });
-
-  it('rejects invalid family metadata', () => {
-    expect(() =>
-      defineTonalPalettes({
-        blue: {light: ramp(), semantic: 42},
-      } as unknown as ThemePalettes),
-    ).toThrow('Palette "blue" semantic must be a string, got 42.');
-
-    expect(() =>
-      defineTonalPalettes({
-        blue: {light: ramp(), description: false},
-      } as unknown as ThemePalettes),
-    ).toThrow('Palette "blue" description must be a string, got false.');
-  });
-
-  it('rejects unknown family keys', () => {
-    expect(() =>
-      defineTonalPalettes({
-        blue: {light: ramp(), aliases: ['info']},
-      } as unknown as ThemePalettes),
-    ).toThrow('Palette "blue" contains unknown family key "aliases".');
-  });
-
-  it('rejects hue and chroma values outside their valid ranges', () => {
-    expect(() =>
-      defineTonalPalettes({
-        blue: {light: {...ramp(), hue: 360}},
-      }),
-    ).toThrow('hue must be a finite number from 0 up to but not including 360');
-
-    expect(() =>
-      defineTonalPalettes({
-        blue: {light: {...ramp(), chroma: -0.1}},
-      }),
-    ).toThrow('chroma must be a finite non-negative number');
-  });
-
-  it('rejects a present but null mode ramp', () => {
-    expect(() =>
-      defineTonalPalettes({
-        blue: {light: null, dark: ramp()},
-      } as unknown as ThemePalettes),
-    ).toThrow('Palette "blue" light must be a tonal ramp when provided.');
-
-    expect(() =>
-      defineTonalPalettes({
-        blue: {light: ramp(), dark: null},
-      } as unknown as ThemePalettes),
-    ).toThrow('Palette "blue" dark must be a tonal ramp when provided.');
   });
 });

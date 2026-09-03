@@ -83,7 +83,6 @@ import type {SyntaxThemeDefinition} from './syntax';
 import {registerTheme} from './themeRegistry';
 import {deepMergeComponents} from './mergeComponents';
 import {resolveLocalTokenContract} from './localTokens';
-import {defineTonalPalettes, type ThemePalettes} from './palettes';
 
 // =============================================================================
 // Types
@@ -183,9 +182,9 @@ export interface DefineThemeInput {
 
   /**
    * Base theme to extend. When provided, the new theme starts with everything
-   * the base resolved to — tokens, palette metadata, component overrides,
-   * icons, indicators, and its `onDark`/`onLight` surfaces — then applies this
-   * input on top. The base theme's values have lowest precedence.
+   * the base resolved to — tokens, component overrides, icons, indicators, and
+   * its `onDark`/`onLight` surfaces — then applies this input on top. The base
+   * theme's values have lowest precedence.
    *
    * The result is flat: an extended theme carries its inheritance in its own
    * resolved output, so `astryx theme build` emits one self-contained
@@ -301,8 +300,6 @@ export interface DefineThemeInput {
    * ```
    */
   color?: ColorScaleConfig;
-  /** Approved authoring palettes, inherited by family and built separately. */
-  palettes?: ThemePalettes;
   /** Token overrides — flat map of CSS custom property names to values.
    *  Values can be a string or [light, dark] tuple.
    *  Only include tokens you want to override; defaults fill the rest. */
@@ -400,8 +397,6 @@ export interface DefinedTheme {
   tokens: Record<string, string>;
   /** Resolved theme-family-local token declarations. */
   localTokens?: Record<string, string>;
-  /** Resolved source-theme palettes. */
-  palettes?: ThemePalettes;
   /** Component style overrides */
   components?: ComponentStyleMap;
   /** Icon registry */
@@ -711,16 +706,6 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
       ? {...base.indicators, ...input.indicators}
       : (input.indicators ?? base?.indicators);
 
-  // Merge by family name so a child replaces one family and inherits the rest.
-  const inputPalettes =
-    input.palettes !== undefined
-      ? defineTonalPalettes(input.palettes)
-      : undefined;
-  const palettes =
-    inputPalettes && base?.palettes
-      ? {...base.palettes, ...inputPalettes}
-      : (inputPalettes ?? base?.palettes);
-
   const theme: DefinedTheme = {
     name: input.name,
     tokens,
@@ -731,7 +716,6 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
           __localTokenLineage: localTokenContract.lineage,
         }
       : {}),
-    ...(palettes ? {palettes} : {}),
     components,
     icons,
     indicators,

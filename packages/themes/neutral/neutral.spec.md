@@ -102,8 +102,8 @@ not authorize a broader meaning.
 Candidate source work contains complete light and separately tuned dark ramps for
 neutral, red, orange, yellow, green, teal, cyan, blue, purple, and pink. This is
 useful theme-owned inventory and evidence. Draft `spec:AST-018` separately owns
-the proposed cross-theme palette contract, optional artifact behavior, and the
-boundary between approved stops and intentional deviations. Neutral's token and
+the proposed cross-theme authoring and validation contract and the boundary
+between approved stops and intentional deviations. Neutral's token and
 component mappings retain their selected color values explicitly; the palette is
 the stable reference used to select and verify those values, not a live dependency
 that automatically changes rendered output.
@@ -157,9 +157,9 @@ measurement-tool implementation.
 ## Build and artifact contract
 
 The package manifest and build tests define Neutral's runtime, CSS, declaration,
-and export outputs. The proposed palette metadata remains outside the default
-runtime theme and is published through one palette artifact set: `/palette` for
-JavaScript and TypeScript consumers and `/palette.json` for data-only tooling.
+and export outputs. The palette remains in a theme-owned source file for
+authoring and audits. It is not part of `defineTheme`, the package's runtime
+exports, generated CSS, or generic theme-build artifacts.
 
 ## Verification map
 

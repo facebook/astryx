@@ -90,9 +90,9 @@ export const myTheme = defineTheme({
 
   /**
    * Start from another theme instead of the defaults. Tokens are copied then
-   * overridden, palette families and icons shallow-merge, and `components`
-   * deep-merge — but the scale configs below REPLACE the base's rather than
-   * merging, because they are inputs to a generator, not values.
+   * overridden, `components` deep-merge, `icons` shallow-merge — but the scale
+   * configs below REPLACE the base's rather than merging, because they are
+   * inputs to a generator, not values.
    *
    * Reference: `astryx theme list` (themes you can install and extend).
    */
@@ -134,10 +134,6 @@ export const myTheme = defineTheme({
    * `astryx docs tokens` for every colour token and its light/dark default.
    */
   color: {accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard'},
-
-  // Optional authoring palettes; production builds emit separate artifacts.
-  // Reference: `astryx docs theme` → Approved tonal palettes.
-  // palettes: approvedPalettes,
 
   /**
    * Type scale and the three font roles.

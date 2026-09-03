@@ -17,8 +17,7 @@ export const doc = {
   summary: 'Compile one or more defineTheme files to CSS + JS',
   description:
     'Compiles a file that calls defineTheme() into a scoped CSS file, a JS module, and ' +
-    'type declarations: the exact CSS the <Theme> runtime emits. Approved palettes are ' +
-    'written as separate opt-in artifacts and omitted from the runtime JS. Takes any number ' +
+    'type declarations: the exact CSS the <Theme> runtime emits. Takes any number of theme ' +
     'files and compiles them in one process, in argument order, stopping at the first ' +
     'failure; an app with several themes does not need a shell loop. With --check it writes ' +
     'nothing and instead reports whether the committed outputs have drifted from source. ' +

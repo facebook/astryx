@@ -235,16 +235,18 @@ const myTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'Define approved tonal palettes when agents, audit tools, custom components, or data visualization need a consistent color reference beyond the semantic token surface. Components still use semantic tokens first. Theme mappings retain explicit resolved color values; agents and authors can use the palette to select or verify those values without making rendered output a live dependency of the palette. Production theme builds keep this metadata out of the default runtime module and emit a separate opt-in palette artifact set.',
+          text: 'A theme package may maintain an approved tonal palette as a separate authoring reference. Components still use semantic tokens first, and defineTheme continues to receive explicit color values. Keeping the palette separate prevents palette edits from silently recoloring the runtime theme.',
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Define an approved palette and build it separately',
-          code: `import {defineTheme} from '@astryxdesign/core/theme';
-import {defineTonalPalettes} from '@astryxdesign/core/theme/palettes';
+          label: 'Maintain and validate an approved palette separately',
+          code: `import {
+  validateTonalPalettes,
+  type ThemePalettes,
+} from '@astryxdesign/core/theme/palettes';
 
-export const brandPalettes = defineTonalPalettes({
+export const brandPalettes = {
   blue: {
     semantic: 'info',
     light: {
@@ -256,32 +258,23 @@ export const brandPalettes = defineTonalPalettes({
       100: '#ffffff',
     },
   },
-});
+} satisfies ThemePalettes;
 
-export const brandTheme = defineTheme({
-  name: 'brand',
-  palettes: brandPalettes,
-  tokens: {
-    // blue.light[40] / blue.light[60]
-    '--color-accent': ['#0073c3', '#60adfa'],
-    // blue.light[100] / blue.light[10]
-    '--color-on-accent': ['#ffffff', '#001f3d'],
-  },
-});`,
+const result = validateTonalPalettes(brandPalettes);`,
         },
         {
           type: 'prose',
-          text: 'Each family requires at least one complete light or dark ramp, with all 21 numeric stop labels from 0 through 100 in increments of 5. Read `blue.light[40]` as “blue, light-mode ramp, stop 40.” Lower labels identify darker stops and higher labels lighter stops in every declared mode. Light-only and dark-only themes declare only the mode they support. Themes supporting both modes declare both ramps; if both intentionally share one ramp, assign it to both fields explicitly. Missing modes are not inferred. These labels identify approved palette stops; validation does not promise that a hex value measures at the exact corresponding HCT coordinate. `astryx theme build` validates attached metadata, excludes it from the runtime theme module, and emits `<name>.palette.js`, `<name>.palette.json`, and `<name>.palette.d.ts` as one artifact set for explicit use by tools and agents.',
+          text: 'Each family requires at least one complete light or dark ramp, with all 21 numeric stop labels from 0 through 100 in increments of 5. Read blue.light[40] as “blue, light-mode ramp, stop 40.” Lower labels identify darker stops and higher labels lighter stops in every declared mode. Light-only and dark-only palettes declare only the mode they support; missing modes are not inferred. validateTonalPalettes returns structured errors and warnings without changing the palette. Theme-package tests decide whether those results pass CI and separately assert the explicit theme values that intentionally align with palette stops.',
         },
       ],
     },
     {
       title: 'Extending a Theme',
-      category: 'guide',
+  category: 'guide',
       content: [
         {
           type: 'prose',
-          text: '`extends` lets you derive a new theme from an existing one, inheriting its tokens, component overrides, icons, and fonts. Source-theme bases also carry palette metadata as part of the authoring foundation. Built themes intentionally omit it; import the matching `/palette` artifact and pass it explicitly when a child needs that metadata. Palette changes do not rewrite the explicit color values already stored in theme mappings.',
+          text: '`extends` lets you derive a new theme from an existing one, inheriting its tokens, component overrides, icons, and fonts. Only specify what you want to change; everything else carries over from the base theme.',
         },
         {
           type: 'code',
@@ -308,10 +301,6 @@ const brandTheme = defineTheme({
             ['components', 'Deep-merged: child component rules override matching keys from the base.'],
             ['icons', 'Shallow-merged: child icons override matching names from the base.'],
             ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
-            [
-              'palettes',
-              'Source bases only: shallow-merged by family as reference metadata. Built bases omit palettes, so a child must attach an explicitly imported `/palette` artifact.',
-            ],
             ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
             ['typography, motion, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],
           ],

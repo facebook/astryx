@@ -36,12 +36,6 @@
       "import": "./dist/neutral.js",
       "require": "./dist/neutral.js"
     },
-    "./palette": {
-      "types": "./dist/neutral.palette.d.ts",
-      "import": "./dist/neutral.palette.js",
-      "require": "./dist/neutral.palette.js"
-    },
-    "./palette.json": "./dist/neutral.palette.json",
     "./theme.css": {
       "types": "./theme.css.d.ts",
       "default": "./dist/theme.css"

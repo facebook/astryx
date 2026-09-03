@@ -182,7 +182,7 @@ export function renderProbeTheme({components, coverage}) {
 // can prove each one still reaches the pixels. Not shipped; not published; a
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
-// defineTheme has six visual inputs and this covers all six:
+// defineTheme takes six things and this covers all six:
 //   components  ${coverage.targets} targets, ${coverage.selectors} selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph

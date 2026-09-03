@@ -21,7 +21,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Theme packages may expose approved tonal palettes as reference metadata. Agents and theme authors can use numbered stops to select or verify explicit theme values, while component and application code continues to use semantic tokens first. Palette metadata does not automatically rewrite rendered theme colors.',
+          text: 'Theme packages may maintain approved tonal palettes as separate authoring references. Agents and theme authors can use numbered stops to select or verify explicit theme values, while component and application code continues to use semantic tokens first. Palette data does not enter defineTheme or automatically rewrite rendered colors.',
         },
       ],
     },

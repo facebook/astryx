@@ -59,6 +59,7 @@
       "exportName": "neutralTheme",
       "files": [
         "neutralTheme.ts",
+        "neutralPalettes.ts",
         "icons.tsx"
       ]
     },

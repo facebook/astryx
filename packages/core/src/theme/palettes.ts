@@ -56,20 +56,35 @@ const PALETTE_FAMILY_KEYS = new Set([
   'description',
 ]);
 
+export interface TonalPaletteValidationIssue {
+  readonly path: string;
+  readonly message: string;
+}
+
+export interface TonalPaletteValidationResult {
+  readonly valid: boolean;
+  readonly errors: ReadonlyArray<TonalPaletteValidationIssue>;
+  readonly warnings: ReadonlyArray<TonalPaletteValidationIssue>;
+}
+
 function validateRamp(
   name: string,
   mode: 'light' | 'dark',
   ramp: TonalPaletteRamp,
+  errors: TonalPaletteValidationIssue[],
 ) {
+  const path = `${name}.${mode}`;
   if (!ramp || typeof ramp !== 'object' || Array.isArray(ramp)) {
-    throw new Error(`Palette "${name}" ${mode} must be a tonal ramp.`);
+    errors.push({path, message: 'Must be a tonal ramp.'});
+    return;
   }
 
   for (const key of Object.keys(ramp)) {
     if (!TONAL_PALETTE_KEYS.has(key)) {
-      throw new Error(
-        `Palette "${name}" ${mode} contains unknown stop or metadata key "${key}".`,
-      );
+      errors.push({
+        path: `${path}.${key}`,
+        message: `Unknown stop or metadata key "${key}".`,
+      });
     }
   }
 
@@ -77,21 +92,26 @@ function validateRamp(
   for (const stop of TONAL_PALETTE_STOPS) {
     const value = ramp[stop];
     if (typeof value !== 'string' || !OPAQUE_HEX.test(value)) {
-      throw new Error(
-        `Palette "${name}" ${mode} stop ${stop} must be an opaque six-digit hex color.`,
-      );
+      errors.push({
+        path: `${path}.${stop}`,
+        message: 'Must be an opaque six-digit hex color.',
+      });
+      continue;
     }
     const parsed = parseColor(value);
     if (parsed === null) {
-      throw new Error(
-        `Palette "${name}" ${mode} stop ${stop} must be an opaque six-digit hex color.`,
-      );
+      errors.push({
+        path: `${path}.${stop}`,
+        message: 'Must be an opaque six-digit hex color.',
+      });
+      continue;
     }
     const luminance = relativeLuminance(parsed);
     if (luminance < previousLuminance) {
-      throw new Error(
-        `Palette "${name}" ${mode} stops must be ordered from darker to lighter; stop ${stop} is darker than the previous stop.`,
-      );
+      errors.push({
+        path: `${path}.${stop}`,
+        message: 'Must not be darker than the previous stop.',
+      });
     }
     previousLuminance = luminance;
   }
@@ -100,86 +120,80 @@ function validateRamp(
     ramp.hue !== undefined &&
     (!Number.isFinite(ramp.hue) || ramp.hue < 0 || ramp.hue >= 360)
   ) {
-    throw new Error(
-      `Palette "${name}" ${mode} hue must be a finite number from 0 up to but not including 360, got ${String(ramp.hue)}.`,
-    );
+    errors.push({
+      path: `${path}.hue`,
+      message: `Must be a finite number from 0 up to but not including 360; received ${String(ramp.hue)}.`,
+    });
   }
   if (
     ramp.chroma !== undefined &&
     (!Number.isFinite(ramp.chroma) || ramp.chroma < 0)
   ) {
-    throw new Error(
-      `Palette "${name}" ${mode} chroma must be a finite non-negative number, got ${String(ramp.chroma)}.`,
-    );
+    errors.push({
+      path: `${path}.chroma`,
+      message: `Must be a finite non-negative number; received ${String(ramp.chroma)}.`,
+    });
   }
 }
 
-/** Validate approved palette metadata without generating CSS tokens. */
-export function defineTonalPalettes<const T extends ThemePalettes>(
-  palettes: T,
-): T {
+/** Inspect palette metadata without changing it or generating theme values. */
+export function validateTonalPalettes(
+  palettes: unknown,
+): TonalPaletteValidationResult {
+  const errors: TonalPaletteValidationIssue[] = [];
+  const warnings: TonalPaletteValidationIssue[] = [];
   if (!palettes || typeof palettes !== 'object' || Array.isArray(palettes)) {
-    throw new Error('Theme palettes must be a named palette map.');
+    errors.push({path: 'palettes', message: 'Must be a named palette map.'});
+    return {valid: false, errors, warnings};
   }
   if (Object.keys(palettes).length === 0) {
-    throw new Error(
-      'Theme palettes must contain at least one named palette family.',
-    );
+    errors.push({
+      path: 'palettes',
+      message: 'Must contain at least one named palette family.',
+    });
   }
 
   for (const [name, family] of Object.entries(palettes)) {
     if (!family || typeof family !== 'object' || Array.isArray(family)) {
-      throw new Error(`Palette "${name}" must be a palette family.`);
+      errors.push({path: name, message: 'Must be a palette family.'});
+      continue;
     }
     for (const key of Object.keys(family)) {
       if (!PALETTE_FAMILY_KEYS.has(key)) {
-        throw new Error(
-          `Palette "${name}" contains unknown family key "${key}".`,
-        );
+        errors.push({path: `${name}.${key}`, message: 'Unknown family key.'});
       }
     }
     if (family.light === undefined && family.dark === undefined) {
-      throw new Error(
-        `Palette "${name}" must define at least one light or dark tonal ramp.`,
-      );
+      errors.push({
+        path: name,
+        message: 'Must define at least one light or dark tonal ramp.',
+      });
     }
     if (family.light === null) {
-      throw new Error(
-        `Palette "${name}" light must be a tonal ramp when provided.`,
-      );
-    }
-    if (family.light !== undefined) {
-      validateRamp(name, 'light', family.light);
+      errors.push({path: `${name}.light`, message: 'Must be a tonal ramp.'});
+    } else if (family.light !== undefined) {
+      validateRamp(name, 'light', family.light as TonalPaletteRamp, errors);
     }
     if (family.dark === null) {
-      throw new Error(
-        `Palette "${name}" dark must be a tonal ramp when provided.`,
-      );
-    }
-    if (family.dark !== undefined) {
-      validateRamp(name, 'dark', family.dark);
+      errors.push({path: `${name}.dark`, message: 'Must be a tonal ramp.'});
+    } else if (family.dark !== undefined) {
+      validateRamp(name, 'dark', family.dark as TonalPaletteRamp, errors);
     }
     if (family.semantic !== undefined && typeof family.semantic !== 'string') {
-      throw new Error(
-        `Palette "${name}" semantic must be a string, got ${String(family.semantic)}.`,
-      );
+      errors.push({
+        path: `${name}.semantic`,
+        message: `Must be a string; received ${String(family.semantic)}.`,
+      });
     }
     if (
       family.description !== undefined &&
       typeof family.description !== 'string'
     ) {
-      throw new Error(
-        `Palette "${name}" description must be a string, got ${String(family.description)}.`,
-      );
+      errors.push({
+        path: `${name}.description`,
+        message: `Must be a string; received ${String(family.description)}.`,
+      });
     }
   }
-  return palettes;
-}
-
-/** Return a palette family's explicitly declared ramp for a color mode. */
-export function getTonalPaletteRamp(
-  family: ThemePaletteFamily,
-  mode: 'light' | 'dark',
-): TonalPaletteRamp | undefined {
-  return family[mode];
+  return {valid: errors.length === 0, errors, warnings};
 }

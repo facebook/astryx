@@ -10,12 +10,11 @@
  * - A CSS file with token overrides and component styles
  * - A JS module that re-exports the built theme (+ icon registry)
  * - A .d.ts (plus an optional .variants.d.ts for custom prop values)
- * - Separate .palette.js/.palette.json/.palette.d.ts artifacts when the source
- *   theme carries approved tonal palettes
  *
- * It performs the writes and returns a `theme.build` receipt. Its `warnings`
- * carry override problems, and its `notices` carry font-loading guidance. It
- * returns `null` when the theme produces no CSS. Errors throw AstryxError (with
+ * It performs the writes and returns a `theme.build` receipt — its `warnings`
+ * carry override problems and any fonts the theme names but does not load
+ * (font-warning.mjs) — or `null` when the theme produced no CSS (nothing to
+ * build). Errors throw AstryxError (with
  * a stable code). Human progress is emitted through the shared `logger`
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
@@ -58,9 +57,9 @@ import {
 // path: core's generator. There is no in-CLI fallback implementation — if this
 // import fails, the build fails (see the ERR_CORE_NOT_FOUND guard in the theme
 // action). A built, resolvable `@astryxdesign/core` is a hard requirement.
-// These are populated from a dynamic import, so `any` is intentional.
+// A built, resolvable `@astryxdesign/core` is a hard requirement. These are
+// populated from a dynamic import (a runtime boundary), so `any` is intentional.
 /** @type {any} */ let _defineTheme = null;
-/** @type {any} */ let _defineTonalPalettes = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
 /** @type {any} */ let _dataTokenDefaults = null;
@@ -68,7 +67,6 @@ import {
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
   _defineTheme = coreTheme.defineTheme;
-  _defineTonalPalettes = coreTheme.defineTonalPalettes;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
   _dataTokenDefaults = coreTheme.dataTokenDefaults;
@@ -666,16 +664,6 @@ function isThemeObject(value) {
   );
 }
 
-function unsupportedTonalPalettesError() {
-  return new AstryxError(
-    'The installed @astryxdesign/core/theme does not support approved tonal ' +
-      'palettes. Upgrade @astryxdesign/core before building themes with this ' +
-      'version of the CLI.',
-    undefined,
-    ERROR_CODES.ERR_THEME_INVALID,
-  );
-}
-
 /**
  * Extract the theme definition from a JS/TS file.
  * Tries jiti first (full TS support), falls back to regex+eval.
@@ -781,8 +769,7 @@ function extractIconInfo(filePath) {
  * all of that — but a built theme is a legitimate base for `extends` (the
  * shipped themes expose one as their `./built` subpath), and a base that
  * carries only tokens makes its children silently lose every component
- * override it had. Palette metadata is emitted separately because it is not
- * required for rendering.
+ * override it had.
  *
  * The icon registry is imported rather than inlined because it holds React
  * elements, which cannot be serialized. `extractIconInfo` lifts the specifier
@@ -901,46 +888,6 @@ export declare const ${iconInfo.exportName}: IconRegistry;
   return `${variantsRef}import type { DefinedTheme } from '@astryxdesign/core/theme';
 ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedTheme;
 `;
-}
-
-/**
- * Generate the opt-in ESM palette artifact.
- * @param {any} themeDef
- * @returns {string}
- */
-function generatePaletteModule(themeDef) {
-  const exportName = `${toIdentifier(themeDef.name)}Palettes`;
-  return `export const ${exportName} = ${JSON.stringify(themeDef.palettes, null, 2)};\n\nexport default ${exportName};\n`;
-}
-
-/**
- * Generate TypeScript declarations for the palette artifact.
- * @param {any} themeDef
- * @returns {string}
- */
-function generatePaletteTypes(themeDef) {
-  const exportName = `${toIdentifier(themeDef.name)}Palettes`;
-  const families = Object.entries(themeDef.palettes)
-    .map(([name, family]) => {
-      const fields = [];
-      if (family.light !== undefined) {
-        fields.push('    readonly light: TonalPaletteRamp;');
-      }
-      if (family.dark !== undefined) {
-        fields.push('    readonly dark: TonalPaletteRamp;');
-      }
-      if (family.semantic !== undefined) {
-        fields.push(
-          `    readonly semantic: ${JSON.stringify(family.semantic)};`,
-        );
-      }
-      if (family.description !== undefined) {
-        fields.push('    readonly description: string;');
-      }
-      return `  readonly ${JSON.stringify(name)}: Readonly<{\n${fields.join('\n')}\n  }>;`;
-    })
-    .join('\n');
-  return `import type { TonalPaletteRamp } from '@astryxdesign/core/theme/palettes';\n\nexport declare const ${exportName}: Readonly<{\n${families}\n}>;\nexport default ${exportName};\n`;
 }
 
 // =============================================================================
@@ -1218,21 +1165,6 @@ export async function themeBuild(
     } else {
       resolvedTheme = themeDef;
     }
-    const palettesToValidate = resolvedTheme?.palettes ?? themeDef.palettes;
-    if (palettesToValidate !== undefined) {
-      if (!_defineTonalPalettes) {
-        throw unsupportedTonalPalettesError();
-      }
-      try {
-        _defineTonalPalettes(palettesToValidate);
-      } catch (error) {
-        throw new AstryxError(
-          /** @type {Error} */ (error).message,
-          undefined,
-          ERROR_CODES.ERR_THEME_INVALID,
-        );
-      }
-    }
     const scopeSelector = themeScopeStart(themeDef.name);
     const scopeTo = THEME_SCOPE_TO;
 
@@ -1340,15 +1272,6 @@ export async function themeBuild(
   const outDir = path.dirname(outPath);
   const jsPath = path.join(outDir, `${baseName}.js`);
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
-  const hasPalettes = Boolean(
-    resolvedTheme?.palettes && Object.keys(resolvedTheme.palettes).length > 0,
-  );
-  const paletteJsPath = path.join(outDir, `${baseName}.palette.js`);
-  const paletteJsonPath = path.join(outDir, `${baseName}.palette.json`);
-  const paletteDtsPath = path.join(outDir, `${baseName}.palette.d.ts`);
-  const obsoletePaths = hasPalettes
-    ? []
-    : [paletteJsPath, paletteJsonPath, paletteDtsPath];
 
   const iconInfo = extractIconInfo(filePath);
 
@@ -1382,17 +1305,6 @@ export async function themeBuild(
   const dtsContent =
     generatedHeader(sourceRelative, 'ts', buildCommand, versions) +
     generateBuiltTypes(themeDef, iconInfo, variantsFileName);
-  const paletteJsContent = hasPalettes
-    ? generatedHeader(sourceRelative, 'js', buildCommand, versions) +
-      generatePaletteModule(resolvedTheme)
-    : null;
-  const paletteJsonContent = hasPalettes
-    ? JSON.stringify(resolvedTheme.palettes, null, 2) + '\n'
-    : null;
-  const paletteDtsContent = hasPalettes
-    ? generatedHeader(sourceRelative, 'ts', buildCommand, versions) +
-      generatePaletteTypes(resolvedTheme)
-    : null;
 
   // Atomic-ish write: stage every file as `<dest>.tmp`, then rename
   // each into place. If any stage step fails we clean up partials and
@@ -1406,20 +1318,13 @@ export async function themeBuild(
   if (variantDtsPath && variantContent) {
     writes.push({dest: variantDtsPath, content: variantContent});
   }
-  if (paletteJsContent && paletteJsonContent && paletteDtsContent) {
-    writes.push(
-      {dest: paletteJsPath, content: paletteJsContent},
-      {dest: paletteJsonPath, content: paletteJsonContent},
-      {dest: paletteDtsPath, content: paletteDtsContent},
-    );
-  }
 
   // Check mode: compare generated content against what's on disk instead of
   // writing. A file is "stale" if it's missing or its content differs once the
   // volatile @generated `Command:` line is ignored. Returns a
   // receipt listing stale/missing outputs so callers (CI) can fail on drift.
   if (options.check) {
-    /** @type {Array<{path: string, reason: 'missing' | 'outdated' | 'obsolete'}>} */
+    /** @type {Array<{path: string, reason: 'missing' | 'outdated'}>} */
     const stale = [];
     for (const w of writes) {
       const rel = path.relative(cwd, w.dest);
@@ -1432,14 +1337,6 @@ export async function themeBuild(
         stale.push({path: rel, reason: 'outdated'});
       }
     }
-    for (const obsoletePath of obsoletePaths) {
-      if (fs.existsSync(obsoletePath)) {
-        stale.push({
-          path: path.relative(cwd, obsoletePath),
-          reason: 'obsolete',
-        });
-      }
-    }
     const upToDate = stale.length === 0;
     if (upToDate) {
       logger.log(`\n✓ Theme outputs are up to date with ${sourceRelative}.`);
@@ -1449,7 +1346,7 @@ export async function themeBuild(
       );
       for (const s of stale) {
         logger.error(
-          `  ${s.reason === 'missing' ? 'missing' : s.reason === 'obsolete' ? 'obsolete' : 'stale'}: ${s.path}`,
+          `  ${s.reason === 'missing' ? 'missing' : 'stale'}: ${s.path}`,
         );
       }
       logger.error(`\n  Rebuild with: ${buildCommand}`);
@@ -1460,10 +1357,7 @@ export async function themeBuild(
         name: themeDef.name,
         upToDate,
         stale,
-        checked: [
-          ...writes.map(w => path.relative(cwd, w.dest)),
-          ...obsoletePaths.map(p => path.relative(cwd, p)),
-        ],
+        checked: writes.map(w => path.relative(cwd, w.dest)),
       },
     };
   }
@@ -1479,9 +1373,6 @@ export async function themeBuild(
     }
     for (const s of staged) {
       fs.renameSync(s.tmp, s.dest);
-    }
-    for (const obsoletePath of obsoletePaths) {
-      fs.rmSync(obsoletePath, {force: true});
     }
   } catch (err) {
     // Roll back any temp files we managed to create.
@@ -1503,13 +1394,6 @@ export async function themeBuild(
   logger.log(`  ${size} KB`);
   logger.log(`✓ ${path.relative(cwd, jsPath)}`);
   logger.log(`✓ ${path.relative(cwd, dtsPath)}`);
-  if (hasPalettes) {
-    logger.log(`✓ ${path.relative(cwd, paletteJsPath)} (opt-in palette)`);
-    logger.log(
-      `✓ ${path.relative(cwd, paletteJsonPath)} (agent-readable palette)`,
-    );
-    logger.log(`✓ ${path.relative(cwd, paletteDtsPath)}`);
-  }
   if (variantDtsPath && variantDecl) {
     const augCount = (variantDecl.match(/': true;/g) || []).length;
     logger.log(
@@ -1522,8 +1406,6 @@ export async function themeBuild(
   const jsImport = importSpecifier(relOutDir, baseName);
   const cssImport = importSpecifier(relOutDir, cssBase) + '.css';
   const exportName = `${toIdentifier(baseName)}Theme`;
-  const paletteImport = importSpecifier(relOutDir, `${baseName}.palette`);
-  const paletteExportName = `${toIdentifier(baseName)}Palettes`;
   logger.log(`
 Install in your app (paths are relative to a file in src/ — adjust if yours lives elsewhere):
 
@@ -1542,15 +1424,7 @@ Or with a <link> tag:
   <Theme theme={${exportName}}>
     <App />
   </Theme>
-${
-  hasPalettes
-    ? `
-Palette metadata is opt-in and is not part of the runtime theme module:
-
-  import { ${paletteExportName} } from '${paletteImport}';
-`
-    : ''
-}`);
+`);
 
   // Fonts the theme names but nothing loads (#5015). Resolved tokens and
   // component overrides carry the final font-family values on both load
@@ -1585,13 +1459,6 @@ Palette metadata is opt-in and is not part of the runtime theme module:
         dts: path.relative(cwd, dtsPath),
         ...(variantDecl && variantDtsPath
           ? {variantsDts: path.relative(cwd, variantDtsPath)}
-          : {}),
-        ...(hasPalettes
-          ? {
-              paletteJs: path.relative(cwd, paletteJsPath),
-              paletteJson: path.relative(cwd, paletteJsonPath),
-              paletteDts: path.relative(cwd, paletteDtsPath),
-            }
           : {}),
       },
       warnings: warningMessages,

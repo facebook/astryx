@@ -3,9 +3,9 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Define and export Neutral's complete OKLCH palette, remap semantic and
-categorical color tokens to explicit values selected from its numbered stops,
-and document the palette contract for theme authors and agents. The CLI template
-ships the same palette and mapping guidance.
+[fix] Add Neutral's theme-owned OKLCH palette reference, remap semantic and
+categorical color tokens to reviewed explicit values, and test both palette
+structure and intentional mappings. The palette stays outside the runtime theme;
+the CLI template ships the same authoring reference and guidance.
 
 @rubyycheung
