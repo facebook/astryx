@@ -76,8 +76,11 @@ preserves the released contract.
   carries a patch bump. Documentation-only, test-only, and private-package-only
   changes need no Changeset. `pnpm changeset:new` is the authoring path and
   `pnpm check:changesets` enforces the current category/bump coupling. Classify
-  each published package update in multi-package work; when categories differ,
-  use separate Changesets so every package entry follows its own classification.
+  each published package update in multi-package work. A fixed-group version-only
+  co-bump needs no Changeset entry by itself, but a generated dependency or peer
+  range edit is part of that package's update and must be classified and named in a
+  Changeset. When categories differ, use separate Changesets so every package entry
+  follows its own classification.
 - **FR8 — Migration evidence matches the affected surface.** Every breaking change
   names the old valid usage, the replacement, and how consumers migrate. Supply an
   `astryx upgrade` codemod when consumer source can be rewritten mechanically.
@@ -107,8 +110,10 @@ preserves the released contract.
   any such combination stop working unchanged, including by narrowing or raising
   the range. A coordinated upgrade that works does not change that classification.
   A dependency bump is not breaking when every previously supported combination
-  keeps working. Preserve the old range, provide an adapter, or classify a narrower
-  range as breaking and meet FR8's migration and release-note obligations.
+  keeps working. Keep every previously supported version in range and provide an
+  adapter when needed; otherwise classify the narrower or higher-floor range as
+  breaking, describe the range change in its Changeset release note, and meet FR8's
+  migration obligation.
 
 ### Platform support
 
@@ -195,8 +200,8 @@ installation scenario as its compatibility promise. Consumers may upgrade that
 package with any companion version the range still allows; a coordinated release
 cannot require an undeclared lockstep upgrade. Classify the package update that
 creates the mismatch. Supporting package updates keep their own classifications.
-A coordinated breaking range change remains allowed when its classification and
-FR8 migration and release notes tell consumers how to move.
+A coordinated breaking range change remains allowed when its Changeset release note
+describes the new range and its FR8 migration tells consumers how to move.
 
 Rejected: marking every dependency bump breaking, which would freeze compatible
 maintenance, or calling an update nonbreaking merely because a coordinated upgrade
