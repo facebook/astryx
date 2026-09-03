@@ -26,5 +26,9 @@
   {
     "component": "lab/CircularProgress",
     "reason": "No direction-sensitive visual, layout, or behavior. The track and fill are concentric SVG circles sharing one center; size, stroke, dash, and clockwise rotation are intentionally identical in LTR and RTL. The optional label is vertically stacked and centered, with no inline positioning or directional glyph."
+  },
+  {
+    "component": "core/Selector",
+    "reason": "Selector uses block-flow field content and an inline list of text options without directional icons, physical positioning, order-dependent layout, scrolling, dragging, or directional keyboard behavior. Its label, value text, status text, and option labels follow the document direction without component-specific mirroring."
   }
 ]
