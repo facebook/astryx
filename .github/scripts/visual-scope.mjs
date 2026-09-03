@@ -22,7 +22,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../..',
+);
 
 /** @param {string} file */
 function readJSON(file) {
@@ -63,14 +66,20 @@ export function classifyVisualScope(files, repoRoot = ROOT, manifests = {}) {
   for (const file of paths) {
     const pkgMatch = file.match(/^packages\/([^/]+)\//);
     if (pkgMatch) {
-      const relativeManifest = path.join('packages', pkgMatch[1], 'package.json');
+      const relativeManifest = path.join(
+        'packages',
+        pkgMatch[1],
+        'package.json',
+      );
       const pkg = readPackage(repoRoot, relativeManifest, manifests);
       if (pkg?.astryx?.canaryOnly === true) {
         canaryPackages.add(pkg.name ?? pkgMatch[1]);
       }
     }
 
-    const themeMatch = file.match(/^packages\/themes\/([^/]+)\/(?:src\/|package\.json$)/);
+    const themeMatch = file.match(
+      /^packages\/themes\/([^/]+)\/(src\/|package\.json$)/,
+    );
     if (!themeMatch) continue;
     const relativeManifest = path.join(
       'packages',
@@ -80,13 +89,25 @@ export function classifyVisualScope(files, repoRoot = ROOT, manifests = {}) {
     );
     const baseManifest = path.join(repoRoot, relativeManifest);
     const basePkg = fs.existsSync(baseManifest) ? readJSON(baseManifest) : null;
-    const headPkg = Object.hasOwn(manifests, relativeManifest)
+    const hasTrustedHeadManifest = Object.hasOwn(manifests, relativeManifest);
+    const headPkg = hasTrustedHeadManifest
       ? manifests[relativeManifest]
       : basePkg;
-    const isStable = pkg => pkg && pkg.private !== true && pkg.astryx?.canaryOnly !== true;
-    // Base metadata is the fail-closed floor: a PR may promote a theme into the
-    // stable lane, but cannot escape review by demoting an existing stable one.
-    if (isStable(basePkg) || isStable(headPkg)) {
+    const isStable = pkg =>
+      pkg && pkg.private !== true && pkg.astryx?.canaryOnly !== true;
+    const baseStable = isStable(basePkg);
+    const headStable = isStable(headPkg);
+    const sourceChanged = themeMatch[2] === 'src/';
+    const releaseChannelChanged =
+      hasTrustedHeadManifest && baseStable !== headStable;
+
+    // Theme source affects pixels. A manifest-only edit enters visual scope only
+    // when trusted base/head metadata proves that the release channel changed;
+    // build scripts and dependency cleanup do not alter rendered output.
+    if (
+      (sourceChanged && (baseStable || headStable)) ||
+      releaseChannelChanged
+    ) {
       stableThemes.add(themeMatch[1]);
       continue;
     }
@@ -109,7 +130,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const files = fs.readFileSync(0, 'utf8').split('\n');
   const manifestsFlag = process.argv.indexOf('--manifests');
   const manifests =
-    manifestsFlag === -1 ? {} : readJSON(path.resolve(process.argv[manifestsFlag + 1]));
+    manifestsFlag === -1
+      ? {}
+      : readJSON(path.resolve(process.argv[manifestsFlag + 1]));
   const result = classifyVisualScope(files, ROOT, manifests);
   process.stdout.write(`${JSON.stringify(result)}\n`);
 

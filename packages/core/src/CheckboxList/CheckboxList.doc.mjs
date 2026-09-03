@@ -1,20 +1,88 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Group',
+    required: true,
+    description: 'Container for the labeled checkbox group.',
+  },
+  {
+    name: 'Group label',
+    required: true,
+    description: 'Text identifying what the checkbox options represent.',
+  },
+  {
+    name: 'Description',
+    required: false,
+    description: 'Helper text below the group label.',
+  },
+  {
+    name: 'Options list',
+    required: true,
+    description: 'List containing the available checkbox options.',
+  },
+  {
+    name: 'Option row',
+    required: true,
+    description: 'Selectable row containing one option.',
+  },
+  {
+    name: 'Checkbox',
+    required: true,
+    description: 'Selection indicator for an option.',
+  },
+  {
+    name: 'Option label',
+    required: true,
+    description: 'Primary content identifying an option.',
+  },
+  {
+    name: 'Option description',
+    required: false,
+    description: 'Secondary text below an option label.',
+  },
+  {
+    name: 'End content',
+    required: false,
+    description: 'Caller-provided content at the end of an option row.',
+  },
+  {
+    name: 'Spinner',
+    required: false,
+    description: 'Loading indicator shown inside the pending checkbox.',
+  },
+  {
+    name: 'Status message',
+    required: false,
+    description: 'Error, warning, or success message below the group.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'CheckboxList',
   displayName: 'Checkbox List',
   group: 'Checkbox',
-  category: 'Data Input',
+  category: 'Form Controls',
   isHiddenFromOverview: true,
-  keywords: ["checkboxlist","checkbox","checkboxgroup","multichoice","multiselect","checklist"],
-  description: 'Checkbox group container with field integration for label, description, and status.',
+  keywords: [
+    'checkboxlist',
+    'checkbox',
+    'checkboxgroup',
+    'multichoice',
+    'multiselect',
+    'checklist',
+  ],
+  description:
+    'Checkbox group container with field integration for label, description, and status.',
   props: [
     {
       name: 'label',
       type: 'string',
-      description: 'Label text for the checkbox group (always rendered for accessibility).',
+      description:
+        'Label text for the checkbox group (always rendered for accessibility).',
       required: true,
     },
     {
@@ -97,41 +165,89 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization. Must be a stylex.create() value.',
+      description:
+        'StyleX styles for layout customization. Must be a stylex.create() value.',
     },
   ],
-  components: [
-    {name: 'CheckboxListItem'},
-  ],
+  components: [{name: 'CheckboxListItem'}],
   usage: {
-    description: 'CheckboxList shows a small group of checkboxes so users can turn several options on or off at once. Place it in settings pages, filter panels, or forms where every choice should be visible without scrolling. For a single standalone checkbox (like "I agree to the terms"), use CheckboxInput instead. If only one option can be picked, use RadioList. If the list is long enough to need searching or scrolling, use MultiSelector instead.',
+    anatomy,
+    description:
+      'CheckboxList shows a small group of checkboxes so users can turn several options on or off at once. Place it in settings pages, filter panels, or forms where every choice should be visible without scrolling. For a single standalone checkbox (like "I agree to the terms"), use CheckboxInput instead. If only one option can be picked, use RadioList. If the list is long enough to need searching or scrolling, use MultiSelector instead.',
     bestPractices: [
-      { guidance: true, description: 'Keep the list short: three to seven options is the sweet spot. Beyond that, switch to MultiSelector which adds search and scrolling.' },
-      { guidance: true, description: 'Turn on dividers (hasDividers) when items have helper text underneath; without them the labels and descriptions blur together.' },
-      { guidance: true, description: 'Write a group label that says what the choices represent: "Export formats" tells users more than "Options".' },
-      { guidance: false, description: 'Show a CheckboxList when the user can only pick one thing; that is what RadioList is for.' },
-      { guidance: false, description: 'Put buttons or links inside the trailing slot (endContent); the whole row is already tappable, so a nested button creates two competing click targets.' },
-      { guidance: false, description: 'Wrap a disabled CheckboxList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
+      {
+        guidance: true,
+        description:
+          'Keep the list short: three to seven options is the sweet spot. Beyond that, switch to MultiSelector which adds search and scrolling.',
+      },
+      {
+        guidance: true,
+        description:
+          'Turn on dividers (hasDividers) when items have helper text underneath; without them the labels and descriptions blur together.',
+      },
+      {
+        guidance: true,
+        description:
+          'Write a group label that says what the choices represent: "Export formats" tells users more than "Options".',
+      },
+      {
+        guidance: false,
+        description:
+          'Show a CheckboxList when the user can only pick one thing; that is what RadioList is for.',
+      },
+      {
+        guidance: false,
+        description:
+          'Put buttons or links inside the trailing slot (endContent); the whole row is already tappable, so a nested button creates two competing click targets.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled CheckboxList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
   theming: {
-    targets: [
-      {className: 'astryx-checkbox-list'},
-    ],
+    targets: [{className: 'astryx-checkbox-list'}],
   },
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
-    description: 'CheckboxList shows a small group of checkboxes so users can turn several options on or off at once. Place it in settings pages, filter panels, or forms where every choice should be visible without scrolling. For a single standalone checkbox (like "I agree to the terms"), use CheckboxInput instead. If only one option can be picked, use RadioList. If the list is long enough to need searching or scrolling, use MultiSelector instead.',
+    description:
+      'CheckboxList shows a small group of checkboxes so users can turn several options on or off at once. Place it in settings pages, filter panels, or forms where every choice should be visible without scrolling. For a single standalone checkbox (like "I agree to the terms"), use CheckboxInput instead. If only one option can be picked, use RadioList. If the list is long enough to need searching or scrolling, use MultiSelector instead.',
     bestPractices: [
-      { guidance: true, description: 'Keep the list short: three to seven options is the sweet spot. Beyond that, switch to MultiSelector which adds search and scrolling.' },
-      { guidance: true, description: 'Turn on dividers (hasDividers) when items have helper text underneath; without them the labels and descriptions blur together.' },
-      { guidance: true, description: 'Write a group label that says what the choices represent: "Export formats" tells users more than "Options".' },
-      { guidance: false, description: 'Show a CheckboxList when the user can only pick one thing; that is what RadioList is for.' },
-      { guidance: false, description: 'Put buttons or links inside the trailing slot (endContent); the whole row is already tappable, so a nested button creates two competing click targets.' },
-      { guidance: false, description: 'Wrap a disabled CheckboxList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
+      {
+        guidance: true,
+        description:
+          'Keep the list short: three to seven options is the sweet spot. Beyond that, switch to MultiSelector which adds search and scrolling.',
+      },
+      {
+        guidance: true,
+        description:
+          'Turn on dividers (hasDividers) when items have helper text underneath; without them the labels and descriptions blur together.',
+      },
+      {
+        guidance: true,
+        description:
+          'Write a group label that says what the choices represent: "Export formats" tells users more than "Options".',
+      },
+      {
+        guidance: false,
+        description:
+          'Show a CheckboxList when the user can only pick one thing; that is what RadioList is for.',
+      },
+      {
+        guidance: false,
+        description:
+          'Put buttons or links inside the trailing slot (endContent); the whole row is already tappable, so a nested button creates two competing click targets.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled CheckboxList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
 };
@@ -141,14 +257,39 @@ export const docsDense = {
   description:
     'Checkbox group component for multi-value selection. Collection mode (parent state) + standalone mode (per-item state).',
   usage: {
-    description: 'CheckboxList shows a small group of checkboxes so users can turn several options on or off at once. Place it in settings pages, filter panels, or forms where every choice should be visible without scrolling. For a single standalone checkbox (like "I agree to the terms"), use CheckboxInput instead. If only one option can be picked, use RadioList. If the list is long enough to need searching or scrolling, use MultiSelector instead.',
+    description:
+      'CheckboxList shows a small group of checkboxes so users can turn several options on or off at once. Place it in settings pages, filter panels, or forms where every choice should be visible without scrolling. For a single standalone checkbox (like "I agree to the terms"), use CheckboxInput instead. If only one option can be picked, use RadioList. If the list is long enough to need searching or scrolling, use MultiSelector instead.',
     bestPractices: [
-      { guidance: true, description: 'Keep the list short: three to seven options is the sweet spot. Beyond that, switch to MultiSelector which adds search and scrolling.' },
-      { guidance: true, description: 'Turn on dividers (hasDividers) when items have helper text underneath; without them the labels and descriptions blur together.' },
-      { guidance: true, description: 'Write a group label that says what the choices represent: "Export formats" tells users more than "Options".' },
-      { guidance: false, description: 'Show a CheckboxList when the user can only pick one thing; that is what RadioList is for.' },
-      { guidance: false, description: 'Put buttons or links inside the trailing slot (endContent); the whole row is already tappable, so a nested button creates two competing click targets.' },
-      { guidance: false, description: 'Wrap a disabled CheckboxList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
+      {
+        guidance: true,
+        description:
+          'Keep the list short: three to seven options is the sweet spot. Beyond that, switch to MultiSelector which adds search and scrolling.',
+      },
+      {
+        guidance: true,
+        description:
+          'Turn on dividers (hasDividers) when items have helper text underneath; without them the labels and descriptions blur together.',
+      },
+      {
+        guidance: true,
+        description:
+          'Write a group label that says what the choices represent: "Export formats" tells users more than "Options".',
+      },
+      {
+        guidance: false,
+        description:
+          'Show a CheckboxList when the user can only pick one thing; that is what RadioList is for.',
+      },
+      {
+        guidance: false,
+        description:
+          'Put buttons or links inside the trailing slot (endContent); the whole row is already tappable, so a nested button creates two competing click targets.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled CheckboxList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
 };

@@ -53,7 +53,7 @@ import {isRtlElement} from '../hooks/isRtlElement';
 import {Icon} from '../Icon';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
-import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {observeResize} from '../utils/sharedResizeObserver';
 import {devWarn} from '../utils/devWarning';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
@@ -494,8 +494,7 @@ export function TabList({
       return;
     }
     const onResize = () => revealSelectedTabRef.current();
-    observeResize(root, onResize);
-    return () => unobserveResize(root);
+    return observeResize(root, onResize);
   }, [hasScroll, listRef]);
 
   const scrollByPage = useCallback((direction: -1 | 1) => {

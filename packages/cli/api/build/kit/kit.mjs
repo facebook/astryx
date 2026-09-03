@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file build.kit leaf — the grouped composition kit for an idea.
+ * @file build.kit leaf — the grouped composition kit and raw match count.
  *
  * Runs the unified search for the query and groups the results into a
  * composition KIT: the closest page templates, the blocks that cover parts,
@@ -30,8 +30,18 @@ const DOMAIN_FLOOR = 55;
  */
 const FRAME = ['AppShell', 'TopNav', 'SideNav', 'Layout'];
 const FOUNDATION = [
-  'VStack', 'HStack', 'Grid', 'StackItem', 'Card', 'Section',
-  'Text', 'Heading', 'Button', 'Icon', 'Badge', 'Divider',
+  'VStack',
+  'HStack',
+  'Grid',
+  'StackItem',
+  'Card',
+  'Section',
+  'Text',
+  'Heading',
+  'Button',
+  'Icon',
+  'Badge',
+  'Divider',
 ];
 const ALWAYS = new Set([...FRAME, ...FOUNDATION]);
 
@@ -47,16 +57,25 @@ export async function buildKit(query, options = {}) {
   // search()'s JSDoc @returns widens results to object[]; the SearchResponse
   // shape is the contract (api/search/search.type.mjs). Cast locally rather than
   // tightening the search @returns (a separate follow-up).
-  const result = /** @type {import('../../search/search.type.mjs').SearchResponse} */ (
-    await search(query, {cwd, type, limit})
-  );
+  const result =
+    /** @type {import('../../search/search.type.mjs').SearchResponse} */ (
+      await search(query, {cwd, type, limit})
+    );
   const results = result.data.results;
 
   const pages = results
-    .filter(r => r.domain === 'template' && r.kind !== 'block' && r.score >= PAGE_FLOOR)
+    .filter(
+      r =>
+        r.domain === 'template' && r.kind !== 'block' && r.score >= PAGE_FLOOR,
+    )
     .slice(0, 3);
   const blocks = results
-    .filter(r => r.domain === 'template' && r.kind === 'block' && r.score >= DOMAIN_FLOOR)
+    .filter(
+      r =>
+        r.domain === 'template' &&
+        r.kind === 'block' &&
+        r.score >= DOMAIN_FLOOR,
+    )
     .slice(0, 5);
   const domain = results
     .filter(
@@ -75,6 +94,7 @@ export async function buildKit(query, options = {}) {
       // Distinguishes "search found nothing" (renderer shows "No matches")
       // from a weak-but-non-empty result set (renderer still shows the kit).
       hasResults: results.length > 0,
+      matchCount: results.length,
       directMatch,
       pages,
       blocks,

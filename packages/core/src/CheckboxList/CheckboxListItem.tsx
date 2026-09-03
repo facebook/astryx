@@ -48,7 +48,9 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
    *
    * Accepts a plain string (single-line truncation applied automatically)
    * or a ReactNode for rich content (no truncation constraints —
-   * child components control their own text behavior).
+   * child components control their own text behavior). Links and buttons in
+   * the label keep their own behavior; only non-interactive row clicks
+   * delegate to the checkbox.
    */
   label: ReactNode;
   /**
@@ -76,9 +78,9 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
    */
   value?: string;
   /**
-   * Secondary text below the label.
+   * Secondary content below the label. Accepts a plain string or a ReactNode.
    */
-  description?: string;
+  description?: ReactNode;
   /**
    * Content rendered after the label area.
    */

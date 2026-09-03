@@ -28,8 +28,29 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import {capture, scout} from './lib/capture.mjs';
-import {analyzeTargeting, buildVerdict, compareCaptures} from './lib/compare.mjs';
-import {buildPlan, readStoryIndex, storiesInPackages} from './lib/plan.mjs';
+import {
+  analyzeTargeting,
+  buildVerdict,
+  compareCaptures,
+  compareReleaseCaptures,
+  validateReleasePlan,
+} from './lib/compare.mjs';
+import {
+  acceptedVisualThemes,
+  accountBaseline,
+  baselineVisualStories,
+  buildPlan,
+  createReleasePlan,
+  exceedsPrVisualShotLimit,
+  existingComponentBaselinePlan,
+  readStoryIndex,
+  readThemeCatalog,
+  resolvePrVisualTotalShotLimit,
+  storiesInPackages,
+  storiesInStorybookGroups,
+  summarizeBaselineAccounting,
+  withThemeMetadata,
+} from './lib/plan.mjs';
 import {READ_TARGETS, emptyAccumulator, fold} from './lib/probe-reach.mjs';
 import {AXES, PROBE_TOKENS, READ_AXES} from './lib/probe-axes.mjs';
 import {renderReport} from './lib/report.mjs';
@@ -39,6 +60,7 @@ import {loadConfig, loadThemeOverrides, loadThemingTargets} from './lib/sources.
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
 const EXIT = {clean: 0, crashed: 1, changed: 2};
+const RELEASE_TIERS = ['surface', 'probe'];
 
 const argv = process.argv.slice(2);
 const command = argv[0];
@@ -55,10 +77,14 @@ const captureIdentity = () => ({
 });
 
 const config = loadConfig(REPO_ROOT);
+const releaseMode = command === 'release';
+const themeCatalog = readThemeCatalog(REPO_ROOT, config.baselineThemes);
 const storybookDir = path.resolve(flag('storybook-dir') ?? 'apps/storybook/dist');
 const baselineDir = path.resolve(flag('baseline') ?? '.visual-baseline');
 let outDir = path.resolve(flag('out') ?? '.visual-run');
-const tiers = (flag('tiers') ?? config.tiers.join(',')).split(',').filter(Boolean);
+const tiers = releaseMode
+  ? RELEASE_TIERS
+  : (flag('tiers') ?? config.tiers.join(',')).split(',').filter(Boolean);
 const sample = flag('sample') ? Number(flag('sample')) : null;
 /** Restrict the plan to story ids containing any of these — for debugging a shot, never for a gate run. */
 const only = (flag('only') ?? '').split(',').filter(Boolean);
@@ -66,28 +92,47 @@ const only = (flag('only') ?? '').split(',').filter(Boolean);
 const components = (flag('components') ?? '').split(',').filter(Boolean);
 /** For the `theme-matrix` tier: only these shipped themes changed. */
 const matrixThemes = (flag('themes') ?? '').split(',').filter(Boolean);
-/**
- * Above this many shots the run declines instead of capturing.
- *
- * A sweeping PR — a token change, a shared hook, a rename across the system —
- * would put hundreds of diffs in front of a reviewer who has no way to judge
- * them one by one, and the honest answer is that a per-PR check is the wrong
- * instrument for that change: the daily gate reviews it against the whole
- * baseline instead. Declining loudly beats either timing out or dumping a
- * report nobody can read.
- */
-const maxShots = flag('max-shots') ? Number(flag('max-shots')) : Infinity;
-/** Storybook package groups that own the stable visual baseline. */
+const explicitMaxShots = has('max-shots') ? flag('max-shots') : null;
+if (has('max-shots') && explicitMaxShots === undefined) {
+  throw new Error('--max-shots requires a value.');
+}
+const maxShots = resolvePrVisualTotalShotLimit({
+  explicitMaxShots,
+  components,
+  matrixThemes,
+  tiers,
+  configuredLimit: releaseMode
+    ? config.visualPlanSafetyLimit
+    : config.prVisualShotLimit,
+  safetyLimit: config.visualPlanSafetyLimit,
+});
 const storyPackages = (flag('story-packages') ?? config.stableStoryPackages.join(','))
   .split(',')
   .filter(Boolean);
 /** A trusted, exact shot list used only to recapture an accepted merged result. */
 const planFile = flag('plan-file');
+if (
+  releaseMode &&
+  (flag('tiers') ||
+    flag('story-packages') ||
+    flag('observations') ||
+    flag('max-shots') ||
+    has('no-scout') ||
+    planFile ||
+    components.length ||
+    matrixThemes.length ||
+    only.length ||
+    sample)
+) {
+  throw new Error('The stable release plan is internal and cannot be scoped by CLI flags.');
+}
 
 function readExactPlan(file) {
   const shots = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
-  if (!Array.isArray(shots) || shots.length > 5000) {
-    throw new Error('Exact visual plan must contain at most 5000 trusted shots.');
+  if (!Array.isArray(shots) || shots.length > config.visualPlanSafetyLimit) {
+    throw new Error(
+      `Exact visual plan must contain at most ${config.visualPlanSafetyLimit} trusted shots.`,
+    );
   }
   const keys = new Set();
   for (const shot of shots) {
@@ -126,21 +171,49 @@ function storiesToScout(stories, targets, themeOverrides) {
   return stories.filter(story => components.has(story.component)).map(story => story.id);
 }
 
-/** @returns {Promise<import('./lib/plan.mjs').Shot[]>} */
+/** @returns {Promise<{shots: import('./lib/plan.mjs').Shot[], stories: ReturnType<typeof readStoryIndex>}>} */
 async function plan() {
-  if (planFile) return readExactPlan(planFile);
-  const [targets, themeOverrides] = await Promise.all([
+  if (planFile) {
+    return {
+      shots: withThemeMetadata(readExactPlan(planFile), themeCatalog),
+      stories: [],
+    };
+  }
+  const [targets, allThemeOverrides] = await Promise.all([
     loadThemingTargets(REPO_ROOT),
     loadThemeOverrides(REPO_ROOT, config.probeTheme),
   ]);
+  const themeOverrides = releaseMode
+    ? Object.fromEntries(
+        Object.entries(allThemeOverrides).filter(
+          ([theme]) => themeCatalog[theme]?.stableVisual === true,
+        ),
+      )
+    : allThemeOverrides;
   const indexedStories = readStoryIndex(
     storybookDir,
     Object.keys(config.excludeStories),
+    REPO_ROOT,
   );
-  const stories = storiesInPackages(indexedStories, storyPackages);
+  const packageStories = storiesInPackages(indexedStories, storyPackages);
+  const stories = storiesInStorybookGroups(
+    packageStories,
+    config.stableStoryGroups,
+  );
+  const {manifest: baselineManifest} = readBaseline(baselineDir);
+  const componentThemes = acceptedVisualThemes(
+    baselineManifest,
+    themeCatalog,
+    config.defaultTheme,
+  );
+  const themeStories = baselineVisualStories(stories, baselineManifest);
 
   let observations;
-  if (!has('no-scout') && (tiers.includes('theme-matrix') || tiers.includes('probe'))) {
+  if (
+    !has('no-scout') &&
+    (tiers.includes('probe') ||
+      (tiers.includes('theme-matrix') && matrixThemes.length === 0))
+  ) {
     const cachePath = flag('observations');
     if (cachePath && fs.existsSync(cachePath)) {
       observations = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
@@ -154,12 +227,29 @@ async function plan() {
         storybookDir,
         theme: config.defaultTheme,
         viewport: config.viewport,
+        concurrency: config.scoutConcurrency,
       });
       if (cachePath) fs.writeFileSync(cachePath, `${JSON.stringify(observations)}\n`);
     }
   }
 
-  const shots = buildPlan({
+  const componentShotCount = tiers.includes('component')
+    ? existingComponentBaselinePlan(
+        buildPlan({
+          stories,
+          targets,
+          themeOverrides,
+          observations,
+          defaultTheme: config.defaultTheme,
+          tiers: ['component'],
+          components,
+          componentThemes,
+          probeTheme: config.probeTheme,
+        }),
+        baselineManifest,
+      ).length
+    : 0;
+  let shots = buildPlan({
     stories,
     targets,
     themeOverrides,
@@ -167,20 +257,55 @@ async function plan() {
     defaultTheme: config.defaultTheme,
     tiers,
     components,
+    componentThemes,
     matrixThemes,
+    themeStories,
     probeTheme: config.probeTheme,
   });
+  if (tiers.includes('component')) {
+    shots = existingComponentBaselinePlan(shots, baselineManifest);
+  }
+  let baselineAccount = null;
+  if (releaseMode) {
+    baselineAccount = accountBaseline(
+      baselineManifest,
+      indexedStories,
+      themeCatalog,
+      REPO_ROOT,
+    );
+  }
+  shots = withThemeMetadata(shots, themeCatalog);
   // A sample is for trying the rig out, never for a gate run: it is taken
   // evenly across the plan so it spans components rather than the first few.
   const filtered = only.length
     ? shots.filter(shot => only.some(fragment => shot.storyId.includes(fragment)))
     : shots;
-  if (!sample || sample >= filtered.length) return filtered;
+  if (!sample || sample >= filtered.length) {
+    return {
+      shots: filtered,
+      stories: indexedStories,
+      baselineAccount,
+      componentShotCount,
+    };
+  }
   const step = filtered.length / sample;
-  return Array.from({length: sample}, (_, index) => filtered[Math.floor(index * step)]);
+  return {
+    shots: Array.from(
+      {length: sample},
+      (_, index) => filtered[Math.floor(index * step)],
+    ),
+    stories: indexedStories,
+    baselineAccount,
+    componentShotCount,
+  };
 }
 
-async function runCapture(shots) {
+async function runCapture(shots, releasePlan = null) {
+  if (shots.length > config.visualPlanSafetyLimit) {
+    throw new Error(
+      `Visual plan has ${shots.length} shots; safety limit is ${config.visualPlanSafetyLimit}.`,
+    );
+  }
   fs.rmSync(outDir, {recursive: true, force: true});
   fs.mkdirSync(outDir, {recursive: true});
   let last = 0;
@@ -191,6 +316,8 @@ async function runCapture(shots) {
     viewport: config.viewport,
     settleMs: config.settleMs,
     fastGlobals: !has('no-fast-globals'),
+    bootstrapGlobals: {astryxTheme: config.defaultTheme, colorMode: 'light'},
+    concurrency: config.captureConcurrency,
     onProgress: ({done, total}) => {
       if (done === total || done - last >= 50) {
         last = done;
@@ -198,6 +325,18 @@ async function runCapture(shots) {
       }
     },
   });
+  const planByKey = new Map(shots.map(shot => [shot.key, shot]));
+  for (const [key, captured] of Object.entries(manifest.shots)) {
+    const planned = planByKey.get(key);
+    Object.assign(captured, {
+      packageName: planned.packageName,
+      packageNames: planned.packageNames,
+      stableVisual: planned.stableVisual,
+      themePackageName: planned.themePackageName,
+      stableThemeVisual: planned.stableThemeVisual,
+      membershipSource: 'accepted-capture',
+    });
+  }
   manifest.context = {
     // `sha` is the tested synthetic merge tree on pull_request runs. Keep the
     // contributor's head and the base separately: acceptance binds to the head
@@ -207,6 +346,7 @@ async function runCapture(shots) {
     headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
     baseSha: process.env.ASTRYX_PR_BASE_SHA ?? null,
     ref: process.env.GITHUB_REF ?? null,
+    ...(releasePlan ? {releasePlan} : {}),
   };
   fs.writeFileSync(
     path.join(outDir, 'manifest.json'),
@@ -230,25 +370,53 @@ function stageReportImages({reportDir, keys, currentDir, baselinePath}) {
 }
 
 async function check() {
-  const shots = await plan();
+  const {shots, stories, baselineAccount, componentShotCount = 0} =
+    await plan();
+  const releasePlan = releaseMode ? createReleasePlan(shots) : null;
+  const baselineAccounting = releaseMode
+    ? summarizeBaselineAccounting(baselineAccount, shots)
+    : null;
+  const ineligible = releaseMode
+    ? shots.filter(shot => !shot.stableVisual || !shot.stableThemeVisual)
+    : [];
+  if (ineligible.length) {
+    throw new Error(
+      `Canonical stable release plan contains ${ineligible.length} ineligible shot(s): ${ineligible.slice(0, 5).map(shot => shot.key).join(', ')}`,
+    );
+  }
 
-  // Over budget: say so in the verdict rather than capturing. The report and
-  // the PR comment both render this, so a skipped check is visible as a
-  // decision, never as a silent pass.
-  if (shots.length > maxShots) {
+  // Over budget: say so in the verdict rather than capturing. The focused
+  // ceiling applies only to component-selected shots; theme-only matrices are
+  // release evidence, not component review expansion. Broad unscoped plans use
+  // the same configured ceiling through maxShots.
+  const componentOverBudget = exceedsPrVisualShotLimit(
+    componentShotCount,
+    config.prVisualShotLimit,
+  );
+  const totalOverBudget = shots.length > maxShots;
+  if (componentOverBudget || totalOverBudget) {
+    const measuredShots = componentOverBudget
+      ? componentShotCount
+      : shots.length;
+    const budget = componentOverBudget
+      ? config.prVisualShotLimit
+      : maxShots;
+    const scope = componentOverBudget
+      ? `component-selected shots (${components.length} components touched)`
+      : 'shots';
     const verdict = {
       version: 1,
       status: 'skipped',
       generatedAt: new Date().toISOString(),
-      reason: `${shots.length} shots exceeds the ${maxShots}-shot budget${components.length ? ` (${components.length} components touched)` : ''} — too broad to review shot by shot here. The daily release gate covers this change against the full baseline.`,
+      reason: `${measuredShots} ${scope} exceeds the ${budget}-shot budget — too broad to review shot by shot here. The daily release gate covers this change against the full baseline.`,
       context: {
         ...captureIdentity(),
         headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
         baseSha: process.env.ASTRYX_PR_BASE_SHA ?? null,
         ref: process.env.GITHUB_REF ?? null,
         tiers,
-        scoped: components.length > 0,
         components,
+        ...(releasePlan ? {releasePlan} : {}),
       },
       counts: {total: shots.length, unchanged: 0, changed: 0, added: 0, removed: 0, failed: 0},
       components,
@@ -272,26 +440,54 @@ async function check() {
   }
 
   process.stderr.write(`Visual gate: ${shots.length} shots (${tiers.join(', ')})\n`);
-  const {manifest, failures} = await runCapture(shots);
+  const {manifest, failures: captureFailures} = await runCapture(shots, releasePlan);
+  let failures = [
+    ...captureFailures,
+    ...(baselineAccounting?.unclassifiedKeys ?? []).map(key => ({
+      key,
+      error: 'Baseline membership is unclassified.',
+    })),
+  ];
 
-  const {manifest: baselineManifest, exists} = readBaseline(baselineDir);
+  const {manifest: rawBaseline, exists} = readBaseline(baselineDir);
+  const baselineManifest = rawBaseline;
   const blocker = exists ? incomparable(baselineManifest, manifest) : null;
   if (blocker) {
-    process.stderr.write(`::error::Baseline is not comparable — ${blocker}\n`);
-    return EXIT.crashed;
+    failures.push({key: 'baseline', error: blocker});
   }
 
   const reportDir = path.join(outDir, 'report');
-  const comparison = await compareCaptures({
-    baselineDir: path.join(baselineDir, 'shots'),
-    currentDir: path.join(outDir, 'shots'),
-    baselineManifest,
-    currentManifest: manifest,
-    diffDir: path.join(reportDir, 'diff'),
-    threshold: config.threshold,
-    maxDiffPixels: config.maxDiffPixels,
-    scoped: components.length > 0,
-  });
+  const compare = releaseMode ? compareReleaseCaptures : compareCaptures;
+  let comparison;
+  try {
+    comparison = await compare({
+      baselineDir: path.join(baselineDir, 'shots'),
+      currentDir: path.join(outDir, 'shots'),
+      baselineManifest,
+      currentManifest: manifest,
+      diffDir: path.join(reportDir, 'diff'),
+      threshold: config.threshold,
+      maxDiffPixels: config.maxDiffPixels,
+      concurrency: config.compareConcurrency,
+      failures,
+    });
+  } catch (error) {
+    if (!releaseMode) throw error;
+    failures = [
+      ...failures,
+      {key: 'release-plan', error: String(error?.message ?? error)},
+    ];
+    comparison = await compareCaptures({
+      baselineDir: path.join(baselineDir, 'shots'),
+      currentDir: path.join(outDir, 'shots'),
+      baselineManifest,
+      currentManifest: manifest,
+      diffDir: path.join(reportDir, 'diff'),
+      threshold: config.threshold,
+      maxDiffPixels: config.maxDiffPixels,
+      concurrency: config.compareConcurrency,
+    });
+  }
 
   const [targets, themeOverrides] = await Promise.all([
     loadThemingTargets(REPO_ROOT),
@@ -309,7 +505,13 @@ async function check() {
     baselineManifest,
     targeting,
     failures,
-    context: {...manifest.context, tiers, baselineExists: exists, scoped: components.length > 0, components},
+    context: {
+      ...manifest.context,
+      tiers,
+      baselineExists: exists,
+      components,
+      ...(baselineAccounting ? {baselineAccounting} : {}),
+    },
   });
 
   stageReportImages({
@@ -357,6 +559,20 @@ function summarize(verdict, baselineExists) {
     `| ${verdict.counts.total} | ${verdict.counts.changed} | ${verdict.counts.added} | ${verdict.counts.removed} | ${verdict.counts.failed} |`,
     '',
   );
+  const accounting = verdict.context?.baselineAccounting;
+  if (accounting) {
+    lines.push(
+      `Baseline accounting: ${accounting.plannedCurrentStable} planned stable · ${accounting.policyExcluded} policy-excluded · ${accounting.intentionallyExcluded} intentionally excluded · ${accounting.preservedLegacy} preserved legacy · ${accounting.unclassified} unclassified`,
+      '',
+    );
+    if (accounting.unclassifiedKeys) {
+      lines.push(
+        'Unclassified baseline keys:',
+        ...accounting.unclassifiedKeys.map(key => `- \`${key}\``),
+        '',
+      );
+    }
+  }
   if (verdict.changes.length > 0) {
     lines.push('### Changed', '', '| shot | theme | mode | diff px | why it is in the plan |', '|---|---|---|---|---|');
     for (const change of verdict.changes.slice(0, 40)) {
@@ -384,7 +600,7 @@ function summarize(verdict, baselineExists) {
 async function main() {
   switch (command) {
     case 'plan': {
-      const shots = await plan();
+      const {shots} = await plan();
       if (has('json')) {
         process.stdout.write(`${JSON.stringify(shots, null, 2)}\n`);
         return EXIT.clean;
@@ -403,12 +619,13 @@ async function main() {
       return EXIT.clean;
     }
     case 'capture': {
-      const shots = await plan();
+      const {shots} = await plan();
       const {failures} = await runCapture(shots);
       process.stdout.write(`Captured ${shots.length - failures.length}/${shots.length} into ${outDir}\n`);
       return failures.length > 0 ? EXIT.crashed : EXIT.clean;
     }
     case 'check':
+    case 'release':
       return check();
     case 'reach': {
       // The assertion a pixel diff cannot make: did each target's override
@@ -416,7 +633,14 @@ async function main() {
       // per-selector colour is the fingerprint, so this is an equality test.
       const {chromium} = await import('playwright');
       const {serveDirectory} = await import('./lib/capture.mjs');
-      const stories = readStoryIndex(storybookDir, Object.keys(config.excludeStories));
+      const stories = storiesInPackages(
+        readStoryIndex(
+          storybookDir,
+          Object.keys(config.excludeStories),
+          REPO_ROOT,
+        ),
+        ['*'],
+      );
       const subject = only.length
         ? stories.filter(story => only.some(f => story.storyId ?? story.id.includes(f)))
         : stories;
@@ -523,7 +747,7 @@ async function main() {
       // A gate that cries wolf gets ignored, so the exclusion list is
       // evidence, not guesswork: capture the same build twice and name every
       // shot that could not reproduce itself.
-      const shots = await plan();
+      const {shots} = await plan();
       const passes = Number(flag('passes') ?? 2);
       /** @type {Map<string, Set<string>>} */
       const seen = new Map();
@@ -566,19 +790,46 @@ async function main() {
         ? JSON.parse(fs.readFileSync(verdictPath, 'utf8'))
         : null;
       const requested = flag('keys');
-      const keys =
+      const removed = new Set(verdict?.removed ?? []);
+      const named =
         !requested || requested === 'all'
-          ? Object.keys(currentManifest.shots)
+          ? [
+              ...Object.keys(currentManifest.shots),
+              ...(has('prune') ? removed : []),
+            ]
           : requested.split(',').filter(Boolean);
+      if (new Set(named).size !== named.length) throw new Error('accept repeats a shot key.');
+      const prune = has('prune') ? named.filter(key => removed.has(key)) : [];
+      const keys = named.filter(key => currentManifest.shots[key]);
+      const unknown = named.filter(key => !currentManifest.shots[key] && !removed.has(key));
+      if (unknown.length) throw new Error(`accept names unknown shot(s): ${unknown.join(', ')}`);
+      if (prune.length) {
+        if (verdict?.status === 'failed') {
+          throw new Error('Refusing to prune from a failed visual verdict.');
+        }
+        const plan = validateReleasePlan(
+          currentManifest.context?.releasePlan,
+          currentManifest,
+        );
+        if (JSON.stringify(verdict?.context?.releasePlan) !== JSON.stringify(plan)) {
+          throw new Error('Refusing to prune without the capture’s canonical release plan.');
+        }
+      }
+      const baselineManifest = {
+        ...currentManifest,
+        context: currentManifest.context
+          ? {...currentManifest.context, releasePlan: undefined}
+          : null,
+      };
       const result = accept({
         baselineDir,
         captureDir: outDir,
-        currentManifest,
+        currentManifest: baselineManifest,
         keys,
         reason: flag('reason') ?? '',
         actor: flag('actor') ?? process.env.GITHUB_ACTOR ?? process.env.USER ?? 'unknown',
         runId: process.env.GITHUB_RUN_ID ?? null,
-        prune: has('prune') ? (verdict?.removed ?? []) : [],
+        prune,
       });
       process.stdout.write(
         `Promoted ${result.promoted.length} shot(s), pruned ${result.pruned.length}, into ${baselineDir}\n`,
@@ -587,7 +838,7 @@ async function main() {
     }
     default:
       process.stderr.write(
-        'Usage: gate.mjs <flaky|plan|capture|check|reach|accept> [--storybook-dir dir] [--baseline dir] [--out dir] [--tiers a,b] [--sample n]\n',
+        'Usage: gate.mjs <flaky|plan|capture|check|release|reach|accept> [--storybook-dir dir] [--baseline dir] [--out dir] [--tiers a,b] [--sample n]\n',
       );
       return EXIT.crashed;
   }

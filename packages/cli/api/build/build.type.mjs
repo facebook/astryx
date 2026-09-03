@@ -27,6 +27,7 @@
  * @property {object} data
  * @property {string} data.query
  * @property {boolean} data.hasResults False when search returned nothing (renderer shows "No matches").
+ * @property {number} data.matchCount Number of ranked search matches before kit score floors and caps.
  * @property {boolean} data.directMatch True when the top page template is a confident direct match.
  * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.pages Closest page templates (≤3).
  * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.blocks Drop-in block patterns covering parts of the idea (≤5).

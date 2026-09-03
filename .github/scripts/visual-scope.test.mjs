@@ -49,17 +49,25 @@ afterEach(() => fs.rmSync(root, {recursive: true, force: true}));
 
 describe('classifyVisualScope', () => {
   it('includes stable Core runtime changes', () => {
-    const result = classifyVisualScope(['packages/core/src/Button/Button.tsx'], root);
+    const result = classifyVisualScope(
+      ['packages/core/src/Button/Button.tsx'],
+      root,
+    );
     expect(result).toMatchObject({
       hasStableVisual: true,
       stableComponents: ['Button'],
       broadStableVisual: false,
     });
-    expect(result.stableCoreFiles).toEqual(['packages/core/src/Button/Button.tsx']);
+    expect(result.stableCoreFiles).toEqual([
+      'packages/core/src/Button/Button.tsx',
+    ]);
   });
 
   it('marks shared Core infrastructure as broad stable scope', () => {
-    const result = classifyVisualScope(['packages/core/src/theme/Theme.tsx'], root);
+    const result = classifyVisualScope(
+      ['packages/core/src/theme/Theme.tsx'],
+      root,
+    );
     expect(result).toMatchObject({
       hasStableVisual: true,
       broadStableVisual: true,
@@ -83,7 +91,34 @@ describe('classifyVisualScope', () => {
       ['packages/themes/neutral/src/neutralTheme.ts'],
       root,
     );
-    expect(result).toMatchObject({hasStableVisual: true, stableThemes: ['neutral']});
+    expect(result).toMatchObject({
+      hasStableVisual: true,
+      stableThemes: ['neutral'],
+    });
+  });
+
+  it('ignores build-only metadata in a stable theme package', () => {
+    const result = classifyVisualScope(
+      [
+        'packages/themes/neutral/package.json',
+        'packages/core/package.json',
+        'scripts/clean-dist.mjs',
+        'pnpm-lock.yaml',
+      ],
+      root,
+      {
+        'packages/themes/neutral/package.json': {
+          name: '@astryxdesign/theme-neutral',
+          private: false,
+          scripts: {build: 'node ../../../scripts/clean-dist.mjs && tsup'},
+        },
+      },
+    );
+    expect(result).toMatchObject({
+      hasStableVisual: false,
+      stableComponents: [],
+      stableThemes: [],
+    });
   });
 
   it('keeps a base-stable theme in scope when the PR marks it private', () => {
@@ -98,7 +133,10 @@ describe('classifyVisualScope', () => {
         },
       },
     );
-    expect(result).toMatchObject({hasStableVisual: true, stableThemes: ['neutral']});
+    expect(result).toMatchObject({
+      hasStableVisual: true,
+      stableThemes: ['neutral'],
+    });
   });
 
   it('uses trusted PR-head metadata for a promoted theme', () => {
@@ -112,7 +150,10 @@ describe('classifyVisualScope', () => {
         },
       },
     );
-    expect(result).toMatchObject({hasStableVisual: true, stableThemes: ['probe']});
+    expect(result).toMatchObject({
+      hasStableVisual: true,
+      stableThemes: ['probe'],
+    });
   });
 
   it('excludes the private probe fixture', () => {
@@ -125,7 +166,10 @@ describe('classifyVisualScope', () => {
   });
 
   it('excludes Lab and records its release channel from package metadata', () => {
-    const result = classifyVisualScope(['packages/lab/src/Drawer/Drawer.tsx'], root);
+    const result = classifyVisualScope(
+      ['packages/lab/src/Drawer/Drawer.tsx'],
+      root,
+    );
     expect(result.hasStableVisual).toBe(false);
     expect(result.canaryPackages).toEqual(['@astryxdesign/lab']);
   });

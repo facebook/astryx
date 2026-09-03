@@ -247,6 +247,7 @@ export const AllVariations: Story = {
 export const StatusVariants: Story = {
   render: () => {
     const [vals, setVals] = useState({
+      native: 'custom-value',
       error: 'bad-email',
       warning: 'admin',
       success: 'valid-user',
@@ -261,6 +262,21 @@ export const StatusVariants: Story = {
           gap: 24,
           maxWidth: 400,
         }}>
+        <Field
+          label="Native input"
+          inputID="native-status-input"
+          status={{
+            type: 'warning',
+            message: 'The attached status stays behind this custom control',
+            messageID: 'native-status-message',
+          }}>
+          <NativeInput
+            id="native-status-input"
+            describedBy="native-status-message"
+            value={vals.native}
+            onChange={set('native')}
+          />
+        </Field>
         <TextInput
           label="Email"
           description="Enter your work email"

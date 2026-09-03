@@ -220,6 +220,7 @@ export default function ResizableWorkspacePage() {
     defaultSize: 300,
     minSizePx: 80,
     maxSizePx: Infinity,
+    direction: 'vertical',
     collapsible: true,
     collapsedSize: 40,
   });

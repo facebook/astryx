@@ -23,7 +23,13 @@ import {describe, it, expect} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {search, SEARCH_DOMAINS} from './search.mjs';
+import {
+  search,
+  scoreCandidate,
+  scoreQuery,
+  tokenizeQuery,
+  SEARCH_DOMAINS,
+} from './search.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const cwd = REPO;
@@ -162,4 +168,76 @@ describe('search leaf — integration components', () => {
       fs.rmSync(dir, {recursive: true, force: true});
     }
   }, SLOW);
+});
+
+describe('search scoring — multi-token aggregation is monotonic', () => {
+  /**
+   * @param {string} q
+   * @param {object} candidate
+   * @returns {number}
+   */
+  const score = (q, candidate) => scoreQuery(q, tokenizeQuery(q), candidate)?.score ?? 0;
+
+  it('ranks matching both terms above matching only the stronger one', () => {
+    // The shipped regression: scoring averaged over MATCHED tokens, so the
+    // weaker second hit pulled the mean down further than the coverage bonus
+    // pushed it up. `build "file browser"` put two form wizards that matched
+    // only "file" (98) above the actual file browser that matched both (97),
+    // and 98 clears the confident-match gate.
+    const partial = {name: 'form-wizard-vertical', keywords: ['file']};
+    const complete = {
+      name: 'file-explorer',
+      keywords: ['file'],
+      description: 'Column browser for nested folders',
+    };
+    expect(score('file browser', complete)).toBeGreaterThan(score('file browser', partial));
+  });
+
+  it('never scores a superset of matched terms below a subset', () => {
+    const subset = {name: 'zzz-none', keywords: ['alpha']};
+    const supersets = [
+      {name: 'zzz-none', keywords: ['alpha'], description: 'beta things'},
+      {name: 'zzz-none', keywords: ['alpha', 'beta']},
+      {name: 'zzz-none', keywords: ['alpha'], weakKeywords: ['beta']},
+    ];
+    for (const superset of supersets) {
+      expect(score('alpha beta', superset)).toBeGreaterThanOrEqual(score('alpha beta', subset));
+    }
+  });
+
+  it('still scores a verbose prompt on the concepts it did hit', () => {
+    // Guards the reason the mean was used: a long prompt matching one concept
+    // strongly must not be crushed by dividing across every query token.
+    const candidate = {name: 'kanban', keywords: ['kanban']};
+    expect(score('i need a kanban somewhere in this rambling request', candidate))
+      .toBeGreaterThanOrEqual(90);
+  });
+});
+
+describe('search scoring — derived keywords rank below authored ones', () => {
+  it('scores an authored keyword above a derived one', () => {
+    const authored = scoreCandidate('dialog', {name: 'x', keywords: ['Dialog']});
+    const derived = scoreCandidate('dialog', {name: 'x', weakKeywords: ['Dialog']});
+    expect(authored?.score).toBe(90);
+    expect(derived?.score).toBe(60);
+  });
+
+  it('keeps one incidental derived match below the confident-match gate', () => {
+    // PAGE_DIRECT in api/build/kit is 95: at full keyword strength a page that
+    // renders one of everything got a 90-point shot per component and was
+    // returned as a confident match for queries it had nothing to do with.
+    const derived = scoreCandidate('dialog', {name: 'x', weakKeywords: ['Dialog']});
+    expect(derived?.score).toBeLessThan(95);
+  });
+
+  it('still surfaces a derived match above the page floor', () => {
+    // PAGE_FLOOR is 50 — weakening the signal must not make it invisible.
+    const derived = scoreCandidate('dialog', {name: 'x', weakKeywords: ['Dialog']});
+    expect(derived?.score).toBeGreaterThanOrEqual(50);
+  });
+
+  it('explains a derived hit as something the template renders', () => {
+    const derived = scoreCandidate('dialog', {name: 'x', weakKeywords: ['Dialog']});
+    expect(derived?.reason).toMatch(/renders Dialog/);
+  });
 });

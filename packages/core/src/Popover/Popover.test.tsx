@@ -2,7 +2,7 @@
 
 /**
  * @file Popover.test.tsx
- * @input Uses vitest, @testing-library/react, Popover, Dialog,
+ * @input Uses vitest, Testing Library, node:fs, Popover, Dialog, and
  *   SegmentedControl
  * @output Unit tests for Popover component behavior
  * @position Testing; validates Popover.tsx implementation
@@ -11,7 +11,9 @@
  */
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {readFileSync} from 'node:fs';
 import React, {useRef} from 'react';
 import {Popover} from './Popover';
 import type {UsePopoverReturn} from './usePopover';
@@ -64,8 +66,19 @@ describe('usePopover public return type', () => {
     const hasDismissalGuard: 'wasJustDismissed' extends keyof UsePopoverReturn
       ? true
       : false = false;
+    const hasInternalToggle: 'toggleWithOptions' extends keyof UsePopoverReturn
+      ? true
+      : false = false;
+    type PublicShowOptions = NonNullable<
+      Parameters<UsePopoverReturn['show']>[0]
+    >;
+    const hasInternalFocusTarget: 'focusTarget' extends keyof PublicShowOptions
+      ? true
+      : false = false;
     expect(hasKeepOpenProps).toBe(false);
     expect(hasDismissalGuard).toBe(false);
+    expect(hasInternalToggle).toBe(false);
+    expect(hasInternalFocusTarget).toBe(false);
   });
 });
 
@@ -203,6 +216,288 @@ describe('Popover', () => {
       </Popover>,
     );
     expect(screen.getByTestId('my-popover')).toBeInTheDocument();
+  });
+
+  it('constrains the layer without clipping content that already fits', () => {
+    render(
+      <Popover
+        content={<span>Content</span>}
+        label="Test"
+        width={640}
+        data-testid="popover-content">
+        <button type="button">Open</button>
+      </Popover>,
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+    const layer = document.querySelector('[popover]');
+    expect(layer).toHaveStyle({boxSizing: 'border-box'});
+    expect(layer?.className).toContain('Popover__styles.viewportFit');
+    expect(layer?.className).toContain('Popover__styles.viewportAligned');
+    expect(layer?.className).toContain('Popover__styles.viewportStart');
+    const surface = screen.getByTestId('popover-content').parentElement;
+    expect(surface?.className).toContain('Popover__styles.surfaceViewportFit');
+    const popoverSource = readFileSync(
+      'packages/core/src/Popover/Popover.tsx',
+      'utf8',
+    );
+    expect(popoverSource).toMatch(
+      /surfaceViewportFit:[\s\S]*?maxInlineSize: stylex\.firstThatWorks\(\s*POPOVER_MAX_INLINE_SIZE/,
+    );
+    expect(popoverSource).toMatch(
+      /surfaceViewportFit:[\s\S]*?maxBlockSize: stylex\.firstThatWorks\(\s*POPOVER_MAX_BLOCK_SIZE/,
+    );
+    expect(surface?.className).not.toContain(
+      'Popover__styles.surfaceScrollable',
+    );
+  });
+
+  it('enables internal scrolling only when content exceeds the available space', () => {
+    const clientHeight = vi
+      .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+      .mockReturnValue(100);
+    const scrollHeight = vi
+      .spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+      .mockReturnValue(200);
+    const clientWidth = vi
+      .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+      .mockReturnValue(200);
+    const scrollWidth = vi
+      .spyOn(HTMLElement.prototype, 'scrollWidth', 'get')
+      .mockReturnValue(200);
+
+    try {
+      render(
+        <Popover
+          content={<span>Long content</span>}
+          label="Test"
+          data-testid="popover-content">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+      expect(
+        screen.getByTestId('popover-content').parentElement?.className,
+      ).toContain('Popover__styles.surfaceScrollable');
+    } finally {
+      clientHeight.mockRestore();
+      scrollHeight.mockRestore();
+      clientWidth.mockRestore();
+      scrollWidth.mockRestore();
+    }
+  });
+
+  it('coalesces repeated overflow signals into one animation frame', () => {
+    let resizeCallback: ResizeObserverCallback | undefined;
+    let mutationCallback: MutationCallback | undefined;
+    const frameCallbacks: FrameRequestCallback[] = [];
+
+    class ResizeObserverMock {
+      constructor(callback: ResizeObserverCallback) {
+        resizeCallback = callback;
+      }
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+    }
+
+    class MutationObserverMock {
+      constructor(callback: MutationCallback) {
+        mutationCallback = callback;
+      }
+      observe = vi.fn();
+      disconnect = vi.fn();
+      takeRecords = vi.fn(() => []);
+    }
+
+    const requestFrame = vi.fn((callback: FrameRequestCallback) => {
+      frameCallbacks.push(callback);
+      return frameCallbacks.length;
+    });
+    const cancelFrame = vi.fn();
+    vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+    vi.stubGlobal('MutationObserver', MutationObserverMock);
+    vi.stubGlobal('requestAnimationFrame', requestFrame);
+    vi.stubGlobal('cancelAnimationFrame', cancelFrame);
+
+    const {unmount} = render(
+      <Popover content={<span>Content</span>} label="Test">
+        <button type="button">Open</button>
+      </Popover>,
+    );
+
+    try {
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+      while (frameCallbacks.length > 0) {
+        const pendingFrames = frameCallbacks.splice(0);
+        act(() => pendingFrames.forEach(callback => callback(0)));
+      }
+      requestFrame.mockClear();
+
+      act(() => {
+        resizeCallback?.([], {} as ResizeObserver);
+        mutationCallback?.([], {} as MutationObserver);
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      expect(requestFrame).toHaveBeenCalledTimes(1);
+      expect(frameCallbacks).toHaveLength(1);
+    } finally {
+      unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('observes overflow only while the popover is open', () => {
+    const resizeConstructed = vi.fn();
+    const resizeDisconnected = vi.fn();
+    const mutationConstructed = vi.fn();
+    const mutationDisconnected = vi.fn();
+
+    class ResizeObserverMock {
+      constructor() {
+        resizeConstructed();
+      }
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = resizeDisconnected;
+    }
+
+    class MutationObserverMock {
+      constructor() {
+        mutationConstructed();
+      }
+      observe = vi.fn();
+      disconnect = mutationDisconnected;
+      takeRecords = vi.fn(() => []);
+    }
+
+    vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+    vi.stubGlobal('MutationObserver', MutationObserverMock);
+
+    const {unmount} = render(
+      <Popover content={<span>Content</span>} label="Test">
+        <button type="button">Open</button>
+      </Popover>,
+    );
+
+    try {
+      const trigger = screen.getByRole('button', {name: 'Open'});
+      expect(resizeConstructed).not.toHaveBeenCalled();
+      expect(mutationConstructed).not.toHaveBeenCalled();
+
+      fireEvent.click(trigger);
+      expect(resizeConstructed).toHaveBeenCalledTimes(1);
+      expect(mutationConstructed).toHaveBeenCalledTimes(1);
+
+      fireEvent.click(trigger);
+      expect(resizeDisconnected).toHaveBeenCalledTimes(1);
+      expect(mutationDisconnected).toHaveBeenCalledTimes(1);
+      expect(resizeConstructed).toHaveBeenCalledTimes(1);
+      expect(mutationConstructed).toHaveBeenCalledTimes(1);
+    } finally {
+      unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('keeps aligned popovers anchored while applying viewport gutters', () => {
+    render(
+      <Popover content={<span>Content</span>} label="Test">
+        <button type="button">Open</button>
+      </Popover>,
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+    const layer = document.querySelector('[popover]');
+    expect(layer?.className).toContain('Popover__styles.viewportAligned');
+    expect(layer?.className).toContain('Popover__styles.viewportStart');
+    expect(layer).toHaveStyle(
+      'min-width: min(anchor-size(width),calc(100% - max(var(--spacing-4),env(safe-area-inset-left,0px),env(safe-area-inset-right,0px))))',
+    );
+  });
+
+  it('mirrors the far-edge gutter for end-aligned popovers', () => {
+    render(
+      <Popover content={<span>Content</span>} label="Test" alignment="end">
+        <button type="button">Open</button>
+      </Popover>,
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+    const layer = document.querySelector('[popover]');
+    expect(layer?.className).toContain('Popover__styles.viewportAligned');
+    expect(layer?.className).toContain('Popover__styles.viewportEnd');
+    expect(layer?.className).not.toContain('Popover__styles.viewportStart');
+  });
+
+  it('reserves both inline gutters only for centered popovers', () => {
+    render(
+      <Popover content={<span>Content</span>} label="Test" alignment="center">
+        <button type="button">Open</button>
+      </Popover>,
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+    const layer = document.querySelector('[popover]');
+    expect(layer?.className).toContain('Popover__styles.viewportCentered');
+    expect(layer?.className).not.toContain('Popover__styles.viewportAligned');
+    expect(layer).toHaveStyle(
+      'min-width: min(anchor-size(width),calc(100vi - max(var(--spacing-4),env(safe-area-inset-left,0px)) - max(var(--spacing-4),env(safe-area-inset-right,0px))))',
+    );
+  });
+
+  it('uses block-axis gutters for side placement', () => {
+    render(
+      <Popover
+        content={<span>Content</span>}
+        label="Test"
+        placement="end"
+        alignment="start">
+        <button type="button">Open</button>
+      </Popover>,
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+    const layer = document.querySelector('[popover]');
+    expect(layer?.className).toContain('Popover__styles.viewportBlockStart');
+    expect(layer?.className).not.toContain('Popover__styles.viewportStart');
+  });
+
+  it('preserves the dialog aria-haspopup contract for render-prop triggers', () => {
+    render(
+      <Popover
+        role="none"
+        content={
+          <div role="menu" aria-label="Actions">
+            Menu content
+          </div>
+        }
+        label="Actions">
+        {triggerProps => (
+          <button
+            type="button"
+            ref={triggerProps.ref}
+            onClick={triggerProps.onClick}
+            aria-haspopup={triggerProps['aria-haspopup']}
+            aria-expanded={triggerProps['aria-expanded']}
+            aria-controls={triggerProps['aria-controls']}>
+            Open menu
+          </button>
+        )}
+      </Popover>,
+    );
+
+    expect(screen.getByRole('button', {name: 'Open menu'})).toHaveAttribute(
+      'aria-haspopup',
+      'dialog',
+    );
   });
 
   it('supports anchorRef sibling mode', () => {
@@ -437,6 +732,106 @@ describe('Popover', () => {
   });
 
   describe('focus restoration', () => {
+    it('focuses the dialog container without outlining an action after pointer activation', async () => {
+      render(
+        <Popover
+          content={<button type="button">Delete</button>}
+          label="Confirm deletion">
+          <button type="button">Open confirmation</button>
+        </Popover>,
+      );
+
+      fireEvent.click(screen.getByRole('button', {name: 'Open confirmation'}), {
+        detail: 1,
+      });
+
+      const dialog = screen.getByRole('dialog', {
+        name: 'Confirm deletion',
+        hidden: true,
+      });
+      await waitFor(() => expect(dialog).toHaveFocus());
+      expect(dialog).toHaveStyle({outline: 'none'});
+      expect(
+        screen.getByRole('button', {name: 'Delete', hidden: true}),
+      ).not.toHaveFocus();
+    });
+
+    it('focuses the first content control after keyboard activation', async () => {
+      render(
+        <Popover
+          content={<button type="button">Delete</button>}
+          label="Confirm deletion">
+          <button type="button">Open confirmation</button>
+        </Popover>,
+      );
+
+      fireEvent.click(screen.getByRole('button', {name: 'Open confirmation'}), {
+        detail: 0,
+      });
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', {name: 'Delete', hidden: true}),
+        ).toHaveFocus(),
+      );
+    });
+
+    it('focuses the dialog container when content has no controls', async () => {
+      render(
+        <Popover content={<span>Read-only content</span>} label="Read only">
+          <button type="button">Open read only</button>
+        </Popover>,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Open read only'}));
+
+      const dialog = screen.getByRole('dialog', {
+        name: 'Read only',
+        hidden: true,
+      });
+      await waitFor(() => expect(dialog).toHaveFocus());
+      expect(
+        screen.getByRole('button', {name: 'Close popover', hidden: true}),
+      ).not.toHaveFocus();
+    });
+
+    it('prefers a genuine content control for initial focus', async () => {
+      render(
+        <Popover
+          content={<button type="button">Content action</button>}
+          label="Action popover">
+          <button type="button">Open action</button>
+        </Popover>,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Open action'}));
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', {name: 'Content action', hidden: true}),
+        ).toHaveFocus(),
+      );
+    });
+
+    it('keeps the fallback close button reachable by Tab', async () => {
+      const user = userEvent.setup();
+      render(
+        <Popover content={<span>Read-only content</span>} label="Read only">
+          <button type="button">Open read only</button>
+        </Popover>,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Open read only'}));
+      await waitFor(() =>
+        expect(
+          screen.getByRole('dialog', {name: 'Read only', hidden: true}),
+        ).toHaveFocus(),
+      );
+
+      await user.tab();
+
+      expect(
+        screen.getByRole('button', {name: 'Close popover', hidden: true}),
+      ).toHaveFocus();
+    });
+
     it('returns focus to the trigger when closed via Escape', () => {
       render(
         <Popover

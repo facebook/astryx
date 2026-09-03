@@ -829,6 +829,21 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
   };
 
   const inheritableFields =
+    (themeDef.__localTokenLineage !== undefined
+      ? `  localTokens: ${JSON.stringify(themeDef.localTokens ?? {}, null, 2)
+          .split('\n')
+          .map((line, i) => (i === 0 ? line : '  ' + line))
+          .join('\n')},\n` +
+        `  __localTokenOwners: ${JSON.stringify(
+          themeDef.__localTokenOwners ?? {},
+          null,
+          2,
+        )
+          .split('\n')
+          .map((line, i) => (i === 0 ? line : '  ' + line))
+          .join('\n')},\n` +
+        `  __localTokenLineage: ${JSON.stringify(themeDef.__localTokenLineage)},\n`
+      : '') +
     serializeField('components', themeDef.components) +
     serializeField('__onDark', themeDef.__onDark) +
     serializeField('__onLight', themeDef.__onLight);
@@ -1142,9 +1157,9 @@ export async function themeBuild(
       'onDark',
       'onLight',
     ];
-    const needsResolution = INPUT_ONLY_FIELDS.some(
-      field => themeDef[field] !== undefined,
-    );
+    const needsResolution =
+      INPUT_ONLY_FIELDS.some(field => themeDef[field] !== undefined) ||
+      ('localTokens' in themeDef && themeDef.__localTokenLineage === undefined);
     if (needsResolution) {
       resolvedTheme = _defineTheme({...themeDef});
     } else {
@@ -1174,6 +1189,7 @@ export async function themeBuild(
       // a substring check on it would fire for every theme.
       const themeOwnValues = JSON.stringify([
         resolvedTheme.tokens ?? {},
+        resolvedTheme.localTokens ?? {},
         resolvedTheme.components ?? {},
       ]);
       const colorSchemeDecl = themeOwnValues.includes('light-dark(')
@@ -1240,9 +1256,9 @@ export async function themeBuild(
   }
 
   const displayTheme = resolvedTheme || themeDef;
-  const tokenCount = displayTheme.tokens
-    ? Object.keys(displayTheme.tokens).length
-    : 0;
+  const tokenCount =
+    Object.keys(displayTheme.tokens ?? {}).length +
+    Object.keys(displayTheme.localTokens ?? {}).length;
   const componentCount = displayTheme.components
     ? Object.keys(displayTheme.components).length
     : 0;

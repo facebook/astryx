@@ -21,7 +21,13 @@
  * - /packages/core/src/theme/index.ts
  */
 
-import {createContext, use, useMemo, useSyncExternalStore} from 'react';
+import {
+  createContext,
+  use,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from 'react';
 import type {ThemeMode} from './types';
 import type {DefinedTheme} from './defineTheme';
 import {resolveThemeTokens} from './tokens';
@@ -281,14 +287,14 @@ export function useTheme(): UseThemeReturn {
     [theme, effectiveMode],
   );
 
-  const token = (name: string): string => {
-    return tokens[name] ?? '';
-  };
+  const token = useCallback(
+    (name: string): string => tokens[name] ?? '',
+    [tokens],
+  );
+  const name = theme?.name ?? 'default';
 
-  return {
-    name: theme?.name ?? 'default',
-    mode: effectiveMode,
-    token,
-    tokens,
-  };
+  return useMemo(
+    () => ({name, mode: effectiveMode, token, tokens}),
+    [name, effectiveMode, token, tokens],
+  );
 }

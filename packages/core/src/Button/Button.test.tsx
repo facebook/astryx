@@ -70,6 +70,16 @@ describe('Button', () => {
     const button = screen.getByRole('button');
     // Button should be disabled when loading
     expect(button).toBeDisabled();
+    expect(button.className).toContain('styles.inactive');
+    expect(button.className).not.toContain('styles.disabled');
+  });
+
+  it('keeps the dimmed treatment for explicitly disabled buttons', () => {
+    render(<Button label="Submit" isDisabled />);
+    const button = screen.getByRole('button');
+    expect(button).toBeDisabled();
+    expect(button.className).toContain('styles.inactive');
+    expect(button.className).toContain('styles.disabled');
   });
 
   it('sets aria-busy synchronously while clickAction is pending', async () => {

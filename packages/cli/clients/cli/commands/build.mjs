@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file build command — thin wrapper around api/build.
+ * @file build command — thin wrapper with stable result telemetry.
  *
  *   astryx build                  → the PLAYBOOK (how to build a page)
  *   astryx build "<what>"         → a COMPOSITION KIT (closest page template,
@@ -12,9 +12,20 @@
  * (never in the API payload) via formatCliCommand/getCliInvocation.
  */
 
-import {getCliInvocation, formatCliCommand} from '../../../foundation/env/package-manager.mjs';
+import {
+  getCliInvocation,
+  formatCliCommand,
+} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, text, record, records, ARROW} from '../formatters/index.mjs';
+import {recordResultSummary} from '../../../foundation/debug/index.mjs';
+import {
+  emit,
+  section,
+  text,
+  record,
+  records,
+  ARROW,
+} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {build as buildApi} from '../../../api/build/build.mjs';
@@ -71,7 +82,10 @@ function printPlaybook(run) {
 export function registerBuild(program) {
   defineCommand(program, buildCommand, {
     fn: buildFn,
-    action: async (/** @type {string | undefined} */ query, /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, verbose?: boolean}} */ options) => {
+    action: async (
+      /** @type {string | undefined} */ query,
+      /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, verbose?: boolean}} */ options,
+    ) => {
       const run = getCliInvocation();
       const json = program.opts().json || false;
 
@@ -93,19 +107,39 @@ export function registerBuild(program) {
       /** @type {import('../../../api/build/build.type.mjs').BuildKitResponse} */
       let result;
       try {
-        result = /** @type {import('../../../api/build/build.type.mjs').BuildKitResponse} */ (
-          await buildApi(query, {cwd: process.cwd(), type: options.type, limit})
-        );
+        result =
+          /** @type {import('../../../api/build/build.type.mjs').BuildKitResponse} */ (
+            await buildApi(query, {
+              cwd: process.cwd(),
+              type: options.type,
+              limit,
+            })
+          );
       } catch (e) {
-        const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
         cliError(err.message, {suggestions: err.suggestions, code: err.code});
         return;
       }
 
-      if (json) return jsonOut(result);
+      const {
+        query: q,
+        hasResults,
+        matchCount,
+        directMatch,
+        pages,
+        blocks,
+        domain,
+        frame,
+        foundation,
+      } = result.data;
+      recordResultSummary([...pages, ...blocks, ...domain], {
+        directMatch,
+        resultCount: matchCount,
+        emptyResult: !hasResults,
+      });
 
-      const {query: q, hasResults, directMatch, pages, blocks, domain, frame, foundation} =
-        result.data;
+      if (json) return jsonOut(result);
 
       if (!hasResults) {
         emit(
@@ -119,7 +153,16 @@ export function registerBuild(program) {
       // already says the kind, so drop `domain`/`import` by default (they're in
       // --json and under --verbose). Keeps each item to name/displayName/desc/cmd.
       const fields = options.verbose
-        ? ['name', 'domain', 'displayName', 'score', 'reason', 'import', 'description', 'command']
+        ? [
+            'name',
+            'domain',
+            'displayName',
+            'score',
+            'reason',
+            'import',
+            'description',
+            'command',
+          ]
         : ['name', 'displayName', 'description', 'command'];
       /** @type {import('../formatters/index.mjs').RecordOptions} */
       const recordOpts = {fields, format: {command: formatCliCommand}};
@@ -184,7 +227,10 @@ export function registerBuild(program) {
       }
 
       out.push(
-        section('FRAME + FOUNDATION', 'Always-available shell + layout/text/action primitives.'),
+        section(
+          'FRAME + FOUNDATION',
+          'Always-available shell + layout/text/action primitives.',
+        ),
         record({
           frame,
           foundation,

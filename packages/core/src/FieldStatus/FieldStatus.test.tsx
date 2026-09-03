@@ -149,6 +149,23 @@ describe('FieldStatus', () => {
       expect(el).toHaveAttribute('data-variant', 'attached');
       expect(el).toHaveClass('attached');
     });
+
+    it('extends the attached background by the field-provided overlap', () => {
+      render(<FieldStatus type="warning" message="msg" data-testid="fs" />);
+      const styles = getComputedStyle(screen.getByTestId('fs'));
+
+      expect(styles.marginTop).toBe(
+        'calc(-1 * var(--_field-status-overlap,var(--spacing-1-5)))',
+      );
+    });
+
+    it('does not intercept pointer input over the attached control', () => {
+      render(<FieldStatus type="warning" message="msg" data-testid="fs" />);
+
+      expect(getComputedStyle(screen.getByTestId('fs')).pointerEvents).toBe(
+        'none',
+      );
+    });
   });
 
   describe('color styling per status type', () => {

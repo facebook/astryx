@@ -12,14 +12,37 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 import {
   isVisualAcceptanceEndpointMaintainer,
   isVisualAcceptanceRecordMaintainer,
 } from './authorization.mjs';
 import {canonicalizePng} from './lib/canonical-png.mjs';
-import {readStoryIndex, shotKey, storiesInPackages} from './lib/plan.mjs';
+import {
+  acceptedVisualThemes,
+  baselineVisualStories,
+  componentVisualStories,
+  exceedsPrVisualShotLimit,
+  readStoryIndex,
+  readThemeCatalog,
+  representativeStories,
+  shotKey,
+  stableBaseline,
+  storiesInPackages,
+  storiesInStorybookGroups,
+  VISUAL_BASELINE_TAG,
+  withThemeMetadata,
+} from './lib/plan.mjs';
 import {renderReport} from './lib/report.mjs';
+import {loadConfig} from './lib/sources.mjs';
+
+const REPO_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../..',
+);
+const config = loadConfig(REPO_ROOT);
+const themeCatalog = readThemeCatalog(REPO_ROOT, config.baselineThemes);
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -181,7 +204,10 @@ function validateEvidence(evidence, expected) {
   ) {
     fail('evidence verdict is invalid');
   }
-  if (!Array.isArray(evidence.deltas) || evidence.deltas.length > 5000) {
+  if (
+    !Array.isArray(evidence.deltas) ||
+    evidence.deltas.length > config.visualPlanSafetyLimit
+  ) {
     fail('evidence delta list is invalid');
   }
   if (evidence.verdict.status === 'skipped') {
@@ -347,6 +373,11 @@ function accept() {
   );
   if (evidence.verdict.status !== 'changed' || evidence.deltas.length === 0) {
     fail('current visual bundle has no delta to accept');
+  }
+  if (evidence.deltas.some(delta => delta.kind !== 'changed')) {
+    fail(
+      'scoped PR acceptance can only authorize changes to existing baseline frames',
+    );
   }
   const manifestFile = path.join(
     pages,
@@ -588,10 +619,13 @@ function readTrustedScope() {
   return scope;
 }
 
-function readTrustedBaseline() {
-  const baseline = readJSON(
+function readTrustedBaseline(stories = null) {
+  const raw = readJSON(
     path.join(path.resolve(flag('baseline')), 'manifest.json'),
   );
+  const baseline = stories
+    ? stableBaseline(raw, stories, themeCatalog, REPO_ROOT)
+    : raw;
   if (
     !baseline?.shots ||
     typeof baseline.shots !== 'object' ||
@@ -600,8 +634,13 @@ function readTrustedBaseline() {
     fail('trusted visual baseline is invalid');
   }
   const entries = Object.entries(baseline.shots);
-  if (entries.length === 0 || entries.length > 5000) {
-    fail(`trusted visual baseline has invalid size ${entries.length}`);
+  if (
+    entries.length === 0 ||
+    entries.length > config.visualPlanSafetyLimit
+  ) {
+    fail(
+      `trusted visual baseline has invalid size ${entries.length}; safety limit is ${config.visualPlanSafetyLimit}`,
+    );
   }
   return {baseline, entries};
 }
@@ -692,58 +731,102 @@ function trustedPlan() {
   const scope = readTrustedScope();
   if (scope.broadStableVisual)
     fail('broad stable scope must be deferred instead of captured');
-  const {entries: baselineEntries} = readTrustedBaseline();
   const storybookDir = path.resolve(flag('storybook-dir'));
   const output = path.resolve(flag('output'));
+  const allIndexed = readStoryIndex(storybookDir, [], REPO_ROOT);
+  const packageStories = storiesInPackages(
+    allIndexed,
+    config.stableStoryPackages,
+  );
+  const indexed = storiesInStorybookGroups(
+    packageStories,
+    config.stableStoryGroups,
+  );
+  const {baseline} = readTrustedBaseline(allIndexed);
+  const baselineKeys = new Set(Object.keys(baseline.shots));
 
-  const baselineThemes = [
-    ...new Set(baselineEntries.map(([, shot]) => shot.theme)),
-  ].filter(Boolean);
+  const baselineThemes = acceptedVisualThemes(
+    baseline,
+    themeCatalog,
+    config.defaultTheme,
+  );
   const shots = [];
 
   if (scope.stableComponents.length > 0 || scope.stableThemes.length > 0) {
-    const indexed = storiesInPackages(readStoryIndex(storybookDir, []), [
-      'Core',
-    ]);
-    const stories = new Map();
-    const newTheme = scope.stableThemes.some(
-      theme => !baselineThemes.includes(theme),
-    );
-    for (const [, shot] of baselineEntries) {
-      if (
-        newTheme ||
-        scope.stableThemes.includes(shot.theme) ||
-        scope.stableComponents.includes(shot.component)
-      ) {
-        stories.set(shot.storyId, shot);
+    const add = (
+      story,
+      theme,
+      componentKeys = null,
+      existingBaselineOnly = false,
+    ) => {
+      for (const mode of ['light', 'dark']) {
+        const shot = {
+          storyId: story.storyId ?? story.id,
+          title: story.title,
+          name: story.name,
+          component: story.component,
+          packageName: story.packageName,
+          packageNames: story.packageNames,
+          stableVisual: story.stableVisual,
+          theme,
+          mode,
+          reasons: ['trusted:pr-scope'],
+        };
+        const keyed = {...shot, key: shotKey(shot)};
+        if (existingBaselineOnly && !baselineKeys.has(keyed.key)) continue;
+        shots.push(keyed);
+        componentKeys?.add(keyed.key);
       }
-    }
-    for (const story of indexed) {
-      if (scope.stableComponents.includes(story.component))
-        stories.set(story.id, story);
-    }
-    const themes =
-      scope.stableThemes.length > 0 ? scope.stableThemes : baselineThemes;
-    for (const story of stories.values()) {
-      for (const theme of themes) {
-        for (const mode of ['light', 'dark']) {
-          const shot = {
-            storyId: story.storyId ?? story.id,
-            title: story.title,
-            name: story.name,
-            component: story.component,
-            theme,
-            mode,
-            reasons: ['trusted:pr-scope'],
-          };
-          shots.push({...shot, key: shotKey(shot)});
+    };
+
+    const componentKeys = new Set();
+    for (const {story, useThemeMatrix} of componentVisualStories(
+      indexed,
+      scope.stableComponents,
+    )) {
+      add(story, config.defaultTheme, componentKeys, true);
+      if (!useThemeMatrix) continue;
+      for (const theme of baselineThemes) {
+        if (theme !== config.defaultTheme) {
+          add(story, theme, componentKeys, true);
         }
       }
     }
+    if (
+      exceedsPrVisualShotLimit(
+        componentKeys.size,
+        config.prVisualShotLimit,
+      )
+    ) {
+      fail(
+        `trusted component plan has invalid size ${componentKeys.size}; focused PR limit is ${config.prVisualShotLimit}`,
+      );
+    }
+
+    const themeStories = baselineVisualStories(indexed, baseline);
+    for (const theme of scope.stableThemes) {
+      if (themeStories.length === 0) {
+        fail(`changed theme ${theme} has no accepted visual stories`);
+      }
+      for (const story of themeStories) add(story, theme);
+    }
   }
-  const unique = [...new Map(shots.map(shot => [shot.key, shot])).values()];
-  if (unique.length === 0 || unique.length > 5000) {
-    fail(`trusted visual plan has invalid size ${unique.length}`);
+  const unique = withThemeMetadata(
+    [...new Map(shots.map(shot => [shot.key, shot])).values()],
+    themeCatalog,
+  );
+  if (unique.some(shot => shot.stableThemeVisual !== true)) {
+    fail('trusted stable plan includes a private or canary theme');
+  }
+  if (unique.length === 0) {
+    fail(
+      'trusted component scope has no existing baseline frames; seed coverage through the manual baseline workflow',
+    );
+  }
+  if (unique.length > config.visualPlanSafetyLimit) {
+    fail(
+      `trusted visual plan has invalid size ${unique.length}; safety limit is ${config.visualPlanSafetyLimit}`,
+    );
   }
   writeJSON(output, unique);
   process.stdout.write(
@@ -751,14 +834,28 @@ function trustedPlan() {
   );
 }
 
+function acceptedStableShots(acceptance) {
+  if (acceptance.keys.some(entry => entry.kind !== 'changed')) {
+    fail(
+      'scoped PR promotion can only update existing baseline frames',
+    );
+  }
+  const shots = withThemeMetadata(
+    acceptance.keys.map(entry => ({...entry.shot, key: entry.key})),
+    themeCatalog,
+  );
+  if (shots.some(shot => shot.stableThemeVisual !== true)) {
+    fail('accepted stable plan includes a private or canary theme');
+  }
+  return shots;
+}
+
 function plan() {
   const acceptanceFile = path.resolve(flag('acceptance'));
   const acceptance = readJSON(acceptanceFile);
   validateAcceptance(acceptance, {dir: path.dirname(acceptanceFile)});
   const output = path.resolve(flag('output'));
-  const shots = acceptance.keys
-    .filter(entry => entry.kind !== 'removed')
-    .map(entry => ({...entry.shot, key: entry.key}));
+  const shots = acceptedStableShots(acceptance);
   writeJSON(output, shots);
   process.stdout.write(
     `Wrote ${shots.length} post-merge shot(s) to ${output}.\n`,
@@ -778,6 +875,7 @@ function promote() {
 
   const acceptance = readJSON(acceptanceFile);
   validateAcceptance(acceptance, {dir: path.dirname(acceptanceFile)});
+  acceptedStableShots(acceptance);
   const manifestFile = path.join(
     pages,
     'visual-gate',
@@ -822,10 +920,6 @@ function promote() {
       fail(
         `baseline conflict for ${entry.key}: expected ${entry.beforeSha256}, found ${currentBefore}`,
       );
-    }
-    if (entry.kind === 'removed') {
-      actions.push({entry, baselineFile, remove: true});
-      continue;
     }
 
     const acceptedAfter = path.join(acceptedDir, 'after', `${entry.key}.png`);
@@ -890,13 +984,8 @@ function promote() {
 
   for (const action of actions) {
     if (action.alreadyPromoted) continue;
-    if (action.remove) {
-      if (fs.existsSync(action.baselineFile)) fs.rmSync(action.baselineFile);
-      delete manifest.shots[action.entry.key];
-    } else {
-      fs.writeFileSync(action.baselineFile, action.canonicalBytes);
-      manifest.shots[action.entry.key] = action.capturedShot;
-    }
+    fs.writeFileSync(action.baselineFile, action.canonicalBytes);
+    manifest.shots[action.entry.key] = action.capturedShot;
   }
 
   manifest.capturedAt = captureManifest.capturedAt;
@@ -913,12 +1002,8 @@ function promote() {
       pr: acceptance.pr,
       headSha: acceptance.headSha,
       mergeSha,
-      promoted: acceptance.keys
-        .filter(entry => entry.kind !== 'removed')
-        .map(entry => entry.key),
-      pruned: acceptance.keys
-        .filter(entry => entry.kind === 'removed')
-        .map(entry => entry.key),
+      promoted: acceptance.keys.map(entry => entry.key),
+      pruned: [],
     },
   ].slice(-200);
   writeJSON(manifestFile, manifest);

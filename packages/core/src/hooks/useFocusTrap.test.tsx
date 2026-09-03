@@ -193,6 +193,46 @@ describe('useFocusTrap tabbable model (infra-8)', () => {
     expect(screen.getByTestId('first')).toHaveFocus();
   });
 
+  it('moves from a programmatic container focus target into the tabbable cycle', () => {
+    render(
+      <Trap>
+        <button type="button" data-testid="first">
+          First
+        </button>
+        <button type="button" data-testid="last">
+          Last
+        </button>
+      </Trap>,
+    );
+    const trap = screen.getByTestId('trap');
+    trap.tabIndex = -1;
+    trap.focus();
+
+    fireEvent.keyDown(document, {key: 'Tab'});
+
+    expect(screen.getByTestId('first')).toHaveFocus();
+  });
+
+  it('moves backward from a programmatic container focus target to the last tabbable control', () => {
+    render(
+      <Trap>
+        <button type="button" data-testid="first">
+          First
+        </button>
+        <button type="button" data-testid="last">
+          Last
+        </button>
+      </Trap>,
+    );
+    const trap = screen.getByTestId('trap');
+    trap.tabIndex = -1;
+    trap.focus();
+
+    fireEvent.keyDown(document, {key: 'Tab', shiftKey: true});
+
+    expect(screen.getByTestId('last')).toHaveFocus();
+  });
+
   it('keeps a programmatic focus target when the trap has no tabbable controls', () => {
     render(
       <Trap>

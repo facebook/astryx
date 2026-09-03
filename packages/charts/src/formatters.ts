@@ -46,11 +46,21 @@ const getPercentFormat = byLocale(
 );
 
 const getShortDateFormat = byLocale(
-  locale => new Intl.DateTimeFormat(locale, {month: 'short', day: 'numeric'}),
+  locale =>
+    new Intl.DateTimeFormat(locale, {
+      month: 'short',
+      day: 'numeric',
+      calendar: 'gregory',
+    }),
 );
 
 const getMonthYearFormat = byLocale(
-  locale => new Intl.DateTimeFormat(locale, {month: 'short', year: 'numeric'}),
+  locale =>
+    new Intl.DateTimeFormat(locale, {
+      month: 'short',
+      year: 'numeric',
+      calendar: 'gregory',
+    }),
 );
 
 /**
