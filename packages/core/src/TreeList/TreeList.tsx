@@ -18,7 +18,7 @@
 import {useId, useState, useMemo, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {mergeProps, composeEventHandlers} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {TreeListItem} from './TreeListItem';
 import type {
@@ -261,6 +261,17 @@ export function TreeList({
     hasRovingTabIndex: true,
   });
 
+  const handleRootKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      onKeyDownProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      handleKeyDown(e);
+    },
+    [onKeyDownProp, handleKeyDown],
+  );
+
   const hasExpandableItems = items.some(
     item => item.children != null && item.children.length > 0,
   );
@@ -335,6 +346,7 @@ export function TreeList({
     <div
       ref={ref}
       data-testid={testId}
+      onKeyDown={handleRootKeyDown}
       {...mergeProps(
         themeProps('tree-list', {density, variant}),
         stylex.props(styles.root, xstyle),
@@ -352,10 +364,6 @@ export function TreeList({
         role="tree"
         aria-label={header != null ? undefined : ariaLabel}
         aria-labelledby={header != null ? headerId : ariaLabelledby}
-        onKeyDown={composeEventHandlers(
-          onKeyDownProp as unknown as React.KeyboardEventHandler<HTMLUListElement>,
-          handleKeyDown,
-        )}
         onFocus={handleFocus}
         {...stylex.props(styles.list)}>
         {renderItems(items, 0, [])}

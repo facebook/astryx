@@ -1163,14 +1163,22 @@ describe('TreeList', () => {
     );
   });
 
-  it('lets a consumer prevent built-in TreeList keyboard navigation', () => {
+  it('lets a consumer prevent built-in TreeList keyboard navigation while receiving root div as event.currentTarget', () => {
+    let capturedCurrentTarget: Element | null = null;
+    const ref = {current: null as HTMLDivElement | null};
     render(
       <TreeList
+        ref={el => {
+          ref.current = el;
+        }}
         items={[
           {id: 'one', label: 'One'},
           {id: 'two', label: 'Two'},
         ]}
-        onKeyDown={event => event.preventDefault()}
+        onKeyDown={event => {
+          capturedCurrentTarget = event.currentTarget;
+          event.preventDefault();
+        }}
       />,
     );
 
@@ -1178,15 +1186,24 @@ describe('TreeList', () => {
     items[0].focus();
     fireEvent.keyDown(items[0], {key: 'ArrowDown'});
 
+    expect(capturedCurrentTarget).toBe(ref.current);
+    expect(ref.current).toBeInstanceOf(HTMLDivElement);
     expect(items[0]).toHaveFocus();
     expect(items[0]).toHaveAttribute('tabindex', '0');
     expect(items[1]).toHaveAttribute('tabindex', '-1');
   });
 
-  it('fires non-canceling consumer onKeyDown while built-in navigation works', () => {
-    const onKeyDown = vi.fn();
+  it('fires non-canceling consumer onKeyDown with root div as event.currentTarget while built-in navigation works', () => {
+    let capturedCurrentTarget: Element | null = null;
+    const ref = {current: null as HTMLDivElement | null};
+    const onKeyDown = vi.fn((event: React.KeyboardEvent<HTMLDivElement>) => {
+      capturedCurrentTarget = event.currentTarget;
+    });
     render(
       <TreeList
+        ref={el => {
+          ref.current = el;
+        }}
         items={[
           {id: 'one', label: 'One'},
           {id: 'two', label: 'Two'},
@@ -1200,6 +1217,8 @@ describe('TreeList', () => {
     fireEvent.keyDown(items[0], {key: 'ArrowDown'});
 
     expect(onKeyDown).toHaveBeenCalledTimes(1);
+    expect(capturedCurrentTarget).toBe(ref.current);
+    expect(ref.current).toBeInstanceOf(HTMLDivElement);
     expect(items[1]).toHaveFocus();
     expect(items[1]).toHaveAttribute('tabindex', '0');
   });
