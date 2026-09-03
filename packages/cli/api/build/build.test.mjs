@@ -148,3 +148,47 @@ describe('build kit — coverage gates the pages group', () => {
     for (const p of r.data.pages) expect(p.queryTerms).toBe(1);
   });
 });
+
+describe('build kit — a thin kit says what to try next', () => {
+  it('hints when the kit comes back nearly empty', async () => {
+    // An agent reading a near-empty kit does not conclude "my wording was
+    // wrong" — it concludes the package has nothing and falls back on its own
+    // memory of Astryx, which is the failure `build` exists to prevent.
+    const r = await build('quantum flux capacitor telemetry', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.pages.length + r.data.blocks.length + r.data.domain.length).toBeLessThan(3);
+    expect(r.data.hint?.reason).toMatch(/keyword search/i);
+    expect(r.data.hint?.commands).toEqual(['component --list', 'template --list']);
+  });
+
+  it('carries no hint when the kit is healthy', async () => {
+    const r = await build('dashboard', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.hint).toBeUndefined();
+  });
+
+  it('hints for a matched-then-filtered query: hasResults true, nothing offerable', async () => {
+    // The case most likely to be misread, and the reason the threshold counts
+    // what SURVIVED the floors rather than what search returned.
+    const r = await build('blockchain', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.hasResults).toBe(true);
+    expect(r.data.pages.length + r.data.blocks.length + r.data.domain.length).toBe(0);
+    expect(r.data.hint).toBeTruthy();
+  });
+
+  it('keeps recovery commands bare, for the caller to render', async () => {
+    // The API cannot know how a project invokes the CLI. A baked-in `astryx
+    // component --list` does not resolve in a pnpm workspace.
+    const r = await build('quantum flux capacitor telemetry', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    for (const c of r.data.hint?.commands ?? []) {
+      expect(c).not.toMatch(/^astryx\b/);
+      expect(c).not.toMatch(/pnpm|npx|yarn|bun/);
+    }
+  });
+});

@@ -34,6 +34,7 @@
  * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.domain Idea-specific components/hooks (≤6), excluding frame/foundation.
  * @property {string[]} data.frame Always-on page-shell component names.
  * @property {string[]} data.foundation Always-on layout/typography/action component names.
+ * @property {{reason: string, commands: string[]}} [data.hint] Present only when the kit is thin. `reason` says why, `commands` are bare subcommands (e.g. `component --list`) for the caller to render with its own invocation — so a reader is never handed a command that does not resolve in their project.
  */
 
 /**

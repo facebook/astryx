@@ -132,6 +132,7 @@ export function registerBuild(program) {
         domain,
         frame,
         foundation,
+        hint,
       } = result.data;
       recordResultSummary([...pages, ...blocks, ...domain], {
         directMatch,
@@ -189,6 +190,9 @@ export function registerBuild(program) {
       if (blocks.length) sectionsOrder.push('BLOCKS');
       if (domain.length) sectionsOrder.push('DOMAIN COMPONENTS');
       sectionsOrder.push('FRAME + FOUNDATION');
+      // The legend promises the complete order, so a section emitted after it
+      // has to be in it.
+      if (hint) sectionsOrder.push('FEW MATCHES');
 
       /** @type {import('../formatters/index.mjs').Block[]} */
       const out = [
@@ -238,6 +242,21 @@ export function registerBuild(program) {
             'import "@astryxdesign/core/reset.css" + "astryx.css"; no <div>/style for layout — use Stack/Grid + tokens',
         }),
       );
+
+      // Last, so it is the line the reader leaves with — and only when the kit
+      // was thin enough that "the package has nothing" is the wrong conclusion.
+      // The commands arrive bare and are rendered through the project's own
+      // invocation, so they are runnable as printed.
+      if (hint) {
+        out.push(
+          section(
+            'FEW MATCHES',
+            `${hint.reason}\nBrowse instead:\n${hint.commands
+              .map(c => formatCliCommand(c))
+              .join('\n')}`,
+          ),
+        );
+      }
 
       emit(...out);
     },
