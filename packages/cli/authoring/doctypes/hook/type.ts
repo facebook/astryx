@@ -5,6 +5,7 @@
  */
 
 import type {
+  ComponentAccessibilityRequirement,
   ComponentBestPractice,
   HookParamDoc,
   HookReturnDoc,
@@ -73,5 +74,6 @@ export interface HookTranslationDoc {
   usage?: {
     description?: string;
     bestPractices?: ComponentBestPractice[];
+    accessibility?: ComponentAccessibilityRequirement[];
   };
 }

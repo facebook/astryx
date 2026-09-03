@@ -46,16 +46,20 @@ import {
   typeScaleVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
-import {mergeRefs} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
-import {formatFilterValue} from './formatFilterValue';
+import {
+  formatFilterValue,
+  formatDateAbsoluteCompact,
+} from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {themeProps} from '../utils/themeProps';
 import {truncateCharacters} from '../utils/characters';
 import {useTranslator} from '../i18n';
+import {useLocale} from '../i18n/useLocale';
+import type {Locale} from '../i18n/types';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
@@ -70,9 +74,18 @@ import type {
   PowerSearchComponents,
 } from './types';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Icon mapping for typeahead entries
 // =============================================================================
+
+// Ranked suggestions shown for a non-empty query. The field list itself is
+// never capped -- see the maxSearchResults prop.
+const DEFAULT_MAX_SEARCH_RESULTS = 10;
+
+// Empty-query browsing gets a high safety ceiling, matching XDS. This shows
+// every practical field list without allowing an accidental unbounded DOM.
+const MAX_BROWSE_MENU_ITEMS = 1000;
 
 const OPERATOR_VALUE_TYPE_TO_ICON: Record<string, IconName> = {
   string: 'search',
@@ -104,7 +117,12 @@ const tokenValueStyles = stylex.create({
 const popoverLayerStyles = stylex.create({
   layer: {
     width: 'anchor-size(width)',
-    minWidth: 400,
+    // Floor for comfortable editing, yielding when the available inline
+    // space cannot fit it, so the editor stays on-screen at narrow viewport
+    // widths (#4761). Percentages resolve against the position-area region
+    // (anchor start edge to viewport end), falling back to the viewport
+    // where area sizing is not honored.
+    minWidth: `min(400px, calc(100% - ${spacingVars['--spacing-4']}))`,
   },
 });
 
@@ -131,10 +149,12 @@ function PowerSearchTokenValue({
   operatorValue,
   filterValue,
   maxLength,
+  locale,
 }: {
   operatorValue: OperatorValue;
   filterValue: FilterValue;
   maxLength: number;
+  locale: Locale;
 }) {
   switch (filterValue.type) {
     case 'empty':
@@ -276,12 +296,10 @@ function PowerSearchTokenValue({
       );
 
     case 'date_absolute': {
-      const date = new Date(filterValue.unixSeconds * 1000);
-      const formatted = new Intl.DateTimeFormat(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      }).format(date);
+      const formatted = formatDateAbsoluteCompact(
+        filterValue.unixSeconds,
+        locale,
+      );
       return (
         <span {...stylex.props(tokenValueStyles.value)}>
           {truncateString(formatted, maxLength)}
@@ -396,8 +414,14 @@ export interface PowerSearchProps extends Omit<
   menuWidth?: number;
   /** Max display length for filter token values. @default 40 */
   maxTokenLength?: number;
-  /** Max items in operator dropdown. */
+  /** Max suggestions in string and entity value typeaheads. @default 10 */
   maxOperatorMenuItems?: number;
+  /**
+   * Max ranked results shown for a non-empty query. This does not affect the
+   * value editor shown after selecting a field. Browsing the field list with
+   * an empty query shows up to 1,000 fields. @default 10
+   */
+  maxSearchResults?: number;
   /** Label for the save button in edit popover. @default 'Apply' */
   popoverSaveButtonLabel?: string;
   /** Timezone ID for date formatting. */
@@ -537,7 +561,10 @@ export function PowerSearch({
   onBlur,
   status,
   statusVariant = 'attached',
+  menuWidth,
   maxTokenLength = 40,
+  maxOperatorMenuItems,
+  maxSearchResults = DEFAULT_MAX_SEARCH_RESULTS,
   popoverSaveButtonLabel: popoverSaveButtonLabelFromProps,
   timezoneID,
   tokenOverflowBehavior,
@@ -554,8 +581,9 @@ export function PowerSearch({
 }: PowerSearchProps) {
   const size = useSize(sizeProp, 'md');
   const config = useInternalConfig(configProp);
-  const searchSource = usePowerSearchSource(config);
+  const searchSource = usePowerSearchSource(config, maxSearchResults);
   const t = useTranslator();
+  const locale = useLocale();
   const label = labelFromProps ?? t('@astryx.powersearch.label');
   const placeholder =
     placeholderFromProps ?? t('@astryx.powersearch.placeholder');
@@ -625,6 +653,7 @@ export function PowerSearch({
             filter.value,
             maxTokenLength,
             t,
+            locale,
             timezoneID,
           )
         : '';
@@ -644,7 +673,7 @@ export function PowerSearch({
         },
       };
     });
-  }, [filters, config, maxTokenLength, timezoneID, t]);
+  }, [filters, config, maxTokenLength, timezoneID, t, locale]);
 
   // Handle tokenizer onChange (field selected from typeahead)
   const handleTokenizerChange = useCallback(
@@ -820,6 +849,7 @@ export function PowerSearch({
             operatorValue={operator.value}
             filterValue={filter.value}
             maxLength={adjustedMaxLength}
+            locale={locale}
           />
         ) : undefined;
 
@@ -858,6 +888,7 @@ export function PowerSearch({
       config,
       configProp,
       maxTokenLength,
+      locale,
       size,
       isReadOnly,
       isDisabled,
@@ -953,6 +984,7 @@ export function PowerSearch({
         onSave={handlePopoverSave}
         onCancel={handlePopoverCancel}
         saveButtonLabel={popoverSaveButtonLabel}
+        maxMenuItems={maxOperatorMenuItems}
         isReadOnly={isReadOnly}
       />
     );
@@ -965,6 +997,7 @@ export function PowerSearch({
     handlePopoverSave,
     handlePopoverCancel,
     popoverSaveButtonLabel,
+    maxOperatorMenuItems,
     isReadOnly,
   ]);
 
@@ -1020,7 +1053,10 @@ export function PowerSearch({
   return (
     <>
       <div
-        ref={mergeRefs(ref, popover.triggerRef as React.Ref<HTMLDivElement>)}
+        ref={useMergedRefs(
+          ref,
+          popover.triggerRef as React.Ref<HTMLDivElement>,
+        )}
         {...themeProps('power-search')}>
         <Tokenizer
           handleRef={tokenizerRef}
@@ -1031,6 +1067,8 @@ export function PowerSearch({
           onChange={handleTokenizerChange}
           renderToken={renderToken}
           renderItem={renderItem}
+          maxMenuItems={MAX_BROWSE_MENU_ITEMS}
+          menuWidth={menuWidth}
           placeholder={filters.length === 0 ? placeholder : ''}
           hasAutoFocus={hasAutoFocus}
           hasClear={hasClear && !isReadOnly}

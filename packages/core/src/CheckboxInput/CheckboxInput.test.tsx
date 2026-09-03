@@ -19,6 +19,30 @@ import {getForcedColorsRules} from '../__tests__/forcedColors';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {FOCUS_OUTLINE_PARTS} from '../utils/focusOutline.stylex';
 
+interface InjectedRule {
+  selector: string;
+  text: string;
+  media: string | null;
+}
+
+function injectedRules(): InjectedRule[] {
+  const walk = (rules: CSSRuleList, condition: string | null): InjectedRule[] =>
+    [...rules].flatMap((rule): InjectedRule[] => {
+      const {selectorText} = rule as CSSStyleRule;
+      if (typeof selectorText === 'string') {
+        return [{selector: selectorText, text: rule.cssText, media: condition}];
+      }
+      const nested = (rule as CSSGroupingRule).cssRules;
+      if (nested == null) {
+        return [];
+      }
+      const own = (rule as CSSMediaRule).media?.mediaText;
+      return walk(nested, own != null && own !== '' ? own : condition);
+    });
+
+  return [...document.styleSheets].flatMap(sheet => walk(sheet.cssRules, null));
+}
+
 afterEach(() => {
   __resetLiveRegionsForTest();
 });
@@ -611,6 +635,35 @@ describe('CheckboxInput', () => {
       ]).toEqual([]);
     });
   });
+
+  describe('coarse pointer and RTL hit-target positioning', () => {
+    it.each([
+      ['sm', 'ltr'],
+      ['sm', 'rtl'],
+      ['md', 'ltr'],
+      ['md', 'rtl'],
+    ] as const)(
+      'applies centerInline styling to native input (size: %s, dir: %s)',
+      (size, dir) => {
+        const {container} = render(
+          <div dir={dir}>
+            <CheckboxInput
+              label="Option"
+              size={size}
+              value={false}
+              onChange={() => {}}
+            />
+          </div>,
+        );
+
+        const input = container.querySelector(
+          'input[type="checkbox"]',
+        ) as HTMLInputElement;
+        expect(input).toBeInTheDocument();
+        expect(input.className).toContain('centerInline');
+      },
+    );
+  });
 });
 
 // jsdom cannot emulate forced-colors rendering, so this asserts that the
@@ -717,5 +770,20 @@ describe('focus ring ownership (WCAG 2.4.7)', () => {
     );
     fireEvent.blur(input);
     expect(indicatorOf(container).style.outlineStyle).toBe('');
+  });
+});
+
+describe('label theme target', () => {
+  it('names its own label so a theme can style it apart from a field label', () => {
+    // The control knows this label shares a row with it; the label does not.
+    // Both classes land on the one element, so a theme reaches every label
+    // through `astryx-field-label` and only this kind through
+    // `astryx-checkbox-label`.
+    render(
+      <CheckboxInput label="Notify me" value={false} onChange={() => {}} />,
+    );
+    const label = screen.getByText('Notify me').closest('label');
+    expect(label).toHaveClass('astryx-field-label');
+    expect(label).toHaveClass('astryx-checkbox-label');
   });
 });

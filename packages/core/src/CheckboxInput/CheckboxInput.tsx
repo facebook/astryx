@@ -44,7 +44,7 @@ import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
@@ -52,6 +52,7 @@ import {useIndicator} from '../Indicator';
 import {themeProps} from '../utils/themeProps';
 import {CheckboxListContext} from '../CheckboxList/CheckboxListContext';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   container: {
     display: 'flex',
@@ -77,34 +78,24 @@ const styles = stylex.create({
   },
   input: {
     position: 'absolute',
+    top: '50%',
     margin: 0,
     padding: 0,
     opacity: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
-    minInlineSize: {
-      default: null,
-      '@media (pointer: coarse)': '24px',
-    },
-    minBlockSize: {
-      default: null,
-      '@media (pointer: coarse)': '24px',
-    },
-    insetBlockStart: {
-      default: null,
-      '@media (pointer: coarse)': '50%',
-    },
-    insetInlineStart: {
-      default: null,
-      '@media (pointer: coarse)': '50%',
-    },
-    transform: {
-      default: null,
-      '@media (pointer: coarse)': 'translate(-50%, -50%)',
+  },
+  inputCoarse: {
+    '@media (pointer: coarse)': {
+      minInlineSize: 24,
+      minBlockSize: 24,
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   labelWrapper: {
     display: 'flex',
@@ -406,7 +397,7 @@ export function CheckboxInput({
           {...focusProps}>
           <input
             {...rest}
-            ref={mergeRefs(
+            ref={useMergedRefs(
               ref,
               indeterminateRef,
               disabledMessageTooltip.positionRef,
@@ -448,6 +439,8 @@ export function CheckboxInput({
             aria-busy={isBusy || undefined}
             {...stylex.props(
               styles.input,
+              rtlStyles.centerInline('-50%'),
+              styles.inputCoarse,
               wrapperSizeStyles[size],
               isDisabled && styles.inputDisabled,
             )}
@@ -474,6 +467,11 @@ export function CheckboxInput({
         </div>
         <div {...stylex.props(styles.labelWrapper)}>
           <FieldLabel
+            // A checkbox's label shares a row with its control, unlike a form
+            // field's label above its input. Naming the label rather than the
+            // arrangement means a theme asks for the thing it wants, and the
+            // component that actually knows what this is says so.
+            {...themeProps('checkbox-label')}
             label={label}
             inputID={id}
             isLabelHidden={isLabelHidden}

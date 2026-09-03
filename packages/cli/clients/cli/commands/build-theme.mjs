@@ -38,6 +38,7 @@ import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {themeAdd} from '../../../api/theme/add/add.mjs';
 import {themeTemplate} from '../../../api/theme/template/template.mjs';
 import {themeList} from '../../../api/theme/list/list.mjs';
+import {themeTargets} from '../../../api/theme/targets/targets.mjs';
 import {themeBuild, importSpecifier} from '../../../api/theme/build/build.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as themeGroup} from './theme.doc.mjs';
@@ -45,10 +46,12 @@ import {doc as themeBuildCommand} from './theme-build.doc.mjs';
 import {doc as themeListCommand} from './theme-list.doc.mjs';
 import {doc as themeAddCommand} from './theme-add.doc.mjs';
 import {doc as themeTemplateCommand} from './theme-template.doc.mjs';
+import {doc as themeTargetsCommand} from './theme-targets.doc.mjs';
 import {doc as themeBuildFn} from '../../../api/theme/themeBuild.doc.mjs';
 import {doc as themeListFn} from '../../../api/theme/themeList.doc.mjs';
 import {doc as themeAddFn} from '../../../api/theme/themeAdd.doc.mjs';
 import {doc as themeTemplateFn} from '../../../api/theme/themeTemplate.doc.mjs';
+import {doc as themeTargetsFn} from '../../../api/theme/themeTargets.doc.mjs';
 
 /**
  * Path to this CLI's real entry (clients/cli/bin/astryx.mjs), resolved from
@@ -195,6 +198,36 @@ function printThemeList(themes) {
 }
 
 /**
+ * Render the targets as one greppable line each, under an aligned header. A
+ * `records()` block would be five lines per target — over a thousand for the
+ * full surface, which is the view this command exists to make readable.
+ * @param {import('../../../api/theme/theme.type.mjs').ThemeTargetEntry[]} targets
+ * @returns {string}
+ */
+function formatTargetsTable(targets) {
+  const rows = targets.map(t => ({
+    key: t.key,
+    component: t.component,
+    props: t.props.join(', ') || '-',
+    states: t.states.join(', ') || '-',
+  }));
+  const head = {key: 'key', component: 'component', props: 'props', states: 'states'};
+  const width = (/** @type {'key'|'component'|'props'} */ field) =>
+    [head, ...rows].reduce((max, r) => Math.max(max, r[field].length), 0);
+  const w = {key: width('key'), component: width('component'), props: width('props')};
+  const line = (/** @type {typeof head} */ r) =>
+    [
+      r.key.padEnd(w.key),
+      r.component.padEnd(w.component),
+      r.props.padEnd(w.props),
+      r.states,
+    ]
+      .join('  ')
+      .trimEnd();
+  return [line(head), ...rows.map(line)].join('\n');
+}
+
+/**
  * @param {import('commander').Command} program
  */
 export function registerTheme(program) {
@@ -224,6 +257,18 @@ export function registerTheme(program) {
       theme.help();
     },
   });
+
+  // Theming questions are asked at `theme`, but per-component overrides live
+  // under `component`. Without this pointer the group reads as a build-tool
+  // menu, and the component targets are unreachable from the noun the user
+  // started at.
+  theme.addHelpText(
+    'after',
+    `\nComponent style overrides:\n` +
+      `  ${getCliInvocation()} theme targets            Every themeable class, with its props and states\n` +
+      `  ${getCliInvocation()} component <Name>         One component's theming table\n` +
+      `  ${getCliInvocation()} docs theme               How component overrides work\n`,
+  );
 
   defineCommand(theme, themeBuildCommand, {
     fn: themeBuildFn,
@@ -499,6 +544,46 @@ export function registerTheme(program) {
             'Copy what you need into your own theme file, then delete it.',
         ),
         code(`${invocation} theme build ${result.data.path}`),
+      );
+    },
+  });
+
+  defineCommand(theme, themeTargetsCommand, {
+    fn: themeTargetsFn,
+    action: async (/** @type {string | undefined} */ filter) => {
+      const json = program.opts().json || false;
+
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeTargetsResponse} */
+      let result;
+      try {
+        result = await themeTargets(filter, {cwd: process.cwd()});
+      } catch (e) {
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+        cliError(err.message, {
+          suggestions: err.suggestions || [],
+          code: err.code,
+        });
+        return;
+      }
+
+      if (json) return jsonOut(result);
+
+      const run = getCliInvocation();
+      const {targets, componentCount} = result.data;
+      emit(
+        section(
+          'Theming targets',
+          `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}`,
+        ),
+        text(formatTargetsTable(targets)),
+        text(
+          [
+            `Each key goes under \`components\` in defineTheme; it paints \`.astryx-<key>\`.`,
+            `Props take a value (\`variant:secondary\`); states are written bare (\`checked\`).`,
+            `One component in full: ${run} component <Name>`,
+          ].join('\n'),
+        ),
       );
     },
   });

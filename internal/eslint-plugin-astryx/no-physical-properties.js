@@ -7,13 +7,17 @@
  *   under RTL; the CSS logical-property equivalents (inline-start/inline-end,
  *   start/end) do, so they're required for correct right-to-left rendering.
  *
- *   Two kinds of violation are detected:
+ *   Three kinds of violation are detected:
  *   1. KEY-BASED — the object key is itself a banned physical property
  *      (e.g. `marginLeft`, `borderRightColor`, `left`, `borderTopLeftRadius`).
  *      The suggested fix renames the key to the logical equivalent.
  *   2. VALUE-BASED — the key is fine, but a specific physical VALUE is used
  *      (e.g. `textAlign: 'left'`, `float: 'right'`, `clear: 'left'`). The
  *      suggested fix replaces only the value; the key is left alone.
+ *   3. RELATIONSHIP-BASED — a logical 50% inline anchor is paired with a
+ *      physical horizontal translate under the same conditions, but has no RTL
+ *      transform counterpart. Each declaration looks safe alone; together they
+ *      displace the element by its own width under RTL.
  *
  *   EXCEPTION — inline centering: `left: '50%'` paired with a `translate`/
  *   `translateX` in the same style object is a deliberate, direction-symmetric
@@ -87,7 +91,7 @@ const PHYSICAL_VALUE_MAP = {
   clear: { left: 'inline-start', right: 'inline-end' },
 };
 
-function isInsideStylexCreate(node) {
+export function isInsideStylexCreate(node) {
   let current = node;
   while (current) {
     if (
@@ -111,6 +115,85 @@ function getStaticValue(node) {
   return null;
 }
 
+function getStaticText(node) {
+  const value = getStaticValue(node);
+  if (value !== null) return value;
+  if (node?.type === 'TemplateLiteral') {
+    return node.quasis.map((quasi) => quasi.value.raw).join(' ');
+  }
+  return null;
+}
+
+function propertyName(property) {
+  return property?.key?.name ?? property?.key?.value ?? null;
+}
+
+/**
+ * Flatten a StyleX conditional value into its static leaves. `default` is kept
+ * in the path here and normalized only when conditions are compared.
+ */
+function conditionalLeaves(node, path = []) {
+  const text = getStaticText(node);
+  if (text !== null) return [{path, text}];
+  if (node?.type !== 'ObjectExpression') return [];
+
+  return node.properties.flatMap((property) => {
+    if (property.type !== 'Property') return [];
+    const name = propertyName(property);
+    if (typeof name !== 'string') return [];
+    return conditionalLeaves(property.value, [...path, name]);
+  });
+}
+
+function isRtlCondition(condition) {
+  return (
+    /\[dir\s*=\s*["']rtl["']\]/.test(condition) ||
+    /:dir\(\s*rtl\s*\)/.test(condition)
+  );
+}
+
+function normalizedConditions(path) {
+  return path.filter(
+    (condition) => condition !== 'default' && !isRtlCondition(condition),
+  );
+}
+
+function sameConditions(a, b) {
+  const left = normalizedConditions(a);
+  const right = normalizedConditions(b);
+  return (
+    left.length === right.length &&
+    left.every((condition, index) => condition === right[index])
+  );
+}
+
+function horizontalTranslate(text) {
+  const match = text.match(/\btranslate(?:X)?\s*\(\s*([^,\s)]+)/);
+  if (!match) return null;
+  const value = match[1];
+  return /^[-+]?0(?:[a-z%]*)?$/.test(value) ? null : value;
+}
+
+function oppositeTranslations(a, b) {
+  if (a === b) return false;
+  const simple = /^([-+]?\d+(?:\.\d+)?)([a-z%]*)$/;
+  const left = a.match(simple);
+  const right = b.match(simple);
+  if (!left || !right || left[2] !== right[2]) return true;
+  return Number(left[1]) === -Number(right[1]);
+}
+
+function siblingProperty(node, keyName) {
+  const object = node.parent;
+  if (object?.type !== 'ObjectExpression') return null;
+  return (
+    object.properties.find(
+      (property) =>
+        property.type === 'Property' && propertyName(property) === keyName,
+    ) ?? null
+  );
+}
+
 /**
  * Does the given ObjectExpression already contain a Property whose key is
  * `keyName`? Handles both identifier keys (`marginLeft`) and string-literal
@@ -128,35 +211,70 @@ function objectHasKey(objectExpression, keyName) {
 }
 
 /**
- * Detects the inline-CENTERING pattern that must NOT be logicalized:
- * `left: '50%'` (or `'-50%'`) paired, in the same style object, with a
- * `transform` containing a `translate`/`translateX` — the physical anchor and
- * the physical translate reference the SAME physical edge, so the pair centers
- * symmetrically in both LTR and RTL. Renaming `left` → `insetInlineStart` here
- * flips the anchor under RTL while the translate stays physical, breaking the
- * centering by the element's own width. Callers should use the shared
- * `rtlStyles.centerInline(blockOffset)` helper instead (which owns the one
- * sanctioned physical-`left` suppression). Returns true when this Property is
- * the `left: '50%'` of such a centering pair.
+ * Returns the fixed inline-centering anchor value when a physical `left` and
+ * horizontal translate are active under the same StyleX conditions.
  */
-function isInlineCenteringLeft(node) {
-  const value = getStaticValue(node.value);
-  if (value !== '50%' && value !== '-50%') return false;
-  const obj = node.parent;
-  if (!obj || obj.type !== 'ObjectExpression') return false;
-  return obj.properties.some((prop) => {
-    if (prop.type !== 'Property') return false;
-    const name = prop.key?.name ?? prop.key?.value;
-    if (name !== 'transform') return false;
-    // transform value may be a string literal or a template literal
-    let text = '';
-    if (prop.value?.type === 'Literal' && typeof prop.value.value === 'string') {
-      text = prop.value.value;
-    } else if (prop.value?.type === 'TemplateLiteral') {
-      text = prop.value.quasis.map((q) => q.value.raw).join(' ');
+function inlineCenteringValue(node) {
+  const transform = siblingProperty(node, 'transform');
+  if (!transform) return null;
+  const transforms = conditionalLeaves(transform.value).filter((leaf) =>
+    horizontalTranslate(leaf.text),
+  );
+
+  for (const anchor of conditionalLeaves(node.value)) {
+    if (anchor.text !== '50%' && anchor.text !== '-50%') continue;
+    if (transforms.some((leaf) => sameConditions(anchor.path, leaf.path))) {
+      return anchor.text;
     }
-    return /\btranslate(X)?\s*\(/.test(text);
-  });
+  }
+  return null;
+}
+
+/**
+ * Returns the broken logical anchor value when a logical 50% inset and physical
+ * horizontal translate share a conditional branch without an opposite RTL
+ * transform in that branch.
+ */
+export function logicalCenteringStatuses(node) {
+  const transform = siblingProperty(node, 'transform');
+  if (!transform) return [];
+  const transforms = conditionalLeaves(transform.value)
+    .map((leaf) => ({...leaf, horizontal: horizontalTranslate(leaf.text)}))
+    .filter((leaf) => leaf.horizontal !== null);
+  const statuses = [];
+
+  for (const anchor of conditionalLeaves(node.value)) {
+    if (anchor.text !== '50%' && anchor.text !== '-50%') continue;
+    const defaults = transforms.filter(
+      (leaf) =>
+        !leaf.path.some(isRtlCondition) &&
+        sameConditions(anchor.path, leaf.path),
+    );
+    if (defaults.length === 0) continue;
+
+    const rtlTransforms = transforms.filter(
+      (leaf) =>
+        leaf.path.some(isRtlCondition) &&
+        sameConditions(anchor.path, leaf.path),
+    );
+    const compensated = defaults.every((defaultTransform) =>
+      rtlTransforms.some((rtlTransform) =>
+        oppositeTranslations(
+          defaultTransform.horizontal,
+          rtlTransform.horizontal,
+        ),
+      ),
+    );
+    statuses.push({compensated, value: anchor.text});
+  }
+  return statuses;
+}
+
+function unmirroredLogicalCenteringValue(node) {
+  return (
+    logicalCenteringStatuses(node).find((status) => !status.compensated)
+      ?.value ?? null
+  );
 }
 
 const rule = {
@@ -165,9 +283,10 @@ const rule = {
     fixable: 'code',
     docs: {
       description:
-        'Disallow physical left/right CSS properties and values inside ' +
-        'stylex.create(). Use the CSS logical equivalents ' +
-        '(inline-start/inline-end, start/end) for RTL support.',
+        'Disallow physical left/right CSS properties and values, plus unsafe ' +
+        'logical-centering transforms, inside stylex.create(). Use logical ' +
+        'properties for directional placement and rtlStyles.centerInline() ' +
+        'for fixed geometric centering.',
       category: 'Best Practices',
       recommended: true,
     },
@@ -184,10 +303,24 @@ const rule = {
         '`left: {{value}}` with a `translate` centers this element — do NOT ' +
         'rename it to `insetInlineStart` (that breaks centering under RTL). ' +
         'Use the shared `rtlStyles.centerInline(blockOffset)` helper instead.',
+      logicalCenteringTransform:
+        '`{{property}}: {{value}}` flips its anchor under RTL, but its paired ' +
+        'horizontal `translate` does not. Use `rtlStyles.centerInline(blockOffset)` ' +
+        'for fixed centering, or add an opposite RTL transform for a variable position.',
     },
-    schema: [],
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          allowLogicalCentering: {type: 'boolean'},
+        },
+        additionalProperties: false,
+      },
+    ],
   },
   create(context) {
+    const allowLogicalCentering =
+      context.options[0]?.allowLogicalCentering === true;
     return {
       Property(node) {
         if (!isInsideStylexCreate(node)) return;
@@ -201,11 +334,13 @@ const rule = {
           // Special case: `left: '50%'` + a centering `translate` must NOT be
           // logicalized (it would break RTL centering). Point at the shared
           // helper instead, and do NOT autofix.
-          if (propName === 'left' && isInlineCenteringLeft(node)) {
+          const centeringValue =
+            propName === 'left' ? inlineCenteringValue(node) : null;
+          if (centeringValue !== null) {
             context.report({
               node: node.key,
               messageId: 'inlineCentering',
-              data: {value: getStaticValue(node.value)},
+              data: {value: centeringValue},
             });
             return;
           }
@@ -246,6 +381,25 @@ const rule = {
             },
           });
           return;
+        }
+
+        // RELATIONSHIP-BASED: a logical 50% anchor flips under RTL while a
+        // physical horizontal translation does not. Inspect matching nested
+        // media/state branches and accept an explicit opposite RTL transform.
+        if (
+          !allowLogicalCentering &&
+          (propName === 'insetInlineStart' ||
+            propName === 'insetInlineEnd')
+        ) {
+          const centeringValue = unmirroredLogicalCenteringValue(node);
+          if (centeringValue !== null) {
+            context.report({
+              node: node.key,
+              messageId: 'logicalCenteringTransform',
+              data: {property: propName, value: centeringValue},
+            });
+            return;
+          }
         }
 
         // VALUE-BASED: the key is fine, but the value may be physical.

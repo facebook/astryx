@@ -55,6 +55,7 @@ export * from './NavIcon';
 export * from './NavMenu';
 export * from './Slider';
 export * from './Stack';
+export * from './Stepper';
 export * from './Switch';
 export * from './DateInput';
 export * from './DateTimeInput';
@@ -134,6 +135,8 @@ export type {
   ToastOptions,
   ToastDismissFn,
   ShowToastFn,
+  ToastContentRenderProps,
+  ToastContentRenderFn,
 } from './Toast';
 
 // Popover component and hook

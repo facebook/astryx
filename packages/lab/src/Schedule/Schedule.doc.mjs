@@ -25,6 +25,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Wrap Schedule in InternationalizationProvider to choose the language, numbering, and field order used by its date and time labels. Schedule date values and calendar arithmetic remain Gregorian for every locale.',
+      },
+      {
+        guidance: true,
+        description:
           'Give each event a category string that matches a categories entry so its color is meaningful and screen readers announce the category name. An unmatched name still renders, but always in blue.',
       },
       {

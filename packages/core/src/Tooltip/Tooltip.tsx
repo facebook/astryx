@@ -22,11 +22,15 @@ import React, {
 } from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
-import {useTooltip, type TooltipFocusTrigger} from './useTooltip';
+import {
+  useTooltip,
+  type TooltipFocusTrigger,
+  type TooltipTouchTrigger,
+} from './useTooltip';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {colorVars} from '../theme/tokens.stylex';
 
-export type {TooltipFocusTrigger} from './useTooltip';
+export type {TooltipFocusTrigger, TooltipTouchTrigger} from './useTooltip';
 
 const styles = stylex.create({
   wrapperContents: {
@@ -100,6 +104,20 @@ export interface TooltipProps {
   focusTrigger?: TooltipFocusTrigger;
 
   /**
+   * What a tap does on a touch pointer, where there is no hover:
+   * - `auto`: tap opens the tooltip, unless the trigger performs an action of
+   *   its own (a button, a link, a form control) — that tap belongs to the
+   *   control, and a hint about a control the user just operated is noise
+   * - `tap`: tap always opens the tooltip. This is what an info icon rendered
+   *   as a button wants: it looks like an action to the DOM, but revealing the
+   *   tooltip is the only thing it does
+   * - `none`: touch never opens the tooltip
+   *
+   * @default 'auto'
+   */
+  touchTrigger?: TooltipTouchTrigger;
+
+  /**
    * Whether the tooltip is enabled.
    * When false, hover/focus triggers are disabled.
    *
@@ -128,6 +146,11 @@ export interface TooltipProps {
    * - `true`: force-show the tooltip (hover/focus hide is suppressed)
    * - `false`: force-hide the tooltip
    * - `undefined`: uncontrolled — hover/focus triggers manage visibility
+   *
+   * A controlled tooltip still takes Escape when it is the top-most layer, and
+   * answers by calling `onOpenChange(false)` without hiding itself — closing is
+   * your update's decision, exactly as for a controlled Dialog. Ignore the call
+   * and the tip stays, and so does the press: nothing underneath dismisses.
    */
   isOpen?: boolean;
 
@@ -176,6 +199,7 @@ export function Tooltip({
   delay = 200,
   hideDelay = 0,
   focusTrigger = 'auto',
+  touchTrigger = 'auto',
   isEnabled = true,
   onOpenChange,
   hasHoverIndication = 'auto',
@@ -204,6 +228,7 @@ export function Tooltip({
     delay,
     hideDelay,
     focusTrigger,
+    touchTrigger,
     isEnabled,
     isOpen,
     isDefaultOpen,

@@ -1,5 +1,39 @@
 # @xds/theme-y2k
 
+# 0.5.2
+
+---
+
+# 0.5.1
+
+#### Fixes
+
+- Theme packages no longer ship an unused CommonJS `icons.js` artifact. Their root entry keeps its advertised CommonJS and ESM outputs, while the standalone icon companion used by `/built` is emitted only as `icons.mjs`. (#5512)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @jiunshinn
+
+---
+
+# 0.5.0
+
+---
+
+# 0.4.7
+
+---
+
+# 0.4.6
+
+---
+
+# 0.4.5
+
+---
+
 # 0.4.4
 
 ---

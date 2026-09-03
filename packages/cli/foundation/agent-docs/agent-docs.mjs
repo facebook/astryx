@@ -25,20 +25,28 @@ import {assertWithin} from '../fs/path-safety.mjs';
 import {getCliInvocation} from '../env/package-manager.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
 import {humanLog} from '../response/json.mjs';
+import {
+  AGENTS_MD,
+  CLAUDE_MD,
+  CLAUDE_DIR_MD,
+  CURSOR_RULES,
+  HERMES_DOT_MD,
+  HERMES_MD,
+  MARKER_START,
+  MARKER_END,
+  LEGACY_MARKER_START,
+  LEGACY_MARKER_END,
+  discoverAgentDocs,
+  isAstryxInitialized,
+} from './agent-doc-state.mjs';
 
-const AGENTS_MD = 'AGENTS.md';
-const CLAUDE_MD = 'CLAUDE.md';
-const CLAUDE_DIR_MD = '.claude/CLAUDE.md'; // cross-platform literal
-const CURSOR_RULES = '.cursorrules';
-const HERMES_DOT_MD = '.hermes.md';
-const HERMES_MD = 'HERMES.md';
-
-
-const MARKER_START = '<!-- ASTRYX:START -->';
-const MARKER_END = '<!-- ASTRYX:END -->';
-// Legacy markers — read during migration so the script finds existing XDS blocks
-const LEGACY_MARKER_START = '<!-- XDS:START -->';
-const LEGACY_MARKER_END = '<!-- XDS:END -->';
+// The agent-doc locations, markers, and the setup-state predicates
+// (discoverAgentDocs, isAstryxInitialized) are the ONE canonical contract. They
+// live in the dependency-free leaf ./agent-doc-state.mjs so the postinstall
+// nudge (enforcement layer 2) can load them safely at install time. Re-exported
+// here so existing importers (init/upgrade commands, the layer-3 nudge in
+// clients/cli/index.mjs, tests) keep their `from './agent-docs.mjs'` paths.
+export {discoverAgentDocs, isAstryxInitialized};
 
 /**
  * Locate the single well-formed managed block in `content`.
@@ -89,57 +97,6 @@ const AGENT_PRESETS = {
   codex: [AGENTS_MD],
   hermes: [HERMES_DOT_MD, HERMES_MD, AGENTS_MD],
 };
-
-/**
- * The canonical set of EVERY location an --agent preset (or the default) can
- * write the Astryx block. SINGLE SOURCE OF TRUTH: discovery, removal, and the
- * `isAstryxInitialized` predicate all derive from this list, so "where init
- * writes" and "where we look" can never drift. (Explicit --agent-docs-path
- * targets are user-chosen and not enumerable here.)
- */
-const AGENT_DOC_PATHS = [
-  AGENTS_MD, // Codex / ChatGPT / generic
-  CLAUDE_MD, // Claude Code (root)
-  CLAUDE_DIR_MD, // Claude Code (.claude/CLAUDE.md)
-  CURSOR_RULES, // Cursor
-  HERMES_DOT_MD, // Hermes
-  HERMES_MD, // Hermes
-];
-
-/**
- * Find all existing agent doc files in a directory, across EVERY location any
- * preset can write (see {@link AGENT_DOC_PATHS}: AGENTS.md, CLAUDE.md,
- * .claude/CLAUDE.md, .cursorrules, .hermes.md, HERMES.md).
- * @param {string} targetDir
- * @returns {string[]} Relative paths of existing agent doc files
- */
-export function discoverAgentDocs(targetDir) {
-  return AGENT_DOC_PATHS.filter(p => fs.existsSync(path.join(targetDir, p)));
-}
-
-/**
- * Single source of truth for "is Astryx set up in this project?" — true when any
- * agent-doc file already carries the Astryx marker, i.e. `init` / `agent-docs`
- * has run. Reused by the init & upgrade commands, the per-command setup nudge
- * (enforcement layer 3), and the cli postinstall nudge (layer 2). Core's
- * postinstall (separate package, layer 1) mirrors the same marker contract.
- *
- * @param {string} [targetDir=process.cwd()]
- * @returns {boolean}
- */
-export function isAstryxInitialized(targetDir = process.cwd()) {
-  for (const rel of discoverAgentDocs(targetDir)) {
-    try {
-      const content = fs.readFileSync(path.join(targetDir, rel), 'utf-8');
-      if (content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START)) {
-        return true;
-      }
-    } catch {
-      // Unreadable file — ignore and keep checking the others.
-    }
-  }
-  return false;
-}
 
 /**
  * Parse the Astryx version a managed block was generated for, from its header
@@ -299,12 +256,26 @@ export function detectStylingSystem(targetDir) {
  * configured (see {@link detectStylingSystem}) so the agent never reaches for a
  * styling path that isn't compiled here.
  *
+ * `topics` is the project's doc-topic list. Passing it is what puts an
+ * integration's topics — including one it contributed in place of a built-in —
+ * in front of the agent by name; without it the block falls back to the CLI's
+ * own topics, because resolving a project's catalog is async and this is not.
+ *
+ * Either way the list now includes the hyphenated topics. The fallback scan
+ * matched `\w+`, which does not match `-`, so five real topics were missing
+ * from every block ever written — `getting-started` and `cli-integrations`
+ * among them. An agent cannot ask for a topic it was never told about, and
+ * `getting-started` is the one it should reach for first.
+ *
  * @param {string} version
- * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string}} [options]
+ * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[]}} [options]
  * @returns {string}
  */
-export function generateCompressedIndex(version, {coreDir, invocation = getCliInvocation(), stylingSystem = 'css'} = {}) {
+export function generateCompressedIndex(version, {coreDir, invocation = getCliInvocation(), stylingSystem = 'css', topics} = {}) {
   const run = invocation;
+  // Annotated because MARKER_START is now an imported const: its literal type
+  // survives the module boundary, so the array would infer as that one literal.
+  /** @type {string[]} */
   const lines = [MARKER_START];
 
   // Component count from live discovery
@@ -377,13 +348,18 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   lines.push(`  component --list   ${componentCount} components by category`);
   lines.push('  template --list    page + block recipes');
   const docsDir = path.join(CLI_ROOT, 'assets', 'docs');
-  if (fs.existsSync(docsDir)) {
-    const topics = fs.readdirSync(docsDir)
-      .map(f => f.match(/^(\w+)\.doc\.mjs$/))
-      .filter(/** @returns {m is RegExpMatchArray} */ (m) => m != null)
-      .map(m => m[1])
-      .sort();
-    if (topics.length > 0) lines.push(`  docs <topic>       ${topics.join(', ')}`);
+  const resolvedTopics =
+    topics ??
+    (fs.existsSync(docsDir)
+      ? fs
+          .readdirSync(docsDir)
+          .map(f => f.match(/^([\w-]+)\.doc\.mjs$/))
+          .filter(/** @returns {m is RegExpMatchArray} */ (m) => m != null)
+          .map(m => m[1])
+          .sort()
+      : []);
+  if (resolvedTopics.length > 0) {
+    lines.push(`  docs <topic>       ${resolvedTopics.join(', ')}`);
   }
   lines.push('  swizzle <Name>     eject component source for deep customization');
   lines.push('  upgrade --apply    run after any @astryxdesign/core bump');
@@ -566,14 +542,17 @@ export function removeAgentDocs(targetDir) {
  * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'hermes', 'all'
  * @param {string[]} [options.paths] - Explicit paths (overrides agent/auto-detect)
  * @param {boolean} [options.onlyReplace] - Only update files that already have Astryx markers (for upgrades)
+ * @param {string[]} [options.topics] - Doc topics to list in the block; defaults
+ *   to the CLI's own. Pass the project's catalog (`(await project.docs()).names()`)
+ *   so an integration's topics reach the agent.
  * @returns {string[]} List of files written
  */
-export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false} = {}) {
+export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false, topics} = {}) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
   const invocation = getCliInvocation(targetDir);
   const stylingSystem = detectStylingSystem(targetDir);
-  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, invocation, stylingSystem});
+  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, invocation, stylingSystem, topics});
   /** @type {string[]} */
   const written = [];
 

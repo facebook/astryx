@@ -27,6 +27,45 @@ afterEach(() => {
 });
 
 describe('Field', () => {
+  it.each(['sm', 'md', 'lg'] as const)(
+    'provides a half-height overlap for an attached %s control',
+    size => {
+      render(
+        <Field
+          label="Username"
+          inputID="username"
+          status={{type: 'warning', message: 'This username may be taken'}}>
+          <div data-size={size}>Control</div>
+        </Field>,
+      );
+
+      const status = screen.getByText('This username may be taken');
+      expect(
+        getComputedStyle(status.parentElement!).getPropertyValue(
+          '--_field-status-overlap',
+        ),
+      ).toBe(`calc(var(--size-element-${size}) / 2)`);
+    },
+  );
+
+  it('layers an attached status behind a custom control', () => {
+    render(
+      <Field
+        label="Username"
+        inputID="username"
+        status={{type: 'warning', message: 'This username may be taken'}}>
+        <input id="username" />
+      </Field>,
+    );
+
+    const status = screen.getByText('This username may be taken');
+    const wrapper = status.parentElement!;
+
+    expect(getComputedStyle(wrapper).isolation).toBe('isolate');
+    expect(getComputedStyle(status).position).toBe('relative');
+    expect(getComputedStyle(status).zIndex).toBe('-1');
+  });
+
   it('renders with label', () => {
     render(
       <Field label="Email" inputID="email-input">

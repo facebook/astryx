@@ -20,8 +20,15 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {Profiler, type ProfilerOnRenderCallback} from 'react';
 import {Typeahead} from './Typeahead';
+import {readFile} from 'node:fs/promises';
+import {resolve} from 'node:path';
 import {BaseTypeahead} from './BaseTypeahead';
+import {
+  BusyIndicatorLaneProvider,
+  createBusyIndicatorLane,
+} from './busyIndicatorLane';
 import type {SearchSource, SearchableItem} from './types';
 import {InternationalizationProvider} from '../i18n';
 
@@ -420,6 +427,55 @@ describe('BaseTypeahead focus-out', () => {
     });
   });
 
+  it('closes the list on the Tab keydown, before the blur it produces', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    input.focus();
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // No blur is fired here on purpose: dismissing from the blur instead lets
+    // the popover close mid-focus-move, which Chrome answers by dropping
+    // focus to <body>.
+    fireEvent.keyDown(input, {key: 'Tab'});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('Tab from the input with the list open moves focus to the next control', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+        <button type="button">Next</button>
+      </>,
+    );
+    const input = screen.getByRole('combobox');
+    input.focus();
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    await user.keyboard('{Tab}');
+    expect(screen.getByRole('button', {name: 'Next'})).toHaveFocus();
+  });
+
   it('keeps the dropdown open when focus moves into the anchor wrapper', async () => {
     const anchor = document.createElement('div');
     document.body.appendChild(anchor);
@@ -658,6 +714,126 @@ describe('Typeahead size', () => {
 });
 
 describe('BaseTypeahead hasEntriesOnFocus', () => {
+  it('does not commit a loading cycle for an empty synchronous bootstrap', async () => {
+    const bootstrap = vi.fn((): SearchableItem[] => []);
+    const onRender = vi.fn<ProfilerOnRenderCallback>();
+    render(
+      <Profiler id="typeahead" onRender={onRender}>
+        <BaseTypeahead
+          searchSource={{search: () => [], bootstrap}}
+          value={null}
+          onChange={() => {}}
+          hasEntriesOnFocus
+        />
+      </Profiler>,
+    );
+    const input = screen.getByRole('combobox');
+    onRender.mockClear();
+
+    await act(async () => {
+      fireEvent.focus(input);
+      await Promise.resolve();
+    });
+
+    expect(bootstrap).toHaveBeenCalledOnce();
+    expect(onRender).not.toHaveBeenCalled();
+  });
+
+  it('does not report loading for synchronous bootstrap results', async () => {
+    const lane = createBusyIndicatorLane();
+    const onLoadingChange = vi.fn(lane.onBusyChange);
+    render(
+      <BusyIndicatorLaneProvider
+        value={{...lane, onBusyChange: onLoadingChange}}>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          hasEntriesOnFocus
+        />
+      </BusyIndicatorLaneProvider>,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    expect(onLoadingChange).not.toHaveBeenCalled();
+  });
+
+  it('clears a pending search loading state before synchronous bootstrap', async () => {
+    let settleSearch: (items: SearchableItem[]) => void = () => {};
+    const searchSource: SearchSource = {
+      search: async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settleSearch = resolve;
+        }),
+      bootstrap: () => [],
+    };
+    render(
+      <BaseTypeahead
+        searchSource={searchSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'a'}});
+    await waitFor(() => {
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    });
+
+    fireEvent.change(input, {target: {value: ''}});
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('status', {name: 'Loading'}),
+      ).not.toBeInTheDocument();
+    });
+
+    await act(async () => {
+      settleSearch(fruits.slice(0, 1));
+      await Promise.resolve();
+    });
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps the loading state for an asynchronous bootstrap', async () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const bootstrap = vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settle = resolve;
+        }),
+    );
+    render(
+      <BaseTypeahead
+        searchSource={{search: () => [], bootstrap}}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows bootstrap results on mouse click', async () => {
     render(
       <BaseTypeahead
@@ -726,6 +902,162 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
     await waitFor(() => {
       expect(input).toHaveAttribute('aria-expanded', 'true');
     });
+  });
+});
+
+describe('BaseTypeahead minQueryLength', () => {
+  it('does not search or open the menu below the threshold', async () => {
+    const search = vi.fn((query: string) =>
+      fruits.filter(f => f.label.toLowerCase().includes(query.toLowerCase())),
+    );
+    render(
+      <BaseTypeahead
+        searchSource={{search, bootstrap: () => []}}
+        value={null}
+        onChange={() => {}}
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(search).not.toHaveBeenCalled();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+
+    // Positive control: the third character crosses the threshold, so the
+    // same harness does see the search and the open menu.
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(search).toHaveBeenCalledExactlyOnceWith('App');
+  });
+
+  it('closes the menu again when the query falls back below the threshold', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('does not fall back to bootstrap entries on ArrowDown below the threshold', async () => {
+    const bootstrap = vi.fn(() => fruits.slice(0, 3));
+    render(
+      <BaseTypeahead
+        searchSource={{search: () => [], bootstrap}}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    bootstrap.mockClear();
+
+    // Typing below the threshold closes the bootstrap menu...
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    // ...and ArrowDown must not re-open it with entries that ignore the
+    // two characters already typed.
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(bootstrap).not.toHaveBeenCalled();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('searches on the first character when minQueryLength is not set', async () => {
+    const search = vi.fn(() => fruits.slice(0, 1));
+    render(
+      <BaseTypeahead
+        searchSource={{search, bootstrap: () => []}}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'A'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(search).toHaveBeenCalledExactlyOnceWith('A');
+  });
+
+  it('stops reporting "Loading" when the query falls below the threshold mid-search', async () => {
+    // Falling below the threshold abandons the in-flight search by bumping the
+    // search generation, which also makes that search decline to clear the
+    // loading flag on its way out. Backspacing from three characters to two on
+    // a remote source is the everyday way to hit it, and the field would
+    // otherwise report "Loading" to a screen reader until the third character
+    // went back in.
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const search = vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settle = resolve;
+        }),
+    );
+    render(
+      <BaseTypeahead
+        searchSource={{search, bootstrap: () => []}}
+        value={null}
+        onChange={() => {}}
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    });
+    expect(input).toHaveAttribute('aria-busy', 'true');
+
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await act(async () => {
+      settle(fruits.slice(0, 1));
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+    expect(input).not.toHaveAttribute('aria-busy');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
   });
 });
 
@@ -1075,7 +1407,13 @@ describe('Typeahead disabledMessage', () => {
       />,
     );
 
-    const container = screen.getByRole('combobox').parentElement as HTMLElement;
+    // The field itself, by its own class: the input no longer sits directly
+    // inside it — it is in the content lane that bounds the value — and
+    // `mouseEnter` does not bubble, so the hover has to land on the element
+    // the tooltip is actually bound to.
+    const container = document.querySelector(
+      '.astryx-typeahead',
+    ) as HTMLElement;
     const tooltip = screen.getByRole('tooltip', h);
     expect(tooltip).toHaveTextContent('You need the Editor role');
 
@@ -1240,5 +1578,371 @@ describe('Typeahead statusVariant forwarding', () => {
       'data-variant',
       'detached',
     );
+  });
+});
+
+describe('busy indicator ownership', () => {
+  /** A source that stays in flight until the test settles it. */
+  const pendingSource = () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    return {
+      source: {
+        search: async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            settle = resolve;
+          }),
+        bootstrap: () => [],
+      },
+      settle: (items: SearchableItem[] = []) => settle(items),
+    };
+  };
+
+  it('renders its own named status for a direct caller', async () => {
+    // BaseTypeaheadProps is re-exported from the package entry point, so the
+    // base has direct callers this repo cannot see. They painted no indicator
+    // of their own — the base did it for them — so it keeps doing it, and the
+    // status stays a named one rather than a bare aria-busy that only reaches
+    // assistive tech.
+    const {source, settle} = pendingSource();
+    render(
+      <BaseTypeahead
+        searchSource={source}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    });
+    // A Spinner, not the static clock glyph this used to render: `clock`
+    // means *time* everywhere else in core, and nothing about it moved while
+    // a search was out.
+    expect(
+      screen.getByRole('status', {name: 'Loading'}).querySelector('svg'),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      settle();
+      await Promise.resolve();
+    });
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('hands the indicator over to a field that takes it, and renders none itself', async () => {
+    // Typeahead and Tokenizer paint the spinner in the one inline-end lane
+    // they already own. Two indicators in one field is the defect this PR
+    // exists to fix, so the base must yield rather than add to it.
+    const {source, settle} = pendingSource();
+    // A real lane with its notify spied, rather than a hand-built object: the
+    // lane is a store now, and the base must drive the store the wrappers use.
+    const lane = createBusyIndicatorLane();
+    const onLoadingChange = vi.fn(lane.onBusyChange);
+    render(
+      <BusyIndicatorLaneProvider
+        value={{...lane, onBusyChange: onLoadingChange}}>
+        <BaseTypeahead
+          searchSource={source}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+      </BusyIndicatorLaneProvider>,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-busy', 'true');
+    });
+    // Scoped by name: the announcer for result counts is a role="status"
+    // live region too, and it is not the indicator.
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+    expect(onLoadingChange).toHaveBeenLastCalledWith(true);
+
+    await act(async () => {
+      settle();
+      await Promise.resolve();
+    });
+    expect(onLoadingChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('keeps the busy handoff out of the exported prop surface', async () => {
+    // The handoff used to be `__onLoadingChange` on BaseTypeaheadProps, which
+    // the package entry point re-exports — so a builder reading the exported
+    // declaration would find it and could reasonably wire it, pinning a detail
+    // between two wrappers and their base as permanent API. An `@internal` tag
+    // is a note to a reader; a module boundary is the actual seam.
+    const entry = await import('./index');
+    expect(Object.keys(entry)).not.toContain('BusyIndicatorLaneProvider');
+    expect(Object.keys(entry)).not.toContain('useBusyIndicatorLane');
+
+    const source = await readFile(
+      resolve(__dirname, 'BaseTypeahead.tsx'),
+      'utf8',
+    );
+    expect(source).not.toContain('__onLoadingChange');
+  });
+
+  it('reports each transition once, and reports nothing when nothing changed', async () => {
+    // Edge-triggered on purpose. Every keystroke below the query threshold
+    // clears the flag, and an unconditional report would hand the wrapper a
+    // `false` per character — each one a state write, and on a field that is
+    // re-rendering as the user types.
+    const {source, settle} = pendingSource();
+    // A real lane with its notify spied, rather than a hand-built object: the
+    // lane is a store now, and the base must drive the store the wrappers use.
+    const lane = createBusyIndicatorLane();
+    const onLoadingChange = vi.fn(lane.onBusyChange);
+    render(
+      <BusyIndicatorLaneProvider
+        value={{...lane, onBusyChange: onLoadingChange}}>
+        <BaseTypeahead
+          searchSource={source}
+          value={null}
+          onChange={() => {}}
+          minQueryLength={3}
+          debounceMs={0}
+        />
+      </BusyIndicatorLaneProvider>,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Below the threshold: no search, so nothing to report.
+    fireEvent.change(input, {target: {value: 'A'}});
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(onLoadingChange).not.toHaveBeenCalled();
+
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(onLoadingChange).toHaveBeenCalledTimes(1);
+    });
+    expect(onLoadingChange).toHaveBeenCalledWith(true);
+
+    // Back below the threshold: one report out, not one per keystroke.
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    fireEvent.change(input, {target: {value: 'A'}});
+    fireEvent.change(input, {target: {value: ''}});
+    await act(async () => {
+      settle();
+      await Promise.resolve();
+    });
+    expect(onLoadingChange).toHaveBeenCalledTimes(2);
+    expect(onLoadingChange).toHaveBeenLastCalledWith(false);
+  });
+});
+
+describe('end controls stay in flow', () => {
+  // The fix for the transform bug, expressed as a rule rather than a
+  // measurement: these controls are ordinary flex siblings of the input, so
+  // they take up room and nothing has to reserve it for them. jsdom performs
+  // no layout, so what is asserted is the absence of the two things that
+  // stopped that being true — an out-of-flow lane, and a padding reserve fed
+  // by a measured width. The geometry itself is browser-verified in the PR.
+  it('renders the clear button without taking it out of flow', () => {
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    const field = container.querySelector('.astryx-typeahead');
+    const clear = screen.getByRole('button', {name: /clear/i});
+    expect(field).toContainElement(clear);
+    // The controls sit in a lane that is itself an ordinary in-flow child of
+    // the field — not a box positioned over it, which is what reserved no
+    // room and put the input underneath.
+    const lane = clear.parentElement as HTMLElement;
+    expect(lane.parentElement).toBe(field);
+    expect(getComputedStyle(lane).position).not.toBe('absolute');
+  });
+
+  it('never reserves room with a measured width', () => {
+    // The custom property is Tokenizer's mechanism and must not reappear
+    // here: a width measured in viewport space and spent as local padding is
+    // wrong under any CSS transform (measured on Tokenizer's 123px lane,
+    // scale(.5) covered 14px of the query and scale(2) left a 125.95px gap).
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    expect(
+      container.querySelector('[style*="--_tokenizer-end-lane-width"]'),
+    ).toBeNull();
+  });
+
+  it('holds the controls at the inline end when a token shows', () => {
+    // `auto` gives free space to the margin rather than to a sibling, so the
+    // controls stay in the corner in the states where the content lane is not
+    // the only flexible item in the row. Without it the clear button sat
+    // against the token in mid-field instead of in the corner (measured:
+    // x=39 in a 300px field, against TextInput's 281).
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    const clear = screen.getByRole('button', {name: /clear/i});
+    const lane = clear.parentElement as HTMLElement;
+    expect(getComputedStyle(lane).marginInlineStart).toBe('auto');
+  });
+
+  it('keeps the field on one row so the controls cannot be pushed off it', () => {
+    // `flex-wrap` moves an item to a new line rather than shrinking it, so a
+    // wrapping field put the controls on a row of their own once the token
+    // got long. The shared field base does not wrap; this must not either.
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    const field = container.querySelector('.astryx-typeahead') as HTMLElement;
+    expect(getComputedStyle(field).flexWrap).not.toBe('wrap');
+  });
+
+  it('keeps the input in flow while a token shows, so the field keeps its width', () => {
+    // A field's width must not depend on its value. Every other field in the
+    // family gets that for free: the `<input>` stays in flow and the field is
+    // as wide as the input's own intrinsic width. This one used to take the
+    // input out of flow and zero its width when a token showed, leaving the
+    // field measuring the token — in a shrink-to-fit parent it snapped to the
+    // value's length (199px to 57px in Chromium, #5560). Block parents hid it,
+    // which is why no story caught it. jsdom resolves no layout, so assert the
+    // mechanism: the input still occupies the row.
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    const style = getComputedStyle(input);
+    expect(style.position).not.toBe('absolute');
+    expect(style.width).not.toBe('0px');
+    expect(style.flex).not.toBe('0 0 0');
+  });
+
+  it('paints the token over the input rather than beside it', () => {
+    // In flow the token would add its own width to the row — the same
+    // value-dependent sizing from the other direction, where a long value
+    // grows the field instead of collapsing it.
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    const token = container.querySelector('.astryx-token') as HTMLElement;
+    expect(getComputedStyle(token).position).toBe('absolute');
+  });
+
+  it('lets the token take the pointer that the hidden input would swallow', () => {
+    // The input still covers that space, so it has to stop intercepting the
+    // clicks that enter edit mode.
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    expect(getComputedStyle(screen.getByRole('combobox')).pointerEvents).toBe(
+      'none',
+    );
+  });
+});
+
+describe('the value is bounded by the content lane', () => {
+  // Keeping the input in flow fixed the field's width, but it left the token
+  // positioned against the whole field, which has no idea where the end
+  // controls start. A value longer than the input then ran under the clear
+  // button and out past the field's own border — measured in Chromium at
+  // 28-33px of overlap and up to 4px outside the border, worse than the 12px
+  // of overlap on main. The lane is the box the value may occupy: an ordinary
+  // flex item that ends exactly where the end lane begins.
+  //
+  // jsdom resolves no layout, so what is asserted here is the mechanism. The
+  // geometry is browser-verified in the PR.
+  const renderWithValue = () =>
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+
+  it('puts the input and the token in one lane, inside the field', () => {
+    const {container} = renderWithValue();
+    const field = container.querySelector('.astryx-typeahead');
+    const input = screen.getByRole('combobox');
+    const token = container.querySelector('.astryx-token') as HTMLElement;
+
+    const lane = input.parentElement as HTMLElement;
+    expect(lane).not.toBe(field);
+    expect(lane.parentElement).toBe(field);
+    // The token's containing block is the lane, which is what bounds it.
+    expect(token.parentElement).toBe(lane);
+    expect(getComputedStyle(lane).position).toBe('relative');
+  });
+
+  it('lets the lane yield its whole width, so a narrow field cannot overflow', () => {
+    // `min-width: 0` is the half of this that the earlier `200px` floor got
+    // wrong: the field states no width of its own, so it still shrinks to
+    // whatever a narrow parent or an InputGroup gives it.
+    const {container} = renderWithValue();
+    const lane = screen.getByRole('combobox').parentElement as HTMLElement;
+    const style = getComputedStyle(lane);
+    expect(style.minWidth).toBe('0');
+    expect(style.flexGrow).toBe('1');
+    // Nothing states a width: a narrow parent gets all of it back.
+    expect(
+      (container.querySelector('.astryx-typeahead') as HTMLElement).style
+        .minWidth,
+    ).toBe('');
+  });
+
+  it("anchors the token at the lane's end, not just its start", () => {
+    // The bound that stops the value reaching the end controls. Anchored at
+    // one end only, the token is capped by the field's own padding box, which
+    // is past the clear button.
+    const {container} = renderWithValue();
+    const token = container.querySelector('.astryx-token') as HTMLElement;
+    const style = getComputedStyle(token);
+    expect(style.insetInlineEnd).toBe('0');
+    // `fit-content` against that pair of insets is what shrink-wraps the
+    // label yet still caps it at the lane; the `auto` end margin is what
+    // keeps the pair from being over-constrained and dropping the end inset.
+    expect(style.width).toBe('fit-content');
+    expect(style.marginInlineEnd).toBe('auto');
   });
 });

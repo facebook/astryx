@@ -8,6 +8,7 @@
  */
 
 import type {ISODateString, PlainDate} from './dateTypes';
+import type {Locale} from '../i18n/types';
 
 export type {PlainDate} from './dateTypes';
 
@@ -129,6 +130,7 @@ export function getTimeZoneParts(
     minute: '2-digit',
     second: '2-digit',
     hourCycle: 'h23',
+    calendar: 'gregory',
   }).formatToParts(new Date(instant));
 
   const lookup = Object.fromEntries(
@@ -277,6 +279,22 @@ export const DATE_FORMAT_MONTH_YEAR: Intl.DateTimeFormatOptions = {
   month: 'long',
 };
 
+// e.g. "Sun" (locale-dependent) — the weekday on its own, abbreviated.
+//
+// This is CLDR's `abbreviated` width, which `Intl` reaches natively. Note
+// that Calendar's 2-letter header ("Su") is CLDR's *short* width, a
+// different thing that `Intl` cannot express at all — which is why that one
+// needs the generated lookup table beside it and this one does not.
+export const DATE_FORMAT_WEEKDAY_ONLY: Intl.DateTimeFormatOptions = {
+  weekday: 'short',
+};
+
+// e.g. "January" (locale-dependent) — the month on its own, for a control
+// that shows a list of months and carries the year separately.
+export const DATE_FORMAT_MONTH_ONLY: Intl.DateTimeFormatOptions = {
+  month: 'long',
+};
+
 // e.g. "Jan 25" (locale-dependent)
 export const DATE_FORMAT_SHORT: Intl.DateTimeFormatOptions = {
   month: 'short',
@@ -290,13 +308,26 @@ export const DATE_FORMAT_SHORT_WITH_YEAR: Intl.DateTimeFormatOptions = {
   year: 'numeric',
 };
 
+/**
+ * Format a `PlainDate` for display.
+ *
+ * The locale defaults to the same `'en'` fallback as `useLocale()`, avoiding
+ * runtime-dependent output when no provider locale is available. Astryx date
+ * APIs currently model Gregorian dates, so this helper defaults to Gregorian
+ * when `options.calendar` is omitted. The explicit option remains supported for
+ * compatibility with the public `Intl.DateTimeFormatOptions` signature; it is a
+ * display-only escape hatch and does not change PlainDate arithmetic, parsing,
+ * serialization, or any Astryx component's calendar semantics.
+ */
 export function plainDateFormat(
   pd: PlainDate,
   options: Intl.DateTimeFormatOptions,
+  locale: Locale = 'en',
 ): string {
-  return new Intl.DateTimeFormat(undefined, options).format(
-    plainDateToDate(pd),
-  );
+  return new Intl.DateTimeFormat(locale, {
+    ...options,
+    calendar: options.calendar ?? 'gregory',
+  }).format(plainDateToDate(pd));
 }
 
 // =============================================================================
@@ -344,9 +375,10 @@ export const SHARED_DATE_FORMAT_OPTIONS: Record<
 export function formatSharedDate(
   pd: PlainDate,
   format: SharedDateFormat,
+  locale: Locale = 'en',
 ): string {
   if (format === 'system_date') {
     return plainDateToISO(pd);
   }
-  return plainDateFormat(pd, SHARED_DATE_FORMAT_OPTIONS[format]);
+  return plainDateFormat(pd, SHARED_DATE_FORMAT_OPTIONS[format], locale);
 }

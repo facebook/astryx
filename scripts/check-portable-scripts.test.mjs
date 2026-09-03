@@ -39,8 +39,7 @@ describe('findOffences — POSIX-only commands', () => {
   });
 
   it('does not flag a command that merely starts with those letters', () => {
-    // `rimraf` — the prescribed fix — starts with "rm"'s letters, and
-    // `concat` with "cat"'s.
+    // `rimraf` starts with "rm"'s letters, and `concat` with "cat"'s.
     expect(
       findOffences({build: 'rimraf dist', gen: 'concat a b'}, {rimraf: '^6'}),
     ).toEqual([]);
@@ -118,19 +117,50 @@ describe('the repo itself (#3637)', () => {
     expect(files.every(file => !file.includes('node_modules/'))).toBe(true);
   });
 
+  /**
+   * Packages whose build writes into a `dist` it must clear first. The themes
+   * are discovered rather than listed, so a new one cannot land without the
+   * cleanup (#5125); lab and charts are the two that regressed in #3637.
+   */
+  const cleansDist = () => [
+    'packages/core',
+    'packages/lab',
+    'packages/charts',
+    'packages/richtext',
+    ...trackedPackageJsonFiles()
+      .filter(file => /^packages\/themes\/[^/]+\/package\.json$/.test(file))
+      .map(file => path.posix.dirname(file)),
+  ];
+
+  it('discovers the theme packages it guards', () => {
+    // A discovery that silently returned nothing would make the `it.each`
+    // below expand to zero tests and pass vacuously, so it is asserted here.
+    expect(cleansDist()).toContain('packages/themes/neutral');
+  });
+
+  it.each(cleansDist())('%s uses the shared portable dist cleaner', dir => {
+    const {scripts, devDependencies = {}} = read(`${dir}/package.json`);
+    const helper = dir.startsWith('packages/themes/')
+      ? '../../../scripts/clean-dist.mjs'
+      : '../../scripts/clean-dist.mjs';
+
+    expect(scripts.build.startsWith(`node ${helper} && `)).toBe(true);
+    expect(devDependencies.rimraf).toBeUndefined();
+  });
+
   it.each(['packages/lab', 'packages/charts'])(
-    '%s builds with the same portable invocation as packages/core',
+    '%s runs babel with the same flags and quoting as packages/core',
     dir => {
-      const {scripts, devDependencies} = read(`${dir}/package.json`);
+      const {scripts} = read(`${dir}/package.json`);
       const core = read('packages/core/package.json');
 
-      expect(scripts.build.startsWith('rimraf dist &&')).toBe(true);
-      expect(devDependencies.rimraf).toBe(core.devDependencies.rimraf);
-      // Same flags, same quoting as core — only the babel config file differs
-      // (lab/charts author theirs in .js, core in .json).
+      // Same flags, same quoting as core. The config filename is normalised so
+      // the assertion holds whichever extension a package authors its babel
+      // config in.
+      const config = /\.\/babel\.config\.\w+/;
       for (const name of ['build:esm', 'dev']) {
-        expect(scripts[name].replace('./babel.config.js', 'CONFIG')).toBe(
-          core.scripts[name].replace('./babel.config.json', 'CONFIG'),
+        expect(scripts[name].replace(config, 'CONFIG')).toBe(
+          core.scripts[name].replace(config, 'CONFIG'),
         );
       }
     },

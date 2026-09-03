@@ -32,6 +32,12 @@ const meta: Meta<typeof Tooltip> = {
       control: 'boolean',
       description: 'Enable/disable the tooltip',
     },
+    touchTrigger: {
+      control: 'select',
+      options: ['auto', 'tap', 'none'],
+      description:
+        'What a tap does where there is no hover: auto (tap unless the trigger acts), tap, or none',
+    },
   },
 };
 
@@ -59,6 +65,17 @@ export const Start: Story = {
     placement: 'start',
     content: 'Tooltip on start',
     children: <Button label="Hover me">Hover me</Button>,
+  },
+};
+
+export const RTLLogicalPlacement: Story = {
+  args: {
+    placement: 'start',
+    content: 'Tooltip on logical start',
+    children: (
+      <Button label="RTL placement target">RTL placement target</Button>
+    ),
+    isDefaultOpen: true,
   },
 };
 
@@ -142,9 +159,7 @@ export const LongContent: Story = {
     placement: 'above',
     content:
       'This is a longer tooltip that contains more detailed information about the element.',
-    children: (
-      <Button label="Hover for more info">Hover for more info</Button>
-    ),
+    children: <Button label="Hover for more info">Hover for more info</Button>,
   },
 };
 
@@ -198,6 +213,37 @@ export const TextNodeInline: Story = {
         </Tooltip>
         .
       </p>
+    </div>
+  ),
+};
+
+/**
+ * Touch has no hover, so a tap decides instead — and what the trigger does
+ * decides for it. Try these on a phone, or in a device emulator with touch
+ * emulation on.
+ */
+export const TouchTriggers: Story = {
+  render: () => (
+    <div style={{padding: 100}}>
+      <HStack gap={4}>
+        {/* Acts on tap: the tap belongs to the button, so no tooltip. */}
+        <Tooltip content="Saves your changes" placement="above">
+          <Button label="Save">Save</Button>
+        </Tooltip>
+        {/* Does nothing on tap: the tap opens the tooltip. */}
+        <Tooltip content="Tooltip on inline text!" placement="above">
+          hover-able term
+        </Tooltip>
+        {/* A button whose only job is the tooltip — say so with `tap`. */}
+        <Tooltip
+          content="Rows are ranked by how many places import the icon"
+          placement="above"
+          touchTrigger="tap">
+          <Button label="What is this?" variant="secondary">
+            ?
+          </Button>
+        </Tooltip>
+      </HStack>
     </div>
   ),
 };

@@ -32,13 +32,17 @@ export const styles = stylex.create({
     '--_hover-delay': '0s',
     '--_reveal-opacity': {
       default: 0,
-      ':hover': {'@media (hover: hover)': 1},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': 1,
+      },
       ':focus-within': 1,
       '@media (any-pointer: coarse)': 1,
     },
     '--_reveal-position': {
       default: 'absolute',
-      ':hover': {'@media (hover: hover)': 'static'},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': 'static',
+      },
       ':focus-within': 'static',
       '@media (any-pointer: coarse)': 'static',
     },
@@ -49,7 +53,9 @@ export const styles = stylex.create({
     // content would snap out of flow at full opacity and flicker.
     '--_reveal-delay': {
       default: REST_DELAY,
-      ':hover': {'@media (hover: hover)': HOVER_DELAY + ', ' + HOVER_DELAY},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': HOVER_DELAY + ', ' + HOVER_DELAY,
+      },
       ':focus-within': '0s, 0s',
       '@media (any-pointer: coarse)': '0s, 0s',
     },
@@ -57,7 +63,9 @@ export const styles = stylex.create({
     // for) but keeps the dwell: an intent gate is timing, not motion.
     '--_reveal-delay-reduced': {
       default: '0s, 0s',
-      ':hover': {'@media (hover: hover)': HOVER_DELAY + ', ' + HOVER_DELAY},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': HOVER_DELAY + ', ' + HOVER_DELAY,
+      },
       ':focus-within': '0s, 0s',
       '@media (any-pointer: coarse)': '0s, 0s',
     },
@@ -66,13 +74,17 @@ export const styles = stylex.create({
     // coarse-pointer branch (it stays visible on touch).
     '--_conceal-opacity': {
       default: 1,
-      ':hover': {'@media (hover: hover)': 0},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': 0,
+      },
     },
     // Single-value dwell for the opacity-only blocks, which have no discrete
     // position to sequence.
     '--_fade-delay': {
       default: '0s',
-      ':hover': {'@media (hover: hover)': HOVER_DELAY},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': HOVER_DELAY,
+      },
       ':focus-within': '0s',
       '@media (any-pointer: coarse)': '0s',
     },
@@ -87,35 +99,47 @@ export const styles = stylex.create({
   stateInactive: {
     '--_reveal-opacity': {
       default: 0,
-      ':hover': {'@media (hover: hover)': 0},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': 0,
+      },
       ':focus-within': 1,
       '@media (any-pointer: coarse)': 1,
     },
     '--_reveal-position': {
       default: 'absolute',
-      ':hover': {'@media (hover: hover)': 'absolute'},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': 'absolute',
+      },
       ':focus-within': 'static',
       '@media (any-pointer: coarse)': 'static',
     },
     '--_reveal-delay': {
       default: REST_DELAY,
-      ':hover': {'@media (hover: hover)': REST_DELAY},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': REST_DELAY,
+      },
       ':focus-within': '0s, 0s',
       '@media (any-pointer: coarse)': '0s, 0s',
     },
     '--_reveal-delay-reduced': {
       default: '0s, 0s',
-      ':hover': {'@media (hover: hover)': '0s, 0s'},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': '0s, 0s',
+      },
       ':focus-within': '0s, 0s',
       '@media (any-pointer: coarse)': '0s, 0s',
     },
     '--_conceal-opacity': {
       default: 1,
-      ':hover': {'@media (hover: hover)': 1},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': 1,
+      },
     },
     '--_fade-delay': {
       default: '0s',
-      ':hover': {'@media (hover: hover)': '0s'},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': '0s',
+      },
       ':focus-within': '0s',
       '@media (any-pointer: coarse)': '0s',
     },
@@ -126,35 +150,47 @@ export const styles = stylex.create({
   stateActive: {
     '--_reveal-opacity': {
       default: 1,
-      ':hover': {'@media (hover: hover)': 1},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': 1,
+      },
       ':focus-within': 1,
       '@media (any-pointer: coarse)': 1,
     },
     '--_reveal-position': {
       default: 'static',
-      ':hover': {'@media (hover: hover)': 'static'},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': 'static',
+      },
       ':focus-within': 'static',
       '@media (any-pointer: coarse)': 'static',
     },
     '--_reveal-delay': {
       default: '0s, 0s',
-      ':hover': {'@media (hover: hover)': '0s, 0s'},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': '0s, 0s',
+      },
       ':focus-within': '0s, 0s',
       '@media (any-pointer: coarse)': '0s, 0s',
     },
     '--_reveal-delay-reduced': {
       default: '0s, 0s',
-      ':hover': {'@media (hover: hover)': '0s, 0s'},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': '0s, 0s',
+      },
       ':focus-within': '0s, 0s',
       '@media (any-pointer: coarse)': '0s, 0s',
     },
     '--_conceal-opacity': {
       default: 0,
-      ':hover': {'@media (hover: hover)': 0},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': 0,
+      },
     },
     '--_fade-delay': {
       default: '0s',
-      ':hover': {'@media (hover: hover)': '0s'},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': '0s',
+      },
       ':focus-within': '0s',
       '@media (any-pointer: coarse)': '0s',
     },

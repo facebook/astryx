@@ -26,11 +26,18 @@ import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
 import {isAstryxInitialized} from '../../foundation/agent-docs/agent-docs.mjs';
+import * as debug from '../../foundation/debug/index.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Read version from package.json so it stays in sync
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf-8'));
+
+// Start the debug recorder before anything can exit. Allocation only — no
+// filesystem, no environment probe, no config — and it must run ahead of the
+// --version preflight below so even that early exit is recorded. The env
+// probe is deferred to delivery. See foundation/debug.
+debug.begin({cliVersion: pkg.version});
 
 // Intercept `xds --version --json` (or `-V --json`) before Commander processes
 // the version flag and exits. Commander's built-in version handler prints the
@@ -57,6 +64,7 @@ if (
  * yet support structured output.
  */
 export const JSON_SUPPORTED = new Set([
+  'init',
   'component',
   'docs',
   'blog',
@@ -70,6 +78,7 @@ export const JSON_SUPPORTED = new Set([
   'theme list',
   'theme add',
   'theme template',
+  'theme targets',
   'upgrade',
   'manifest',
   'doctor',
@@ -94,6 +103,115 @@ function fullCommandName(actionCommand, root) {
     cmd = cmd.parent;
   }
   return parts.join(' ');
+}
+
+/**
+ * Load the project's `debug` function, if it has one.
+ *
+ * Called from the bin BEFORE Commander parses, not from a hook. Most commands
+ * never touch `astryx.config` on their own, and parse errors and `--help`
+ * short-circuit before any hook runs — so anywhere later would leave exactly
+ * the failures you most want reported with nowhere to report them.
+ *
+ * The gate before the load is the point. `Project.load` EVALUATES the config
+ * module and loads every integration it names, and before this feature most
+ * commands did neither: running a project's own code on `astryx --version`,
+ * for a project that never asked for any of this, is not a cost the feature
+ * gets to impose. So the file is read as text first and only loaded if the
+ * word appears in it. A project with no config pays one `existsSync` walk; a
+ * project with a config and no `debug` pays one small `readFile`.
+ *
+ * The text test is deliberately loose — any occurrence, comments included —
+ * because a false positive costs one config load the CLI used to do anyway,
+ * while a false negative silently records nothing. The one shape it cannot
+ * see is a config that never spells the word, e.g. spreading in an object
+ * from another module; that is documented on the `debug` config key.
+ *
+ * @returns {Promise<void>}
+ */
+export async function loadProjectDebugHandler() {
+  try {
+    const {findConfigPath, Project} = await import(
+      '../../foundation/config/project.mjs'
+    );
+    const configPath = findConfigPath(process.cwd());
+    if (!configPath) return;
+    if (!fs.readFileSync(configPath, 'utf-8').includes('debug')) {
+      debug.noteConfigGateSkipped();
+      return;
+    }
+    await Project.load(process.cwd());
+  } catch {
+    // A broken config is the command's problem to report, not ours.
+  }
+}
+
+/**
+ * Hand the whole invocation to the debug recorder: which command ran, its
+ * positional arguments by name, its options and where each value came from,
+ * and the root-level flags.
+ *
+ * This lives in a `preAction` hook rather than in `defineCommand` because the
+ * hook fires for EVERY action — including the four commands registered inline
+ * below (root, manifest, postinstall, and the load-failure stub), which never
+ * pass through the converter. One capture point, no coverage gaps.
+ *
+ * @param {import('commander').Command} actionCommand
+ * @param {import('commander').Command} root
+ */
+function captureInvocation(actionCommand, root) {
+  const name = fullCommandName(actionCommand, root);
+  debug.setCommand(name);
+  debug.setGlobalOptions(root.opts());
+
+  // Only pay for these probes when something will actually read them. Both
+  // touch the filesystem, and most commands never load a Project — which is
+  // why recording them here rather than at the config boundary is what makes
+  // them present at all.
+  if (debug.isRecording()) {
+    try {
+      const cwd = process.cwd();
+      debug.setProject({
+        inProject: fs.existsSync(path.join(cwd, 'package.json')),
+        initialized: isAstryxInitialized(cwd),
+      });
+    } catch {
+      // Leave them null rather than failing the command.
+    }
+  }
+
+  // Positional values arrive as a bare array; pair them with the declared
+  // argument names so the log records `{component: 'XDSButton'}` rather than
+  // an anonymous `['XDSButton']` nobody can query. `registeredArguments` is
+  // Commander 12's accessor and `_args` the older internal — read both, as
+  // lib/manifest.mjs does, so a Commander bump degrades to unnamed args
+  // rather than losing them.
+  const declared =
+    /** @type {any} */ (actionCommand).registeredArguments ??
+    /** @type {any} */ (actionCommand)._args ??
+    [];
+  const values = actionCommand.args ?? [];
+  /** @type {Record<string, unknown>} */
+  const args = {};
+  declared.forEach((/** @type {any} */ arg, /** @type {number} */ i) => {
+    const key = typeof arg?.name === 'function' ? arg.name() : `arg${i}`;
+    if (values[i] !== undefined) args[key] = values[i];
+  });
+  // Anything Commander did not have a declaration for (extra positionals on
+  // the root command, which is how an unknown command arrives here).
+  if (values.length > declared.length) {
+    args.extra = values.slice(declared.length);
+  }
+  debug.setArgs(args);
+
+  /** @type {Record<string, string>} */
+  const sources = {};
+  const options = actionCommand.opts();
+  for (const key of Object.keys(options)) {
+    const source = actionCommand.getOptionValueSource?.(key);
+    if (source) sources[key] = source;
+  }
+  debug.setOptions(options, sources);
 }
 
 /**
@@ -277,6 +395,19 @@ export async function createProgram() {
    * action runs with --json, they are responsible for emitting an envelope on
    * every code path.
    */
+  /**
+   * Debug capture. Registered first so the invocation is on record before any
+   * later hook can reject it, and inside a try/catch because a recording bug
+   * must never be the reason a command fails.
+   */
+  program.hook('preAction', (thisCommand, actionCommand) => {
+    try {
+      captureInvocation(actionCommand, program);
+    } catch {
+      // Never let recording break the CLI.
+    }
+  });
+
   program.hook('preAction', (thisCommand, actionCommand) => {
     if (!program.opts().json) return;
     // Engage global JSON mode so humanLog()/humanWarn() across commands become
@@ -288,6 +419,10 @@ export async function createProgram() {
     const fullName = fullCommandName(actionCommand, program);
     if (JSON_SUPPORTED.has(fullName)) return;
     process.__xdsJsonHandled = true;
+    debug.setOutcome('rejected', {
+      exitCode: 1,
+      code: ERROR_CODES.ERR_INVALID_OPTION,
+    });
     console.log(JSON.stringify({
       apiVersion: API_VERSION,
       error: `JSON output is not supported for the '${fullName}' command`,

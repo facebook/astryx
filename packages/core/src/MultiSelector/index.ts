@@ -11,8 +11,10 @@
 export {
   MultiSelector,
   type MultiSelectorProps,
+  type MultiSelectorPresentation,
   type MultiSelectorSize,
   type MultiSelectorStatusType,
+  type MultiSelectorSelectedItem,
 } from './MultiSelector';
 export type {
   MultiSelectorOptionType,

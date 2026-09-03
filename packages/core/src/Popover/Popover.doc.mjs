@@ -7,13 +7,26 @@ export const docs = {
   displayName: 'Popover',
   group: 'Popover',
   category: 'Overlay',
-  keywords: ["popover","popup","dropdown","tooltip","overlay","flyout","callout","popper","anchor","floating","bubble"],
+  keywords: [
+    'popover',
+    'popup',
+    'dropdown',
+    'tooltip',
+    'overlay',
+    'flyout',
+    'callout',
+    'popper',
+    'anchor',
+    'floating',
+    'bubble',
+  ],
   components: [
     {
       name: 'Popover',
       displayName: 'Popover',
       description:
-        'A click-triggered popover for displaying interactive content anchored to a trigger element.',      props: [
+        'A click-triggered popover for displaying interactive content anchored to a trigger element.',
+      props: [
         {
           name: 'children',
           type: 'ReactNode',
@@ -31,18 +44,26 @@ export const docs = {
           type: 'ReactNode',
           description: 'Content to display inside the popover.',
           required: true,
-          slotElements: [{__element: 'Text', props: {type: 'body'}, children: 'Content text'}],
+          slotElements: [
+            {
+              __element: 'Text',
+              props: {type: 'body'},
+              children: 'Content text',
+            },
+          ],
         },
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: 'Position placement relative to the trigger. Logical: start/end resolve against the popover\'s own inherited direction, so RTL contexts mirror automatically in pure CSS.',
+          description:
+            "Position placement relative to the trigger. Logical: start/end resolve against the popover's own inherited direction, so RTL contexts mirror automatically in pure CSS.",
           default: "'below'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: 'Alignment along the placement axis. Logical: start/end follow the popover\'s own inherited direction (RTL mirrors).',
+          description:
+            "Alignment along the placement axis. Logical: start/end follow the popover's own inherited direction (RTL mirrors).",
           default: "'start'",
         },
         {
@@ -64,7 +85,8 @@ export const docs = {
         {
           name: 'width',
           type: 'number | string',
-          description: 'Width of the popover container.',
+          description:
+            'Width of the popover container. The layer still caps to the viewport with alignment-aware safe-area gutters before scrolling long content.',
           default: "'auto'",
         },
         {
@@ -89,7 +111,8 @@ export const docs = {
         {
           name: 'hasCloseButton',
           type: 'boolean',
-          description: 'Whether to include a hidden close button for accessibility.',
+          description:
+            'Whether to include a hidden close button for accessibility.',
           default: 'true',
         },
         {
@@ -101,61 +124,126 @@ export const docs = {
         {
           name: 'hasAutoFocus',
           type: 'boolean',
-          description: 'Whether to auto-focus the first focusable element when the popover opens. Set to false for inline showcases or documentation previews.',
+          description:
+            'Whether to move focus into the popover when it opens. Keyboard activation focuses the first content control; pointer activation focuses the labeled dialog container so an action does not appear preselected. Set to false for inline showcases or documentation previews.',
           default: 'true',
         },
         {
           name: 'hasLightDismiss',
           type: 'boolean',
-          description: 'Whether clicking outside dismisses the popover. Set to false for surfaces that stay open until explicitly dismissed, like onboarding coachmarks.',
+          description:
+            'Whether clicking outside dismisses the popover. Set to false for surfaces that stay open until explicitly dismissed, like onboarding coachmarks.',
           default: 'true',
         },
         {
           name: 'hasEscapeDismiss',
           type: 'boolean',
-          description: 'Whether pressing Escape dismisses the popover. Only takes full effect together with hasLightDismiss={false}, since native light dismiss also closes on Escape.',
+          description:
+            'Whether pressing Escape dismisses the popover. Only takes full effect together with hasLightDismiss={false}, since native light dismiss also closes on Escape.',
           default: 'true',
         },
         {
           name: 'xstyle',
           type: 'StyleXStyles',
-          description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+          description:
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],
     },
   ],
   playground: {
     defaults: {
-      content: {__element: 'Text', props: {type: 'body'}, children: 'Popover content goes here.'},
-      children: {__element: 'Button', props: {label: 'Open popover', variant: 'secondary'}},
+      content: {
+        __element: 'Text',
+        props: {type: 'body'},
+        children: 'Popover content goes here.',
+      },
+      children: {
+        __element: 'Button',
+        props: {label: 'Open popover', variant: 'secondary'},
+      },
     },
   },
   theming: {
     targets: [
+      // Canonical broad target for the painted Popover surface.
       {className: 'astryx-popover'},
-      {className: 'astryx-popover-surface'},
+      // Deprecated compatibility alias. Existing themes keep working during
+      // migration; new themes target `popover`.
+      {
+        className: 'astryx-popover-surface',
+        deprecatedFor: 'popover',
+      },
     ],
     vars: [
-      {name: '--_popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)', private: true},
+      {
+        name: '--_popover-radius',
+        description: 'Border radius of the popover surface',
+        default: 'var(--radius-container)',
+        private: true,
+      },
     ],
-    derived: [
-      {property: 'borderRadius', vars: ['--_popover-radius']},
-    ],
+    derived: [{property: 'borderRadius', vars: ['--_popover-radius']}],
   },
   usage: {
     description:
       'A click-triggered overlay anchored to a button or trigger element. Use it for secondary actions, inline confirmations, or supplementary information that does not warrant a full dialog. For hover previews use HoverCard, for brief helper text use Tooltip.',
     bestPractices: [
-      { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
-      { guidance: true, description: 'Provide a clear way to close: either by clicking outside or with an explicit close button.' },
-      { guidance: false, description: 'Nest popovers inside other popovers; it creates confusing focus and navigation.' },
-      { guidance: false, description: 'Use a popover for content that requires heavy user input; use a Dialog instead.' },
-      { guidance: false, description: 'Put too much content in a popover; if it needs scrolling, use a Dialog instead.' },
+      {
+        guidance: true,
+        description:
+          'Keep popover content focused on a single task or piece of information.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a clear way to close: either by clicking outside or with an explicit close button.',
+      },
+      {
+        guidance: true,
+        description:
+          'Theme the painted surface through popover. Existing popover-surface overrides remain supported during migration, but new themes should not depend on that deprecated alias.',
+      },
+      {
+        guidance: false,
+        description:
+          'Nest popovers inside other popovers; it creates confusing focus and navigation.',
+      },
+      {
+        guidance: false,
+        description:
+          "Assume input complexity alone determines the presentation; evaluate the task's focus, space, and interaction requirements.",
+      },
+      {
+        guidance: false,
+        description:
+          'Assume scrolling alone means Popover is the wrong component; a bounded Popover may scroll while a focused anchored interaction remains appropriate.',
+      },
     ],
     anatomy: [
-      {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
-      {name: 'Body', required: true, description: 'Main content area of the popover.'},
-      {name: 'Trigger Element', required: true, description: 'The button or link that toggles the popover open.'},
+      {
+        name: 'Trigger element',
+        required: true,
+        description:
+          'Caller-supplied or externally referenced control that anchors and toggles the popover.',
+      },
+      {
+        name: 'Popover surface',
+        required: true,
+        description:
+          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains only as a deprecated compatibility alias during migration.',
+      },
+      {
+        name: 'Popover content',
+        required: true,
+        description: 'Caller-supplied content rendered inside the surface.',
+      },
+      {
+        name: 'Fallback close control',
+        required: false,
+        description:
+          'Keyboard-reachable close affordance appended by usePopover when enabled.',
+      },
     ],
   },
 };
@@ -168,8 +256,7 @@ export const docsZh = {
     {
       name: 'Popover',
       displayName: 'Popover',
-      description:
-        '一个点击触发的弹出框，用于显示锚定到触发元素的交互式内容。',
+      description: '一个点击触发的弹出框，用于显示锚定到触发元素的交互式内容。',
       props: [
         {
           name: 'children',
@@ -180,8 +267,7 @@ export const docsZh = {
         {
           name: 'anchorRef',
           type: 'React.RefObject<HTMLElement>',
-          description:
-            '在兄弟模式下用作弹出框锚点的外部 ref。',
+          description: '在兄弟模式下用作弹出框锚点的外部 ref。',
         },
         {
           name: 'content',
@@ -192,13 +278,15 @@ export const docsZh = {
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: '相对于触发器的位置放置方式。逻辑值：start/end 根据弹出层自身继承的方向解析，RTL 环境通过纯 CSS 自动镜像。',
+          description:
+            '相对于触发器的位置放置方式。逻辑值：start/end 根据弹出层自身继承的方向解析，RTL 环境通过纯 CSS 自动镜像。',
           default: "'below'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: '沿放置轴的对齐方式。逻辑值：start/end 跟随弹出层自身继承的方向（RTL 镜像）。',
+          description:
+            '沿放置轴的对齐方式。逻辑值：start/end 跟随弹出层自身继承的方向（RTL 镜像）。',
           default: "'start'",
         },
         {
@@ -220,7 +308,8 @@ export const docsZh = {
         {
           name: 'width',
           type: 'number | string',
-          description: '弹出框容器的宽度。',
+          description:
+            '弹出框容器的宽度。弹出层仍会限制在视口和安全区域留白内，长内容再滚动。',
           default: "'auto'",
         },
         {
@@ -257,19 +346,22 @@ export const docsZh = {
         {
           name: 'hasAutoFocus',
           type: 'boolean',
-          description: '弹出框打开时是否自动聚焦第一个可聚焦元素。内联展示或文档预览设为 false。',
+          description:
+            '弹出框打开时是否自动聚焦第一个可聚焦元素。内联展示或文档预览设为 false。',
           default: 'true',
         },
         {
           name: 'hasLightDismiss',
           type: 'boolean',
-          description: '点击外部是否关闭弹出框。需要显式关闭的界面（如新手引导提示）设为 false。',
+          description:
+            '点击外部是否关闭弹出框。需要显式关闭的界面（如新手引导提示）设为 false。',
           default: 'true',
         },
         {
           name: 'hasEscapeDismiss',
           type: 'boolean',
-          description: '按 Escape 是否关闭弹出框。仅在 hasLightDismiss={false} 时生效，因为原生 light dismiss 行为同样响应 Escape。',
+          description:
+            '按 Escape 是否关闭弹出框。仅在 hasLightDismiss={false} 时生效，因为原生 light dismiss 行为同样响应 Escape。',
           default: 'true',
         },
       ],
@@ -277,30 +369,84 @@ export const docsZh = {
   ],
   theming: {
     targets: [
+      // Canonical broad target for the painted Popover surface.
       {className: 'astryx-popover'},
-      {className: 'astryx-popover-surface'},
+      // Deprecated compatibility alias. Existing themes keep working during
+      // migration; new themes target `popover`.
+      {
+        className: 'astryx-popover-surface',
+        deprecatedFor: 'popover',
+      },
     ],
     vars: [
-      {name: '--_popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)', private: true},
+      {
+        name: '--_popover-radius',
+        description: 'Border radius of the popover surface',
+        default: 'var(--radius-container)',
+        private: true,
+      },
     ],
-    derived: [
-      {property: 'borderRadius', vars: ['--_popover-radius']},
-    ],
+    derived: [{property: 'borderRadius', vars: ['--_popover-radius']}],
   },
   usage: {
     description:
       'A click-triggered overlay anchored to a button or trigger element. Use it for secondary actions, inline confirmations, or supplementary information that does not warrant a full dialog. For hover previews use HoverCard, for brief helper text use Tooltip.',
     bestPractices: [
-      { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
-      { guidance: true, description: 'Provide a clear way to close: either by clicking outside or with an explicit close button.' },
-      { guidance: false, description: 'Nest popovers inside other popovers; it creates confusing focus and navigation.' },
-      { guidance: false, description: 'Use a popover for content that requires heavy user input; use a Dialog instead.' },
-      { guidance: false, description: 'Put too much content in a popover; if it needs scrolling, use a Dialog instead.' },
+      {
+        guidance: true,
+        description:
+          'Keep popover content focused on a single task or piece of information.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a clear way to close: either by clicking outside or with an explicit close button.',
+      },
+      {
+        guidance: true,
+        description:
+          'Theme the painted surface through popover. Existing popover-surface overrides remain supported during migration, but new themes should not depend on that deprecated alias.',
+      },
+      {
+        guidance: false,
+        description:
+          'Nest popovers inside other popovers; it creates confusing focus and navigation.',
+      },
+      {
+        guidance: false,
+        description:
+          "Assume input complexity alone determines the presentation; evaluate the task's focus, space, and interaction requirements.",
+      },
+      {
+        guidance: false,
+        description:
+          'Assume scrolling alone means Popover is the wrong component; a bounded Popover may scroll while a focused anchored interaction remains appropriate.',
+      },
     ],
     anatomy: [
-      {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
-      {name: 'Body', required: true, description: 'Main content area of the popover.'},
-      {name: 'Trigger Element', required: true, description: 'The button or link that toggles the popover open.'},
+      {
+        name: 'Trigger element',
+        required: true,
+        description:
+          'Caller-supplied or externally referenced control that anchors and toggles the popover.',
+      },
+      {
+        name: 'Popover surface',
+        required: true,
+        description:
+          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains only as a deprecated compatibility alias during migration.',
+      },
+      {
+        name: 'Popover content',
+        required: true,
+        description: 'Caller-supplied content rendered inside the surface.',
+      },
+      {
+        name: 'Fallback close control',
+        required: false,
+        description:
+          'Keyboard-reachable close affordance appended by usePopover when enabled.',
+      },
     ],
   },
 };
@@ -313,16 +459,61 @@ export const docsDense = {
     description:
       'A click-triggered overlay anchored to a button or trigger element. Use it for secondary actions, inline confirmations, or supplementary information that does not warrant a full dialog. For hover previews use HoverCard, for brief helper text use Tooltip.',
     bestPractices: [
-      { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
-      { guidance: true, description: 'Provide a clear way to close: either by clicking outside or with an explicit close button.' },
-      { guidance: false, description: 'Nest popovers inside other popovers; it creates confusing focus and navigation.' },
-      { guidance: false, description: 'Use a popover for content that requires heavy user input; use a Dialog instead.' },
-      { guidance: false, description: 'Put too much content in a popover; if it needs scrolling, use a Dialog instead.' },
+      {
+        guidance: true,
+        description:
+          'Keep popover content focused on a single task or piece of information.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a clear way to close: either by clicking outside or with an explicit close button.',
+      },
+      {
+        guidance: true,
+        description:
+          'Theme the painted surface through popover. Existing popover-surface overrides remain supported during migration, but new themes should not depend on that deprecated alias.',
+      },
+      {
+        guidance: false,
+        description:
+          'Nest popovers inside other popovers; it creates confusing focus and navigation.',
+      },
+      {
+        guidance: false,
+        description:
+          "Assume input complexity alone determines the presentation; evaluate the task's focus, space, and interaction requirements.",
+      },
+      {
+        guidance: false,
+        description:
+          'Assume scrolling alone means Popover is the wrong component; a bounded Popover may scroll while a focused anchored interaction remains appropriate.',
+      },
     ],
     anatomy: [
-      {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
-      {name: 'Body', required: true, description: 'Main content area of the popover.'},
-      {name: 'Trigger Element', required: true, description: 'The button or link that toggles the popover open.'},
+      {
+        name: 'Trigger element',
+        required: true,
+        description:
+          'Caller-supplied or externally referenced control that anchors and toggles the popover.',
+      },
+      {
+        name: 'Popover surface',
+        required: true,
+        description:
+          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains only as a deprecated compatibility alias during migration.',
+      },
+      {
+        name: 'Popover content',
+        required: true,
+        description: 'Caller-supplied content rendered inside the surface.',
+      },
+      {
+        name: 'Fallback close control',
+        required: false,
+        description:
+          'Keyboard-reachable close affordance appended by usePopover when enabled.',
+      },
     ],
   },
   components: [
@@ -332,21 +523,29 @@ export const docsDense = {
       description:
         'Click-triggered popover for interactive content anchored to trigger element.',
       propDescriptions: {
-        children: 'Trigger element. Must contain <button> or [role="button"] element.',
+        children:
+          'Trigger element. Must contain <button> or [role="button"] element.',
         anchorRef: 'External ref for popover anchor in sibling mode.',
         content: 'Content displayed inside popover.',
-        placement: 'Position relative to trigger. Logical: start/end resolve against the popover\'s inherited direction (RTL mirrors).',
-        alignment: 'Alignment along placement axis. Logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
+        placement:
+          "Position relative to trigger. Logical: start/end resolve against the popover's inherited direction (RTL mirrors).",
+        alignment:
+          "Alignment along placement axis. Logical: start/end follow the popover's inherited direction (RTL mirrors).",
         isOpen: 'Whether popover shown in controlled mode.',
         onOpenChange: 'Callback fired when popover visibility changes.',
         isEnabled: 'When false, trigger interactions ignored.',
-        width: 'Popover container width.',
+        width:
+          'Popover container width; capped to alignment-aware viewport/safe-area gutters before long content scrolls.',
         label: 'Accessible label for popover dialog.',
-        hasCloseButton: 'Whether to include hidden close button for accessibility.',
+        hasCloseButton:
+          'Whether to include hidden close button for accessibility.',
         closeButtonLabel: 'Label for hidden close button.',
-        hasAutoFocus: 'Auto-focus first element on open; false for showcases.',
-        hasLightDismiss: 'Outside click dismisses; false for explicit-dismiss surfaces (coachmarks).',
-        hasEscapeDismiss: 'Escape dismisses; full effect only with hasLightDismiss=false.',
+        hasAutoFocus:
+          'Move focus into the popover on open; keyboard targets the first control and pointer targets the dialog container.',
+        hasLightDismiss:
+          'Outside click dismisses; false for explicit-dismiss surfaces (coachmarks).',
+        hasEscapeDismiss:
+          'Escape dismisses; full effect only with hasLightDismiss=false.',
       },
     },
   ],

@@ -339,6 +339,51 @@ describe('CheckboxList', () => {
     expect(screen.getByText('This is option A')).toBeInTheDocument();
   });
 
+  it('renders a ReactNode description on items', () => {
+    render(
+      <CheckboxList label="Plans" value={[]} onChange={() => {}}>
+        <CheckboxListItem
+          label="Pro plan"
+          value="pro"
+          description={
+            <span>
+              See the <a href="#pricing">pricing page</a>
+            </span>
+          }
+        />
+      </CheckboxList>,
+    );
+    expect(
+      screen.getByRole('link', {name: 'pricing page'}),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps a link in a ReactNode label independent from selection', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <CheckboxList label="Plans" value={[]} onChange={onChange}>
+        <CheckboxListItem
+          label={
+            <>
+              Pro plan <a href="#pricing">pricing details</a>
+            </>
+          }
+          aria-label="Pro plan"
+          value="pro"
+        />
+      </CheckboxList>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Pro plan'});
+    const link = screen.getByRole('link', {name: 'pricing details'});
+    await user.tab();
+    expect(checkbox).toHaveFocus();
+    await user.tab();
+    expect(link).toHaveFocus();
+    await user.click(link);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('renders description on the checkbox list group', () => {
     render(
       <CheckboxList

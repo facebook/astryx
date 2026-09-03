@@ -322,6 +322,19 @@ export interface BodyCellRenderProps {
    * sticky offsets. Optional for backward compatibility.
    */
   columns?: ReadonlyArray<TableColumn<Record<string, unknown>>>;
+  /**
+   * When true, the cell renders empty: BaseTable calls neither the column's
+   * `renderCell` nor the default renderer. Set it for a row whose cells a
+   * plugin is going to replace wholesale in `transformBodyRow` (a grouped-rows
+   * section header, a summary row) — the row is not one the consumer supplied,
+   * so their renderer can only misread it or throw, and its output is
+   * discarded moments later anyway.
+   *
+   * Applies to this cell only, and is decided per render against the final
+   * column list, so it covers columns other plugins contributed regardless of
+   * where in the pipeline this plugin sits.
+   */
+  isContentSuppressed?: boolean;
 }
 
 /**
@@ -414,12 +427,17 @@ export type TableContextActions =
  *
  * 1. `transformColumns` — filter, reorder, or inject columns before rendering
  * 2. `transformTable` — transform the root `<table>` element props
- * 3. `transformHeaderRow` — transform the header `<tr>` props
- * 4. `transformHeaderCell` — transform each `<th>` props
- * 5. `transformBodyRow` — transform each body `<tr>` props
- * 6. `transformBodyCell` — transform each body `<td>` props
+ * 3. `transformHeaderCell` — transform each `<th>` props
+ * 4. `transformHeaderRow` — transform the header `<tr>` props
+ * 5. `transformBodyCell` — transform each body `<td>` props
+ * 6. `transformBodyRow` — transform each body `<tr>` props
  * 7. `transformScrollWrapper` — transform the scroll-container wrapper around the table
  * 8. `transformTableContext` — wrap the table output in context providers
+ *
+ * A row's cells are built before its row transform runs, and reach it as
+ * `children`: the cell hook is the earliest per-cell interception point, and a
+ * row transform can discard cells but cannot stop them being built (see
+ * `isContentSuppressed` on `BodyCellRenderProps` for that).
  *
  * Plugins may also contribute right-click menu actions by appending to
  * `contextMenuActions` in `transformHeaderCell` / `transformBodyCell`

@@ -19,6 +19,30 @@ import {
 } from '../__tests__/forcedColors';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
+interface InjectedRule {
+  selector: string;
+  text: string;
+  media: string | null;
+}
+
+function injectedRules(): InjectedRule[] {
+  const walk = (rules: CSSRuleList, condition: string | null): InjectedRule[] =>
+    [...rules].flatMap((rule): InjectedRule[] => {
+      const {selectorText} = rule as CSSStyleRule;
+      if (typeof selectorText === 'string') {
+        return [{selector: selectorText, text: rule.cssText, media: condition}];
+      }
+      const nested = (rule as CSSGroupingRule).cssRules;
+      if (nested == null) {
+        return [];
+      }
+      const own = (rule as CSSMediaRule).media?.mediaText;
+      return walk(nested, own != null && own !== '' ? own : condition);
+    });
+
+  return [...document.styleSheets].flatMap(sheet => walk(sheet.cssRules, null));
+}
+
 afterEach(() => {
   __resetLiveRegionsForTest();
 });
@@ -789,6 +813,35 @@ describe('Switch', () => {
       expect(root).toHaveAttribute('aria-label', 'Toggle notifications');
     });
   });
+
+  describe('coarse pointer and RTL hit-target positioning', () => {
+    it.each([
+      ['sm', 'ltr'],
+      ['sm', 'rtl'],
+      ['md', 'ltr'],
+      ['md', 'rtl'],
+    ] as const)(
+      'applies centerInline styling to native input (size: %s, dir: %s)',
+      (size, dir) => {
+        const {container} = render(
+          <div dir={dir}>
+            <Switch
+              label="Dark mode"
+              size={size}
+              value={false}
+              onChange={() => {}}
+            />
+          </div>,
+        );
+
+        const input = container.querySelector(
+          'input[type="checkbox"]',
+        ) as HTMLInputElement;
+        expect(input).toBeInTheDocument();
+        expect(input.className).toContain('centerInline');
+      },
+    );
+  });
 });
 
 // jsdom cannot emulate forced-colors rendering, so these assert that the
@@ -821,5 +874,15 @@ describe('forced colors (WCAG 1.4.11)', () => {
     );
     // And the tint never leaks into the forced-colors output.
     expect(getForcedColorsRules()).not.toContain('color-mix');
+  });
+});
+
+describe('label theme target', () => {
+  it('names its own label so a theme can style it apart from a field label', () => {
+    // See CheckboxInput: the control names the label it owns.
+    render(<Switch label="Wi-Fi" value={false} onChange={() => {}} />);
+    const label = screen.getByText('Wi-Fi').closest('label');
+    expect(label).toHaveClass('astryx-field-label');
+    expect(label).toHaveClass('astryx-switch-label');
   });
 });

@@ -4,6 +4,7 @@ import {describe, it, expect, vi} from 'vitest';
 import type {IconRegistry} from '../Icon/globalIconRegistry';
 import type {DefinedTheme} from './defineTheme';
 import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
+import {resolveThemeToken} from './tokens';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -79,6 +80,155 @@ describe('defineTheme', () => {
     warn.mockRestore();
   });
 
+  it('keeps explicitly enrolled local tokens separate and emits their exact names', () => {
+    const theme = defineTheme({
+      name: 'ocean-theme',
+      localTokens: {
+        '--astryx-theme-ocean-theme-color-status-fill-accent': [
+          '#0077b6',
+          '#48cae4',
+        ],
+      },
+      components: {
+        badge: {
+          'variant:info': {
+            backgroundColor:
+              'var(--astryx-theme-ocean-theme-color-status-fill-accent)',
+          },
+        },
+      },
+    });
+
+    expect(theme.tokens).not.toHaveProperty(
+      '--astryx-theme-ocean-theme-color-status-fill-accent',
+    );
+    expect(theme.localTokens).toEqual({
+      '--astryx-theme-ocean-theme-color-status-fill-accent':
+        'light-dark(#0077b6, #48cae4)',
+    });
+    expect(theme.__localTokenOwners).toEqual({
+      '--astryx-theme-ocean-theme-color-status-fill-accent': 'ocean-theme',
+    });
+    expect(theme.__localTokenLineage).toEqual(['ocean-theme']);
+    expect(generateThemeTestCSS(theme)).toContain(
+      '--astryx-theme-ocean-theme-color-status-fill-accent: light-dark(#0077b6, #48cae4);',
+    );
+  });
+
+  it('rejects a name declared in both tokens and localTokens before CSS and token helpers can disagree', () => {
+    const token = '--astryx-theme-ocean-theme-color-status-fill-accent';
+    const legacyTheme = defineTheme({
+      name: 'ocean-theme',
+      tokens: {
+        // @ts-expect-error legacy tokens remain permissive at runtime
+        [token]: '#0077b6',
+      },
+    });
+
+    expect(generateThemeTestCSS(legacyTheme)).toContain(`${token}: #0077b6;`);
+    expect(resolveThemeToken(legacyTheme, token, {mode: 'light'})).toBe(
+      '#0077b6',
+    );
+
+    expect(() =>
+      defineTheme({
+        name: 'ocean-theme',
+        tokens: {
+          // @ts-expect-error legacy tokens remain permissive at runtime
+          [token]: '#0077b6',
+        },
+        localTokens: {
+          [token]: '#48cae4',
+        },
+      }),
+    ).toThrow(/both tokens and localTokens/);
+  });
+
+  it('does not reinterpret legacy reserved-prefix references without enrollment', () => {
+    const theme = defineTheme({
+      name: 'legacy',
+      tokens: {
+        // @ts-expect-error legacy permissive token input remains unchanged
+        '--astryx-theme-legacy-color-old': '#123456',
+      },
+      components: {
+        badge: {
+          base: {color: 'var(--astryx-theme-missing-color-old)'},
+        },
+      },
+    });
+
+    expect(theme.tokens['--astryx-theme-legacy-color-old']).toBe('#123456');
+    expect(theme).not.toHaveProperty('localTokens');
+    expect(theme).not.toHaveProperty('__localTokenOwners');
+    expect(theme).not.toHaveProperty('__localTokenLineage');
+  });
+
+  it.each([
+    ['Uppercase', '--astryx-theme-Uppercase-color-accent'],
+    ['wrong-space', '--astryx-theme-other-color-accent'],
+    ['wrong-space', '--astryx-theme-wrong-space-Color-accent'],
+  ])('rejects malformed local token enrollment for %s', (name, token) => {
+    expect(() =>
+      defineTheme({
+        name,
+        localTokens: {[token]: '#123456'},
+      }),
+    ).toThrow(/localTokens|local token/);
+  });
+
+  it.each(['VAR', 'vAr'])(
+    'rejects undeclared local references using %s() in nested and media component rules',
+    functionName => {
+      expect(() =>
+        defineTheme({
+          name: 'ocean',
+          localTokens: {},
+          components: {
+            button: {
+              base: {
+                ':hover': {
+                  color: `${functionName}(--astryx-theme-ocean-color-missing)`,
+                },
+              },
+            },
+          },
+        }),
+      ).toThrow(/has no declaration/);
+
+      expect(() =>
+        defineTheme({
+          name: 'ocean',
+          localTokens: {},
+          onDark: {
+            components: {
+              badge: {
+                base: {
+                  color: `${functionName}(--astryx-theme-ocean-color-missing)`,
+                },
+              },
+            },
+          },
+        }),
+      ).toThrow(/has no declaration/);
+    },
+  );
+
+  it.each(['VAR', 'vAr'])(
+    'rejects cycles between local tokens using %s()',
+    functionName => {
+      expect(() =>
+        defineTheme({
+          name: 'cycle',
+          localTokens: {
+            '--astryx-theme-cycle-color-a': `${functionName}(--astryx-theme-cycle-color-b)`,
+            '--astryx-theme-cycle-color-b': `${functionName}(--astryx-theme-cycle-color-a)`,
+          },
+        }),
+      ).toThrow(/cycle detected/);
+    },
+  );
+
   it('includes icons in the theme', () => {
     const icons = {close: 'X'} as Partial<IconRegistry>;
     const theme = defineTheme({name: 'icons', icons});
@@ -114,6 +264,29 @@ describe('generateThemeCSS', () => {
     expect(css).toContain('@scope');
     expect(css).toContain(':where(h1, h2, h3, h4, h5, h6)');
     expect(css).toContain('font-family: var(--font-family-heading)');
+  });
+
+  it('keeps the data palette out of a theme that never mentions it', () => {
+    // That the palette IS declared is covered by `seeds the whole palette
+    // once, at :root` in generateThemeRules.test.ts. It is theme-independent,
+    // so there is nothing about it a theme can be used to assert.
+    const {component} = generateThemeCSS(defineTheme({name: 'chartless'}));
+    expect(component).not.toContain('--color-data-');
+  });
+
+  it('puts only the named data token in the theme block, not its siblings', () => {
+    const theme = defineTheme({
+      name: 'brand-charts',
+      tokens: {'--color-data-categorical-blue': '#00A3FF'},
+    });
+    const {component} = generateThemeCSS(theme);
+    expect(component).toContain('--color-data-categorical-blue: #00A3FF;');
+    // Leaving the siblings out of the theme's own block is what lets a nested
+    // theme inherit a parent's override instead of shadowing it.
+    expect(component).not.toContain('--color-data-categorical-orange');
+    // Defaults reach the stylesheet without entering the theme's own tokens,
+    // which are what `astryx theme build` reports as overrides.
+    expect(theme.tokens['--color-data-categorical-orange']).toBeUndefined();
   });
 
   it('splits prose into reset layer and components into astryx-theme', () => {
@@ -738,7 +911,9 @@ describe('pseudo-class overrides in components', () => {
     expect(css).toContain('.astryx-radio {');
     expect(css).toContain('border-color: #8F9296');
     // Pseudo rule — separate selector
-    expect(css).toContain('.astryx-radio:hover {');
+    expect(css).toContain(
+      '.astryx-radio:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+    );
     expect(css).toContain(
       'border-color: color-mix(in srgb, #8F9296, black 20%)',
     );
@@ -764,7 +939,9 @@ describe('pseudo-class overrides in components', () => {
     const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-button.primary-muted {');
     expect(css).toContain('background-color: #ECF5FF');
-    expect(css).toContain('.astryx-button.primary-muted:hover {');
+    expect(css).toContain(
+      '.astryx-button.primary-muted:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+    );
     expect(css).toContain('background-color: #D6EBFF');
     expect(css).toContain('.astryx-button.primary-muted:focus-visible {');
     expect(css).toContain('outline: 2px solid var(--color-accent)');
@@ -787,7 +964,9 @@ describe('pseudo-class overrides in components', () => {
     // Should NOT emit an empty base rule
     expect(css).not.toMatch(/\.astryx-switch\s*\{\s*\}/);
     // Should emit the pseudo rule
-    expect(css).toContain('.astryx-switch:hover {');
+    expect(css).toContain(
+      '.astryx-switch:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+    );
   });
 
   it('keeps non-pseudo string values as regular properties', () => {
@@ -994,6 +1173,83 @@ describe('container padding mapping', () => {
 });
 
 describe('defineTheme extends', () => {
+  it('inherits enrollment, allows exact replacement, and owns new child names', () => {
+    const base = defineTheme({
+      name: 'base-theme',
+      localTokens: {
+        '--astryx-theme-base-theme-color-status-fill': '#123456',
+      },
+    });
+    const child = defineTheme({
+      name: 'child-theme',
+      extends: base,
+      localTokens: {
+        '--astryx-theme-base-theme-color-status-fill': '#654321',
+        '--astryx-theme-child-theme-color-surface-raised': '#abcdef',
+      },
+    });
+
+    expect(child.localTokens).toEqual({
+      '--astryx-theme-base-theme-color-status-fill': '#654321',
+      '--astryx-theme-child-theme-color-surface-raised': '#abcdef',
+    });
+    expect(child.__localTokenOwners).toEqual({
+      '--astryx-theme-base-theme-color-status-fill': 'base-theme',
+      '--astryx-theme-child-theme-color-surface-raised': 'child-theme',
+    });
+    expect(child.__localTokenLineage).toEqual(['base-theme', 'child-theme']);
+  });
+
+  it('inherits enrollment when the child declares no local tokens', () => {
+    const base = defineTheme({name: 'base-theme', localTokens: {}});
+    const child = defineTheme({name: 'child-theme', extends: base});
+
+    expect(child.localTokens).toEqual({});
+    expect(child.__localTokenLineage).toEqual(['base-theme', 'child-theme']);
+  });
+
+  it('preserves legacy descendant names when they only inherit enrollment', () => {
+    const base = defineTheme({
+      name: 'base-theme',
+      localTokens: {
+        '--astryx-theme-base-theme-color-status-fill': '#123456',
+      },
+    });
+    const legacyChild = defineTheme({name: 'Legacy.Theme', extends: base});
+    const grandchild = defineTheme({name: 'grandchild', extends: legacyChild});
+
+    expect(legacyChild.localTokens).toEqual(base.localTokens);
+    expect(legacyChild.__localTokenLineage).toEqual([
+      'base-theme',
+      'Legacy.Theme',
+    ]);
+    expect(grandchild.localTokens).toEqual(base.localTokens);
+    expect(grandchild.__localTokenLineage).toEqual([
+      'base-theme',
+      'Legacy.Theme',
+      'grandchild',
+    ]);
+  });
+
+  it('rejects a new declaration in another theme namespace', () => {
+    const base = defineTheme({
+      name: 'base-theme',
+      localTokens: {
+        '--astryx-theme-base-theme-color-status-fill': '#123456',
+      },
+    });
+
+    expect(() =>
+      defineTheme({
+        name: 'child-theme',
+        extends: base,
+        localTokens: {
+          '--astryx-theme-base-theme-color-new-role': '#abcdef',
+        },
+      }),
+    ).toThrow(/exact namespace/);
+  });
+
   it('inherits tokens from base theme', () => {
     const base = defineTheme({
       name: 'base',

@@ -5,7 +5,7 @@
 export const docs = {
   name: 'TextInput',
   displayName: 'Text Input',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
   props: [
     {
@@ -70,6 +70,16 @@ export const docs = {
       description:
         'Displays a "Required" indicator next to the label and sets aria-required. Mutually exclusive with isOptional.',
       default: 'false',
+    },
+    {
+      name: 'onEnter',
+      type: '() => void',
+      description: 'Callback fired when the user presses the Enter key.',
+    },
+    {
+      name: 'onKeyDown',
+      type: '(e: KeyboardEvent<HTMLInputElement>) => void',
+      description: 'Callback fired on keydown events on the input.',
     },
     {
       name: 'isDisabled',

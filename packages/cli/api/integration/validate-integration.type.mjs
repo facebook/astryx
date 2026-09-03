@@ -17,7 +17,9 @@
  * @property {string} [components]
  * @property {string} [templates]
  * @property {string} [codemods]
+ * @property {string} [docs]
  * @property {string} [issuesUrl]
+ * @property {string[]} [__unknownKeys]
  * @property {string} __spec
  * @property {string} __packageDir
  * @property {string} __manifestFile

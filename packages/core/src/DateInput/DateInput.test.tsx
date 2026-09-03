@@ -917,6 +917,27 @@ describe('DateInput', () => {
       expect(screen.getByDisplayValue('Jan 25, 2026')).toBeInTheDocument();
     });
 
+    it('updates when the InternationalizationProvider locale changes (#5074)', () => {
+      const renderDateInput = (locale: 'en-US' | 'es-ES') => (
+        <InternationalizationProvider locale={locale}>
+          <DateInput
+            label="Date"
+            value="2026-01-25"
+            onChange={() => {}}
+            format="date_long"
+          />
+        </InternationalizationProvider>
+      );
+      const {rerender} = render(renderDateInput('en-US'));
+
+      expect(screen.getByDisplayValue('January 25, 2026')).toBeInTheDocument();
+
+      rerender(renderDateInput('es-ES'));
+      expect(
+        screen.getByDisplayValue('25 de enero de 2026'),
+      ).toBeInTheDocument();
+    });
+
     it('renders the ISO shape for format="system_date"', () => {
       render(
         <DateInput
@@ -1186,7 +1207,7 @@ describe('DateInput clear icon theme target', () => {
     expect(css).toContain('.astryx-date-input-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-date-input-clear-icon:hover {');
+    expect(css).toContain('.astryx-date-input-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });

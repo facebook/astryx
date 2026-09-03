@@ -106,6 +106,9 @@ jobs:
             echo "No translated locale files present; nothing to normalize."
           fi
 
+      - name: Generate Calendar CLDR weekdays
+        run: pnpm generate:cldr-weekdays
+
       # peter-evans/create-pull-request@v7.0.11 — pinned by SHA per repo policy.
       - name: Open translations PR
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1

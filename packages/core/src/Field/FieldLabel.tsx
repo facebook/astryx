@@ -45,11 +45,14 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   srOnly: {
     borderStyle: 'none',
@@ -82,7 +85,10 @@ const styles = stylex.create({
   // When the description forwards clicks to a click-activatable control
   // (checkbox/switch), it reads as part of the same hit target as the label.
   descriptionClickable: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
 });
 
@@ -279,6 +285,13 @@ export function FieldLabel({
         htmlFor={isGroupLabel ? undefined : inputID}
         {...rest}
         {...mergeProps(
+          // A control that knows what kind of label this is passes its own
+          // target down (CheckboxInput's `checkbox-label`, Switch's
+          // `switch-label`); it arrives as `className` and composes onto this
+          // one. The label itself does not describe its own placement — it
+          // cannot know it, and any encoding it guessed would be wrong for a
+          // caller that arranges labels differently (Field's
+          // `horizontal-labels`).
           themeProps('field-label'),
           stylex.props(
             styles.label,

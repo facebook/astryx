@@ -19,6 +19,11 @@ export interface ItemGroup<T extends SearchableItem = SearchableItem> {
   items: T[];
 }
 
+export interface GroupItemsOptions {
+  /** Place ungrouped items before named groups instead of after them. */
+  ungroupedFirst?: boolean;
+}
+
 /**
  * Extract the group string from an item's auxiliaryData.
  */
@@ -52,6 +57,7 @@ export function getItemGroup(item: SearchableItem): string | undefined {
  */
 export function groupItems<T extends SearchableItem>(
   items: T[],
+  {ungroupedFirst = false}: GroupItemsOptions = {},
 ): ItemGroup<T>[] {
   const hasGroups = items.some(item => getItemGroup(item) != null);
 
@@ -76,14 +82,14 @@ export function groupItems<T extends SearchableItem>(
     }
   }
 
-  const result: ItemGroup<T>[] = groupOrder.map(heading => ({
+  const namedGroups: ItemGroup<T>[] = groupOrder.map(heading => ({
     heading,
     items: groups.get(heading) ?? [],
   }));
+  const ungroupedGroup: ItemGroup<T>[] =
+    ungrouped.length > 0 ? [{heading: null, items: ungrouped}] : [];
 
-  if (ungrouped.length > 0) {
-    result.push({heading: null, items: ungrouped});
-  }
-
-  return result;
+  return ungroupedFirst
+    ? [...ungroupedGroup, ...namedGroups]
+    : [...namedGroups, ...ungroupedGroup];
 }

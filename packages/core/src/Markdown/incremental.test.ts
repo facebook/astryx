@@ -131,12 +131,26 @@ describe('parseMarkdownIncremental', () => {
     expect(state.settledText).toBe('');
   });
 
-  it('unclosed fence keeps everything unsettled', () => {
+  it('settles what precedes an unclosed fence, and nothing inside it', () => {
     const state = createIncrementalState();
     const input =
       '# Title\n\n```python\ndef foo():\n    pass\n\n# still inside fence';
     parseMarkdownIncremental(input, state);
-    expect(state.settledBlocks).toHaveLength(0);
+    expect(state.settledText).toBe('# Title');
+    expect(state.settledBlocks).toHaveLength(1);
+  });
+
+  it('does not hold back lines inside an unclosed fence', () => {
+    const state = createIncrementalState();
+    const blocks = parseMarkdownIncremental(
+      'Intro\n\n```ts\ntype Id = string | number;',
+      state,
+    );
+    const code = blocks.find(block => block.type === 'codeblock');
+    expect(code).toMatchObject({
+      type: 'codeblock',
+      content: 'type Id = string | number;',
+    });
   });
 
   it('handles task list streaming', () => {
@@ -193,6 +207,76 @@ describe('parseMarkdownIncremental', () => {
     );
     // The settled blocks array reference should be the same (reused, not re-parsed)
     expect(state.settledBlocks).toBe(cachedBlocks);
+  });
+
+  it('returns a fresh array and leaves earlier snapshots untouched', () => {
+    const state = createIncrementalState();
+    const first = parseMarkdownIncremental(
+      '# Stable\n\nFirst paragraph\n\nTail',
+      state,
+    );
+    const stableHeading = first[0];
+    const snapshot = structuredClone(first);
+
+    const second = parseMarkdownIncremental(
+      '# Stable\n\nFirst paragraph\n\nTail grows',
+      state,
+    );
+
+    // Call 1's return is a stable snapshot: a later call neither replaces it
+    // in place nor edits the block nodes it holds.
+    expect(second).not.toBe(first);
+    expect(first).toEqual(snapshot);
+    // Settled block objects are reused across calls by reference.
+    expect(second[0]).toBe(stableHeading);
+    expect(second).toEqual(
+      parseMarkdown('# Stable\n\nFirst paragraph\n\nTail grows'),
+    );
+  });
+
+  it('re-parses when settled text is replaced at the same length', () => {
+    const state = createIncrementalState();
+    const before = '# Alpha\n\nOld body copy';
+    const after = '# Bravo\n\nNew body copy';
+    expect(after).toHaveLength(before.length);
+
+    parseMarkdownIncremental(before, state);
+    const blocks = parseMarkdownIncremental(after, state);
+
+    expect(blocks).toEqual(parseMarkdown(after));
+  });
+
+  it('re-parses when settled text is replaced by longer content', () => {
+    const state = createIncrementalState();
+    parseMarkdownIncremental('# Alpha\n\nOld body copy', state);
+
+    const after =
+      '# Bravo heading\n\nNew body copy, longer than before\n\nTail';
+    const blocks = parseMarkdownIncremental(after, state);
+
+    expect(blocks).toEqual(parseMarkdown(after));
+  });
+
+  it('keeps the prefix settled while a long fence streams and closes', () => {
+    const state = createIncrementalState();
+    const prefix = '# Stable\n\n';
+    const fence = '```ts\nconst a = 1;\n\nconst b = 2;';
+    let stableHeading: BlockNode | undefined;
+
+    for (let end = 1; end <= fence.length; end++) {
+      const blocks = parseMarkdownIncremental(
+        prefix + fence.slice(0, end),
+        state,
+      );
+      stableHeading ??= blocks[0];
+      expect(blocks[0]).toBe(stableHeading);
+      expect(state.settledText).toBe('# Stable');
+    }
+
+    const complete = `${prefix}${fence}\n\`\`\`\n\nAfter`;
+    const blocks = parseMarkdownIncremental(complete, state);
+    expect(blocks[0]).toBe(stableHeading);
+    expect(blocks).toEqual(parseMarkdown(complete));
   });
 
   it('tracks settledText correctly', () => {
@@ -684,5 +768,18 @@ describe('parseMarkdownIncremental link reference definitions', () => {
       state,
     );
     expect(firstLinkHref(after)).toBe('/docs');
+  });
+
+  it('keeps first-definition-wins when definitions move into the settled prefix', () => {
+    const state = createIncrementalState();
+    const first = 'See [d].\n\n[d]: /first\n\nMiddle paragraph\n\n[d]: /second';
+    expect(firstLinkHref(parseMarkdownIncremental(first, state))).toBe(
+      '/first',
+    );
+
+    const complete = `${first}\n\nAfter`;
+    const blocks = parseMarkdownIncremental(complete, state);
+    expect(blocks).toEqual(parseMarkdown(complete));
+    expect(firstLinkHref(blocks)).toBe('/first');
   });
 });

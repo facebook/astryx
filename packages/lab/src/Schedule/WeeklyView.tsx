@@ -9,7 +9,10 @@
  * @position Concrete schedule view; exported as createScheduleWeeklyView
  */
 
-import {plainDateAddDays, plainDateSetStartOfWeek} from '@astryxdesign/core/utils';
+import {
+  plainDateAddDays,
+  plainDateSetStartOfWeek,
+} from '@astryxdesign/core/utils';
 import {enumerateDates, getScheduleRangeFromDates} from './dateMath';
 import {useScheduleContext} from './context';
 import {
@@ -35,7 +38,7 @@ export interface ScheduleWeeklyViewOptions {
 function ScheduleWeeklyView({
   options,
 }: ScheduleViewComponentProps<ScheduleWeeklyViewOptions>) {
-  const {events, focusDate, timezoneID, range, isLoading} =
+  const {events, focusDate, timezoneID, locale, range, isLoading} =
     useScheduleContext();
   const {minHour = 0, maxHour = 24, hourHeight = 100} = options;
   const days = enumerateDates(range.startDate, range.endDate);
@@ -44,6 +47,7 @@ function ScheduleWeeklyView({
     days[0],
     days[days.length - 1],
     timezoneID,
+    locale,
   );
 
   return (

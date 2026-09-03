@@ -12,6 +12,7 @@ import {
 import {render, screen, act, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Timestamp} from './Timestamp';
+import {formatInstant} from './formatInstant';
 import {formatTooltipLines} from './tooltipEntries';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
@@ -255,7 +256,116 @@ describe('Timestamp', () => {
     });
   });
 
+  it.each([
+    {format: 'relative' as const, style: 'long' as const},
+    {format: 'relative_short' as const, style: 'narrow' as const},
+    {format: 'auto' as const, style: 'long' as const},
+  ])(
+    'updates $format output when the provider locale changes',
+    ({format, style}) => {
+      const value = Date.now() / 1000 - 2 * 3600;
+      const timestamp = (locale: string) => (
+        <InternationalizationProvider locale={locale}>
+          <Timestamp
+            value={value}
+            format={format}
+            hasTooltip={false}
+            data-testid="ts"
+          />
+        </InternationalizationProvider>
+      );
+      const expected = (locale: string) =>
+        new Intl.RelativeTimeFormat(locale, {
+          numeric: 'always',
+          style,
+        }).format(-2, 'hour');
+
+      const {rerender} = render(timestamp('en-US'));
+      expect(screen.getByTestId('ts')).toHaveTextContent(expected('en-US'));
+
+      rerender(timestamp('fr-FR'));
+      expect(screen.getByTestId('ts')).toHaveTextContent(expected('fr-FR'));
+    },
+  );
+
+  it('localizes relative idioms from the provider locale', () => {
+    const timestamp = (value: number) => (
+      <InternationalizationProvider locale="fr-FR">
+        <Timestamp
+          value={value}
+          format="relative"
+          hasTooltip={false}
+          data-testid="ts"
+        />
+      </InternationalizationProvider>
+    );
+    const formatter = new Intl.RelativeTimeFormat('fr-FR', {
+      numeric: 'auto',
+      style: 'long',
+    });
+
+    const {rerender} = render(timestamp(Date.now() / 1000 - 5));
+    expect(screen.getByTestId('ts')).toHaveTextContent(
+      formatter.format(0, 'second'),
+    );
+
+    rerender(timestamp(Date.now() / 1000 - 100000));
+    expect(screen.getByTestId('ts')).toHaveTextContent(
+      formatter.format(-1, 'day'),
+    );
+  });
+
   // --- Standard display formats ---
+
+  it('updates absolute output when the provider locale changes', () => {
+    const value = '2026-01-25T12:00:00Z';
+    const timestamp = (locale: string) => (
+      <InternationalizationProvider locale={locale}>
+        <Timestamp
+          value={value}
+          format="date_long"
+          hasTooltip={false}
+          data-testid="ts"
+        />
+      </InternationalizationProvider>
+    );
+
+    const {rerender} = render(timestamp('en-US'));
+    expect(screen.getByTestId('ts')).toHaveTextContent('January 25, 2026');
+
+    rerender(timestamp('de-DE'));
+    expect(screen.getByTestId('ts')).toHaveTextContent('25. Januar 2026');
+  });
+
+  it.each(['full', 'date', 'date_long', 'date_weekday', 'date_time'] as const)(
+    'keeps Gregorian years for the %s format under a non-Gregorian locale',
+    format => {
+      const value = formatInstant(
+        new Date('2026-08-22T12:00:00Z'),
+        format,
+        'th-TH',
+        {timeZone: 'UTC'},
+      );
+      expect(value).toContain('2026');
+      expect(value).not.toContain('2569');
+    },
+  );
+
+  it('keeps Gregorian years in Timestamp output under a non-Gregorian locale', () => {
+    render(
+      <InternationalizationProvider locale="th-TH">
+        <Timestamp
+          value="2026-08-22T12:00:00Z"
+          format="date_long"
+          hasTooltip={false}
+          data-testid="ts"
+        />
+      </InternationalizationProvider>,
+    );
+
+    expect(screen.getByTestId('ts')).toHaveTextContent('2026');
+    expect(screen.getByTestId('ts')).not.toHaveTextContent('2569');
+  });
 
   it('renders date format', () => {
     render(
@@ -441,7 +551,7 @@ describe('Timestamp', () => {
     );
 
     const longTz =
-      new Intl.DateTimeFormat(undefined, {timeZoneName: 'long'})
+      new Intl.DateTimeFormat('en', {timeZoneName: 'long'})
         .formatToParts(oneHourAgo)
         .find(p => p.type === 'timeZoneName')?.value ?? '';
     expect(longTz).not.toBe('');
@@ -462,7 +572,7 @@ describe('Timestamp', () => {
     );
 
     const tzPart = (form: 'short' | 'long') =>
-      new Intl.DateTimeFormat(undefined, {timeZoneName: form})
+      new Intl.DateTimeFormat('en', {timeZoneName: form})
         .formatToParts(date)
         .find(p => p.type === 'timeZoneName')?.value ?? '';
     const text = screen.getByTestId('ts').textContent ?? '';
@@ -545,11 +655,24 @@ describe('Timestamp', () => {
     expect(screen.getByText('now')).toBeInTheDocument();
   });
 
-  it('renders a genuine near-future time beyond the skew tolerance', () => {
+  it('renders a genuine near-future time beyond the skew tolerance with the native formatter', () => {
     // Past the skew window — this is a real upcoming time, not clock drift.
     const fortyFiveSecondsFromNow = Date.now() / 1000 + 45;
-    render(<Timestamp value={fortyFiveSecondsFromNow} format="relative" />);
-    expect(screen.getByText('in a few seconds')).toBeInTheDocument();
+    render(
+      <Timestamp
+        value={fortyFiveSecondsFromNow}
+        format="relative"
+        hasTooltip={false}
+      />,
+    );
+    expect(
+      screen.getByText(
+        new Intl.RelativeTimeFormat('en', {
+          numeric: 'always',
+          style: 'long',
+        }).format(45, 'second'),
+      ),
+    ).toBeInTheDocument();
   });
 
   // --- Long-ago relative ---
@@ -653,6 +776,24 @@ describe('Timestamp', () => {
       expect(screen.getByTestId('ts')).toHaveAttribute('tabindex', '0');
     });
 
+    it('does not put aria-expanded on the role-less hover-card trigger', async () => {
+      render(
+        <Timestamp
+          value={Date.now() / 1000 - 3600}
+          format="relative"
+          data-testid="ts"
+        />,
+      );
+      const trigger = screen.getByTestId('ts').parentElement;
+      // The trigger is Text's <span>, which has no role, so aria-expanded is
+      // invalid on it (axe aria-allowed-attr, critical). aria-haspopup is
+      // global and still advertises the dialog.
+      await waitFor(() => {
+        expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+      });
+      expect(trigger).not.toHaveAttribute('aria-expanded');
+    });
+
     it('shows the hover card when the timestamp receives keyboard focus', async () => {
       const user = userEvent.setup();
       render(
@@ -673,7 +814,7 @@ describe('Timestamp', () => {
       // no-break spaces that jest-dom's matcher normalization would break on.
       const normalize = (s: string) => s.replace(/\s+/g, ' ');
       const datetime = new Date(el.getAttribute('datetime') ?? '');
-      const expected = new Intl.DateTimeFormat(undefined, {
+      const expected = new Intl.DateTimeFormat('en', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -789,7 +930,7 @@ describe('Timestamp', () => {
       const datetime = new Date(
         screen.getByTestId('ts').getAttribute('datetime') ?? '',
       );
-      const expected = new Intl.DateTimeFormat(undefined, {
+      const expected = new Intl.DateTimeFormat('en', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -1252,7 +1393,7 @@ describe('Timestamp', () => {
             data-testid="ts"
           />,
         );
-        const [line] = formatTooltipLines(new Date(VALUE), [{format}]);
+        const [line] = formatTooltipLines(new Date(VALUE), [{format}], 'en');
         expect(line.value).toBe(screen.getByTestId('ts').textContent);
       },
     );
@@ -1275,13 +1416,53 @@ describe('Timestamp', () => {
       );
       const date = new Date(VALUE);
       const tzPart = (form: 'short' | 'long') =>
-        new Intl.DateTimeFormat(undefined, {timeZoneName: form})
+        new Intl.DateTimeFormat('en', {timeZoneName: form})
           .formatToParts(date)
           .find(p => p.type === 'timeZoneName')?.value ?? '';
-      const [line] = formatTooltipLines(date, [{format: 'full'}]);
+      const [line] = formatTooltipLines(date, [{format: 'full'}], 'en');
       expect(screen.getByTestId('ts').getAttribute('aria-label')).toBe(
         line.value.replace(tzPart('short'), tzPart('long')),
       );
+    });
+  });
+});
+
+describe('Timestamp pass-through props', () => {
+  it('forwards pass-through props to the time element', () => {
+    render(
+      <Timestamp
+        value="2024-01-15T10:30:00Z"
+        format="date_time"
+        aria-label="Published"
+        id="published-at"
+        data-source="cms"
+        data-testid="stamp"
+      />,
+    );
+    const time = screen.getByTestId('stamp');
+    expect(time.tagName).toBe('TIME');
+    expect(time).toHaveAttribute('aria-label', 'Published');
+    expect(time).toHaveAttribute('id', 'published-at');
+    expect(time).toHaveAttribute('data-source', 'cms');
+  });
+
+  it('keeps its own spelled-out label on a relative timestamp', () => {
+    render(
+      <Timestamp
+        value={Date.now()}
+        format="relative"
+        aria-label="Caller label"
+        data-source="cms"
+        data-testid="stamp"
+      />,
+    );
+    const stamp = screen.getByTestId('stamp');
+    expect({
+      ariaLabel: stamp.getAttribute('aria-label'),
+      dataSource: stamp.getAttribute('data-source'),
+    }).toEqual({
+      ariaLabel: expect.not.stringMatching(/^Caller label$/),
+      dataSource: 'cms',
     });
   });
 });

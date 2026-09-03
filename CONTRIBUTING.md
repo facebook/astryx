@@ -4,7 +4,7 @@ For the full contribution process — what we accept, how to propose new compone
 
 Key pages:
 
-- **[API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)** — naming, prop patterns, composition rules (read before submitting an RFC)
+- **[API conventions guide](docs/contributing/api-conventions.md)** — practical naming, composition, styling, proposal, and review guidance linked to current owner records
 - **[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** — the design-side bar: tokens, spacing, radius, elevation, type, color, motion, and state representations
 - **[Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
 - **[Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle)** — how components move from lab → core and templates from hidden → visible
@@ -92,9 +92,6 @@ cd astryx
 # Install dependencies
 pnpm install
 
-# Build core package first (required for Storybook)
-pnpm -F @astryxdesign/core build
-
 # Start Storybook for component development
 cd apps/storybook
 pnpm dev
@@ -102,19 +99,9 @@ pnpm dev
 
 ### Running Storybook
 
-Storybook loads pre-built packages from `dist/` folders, so you need to build packages before running Storybook.
-
-**First time setup:**
-
-```bash
-# Build all packages
-pnpm build
-
-# Or build just core
-pnpm -F @astryxdesign/core build
-```
-
-**Start Storybook:**
+Storybook resolves every workspace package to its `src/` directory and compiles
+it itself, so a fresh clone needs no build step first — `pnpm install` then
+`pnpm dev` is enough.
 
 ```bash
 cd apps/storybook
@@ -127,16 +114,8 @@ Storybook will open at http://localhost:6006 with:
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
-**If you make changes to `@astryxdesign/core`:**
-
-```bash
-# Rebuild core package
-pnpm -F @astryxdesign/core build
-
-# Restart Storybook to see changes
-cd apps/storybook
-pnpm dev
-```
+**If you make changes to `@astryxdesign/core`:** nothing extra. The dev server
+serves the edited source, so the story updates on save — no rebuild, no restart.
 
 ### Running the Doc Site
 
@@ -474,8 +453,11 @@ When the audit reports baseline entries as "resolved", delete them from
 PRs that touch components also run an RTL audit (`pr-rtl`), scoped to the
 changed components like `pr-a11y`. It is soft-gated — findings show in the job
 summary but don't block. Repro locally with `pnpm rtl:audit -- --filter Avatar`
-(the `--` matters: `pnpm -F` is itself `--filter`). See
-`apps/storybook/rtl-audit/README.md`.
+(the `--` matters: `pnpm -F` is itself `--filter`). The report classifies every
+scoped component as **measured**, **verified N-A**, or a **coverage gap**; an
+unexplained all-N-A result is not a clean RTL result. The weekly unfiltered run
+applies the same contract to the full existing roster, while PR CI applies it
+to new and changed components. See `apps/storybook/rtl-audit/README.md`.
 
 ### Modal close visibility guard
 
@@ -490,6 +472,33 @@ browser is not obliged to release that when `close()` finally runs — Safari
 26.1 did not (#4290). The ordering comes from a CSS transition, so jsdom
 cannot see it and the unit suites pass either way. Add a target here when a
 component closes a `<dialog>` on a delay.
+
+### Disabled hover guard
+
+A disabled element must never paint a hover state: `:hover` keeps matching a
+disabled control in every engine, so a hover treatment written for the enabled
+element is still painted under the pointer. Guard every self-`:hover` with
+`:hover:where(:not(:disabled,[aria-disabled="true"]))` — `:where()` adds no
+specificity, so the rule weighs the same as before. The `@astryx/no-hover-on-disabled`
+lint rule (autofixable) enforces it at author time; `pnpm guard:disabled-hover
+--storybook-dir apps/storybook/dist` sweeps a built Storybook in Chromium and
+fails on any disabled element whose paint changes under a forced `:hover`.
+
+### Disabled cursor guard
+
+A disabled control must not answer the pointer with an interactive cursor: the
+cursor is the only affordance a pointer user gets before they commit to a
+click. Write every `cursor` so the disabled state takes it back —
+`cursor: {default: 'pointer', ':is(:disabled,[aria-disabled="true"])': 'default'}`
+— including a flat `cursor` inside a `disabled` style, since StyleX merges one
+property at a time and a later declaration replaces the earlier one's
+conditions along with its value. `default` rather than `not-allowed`: a
+disabled control sealed behind `pointer-events: none` shows whatever its
+ancestor shows, so one cursor everywhere beats a stronger one we can only
+paint on some of them. The `@astryx/disabled-cursor` lint rule (autofixable)
+enforces it at author time; `pnpm guard:disabled-cursor --storybook-dir
+apps/storybook/dist` hit-tests every disabled element in a built Storybook in
+Chromium and fails on any other cursor.
 
 ## Versioning & Releases
 
@@ -754,6 +763,9 @@ Astryx accepts community translations via Crowdin. To help translate astryx
 into your language, visit <https://crowdin.com/project/astryx>. New locales are
 picked up automatically after a maintainer reviews the auto-generated
 translations PR.
+
+Calendar’s compact weekday labels, such as `Su` and `Mo`, are generated from
+Unicode CLDR data because browsers do not provide that format.
 
 ## Contributor License Agreement ("CLA")
 

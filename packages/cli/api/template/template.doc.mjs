@@ -104,7 +104,7 @@ export const doc = {
     {
       type: 'template.skeleton',
       description:
-        "A layout skeleton — structural tags with spatial annotations — plus the template's description and the components it composes.",
+        "A layout skeleton (structural tags with spatial annotations) plus the template's description and the components it composes.",
     },
     {
       type: 'template.copy',
@@ -114,7 +114,7 @@ export const doc = {
     {
       type: 'template.cdn',
       description:
-        'A write receipt for the CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
+        'A write receipt for the CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not. `exists` when a file was already there, which is a success.',
     },
   ],
   throws: [

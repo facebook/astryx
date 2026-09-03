@@ -1,5 +1,74 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Dialog',
+    required: true,
+    description: 'Modal surface that contains the command palette.',
+  },
+  {
+    name: 'Input',
+    required: true,
+    description:
+      'Search region containing the query field and its supporting visuals.',
+  },
+  {
+    name: 'Search glyph',
+    required: true,
+    description: 'Search symbol rendered by Icon in the default Input.',
+  },
+  {
+    name: 'Query field',
+    required: true,
+    description: 'Native text field used to enter a search query.',
+  },
+  {
+    name: 'Loading spinner',
+    required: false,
+    description:
+      'Spinner shown in the default Input while a search is pending.',
+  },
+  {
+    name: 'List',
+    required: true,
+    description:
+      'Scrollable listbox containing the current results or Empty state.',
+  },
+  {
+    name: 'Item',
+    required: false,
+    description: 'Selectable command result rendered inside the List.',
+  },
+  {
+    name: 'Group',
+    required: false,
+    description: 'Optional collection of Items that share a heading.',
+  },
+  {
+    name: 'Group heading',
+    required: false,
+    description: 'Visible heading rendered for a Group.',
+  },
+  {
+    name: 'Empty',
+    required: false,
+    description: 'Message shown when the current result set is empty.',
+  },
+  {
+    name: 'Footer',
+    required: false,
+    description:
+      'Footer region for default keyboard guidance or caller-provided content.',
+  },
+  {
+    name: 'Keyboard shortcut',
+    required: false,
+    description:
+      'Painted key badges rendered by Kbd in the default Footer guidance.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'CommandPalette',
@@ -152,6 +221,7 @@ export const docs = {
     ],
   },
   usage: {
+    anatomy,
     description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by SearchSource for filtering and selection.',
     bestPractices: [
       { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
@@ -165,6 +235,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
+    anatomy,
     description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by SearchSource for filtering and selection.',
     bestPractices: [
       { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
@@ -180,6 +251,7 @@ export const docsDense = {
   description:
     'searchSource-driven command palette dialog; filtering, keyboard nav, grouping, selection; same SearchSource interface as Typeahead',
   usage: {
+    anatomy,
     description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by SearchSource for filtering and selection.',
     bestPractices: [
       { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },

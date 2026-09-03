@@ -15,7 +15,7 @@ export const docs = {
   name: 'TransferListSelector',
   displayName: 'Transfer List Selector',
   group: 'Selector',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'transfer list',
     'dual list',
@@ -479,6 +479,29 @@ export const docs = {
         required: true,
         description:
           'Reports add, remove, bulk, and reorder results without relying on visual position alone.',
+      },
+    ],
+  },
+  // Mirrors the themeProps() calls in TransferList.tsx. `astryx theme build`
+  // reads this inventory to learn which visual props a target can vary on, so
+  // a target missing here cannot be themed even though it carries the class.
+  theming: {
+    targets: [
+      {
+        className: 'astryx-transfer-list',
+        visualProps: [],
+      },
+      {
+        className: 'astryx-transfer-list-collection',
+        visualProps: [],
+      },
+      {
+        className: 'astryx-transfer-list-panel',
+        visualProps: ['side'],
+      },
+      {
+        className: 'astryx-transfer-list-item',
+        visualProps: ['side', 'state'],
       },
     ],
   },
