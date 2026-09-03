@@ -6,6 +6,7 @@ import {resolveValue} from '../components/component-detail/resolveElements';
 
 vi.mock('@astryxdesign/core', () => ({
   Badge: () => null,
+  DropdownMenuRadioItem: () => null,
   Icon: () => null,
   SideNavItem: () => null,
   Text: () => null,
@@ -57,5 +58,19 @@ describe('component detail element resolution', () => {
     expect(resolved.status.type).toBe('error');
     expect(isValidElement(resolved.status.message)).toBe(true);
     expect(resolved.status.message.props.children).toBe('Bad date');
+  });
+
+  it("resolves DropdownMenuRadioGroup's radio-item children into React elements (#5888)", () => {
+    const resolved = resolveValue([
+      {__element: 'DropdownMenuRadioItem', props: {value: 'name', label: 'Name'}},
+      {__element: 'DropdownMenuRadioItem', props: {value: 'date', label: 'Date modified'}},
+      {__element: 'DropdownMenuRadioItem', props: {value: 'size', label: 'Size'}},
+    ]);
+
+    expect(Array.isArray(resolved)).toBe(true);
+    const items = resolved as ReactElement<Record<string, unknown>>[];
+    expect(items).toHaveLength(3);
+    expect(items.every(item => isValidElement(item))).toBe(true);
+    expect(items[0].props).toMatchObject({value: 'name', label: 'Name'});
   });
 });

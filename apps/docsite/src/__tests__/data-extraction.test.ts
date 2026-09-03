@@ -323,6 +323,32 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('LayoutFooter declares a playground wrapper and default content so preview is not empty (#5895)', () => {
+    const core = components['@astryxdesign/core'];
+    const layoutFooter = core.find(c => c.name === 'LayoutFooter');
+    expect(layoutFooter).toBeDefined();
+    expect(layoutFooter!.playground?.defaults).toMatchObject({
+      children: expect.any(String),
+      hasDivider: true,
+    });
+    expect(layoutFooter!.playground?.wrapper).toMatchObject({
+      component: 'Layout',
+    });
+  });
+
+  it('DropdownMenuRadioGroup declares radio-item children and a selected value so preview is not empty (#5888)', () => {
+    const core = components['@astryxdesign/core'];
+    const radioGroup = core.find(c => c.name === 'DropdownMenuRadioGroup');
+    expect(radioGroup).toBeDefined();
+    expect(radioGroup!.playground?.defaults).toMatchObject({
+      label: 'Sort by',
+      value: 'name',
+      children: expect.arrayContaining([
+        expect.objectContaining({__element: 'DropdownMenuRadioItem'}),
+      ]),
+    });
+  });
+
   it('Lightbox declares an overlay playground with a closed initial state (#3657)', () => {
     const core = components['@astryxdesign/core'];
     const lightbox = core.find(c => c.name === 'Lightbox');
