@@ -2,7 +2,9 @@
   {
     "component": "AppShell",
     "storyId": "core-appshell--top-nav-with-side-nav",
-    "dims": ["D4"],
+    "dims": [
+      "D4"
+    ],
     "selectors": {
       "overlay": ".astryx-app-shell-sidenav",
       "overlayRoot": ".astryx-app-shell"
@@ -11,7 +13,9 @@
   {
     "component": "ButtonGroup",
     "storyId": "core-buttongroup--horizontal",
-    "dims": ["D2"],
+    "dims": [
+      "D2"
+    ],
     "selectors": {
       "prev": "[role=\"group\"] button:first-child",
       "next": "[role=\"group\"] button:last-child"
@@ -20,7 +24,9 @@
   {
     "component": "CheckboxList",
     "storyId": "core-checkboxlist--rich-descriptions",
-    "dims": ["D2"],
+    "dims": [
+      "D2"
+    ],
     "selectors": {
       "prev": ".astryx-checkbox-input",
       "next": "[data-testid=\"checkbox-end-content\"]"
@@ -29,7 +35,9 @@
   {
     "component": "RadioList",
     "storyId": "core-radiolist--rich-content",
-    "dims": ["D2"],
+    "dims": [
+      "D2"
+    ],
     "selectors": {
       "prev": "input[aria-label=\"Pro\"]",
       "next": "[data-testid=\"radio-end-content\"]"
@@ -38,7 +46,9 @@
   {
     "component": "Calendar",
     "storyId": "core-calendar--default",
-    "dims": ["D2"],
+    "dims": [
+      "D2"
+    ],
     "selectors": {
       "prev": "button[aria-label=\"Previous month\"]",
       "next": "button[aria-label=\"Next month\"]"
@@ -47,7 +57,9 @@
   {
     "component": "Carousel",
     "storyId": "core-carousel--default",
-    "dims": ["D3"],
+    "dims": [
+      "D3"
+    ],
     "selectors": {
       "scroller": "[aria-roledescription=\"carousel\"] > div:first-child",
       "nextButton": "button[aria-label=\"Scroll right\"]"
@@ -56,7 +68,9 @@
   {
     "component": "Chat",
     "storyId": "core-chat--mixed-content",
-    "dims": ["D2"],
+    "dims": [
+      "D2"
+    ],
     "selectors": {
       "prev": ".astryx-chat-message-bubble[data-sender=\"assistant\"]",
       "next": ".astryx-chat-message-bubble[data-sender=\"user\"]"
@@ -89,7 +103,9 @@
   {
     "component": "Lightbox",
     "storyId": "core-lightbox--gallery",
-    "dims": ["D2"],
+    "dims": [
+      "D2"
+    ],
     "setup": {
       "click": "img, [role=button]"
     },
@@ -101,7 +117,9 @@
   {
     "component": "Stepper",
     "storyId": "core-stepper--default-horizontal",
-    "dims": ["D2"],
+    "dims": [
+      "D2"
+    ],
     "selectors": {
       "prev": ".astryx-stepper > li:first-child",
       "next": ".astryx-stepper > li:last-child"
@@ -110,7 +128,9 @@
   {
     "component": "TabList",
     "storyId": "core-tablist--overflow",
-    "dims": ["D3"],
+    "dims": [
+      "D3"
+    ],
     "selectors": {
       "scroller": ".astryx-tab-strip",
       "nextButton": ".astryx-tab-scroll-button"
@@ -119,7 +139,9 @@
   {
     "component": "Typeahead",
     "storyId": "core-typeahead--rtl-end-lane",
-    "dims": ["D4"],
+    "dims": [
+      "D4"
+    ],
     "selectors": {
       "overlay": "button[aria-label=\"Clear selection\"]",
       "overlayRoot": ".astryx-typeahead"
@@ -128,7 +150,9 @@
   {
     "component": "Tokenizer",
     "storyId": "core-tokenizer--rtl-end-lane",
-    "dims": ["D4"],
+    "dims": [
+      "D4"
+    ],
     "selectors": {
       "overlay": "button[aria-label=\"Clear all\"]",
       "overlayRoot": ".astryx-tokenizer"
@@ -137,7 +161,9 @@
   {
     "component": "Tooltip",
     "storyId": "core-tooltip--rtl-logical-placement",
-    "dims": ["D4"],
+    "dims": [
+      "D4"
+    ],
     "selectors": {
       "overlay": ".astryx-tooltip",
       "overlayRoot": "button:has-text(\"RTL placement target\")"
@@ -146,7 +172,9 @@
   {
     "component": "Toast",
     "storyId": "core-toast--logical-placement",
-    "dims": ["D4"],
+    "dims": [
+      "D4"
+    ],
     "setup": {
       "click": "button:has-text(\"Show toast\")"
     },
