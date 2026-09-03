@@ -11,11 +11,16 @@
  * SYNC: When useResizable changes, update tests to match new behavior
  */
 
-import {useLayoutEffect} from 'react';
+import {createElement, useLayoutEffect} from 'react';
+import {renderToString} from 'react-dom/server';
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import {useResizable} from './useResizable';
-import type {ResizableProps} from './useResizable';
+import type {
+  ResizableConstraintValue,
+  ResizableProps,
+  UseResizableSingleConfig,
+} from './useResizable';
 
 const AUTO_SAVE_ID = 'test-panel';
 const KEY = `astryx-resizable:${AUTO_SAVE_ID}`;
@@ -646,6 +651,188 @@ describe('useResizable percentage configuration (AST-010)', () => {
     });
   });
 
+  describe('CSS min()/max() constraints — AST-010 amendment', () => {
+    it('resolves the canonical minimum against the container basis', () => {
+      content = 500;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 0,
+          minSize: 'max(40%, 333px)',
+          containerRef,
+        }),
+      );
+
+      expect(result.current.props._minSizePx).toBe(333);
+      expect(result.current.size).toBe(333);
+
+      act(() => {
+        content = 1000;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.props._minSizePx).toBe(400);
+      expect(result.current.size).toBe(400);
+    });
+
+    it('resolves the canonical maximum and re-clamps when the basis narrows', () => {
+      content = 1000;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 500,
+          maxSize: 'min(400px, 10%)',
+          containerRef,
+        }),
+      );
+
+      expect(result.current.props._maxSizePx).toBe(100);
+      expect(result.current.size).toBe(100);
+
+      act(() => {
+        content = 500;
+        StubResizeObserver.resizeAll();
+      });
+      expect(result.current.props._maxSizePx).toBe(50);
+      expect(result.current.size).toBe(50);
+    });
+
+    it('evaluates nested and variadic expressions', () => {
+      content = 1000;
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 0,
+          minSize: 'min(900px, 80%, max(40%, 333px))',
+          containerRef,
+        }),
+      );
+
+      expect(result.current.props._minSizePx).toBe(400);
+      expect(result.current.size).toBe(400);
+    });
+
+    it('detects a nested percentage dependency and follows the viewport basis', () => {
+      window.innerWidth = 1000;
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 500,
+          maxSize: 'min(400px, max(5%, 10%))',
+        }),
+      );
+      expect(result.current.props._maxSizePx).toBe(100);
+      expect(result.current.size).toBe(100);
+
+      act(() => {
+        window.innerWidth = 500;
+        window.dispatchEvent(new Event('resize'));
+      });
+      expect(result.current.props._maxSizePx).toBe(50);
+      expect(result.current.size).toBe(50);
+    });
+
+    it('does not observe a container for a pure-pixel expression', () => {
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 0,
+          minSize: 'max(40px, 333px)',
+          containerRef,
+        }),
+      );
+
+      expect(result.current.props._minSizePx).toBe(333);
+      expect(
+        StubResizeObserver.instances.flatMap(observer => observer.targets),
+      ).not.toContain(containerRef.current);
+    });
+
+    it('keeps maximum-wins ordering when resolved constraints conflict', () => {
+      content = 1000;
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const containerRef = makeContainer();
+      const {result} = renderHook(() =>
+        useResizable({
+          defaultSize: 500,
+          minSize: 'max(40%, 333px)',
+          maxSize: 'min(400px, 10%)',
+          containerRef,
+        }),
+      );
+
+      expect(result.current.props._minSizePx).toBe(400);
+      expect(result.current.props._maxSizePx).toBe(100);
+      expect(result.current.size).toBe(100);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('The maximum wins'),
+      );
+      warn.mockRestore();
+    });
+
+    it.each([
+      'calc(100% - 20px)',
+      'clamp(100px, 20%, 400px)',
+      'var(--panel-width)',
+      'min(100px + 20px, 50%)',
+      'min(10rem, 50%)',
+      'min()',
+      'min(100px,)',
+      'min(100px 50%)',
+      'min(100px, 50%))trailing',
+      'MIN(100px, 50%)',
+      'max(-1px, 50%)',
+      'min(120%, 100px)',
+    ])('rejects unsupported or malformed syntax: %s', invalid => {
+      const {result} = renderHook(() =>
+        useResizable({defaultSize: 10, minSize: invalid as never}),
+      );
+      expect(result.current.props._minSizePx).toBe(50);
+      expect(result.current.size).toBe(50);
+    });
+
+    it('bounds expression nesting at eight functions', () => {
+      const nest = (depth: number) => {
+        let value = '1px';
+        for (let i = 0; i < depth; i += 1) {
+          value = `max(1px, ${value})`;
+        }
+        return value;
+      };
+
+      const accepted = renderHook(() =>
+        useResizable({defaultSize: 0, minSize: nest(8) as never}),
+      );
+      expect(accepted.result.current.props._minSizePx).toBe(1);
+
+      const rejected = renderHook(() =>
+        useResizable({defaultSize: 0, minSize: nest(9) as never}),
+      );
+      expect(rejected.result.current.props._minSizePx).toBe(50);
+    });
+
+    it('uses the 1200px server basis with no container ref', () => {
+      const originalWindow = globalThis.window;
+      vi.stubGlobal('window', undefined);
+      try {
+        const html = renderToString(
+          createElement(() => {
+            const region = useResizable({
+              defaultSize: 500,
+              maxSize: 'min(400px, 10%)',
+            });
+            return createElement(
+              'output',
+              null,
+              `${region.size}/${region.props._maxSizePx}`,
+            );
+          }),
+        );
+        expect(html).toContain('120/120');
+      } finally {
+        vi.stubGlobal('window', originalWindow);
+      }
+    });
+  });
+
   describe('FR5 — state, ARIA and paint describe one geometry', () => {
     it('publishes the clamped size and the resolved bounds', () => {
       const containerRef = makeContainer();
@@ -716,6 +903,27 @@ describe('useResizable percentage configuration (AST-010)', () => {
         useResizable({defaultSize: 10_000, maxSize: 'nope' as never}),
       );
       expect(result.current.size).toBe(10_000);
+    });
+
+    it('keeps CSS math out of released defaultSize', () => {
+      const {result} = renderHook(() =>
+        useResizable({defaultSize: 'min(400px, 10%)'}),
+      );
+      expect(result.current.size).toBe(250);
+    });
+
+    it('keeps deprecated aliases pixel-only at runtime', () => {
+      const min = renderHook(() =>
+        useResizable({defaultSize: 10, minSizePx: '25%' as never}),
+      );
+      expect(min.result.current.props._minSizePx).toBe(50);
+      expect(min.result.current.size).toBe(50);
+
+      const max = renderHook(() =>
+        useResizable({defaultSize: 10_000, maxSizePx: '25%' as never}),
+      );
+      expect(max.result.current.props._maxSizePx).toBe(Infinity);
+      expect(max.result.current.size).toBe(10_000);
     });
 
     it('accepts an exact px string', () => {
@@ -1006,5 +1214,59 @@ describe('ResizableProps source compatibility (AST-010 API5)', () => {
     };
     expect(prePr._direction).toBeUndefined();
     expect(prePr._onResizeCancel).toBeUndefined();
+  });
+});
+
+describe('Resizable constraint types', () => {
+  it('accepts numbers, px, percentages, and CSS min()/max()', () => {
+    const accepted = [
+      240,
+      '240px',
+      '40%',
+      'max(40%, 333px)',
+      'min(400px, max(5%, 10%))',
+    ] satisfies ResizableConstraintValue[];
+
+    expect(accepted).toHaveLength(5);
+  });
+
+  it('rejects unsupported top-level string forms', () => {
+    // @ts-expect-error only px, %, min(), and max() string forms are public
+    const rem: ResizableConstraintValue = '10rem';
+    // @ts-expect-error arithmetic is outside the constraint grammar
+    const calc: ResizableConstraintValue = 'calc(100% - 20px)';
+    // @ts-expect-error clamp() is outside the constraint grammar
+    const clamp: ResizableConstraintValue = 'clamp(100px, 20%, 400px)';
+    // @ts-expect-error custom properties are outside the constraint grammar
+    const variable: ResizableConstraintValue = 'var(--panel-width)';
+
+    expect([rem, calc, clamp, variable]).toHaveLength(4);
+  });
+
+  it('preserves defaultSize and the legacy aliases while excluding conflicts', () => {
+    const releasedDefault: UseResizableSingleConfig = {
+      defaultSize: 'runtime-validated-string',
+    };
+    const legacyBounds: UseResizableSingleConfig = {
+      minSizePx: 100,
+      maxSizePx: Infinity,
+    };
+    // @ts-expect-error unified and legacy minimums are mutually exclusive
+    const conflictingMin: UseResizableSingleConfig = {
+      minSize: 'max(40%, 333px)',
+      minSizePx: 100,
+    };
+    // @ts-expect-error unified and legacy maximums are mutually exclusive
+    const conflictingMax: UseResizableSingleConfig = {
+      maxSize: 'min(400px, 10%)',
+      maxSizePx: 400,
+    };
+
+    expect([
+      releasedDefault,
+      legacyBounds,
+      conflictingMin,
+      conflictingMax,
+    ]).toHaveLength(4);
   });
 });

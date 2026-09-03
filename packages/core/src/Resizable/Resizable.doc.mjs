@@ -85,20 +85,33 @@ export const docs = {
           name: 'defaultSize',
           type: 'number | string',
           description:
-            'Initial size in pixels or percentage string (e.g. "20%").',
+            'Released initial size: a pixel number, exact "Npx", or exact "N%" from 0% to 100%. Unsupported strings use the documented fallback.',
           default: '250',
+        },
+        {
+          name: 'minSize',
+          type: 'ResizableConstraintValue',
+          description:
+            'Minimum size: a pixel number, "Npx", "N%", or recursive CSS min()/max() expression.',
+          default: '50',
+        },
+        {
+          name: 'maxSize',
+          type: 'ResizableConstraintValue',
+          description:
+            'Maximum size: a pixel number, "Npx", "N%", or recursive CSS min()/max() expression. The maximum wins if resolved bounds conflict.',
+          default: 'Infinity',
         },
         {
           name: 'minSizePx',
           type: 'number',
-          description: 'Minimum size in pixels.',
-          default: '50',
+          description: 'Deprecated pixel-only alias for minSize.',
         },
         {
           name: 'maxSizePx',
           type: 'number',
-          description: 'Maximum size in pixels.',
-          default: 'Infinity',
+          description:
+            'Deprecated pixel-only alias for maxSize. Explicit Infinity remains valid.',
         },
         {
           name: 'collapsible',
@@ -127,6 +140,26 @@ export const docs = {
           type: 'string',
           description:
             'Key for persisting sizes and collapse state to localStorage.',
+        },
+      ],
+      examples: [
+        {
+          label: 'Container-relative minimum',
+          code: `const containerRef = useRef<HTMLDivElement>(null);
+const region = useResizable({
+  defaultSize: 360,
+  minSize: 'max(40%, 333px)',
+  containerRef,
+});`,
+        },
+        {
+          label: 'Container-relative maximum',
+          code: `const containerRef = useRef<HTMLDivElement>(null);
+const region = useResizable({
+  defaultSize: 360,
+  maxSize: 'min(400px, 10%)',
+  containerRef,
+});`,
         },
       ],
     },
@@ -243,8 +276,8 @@ export const docsDense = {
         'Hook managing resize state for one or more panel regions. Returns size, isCollapsed, collapse/expand/resize methods, + props to pass to handles.',
       propDescriptions: {
         defaultSize: 'initial size: px number, "Npx", or "N%" of the basis',
-        minSize: 'minimum size: px number, "Npx", or "N%" of the basis',
-        maxSize: 'maximum size: px number, "Npx", or "N%" of the basis',
+        minSize: 'minimum: px number, "Npx", "N%", or nested CSS min()/max()',
+        maxSize: 'maximum: px number, "Npx", "N%", or nested CSS min()/max()',
         collapsible: 'region can collapse to size 0?',
         collapsedSize: 'px threshold triggering collapse during drag',
         snaps: 'px values to snap to during resize',

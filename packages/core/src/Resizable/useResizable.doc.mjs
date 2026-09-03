@@ -25,16 +25,16 @@ export const docs = {
     },
     {
       name: 'minSize',
-      type: 'number | string',
+      type: 'ResizableConstraintValue',
       description:
-        'Minimum size, in the same vocabulary as defaultSize. A percentage minimum re-resolves when its basis changes and clamps the current pixel size.',
+        'Minimum size: a non-negative pixel number, exact "Npx", exact "N%" from 0% to 100%, or a recursive CSS min()/max() expression nested up to eight levels. Percentage leaves re-resolve when their basis changes and clamp the current pixel size. Other CSS functions, arithmetic, variables, and units are invalid.',
       default: '50',
     },
     {
       name: 'maxSize',
-      type: 'number | string',
+      type: 'ResizableConstraintValue',
       description:
-        'Maximum size, in the same vocabulary as defaultSize. A percentage maximum re-resolves when its basis changes and clamps the current pixel size.',
+        'Maximum size: a non-negative pixel number, exact "Npx", exact "N%" from 0% to 100%, or a recursive CSS min()/max() expression nested up to eight levels. Percentage leaves re-resolve when their basis changes and clamp the current pixel size. Other CSS functions, arithmetic, variables, and units are invalid.',
       default: 'Infinity',
     },
     {
@@ -54,13 +54,13 @@ export const docs = {
       name: 'minSizePx',
       type: 'number',
       description:
-        'Deprecated. Use minSize, which also accepts a percentage. Supplying both is a type error; if untyped code supplies both, minSize wins.',
+        'Deprecated. Use minSize, which also accepts percentage and CSS min()/max() constraints. Supplying both is a type error; if untyped code supplies both, minSize wins.',
     },
     {
       name: 'maxSizePx',
       type: 'number',
       description:
-        'Deprecated. Use maxSize, which also accepts a percentage. Explicit Infinity remains valid.',
+        'Deprecated. Use maxSize, which also accepts percentage and CSS min()/max() constraints. Explicit Infinity remains valid.',
     },
     {
       name: 'collapsible',
@@ -145,7 +145,17 @@ export const docs = {
       {
         guidance: true,
         description:
+          "Use minSize: 'max(40%, 333px)' for a fluid floor, or maxSize: 'min(400px, 10%)' for a fluid ceiling. Percentage leaves use containerRef when supplied.",
+      },
+      {
+        guidance: true,
+        description:
           'Set autoSaveId to persist user-chosen sizes across page reloads.',
+      },
+      {
+        guidance: false,
+        description:
+          'Configure a minimum that can resolve above its maximum. If they conflict, the maximum wins deterministically.',
       },
       {
         guidance: false,
@@ -166,8 +176,10 @@ export const docsDense = {
     'Adds drag-to-resize behavior to layout regions. Supports single-/multi-region configs w/ snap points, collapsible panels, localStorage persistence, cascade resize ordering.',
   paramDescriptions: {
     defaultSize: 'initial size: px number, "Npx", or "N%" of the basis.',
-    minSize: 'min size: px number, "Npx", or "N%" of the basis.',
-    maxSize: 'max size: px number, "Npx", or "N%" of the basis.',
+    minSize:
+      'min constraint: px number, "Npx", "N%", or nested CSS min()/max().',
+    maxSize:
+      'max constraint: px number, "Npx", "N%", or nested CSS min()/max().',
     containerRef: 'the element a percentage is a share of.',
     direction: 'which axis to resize along.',
     collapsible:
@@ -201,7 +213,17 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          "Use minSize: 'max(40%, 333px)' for a fluid floor, or maxSize: 'min(400px, 10%)' for a fluid ceiling.",
+      },
+      {
+        guidance: true,
+        description:
           'Set autoSaveId to persist user-chosen sizes across page reloads.',
+      },
+      {
+        guidance: false,
+        description:
+          'Configure min > max. Maximum wins deterministically when resolved bounds conflict.',
       },
       {
         guidance: false,

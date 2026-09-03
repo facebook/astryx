@@ -30,10 +30,69 @@ const s = stylex.create({
     borderRadius: radiusVars['--radius-container'],
     margin: spacingVars['--spacing-2'],
   },
+  constraintStack: {
+    display: 'grid',
+    gap: spacingVars['--spacing-4'],
+  },
+  constraintFrame: {height: 120},
 });
 
 function HookDemo({children}: {children: React.ReactNode}) {
   return <div>{children}</div>;
+}
+
+function CssMathConstraintProbe({kind}: {kind: 'minimum' | 'maximum'}) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const isMinimum = kind === 'minimum';
+  const expression = isMinimum ? 'max(40%, 333px)' : 'min(400px, 10%)';
+  const region = useResizable(
+    isMinimum
+      ? {
+          defaultSize: 0,
+          minSize: 'max(40%, 333px)',
+          containerRef: frameRef,
+        }
+      : {
+          defaultSize: 500,
+          maxSize: 'min(400px, 10%)',
+          containerRef: frameRef,
+        },
+  );
+  const resolvedBound = isMinimum
+    ? region.props._minSizePx
+    : region.props._maxSizePx;
+  const testId = `css-math-${kind}`;
+
+  return (
+    <div
+      ref={frameRef}
+      data-testid={`${testId}-frame`}
+      data-expression={expression}
+      data-resolved-bound={resolvedBound}
+      data-size={region.size}
+      {...stylex.props(s.shell, s.constraintFrame)}>
+      <Layout
+        height="fill"
+        start={
+          <>
+            <LayoutPanel
+              width={region.size}
+              hasDivider={false}
+              data-testid={`${testId}-panel`}>
+              {Math.round(region.size)}px
+            </LayoutPanel>
+            <ResizeHandle
+              direction="horizontal"
+              hasDivider
+              label={`Resize ${kind} constraint example`}
+              resizable={region.props}
+            />
+          </>
+        }
+        content={<LayoutContent>{expression}</LayoutContent>}
+      />
+    </div>
+  );
 }
 
 const meta: Meta<typeof HookDemo> = {
@@ -370,6 +429,24 @@ export const PercentageSizing: Story = {
       </div>
     );
   },
+};
+
+/**
+ * Recursive CSS min()/max() constraints against a live container basis.
+ *
+ * The two rows intentionally keep the canonical expressions separate: combining
+ * this minimum and maximum would invert the bounds, in which case the maximum
+ * wins. Resize either frame to see percentage leaves recompute recursively.
+ */
+export const CssMathConstraints: Story = {
+  render: () => (
+    <div
+      data-testid="css-math-constraints"
+      {...stylex.props(s.constraintStack)}>
+      <CssMathConstraintProbe kind="minimum" />
+      <CssMathConstraintProbe kind="maximum" />
+    </div>
+  ),
 };
 
 /**

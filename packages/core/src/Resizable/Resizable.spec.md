@@ -27,7 +27,7 @@ architecture:
     architecture:public-component-api,
   ]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-010]
 ---
 
 # Resizable component contract
@@ -36,17 +36,21 @@ system_specs: []
 
 Resizable combines the useResizable state and behavior hook with a focusable
 ResizeHandle. The handle presents a default Grip pill over an enlarged invisible
-Grab zone. This draft records current consumer anatomy and theming ownership
-without changing resize semantics, runtime behavior, styling, targets, or public
-API.
+Grab zone. This draft records consumer anatomy and theming ownership plus the
+AST-010 sizing contract: configuration may express container- or viewport-based
+percentage constraints, including bounded recursive CSS `min()` / `max()`, while
+selected state, rendered geometry, persistence, callbacks, and ARIA remain pixels.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, aliases, and public API remain unchanged
+- Released default preserved: `yes`; `defaultSize` retains its released type,
+  one-time percentage resolution, and 250px invalid fallback
+- Compatibility class: additive `minSize` / `maxSize` and
+  `ResizableConstraintValue`; deprecated `minSizePx` / `maxSizePx`, pixel output,
+  controlled behavior, DOM, styling, and theming targets remain compatible
 - Controlled/uncontrolled behavior: unchanged
-- Migration decision: none
+- Migration decision: aliases remain supported; use unified constraints for new
+  code
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -67,21 +71,26 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Layout-region topology, inset, divider, or scrolling rules.
 - A public target for the Grab zone; none exists on current `main`.
 - Fixing the missing runtime reflection for the documented Handle `direction`
-  theming state in this documentation-only change.
+  theming state in this constraint change.
 
 ## Public concepts
 
-No new public concept is introduced. Consumer props, hook outputs, and usage
-remain documented in `Resizable.doc.mjs` and `useResizable.doc.mjs`.
+`minSize` and `maxSize` are flat unified constraints typed as
+`ResizableConstraintValue`: a non-negative pixel number, exact `Npx`, exact
+0–100 `N%`, or a lowercase recursive CSS `min()` / `max()` expression over those
+string leaves, nested at most eight function levels. `defaultSize` keeps its
+released `SizeValue` surface and atomic runtime grammar. Consumer props, outputs,
+and examples are documented in `Resizable.doc.mjs` and `useResizable.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                             | Basis                           | Draft review state                                            |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------- |
-| FR1 | ResizeHandle renders one focusable Handle and one enlarged Grab zone; the default render also contains a Grip pill, while caller-provided children replace that pill.                           | Current source, docs, and tests | Verified current behavior; no new behavior decided            |
-| FR2 | Handle carries `resize-handle`, Grip pill carries `resize-handle-pill`, and Grab zone carries no public target.                                                                                 | Current source and public docs  | Verified current target inventory; no target change           |
-| FR3 | Pointer, keyboard, collapse, snap, persistence, reversal, and size behavior remain owned by ResizeHandle and useResizable rather than layout-regions collaborators.                             | Current source, docs, and tests | Verified current ownership; resize semantics remain unchanged |
-| FR4 | Resizable metadata advertises `direction` as a Handle visual state, but current runtime calls `themeProps('resize-handle')` without reflecting that value, so direction selectors cannot match. | Current source and public docs  | Verified audit gap; deliberately not fixed in this change     |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                  | Basis                            | Draft review state                                                        |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------- |
+| FR1 | ResizeHandle renders one focusable Handle and one enlarged Grab zone; the default render also contains a Grip pill, while caller-provided children replace that pill.                                                                                                | Current source, docs, and tests  | Verified current behavior; no new behavior decided                        |
+| FR2 | Handle carries `resize-handle`, Grip pill carries `resize-handle-pill`, and Grab zone carries no public target.                                                                                                                                                      | Current source and public docs   | Verified current target inventory; no target change                       |
+| FR3 | Pointer, keyboard, collapse, snap, persistence, reversal, and size behavior remain owned by ResizeHandle and useResizable rather than layout-regions collaborators.                                                                                                  | Current source, docs, and tests  | Verified current ownership; resize semantics remain unchanged             |
+| FR4 | Resizable metadata advertises `direction` as a Handle visual state, but current runtime calls `themeProps('resize-handle')` without reflecting that value, so direction selectors cannot match.                                                                      | Current source and public docs   | Verified audit gap; deliberately not fixed in this change                 |
+| FR5 | Percentage leaves in `minSize` / `maxSize`, including inside recursive CSS `min()` / `max()`, resolve against the AST-010 basis and re-clamp pixel state when it changes. Invalid expressions use deterministic fallbacks; if minimum exceeds maximum, maximum wins. | AST-010, source, tests, Chromium | New additive constraint contract; defaults and interactions remain pixels |
 
 ### Allowed variation
 
@@ -106,12 +115,20 @@ remain documented in `Resizable.doc.mjs` and `useResizable.doc.mjs`.
 
 ### Transformation and precedence order
 
-- No new clamp, snap, collapse, persistence, reversal, pointer, or keyboard order
-  is introduced.
+- Parse each bound fully, rejecting unsupported syntax before evaluation.
+- Resolve pixel leaves directly and percentage leaves against one active basis;
+  evaluate nested `min()` / `max()` from the leaves outward.
+- Clamp with `Math.min(max, Math.max(min, size))`; maximum wins when bounds
+  conflict.
+- Pointer, keyboard, snap, collapse, persistence, and callbacks then continue on
+  resolved pixel state.
 
 ### Performance and resources
 
-- No new listener, storage, observer, or render requirement is introduced.
+- Parsing is linear in the authored value and recursion is bounded to eight
+  function levels.
+- Percentage-dependent constraints reuse the one shared ResizeObserver subscription
+  required by AST-010; pure-pixel values and expressions subscribe to no basis.
 
 ## Accessibility contract
 
@@ -153,8 +170,11 @@ not emit the documented target state.
 
 - `architecture:component-theming-surface` owns anatomy qualification, target
   mapping, and target-state reflection requirements.
-- `architecture:interaction-modality` and `architecture:public-component-api`
-  own shared modality and API boundaries; this draft changes neither.
+- `architecture:interaction-modality` continues to own shared modality behavior;
+  `architecture:public-component-api` owns the additive constraint type and
+  compatibility boundary.
+- `spec:AST-010` owns basis resolution, parsing, clamping, persistence, and the
+  maximum-wins conflict rule.
 - `family:layout-regions` lists useResizable and ResizeHandle as collaborators
   that may drive a LayoutPanel's size. Resizable is not a layout-regions member,
   and that family does not own or redefine resize state, snapping, persistence,
@@ -162,13 +182,14 @@ not emit the documented target state.
 
 ## Verification map
 
-| Contract            | Verification                                       | Representative states                           | Mutation or failure expectation                                                                                 | Audit section              |
-| ------------------- | -------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| FR1                 | `ResizeHandle.test.tsx` plus source inspection     | Default, custom, collapsed, disabled, both axes | Handle and Grab zone regressions fail focused tests; custom Grip replacement currently relies on source review. | `audit:Resizable/anatomy`  |
-| FR2                 | Source inspection and `themingTargets.test.ts`     | Handle, Grip pill, and Grab zone                | Removing a target or documenting an unshipped Grab zone target fails evidence or inventory.                     | `audit:Resizable/theming`  |
-| FR3                 | `ResizeHandle.test.tsx` and `useResizable.test.ts` | Pointer, keyboard, snap, collapse, persistence  | Moving resize ownership or changing current transformations fails focused behavior coverage.                    | `audit:Resizable/behavior` |
-| FR4                 | Source and public metadata comparison              | Horizontal and vertical Handle                  | No current test detects that documented `direction` is absent from runtime target-state reflection.             | `audit:Resizable/theming`  |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                      | Canonical anatomy and two current targets       | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                      | `audit:Resizable/theming`  |
+| Contract            | Verification                                       | Representative states                                                        | Mutation or failure expectation                                                                                                         | Audit section              |
+| ------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| FR1                 | `ResizeHandle.test.tsx` plus source inspection     | Default, custom, collapsed, disabled, both axes                              | Handle and Grab zone regressions fail focused tests; custom Grip replacement currently relies on source review.                         | `audit:Resizable/anatomy`  |
+| FR2                 | Source inspection and `themingTargets.test.ts`     | Handle, Grip pill, and Grab zone                                             | Removing a target or documenting an unshipped Grab zone target fails evidence or inventory.                                             | `audit:Resizable/theming`  |
+| FR3                 | `ResizeHandle.test.tsx` and `useResizable.test.ts` | Pointer, keyboard, snap, collapse, persistence                               | Moving resize ownership or changing current transformations fails focused behavior coverage.                                            | `audit:Resizable/behavior` |
+| FR4                 | Source and public metadata comparison              | Horizontal and vertical Handle                                               | No current test detects that documented `direction` is absent from runtime target-state reflection.                                     | `audit:Resizable/theming`  |
+| FR5                 | `useResizable.test.ts`, typecheck, and Chromium    | Atomic/nested/invalid values; wide/narrow basis; inverted bounds; SSR/no-ref | Parser or dependency regressions fail focused tests; canonical browser measurements must match resolved ARIA bounds and panel geometry. | `audit:Resizable/behavior` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                      | Canonical anatomy and two current targets                                    | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                                              | `audit:Resizable/theming`  |
 
 Current tests exercise Handle and Grab zone structure and behavior but do not
 render `children` to prove that custom content replaces Grip pill. That branch is
@@ -178,8 +199,9 @@ cover its missing runtime reflection; that mismatch is currently unguarded.
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-API, resize, layout-family, or theming decision.
+Resizable sizing decisions are delegated to `spec:AST-010`, including
+constraint vocabulary, basis dependency, deterministic fallbacks, and
+maximum-wins conflict handling. This component record adds no second policy.
 
 ## Open questions
 

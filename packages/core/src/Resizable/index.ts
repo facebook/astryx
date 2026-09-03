@@ -13,6 +13,7 @@ export {useResizable} from './useResizable';
 export type {
   ResizableRegion,
   ResizableRegionConfig,
+  ResizableConstraintValue,
   ResizableProps,
   ResizableConfig,
   UseResizableSingleConfig,
