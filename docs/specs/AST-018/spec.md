@@ -174,11 +174,24 @@ color that does not match a palette stop. Those approaches would turn guidance
 into enforcement and force legitimate overlays, brand colors, and
 contrast-specific values into misleading palette entries.
 
+### DEC-2 — Emit one palette artifact set in JavaScript and JSON
+
+**Reference:** `spec:AST-018/DEC-2`
+
+**Decider:** `rubyycheung`, `2026-09-02`
+
+Each palette-bearing theme emits one logical artifact set. JavaScript supports
+normal application and tooling imports, JSON provides a data-only format for
+agents and non-JavaScript tooling, and a TypeScript declaration accompanies the
+JavaScript export. These are representations of the same resolved palette, not
+independent palette contracts.
+
+Rejected: emitting separate artifacts for individual color families or choosing
+only one consumption format. Per-family artifacts would fragment ownership and
+versioning; omitting JSON or JavaScript would unnecessarily restrict consumers.
+
 ## Open questions
 
-- **OQ2 — Are JavaScript, JSON, and TypeScript declarations the supported palette
-  artifact set?** (`human-api`) Promotion requires agreement that these opt-in
-  outputs are useful enough to become maintained package and CLI contracts.
 - **OQ3 — Is Neutral's exact palette and remapping evidence complete?**
   (`human-design`) This does not block evaluation of the generic contract, but
   Neutral adoption requires separate exact-head theme approval.
