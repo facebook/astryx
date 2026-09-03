@@ -372,7 +372,9 @@ describe('Field', () => {
       </Field>,
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      'Field: isOptional and isRequired are mutually exclusive. isOptional takes precedence.',
+      expect.stringContaining(
+        'Field: isOptional and isRequired are mutually exclusive. isOptional takes precedence.',
+      ),
     );
     warnSpy.mockRestore();
   });

@@ -1,5 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * Generated CLI guidance for AI agents. Run:
+ * `npx @astryxdesign/cli search "ChatDictationButton"`
+ * for current props, examples, and usage guidance.
+ */
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {

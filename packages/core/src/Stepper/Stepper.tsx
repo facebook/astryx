@@ -25,9 +25,8 @@ import {useCallback, useMemo, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {spacingVars} from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {devWarn, mergeProps, themeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {themeProps} from '../utils';
 import {useTranslator} from '../i18n';
 import {
   StepperContext,
@@ -168,8 +167,9 @@ export function Stepper({
     const prev = counts.get(index) ?? 0;
     counts.set(index, prev + 1);
     if (process.env.NODE_ENV !== 'production' && prev + 1 > 1) {
-      console.warn(
-        `[Stepper] Duplicate step index ${index}: two <Step> elements share the same \`step\` value. ` +
+      devWarn(
+        'Stepper',
+        `Duplicate step index ${index}: two <Step> elements share the same \`step\` value. ` +
           `This breaks \`aria-current="step"\` and causes both to show as active simultaneously.`,
       );
     }

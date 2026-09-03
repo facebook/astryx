@@ -44,7 +44,7 @@ import {
 import {BreadcrumbContext, type BreadcrumbsVariant} from './Breadcrumbs';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
-import {mergeProps, rtlStyles} from '../utils';
+import {devWarn, mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
@@ -309,13 +309,15 @@ export function BreadcrumbItem({
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production' && hasMenu) {
       if (href != null) {
-        console.warn(
-          'BreadcrumbItem: `menu` and `href` are mutually exclusive; `menu` ' +
+        devWarn(
+          'BreadcrumbItem',
+          '`menu` and `href` are mutually exclusive; `menu` ' +
             'takes precedence and `href` is ignored.',
         );
       } else if (onClick != null) {
-        console.warn(
-          'BreadcrumbItem: `menu` and `onClick` are mutually exclusive; ' +
+        devWarn(
+          'BreadcrumbItem',
+          '`menu` and `onClick` are mutually exclusive; ' +
             '`menu` takes precedence and `onClick` is ignored.',
         );
       }
