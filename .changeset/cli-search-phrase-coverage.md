@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Report coverage on verbatim phrase matches in CLI search, which were returning without it and failing the published type surface. (#PENDING)
+[fix] Report coverage on verbatim phrase matches in CLI search, which were returning without it and failing the published type surface. (#5996)
 
 @ernestt
 
