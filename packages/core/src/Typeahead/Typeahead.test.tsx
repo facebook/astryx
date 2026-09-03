@@ -20,6 +20,7 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {Profiler, type ProfilerOnRenderCallback} from 'react';
 import {Typeahead} from './Typeahead';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
@@ -713,6 +714,126 @@ describe('Typeahead size', () => {
 });
 
 describe('BaseTypeahead hasEntriesOnFocus', () => {
+  it('does not commit a loading cycle for an empty synchronous bootstrap', async () => {
+    const bootstrap = vi.fn((): SearchableItem[] => []);
+    const onRender = vi.fn<ProfilerOnRenderCallback>();
+    render(
+      <Profiler id="typeahead" onRender={onRender}>
+        <BaseTypeahead
+          searchSource={{search: () => [], bootstrap}}
+          value={null}
+          onChange={() => {}}
+          hasEntriesOnFocus
+        />
+      </Profiler>,
+    );
+    const input = screen.getByRole('combobox');
+    onRender.mockClear();
+
+    await act(async () => {
+      fireEvent.focus(input);
+      await Promise.resolve();
+    });
+
+    expect(bootstrap).toHaveBeenCalledOnce();
+    expect(onRender).not.toHaveBeenCalled();
+  });
+
+  it('does not report loading for synchronous bootstrap results', async () => {
+    const lane = createBusyIndicatorLane();
+    const onLoadingChange = vi.fn(lane.onBusyChange);
+    render(
+      <BusyIndicatorLaneProvider
+        value={{...lane, onBusyChange: onLoadingChange}}>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          hasEntriesOnFocus
+        />
+      </BusyIndicatorLaneProvider>,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    expect(onLoadingChange).not.toHaveBeenCalled();
+  });
+
+  it('clears a pending search loading state before synchronous bootstrap', async () => {
+    let settleSearch: (items: SearchableItem[]) => void = () => {};
+    const searchSource: SearchSource = {
+      search: async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settleSearch = resolve;
+        }),
+      bootstrap: () => [],
+    };
+    render(
+      <BaseTypeahead
+        searchSource={searchSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'a'}});
+    await waitFor(() => {
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    });
+
+    fireEvent.change(input, {target: {value: ''}});
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('status', {name: 'Loading'}),
+      ).not.toBeInTheDocument();
+    });
+
+    await act(async () => {
+      settleSearch(fruits.slice(0, 1));
+      await Promise.resolve();
+    });
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps the loading state for an asynchronous bootstrap', async () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const bootstrap = vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settle = resolve;
+        }),
+    );
+    render(
+      <BaseTypeahead
+        searchSource={{search: () => [], bootstrap}}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows bootstrap results on mouse click', async () => {
     render(
       <BaseTypeahead

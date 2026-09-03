@@ -137,6 +137,28 @@
     }
   },
   {
+    "component": "Layout",
+    "storyId": "core-layout--dual-panels",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-layout-panel:first-of-type",
+      "next": ".astryx-layout-panel:last-of-type"
+    }
+  },
+  {
+    "component": "Resizable",
+    "storyId": "lab-resizable--horizontal-split",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": ".astryx-resize-handle",
+      "overlayRoot": ".astryx-layout"
+    }
+  },
+  {
     "component": "Stepper",
     "storyId": "core-stepper--default-horizontal",
     "dims": [
