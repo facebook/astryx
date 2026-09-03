@@ -126,6 +126,29 @@ export interface UseChatStreamScrollReturn {
 
 const SIXTY_FPS_MS = 1000 / 60;
 
+// Whether a scroll-up gesture that started on `target` is consumed before it
+// reaches `el`: a vertically scrollable element in between still has room
+// above. Scroll chaining hands a gesture outward only from a scroller at its
+// edge, so this is what decides whether the scroll it produces is ours.
+function scrollUpConsumedBelow(
+  target: EventTarget | null,
+  el: HTMLElement,
+): boolean {
+  for (
+    let node = target instanceof Element ? target : null;
+    node && node !== el;
+    node = node.parentElement
+  ) {
+    if (node.scrollTop > 0) {
+      const {overflowY} = getComputedStyle(node);
+      if (overflowY === 'auto' || overflowY === 'scroll') {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export function useChatStreamScroll({
   scrollRef,
   enabled = true,
@@ -147,8 +170,8 @@ export function useChatStreamScroll({
   const lastTickRef = useRef<number | undefined>(undefined);
   // The spring's pending frame, so a jump can cancel it for real.
   const rafRef = useRef<number>(0);
-  // Set by a reader gesture to vouch for the scroll it produces — see the
-  // synthetic-resize guard in onScroll.
+  // Set by a reader gesture this scroller consumes, to vouch for the scroll
+  // it produces — see the synthetic-resize guard in onScroll.
   const gestureRef = useRef(false);
 
   // For scroll direction detection
@@ -378,12 +401,13 @@ export function useChatStreamScroll({
       }
     };
 
-    // Wheel up vouches for the scroll it is about to produce. The gesture
-    // itself never unlocks: one this scroller does not consume — a wheel over
-    // a nested scrollable child, an overscroll at the bottom — produces no
-    // scroll event at all and must leave following alone.
+    // A wheel up this scroller consumes vouches for the scroll it is about
+    // to produce. The gesture itself never unlocks: one it does not consume —
+    // a wheel a nested scroller takes, an overscroll at the bottom — produces
+    // no scroll event here and must leave following alone. A geometry change
+    // that arrives during a gesture that was not ours stays synthetic.
     const onWheel = (e: WheelEvent) => {
-      if (e.deltaY >= 0) {
+      if (e.deltaY >= 0 || scrollUpConsumedBelow(e.target, el)) {
         return;
       }
       gestureRef.current = true;
@@ -398,20 +422,41 @@ export function useChatStreamScroll({
       });
     };
 
-    // A drag vouches for its whole gesture: unlike a wheel notch, the scroll
-    // it produces can land many frames after it starts.
-    const onTouchStart = () => {
+    // A drag vouches from the first move that pushes this scroller up until
+    // the finger lifts: unlike a wheel notch, the scroll it produces can land
+    // many frames after the move. A resting finger, or one dragging a nested
+    // scroller that still has room above, is not a gesture of ours.
+    let touchTarget: EventTarget | null = null;
+    let lastTouchY: number | undefined;
+
+    const onTouchStart = (e: TouchEvent) => {
+      touchTarget = e.target;
+      lastTouchY = e.touches[0]?.clientY;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const y = e.touches[0]?.clientY;
+      if (y === undefined || lastTouchY === undefined) {
+        return;
+      }
+      const fingerMovedDown = y > lastTouchY;
+      lastTouchY = y;
+      if (!fingerMovedDown || scrollUpConsumedBelow(touchTarget, el)) {
+        return;
+      }
       gestureRef.current = true;
     };
 
     const onTouchEnd = () => {
       gestureRef.current = false;
+      lastTouchY = undefined;
     };
 
     el.addEventListener('scroll', onScroll, {passive: true});
     el.addEventListener('scrollend', onScrollEnd);
     el.addEventListener('wheel', onWheel, {passive: true});
     el.addEventListener('touchstart', onTouchStart, {passive: true});
+    el.addEventListener('touchmove', onTouchMove, {passive: true});
     el.addEventListener('touchend', onTouchEnd, {passive: true});
     el.addEventListener('touchcancel', onTouchEnd, {passive: true});
 
@@ -429,6 +474,7 @@ export function useChatStreamScroll({
       el.removeEventListener('scrollend', onScrollEnd);
       el.removeEventListener('wheel', onWheel);
       el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
       el.removeEventListener('touchcancel', onTouchEnd);
     };

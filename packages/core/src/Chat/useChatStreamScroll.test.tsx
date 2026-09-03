@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {act, render} from '@testing-library/react';
+import {act, fireEvent, render} from '@testing-library/react';
 import {useRef} from 'react';
 import {
   useChatStreamScroll,
@@ -94,14 +94,22 @@ function Harness({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   api.current = useChatStreamScroll({scrollRef, ...options});
-  return <div ref={scrollRef} data-testid="scroller" />;
+  // A vertically scrollable child — a code block, a table — whose gestures
+  // bubble to the scroller.
+  return (
+    <div ref={scrollRef} data-testid="scroller">
+      <div data-testid="nested" style={{overflowY: 'auto'}} />
+    </div>
+  );
 }
 
 function renderHook(options?: Partial<UseChatStreamScrollOptions>) {
   const api: {current: UseChatStreamScrollReturn | null} = {current: null};
   const utils = render(<Harness options={options} api={api} />);
   const el = utils.getByTestId('scroller');
-  return {api, el, ...utils};
+  const nested = utils.getByTestId('nested');
+  setGeometry(nested, {scrollHeight: 600, clientHeight: 200});
+  return {api, el, nested, ...utils};
 }
 
 describe('useChatStreamScroll — initial positioning', () => {
@@ -233,9 +241,19 @@ describe('useChatStreamScroll — reader gestures', () => {
     });
   }
 
-  function wheelUp(el: HTMLElement) {
+  function wheelUp(target: HTMLElement) {
     act(() => {
-      el.dispatchEvent(new WheelEvent('wheel', {deltaY: -120}));
+      target.dispatchEvent(
+        new WheelEvent('wheel', {deltaY: -120, bubbles: true}),
+      );
+    });
+  }
+
+  // A finger lands and moves down — the drag that scrolls content up.
+  function dragDown(target: HTMLElement) {
+    act(() => {
+      fireEvent.touchStart(target, {touches: [{clientX: 0, clientY: 100}]});
+      fireEvent.touchMove(target, {touches: [{clientX: 0, clientY: 140}]});
     });
   }
 
@@ -309,9 +327,7 @@ describe('useChatStreamScroll — reader gestures', () => {
     const {api, el} = renderHook();
     settleAtBottom(el);
 
-    act(() => {
-      el.dispatchEvent(new Event('touchstart'));
-    });
+    dragDown(el);
     flushRaf();
     flushRaf();
     scrollUpDuringGrowth(el);
@@ -319,16 +335,71 @@ describe('useChatStreamScroll — reader gestures', () => {
     expect(api.current!.isLocked).toBe(false);
   });
 
-  it('a drag over a nested scroller does not let a resize clamp release', () => {
-    // A finger resting on a nested scrollable child bubbles touchstart here,
-    // but the drag is not ours. A block above collapsing while it is down
-    // clamps the position to the new bottom; that is not the reader scrolling.
+  it('a resting finger is not a gesture: a shift under it stays synthetic', () => {
+    // The spring is trailing a fast stream when a block above the viewport
+    // collapses; scroll anchoring moves scrollTop up by its height. The
+    // finger never moved, so nothing here was the reader.
+    const {api, el} = renderHook();
+    settleAtBottom(el);
+    setGeometry(el, {scrollHeight: 2320, clientHeight: 400});
+    el.scrollTop = 1344;
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+
+    act(() => {
+      fireEvent.touchStart(el, {touches: [{clientX: 0, clientY: 100}]});
+    });
+    setGeometry(el, {scrollHeight: 2220, clientHeight: 400});
+    el.scrollTop = 1244;
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+
+    expect(api.current!.isLocked).toBe(true);
+  });
+
+  it('a drag a nested scroller consumes does not vouch for our scroll', () => {
+    const {api, el, nested} = renderHook();
+    settleAtBottom(el);
+
+    nested.scrollTop = 50;
+    dragDown(nested);
+    scrollUpDuringGrowth(el);
+
+    expect(api.current!.isLocked).toBe(true);
+  });
+
+  it('a nested scroller at its top hands the drag to us', () => {
+    const {api, el, nested} = renderHook();
+    settleAtBottom(el);
+
+    nested.scrollTop = 0;
+    dragDown(nested);
+    scrollUpDuringGrowth(el);
+
+    expect(api.current!.isLocked).toBe(false);
+  });
+
+  it('a wheel a nested scroller consumes does not vouch for our scroll', () => {
+    const {api, el, nested} = renderHook();
+    settleAtBottom(el);
+
+    nested.scrollTop = 50;
+    wheelUp(nested);
+    scrollUpDuringGrowth(el);
+
+    expect(api.current!.isLocked).toBe(true);
+  });
+
+  it('a drag we consumed does not let a resize clamp release', () => {
+    // The finger is on us but nothing scrolls (overscroll at the bottom);
+    // a block above collapses and the clamp lands on the new bottom. That
+    // is not the reader scrolling up.
     const {api, el} = renderHook();
     settleAtBottom(el);
 
-    act(() => {
-      el.dispatchEvent(new Event('touchstart'));
-    });
+    dragDown(el);
     setGeometry(el, {scrollHeight: 800, clientHeight: 400});
     el.scrollTop = 400;
     act(() => {
@@ -342,11 +413,9 @@ describe('useChatStreamScroll — reader gestures', () => {
     const {api, el} = renderHook();
     settleAtBottom(el);
 
+    dragDown(el);
     act(() => {
-      el.dispatchEvent(new Event('touchstart'));
-    });
-    act(() => {
-      el.dispatchEvent(new Event('touchend'));
+      fireEvent.touchEnd(el);
     });
     scrollUpDuringGrowth(el);
 
