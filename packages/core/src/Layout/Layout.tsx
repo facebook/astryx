@@ -28,6 +28,10 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {useTranslator} from '../i18n';
+import {focusVars} from '../theme/tokens.stylex';
+import {useLayoutRegionGeometry} from './useLayoutRegionGeometry';
 import {
   layoutPaddingOuterXVarStyles,
   layoutPaddingOuterYVarStyles,
@@ -67,6 +71,68 @@ const styles = stylex.create({
   middle: {
     flex: 1,
     minHeight: 0,
+    width: '100%',
+  },
+  middleConstrained: {
+    boxSizing: 'border-box',
+    maxWidth: 'var(--layout-content-width, none)',
+    marginInline: 'auto',
+  },
+  middleScrollable: {
+    overflow: 'auto',
+  },
+  middleScrollableExpanded: {
+    scrollbarGutter: 'stable both-edges',
+  },
+  middleConstrainedRow: {
+    boxSizing: 'border-box',
+    width: '100%',
+    minHeight: '100%',
+  },
+  middleExpandedRow: {
+    boxSizing: 'border-box',
+    width: '100%',
+    maxWidth: 'var(--layout-content-width, none)',
+    minHeight: '100%',
+    marginInline: 'auto',
+  },
+  middleRowPassthrough: {
+    display: 'contents',
+  },
+  middleFocusInset: {
+    outlineOffset: {
+      default: null,
+      ':focus-visible': `calc(-1 * ${focusVars['--focus-outline-width']})`,
+    },
+  },
+  contentLanePinned: {
+    alignSelf: 'flex-start',
+    height: '100%',
+    overflow: 'auto',
+    position: 'sticky',
+    top: 0,
+  },
+  contentLanePinnedExpanded: {
+    height: 'var(--layout-middle-client-height, 100%)',
+    maxHeight: 'var(--layout-middle-client-height, 100%)',
+  },
+  sideLaneShared: {
+    display: 'flex',
+    flexShrink: 0,
+    minHeight: 'var(--layout-middle-client-height, 100%)',
+  },
+  sideLanePinned: {
+    alignSelf: 'flex-start',
+    display: 'flex',
+    flexShrink: 0,
+    height: '100%',
+    overflow: 'auto',
+    position: 'sticky',
+    top: 0,
+  },
+  sideLanePinnedExpanded: {
+    height: 'var(--layout-middle-client-height, 100%)',
+    maxHeight: 'var(--layout-middle-client-height, 100%)',
   },
   // When full bleed, set outer padding variables to 0 so child components touch container edges
   fullBleed: {
@@ -78,11 +144,6 @@ const styles = stylex.create({
 const dynamicStyles = stylex.create({
   contentWidthVar: (width: SizeValue) => ({
     '--layout-content-width': typeof width === 'number' ? `${width}px` : width,
-  }),
-  contentWidth: (width: SizeValue) => ({
-    width: '100%',
-    maxWidth: typeof width === 'number' ? `${width}px` : width,
-    marginInline: 'auto',
   }),
 });
 
@@ -98,11 +159,23 @@ export interface LayoutProps extends Omit<BaseProps, 'content'> {
   content?: ReactNode;
 
   /**
-   * Maximum width of the content within each slot (header, content, footer,
-   * panels). Dividers remain full-bleed. Content is centered with
+   * Maximum width of the aligned content within each slot (header, content,
+   * footer, panels). Dividers remain full-bleed. Content is centered with
    * `margin-inline: auto` when narrower than the available space.
    *
+   * `contentWidth` always includes the complete start + content + end
+   * composition. In a fill-height layout, slots whose top-level rendered region
+   * is a LayoutContent or LayoutPanel with `height="auto"` move together in the
+   * middle scrollport, while regions with the default `height="fill"` remain
+   * pinned. `isScrollable` independently controls local overflow. Non-region
+   * slot content also remains pinned in an independently scrollable lane. If a
+   * slot renders multiple top-level LayoutContent or LayoutPanel roots, they
+   * must agree on `height`; mixed values conservatively keep that slot pinned.
+   *
    * Numbers are treated as pixels, strings are used as-is (e.g., '60ch').
+   * Bare `var(...)` values use the constrained-scrollport fallback because
+   * their resolved value may be intrinsic; wrap a guaranteed length in
+   * `calc(...)` to use the expanded middle scrollport.
    * Common page widths:
    * - `640` — forms, settings, text-focused pages
    * - `960` — content pages, component demos, wider layouts
@@ -222,7 +295,7 @@ function AreaProvider({
  * />
  * ```
  */
-export function Layout({
+function LayoutWrapper({
   children,
   content,
   contentWidth,
@@ -238,6 +311,7 @@ export function Layout({
   className,
   style,
 }: LayoutProps) {
+  const t = useTranslator();
   const isFill = height === 'fill';
   // Children are a shorthand for the content slot; an explicit `content` prop
   // wins when both are provided.
@@ -253,9 +327,96 @@ export function Layout({
   const hasFooter = footer != null;
   const hasStart = start != null;
   const hasEnd = end != null;
+  const {
+    contentUsesMiddleScroll,
+    detectedRegions,
+    endUsesMiddleScroll,
+    hasExpandedMiddleScroll,
+    hasMiddleScroll,
+    layoutInnerRef,
+    middleRef,
+    startUsesMiddleScroll,
+  } = useLayoutRegionGeometry({contentWidth, isFill});
+
+  const startIsPinned = hasMiddleScroll && hasStart && !startUsesMiddleScroll;
+  const endIsPinned = hasMiddleScroll && hasEnd && !endUsesMiddleScroll;
+  const contentIsPinned = hasMiddleScroll && !contentUsesMiddleScroll;
+  const middleScrollLabel =
+    (startUsesMiddleScroll ? detectedRegions.start.label : undefined) ??
+    (contentUsesMiddleScroll ? detectedRegions.content.label : undefined) ??
+    (endUsesMiddleScroll ? detectedRegions.end.label : undefined) ??
+    t('@astryx.layout.middleScrollRegion');
   const slotsValue = useMemo<LayoutSlots>(
-    () => ({hasHeader, hasFooter, hasStart, hasEnd}),
-    [hasHeader, hasFooter, hasStart, hasEnd],
+    () => ({
+      hasHeader,
+      hasFooter,
+      hasStart,
+      hasEnd,
+      hasMiddleScroll,
+      hasExpandedMiddleScroll,
+    }),
+    [
+      hasHeader,
+      hasFooter,
+      hasStart,
+      hasEnd,
+      hasMiddleScroll,
+      hasExpandedMiddleScroll,
+    ],
+  );
+
+  const middleStyles = [
+    styles.middle,
+    !hasExpandedMiddleScroll && styles.middleConstrained,
+    hasMiddleScroll && styles.middleScrollable,
+    hasMiddleScroll && styles.middleScrollableExpanded,
+    hasMiddleScroll && styles.middleFocusInset,
+  ] as const;
+  const middleStyleProps = hasMiddleScroll
+    ? focusOutlineProps.focusVisible(...middleStyles)
+    : stylex.props(...middleStyles);
+  const middleRegions = (
+    <>
+      <div
+        data-layout-start-lane=""
+        {...stylex.props(
+          hasMiddleScroll
+            ? startIsPinned
+              ? styles.sideLanePinned
+              : styles.sideLaneShared
+            : styles.middleRowPassthrough,
+          startIsPinned &&
+            hasExpandedMiddleScroll &&
+            styles.sideLanePinnedExpanded,
+        )}>
+        <AreaProvider area="start">{start}</AreaProvider>
+      </div>
+      <div
+        data-layout-content-lane=""
+        {...stylex.props(
+          ...stackItem({size: 'fill'}),
+          contentIsPinned && styles.contentLanePinned,
+          contentIsPinned &&
+            hasExpandedMiddleScroll &&
+            styles.contentLanePinnedExpanded,
+        )}>
+        <AreaProvider area="content">{resolvedContent}</AreaProvider>
+      </div>
+      <div
+        data-layout-end-lane=""
+        {...stylex.props(
+          hasMiddleScroll
+            ? endIsPinned
+              ? styles.sideLanePinned
+              : styles.sideLaneShared
+            : styles.middleRowPassthrough,
+          endIsPinned &&
+            hasExpandedMiddleScroll &&
+            styles.sideLanePinnedExpanded,
+        )}>
+        <AreaProvider area="end">{end}</AreaProvider>
+      </div>
+    </>
   );
 
   const tree = (
@@ -273,6 +434,7 @@ export function Layout({
           style,
         )}>
         <div
+          ref={layoutInnerRef}
           {...stylex.props(
             stylex.defaultMarker(),
             styles.layoutInner,
@@ -283,20 +445,33 @@ export function Layout({
             padding != null && layoutPaddingOuterYVarStyles[padding],
             contentWidth != null && dynamicStyles.contentWidthVar(contentWidth),
           )}>
-          <AreaProvider area="header">{header}</AreaProvider>
           <div
-            {...stylex.props(
-              ...stack({direction: 'horizontal'}),
-              styles.middle,
-              contentWidth != null && dynamicStyles.contentWidth(contentWidth),
-            )}>
-            <AreaProvider area="start">{start}</AreaProvider>
-            <div {...stylex.props(...stackItem({size: 'fill'}))}>
-              <AreaProvider area="content">{resolvedContent}</AreaProvider>
-            </div>
-            <AreaProvider area="end">{end}</AreaProvider>
+            data-layout-header-lane=""
+            {...stylex.props(styles.middleRowPassthrough)}>
+            <AreaProvider area="header">{header}</AreaProvider>
           </div>
-          <AreaProvider area="footer">{footer}</AreaProvider>
+          <div
+            ref={middleRef}
+            tabIndex={hasMiddleScroll ? 0 : undefined}
+            role={hasMiddleScroll ? 'group' : undefined}
+            aria-label={hasMiddleScroll ? middleScrollLabel : undefined}
+            {...middleStyleProps}>
+            <div
+              data-layout-middle-row=""
+              {...stylex.props(
+                ...stack({direction: 'horizontal'}),
+                hasExpandedMiddleScroll
+                  ? styles.middleExpandedRow
+                  : styles.middleConstrainedRow,
+              )}>
+              {middleRegions}
+            </div>
+          </div>
+          <div
+            data-layout-footer-lane=""
+            {...stylex.props(styles.middleRowPassthrough)}>
+            <AreaProvider area="footer">{footer}</AreaProvider>
+          </div>
         </div>
       </div>
     </LayoutSlotsContext>
@@ -311,6 +486,11 @@ export function Layout({
   }
 
   return tree;
+}
+
+/** Renders the public Layout through the environment-observing ownership wrapper. */
+export function Layout(props: LayoutProps) {
+  return <LayoutWrapper {...props} />;
 }
 
 Layout.displayName = 'Layout';

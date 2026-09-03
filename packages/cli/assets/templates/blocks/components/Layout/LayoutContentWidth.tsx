@@ -24,12 +24,13 @@ export default function LayoutContentWidth() {
         </LayoutHeader>
       }
       content={
-        <LayoutContent>
+        <LayoutContent height="auto">
           <VStack gap={3}>
             <Text type="body">
-              The contentWidth prop constrains content to a maximum width and
-              centers it within the layout. Dividers remain full-bleed while
-              content stays narrow and readable.
+              The contentWidth prop aligns header, body, and footer content to a
+              shared maximum width. Setting LayoutContent height="auto" moves
+              the body into the full-width Layout middle scrollport while its
+              content stays aligned.
             </Text>
             <Text type="body" color="secondary">
               Common widths: 640 for forms, 960 for content pages.

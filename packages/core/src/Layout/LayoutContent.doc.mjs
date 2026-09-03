@@ -21,9 +21,17 @@ export const docs = {
         'Internal padding using the spacing scale. Overrides the default padding from the layout container.',
     },
     {
+      name: 'height',
+      type: "'fill' | 'auto'",
+      description:
+        "Block-axis sizing. 'fill' fills the Layout middle region; 'auto' uses natural height and moves with the fill-height Layout's middle scrollport.",
+      default: "'fill'",
+    },
+    {
       name: 'isScrollable',
       type: 'boolean',
-      description: 'Enable scrollable overflow.',
+      description:
+        'Enables scrollable overflow for this content area independently of its height.',
       default: 'true',
     },
     {
@@ -56,9 +64,16 @@ export const docsZh = {
       description: '使用间距比例的内边距。覆盖布局容器的默认内边距。',
     },
     {
+      name: 'height',
+      type: "'fill' | 'auto'",
+      description:
+        "区块轴尺寸。'fill' 填满 Layout 中间区域；'auto' 使用自然高度并随填充高度 Layout 的中间滚动区域移动。",
+      default: "'fill'",
+    },
+    {
       name: 'isScrollable',
       type: 'boolean',
-      description: '启用可滚动溢出。',
+      description: '独立于高度控制此内容区域是否启用滚动溢出。',
       default: 'true',
     },
     {
@@ -81,8 +96,11 @@ export const docsDense = {
   description: 'Scrollable main content area.',
   propDescriptions: {
     children: 'Content.',
-    padding: 'Internal padding on spacing scale. Overrides layout container default.',
-    isScrollable: 'Enable scrollable overflow.',
+    padding:
+      'Internal padding on spacing scale. Overrides layout container default.',
+    height:
+      'Fill the Layout middle region or use natural height and move with its middle scrollport.',
+    isScrollable: 'Enable scrollable overflow independently of height.',
     label: 'Accessible label for landmark element.',
     role: 'ARIA landmark role.',
   },

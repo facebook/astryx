@@ -17,7 +17,8 @@ export const docs = {
     {
       name: 'hasDivider',
       type: 'boolean',
-      description: 'Border on the appropriate edge.',
+      description:
+        'Border on the appropriate edge. Auto-height panels stretch across the shared row so the divider spans the full middle region.',
       default: 'false',
     },
     {
@@ -27,9 +28,17 @@ export const docs = {
         'Internal padding using the spacing scale. Overrides the default padding from the layout container.',
     },
     {
+      name: 'height',
+      type: "'fill' | 'auto'",
+      description:
+        "Block-axis sizing. 'fill' fills the Layout middle viewport. With 'auto', panel content contributes its natural height to the shared row and the panel box stretches across that row so its background and divider remain continuous.",
+      default: "'fill'",
+    },
+    {
       name: 'isScrollable',
       type: 'boolean',
-      description: 'Enable scrollable overflow.',
+      description:
+        'Enables scrollable overflow for this panel independently of its height.',
       default: 'true',
     },
     {
@@ -71,7 +80,8 @@ export const docsZh = {
     {
       name: 'hasDivider',
       type: 'boolean',
-      description: '相应边缘的边框。',
+      description:
+        '相应边缘的边框。自动高度面板会沿共享行拉伸，使分隔线覆盖整个中间区域。',
       default: 'false',
     },
     {
@@ -80,9 +90,16 @@ export const docsZh = {
       description: '使用间距比例的内边距。覆盖布局容器的默认内边距。',
     },
     {
+      name: 'height',
+      type: "'fill' | 'auto'",
+      description:
+        "区块轴尺寸。'fill' 填满 Layout 中间视口；使用 'auto' 时，面板内容以自然高度参与共享行，而面板盒会拉伸到整行，使背景和分隔线保持连续。",
+      default: "'fill'",
+    },
+    {
       name: 'isScrollable',
       type: 'boolean',
-      description: '启用可滚动溢出。',
+      description: '独立于高度控制此面板是否启用滚动溢出。',
       default: 'true',
     },
     {
@@ -117,10 +134,13 @@ export const docsDense = {
   description: 'Sidebar for navigation, settings, inspector panels.',
   propDescriptions: {
     children: 'Panel content.',
-    hasDivider: 'Border on appropriate edge.',
+    hasDivider:
+      'Border on the appropriate edge; auto-height panels stretch it across the full middle region.',
     padding:
       'Internal padding on spacing scale. Overrides layout container default.',
-    isScrollable: 'Enable scrollable overflow.',
+    height:
+      'Fill the middle viewport, or let content contribute natural row height while the panel box stretches for continuous background/dividers.',
+    isScrollable: 'Enable scrollable overflow independently of height.',
     label: 'Accessible label for landmark element.',
     role: 'ARIA landmark role.',
     width:

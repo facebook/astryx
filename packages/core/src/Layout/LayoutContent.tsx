@@ -34,10 +34,7 @@ import {
 const styles = stylex.create({
   content: {
     boxSizing: 'border-box',
-    height: '100%',
     flex: 1,
-    minHeight: 0,
-    overflow: 'clip',
     // Default: inner padding on all sides (will be overridden by position-specific styles)
     paddingInlineStart: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
     paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
@@ -45,14 +42,14 @@ const styles = stylex.create({
       default: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
       // When header has no divider, collapse top padding for seamless visual flow
       [stylex.when.ancestor(
-        ':has(> .astryx-layout-header:not([data-divider]))',
+        ':has(> [data-layout-header-lane] > .astryx-layout-header:not([data-divider]))',
       )]: 0,
     },
     paddingBlockEnd: {
       default: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
       // When footer has no divider, collapse bottom padding for seamless visual flow
       [stylex.when.ancestor(
-        ':has(> .astryx-layout-footer:not([data-divider]))',
+        ':has(> [data-layout-footer-lane] > .astryx-layout-footer:not([data-divider]))',
       )]: 0,
     },
     // Publish container padding vars for bleed children (Table, Divider, etc.)
@@ -81,7 +78,19 @@ const styles = stylex.create({
     paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
     '--container-padding-block-end': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
   },
-  scrollable: {
+  heightFill: {
+    height: '100%',
+    minHeight: 0,
+  },
+  heightAuto: {
+    alignSelf: 'flex-start',
+    height: 'auto',
+    minHeight: 0,
+  },
+  overflowStatic: {
+    overflow: 'clip',
+  },
+  overflowScrollable: {
     overflow: 'auto',
   },
   fullBleed: {
@@ -95,6 +104,8 @@ const styles = stylex.create({
     '--container-padding-block-end': '0px',
   },
 });
+
+export type LayoutRegionHeight = 'fill' | 'auto';
 
 export interface LayoutContentProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -111,9 +122,18 @@ export interface LayoutContentProps extends BaseProps<HTMLDivElement> {
   padding?: SpacingStep;
 
   /**
+   * Controls this region's block-axis sizing.
+   * - `fill`: fills the Layout middle region (default).
+   * - `auto`: uses its natural height and moves with the fill-height Layout's
+   *   middle scrollport.
+   * @default 'fill'
+   */
+  height?: LayoutRegionHeight;
+
+  /**
    * Enables scrollable overflow for the content area.
-   * Set to false for auto-height layouts where sticky positioning
-   * needs to work with parent containers.
+   * Set to false for non-scrolling overflow behavior, including sticky
+   * descendants that need the parent scroll container.
    * @default true
    */
   isScrollable?: boolean;
@@ -135,8 +155,10 @@ export interface LayoutContentProps extends BaseProps<HTMLDivElement> {
  * Scrollable main content area for Layout. Wraps the primary body content
  * with automatic scroll containment and context-aware padding.
  *
- * Already provides its own padding and scroll — don't add padding or
- * overflow to children. Use `padding={0}` if you need edge-to-edge content.
+ * Provides context-aware padding and controls height and overflow independently.
+ * `height="auto"` moves the region with a fill-height Layout's middle scrollport.
+ * Don't add padding or overflow to children. Use `padding={0}` if you need
+ * edge-to-edge content.
  *
  * @example
  * ```
@@ -168,6 +190,7 @@ export interface LayoutContentProps extends BaseProps<HTMLDivElement> {
  */
 export function LayoutContent({
   children,
+  height = 'fill',
   isScrollable = true,
   padding,
   label,
@@ -188,15 +211,16 @@ export function LayoutContent({
       role={role}
       aria-label={label}
       {...mergeProps(
-        themeProps('layout-content'),
+        themeProps('layout-content', {height}),
         stylex.props(
           styles.content,
+          height === 'fill' ? styles.heightFill : styles.heightAuto,
+          isScrollable ? styles.overflowScrollable : styles.overflowStatic,
           // Outer padding on container edges (unless content is full bleed)
           !hasStart && !isZeroPadding && padding == null && styles.noStart,
           !hasEnd && !isZeroPadding && padding == null && styles.noEnd,
           !hasHeader && !isZeroPadding && padding == null && styles.noHeader,
           !hasFooter && !isZeroPadding && padding == null && styles.noFooter,
-          isScrollable && styles.scrollable,
           isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
@@ -207,7 +231,9 @@ export function LayoutContent({
         className,
         style,
       )}
-      {...props}>
+      {...props}
+      data-layout-region="content"
+      data-layout-height={height}>
       {children}
     </div>
   );

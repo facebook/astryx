@@ -74,7 +74,7 @@ export {LayoutFooter} from './LayoutFooter';
 export type {LayoutFooterProps} from './LayoutFooter';
 
 export {LayoutContent} from './LayoutContent';
-export type {LayoutContentProps} from './LayoutContent';
+export type {LayoutContentProps, LayoutRegionHeight} from './LayoutContent';
 
 export {LayoutPanel} from './LayoutPanel';
 export type {LayoutPanelProps} from './LayoutPanel';

@@ -16,6 +16,7 @@ import {use, createRef} from 'react';
 import {Layout} from './Layout';
 import {LayoutHeader} from './LayoutHeader';
 import {LayoutFooter} from './LayoutFooter';
+import {LayoutContent} from './LayoutContent';
 import {LayoutAreaContext} from './LayoutAreaContext';
 import {LayoutSlotsContext} from './LayoutSlotsContext';
 
@@ -127,6 +128,8 @@ describe('Layout', () => {
         hasFooter: false,
         hasStart: true,
         hasEnd: false,
+        hasMiddleScroll: false,
+        hasExpandedMiddleScroll: false,
       });
     });
 
@@ -138,7 +141,40 @@ describe('Layout', () => {
         hasFooter: false,
         hasStart: false,
         hasEnd: false,
+        hasMiddleScroll: false,
+        hasExpandedMiddleScroll: false,
       });
+    });
+
+    it('reports middle-scroll participation to descendants', () => {
+      render(
+        <Layout
+          content={
+            <LayoutContent height="auto">
+              <SlotsProbe />
+            </LayoutContent>
+          }
+        />,
+      );
+      const slots = JSON.parse(screen.getByTestId('slots').textContent ?? '{}');
+      expect(slots.hasMiddleScroll).toBe(true);
+      expect(slots.hasExpandedMiddleScroll).toBe(true);
+    });
+
+    it('does not create a middle scrollport in auto-height layouts', () => {
+      render(
+        <Layout
+          height="auto"
+          content={
+            <LayoutContent height="auto">
+              <SlotsProbe />
+            </LayoutContent>
+          }
+        />,
+      );
+      const slots = JSON.parse(screen.getByTestId('slots').textContent ?? '{}');
+      expect(slots.hasMiddleScroll).toBe(false);
+      expect(slots.hasExpandedMiddleScroll).toBe(false);
     });
 
     it('reports every slot filled', () => {
@@ -157,6 +193,8 @@ describe('Layout', () => {
         hasFooter: true,
         hasStart: true,
         hasEnd: true,
+        hasMiddleScroll: false,
+        hasExpandedMiddleScroll: false,
       });
     });
   });

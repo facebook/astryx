@@ -39,17 +39,19 @@ system_specs: []
 Layout is a general layout primitive that arranges five optional named slots:
 Header, logical-start Panel, Content area, logical-end Panel, and Footer. It can
 structure regions within a page or bounded container, while AppShell owns the
-page shell. This draft records the current aggregate consumer anatomy and
-theming ownership without changing runtime behavior, DOM, styling, targets, or
-public API.
+page shell. This draft records the aggregate consumer anatomy, theming
+ownership, and the region-level scroll ownership coordinated by Layout.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, aliases, and public API remain unchanged
+- Released defaults preserved: `yes`; LayoutContent and LayoutPanel keep
+  `isScrollable=true`, and the new `height` prop defaults to `fill`
+- Compatibility class: additive opt-in; existing `isScrollable={false}` keeps
+  its released overflow behavior, while `height="auto"` joins the fill-height
+  Layout middle scrollport
 - Controlled/uncontrolled behavior: not applicable
-- Migration decision: none
+- Migration decision: none; all existing callers retain their sizing and
+  overflow behavior
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -65,6 +67,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   `layout-header`, `layout-panel`, `layout-content`, and `layout-footer` targets.
 - One LayoutPanel concept and `layout-panel` target shared by instances supplied
   to the logical-start and logical-end slots.
+- The fill-height middle scrollport that coordinates top-level LayoutContent and
+  LayoutPanel region roots whose `height="auto"` opts into natural sizing.
 
 **Does not own / non-goals**
 
@@ -77,18 +81,19 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Correcting current container-padding publication mismatches or preventing two
   adjacent divider owners from both painting; those remain current gaps and
   caller obligations recorded below.
-- New runtime behavior, API, target, alias, or region wrapper.
 
 ## Public concepts
 
 The current public topology has five independent ReactNode slots. Slot position
 is not rendered anatomy and does not add a target to arbitrary content.
 
-| Concept       | Current values                                | Meaning                                                                                      |
-| ------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| slot topology | `header`, `start`, `content`, `end`, `footer` | Positions caller content in the five-slot arrangement; omitted slots render no area wrapper. |
-| slot content  | any ReactNode                                 | The caller may supply Layout region components or unrelated content.                         |
-| panel anatomy | LayoutPanel in `start` and/or `end`           | Both positions use one optional Panel anatomy concept and one `layout-panel` target.         |
+| Concept        | Current values                                | Meaning                                                                                                  |
+| -------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| slot topology  | `header`, `start`, `content`, `end`, `footer` | Positions caller content in the five-slot arrangement; omitted slots render no area wrapper.             |
+| slot content   | any ReactNode                                 | The caller may supply Layout region components or unrelated content.                                     |
+| panel anatomy  | LayoutPanel in `start` and/or `end`           | Both positions use one optional Panel anatomy concept and one `layout-panel` target.                     |
+| region height  | `fill` or `auto`                              | Fill keeps the region pinned to the middle viewport; auto uses natural height and joins the middle flow. |
+| local overflow | scrollable or clipped                         | `isScrollable` independently preserves the released overflow toggle.                                     |
 
 Consumer syntax, defaults, and recommended region components remain documented
 in `Layout.doc.mjs` and the region subcomponent docs. `family:layout-regions`
@@ -97,14 +102,15 @@ the broader container system shared with Section, Table, Toolbar, and Divider.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                                              | Basis                                     | Draft review state                                 |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------- |
-| FR1 | Layout renders one general Layout container carrying the current `layout` target and places arbitrary caller-provided ReactNode content in the `header`, `start`, `content`, `end`, and `footer` slots. Slot placement alone adds no region component or target. | Current source, docs, and tests           | Verified current behavior; no new behavior decided |
-| FR2 | When the caller supplies LayoutHeader, LayoutContent, or LayoutFooter, that component carries its current `layout-header`, `layout-content`, or `layout-footer` target; Layout does not add those targets to arbitrary slot content.                             | Current source and target metadata        | Verified current inventory; no target change       |
-| FR3 | LayoutPanel instances supplied to logical start or end share one aggregate Panel anatomy part and the current `layout-panel` target; slot position does not create a second anatomy part or target.                                                              | Current source, docs, tests, and family   | Verified current ownership; no API change          |
-| FR4 | `Layout.doc.mjs` is the canonical aggregate consumer document for the five current `layout*` targets and maps each target once; region subcomponent docs continue to document their own props and usage.                                                         | Current documentation organization        | Verified current ownership                         |
-| FR5 | LayoutContent and LayoutPanel retain their shipped automatic container-padding publication behavior, including the mismatches recorded by `architecture:container-padding`; this documentation does not claim exact parity.                                      | Current source and architecture record    | Current conformance gap; not fixed here            |
-| FR6 | When an adjacent ResizeHandle owns a panel divider, the caller must keep `LayoutPanel hasDivider={false}`; current composition does not prevent both components from painting the same boundary.                                                                 | Current source, docs, and family contract | Current caller obligation; not fixed here          |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                                                               | Basis                                   | Draft review state                                         |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------- |
+| FR1 | Layout renders one general Layout container carrying the current `layout` target and places arbitrary caller-provided ReactNode content in the `header`, `start`, `content`, `end`, and `footer` slots. Slot placement alone adds no region component or target.                                                                                                                                                                                  | Current source, docs, and tests         | Verified current behavior; no new behavior decided         |
+| FR2 | When the caller supplies LayoutHeader, LayoutContent, or LayoutFooter, that component carries its current `layout-header`, `layout-content`, or `layout-footer` target; Layout does not add those targets to arbitrary slot content.                                                                                                                                                                                                              | Current source and target metadata      | Verified current inventory; no target change               |
+| FR3 | LayoutPanel instances supplied to logical start or end share one aggregate Panel anatomy part and the current `layout-panel` target; slot position does not create a second anatomy part or target.                                                                                                                                                                                                                                               | Current source, docs, tests, and family | Verified current ownership; no API change                  |
+| FR4 | `Layout.doc.mjs` is the canonical aggregate consumer document for the five current `layout*` targets and maps each target once; region subcomponent docs continue to document their own props and usage.                                                                                                                                                                                                                                          | Current documentation organization      | Verified current ownership                                 |
+| FR5 | LayoutContent and LayoutPanel retain their shipped automatic container-padding publication behavior, including the mismatches recorded by `architecture:container-padding`; this documentation does not claim exact parity.                                                                                                                                                                                                                       | Current source and architecture record  | Current conformance gap; not fixed here                    |
+| FR6 | When an adjacent ResizeHandle owns a panel divider, the caller must keep `LayoutPanel hasDivider={false}`; current composition does not prevent both components from painting the same boundary. Auto-height panels stretch across the shared row so their panel-owned divider spans the full middle region.                                                                                                                                      | Current source, docs, tests, and family | Caller obligation preserved; auto-height geometry proposed |
+| FR7 | LayoutContent and LayoutPanel preserve their released `isScrollable` overflow behavior. Their new `height` prop defaults to `fill`; in a fill-height Layout, top-level region roots with `height="auto"` participate in the focusable middle scrollport while fill-height sibling slots remain pinned. Multiple region roots in one slot must agree; mixed heights keep that slot pinned. In auto-height Layout, no middle scrollport is created. | Current source, docs, tests, and family | Proposed additive behavior; defaults preserved             |
 
 ### Current evidence and gaps
 
@@ -131,21 +137,31 @@ the broader container system shared with Section, Table, Toolbar, and Divider.
 - **AV3 — Panel position.** LayoutPanel may occupy logical start or end, or both
   positions may be supplied; all instances remain one Panel anatomy concept and
   target.
+- **AV4 — Height and overflow.** Direct LayoutContent and LayoutPanel regions
+  preserve their independent `isScrollable` overflow toggle. `height` defaults
+  to `fill`; `height="auto"` participates in the fill-height middle scrollport.
+  Multiple region roots in one slot must agree on height, otherwise the slot
+  stays pinned. Auto-height Layouts remain page/ancestor-scrolled.
 
 ### Representative states
 
-| State                          | Required invariant                                                                         | Allowed variation                                      |
-| ------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| Arbitrary content only         | Layout container carries `layout`; arbitrary content gains no region target from its slot. | Caller content and current height/width configuration. |
-| Composed header/content/footer | Supplied Layout region components retain their own anatomy and targets.                    | Any region may instead be absent or arbitrary content. |
-| Start or end LayoutPanel       | Either logical position uses the one Panel anatomy part and `layout-panel` target.         | Position, width, scrolling, padding, and caller role.  |
-| Two LayoutPanels               | Both instances remain repetitions of the same Panel anatomy part and target.               | Independent content, width, and local configuration.   |
-| ResizeHandle-adjacent          | Divider ownership follows the current caller obligation in FR6.                            | Resize state remains owned by the resize components.   |
+| State                          | Required invariant                                                                         | Allowed variation                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Arbitrary content only         | Layout container carries `layout`; arbitrary content gains no region target from its slot. | Caller content and current height/width configuration.      |
+| Composed header/content/footer | Supplied Layout region components retain their own anatomy and targets.                    | Any region may instead be absent or arbitrary content.      |
+| Start or end LayoutPanel       | Either logical position uses the one Panel anatomy part and `layout-panel` target.         | Position, width, scrolling, padding, and caller role.       |
+| Two LayoutPanels               | Both instances remain repetitions of the same Panel anatomy part and target.               | Fill or natural height may be selected per panel.           |
+| Mixed heights                  | Auto regions move in the middle scrollport; fill regions remain pinned.                    | Any direct content/start/end subset may use natural height. |
+| ResizeHandle-adjacent          | Divider ownership follows the current caller obligation in FR6.                            | Resize state remains owned by the resize components.        |
 
 ### Transformation and precedence order
 
-- No new slot, padding, content-width, divider, scrolling, sizing, or styling
-  precedence rule is introduced.
+- Region `height` defaults to `fill`. In a fill-height Layout, explicit `auto`
+  opts a top-level rendered region root into the middle scrollport; in an
+  auto-height Layout, the page/ancestor remains the scroll owner.
+- Region `isScrollable` retains its released, independent overflow behavior.
+- No new slot, padding, content-width, divider, sizing, or styling precedence
+  rule is introduced.
 
 ### Performance and resources
 
@@ -153,9 +169,11 @@ the broader container system shared with Section, Table, Toolbar, and Divider.
 
 ## Accessibility contract
 
-This draft does not add inferred landmark semantics. LayoutHeader,
-LayoutContent, LayoutFooter, and LayoutPanel retain their current explicit
-caller-supplied role and label behavior.
+This draft does not add inferred landmark semantics to individual regions.
+LayoutHeader, LayoutContent, LayoutFooter, and LayoutPanel retain their current
+explicit caller-supplied role and label behavior. An active middle scrollport is
+keyboard focusable and exposed as a named group, using the first participating
+region label when available and a localized fallback otherwise.
 
 ## Design relationships
 
@@ -200,17 +218,19 @@ end, or both. It does not map the `start` and `end` slots themselves.
 - `architecture:component-theming-surface` owns anatomy qualification and exact
   target mapping rules.
 - `architecture:public-component-api` owns the stable slots, props, exports, and
-  compatibility boundary; this documentation adds no API.
+  compatibility boundary; the additive height prop preserves existing defaults
+  and behavior.
 
 ## Verification map
 
-| Contract      | Verification                                                                                   | Representative states                                                              | Mutation or failure expectation                                                                                                                                                   | Audit section                |
-| ------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| FR1–FR3       | Layout render, slot-context, children-as-content, region-component, and target inventory tests | Arbitrary slot content, optional region components, logical start/end LayoutPanels | Removing slot placement, a composed region, or a current target fails existing structure, context, or target assertions; arbitrary slot content is not asserted to gain a target. | `audit:Layout/anatomy`       |
-| FR4           | `scripts/check-knowledge.mjs`                                                                  | Canonical aggregate doc and exact five-target map                                  | Missing, extra, prefixed, or stale target mappings fail repository validation.                                                                                                    | `audit:Layout/theming`       |
-| FR5           | Source inspection plus `architecture:container-padding` verification evidence                  | Automatic outer-edge Content area and Panel paths                                  | This draft adds no parity assertion; a runtime correction requires separate compatibility evidence.                                                                               | `audit:Layout/layout`        |
-| FR6           | LayoutPanel source/docs plus `family:layout-regions` verification evidence                     | Panel beside a divider-owning ResizeHandle                                         | This draft adds no prevention assertion; changing ownership requires separate runtime coverage.                                                                                   | `audit:Layout/layout`        |
-| Accessibility | `LayoutSlots.test.tsx` landmark assertions                                                     | Header, Content area, Footer, and Panel roles                                      | Supplied role or label no longer reaches the region element.                                                                                                                      | `audit:Layout/accessibility` |
+| Contract      | Verification                                                                                         | Representative states                                                                                                               | Mutation or failure expectation                                                                                                                                                       | Audit section                |
+| ------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| FR1–FR3       | Layout render, slot-context, children-as-content, region-component, and target inventory tests       | Arbitrary slot content, optional region components, logical start/end LayoutPanels                                                  | Removing slot placement, a composed region, or a current target fails existing structure, context, or target assertions; arbitrary slot content is not asserted to gain a target.     | `audit:Layout/anatomy`       |
+| FR4           | `scripts/check-knowledge.mjs`                                                                        | Canonical aggregate doc and exact five-target map                                                                                   | Missing, extra, prefixed, or stale target mappings fail repository validation.                                                                                                        | `audit:Layout/theming`       |
+| FR5           | Source inspection plus `architecture:container-padding` verification evidence                        | Automatic outer-edge Content area and Panel paths                                                                                   | This draft adds no parity assertion; a runtime correction requires separate compatibility evidence.                                                                                   | `audit:Layout/layout`        |
+| FR6           | LayoutPanel source/docs, `contentWidth.test.tsx`, plus `family:layout-regions` verification evidence | Fill and auto panel-owned dividers, including auto stretch across the shared row, plus a panel beside a divider-owning ResizeHandle | Removing full-height auto-panel stretch fails focused tests; duplicate ResizeHandle divider ownership remains a caller obligation.                                                    | `audit:Layout/layout`        |
+| FR7           | `Layout.test.tsx`, `LayoutSlots.test.tsx`, `contentWidth.test.tsx`, and Storybook browser evidence   | Content-only, one-panel, and mixed three-region height modes in fill/auto Layouts                                                   | Changing defaults, `isScrollable` compatibility, auto-region participation, fill-region pinning, focusability, or contentWidth containment fails focused structure or browser checks. | `audit:Layout/layout`        |
+| Accessibility | `LayoutSlots.test.tsx` landmark assertions and the Layout Storybook accessibility audit              | Header, Content area, Footer, Panel, and active middle scrollport                                                                   | Supplied region semantics stop forwarding, or the middle scrollport loses its focus stop or accessible name.                                                                          | `audit:Layout/accessibility` |
 
 ## Decision log
 

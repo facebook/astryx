@@ -1438,5 +1438,9 @@
   "@astryx.transferListSelector.triggerLabel": {
     "defaultMessage": "{count, number} selected",
     "description": "Default summary on the closed trigger of a lab TransferListSelector, stating how many options are currently chosen. Consumers usually override this with a domain phrase (e.g. \"7 columns\")."
+  },
+  "@astryx.layout.middleScrollRegion": {
+    "defaultMessage": "Scrollable natural-height layout regions",
+    "description": "Accessible name for the shared middle scrollport in a fill-height Layout when one or more regions use height=auto."
   }
 }
