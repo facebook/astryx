@@ -18,6 +18,7 @@ references:
     architecture:theme-compilation,
     architecture:component-theming-surface,
     spec:AST-006,
+    spec:AST-018,
   ]
 ---
 
@@ -99,9 +100,9 @@ not authorize a broader meaning.
 
 Candidate source work contains complete light and separately tuned dark ramps for
 neutral, red, orange, yellow, green, teal, cyan, blue, purple, and pink. This is
-useful theme-owned inventory and evidence, not a requirement to adopt a palette
-generator or publish palette artifacts. Those cross-theme choices require a
-separate draft system spec.
+useful theme-owned inventory and evidence. Draft `spec:AST-018` separately owns
+the proposed cross-theme palette contract, optional artifact behavior, and the
+boundary between approved stops and intentional deviations.
 
 ## Component and state mappings
 
