@@ -1222,4 +1222,38 @@ describe('TreeList', () => {
     expect(items[1]).toHaveFocus();
     expect(items[1]).toHaveAttribute('tabindex', '0');
   });
+
+  it('does not trigger built-in tree navigation when keydown originates inside the header slot', () => {
+    let capturedCurrentTarget: Element | null = null;
+    const ref = {current: null as HTMLDivElement | null};
+    const onKeyDown = vi.fn((event: React.KeyboardEvent<HTMLDivElement>) => {
+      capturedCurrentTarget = event.currentTarget;
+    });
+
+    render(
+      <TreeList
+        ref={el => {
+          ref.current = el;
+        }}
+        header={<button type="button">Header Action</button>}
+        items={[
+          {id: 'one', label: 'One'},
+          {id: 'two', label: 'Two'},
+        ]}
+        onKeyDown={onKeyDown}
+      />,
+    );
+
+    const headerButton = screen.getByRole('button', {name: 'Header Action'});
+    headerButton.focus();
+    fireEvent.keyDown(headerButton, {key: 'ArrowDown'});
+
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    expect(capturedCurrentTarget).toBe(ref.current);
+    expect(ref.current).toBeInstanceOf(HTMLDivElement);
+    // Focus remains on header button, internal tree navigation was not triggered
+    expect(document.activeElement).toBe(headerButton);
+    const items = screen.getAllByRole('treeitem');
+    expect(items[0]).toHaveAttribute('tabindex', '0');
+  });
 });

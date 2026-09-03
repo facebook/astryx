@@ -267,9 +267,15 @@ export function TreeList({
       if (e.defaultPrevented) {
         return;
       }
-      handleKeyDown(e);
+      if (
+        treeRef.current != null &&
+        e.target instanceof Node &&
+        treeRef.current.contains(e.target)
+      ) {
+        handleKeyDown(e);
+      }
     },
-    [onKeyDownProp, handleKeyDown],
+    [onKeyDownProp, handleKeyDown, treeRef],
   );
 
   const hasExpandableItems = items.some(
