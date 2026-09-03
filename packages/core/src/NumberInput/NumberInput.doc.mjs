@@ -217,6 +217,19 @@ export const docs = {
       type: '() => void',
       description: 'Callback fired when the user presses the Enter key.',
     },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        'Whether the input is in a loading state (field value is resolving or being saved).',
+      default: 'false',
+    },
+    {
+      name: 'changeAction',
+      type: '(value: number) => void | Promise<void>',
+      description:
+        'Async action on change. Fires after onChange if not prevented. Runs in a React transition for optimistic updates.',
+    },
   ],
   theming: {
     targets: [

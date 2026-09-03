@@ -24,6 +24,8 @@ import {
   useMemo,
   useCallback,
   useRef,
+  useTransition,
+  useOptimistic,
   type FocusEvent,
   type KeyboardEvent,
   type ReactNode,
@@ -399,6 +401,16 @@ interface NumberInputPropsBase extends Omit<
    * Callback fired on keydown events on the input.
    */
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  /**
+   * Whether the input is in a loading state (field value is resolving or being saved).
+   * @default false
+   */
+  isLoading?: boolean;
+  /**
+   * Async action on change. Fires after onChange if not prevented.
+   * Runs in a React transition for optimistic updates.
+   */
+  changeAction?: (value: number) => void | Promise<void>;
 }
 
 /**
@@ -535,6 +547,8 @@ export function NumberInput({
   statusVariant = 'attached',
   size: sizeProp,
   onChange,
+  changeAction,
+  isLoading = false,
   value,
   placeholder,
   labelTooltip,
@@ -573,6 +587,10 @@ export function NumberInput({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputGroup = useInputGroup();
+
+  const [, startTransition] = useTransition();
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const isBusy = isLoading || optimisticValue !== value;
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
@@ -695,12 +713,24 @@ export function NumberInput({
       if (decision.type === 'clear') {
         if (hasClear && value != null) {
           onChange(null);
+          if (changeAction) {
+            startTransition(async () => {
+              setOptimisticValue(null);
+              await changeAction(null);
+            });
+          }
         }
       } else if (decision.type === 'commit' && decision.value !== value) {
         onChange(decision.value);
+        if (changeAction) {
+          startTransition(async () => {
+            setOptimisticValue(decision.value);
+            await changeAction(decision.value);
+          });
+        }
       }
     },
-    [hasClear, isIntegerOnly, locale, max, min, onChange, pendingInput, value],
+    [hasClear, isIntegerOnly, locale, max, min, onChange, changeAction, pendingInput, value, startTransition],
   );
 
   // Blur ends the edit and displays the resulting committed value.
@@ -750,9 +780,15 @@ export function NumberInput({
       setPendingInput(null);
       if (nextValue !== value) {
         onChange(nextValue);
+        if (changeAction) {
+          startTransition(async () => {
+            setOptimisticValue(nextValue);
+            await changeAction(nextValue);
+          });
+        }
       }
     },
-    [getNextValue, isDisabled, isReadOnly, onChange, value],
+    [getNextValue, isDisabled, isReadOnly, onChange, changeAction, value, startTransition],
   );
 
   // Handle keyboard events
@@ -832,10 +868,16 @@ export function NumberInput({
   const handleClear = useCallback(() => {
     if (hasClear) {
       onChange(null);
+      if (changeAction) {
+        startTransition(async () => {
+          setOptimisticValue(null);
+          await changeAction(null);
+        });
+      }
     }
     setPendingInput(null);
     inputRef.current?.focus();
-  }, [hasClear, onChange]);
+  }, [hasClear, onChange, changeAction, startTransition]);
 
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
