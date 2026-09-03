@@ -4,8 +4,9 @@
  * @file Shared RTL coverage and directional-decoration helpers.
  * @input Rendered DOM decorations plus D1/D5/D6/curated audit results.
  * @output Contextual decoration candidates, pair verdicts, component-filter
- *   reconciliation, and per-component measured / verified-N-A / coverage-gap
- *   classifications.
+ *   reconciliation, coverage-debt validation, identifier validation for removed
+ *   registry declarations, and per-component measured / verified-N-A /
+ *   known-gap / new-gap classifications.
  * @position Pure support layer for rtl-audit.mjs and its unit tests.
  */
 
@@ -265,6 +266,12 @@ function componentName(component) {
   return component.split('/').at(-1)?.toLowerCase() ?? component.toLowerCase();
 }
 
+function componentMatchesFilter(component, filter) {
+  return (
+    component.toLowerCase() === filter || componentName(component) === filter
+  );
+}
+
 /**
  * Build the component roster for a scoped audit.
  *
@@ -285,9 +292,11 @@ export function buildAuditedComponentRoster({
   const unmatchedFilters = normalizedFilters
     .filter(
       filter =>
-        !knownComponents.some(component => componentName(component) === filter),
+        !knownComponents.some(component =>
+          componentMatchesFilter(component, filter),
+        ),
     )
-    .map(filter => `unknown/${filter}`);
+    .map(filter => (filter.includes('/') ? filter : `unknown/${filter}`));
 
   return Array.from(
     new Map(
@@ -299,14 +308,160 @@ export function buildAuditedComponentRoster({
   ).filter(
     component =>
       normalizedFilters.length === 0 ||
-      normalizedFilters.includes(componentName(component)),
+      normalizedFilters.some(filter =>
+        componentMatchesFilter(component, filter),
+      ),
+  );
+}
+
+export function validateRemovedComponents(value) {
+  if (!Array.isArray(value)) {
+    throw new Error('removed components must be a JSON array');
+  }
+
+  const seen = new Set();
+  return value.map((component, index) => {
+    if (
+      typeof component !== 'string' ||
+      !/^(core|lab|unknown)\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(component)
+    ) {
+      throw new Error(
+        `removed component at index ${index} must be a core/Name, lab/Name, or unknown/Name string`,
+      );
+    }
+    const key = component.toLowerCase();
+    if (seen.has(key)) {
+      throw new Error(`duplicate removed component: ${component}`);
+    }
+    seen.add(key);
+    return component;
+  });
+}
+
+export function validateVerifiedNotApplicable(value) {
+  if (!Array.isArray(value)) {
+    throw new Error('verified-not-applicable registry must be a JSON array');
+  }
+
+  const seen = new Set();
+  return value.map((declaration, index) => {
+    const component = declaration?.component;
+    const reason = declaration?.reason;
+    if (
+      typeof component !== 'string' ||
+      !/^(core|lab|unknown)\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(component) ||
+      typeof reason !== 'string' ||
+      reason.trim().length === 0
+    ) {
+      throw new Error(
+        `verified-N/A entry at index ${index} needs a core/Name, lab/Name, or unknown/Name component and a non-empty reason`,
+      );
+    }
+    const key = component.toLowerCase();
+    if (seen.has(key)) {
+      throw new Error(`duplicate verified-N/A declaration: ${component}`);
+    }
+    seen.add(key);
+    return {...declaration, reason: reason.trim()};
+  });
+}
+
+export function diffVerifiedNotApplicable(previous, current) {
+  const previousDeclarations = validateVerifiedNotApplicable(previous);
+  const currentDeclarations = validateVerifiedNotApplicable(current);
+  const previousByKey = new Map(
+    previousDeclarations.map(declaration => [
+      declaration.component.toLowerCase(),
+      declaration,
+    ]),
+  );
+  const currentByKey = new Map(
+    currentDeclarations.map(declaration => [
+      declaration.component.toLowerCase(),
+      declaration,
+    ]),
+  );
+  const keys = new Set([...previousByKey.keys(), ...currentByKey.keys()]);
+  const changed = [];
+  const removed = [];
+  for (const key of keys) {
+    const before = previousByKey.get(key);
+    const after = currentByKey.get(key);
+    if (!after) {
+      changed.push(before.component);
+      removed.push(before.component);
+    } else if (!before || before.reason !== after.reason) {
+      changed.push(after.component);
+    }
+  }
+  return {changed, removed};
+}
+
+export function validateKnownCoverageGaps(value) {
+  if (!Array.isArray(value)) {
+    throw new Error('known coverage gaps registry must be a JSON array');
+  }
+
+  const seen = new Set();
+  return value.map((component, index) => {
+    if (
+      typeof component !== 'string' ||
+      !/^(core|lab)\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(component)
+    ) {
+      throw new Error(
+        `known coverage gap at index ${index} must be a core/Name or lab/Name string`,
+      );
+    }
+    const key = component.toLowerCase();
+    if (seen.has(key)) {
+      throw new Error(`duplicate known coverage gap: ${component}`);
+    }
+    seen.add(key);
+    return component;
+  });
+}
+
+export function validateKnownCoverageGapTransition(previous, current) {
+  const previousComponents = validateKnownCoverageGaps(previous);
+  const currentComponents = validateKnownCoverageGaps(current);
+  const previousKeys = new Set(
+    previousComponents.map(component => component.toLowerCase()),
+  );
+  const currentKeys = new Set(
+    currentComponents.map(component => component.toLowerCase()),
+  );
+  const added = currentComponents.filter(
+    component => !previousKeys.has(component.toLowerCase()),
+  );
+  if (added.length > 0) {
+    throw new Error(
+      `known coverage gaps baseline is removal-only; added: ${added.join(', ')}`,
+    );
+  }
+  return {
+    removed: previousComponents.filter(
+      component => !currentKeys.has(component.toLowerCase()),
+    ),
+  };
+}
+
+export function coverageHasFindings(coverage) {
+  if (coverage?.registryError != null) {
+    return true;
+  }
+  return Boolean(
+    coverage?.enforced &&
+    (coverage.gaps > 0 ||
+      coverage.staleKnownGaps > 0 ||
+      coverage.staleVerifiedNa > 0),
   );
 }
 
 /**
- * Classify every component in the audited roster. An unexplained all-N/A result
- * is a coverage gap; a verified-N/A declaration is stale if a detector later
- * finds applicable behavior.
+ * Classify every component in the audited roster. New unexplained all-N/A
+ * results are coverage gaps. Pre-existing gaps stay visible as known debt until
+ * they become measured or verified N/A, at which point their baseline entry is
+ * stale and must be removed.
  */
 export function buildComponentCoverage({
   components,
@@ -315,8 +470,14 @@ export function buildComponentCoverage({
   decorationResults = [],
   curatedResults = [],
   verifiedNa = [],
+  knownGaps = [],
+  removedFromRoster = [],
+  checkKnownGapRoster = true,
   enforced = true,
 }) {
+  const rosterKeys = new Set(
+    components.map(component => component.toLowerCase()),
+  );
   const byName = new Map();
   for (const component of components) {
     const key = component.toLowerCase();
@@ -364,11 +525,30 @@ export function buildComponentCoverage({
       );
     }
   }
+  const known = new Map(
+    knownGaps.map(component => [component.toLowerCase(), component]),
+  );
+  const removed = new Set(
+    removedFromRoster.map(component => component.toLowerCase()),
+  );
 
   const results = Array.from(byName.values())
     .sort((left, right) => left.component.localeCompare(right.component))
     .map(entry => {
-      const reason = verified.get(entry.component.toLowerCase());
+      const key = entry.component.toLowerCase();
+      const reason = verified.get(key);
+      const knownComponent = known.get(key);
+      if (knownComponent && (entry.applicable.length > 0 || reason)) {
+        return {
+          ...entry,
+          status: 'stale-known-coverage-gap',
+          reason,
+          note:
+            entry.applicable.length > 0
+              ? 'known coverage gap is now measured and must leave the baseline'
+              : 'known coverage gap is now verified N/A and must leave the baseline',
+        };
+      }
       if (entry.applicable.length > 0 && reason) {
         return {
           ...entry,
@@ -383,21 +563,52 @@ export function buildComponentCoverage({
       if (reason) {
         return {...entry, status: 'verified-na', reason};
       }
+      if (removed.has(key)) {
+        return {
+          ...entry,
+          status: 'removed-component',
+          note: 'component no longer exists in the source or story roster',
+        };
+      }
+      if (knownComponent) {
+        return {
+          ...entry,
+          status: 'known-coverage-gap',
+          note: 'pre-existing all-N/A coverage debt',
+        };
+      }
       return {
         ...entry,
         status: 'coverage-gap',
-        note: 'all dimensions are N-A and no verified-N/A reason is recorded',
+        note: 'new all-N/A result with no verified-N/A reason',
       };
     });
+
+  if (checkKnownGapRoster) {
+    for (const [key, component] of known) {
+      if (!rosterKeys.has(key)) {
+        results.push({
+          component,
+          applicable: [],
+          status: 'stale-known-coverage-gap',
+          note: 'known coverage gap no longer exists in the audited roster',
+        });
+      }
+    }
+  }
+  results.sort((left, right) => left.component.localeCompare(right.component));
 
   const count = status =>
     results.filter(result => result.status === status).length;
   return {
     enforced,
-    total: results.length,
+    total: components.length,
     measured: count('measured'),
     verifiedNa: count('verified-na'),
+    removedComponents: count('removed-component'),
+    knownGaps: count('known-coverage-gap'),
     gaps: count('coverage-gap'),
+    staleKnownGaps: count('stale-known-coverage-gap'),
     staleVerifiedNa: count('stale-verified-na'),
     results,
   };

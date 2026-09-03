@@ -11,6 +11,12 @@ import {
   buildComponentCoverage,
   classifyDirectionalDecorationPair,
   collectDirectionalDecorations,
+  coverageHasFindings,
+  diffVerifiedNotApplicable,
+  validateKnownCoverageGaps,
+  validateKnownCoverageGapTransition,
+  validateRemovedComponents,
+  validateVerifiedNotApplicable,
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 
 const IDENTITY = [1, 0, 0, 1];
@@ -100,6 +106,107 @@ describe('classifyDirectionalDecorationPair', () => {
   });
 });
 
+describe('validateRemovedComponents', () => {
+  it('accepts removed Core, Lab, and unknown identifiers', () => {
+    expect(
+      validateRemovedComponents([
+        'core/Button',
+        'lab/Tree',
+        'unknown/ChartTooltip',
+      ]),
+    ).toEqual(['core/Button', 'lab/Tree', 'unknown/ChartTooltip']);
+  });
+
+  it('rejects malformed and duplicate identifiers', () => {
+    expect(() => validateRemovedComponents(['ChartTooltip'])).toThrow(
+      'core/Name, lab/Name, or unknown/Name',
+    );
+    expect(() =>
+      validateRemovedComponents(['unknown/ChartTooltip', 'unknown/charttooltip']),
+    ).toThrow('duplicate removed component');
+  });
+});
+
+describe('validateVerifiedNotApplicable', () => {
+  it('accepts reviewed declarations and trims their reasons', () => {
+    expect(
+      validateVerifiedNotApplicable([
+        {component: 'core/Text', reason: '  No directional behavior.  '},
+        {component: 'unknown/ChartTooltip', reason: 'Fixture-only surface.'},
+      ]),
+    ).toEqual([
+      {component: 'core/Text', reason: 'No directional behavior.'},
+      {component: 'unknown/ChartTooltip', reason: 'Fixture-only surface.'},
+    ]);
+  });
+
+  it('reports added, changed, and removed declarations', () => {
+    expect(
+      diffVerifiedNotApplicable(
+        [
+          {component: 'core/Unchanged', reason: 'Same.'},
+          {component: 'core/Changed', reason: 'Before.'},
+          {component: 'core/Removed', reason: 'Gone.'},
+        ],
+        [
+          {component: 'core/Unchanged', reason: 'Same.'},
+          {component: 'core/Changed', reason: 'After.'},
+          {component: 'core/Added', reason: 'New.'},
+        ],
+      ),
+    ).toEqual({
+      changed: ['core/Changed', 'core/Removed', 'core/Added'],
+      removed: ['core/Removed'],
+    });
+  });
+
+  it('rejects malformed and duplicate declarations', () => {
+    expect(() => validateVerifiedNotApplicable([null])).toThrow(
+      'verified-N/A entry at index 0',
+    );
+    expect(() =>
+      validateVerifiedNotApplicable([
+        {component: 'core/Text', reason: 'Reviewed.'},
+        {component: 'core/text', reason: 'Also reviewed.'},
+      ]),
+    ).toThrow('duplicate verified-N/A declaration');
+  });
+});
+
+describe('validateKnownCoverageGaps', () => {
+  it('accepts unique Core and Lab component names', () => {
+    expect(validateKnownCoverageGaps(['core/Button', 'lab/Tree'])).toEqual([
+      'core/Button',
+      'lab/Tree',
+    ]);
+  });
+
+  it('rejects malformed and duplicate entries', () => {
+    expect(() => validateKnownCoverageGaps({})).toThrow('JSON array');
+    expect(() => validateKnownCoverageGaps(['Button'])).toThrow(
+      'core/Name or lab/Name',
+    );
+    expect(() =>
+      validateKnownCoverageGaps(['core/Button', 'core/button']),
+    ).toThrow('duplicate known coverage gap');
+  });
+
+  it('permits removals but rejects additions', () => {
+    expect(
+      validateKnownCoverageGapTransition(
+        ['core/Button', 'lab/Tree'],
+        ['core/Button'],
+      ),
+    ).toEqual({removed: ['lab/Tree']});
+    expect(() =>
+      validateKnownCoverageGapTransition(
+        ['core/Button'],
+        ['core/Button', 'core/NewComponent'],
+      ),
+    ).toThrow('baseline is removal-only; added: core/NewComponent');
+  });
+});
+
 describe('buildComponentCoverage', () => {
   it('classifies measured, verified N/A, unexplained gaps, and stale declarations', () => {
     const coverage = buildComponentCoverage({
@@ -151,6 +258,83 @@ describe('buildComponentCoverage', () => {
     });
   });
 
+  it('separates known debt from new and stale gaps', () => {
+    const coverage = buildComponentCoverage({
+      components: ['core/Legacy', 'core/New', 'core/Measured', 'core/Verified'],
+      autoResults: [
+        {
+          component: 'core/Measured',
+          storyId: 'core-measured--default',
+          verdict: 'pass',
+        },
+      ],
+      verifiedNa: [
+        {
+          component: 'core/Verified',
+          reason: 'No direction-sensitive behavior.',
+        },
+      ],
+      knownGaps: [
+        'core/Legacy',
+        'core/Measured',
+        'core/Verified',
+        'lab/Removed',
+      ],
+    });
+
+    expect(coverage).toMatchObject({
+      total: 4,
+      measured: 0,
+      verifiedNa: 0,
+      knownGaps: 1,
+      gaps: 1,
+      staleKnownGaps: 3,
+      staleVerifiedNa: 0,
+    });
+    expect(
+      Object.fromEntries(
+        coverage.results.map(result => [result.component, result.status]),
+      ),
+    ).toEqual({
+      'core/Legacy': 'known-coverage-gap',
+      'core/Measured': 'stale-known-coverage-gap',
+      'core/New': 'coverage-gap',
+      'core/Verified': 'stale-known-coverage-gap',
+      'lab/Removed': 'stale-known-coverage-gap',
+    });
+  });
+
+  it('does not treat out-of-scope baseline entries as removed in a filtered run', () => {
+    const coverage = buildComponentCoverage({
+      components: ['core/Current'],
+      knownGaps: ['core/Current', 'core/OutOfScope'],
+      checkKnownGapRoster: false,
+    });
+
+    expect(coverage).toMatchObject({
+      total: 1,
+      knownGaps: 1,
+      staleKnownGaps: 0,
+    });
+    expect(coverage.results).toHaveLength(1);
+  });
+
+  it('classifies a removed debt component separately from a new gap', () => {
+    const coverage = buildComponentCoverage({
+      components: ['core/Removed'],
+      removedFromRoster: ['core/Removed'],
+    });
+
+    expect(coverage).toMatchObject({
+      total: 1,
+      removedComponents: 1,
+      gaps: 0,
+    });
+    expect(coverage.results).toMatchObject([
+      {component: 'core/Removed', status: 'removed-component'},
+    ]);
+  });
+
   it('keeps missing stories and audit errors as coverage gaps', () => {
     const coverage = buildComponentCoverage({
       components: ['core/MissingStory', 'core/BrokenAudit'],
@@ -185,6 +369,57 @@ describe('buildComponentCoverage', () => {
   });
 });
 
+describe('coverageHasFindings', () => {
+  it('keeps known debt non-failing while new and stale gaps fail', () => {
+    expect(
+      coverageHasFindings({
+        enforced: true,
+        knownGaps: 12,
+        gaps: 0,
+        staleKnownGaps: 0,
+        staleVerifiedNa: 0,
+      }),
+    ).toBe(false);
+    expect(
+      coverageHasFindings({
+        enforced: true,
+        knownGaps: 0,
+        gaps: 1,
+        staleKnownGaps: 0,
+        staleVerifiedNa: 0,
+      }),
+    ).toBe(true);
+    expect(
+      coverageHasFindings({
+        enforced: true,
+        knownGaps: 0,
+        gaps: 0,
+        staleKnownGaps: 1,
+        staleVerifiedNa: 0,
+      }),
+    ).toBe(true);
+    expect(
+      coverageHasFindings({
+        enforced: false,
+        knownGaps: 0,
+        gaps: 1,
+        staleKnownGaps: 0,
+        staleVerifiedNa: 0,
+      }),
+    ).toBe(false);
+    expect(
+      coverageHasFindings({
+        enforced: false,
+        knownGaps: 0,
+        gaps: 0,
+        staleKnownGaps: 0,
+        staleVerifiedNa: 0,
+        registryError: 'malformed registry',
+      }),
+    ).toBe(true);
+  });
+});
+
 describe('buildAuditedComponentRoster', () => {
   it('uses an umbrella Storybook surface without adding an unknown duplicate', () => {
     expect(
@@ -194,6 +429,16 @@ describe('buildAuditedComponentRoster', () => {
         filters: ['chat'],
       }),
     ).toEqual(['core/chat']);
+  });
+
+  it('retains a package-qualified filter for a removed component', () => {
+    expect(
+      buildAuditedComponentRoster({
+        sourceComponents: ['core/Button'],
+        storyComponents: ['core/button'],
+        filters: ['core/Removed'],
+      }),
+    ).toEqual(['core/removed']);
   });
 
   it('retains an unknown entry when neither source nor stories match', () => {
