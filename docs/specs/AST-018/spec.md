@@ -36,6 +36,13 @@ color; they are not live dependencies that automatically rewrite theme output.
 owning theme. `defineTonalPalettes()` validates the data contract; it does not
 grant design approval or certify accessibility.
 
+The author supplies this palette map to `defineTheme({palettes})`. It MAY be
+declared inline or imported from a colocated theme-owned module such as
+`neutralPalettes.ts`; this contract does not require one source-file layout.
+Generating the initial ramps from seeds or anchors is a separate authoring
+workflow. Once the map is attached, the theme build generates its published
+palette artifact set automatically.
+
 ## Terminology
 
 This record uses the vocabulary already established by the Neutral remap:
@@ -56,6 +63,7 @@ This record uses the vocabulary already established by the Neutral remap:
 - Exposing numbered palette stops as portable Core tokens for component or
   application code.
 - Generating semantic tokens automatically from hue, chroma, or stop numbers.
+- Generating initial palette ramps from seeds or anchors.
 - Replacing explicit theme color values with live palette references.
 - Approving any particular theme's palette values, mappings, or visual result.
 - Adding repository-wide palette linting in the initial contract implementation.
