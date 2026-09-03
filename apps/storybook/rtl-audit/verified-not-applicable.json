@@ -25,11 +25,11 @@
   },
   {
     "component": "core/CheckboxInput",
-    "reason": "CheckboxInput is a single control primitive. Its visual chrome and label use logical block/inline layout and non-directional indicators. Touch target centering under coarse pointers is direction-symmetric via physical left: 50% + translateX(-50%) and covered by unit regression tests."
+    "reason": "CheckboxInput is a single control primitive using logical layout. Touch target centering under coarse pointers is direction-symmetric via physical left: 50% + translateX(-50%) and verified via real geometric elementFromPoint hit-testing and activation unit regression tests across sm/md LTR/RTL variants."
   },
   {
     "component": "core/Switch",
-    "reason": "Switch is a single control primitive. Its track and thumb travel use directional flip styles (:is([dir=\"rtl\"] *) translateX(-12px)), and its touch target centering under coarse pointers is direction-symmetric via physical left: 50% + translateX(-50%), covered by unit regression tests."
+    "reason": "Switch is a single control primitive. Track/thumb travel use directional flip styles, and touch target centering under coarse pointers is direction-symmetric via physical left: 50% + translateX(-50%), verified via real geometric elementFromPoint hit-testing and activation unit regression tests across sm/md LTR/RTL variants."
   },
   {
     "component": "lab/CircularProgress",
