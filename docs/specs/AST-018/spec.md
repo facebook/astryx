@@ -41,6 +41,7 @@ portable vocabulary does not express the required color.
   application code.
 - Generating semantic tokens automatically from hue, chroma, or stop numbers.
 - Approving any particular theme's palette values, mappings, or visual result.
+- Adding repository-wide palette linting in the initial contract implementation.
 
 ## Requirements
 
@@ -75,18 +76,28 @@ portable vocabulary does not express the required color.
 - **FR6 — Extension is deterministic by family.** A child theme MUST inherit its
   base theme's resolved palette families and MAY replace a family by restating
   its exact family name. Family replacement is shallow; stops from two versions
-  of one family MUST NOT be combined into an unreviewed ramp.
+  of one family MUST NOT be combined into an unreviewed ramp. Family names are
+  local to their owning theme; independently imported `neutralPalettes.red` and
+  `stonePalettes.red` do not share a global namespace. Tooling MUST NOT combine
+  unrelated sidecars into an unqualified global family map.
 - **FR7 — Runtime and artifact boundaries are explicit.** Source themes retain
   resolved palette metadata for authoring and source-theme extension. The default
   built runtime module MUST omit it. A palette-bearing static build MUST emit
   opt-in JavaScript, JSON, and declaration sidecars containing the same resolved
-  metadata.
+  metadata. Those three files are representations of one logical, atomic palette
+  sidecar per theme, not independent sidecars for individual color families.
 - **FR8 — Optional artifacts have a complete lifecycle.** Build and `--check`
   behavior MUST create, compare, report, and remove palette sidecars as the
   source adds, changes, or removes palette metadata. Palette-free themes MUST
   remain buildable when the installed Core version predates this optional
   contract; a palette-bearing theme MUST fail clearly when that Core support is
   unavailable.
+- **FR9 — Published palette removal is compatibility work.** Local and
+  unpublished builds MAY remove obsolete palette artifacts automatically. Once a
+  published package exposes a `/palette` subpath, removing its palette MUST also
+  remove the package export through an explicitly reviewed breaking Changeset and
+  migration note. A published export MUST NOT remain pointed at a deleted
+  sidecar.
 
 ### Platform support
 
@@ -111,6 +122,12 @@ component overrides. Neutral is the first proposed adopter; its exact ramps,
 mappings, deviations, contrast receipts, and visual approval remain owned by
 `theme:neutral`.
 
+A focused `check:theme-palettes` repository check is planned as follow-up tooling,
+not as an additional requirement for the initial implementation PR. It should
+fail for package-export/sidecar mismatches, orphan artifacts, and malformed
+families; warn about unusually large palette output and direct colors that match
+an existing stop; and preserve intentional deviations allowed by FR4.
+
 ## Verification
 
 | Contract | Verification                                                            | Representative states                                                                                    | Mutation or failure expectation                                                                                           |
@@ -119,6 +136,7 @@ mappings, deviations, contrast receipts, and visual approval remain owned by
 | FR3–FR5  | Neutral source, theme spec, token tests, and rendered contrast evidence | semantic mapping; direct color; alpha overlay; light/dark component pairing                              | Palette declaration becomes mandatory, a justified direct value is rejected, or a stop is treated as accessibility proof. |
 | FR6      | Core theme-extension tests                                              | inherited families; exact family replacement; omitted dark ramp                                          | A child loses unrelated families or accidentally merges partial ramps.                                                    |
 | FR7–FR8  | CLI palette build and older-Core compatibility tests                    | source and built bases; JS/JSON/declaration outputs; add/change/remove; `--check`; palette-free old Core | Runtime output gains unused metadata, sidecars drift or remain stale, or an unrelated older-Core build fails.             |
+| FR9      | Package-export and Changeset checks                                     | unpublished cleanup; published `/palette` retention and removal                                          | An exported sidecar disappears without compatibility treatment, or an export points to a deleted file.                    |
 
 ## Decision log
 
