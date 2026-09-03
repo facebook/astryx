@@ -8,9 +8,13 @@ import {describe, it, expect, vi} from 'vitest';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {build} from './build.mjs';
+import {search} from '../search/search.mjs';
 
 // api/build/ -> up 3 = packages/cli, up 4 = repo root (has packages/core).
-const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+const REPO = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../../..',
+);
 
 // build() delegates to search(), whose first (cold) call is slow under vitest.
 vi.setConfig({testTimeout: 30000});
@@ -28,6 +32,8 @@ describe('build API', () => {
     if (r.type !== 'build.kit') return;
     expect(r.data.query).toBe('dashboard');
     expect(r.data.hasResults).toBe(true);
+    const raw = await search('dashboard', {cwd: REPO, limit: 60});
+    expect(r.data.matchCount).toBe(raw.data.results.length);
     expect(r.data.frame).toContain('AppShell');
     expect(r.data.foundation).toContain('Button');
     expect(Array.isArray(r.data.pages)).toBe(true);
@@ -80,11 +86,23 @@ describe('build API', () => {
     for (const d of domain) expect(['component', 'hook']).toContain(d.domain);
   });
 
+  it('keeps raw matches when every result is filtered out of the kit', async () => {
+    const r = await build('color', {cwd: REPO, type: 'doc'});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.hasResults).toBe(true);
+    expect(r.data.matchCount).toBeGreaterThan(0);
+    expect(r.data.pages).toHaveLength(0);
+    expect(r.data.blocks).toHaveLength(0);
+    expect(r.data.domain).toHaveLength(0);
+  });
+
   it('no matches → build.kit with hasResults=false and empty groups', async () => {
     const r = await build('zzznomatch99', {cwd: REPO});
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     expect(r.data.hasResults).toBe(false);
+    expect(r.data.matchCount).toBe(0);
     expect(r.data.pages).toHaveLength(0);
     expect(r.data.blocks).toHaveLength(0);
     expect(r.data.domain).toHaveLength(0);

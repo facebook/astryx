@@ -28,7 +28,7 @@
  * swallows its own errors; the worst outcome of a bug in here is a missing or
  * partial event.
  *
- * @input  lifecycle calls from the command layer, plus a handler from config
+ * @input  lifecycle calls, result summaries, and a handler from config
  * @output one event per invocation, delivered to that handler
  * @position packages/cli/foundation/debug — runtime
  */
@@ -341,6 +341,51 @@ export function setProject(facts) {
         _event.project[/** @type {keyof typeof _event.project} */ (key)] =
           /** @type {any} */ (value);
       }
+    }
+  });
+}
+
+/** Values `resultKind` may carry — mirrors DebugResultKind. */
+const RESULT_KINDS = new Set(['component', 'template', 'doc', 'hook']);
+
+/**
+ * Record a stable summary of a command's result set and presentation.
+ *
+ * @param {Array<{domain?: unknown}>} results Surfaced results used for kind.
+ * @param {{directMatch?: boolean, resultCount?: number, emptyResult?: boolean}} [options]
+ */
+export function recordResultSummary(
+  results,
+  {directMatch, resultCount, emptyResult} = {},
+) {
+  guard(() => {
+    if (!_event || !Array.isArray(results)) return;
+
+    const kinds = new Set(
+      results
+        .map(result => result?.domain)
+        .filter(kind => typeof kind === 'string' && RESULT_KINDS.has(kind)),
+    );
+    const count =
+      typeof resultCount === 'number' &&
+      Number.isInteger(resultCount) &&
+      resultCount >= 0
+        ? resultCount
+        : results.length;
+
+    _event.output.resultCount = count;
+    _event.output.emptyResult =
+      typeof emptyResult === 'boolean' ? emptyResult : count === 0;
+    _event.output.resultKind =
+      kinds.size === 0
+        ? null
+        : kinds.size === 1
+          ? /** @type {import('../../authoring/debug/type').DebugResultKind} */ (
+              kinds.values().next().value
+            )
+          : 'mixed';
+    if (typeof directMatch === 'boolean') {
+      _event.output.directMatch = directMatch;
     }
   });
 }
