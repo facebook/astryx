@@ -406,6 +406,12 @@ describe('themeBuild() — receipt', () => {
         message: 'Theme palettes must be a named palette map.',
       },
       {
+        file: 'invalid-palette-container-empty.mjs',
+        palettes: {},
+        message:
+          'Theme palettes must contain at least one named palette family.',
+      },
+      {
         file: 'invalid-palette-tone.mjs',
         family: {
           light: {

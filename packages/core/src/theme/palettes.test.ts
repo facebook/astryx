@@ -95,6 +95,9 @@ describe('defineTonalPalettes', () => {
     expect(() => defineTonalPalettes([] as unknown as ThemePalettes)).toThrow(
       'Theme palettes must be a named palette map.',
     );
+    expect(() => defineTonalPalettes({})).toThrow(
+      'Theme palettes must contain at least one named palette family.',
+    );
   });
 
   it('rejects invalid family metadata', () => {

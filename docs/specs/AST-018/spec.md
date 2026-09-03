@@ -66,12 +66,14 @@ This record uses the vocabulary already established by the Neutral remap:
   Palette metadata MUST NOT alter CSS merely because it is declared.
 - **FR2 — Declared ramps are complete and validated.** Every declared family
   MUST provide a complete light ramp for the approved numbered stop set and MAY
-  provide a separately tuned dark ramp. There is no required family set: a theme
-  such as Stone MAY declare only one family, and an omitted dark ramp means that
-  family intentionally uses its light ramp in both modes. Values MUST be opaque
-  six-digit hex colors ordered from darker to lighter by relative luminance.
-  Unknown family and ramp fields MUST be rejected. Hue, chroma, semantic labels,
-  and descriptions are optional metadata rather than generators.
+  provide a separately tuned dark ramp. When `palettes` is present, it MUST
+  contain at least one family; a theme with no palette omits the field. There is
+  no required family set: a theme such as Stone MAY declare only one family, and
+  an omitted dark ramp means that family intentionally uses its light ramp in
+  both modes. Values MUST be opaque six-digit hex colors ordered from darker to
+  lighter by relative luminance. Unknown family and ramp fields MUST be rejected.
+  Hue, chroma, semantic labels, and descriptions are optional metadata rather
+  than generators.
 - **FR3 — Semantic tokens remain first.** Components and applications SHOULD use
   portable semantic tokens. Maintained theme source MAY select an exact palette
   stop when defining semantic tokens or theme-owned component mappings. The
@@ -235,11 +237,23 @@ metadata to every built runtime theme. Those options add merge complexity or
 runtime weight when the existing source, built, and `/palette` entry points
 already express the intended choice.
 
+### DEC-5 — An explicitly empty palette map is invalid
+
+**Reference:** `spec:AST-018/DEC-5`
+
+**Decider:** `rubyycheung`, `2026-09-02`
+
+When `palettes` is present, it contains at least one complete named family. A
+theme with no palette omits the field. A real palette may be published before it
+is mapped to tokens because usage is optional; future tooling may report that as
+informational rather than rejecting it.
+
+Rejected: treating `palettes: {}` as a placeholder or as equivalent to omission.
+An empty map communicates no palette intent and can conceal accidental removal of
+every family.
+
 ## Open questions
 
-- **OQ5 — Should an explicitly declared empty palette map be rejected or treated
-  as omitted?** (`human-api`) The terminology says a palette map contains at least
-  one family, while the current validator accepts `{}` and emits no artifacts.
 - **OQ6 — Must package-export parity be enforced in this implementation or in the
   planned repository checker?** (`human-api`) The current build removes obsolete
   files but does not itself prevent a published `/palette` export from pointing

@@ -118,6 +118,11 @@ export function defineTonalPalettes<const T extends ThemePalettes>(
   if (!palettes || typeof palettes !== 'object' || Array.isArray(palettes)) {
     throw new Error('Theme palettes must be a named palette map.');
   }
+  if (Object.keys(palettes).length === 0) {
+    throw new Error(
+      'Theme palettes must contain at least one named palette family.',
+    );
+  }
 
   for (const [name, family] of Object.entries(palettes)) {
     if (!family || typeof family !== 'object' || !family.light) {
