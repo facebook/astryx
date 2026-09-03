@@ -2,11 +2,11 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] TreeList: compose consumer `onKeyDown` with built-in APG tree keyboard navigation
+[fix] TreeList: respect consumer `onKeyDown` `preventDefault` cancellation for APG tree keyboard navigation
 
-`TreeList` passed `onKeyDown` to the root `<div>` via `restProps` while attaching `handleKeyDown` to the inner `<ul role="tree">`. Because keyboard events originate on `treeitem` elements inside `ul`, the built-in navigation handler ran before the consumer handler, preventing consumer `event.preventDefault()` from suppressing built-in arrow navigation.
+`TreeList` previously processed built-in APG keyboard navigation on the inner `<ul role="tree">` before consumer `onKeyDown` ran on the root `<div>`, preventing consumer `event.preventDefault()` from suppressing built-in arrow navigation.
 
-Consumer `onKeyDown` is now composed with `handleKeyDown` on the `<ul role="tree">` element via `composeEventHandlers`. Calling `event.preventDefault()` in `onKeyDown` now successfully cancels built-in navigation and leaves focus and roving tabindex unchanged.
+Root `onKeyDown` now invokes consumer `onKeyDown` on the root container first and checks `event.defaultPrevented` before handling internal tree navigation for keydown events originating inside the `<ul role="tree">`. Calling `event.preventDefault()` in `onKeyDown` now successfully cancels built-in navigation and leaves focus and roving tabindex unchanged while preserving root handler target contracts.
 
 @Geervan
 
