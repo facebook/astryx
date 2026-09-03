@@ -206,13 +206,23 @@ not assert that every existing component, mode, or interaction state already
 passes accessibility requirements. Component-context findings remain separately
 testable and fixable without invalidating the palette contract.
 
+The exact Neutral palette values and baseline mappings present at commit
+`19848f1a54` are approved as the anchor for those subsequent decisions.
+
 Rejected: making complete component-level contrast conformance a prerequisite for
 defining the palette. That would confuse the measurement baseline with the
 follow-up work the baseline is intended to enable.
 
 ## Open questions
 
-- **OQ3 — Are Neutral's exact palette values and baseline mappings visually
-  approved?** (`human-design`) This asks whether the remap is the right stable
-  starting point for contrast testing. It does not require every component
-  context to pass before the palette can be approved.
+- **OQ4 — Is palette inheritance intentionally limited to source themes, and can
+  a child remove an inherited family?** (`human-api`) Built runtime themes omit
+  palette metadata, while source themes retain it; the contract must state
+  whether that asymmetry and the lack of a family-removal operation are intended.
+- **OQ5 — Should an explicitly declared empty palette map be rejected or treated
+  as omitted?** (`human-api`) The terminology says a palette map contains at least
+  one family, while the current validator accepts `{}` and emits no artifacts.
+- **OQ6 — Must package-export parity be enforced in this implementation or in the
+  planned repository checker?** (`human-api`) The current build removes obsolete
+  files but does not itself prevent a published `/palette` export from pointing
+  to a removed artifact.
