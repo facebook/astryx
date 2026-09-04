@@ -18,12 +18,12 @@
  * - Under `prefers-reduced-motion`, every spring path falls back to the
  *   same instant jump — following still works, it just doesn't animate
  *
- * Uses scroll direction (lastScrollTop comparison) to detect user
- * intent — works for wheel, touch, scrollbar drag, keyboard, everything.
- * While following, the hook owns the position: it disables scroll
- * anchoring on the container, so the only move the browser makes on its
- * own is a resize clamp onto the bottom, and any other upward move is
- * the reader.
+ * Reads user intent from position: a scroll that lands above the last
+ * position this hook set or saw is the reader — wheel, touch, scrollbar
+ * drag, keyboard, everything, including a move the spring's next frame
+ * would otherwise outrun. While following, the hook owns the position:
+ * it disables scroll anchoring on the container, so the only move the
+ * browser makes on its own is a resize clamp onto the bottom.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -126,6 +126,28 @@ export interface UseChatStreamScrollReturn {
 
 const SIXTY_FPS_MS = 1000 / 60;
 
+// While following, the hook owns the container's position, so the browser's
+// scroll anchoring must not move it. The rule rides on an attribute rather
+// than the element's inline style: a consumer's own `overflow-anchor` is never
+// read, written or restored — it simply applies again once the attribute is
+// gone. `!important` so an inline `auto` cannot switch anchoring back on under
+// a following container; an inline `!important` still wins, deliberately.
+const FOLLOWING_ATTR = 'data-astryx-chat-following';
+const FOLLOWING_STYLE_ATTR = 'data-astryx-chat-following-style';
+
+function ensureFollowingStyle(): void {
+  if (
+    typeof document === 'undefined' ||
+    document.head.querySelector(`[${FOLLOWING_STYLE_ATTR}]`)
+  ) {
+    return;
+  }
+  const style = document.createElement('style');
+  style.setAttribute(FOLLOWING_STYLE_ATTR, '');
+  style.textContent = `[${FOLLOWING_ATTR}]{overflow-anchor:none !important}`;
+  document.head.appendChild(style);
+}
+
 export function useChatStreamScroll({
   scrollRef,
   enabled = true,
@@ -147,29 +169,22 @@ export function useChatStreamScroll({
   const lastTickRef = useRef<number | undefined>(undefined);
   // The spring's pending frame, so a jump can cancel it for real.
   const rafRef = useRef<number>(0);
-  // For scroll direction detection
+  // The last position this hook set or saw. Updated by every write of ours
+  // (spring frame, jump, scrollToMessage) as well as by every scroll event,
+  // so a reader's move that lands between two spring frames still shows as
+  // "above where we put it" even when the next frame's write outran it.
   const lastScrollTopRef = useRef(0);
-
-  // The scroll element's own inline overflow-anchor, captured when the hook
-  // takes the element over and put back whenever it lets go, so a consumer
-  // who set it themselves keeps it.
-  const priorOverflowAnchorRef = useRef('');
 
   // While following, this hook is the only thing that should move the
   // container: scroll anchoring is off, so the browser's one remaining move
   // is the resize clamp onto the bottom, and every other upward move is the
-  // reader. Unlocked, the element's own anchoring is restored — a reader up
+  // reader. Unlocked, the element's own anchoring applies again — a reader up
   // in the history wants it when content above them changes.
   const setLocked = useCallback(
     (locked: boolean) => {
       lockedRef.current = locked;
       setIsLocked(locked);
-      const el = scrollRef.current;
-      if (el) {
-        el.style.overflowAnchor = locked
-          ? 'none'
-          : priorOverflowAnchorRef.current;
-      }
+      scrollRef.current?.toggleAttribute(FOLLOWING_ATTR, locked);
     },
     [scrollRef],
   );
@@ -213,6 +228,7 @@ export function useChatStreamScroll({
     velocityRef.current =
       (damping * velocityRef.current + stiffness * diff) / mass;
     el.scrollTop += velocityRef.current * tickDelta;
+    lastScrollTopRef.current = el.scrollTop;
 
     rafRef.current = requestAnimationFrame(animate);
   }, [scrollRef, damping, stiffness, mass]);
@@ -340,10 +356,8 @@ export function useChatStreamScroll({
     }
 
     lastScrollTopRef.current = el.scrollTop;
-    priorOverflowAnchorRef.current = el.style.overflowAnchor;
-    if (lockedRef.current) {
-      el.style.overflowAnchor = 'none';
-    }
+    ensureFollowingStyle();
+    el.toggleAttribute(FOLLOWING_ATTR, lockedRef.current);
 
     const onScroll = () => {
       const {scrollTop, scrollHeight, offsetHeight} = el;
@@ -389,7 +403,7 @@ export function useChatStreamScroll({
     return () => {
       el.removeEventListener('scroll', onScroll);
       el.removeEventListener('scrollend', onScrollEnd);
-      el.style.overflowAnchor = priorOverflowAnchorRef.current;
+      el.removeAttribute(FOLLOWING_ATTR);
     };
   }, [scrollRef, enabled, lockThreshold, buttonThreshold, setLocked]);
 

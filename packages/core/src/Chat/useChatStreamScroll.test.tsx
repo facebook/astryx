@@ -291,48 +291,67 @@ describe('useChatStreamScroll — reader intent while content arrives', () => {
 
   it('owns scroll anchoring while following and hands it back when not', () => {
     // Anchoring is the browser's other way of moving a container up on a
-    // content change; while following, the hook is the only writer.
+    // content change; while following, the hook is the only writer. The
+    // switch is an attribute plus one injected rule, never the element's own
+    // inline style.
     const {api, el, unmount} = renderHook();
     settleAtBottom(el);
-    expect(el.style.overflowAnchor).toBe('none');
+    expect(el.hasAttribute('data-astryx-chat-following')).toBe(true);
+    const rule = document.head.querySelector(
+      '[data-astryx-chat-following-style]',
+    );
+    expect(rule?.textContent).toContain('overflow-anchor:none !important');
+    expect(el.style.overflowAnchor).toBe('');
 
     scrollUpDuringGrowth(el);
     expect(api.current!.isLocked).toBe(false);
-    expect(el.style.overflowAnchor).toBe('');
+    expect(el.hasAttribute('data-astryx-chat-following')).toBe(false);
 
     act(() => api.current!.scrollToBottom({behavior: 'instant'}));
-    expect(el.style.overflowAnchor).toBe('none');
+    expect(el.hasAttribute('data-astryx-chat-following')).toBe(true);
 
     unmount();
-    expect(el.style.overflowAnchor).toBe('');
+    expect(el.hasAttribute('data-astryx-chat-following')).toBe(false);
   });
-});
 
-describe('useChatStreamScroll — a consumer-owned overflow-anchor', () => {
-  it('is put back on unlock and on unmount, not cleared', () => {
-    // The consumer set overflow-anchor: none themselves before the hook took
-    // the element over; the hook must hand that back, not '', whenever it
-    // stops owning the position.
-    const {api, el, rerender, unmount} = renderHook({enabled: false});
+  it("never touches the element's own overflow-anchor, whatever it becomes", () => {
+    // The consumer set an inline value before the hook took over, then
+    // changed it while the hook was following. Both are theirs: the hook
+    // must not have written over either, and the latest one is what applies
+    // once the hook lets go.
+    const {api, el, unmount} = renderHook();
+    el.style.overflowAnchor = 'auto';
+    settleAtBottom(el);
+    expect(el.style.overflowAnchor).toBe('auto');
+
     el.style.overflowAnchor = 'none';
-    rerender(<Harness options={{}} api={api} />);
-    expect(el.style.overflowAnchor).toBe('none');
-
-    setGeometry(el, {scrollHeight: 1000, clientHeight: 400});
-    flushRaf();
-    act(() => {
-      el.dispatchEvent(new Event('scroll'));
-    });
-    setGeometry(el, {scrollHeight: 1400, clientHeight: 400});
-    el.scrollTop = 300;
-    act(() => {
-      el.dispatchEvent(new Event('scroll'));
-    });
+    scrollUpDuringGrowth(el);
     expect(api.current!.isLocked).toBe(false);
     expect(el.style.overflowAnchor).toBe('none');
 
     unmount();
     expect(el.style.overflowAnchor).toBe('none');
+  });
+
+  it('a scroll-up the next spring frame outruns still releases', () => {
+    // Between two frames the reader wheels up 100px; the spring's next write
+    // then adds more than that, so the net position still advanced. Judged
+    // against the position the hook itself wrote, the reader's move shows.
+    const {api, el} = renderHook();
+    settleAtBottom(el);
+
+    setGeometry(el, {scrollHeight: 4000, clientHeight: 400});
+    act(() => api.current!.scrollIfLocked());
+    flushRaf();
+    const written = el.scrollTop;
+    expect(written).toBeGreaterThan(700);
+
+    el.scrollTop = written - 100;
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+
+    expect(api.current!.isLocked).toBe(false);
   });
 });
 
