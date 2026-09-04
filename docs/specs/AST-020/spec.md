@@ -3,12 +3,12 @@ schema_version: 1
 template_version: 1
 kind: system-spec
 id: spec:AST-020
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-09-03
+phase: accepted
 owners: [cixzhang]
 affects_architecture: []
 affects_families: []
@@ -196,8 +196,8 @@ and name/role/value/state. It updates that review to WCAG 2.2 and keeps page-own
 browser-owned, and real-AT-owned checks outside a component runtime contract when
 that is the honest boundary.
 
-This draft creates no tests, package, CLI documentation, component behavior, or CI
-gate. Those changes follow only after this record becomes current.
+This accepted spec creates no tests, package, CLI documentation, component behavior,
+or CI gate. Those changes follow in implementation work governed by this record.
 
 ## Verification
 

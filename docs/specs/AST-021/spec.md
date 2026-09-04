@@ -3,12 +3,12 @@ schema_version: 1
 template_version: 1
 kind: system-spec
 id: spec:AST-021
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-09-03
+phase: accepted
 owners: [cixzhang]
 affects_architecture: []
 affects_families: []
@@ -185,7 +185,8 @@ backlog or private review link.
 The tracker may reorder components within these phases by user impact. A later phase
 MUST NOT weaken the evidence boundaries or known-failure rules to increase throughput.
 
-This draft changes no component test, behavior, package, public API, or CI gate.
+This accepted spec changes no component test, behavior, package, public API, or CI
+gate. Those changes follow in implementation work governed by this record.
 
 ## Verification
 
@@ -235,11 +236,25 @@ conformant or waiting for a repository-wide remediation.
 Rejected: all-or-nothing migration, silent skips, and enabling one broad report-only
 suite that cannot stop regressions.
 
-The remaining migration, test-ownership, and reporting rules are proposals in this
-draft. No repository decision has approved them yet.
+### DEC-2 — Keep one owner for shared tests and preserve historical failures exactly
+
+**Reference:** `spec:AST-021/DEC-2`
+**Decider:** `cixzhang`, `2026-09-03`
+
+Keep test migration separate from component remediation. Move only reusable
+standards-derived outcomes into pattern contracts; retain component-specific API,
+composition, form, styling, and callback tests with the component. Existing defects
+stay as exact runnable `known-failure` results tied to one expectation, binding,
+state, and public issue. They never count as passing, cannot mask a different or
+wider failure, and become unexpected passes when fixed so stale debt is removed.
+
+Report passes, known failures, exemptions, and unrun layers as separate facts rather
+than averaging them into one accessibility score.
+
+Rejected: changing component behavior inside migration work, deleting
+component-owned tests, broad skips, and a percentage that can make a required
+failure look conformant.
 
 ## Open questions
 
-- **OQ1 — Migration policy.** Should approval adopt FR5–FR14 as written: migrate
-  separately from remediation, retain component-specific tests, use exact runnable
-  known failures, and report a factual ledger rather than one score? (`human-api`)
+None.
