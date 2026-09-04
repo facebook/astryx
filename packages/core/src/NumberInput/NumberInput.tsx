@@ -4,7 +4,8 @@
 
 /**
  * @file NumberInput.tsx
- * @input Uses React, useId, useState, useMemo, useCallback, Field, Icon, InputGroupContext
+ * @input Uses React, useId, useState, useMemo, useCallback, useTransition,
+ *   useOptimistic, Field, Icon, Spinner, InputGroupContext
  * @output Exports NumberInput component, NumberInputProps
  * @position Core implementation; consumed by index.ts, tested by NumberInput.test.tsx
  *
@@ -50,6 +51,7 @@ import {
   type FieldStatusVariant,
 } from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
@@ -402,24 +404,33 @@ interface NumberInputPropsBase extends Omit<
    */
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
   /**
-   * Whether the input is in a loading state (field value is resolving or being saved).
+   * Whether the field value is resolving or being saved.
+   *
+   * This is the input-family "input busy" state: it describes the value, not
+   * any component-owned data source. It shares one busy presentation with a
+   * pending `changeAction` — the two never render two separate indicators.
    * @default false
    */
   isLoading?: boolean;
-  /**
-   * Async action on change. Fires after onChange if not prevented.
-   * Runs in a React transition for optimistic updates.
-   */
-  changeAction?: (value: number) => void | Promise<void>;
 }
 
 /**
  * Without `hasClear`, onChange only receives valid numbers.
  * With `hasClear`, onChange also receives `null` when the user clears the input.
+ *
+ * `changeAction` follows `onChange` through the same split: it is handed the
+ * value that was just committed, so it widens to `null` alongside `onChange`
+ * when the field is clearable.
  */
 type NumberInputPropsNonClearable = NumberInputPropsBase & {
   hasClear?: false;
   onChange: (value: number) => void;
+  /**
+   * Async action run after `onChange` for the same value change. The proposed
+   * value is shown optimistically while it runs, and it contributes to the
+   * same busy presentation as `isLoading`.
+   */
+  changeAction?: (value: number) => void | Promise<void>;
 };
 
 type NumberInputPropsClearable = NumberInputPropsBase & {
@@ -432,6 +443,13 @@ type NumberInputPropsClearable = NumberInputPropsBase & {
    */
   hasClear: true;
   onChange: (value: number | null) => void;
+  /**
+   * Async action run after `onChange` for the same value change. The proposed
+   * value is shown optimistically while it runs, and it contributes to the
+   * same busy presentation as `isLoading`. Receives `null` when the user
+   * clears the input.
+   */
+  changeAction?: (value: number | null) => void | Promise<void>;
 };
 
 export type NumberInputProps =
@@ -590,7 +608,40 @@ export function NumberInput({
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+
+  // Everything user-visible reads this, never the raw `value` prop: while a
+  // changeAction is in flight the controlled prop still holds the old value,
+  // so rendering from it would show a stale number and — worse — would make
+  // the next step recompute from that stale base and resubmit the same value.
+  const effectiveValue = optimisticValue;
+
+  // One busy presentation for the whole family concept: an explicit isLoading
+  // and an in-flight changeAction are the same state to the user, so they
+  // resolve to a single flag driving a single indicator (never two).
   const isBusy = isLoading || optimisticValue !== value;
+
+  // Single funnel for the transition so the three value-change paths (text
+  // commit, step, clear) cannot drift apart.
+  //
+  // The cast is the one place the discriminated union has to be re-tied: the
+  // props type already guarantees changeAction accepts null exactly when
+  // hasClear is true, but destructuring severed the link TypeScript needs to
+  // see that. Every null below is inside a `hasClear` guard.
+  const runChangeAction = useCallback(
+    (nextValue: number | null) => {
+      if (!changeAction) {
+        return;
+      }
+      const action = changeAction as (
+        value: number | null,
+      ) => void | Promise<void>;
+      startTransition(async () => {
+        setOptimisticValue(nextValue);
+        await action(nextValue);
+      });
+    },
+    [changeAction, setOptimisticValue],
+  );
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
@@ -641,11 +692,11 @@ export function NumberInput({
   );
 
   const formattedValue = useMemo(() => {
-    if (value == null) {
+    if (effectiveValue == null) {
       return '';
     }
-    return formatValue?.(value) ?? String(value);
-  }, [formatValue, value]);
+    return formatValue?.(effectiveValue) ?? String(effectiveValue);
+  }, [formatValue, effectiveValue]);
 
   // Preserve pending text while editing. Otherwise show the formatted value
   // at rest and the raw numeric value while focused so it remains editable.
@@ -653,11 +704,13 @@ export function NumberInput({
     if (pendingInput !== null) {
       return pendingInput;
     }
-    if (value == null) {
+    if (effectiveValue == null) {
       return '';
     }
-    return isFocused ? formatEditableNumber(value, locale) : formattedValue;
-  }, [formattedValue, isFocused, locale, pendingInput, value]);
+    return isFocused
+      ? formatEditableNumber(effectiveValue, locale)
+      : formattedValue;
+  }, [formattedValue, isFocused, locale, pendingInput, effectiveValue]);
 
   // Check if current pending input is valid (for styling purposes)
   const isInputValid = useMemo(() => {
@@ -710,27 +763,32 @@ export function NumberInput({
         setPendingInput(null);
       }
 
+      // Compared against the optimistic value so a commit that merely restates
+      // an already-pending change is not submitted a second time.
       if (decision.type === 'clear') {
-        if (hasClear && value != null) {
+        if (hasClear && effectiveValue != null) {
           onChange(null);
-          if (changeAction) {
-            startTransition(async () => {
-              setOptimisticValue(null);
-              await changeAction(null);
-            });
-          }
+          runChangeAction(null);
         }
-      } else if (decision.type === 'commit' && decision.value !== value) {
+      } else if (
+        decision.type === 'commit' &&
+        decision.value !== effectiveValue
+      ) {
         onChange(decision.value);
-        if (changeAction) {
-          startTransition(async () => {
-            setOptimisticValue(decision.value);
-            await changeAction(decision.value);
-          });
-        }
+        runChangeAction(decision.value);
       }
     },
-    [hasClear, isIntegerOnly, locale, max, min, onChange, changeAction, pendingInput, value, startTransition],
+    [
+      hasClear,
+      isIntegerOnly,
+      locale,
+      max,
+      min,
+      onChange,
+      runChangeAction,
+      pendingInput,
+      effectiveValue,
+    ],
   );
 
   // Blur ends the edit and displays the resulting committed value.
@@ -743,15 +801,18 @@ export function NumberInput({
     [commitPendingInput, onBlur],
   );
 
+  // Steps from the optimistic value, so repeated steps during an in-flight
+  // changeAction advance (1 -> 2 -> 3) instead of recomputing from the stale
+  // controlled value and resubmitting the same number.
   const valueForStepping = useMemo(() => {
     if (pendingInput === null) {
-      return value ?? null;
+      return effectiveValue ?? null;
     }
     if (pendingInput.trim() === '') {
       return null;
     }
-    return parseInput(pendingInput) ?? value ?? null;
-  }, [parseInput, pendingInput, value]);
+    return parseInput(pendingInput) ?? effectiveValue ?? null;
+  }, [parseInput, pendingInput, effectiveValue]);
 
   const getNextValue = useCallback(
     (direction: StepDirection) =>
@@ -778,17 +839,19 @@ export function NumberInput({
         return;
       }
       setPendingInput(null);
-      if (nextValue !== value) {
+      if (nextValue !== effectiveValue) {
         onChange(nextValue);
-        if (changeAction) {
-          startTransition(async () => {
-            setOptimisticValue(nextValue);
-            await changeAction(nextValue);
-          });
-        }
+        runChangeAction(nextValue);
       }
     },
-    [getNextValue, isDisabled, isReadOnly, onChange, changeAction, value, startTransition],
+    [
+      getNextValue,
+      isDisabled,
+      isReadOnly,
+      onChange,
+      runChangeAction,
+      effectiveValue,
+    ],
   );
 
   // Handle keyboard events
@@ -868,16 +931,11 @@ export function NumberInput({
   const handleClear = useCallback(() => {
     if (hasClear) {
       onChange(null);
-      if (changeAction) {
-        startTransition(async () => {
-          setOptimisticValue(null);
-          await changeAction(null);
-        });
-      }
+      runChangeAction(null);
     }
     setPendingInput(null);
     inputRef.current?.focus();
-  }, [hasClear, onChange, changeAction, startTransition]);
+  }, [hasClear, onChange, runChangeAction]);
 
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
@@ -948,16 +1006,20 @@ export function NumberInput({
         aria-valuemin={min ?? undefined}
         aria-valuemax={max ?? undefined}
         // The ARIA value and hidden form input expose the committed value;
-        // pendingInput is still an uncommitted edit and may be invalid.
-        aria-valuenow={value ?? undefined}
+        // pendingInput is still an uncommitted edit and may be invalid. The
+        // optimistic value is what the sighted user sees, so it is what gets
+        // exposed — otherwise assistive tech would read a different number
+        // from the one on screen while a changeAction is in flight.
+        aria-valuenow={effectiveValue ?? undefined}
         aria-valuetext={
-          value == null || !formatValue ? undefined : formattedValue
+          effectiveValue == null || !formatValue ? undefined : formattedValue
         }
         aria-describedby={ariaDescribedBy}
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }
+        aria-busy={isBusy || undefined}
         aria-labelledby={ariaLabelledBy}
         {...stylex.props(
           styles.input,
@@ -965,6 +1027,11 @@ export function NumberInput({
           !isInputValid && styles.inputInvalid,
         )}
       />
+      {/*
+        Deliberately the committed `value`, not the optimistic one: a form must
+        submit what the owner has actually accepted, never a proposed value
+        that a pending changeAction may still reject.
+      */}
       {formatValue && htmlName && !isDisabled && (
         <input
           type="hidden"
@@ -985,12 +1052,19 @@ export function NumberInput({
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
         {!isInputValid ? 'Invalid number' : ''}
       </VisuallyHidden>
-      {hasClear && value != null && !isDisabled && !isReadOnly && (
+      {hasClear && effectiveValue != null && !isDisabled && !isReadOnly && (
         <InputClearButton
           label={t('@astryx.numberInput.clearLabel', {label})}
           onClick={handleClear}
         />
       )}
+      {/*
+        The single busy presentation for both isLoading and an in-flight
+        changeAction. Placed in the end lane between clear and status so it
+        takes its own space rather than overlapping either (family FR2), and
+        ordered as in TextInput so the family reads consistently.
+      */}
+      {isBusy && <Spinner size="sm" />}
       {statusIcon}
       {hasNumberSteppers && (
         <div {...stylex.props(styles.numberSteppers)}>
