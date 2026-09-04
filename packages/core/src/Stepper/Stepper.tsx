@@ -167,11 +167,11 @@ const styles = stylex.create({
     gap: 0,
   },
   // The element the collapse threshold is measured against, and the one that
-  // stacks the track above the row naming the step it is on.
+  // stacks the track directly above the row naming the step it is on.
   frame: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-2'],
+    gap: 0,
     width: '100%',
   },
   // Laid out as a row so the controls can bracket the step: they belong at the

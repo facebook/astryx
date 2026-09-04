@@ -24,8 +24,10 @@
  * Nothing about it is public API: Stepper hands each Step the step it came
  * from through context, and the rest is derived. In a compact horizontal
  * Stepper, each track node is presentational rather than clickable; navigation
- * moves to the named previous/next controls in the summary row, while each
- * public content slot stays mounted and is hidden to preserve local state.
+ * moves to the named previous/next controls in the summary row. The on-track
+ * layout keeps each indicator on the rail and does not repeat the active one
+ * beside the summary label. Each public content slot stays mounted and is
+ * hidden to preserve local state.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stepper/Stepper.doc.mjs
@@ -1303,10 +1305,12 @@ export function Step({
     status: status ?? undefined,
   });
 
-  // Indicator + Label row
+  // Indicator + Label row. In compact on-track mode the indicator remains
+  // visible on the rail, so the summary reuses this row without drawing the
+  // active indicator a second time beside the label.
   const iconLabelNode = (
     <div {...stylex.props(styles.iconLabelRow)}>
-      {indicatorNode}
+      {(!isCompact || indicatorPosition !== 'on-track') && indicatorNode}
       <span
         {...mergeProps(
           labelThemeProps,
@@ -1374,11 +1378,10 @@ export function Step({
   // `:first-child`/`:last-child` position to decide which caps to hide.
   //
   // Rendered here rather than handed up as data because it reuses
-  // `iconLabelNode` whole: `indicator` resolution, the status glyphs, the
-  // completed check and the disabled tints are a hundred lines above, and any
-  // copy of them would drift. The description is re-wrapped, though — the row
-  // version indents itself under an indicator, and centred under a track there
-  // is nothing to line it up with.
+  // `iconLabelNode`: indicator resolution, status glyphs, completed checks,
+  // disabled tints, and the compact on-track rule above stay in one place. The
+  // description is re-wrapped, though — the row version indents itself under
+  // an indicator, and centred under a track there is nothing to line it up with.
   const summaryNode =
     isCompact && isActive && summarySlot != null
       ? createPortal(

@@ -74,7 +74,7 @@ export const docs = {
         name: 'Compact summary',
         required: false,
         description:
-          'The row a horizontal Stepper adds beneath the track once it is too narrow to label every step: the current step name and optional Previous/Next controls. Turn either half off with hasCollapsedLabel or hasCollapsedControls when the page already provides it. Every step keeps its name in the accessible sequence at any width.',
+          'The row a horizontal Stepper adds directly beneath the track once it is too narrow to label every step: the current step name and optional Previous/Next controls. The on-track layout keeps its indicators on the rail instead of repeating the active indicator beside this label. Turn either half off with hasCollapsedLabel or hasCollapsedControls when the page already provides it. Every step keeps its name in the accessible sequence at any width.',
       },
       {
         name: 'Step',

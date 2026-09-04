@@ -1123,7 +1123,7 @@ export const NarrowCollapse: Story = {
     docs: {
       description: {
         story:
-          'A horizontal stepper measures its own width and collapses once a step has less than ~112px to work with, so the breakpoint follows the step count rather than the viewport. Labels give way to a bare track, and the current step is named underneath. The two indicator positions collapse differently on purpose: `separated` drops its click targets along with the labels, leaving a 4px bar too small to aim at, so the paired controls become the only way through — while `on-track` keeps its indicators as a row of nodes on the rail, still tappable. Controls appear only when `onStepClick` is set; a stepper driven solely by a form’s own Back and Continue does not get a second, competing pair.',
+          'A horizontal stepper measures its own width and collapses once a step has less than ~112px to work with, so the breakpoint follows the step count rather than the viewport. Labels give way to a bare track, and the current step is named directly underneath with no extra vertical gap. The two indicator positions collapse differently on purpose: `separated` drops its indicators with the labels and repeats the active indicator beside the compact label, while `on-track` keeps its indicators as presentational nodes on the rail and does not repeat the active one beside the label. Controls appear only when `onStepClick` is set; a stepper driven solely by a form’s own Back and Continue does not get a second, competing pair.',
       },
     },
   },
@@ -1151,7 +1151,7 @@ export const NarrowCollapse: Story = {
           </Stepper>
         </div>
         <div style={{maxWidth: 320}}>
-          <Text type="label">320px — on-track keeps its nodes pressable</Text>
+          <Text type="label">320px — on-track keeps nodes on the rail</Text>
           <Stepper
             activeStep={b}
             onStepClick={setB}

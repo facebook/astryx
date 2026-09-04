@@ -84,6 +84,8 @@ Consumer syntax and description remain in `Stepper.doc.mjs` `theming.vars`.
 | FR9  | In both indicator positions, each rendered Label and Description carries its own target and reflects `progress` and `status`.                                                                | Current source, docs, and tests   | Settled            |
 | FR10 | Label alone reflects `disabled`, because only Label owns disabled paint. Description and the other targets do not gain the selector for symmetry.                                            | Current source, docs, and tests   | Settled            |
 | FR11 | Label and Description each declare `font-size`, `line-height`, and `color`. Those declarations outrank values inherited from `step`, so only direct targets can expose that paint to themes. | Current source and Chromium probe | Settled            |
+| FR12 | A compact horizontal summary sits directly beneath its track without an additional frame gap.                                                                                                | Reviewed narrow-layout feedback   | Settled            |
+| FR13 | In compact `on-track`, indicators remain on the rail and the active indicator is not repeated beside the summary label; compact `separated` retains the active indicator beside its label.   | Reviewed narrow-layout feedback   | Settled            |
 
 `status` on Label and Description is a selector seam. It does not claim that
 Astryx paints either text part by status.
@@ -107,6 +109,8 @@ Astryx paints either text part by status.
 | `indicator="none"`                                             | FR5                | —                 |
 | value below `0` or above the cap                               | FR4, FR6           | —                 |
 | both indicator positions; each progress/status; disabled Label | FR9–FR11           | —                 |
+| compact horizontal summary                                     | FR12               | —                 |
+| compact `on-track` and `separated` indicators                  | FR13               | —                 |
 
 ### Transformation and precedence order
 
@@ -189,6 +193,8 @@ parts. Their own typography and color declarations make `inherits: step` false;
 | FR8                 | `Stepper.test.tsx` vocabulary guard                      | vertical on-track                                        | Re-adding `data-segment` or a bare role class fails the guard.                           | `audit:Stepper/theming` |
 | FR9, FR10           | `Stepper.test.tsx` target and generated-theme assertions | Both indicator positions; progress, status, and disabled | Removing a target or state, or moving it off the painted span, fails focused tests.      | `audit:Stepper/theming` |
 | FR11                | Exact-head Chromium probe                                | Themed `step`, Label, and Description                    | If inheritance reaches the text, the Step target's probe color appears there.            | `audit:Stepper/theming` |
+| FR12                | `Stepper.test.tsx` compact frame gap assertion           | Compact horizontal summary                               | Restoring frame spacing separates the summary from the track and fails the suite.        | `audit:Stepper/layout`  |
+| FR13                | `Stepper.test.tsx` compact indicator assertions          | Compact `separated` and `on-track`                       | Repeating the on-track active indicator, or dropping the separated one, fails the suite. | `audit:Stepper/layout`  |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                            | Canonical anatomy and the nine current targets           | A target with no anatomy owner, or a stale/extra part, fails repository validation.      | `audit:Stepper/theming` |
 
 ## Decision log

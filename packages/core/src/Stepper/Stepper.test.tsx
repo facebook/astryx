@@ -1114,10 +1114,22 @@ describe('Stepper', () => {
       // a description — the rest have no label left to hang one under.
       expect(within(summary!).getByText('Shipping')).toBeInTheDocument();
       expect(within(summary!).getByText('Where it goes')).toBeInTheDocument();
+      // The separated track has no indicator nodes of its own, so the compact
+      // label keeps the active indicator beside it.
+      expect(
+        summary!.querySelector('.astryx-step-indicator'),
+      ).toBeInTheDocument();
 
       const list = screen.getByRole('list');
       expect(within(list).queryByText('Where it goes')).toBeNull();
       expect(screen.getAllByRole('listitem')).toHaveLength(4);
+    });
+
+    it('places the compact summary directly against the track', () => {
+      atWidth(320, fourSteps({}));
+      const frame = document.querySelector<HTMLElement>(FRAME);
+      expect(frame).not.toBeNull();
+      expect(['0', '0px']).toContain(getComputedStyle(frame!).gap);
     });
 
     it('collapses later the more steps there are', () => {
@@ -1343,6 +1355,9 @@ describe('Stepper', () => {
       expect(
         delivery.querySelector('.astryx-step-indicator'),
       ).toBeInTheDocument();
+      const summary = document.querySelector<HTMLElement>(SUMMARY);
+      expect(summary).not.toBeNull();
+      expect(summary!.querySelector('.astryx-step-indicator')).toBeNull();
       expect(
         screen.queryByRole('button', {name: /^Go to step 3: Delivery/}),
       ).not.toBeInTheDocument();
