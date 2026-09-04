@@ -96,7 +96,7 @@ Consumer syntax and description remain in `Stepper.doc.mjs` `theming.vars`.
 | FR11 | Label and Description each declare `font-size`, `line-height`, and `color`. Those declarations outrank values inherited from `step`, so only direct targets can expose that paint to themes.                                                                | Current source and Chromium probe    | Settled                   |
 | FR12 | A compact horizontal summary sits directly beneath its track without an additional frame gap.                                                                                                                                                               | Reviewed narrow-layout feedback      | Settled                   |
 | FR13 | In compact `on-track`, indicators remain on the rail and the active indicator is not repeated beside the summary label; compact `separated` retains the active indicator beside its label.                                                                  | Reviewed narrow-layout feedback      | Settled                   |
-| FR14 | `horizontalOptions.minimumStepWidth` accepts pixel numbers and CSS length strings. The browser resolves string units on an invisible probe, and a change to that resolved length recomputes compact state even when the Stepper width is unchanged.         | Configurable collapse threshold      | Proposed for owner review |
+| FR14 | `horizontalOptions.minimumStepWidth` accepts pixel numbers and CSS lengths. Its invisible browser-resolved probe remains mounted in every progress state, including all-complete, and recomputes compact state whenever its resolved width changes.         | Configurable collapse threshold      | Proposed for owner review |
 | FR15 | `horizontalOptions.collapsedVariant` keeps horizontal-only configuration together: `withLabelAndControls` shows both parts, `withLabel` omits controls, and `hiddenLabel` omits the visible label while retaining controls when `onStepClick` is available. | Collapsed presentation consolidation | Proposed for owner review |
 
 `status` on Label and Description is a selector seam. It does not claim that
@@ -124,6 +124,7 @@ Astryx paints either text part by status.
 | compact horizontal summary                                      | FR12               | —                 |
 | compact `on-track` and `separated` indicators                   | FR13               | —                 |
 | numeric, `rem`, `calc()`, or custom-property collapse threshold | FR14               | —                 |
+| all-complete with a custom collapse threshold                   | FR14               | —                 |
 | each `collapsedVariant`, with and without `onStepClick`         | FR15               | —                 |
 
 ### Transformation and precedence order

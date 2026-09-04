@@ -1171,6 +1171,37 @@ describe('Stepper', () => {
       expect(measure).toHaveStyle({width: '80px'});
     });
 
+    it('measures a custom threshold when every step is complete', () => {
+      // activeStep === stepCount is the supported all-complete state, so no
+      // step is active. Four steps still get 90px each, which is enough for
+      // this custom 80px threshold and must not fall back to the 112px default.
+      atWidth(
+        360,
+        <Stepper
+          activeStep={4}
+          horizontalOptions={{
+            minimumStepWidth: 'var(--completed-step-width)',
+            collapsedVariant: 'withLabelAndControls',
+          }}
+          style={{'--completed-step-width': '5rem'} as React.CSSProperties}>
+          <Step step={0} label="Cart" />
+          <Step step={1} label="Shipping" />
+          <Step step={2} label="Delivery" />
+          <Step step={3} label="Payment" />
+        </Stepper>,
+        80,
+      );
+
+      expect(document.querySelector(SUMMARY)).toBeNull();
+      const measure = Array.from(
+        document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
+      ).find(element => element.style.width !== '');
+      expect(measure).toHaveStyle({
+        width: 'var(--completed-step-width)',
+      });
+      expect(measure?.closest('li')).toBe(screen.getAllByRole('listitem')[0]);
+    });
+
     it('lets the browser resolve a CSS minimum step width', () => {
       // Four steps get 90px each. The browser-resolved 6rem probe is stubbed
       // to 96px, so this instance collapses without Stepper parsing the unit.

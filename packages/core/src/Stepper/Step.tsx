@@ -1422,15 +1422,22 @@ export function Step({
     </>
   ) : null;
 
-  const minStepWidthMeasureNode = isActive ? (
-    <div
-      ref={minStepWidthMeasureRef}
-      aria-hidden="true"
-      {...mergeProps(stylex.props(styles.minStepWidthMeasure), {
-        style: {width: minimumStepWidth},
-      })}
-    />
-  ) : null;
+  // Keep the CSS-length probe on the first logical step rather than the active
+  // one. `activeStep === stepCount` is the supported all-complete state, where
+  // no step is active, but the Stepper still needs to resolve a custom compact
+  // threshold. Step indices are zero-based, so step 0 is a stable single host
+  // whose position inside the public list also preserves CSS-variable
+  // inheritance from that root.
+  const minStepWidthMeasureNode =
+    !isVertical && step === 0 ? (
+      <div
+        ref={minStepWidthMeasureRef}
+        aria-hidden="true"
+        {...mergeProps(stylex.props(styles.minStepWidthMeasure), {
+          style: {width: minimumStepWidth},
+        })}
+      />
+    ) : null;
 
   // ======= ON-TRACK: indicator is a node on the connector =======
   if (indicatorPosition === 'on-track') {

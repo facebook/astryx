@@ -98,7 +98,7 @@ export interface StepperContextValue {
   summarySlot: HTMLElement | null;
   /** CSS length whose resolved value sets the compact per-step threshold. */
   minimumStepWidth: number | string;
-  /** Ref for the active Step's invisible CSS-length measurement element. */
+  /** Ref for the first Step's invisible CSS-length measurement element. */
   minStepWidthMeasureRef: RefCallback<HTMLDivElement>;
 }
 
