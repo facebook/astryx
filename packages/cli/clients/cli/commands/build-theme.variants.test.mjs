@@ -55,7 +55,9 @@ beforeAll(() => {
 
 let tmpDir;
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-build-theme-variants-'));
+  tmpDir = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'astryx-build-theme-variants-'),
+  );
 });
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
@@ -70,6 +72,7 @@ describe('theme build custom-variant augmentations', () => {
         tokens: { '--color-bg': '#fff' },
         components: {
           button: { 'variant:accentOutline': { backgroundColor: 'transparent' } },
+          text: { 'type:hero': { fontSize: '48px' } },
         },
       };\n`,
     );
@@ -88,45 +91,14 @@ describe('theme build custom-variant augmentations', () => {
     expect(dts).toContain("declare module '@astryxdesign/core/Button'");
     expect(dts).toMatch(/interface ButtonVariantMap\b/);
     expect(dts).toContain("'accentOutline': true;");
+    expect(dts).toContain("declare module '@astryxdesign/core/theme'");
+    expect(dts).toMatch(/interface CustomTextTypes\b/);
+    expect(dts).toContain("'hero': true;");
     // …and NOT the old, non-existent XDS-prefixed interface.
     expect(dts).not.toMatch(/XDSButtonVariantMap/);
   });
 
-  it('skips props with no augmentation point (Button size, Heading type)', async () => {
-    const themeFile = writeTheme(
-      tmpDir,
-      `export default {
-        name: 'variants-theme',
-        tokens: { '--color-bg': '#fff' },
-        components: {
-          button: {
-            'variant:accentOutline': { backgroundColor: 'transparent' },
-            'size:jumbo': { paddingBlock: '40px' },
-          },
-          heading: { 'type:hero': { fontSize: '80px' } },
-        },
-      };\n`,
-    );
-
-    const result = await runCli(
-      ['theme', 'build', path.relative(tmpDir, themeFile)],
-      tmpDir,
-    );
-    expect(result.code).toBe(0);
-
-    const variantsPath = path.join(tmpDir, 'variants-theme.variants.d.ts');
-    expect(fs.existsSync(variantsPath)).toBe(true);
-    const dts = fs.readFileSync(variantsPath, 'utf-8');
-
-    // The augmentable variant is emitted…
-    expect(dts).toMatch(/interface ButtonVariantMap\b/);
-    // …but closed literal-union props get no dead augmentation.
-    expect(dts).not.toMatch(/ButtonSizeMap/);
-    expect(dts).not.toMatch(/HeadingTypeMap/);
-    expect(dts).not.toContain("declare module '@astryxdesign/core/Heading'");
-  });
-
-  it('does not emit a .variants.d.ts when every custom value is non-augmentable', async () => {
+  it('rejects custom values for closed visual props', async () => {
     const themeFile = writeTheme(
       tmpDir,
       `export default {
@@ -134,6 +106,7 @@ describe('theme build custom-variant augmentations', () => {
         tokens: { '--color-bg': '#fff' },
         components: {
           button: { 'size:jumbo': { paddingBlock: '40px' } },
+          heading: { 'type:body': { fontSize: '80px' } },
         },
       };\n`,
     );
@@ -142,10 +115,37 @@ describe('theme build custom-variant augmentations', () => {
       ['theme', 'build', path.relative(tmpDir, themeFile)],
       tmpDir,
     );
-    expect(result.code).toBe(0);
+    expect(result.code).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'Root theme sets unsupported "button.size:jumbo"',
+    );
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'Root theme sets unsupported "heading.type:body"',
+    );
     expect(
       fs.existsSync(path.join(tmpDir, 'variants-theme.variants.d.ts')),
     ).toBe(false);
+  });
+
+  it('rejects custom values for alias-typed closed visual props', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        components: {
+          'avatar-group': { 'size:giant': { gap: '40px' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'Root theme sets unsupported "avatar-group.size:giant"',
+    );
   });
 
   it('makes generated custom component prop values type-check through public subpaths', async () => {
@@ -185,7 +185,10 @@ describe('theme build custom-variant augmentations', () => {
     );
     expect(result.code).toBe(0);
 
-    const projectDir = path.join(CLI_ROOT, `.tmp-variant-consumer-${process.pid}`);
+    const projectDir = path.join(
+      CLI_ROOT,
+      `.tmp-variant-consumer-${process.pid}`,
+    );
     fs.rmSync(projectDir, {recursive: true, force: true});
     fs.mkdirSync(projectDir);
     fs.copyFileSync(
@@ -258,10 +261,14 @@ describe('theme build custom-variant augmentations', () => {
     );
 
     try {
-      execFileSync('pnpm', ['exec', 'tsc', '--project', 'tsconfig.json', '--noEmit'], {
-        cwd: projectDir,
-        stdio: 'pipe',
-      });
+      execFileSync(
+        'pnpm',
+        ['exec', 'tsc', '--project', 'tsconfig.json', '--noEmit'],
+        {
+          cwd: projectDir,
+          stdio: 'pipe',
+        },
+      );
     } finally {
       fs.rmSync(projectDir, {recursive: true, force: true});
     }

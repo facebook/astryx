@@ -19,6 +19,10 @@
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
  *
+ * It validates component targets and finite visual-prop domains, resolving
+ * source aliases so closed props cannot emit unreachable selectors while real
+ * augmentation points remain extensible.
+ *
  * With `{check: true}`, it compiles the same outputs in memory but writes
  * nothing: it compares each generated file against what is on disk (ignoring
  * only the volatile `@generated` `Command:` line) and returns a
@@ -207,6 +211,167 @@ function toPascalCase(name) {
 let _knownValuesIndexPromise = null;
 
 /**
+ * Resolve finite string/number literal unions from core's source aliases.
+ * Unsupported forms and duplicate names stay unresolved so validators never
+ * mistake a partial union for the complete public domain.
+ *
+ * @param {string[]} files
+ * @param {Set<string>} requestedNames
+ * @returns {Promise<Map<string, string[]>>}
+ */
+async function loadLiteralTypeAliases(files, requestedNames) {
+  if (requestedNames.size === 0) return new Map();
+  const {default: jscodeshift} = await import('jscodeshift');
+  const j = jscodeshift.withParser('tsx');
+  /** @type {Map<string, any|null>} */
+  const declarations = new Map();
+  const pending = new Set(requestedNames);
+  const parsedFiles = new Set();
+
+  while (pending.size > 0) {
+    const names = [...pending];
+    pending.clear();
+    let parsedAny = false;
+
+    for (const file of files) {
+      if (parsedFiles.has(file)) continue;
+      let source;
+      try {
+        source = fs.readFileSync(file, 'utf-8');
+      } catch {
+        continue;
+      }
+      const definesRequestedAlias = names.some(name => {
+        const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(String.raw`\btype\s+${escapedName}\b`).test(source);
+      });
+      if (!definesRequestedAlias) continue;
+
+      parsedFiles.add(file);
+      parsedAny = true;
+      try {
+        const root = j(source);
+        root
+          .find(j.TSTypeAliasDeclaration)
+          .forEach((/** @type {{node: any}} */ aliasPath) => {
+            const name = aliasPath.node.id?.name;
+            if (!name) return;
+            declarations.set(
+              name,
+              declarations.has(name) ? null : aliasPath.node.typeAnnotation,
+            );
+          });
+      } catch {
+        // A source file that cannot be parsed must not invalidate other aliases.
+      }
+    }
+
+    for (const declaration of declarations.values()) {
+      if (!declaration) continue;
+      j(declaration)
+        .find(j.TSTypeReference)
+        .forEach((/** @type {{node: any}} */ referencePath) => {
+          const name =
+            referencePath.node.typeName?.type === 'Identifier'
+              ? referencePath.node.typeName.name
+              : null;
+          if (name && !declarations.has(name)) pending.add(name);
+        });
+    }
+    if (!parsedAny) break;
+  }
+
+  /** @type {Map<string, string[]|null>} */
+  const cache = new Map();
+  /**
+   * @param {string} name
+   * @param {Set<string>} stack
+   * @returns {string[]|null}
+   */
+  const resolveName = (name, stack = new Set()) => {
+    if (cache.has(name)) return cache.get(name) ?? null;
+    const declaration = declarations.get(name);
+    if (!declaration || stack.has(name)) return null;
+    const nextStack = new Set(stack).add(name);
+    const values = resolveNode(declaration, nextStack);
+    cache.set(name, values);
+    return values;
+  };
+
+  /**
+   * @param {any} node
+   * @param {Set<string>} stack
+   * @returns {string[]|null}
+   */
+  function resolveNode(node, stack) {
+    if (!node) return null;
+    if (node.type === 'TSParenthesizedType') {
+      return resolveNode(node.typeAnnotation, stack);
+    }
+    if (node.type === 'TSLiteralType') {
+      const value = node.literal?.value;
+      return typeof value === 'string' || typeof value === 'number'
+        ? [String(value)]
+        : null;
+    }
+    if (node.type === 'TSTypeReference') {
+      const name =
+        node.typeName?.type === 'Identifier' ? node.typeName.name : null;
+      return name ? resolveName(name, stack) : null;
+    }
+    if (node.type === 'TSUnionType') {
+      const values = new Set();
+      for (const member of node.types ?? []) {
+        const resolved = resolveNode(member, stack);
+        if (!resolved) return null;
+        for (const value of resolved) values.add(value);
+      }
+      return [...values];
+    }
+    return null;
+  }
+
+  /** @type {Map<string, string[]>} */
+  const resolved = new Map();
+  for (const name of declarations.keys()) {
+    const values = resolveName(name);
+    if (values && values.length > 0) resolved.set(name, values);
+  }
+  return resolved;
+}
+
+/**
+ * Resolve a doc prop type when it is a finite union of string/number literals
+ * and source aliases. Returns null for open or unsupported type expressions.
+ *
+ * @param {string} type
+ * @param {Map<string, string[]>} aliases
+ * @returns {Set<string>|null}
+ */
+function literalValuesFromType(type, aliases) {
+  const values = new Set();
+  for (const rawPart of type.split('|')) {
+    const part = rawPart
+      .trim()
+      .replace(/^\((.*)\)$/, '$1')
+      .trim();
+    const stringMatch = part.match(/^'([^']+)'$/);
+    if (stringMatch) {
+      values.add(stringMatch[1]);
+      continue;
+    }
+    if (/^-?\d+(?:\.\d+)?$/.test(part)) {
+      values.add(part);
+      continue;
+    }
+    const aliasValues = aliases.get(part);
+    if (!aliasValues) return null;
+    for (const value of aliasValues) values.add(value);
+  }
+  return values.size > 0 ? values : null;
+}
+
+/**
  * Build one target-keyed index of built-in visual-prop values from every core
  * component doc. A rendered target often lives in a sibling doc (for example,
  * `astryx-heading` is documented by Text/Heading.doc.mjs), so directory-name
@@ -219,6 +384,8 @@ async function loadKnownValuesIndex() {
 
   /** @type {any[]} */
   const docs = [];
+  /** @type {string[]} */
+  const sourceFiles = [];
   /** @param {string} dir */
   async function scan(dir) {
     for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
@@ -229,6 +396,13 @@ async function loadKnownValuesIndex() {
         }
         continue;
       }
+      if (
+        (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) &&
+        !entry.name.includes('.test.') &&
+        !entry.name.includes('.stories.')
+      ) {
+        sourceFiles.push(full);
+      }
       if (!entry.name.endsWith('.doc.mjs')) continue;
       try {
         docs.push(await loadComponentDoc(full));
@@ -238,6 +412,35 @@ async function loadKnownValuesIndex() {
     }
   }
   await scan(coreSrc);
+  const visualPropNames = new Set(
+    docs.flatMap(doc =>
+      (doc?.theming?.targets ?? []).flatMap(
+        (/** @type {any} */ target) => target?.visualProps ?? [],
+      ),
+    ),
+  );
+  const requestedAliases = new Set();
+  for (const doc of docs) {
+    const props = [
+      ...(doc?.props ?? []),
+      ...(doc?.components ?? []).flatMap(
+        (/** @type {any} */ component) => component?.props ?? [],
+      ),
+    ];
+    for (const prop of props) {
+      if (!visualPropNames.has(prop?.name) || typeof prop?.type !== 'string') {
+        continue;
+      }
+      for (const rawPart of prop.type.split('|')) {
+        const part = rawPart
+          .trim()
+          .replace(/^\((.*)\)$/, '$1')
+          .trim();
+        if (/^[A-Za-z_$][\w$]*$/.test(part)) requestedAliases.add(part);
+      }
+    }
+  }
+  const aliases = await loadLiteralTypeAliases(sourceFiles, requestedAliases);
 
   /** @param {string} value */
   const targetName = value =>
@@ -256,31 +459,34 @@ async function loadKnownValuesIndex() {
       if (typeof prop?.name !== 'string' || typeof prop?.type !== 'string') {
         continue;
       }
-      /** @type {Set<string>} */
-      const values = new Set();
-      for (const match of prop.type.match(/'([^']+)'/g) ?? []) {
-        values.add(match.slice(1, -1));
-      }
-      for (const part of prop.type
-        .split('|')
-        .map((/** @type {string} */ value) => value.trim())) {
-        if (/^-?\d+(?:\.\d+)?$/.test(part)) values.add(part);
-      }
-      if (values.size > 0) result[prop.name] = values;
+      const values = literalValuesFromType(prop.type, aliases);
+      if (values) result[prop.name] = values;
     }
     return result;
   };
 
   /** @type {Record<string, Record<string, Set<string>>>} */
   const valuesByOwner = {};
+  /**
+   * @param {string} owner
+   * @param {Record<string, Set<string>>} values
+   */
+  const mergeOwnerValues = (owner, values) => {
+    if (!valuesByOwner[owner]) valuesByOwner[owner] = {};
+    for (const [prop, propValues] of Object.entries(values)) {
+      if (!valuesByOwner[owner][prop]) valuesByOwner[owner][prop] = new Set();
+      for (const value of propValues) valuesByOwner[owner][prop].add(value);
+    }
+  };
   for (const doc of docs) {
     if (typeof doc?.name === 'string') {
-      valuesByOwner[targetName(doc.name)] = valuesFromProps(doc.props);
+      mergeOwnerValues(targetName(doc.name), valuesFromProps(doc.props));
     }
     for (const component of /** @type {any[]} */ (doc?.components ?? [])) {
       if (typeof component?.name === 'string') {
-        valuesByOwner[targetName(component.name)] = valuesFromProps(
-          component.props,
+        mergeOwnerValues(
+          targetName(component.name),
+          valuesFromProps(component.props),
         );
       }
     }
@@ -304,10 +510,11 @@ async function loadKnownValuesIndex() {
         if (!collected[componentName][prop]) {
           collected[componentName][prop] = new Set();
         }
-        for (const value of [
-          ...(localValues[prop] ?? []),
-          ...(ownerValues[prop] ?? []),
-        ]) {
+        const propValues =
+          ownerValues[prop]?.size > 0
+            ? ownerValues[prop]
+            : (localValues[prop] ?? []);
+        for (const value of propValues) {
           collected[componentName][prop].add(value);
         }
       }
@@ -518,6 +725,112 @@ function componentHasAugmentableInterface(pascalName, interfaceName) {
   return re.test(decl);
 }
 
+/** @type {Map<string, {modulePath: string, interfaceName: string}|null>} */
+const _visualPropAugmentationTargetCache = new Map();
+
+/**
+ * Find the public module/interface pair that makes a visual prop extensible.
+ * Most axes use `<Component><Prop>Map`; Text's historical type axis uses the
+ * `CustomTextTypes` interface in the theme module.
+ *
+ * @param {string} component
+ * @param {string} prop
+ * @returns {Promise<{modulePath: string, interfaceName: string}|null>}
+ */
+async function resolveVisualPropAugmentationTarget(component, prop) {
+  const cacheKey = `${component}:${prop}`;
+  if (_visualPropAugmentationTargetCache.has(cacheKey)) {
+    return _visualPropAugmentationTargetCache.get(cacheKey) ?? null;
+  }
+
+  if (component === 'text' && prop === 'type') {
+    const coreRoot = resolveCoreRoot();
+    const declarations = coreRoot
+      ? [
+          path.join(coreRoot, 'dist', 'theme', 'types.d.ts'),
+          path.join(coreRoot, 'src', 'theme', 'types.ts'),
+        ]
+          .filter(file => fs.existsSync(file))
+          .map(file => fs.readFileSync(file, 'utf-8'))
+          .join('\n')
+      : '';
+    if (/\binterface\s+CustomTextTypes\b/.test(declarations)) {
+      const target = {
+        modulePath: '@astryxdesign/core/theme',
+        interfaceName: 'CustomTextTypes',
+      };
+      _visualPropAugmentationTargetCache.set(cacheKey, target);
+      return target;
+    }
+  }
+
+  const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
+  const candidate = (await resolveAugmentationTargetCandidates(component)).find(
+    candidate =>
+      componentHasAugmentableInterface(
+        candidate.moduleName,
+        `${candidate.interfacePrefix}${propPascal}Map`,
+      ),
+  );
+  const target = candidate
+    ? {
+        modulePath: `@astryxdesign/core/${candidate.moduleName}`,
+        interfaceName: `${candidate.interfacePrefix}${propPascal}Map`,
+      }
+    : null;
+  _visualPropAugmentationTargetCache.set(cacheKey, target);
+  return target;
+}
+
+/**
+ * Whether a rendered target/prop has a real public interface that module
+ * augmentation can widen.
+ *
+ * @param {string} component
+ * @param {string} prop
+ * @returns {Promise<boolean>}
+ */
+async function isExtensibleVisualProp(component, prop) {
+  return (await resolveVisualPropAugmentationTarget(component, prop)) != null;
+}
+
+/**
+ * Reject unknown root values on closed visual props. Extensible props may add
+ * values because the build emits a matching module augmentation.
+ *
+ * @param {Record<string, any>} themeDef
+ * @returns {Promise<string[]>}
+ */
+async function validateRootVariantValues(themeDef) {
+  /** @type {string[]} */
+  const errors = [];
+  for (const [component, rules] of rootComponentEntries(themeDef)) {
+    const known = await getKnownValues(component);
+    for (const key of Object.keys(rules)) {
+      if (key === 'base') continue;
+      for (const pair of key.split('+')) {
+        const colon = pair.indexOf(':');
+        if (colon === -1) continue;
+        const prop = pair.slice(0, colon);
+        const value = pair.slice(colon + 1);
+        const knownValues = known[prop];
+        if (
+          !knownValues ||
+          knownValues.length === 0 ||
+          knownValues.includes(value)
+        ) {
+          continue;
+        }
+        if (await isExtensibleVisualProp(component, prop)) continue;
+        errors.push(
+          `Root theme sets unsupported "${component}.${prop}:${value}". "${prop}" is a closed visual prop; use a built-in value.`,
+        );
+      }
+    }
+  }
+  return [...new Set(errors)];
+}
+
 /**
  * Adaptation values from resolved runtime rules, raw input, or normalized built
  * metadata. Built modules intentionally omit `__adaptationRules`, so every CLI
@@ -616,15 +929,14 @@ async function validateAdaptationVariantValues(themeDef) {
         const prop = colon === -1 ? pair : pair.slice(0, colon);
         if (colon === -1) continue;
         const value = pair.slice(colon + 1);
-        // Some public prop types are opaque aliases rather than literal unions.
-        // When docs cannot enumerate an axis, avoid turning that discovery gap
-        // into a false hard failure; the normal component validator still checks
-        // that the axis itself exists.
-        if (!known[prop] || known[prop].length === 0) continue;
-        if (
-          known[prop].includes(value) ||
-          rootValues.has(`${component}:${pair}`)
-        ) {
+        const knownValues = known[prop];
+        if (knownValues?.includes(value)) continue;
+        const extensible = await isExtensibleVisualProp(component, prop);
+        if (extensible && rootValues.has(`${component}:${pair}`)) continue;
+        // Keep unknown axes advisory-only. For known extensible axes, however,
+        // a rule-only value is always invalid even when docs cannot enumerate
+        // the built-ins.
+        if ((!knownValues || knownValues.length === 0) && !extensible) {
           continue;
         }
         errors.push(
@@ -645,11 +957,11 @@ async function validateAdaptationVariantValues(themeDef) {
  *   banner + status → BannerStatusMap
  *   button + variant → ButtonVariantMap
  *
- * An augmentation is only emitted when `@astryxdesign/core/<Component>` actually
- * exports a matching interface. Props backed by closed literal-union types
- * (e.g. Button `size`, Heading `type`/`level`) have no augmentation point, so
- * generating a `declare module` block for them would be dead code — those are
- * skipped.
+ * An augmentation is only emitted when the public core surface actually exports
+ * a matching interface. Most axes use `<Component><Prop>Map`; Text's historical
+ * type axis uses `CustomTextTypes` in `@astryxdesign/core/theme`. Props backed by
+ * closed literal-union types (e.g. Button `size`, Heading `type`/`level`) have no
+ * augmentation point, so generating a declaration for them would be dead code.
  *
  * @param {{components?: Record<string, Record<string, Record<string, unknown>>>}} themeDef - Theme definition (resolved by defineTheme)
  * @returns {Promise<string|null>} TypeScript declaration content, or null if no augmentations needed
@@ -701,28 +1013,14 @@ async function generateVariantDeclarationsAsync(themeDef) {
     for (const [prop, values] of Object.entries(props)) {
       if (values.size === 0) continue;
 
-      const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const target = (
-        await resolveAugmentationTargetCandidates(component)
-      ).find(candidate =>
-        componentHasAugmentableInterface(
-          candidate.moduleName,
-          `${candidate.interfacePrefix}${propPascal}Map`,
-        ),
-      );
+      const target = await resolveVisualPropAugmentationTarget(component, prop);
 
       // Only augment interfaces that actually exist as an extension point in
-      // core. Props backed by closed literal-union types (e.g. Button `size`,
-      // Heading `type`/`level`) have no `*Map` interface — a `declare module`
-      // block against a non-existent interface just creates a new, unused
-      // interface and never extends the component's prop union, so skip it.
+      // core. Closed literal-union props have no target, so they are skipped.
       if (!target) continue;
 
-      const modulePath = `@astryxdesign/core/${target.moduleName}`;
-      const interfaceName = `${target.interfacePrefix}${propPascal}Map`;
-
-      sections.push(`declare module '${modulePath}' {`);
-      sections.push(`  interface ${interfaceName} {`);
+      sections.push(`declare module '${target.modulePath}' {`);
+      sections.push(`  interface ${target.interfaceName} {`);
       for (const v of values) {
         sections.push(`    '${v}': true;`);
       }
@@ -1366,11 +1664,13 @@ export async function themeBuild(
       resolvedTheme = themeDef;
     }
 
-    const adaptationValueErrors =
-      await validateAdaptationVariantValues(resolvedTheme);
-    if (adaptationValueErrors.length > 0) {
+    const variantValueErrors = [
+      ...(await validateRootVariantValues(resolvedTheme)),
+      ...(await validateAdaptationVariantValues(resolvedTheme)),
+    ];
+    if (variantValueErrors.length > 0) {
       throw new AstryxError(
-        adaptationValueErrors.join('\n'),
+        variantValueErrors.join('\n'),
         undefined,
         ERROR_CODES.ERR_THEME_INVALID,
       );
