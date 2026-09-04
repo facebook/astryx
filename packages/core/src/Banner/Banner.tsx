@@ -9,7 +9,8 @@
  * @position Core implementation; consumed by index.ts, tested by Banner.test.tsx
  *
  * Visual structure:
- * - Root container: layout-only wrapper (flex column), no visual styling, no theme target
+ * - Root container (themeProps 'banner-root'): owns the resting elevation and,
+ *   for elevated card banners, the outer radius that shapes that shadow
  * - Header area (themeProps 'banner'): colored status background with icon, title, description, actions, dismiss
  * - Content area (themeProps 'banner-content'): card background for additional content (children)
  * - Status icon (themeProps 'banner-icon'): the target rides on the default
@@ -226,7 +227,7 @@ const statusIconColor: Partial<Record<BannerStatus, IconColor>> = {
 // =============================================================================
 
 const styles = stylex.create({
-  // Root container — layout only, no visual styling
+  // Root container — outer elevation and elevated-card radius painter
   root: {
     display: 'flex',
     flexDirection: 'column',
@@ -577,6 +578,7 @@ export function Banner({
         handlePointerDownCapture,
       )}
       {...mergeProps(
+        themeProps('banner-root', {container, elevation}),
         stylex.props(
           styles.root,
           elevationStyles[elevation],

@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  274 targets, 885 selectors (generated from the docs)
+//   components  275 targets, 892 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -616,6 +616,50 @@ export const probeTheme = defineTheme({
         color: 'hsl(228.2 75% 12%)',
         borderColor: 'hsl(181.5 92% 25%)',
         outlineColor: 'hsl(303.5 82% 25%)',
+      },
+    },
+    'banner-root': {
+      base: {
+        backgroundColor: 'hsl(27.5 92% 47%)',
+        color: 'hsl(192.1 72% 12%)',
+        borderColor: 'hsl(55.2 81% 25%)',
+        outlineColor: 'hsl(265.7 80% 25%)',
+      },
+      'container:card': {
+        backgroundColor: 'hsl(192.6 85% 48%)',
+        color: 'hsl(193.8 89% 12%)',
+        borderColor: 'hsl(191.7 75% 25%)',
+        outlineColor: 'hsl(155.2 75% 25%)',
+      },
+      'container:section': {
+        backgroundColor: 'hsl(25.0 91% 52%)',
+        color: 'hsl(275.3 86% 12%)',
+        borderColor: 'hsl(172.4 84% 25%)',
+        outlineColor: 'hsl(225.5 94% 25%)',
+      },
+      'elevation:none': {
+        backgroundColor: 'hsl(192.0 80% 56%)',
+        color: 'hsl(36.9 79% 12%)',
+        borderColor: 'hsl(1.2 80% 25%)',
+        outlineColor: 'hsl(44.8 92% 25%)',
+      },
+      'elevation:low': {
+        backgroundColor: 'hsl(280.0 72% 53%)',
+        color: 'hsl(281.3 78% 12%)',
+        borderColor: 'hsl(23.7 94% 25%)',
+        outlineColor: 'hsl(24.0 78% 25%)',
+      },
+      'elevation:med': {
+        backgroundColor: 'hsl(65.0 75% 53%)',
+        color: 'hsl(15.3 80% 12%)',
+        borderColor: 'hsl(267.9 90% 25%)',
+        outlineColor: 'hsl(323.1 78% 25%)',
+      },
+      'elevation:high': {
+        backgroundColor: 'hsl(254.8 76% 59%)',
+        color: 'hsl(188.1 79% 12%)',
+        borderColor: 'hsl(149.0 92% 25%)',
+        outlineColor: 'hsl(305.4 82% 25%)',
       },
     },
     'base-table': {

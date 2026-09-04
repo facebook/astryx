@@ -127,6 +127,7 @@ export const docs = {
   },
   theming: {
     targets: [
+      {className: 'astryx-banner-root', visualProps: ['container', 'elevation']},
       {className: 'astryx-banner', visualProps: ['container', 'status']},
       {className: 'astryx-banner-icon', visualProps: ['status']},
       {className: 'astryx-banner-description'},
@@ -187,6 +188,13 @@ export const docsZh = {
   ],
   theming: {
     targets: [
+      {
+        className: 'astryx-banner-root',
+        visualProps: [
+          'container',
+          'elevation',
+        ],
+      },
       {
         className: 'astryx-banner',
         visualProps: [
