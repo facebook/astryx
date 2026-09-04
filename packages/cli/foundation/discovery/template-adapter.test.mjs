@@ -16,7 +16,7 @@ import {describe, it, expect, beforeAll, afterAll} from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import {extractComponents} from './template-adapter.mjs';
+import {extractComponents, stripTemplateAssetRefs} from './template-adapter.mjs';
 
 /** @type {string} */
 let dir;
@@ -132,5 +132,30 @@ describe('extractComponents — TypeScript generics are not components', () => {
       }`,
     );
     expect(extractComponents(file)).toEqual(['Card']);
+  });
+});
+
+describe('stripTemplateAssetRefs', () => {
+  it('uses the last extension on dotted demo asset names', () => {
+    const src = 'src="/template-assets/clip.min.mp4"'
+    expect(stripTemplateAssetRefs(src)).toBe('src=""')
+  });
+
+  it('strips m4v demo assets as video', () => {
+    const src = 'src="/template-assets/demo.m4v"'
+    expect(stripTemplateAssetRefs(src)).toBe('src=""')
+  });
+
+  it('keeps the image placeholder for known image extensions', () => {
+    const src = 'src="/template-assets/hero.png"'
+    const out = stripTemplateAssetRefs(src)
+    expect(out).toContain('data:image/svg+xml')
+    expect(out).not.toContain('/template-assets/hero.png')
+  });
+
+  it('throws for an unrecognized demo asset extension', () => {
+    expect(() => stripTemplateAssetRefs('src="/template-assets/clip.bin"')).toThrow(
+      /Unrecognized template asset extension: bin/,
+    )
   });
 });
