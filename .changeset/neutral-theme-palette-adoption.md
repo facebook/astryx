@@ -3,10 +3,8 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Add Neutral's reproducible, theme-owned OKLCH palette, remap semantic and
-categorical color tokens to reviewed stops without shipping the full authoring
-palette at runtime, and test the request, receipt, generated result, and
-intentional mappings together. The CLI template ships the same authoring
-artifacts.
+[new] Add Neutral's reproducible, theme-owned OKLCH palette without changing
+its runtime token mappings. The request, receipt, generated result, and CLI
+template artifacts are committed together for review.
 
 @rubyycheung

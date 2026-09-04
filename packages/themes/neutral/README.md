@@ -44,20 +44,15 @@ Neutral is the reference implementation for palette-aware theme templates.
 Templates may follow its ownership, review, and alignment workflow without
 copying its colors or stop layout.
 
-Use semantic theme tokens in components. Neutral's runtime theme contains only
-its selected values, while tests tie those values back to reviewed palette
-stops. Changing the generated palette must therefore include the regenerated
-receipt, token diff, tests, and visual review without shipping the full
-authoring palette in the runtime bundle.
+Use semantic theme tokens in components. Neutral's runtime theme does not import
+the complete authoring palette. Mapping semantic tokens to reviewed stops is a
+separate change, so palette generation and token adoption can be reviewed
+independently.
 
-Regenerate the candidate and its receipt with:
-
-```bash
-astryx theme palette generate packages/themes/neutral/palette.config.json \
-  --out packages/themes/neutral/src/neutralPalettes.generated.ts \
-  --overwrite
-pnpm bundle:cli-themes
-```
+The committed request and receipt preserve the generation inputs and provenance.
+CLI regeneration is not yet a supported release workflow; until that tooling
+ships, treat the generated module and receipt as reviewed artifacts rather than
+editing them by hand.
 
 ### CSS import
 

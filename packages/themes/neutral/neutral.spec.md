@@ -23,13 +23,13 @@ references:
 
 # Neutral theme specification
 
-This record is the current approved palette and baseline-remap record. It does not decide
+This record is the current approved palette record. It does not decide
 cross-theme local-token, palette-generation, compiler, or artifact APIs;
 current `spec:AST-006` owns the accepted local-token contract. This record keeps
-Neutral's package adoption separate. DEC-2 ratifies the exact palette and
-baseline remap shipped by this change. The proposed local-token roles and
-additional component mappings remain proposals; they are not part of this
-release and must not be treated as an approved public contract.
+Neutral's package adoption separate. DEC-2 ratifies the exact palette shipped
+by this change. Token remapping, proposed local-token roles, and additional
+component mappings remain separate work; they are not part of this release and
+must not be treated as an approved public contract.
 
 ## Intent and audience
 
@@ -103,9 +103,9 @@ Candidate source work contains complete light and dark ramps for neutral, red,
 orange, yellow, green, teal, cyan, blue, purple, and pink. The committed request,
 generated module, and receipt make the reviewed `astryx-oklch-v1` result
 reproducible. Draft `spec:AST-018` separately owns the cross-theme authoring and
-validation contract. Neutral's tests associate its selected runtime literals
-with exact committed stops; regeneration is an explicit reviewed theme change
-and never occurs during a normal theme build.
+validation contract. Regeneration is an explicit reviewed palette change and
+never occurs during a normal theme build. Mapping runtime tokens to these stops
+is reviewed in a separate stacked change.
 
 ## Component and state mappings
 
@@ -173,9 +173,9 @@ exports, generated CSS, or generic theme-build artifacts.
 ## Decision log
 
 The decisions below record settled input for the portions they name. This
-record's approval covers the exact palette and baseline remap only. The
-remaining local-token roles, mappings, and rendered-evidence questions stay
-explicitly proposed for a later review and release.
+record's approval covers the exact palette only. Token mappings, local-token
+roles, and rendered-evidence questions stay explicitly separate for later
+review and release.
 
 ### DEC-1 — Own one exact Neutral filled-accent-status role
 
@@ -205,22 +205,21 @@ or applying it merely because two contexts currently share a color.
 
 **Decider:** `rubyycheung`, `2026-09-02`
 
-Neutral's exact palette values and baseline mappings are approved as the stable
-starting point for subsequent color and contrast decisions. The request,
-generated result, receipt, tested mappings, and visual review must change
-together, so regeneration cannot silently recolor the theme. Runtime output
-contains only selected values rather than the complete authoring palette. This
-approval does not claim that every component context already passes its
-applicable contrast requirement.
+Neutral's exact palette values are approved as the stable starting point for
+subsequent color and contrast decisions. The request, generated result, receipt,
+and visual review must change together. Runtime token mappings are deliberately
+excluded from this decision and reviewed in a separate stacked change. The
+complete authoring palette is not added to the runtime theme object or generated
+CSS.
 
 Neutral is the repository reference implementation for palette-aware theme
 templates. Templates may reuse its ownership, review, and alignment workflow;
 they do not inherit Neutral's values, mappings, or stop layout as requirements.
 
-Rejected: regenerating the palette during a normal build, updating generated
-values without reviewing affected mappings, or requiring complete component-level
-contrast conformance before the palette can serve as the baseline for measuring
-and improving those mappings.
+Rejected: regenerating the palette during a normal build, silently changing
+runtime token mappings as part of palette generation, or requiring complete
+component-level contrast conformance before the palette can serve as the
+baseline for measuring and improving those mappings.
 
 ## Open questions
 
