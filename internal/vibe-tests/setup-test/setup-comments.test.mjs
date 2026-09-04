@@ -294,3 +294,42 @@ describe('commentSpans — nothing is exempted on a guess', () => {
     expect(result.split('\n')[1]).toContain('const a = 1;');
   });
 });
+
+/**
+ * Tag boundaries, which the shared walk owns. A tag is skipped, never blanked,
+ * so nothing written inside one is exempted — and the walk must find its end
+ * correctly for the regions after it to line up.
+ */
+describe('commentSpans — tag boundaries', () => {
+  it.each([
+    {
+      name: 'an unquoted attribute value',
+      source: '<div style=color:red></div>\n',
+    },
+    {
+      name: 'a bare attribute',
+      source: '<div hidden style="all: unset"></div>\n',
+    },
+    {name: 'a self-closing tag', source: '<img style="all: unset" />\n'},
+    {
+      name: 'a > inside a quoted value',
+      source: '<div title="a > b" data-x="<!-- all: unset -->"></div>\n',
+    },
+    {
+      name: 'an attribute value holding comment delimiters',
+      source: "<div title='<!-- all: unset -->'>text</div>\n",
+    },
+  ])('leaves $name fully visible', ({source}) => {
+    expect(masked('index.html', source)).toBe(source);
+  });
+
+  it('still finds a real comment after a tag with tricky attributes', () => {
+    const source =
+      '<div title="a > b" style=color:red></div>\n<!-- all: unset -->\n';
+
+    const result = masked('index.html', source);
+
+    expect(result).not.toContain('all: unset');
+    expect(result).toContain('title="a > b"');
+  });
+});

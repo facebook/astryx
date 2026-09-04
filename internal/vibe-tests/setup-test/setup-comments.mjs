@@ -22,10 +22,12 @@
  * - Scripts go through the **TypeScript** parser, which handles `.js`, `.jsx`,
  *   `.ts`, and `.tsx` with one API and reports comments as trivia, so `//` in a
  *   URL string and `/*` in a regular expression are not comments.
- * - HTML, Vue, and Svelte are WALKED rather than scanned, because `<!--` opens
- *   a comment only in markup text: inside `<script>` and `<style>`, and inside
- *   a tag's attribute values, those four characters are ordinary content. Each
- *   raw-text element's body is handed to the analyzer for its own language.
+ * - HTML, Vue, and Svelte are WALKED rather than scanned (see
+ *   `setup-markup.mjs`, the walk this shares with `setup-important.mjs`),
+ *   because `<!--` opens a comment only in markup text: inside `<script>` and
+ *   `<style>`, and inside a tag's attribute values, those four characters are
+ *   ordinary content. Each raw-text element's body is handed to the analyzer
+ *   for its own language.
  *
  * Blanking preserves offsets and line boundaries, so a hatch written on the
  * same line as a comment is still found, and only the comment's own characters
@@ -46,6 +48,7 @@ import {
   MARKUP_EXTENSIONS,
   SCRIPT_KINDS,
 } from './setup-important.mjs';
+import {markupRegions} from './setup-markup.mjs';
 
 function lineStarts(text) {
   const starts = [0];
@@ -132,88 +135,33 @@ function scriptCommentSpans(text, fileName, scriptKind) {
 }
 
 /**
- * Skip a start or end tag, from its `<` to just past its `>`.
+ * Comment spans in markup, over the regions of the shared structural walk.
  *
- * Quoted attribute values are skipped whole, so a `>` inside one does not end
- * the tag early — and, with it, a `<!--` written inside an attribute value is
- * never seen as a comment opener, because a comment cannot begin inside a tag.
- */
-function skipTag(text, index) {
-  let cursor = index + 1;
-  while (cursor < text.length) {
-    const character = text[cursor];
-    if (character === '"' || character === "'") {
-      cursor += 1;
-      while (cursor < text.length && text[cursor] !== character) cursor += 1;
-      cursor += 1;
-      continue;
-    }
-    if (character === '>') return cursor + 1;
-    cursor += 1;
-  }
-  return text.length;
-}
-
-/**
- * Comment spans in markup, found by walking the document rather than by
- * scanning it for `<!--`.
- *
- * WHERE a comment can begin is the whole point. `<!--` opens a comment only in
- * markup TEXT. Inside `<script>` and `<style>` — raw-text elements, whose
- * content is JavaScript and CSS, not markup — and inside a tag's own attribute
- * values, the same four characters are ordinary content. A flat scan blanked
- * them anyway, which let a script hide a hatch from the check and then apply
- * it: `const c = '<!-- all: unset -->'` was read as a comment, so
- * `style.cssText = c.slice(4, -3)` set a blanket reset the scan had already
- * agreed not to look at.
- *
- * So the walk reads each region as what it is: a comment is a comment, a raw
- * text element's body is handed to the analyzer for ITS language (where only a
- * real `/* … *\/` or `//` counts), and a tag is skipped whole. Everything else
- * is content and stays fully visible to the scan.
+ * WHERE a comment can begin is the whole point — see `setup-markup.mjs`. A real
+ * `<!-- … -->` is prose; a raw-text element's body is handed to the analyzer
+ * for ITS language, where only a real `/* … *\/` or `//` counts; a tag and its
+ * attribute values are neither, so `<!--` written inside one stays visible.
  */
 function markupCommentSpans(text, fileName) {
   const spans = [];
-  let index = 0;
-
-  while (index < text.length) {
-    const next = text.indexOf('<', index);
-    if (next === -1) break;
-
-    if (text.startsWith('<!--', next)) {
-      const close = text.indexOf('-->', next + 4);
-      const end = close === -1 ? text.length : close + 3;
-      spans.push({start: next, end});
-      index = end;
+  for (const region of markupRegions(text)) {
+    if (region.kind === 'comment') {
+      spans.push({start: region.start, end: region.end});
       continue;
     }
-
-    const rawText = /^<(script|style)\b/i.exec(text.slice(next, next + 8));
-    if (rawText) {
-      const tag = rawText[1].toLowerCase();
-      const bodyStart = skipTag(text, next);
-      const closing = new RegExp(`</${tag}\\s*>`, 'i').exec(
-        text.slice(bodyStart),
-      );
-      const bodyEnd = closing ? bodyStart + closing.index : text.length;
-      const body = text.slice(bodyStart, bodyEnd);
-      const inner =
-        tag === 'style'
-          ? cssCommentSpans(body)
-          : scriptCommentSpans(body, `${fileName}.ts`, ts.ScriptKind.TS);
-      for (const span of inner) {
-        spans.push({
-          start: span.start + bodyStart,
-          end: span.end + bodyStart,
-        });
-      }
-      index = closing ? bodyEnd + closing[0].length : text.length;
-      continue;
+    if (region.kind !== 'style' && region.kind !== 'script') continue;
+    const body = text.slice(region.start, region.end);
+    const inner =
+      region.kind === 'style'
+        ? cssCommentSpans(body)
+        : scriptCommentSpans(body, `${fileName}.ts`, ts.ScriptKind.TS);
+    for (const span of inner) {
+      spans.push({
+        start: span.start + region.start,
+        end: span.end + region.start,
+      });
     }
-
-    index = skipTag(text, next);
   }
-
   return spans;
 }
 

@@ -892,13 +892,13 @@ describe('setup integrity', () => {
 
 describe('substantive line delta', () => {
   it('sees no deletion when a wrapper only re-indents the tree', () => {
-    expect(substantiveLineDelta(establishedHostApp(), wrappedHostApp())).toEqual(
-      {
-        baselineLines: expect.any(Number),
-        deletedLines: 0,
-        deletedFraction: 0,
-      },
-    );
+    expect(
+      substantiveLineDelta(establishedHostApp(), wrappedHostApp()),
+    ).toEqual({
+      baselineLines: expect.any(Number),
+      deletedLines: 0,
+      deletedFraction: 0,
+    });
   });
 
   it('sees every line deleted when the same content is minified onto one line', () => {
@@ -926,7 +926,10 @@ describe('substantive line delta', () => {
 
   it('treats a line as unchanged when only its indentation moved', () => {
     expect(
-      substantiveLineDelta('  <Card className="divide-y">\n', '      <Card className="divide-y">\n'),
+      substantiveLineDelta(
+        '  <Card className="divide-y">\n',
+        '      <Card className="divide-y">\n',
+      ),
     ).toEqual({baselineLines: 1, deletedLines: 0, deletedFraction: 0});
   });
 });
@@ -1032,7 +1035,9 @@ describe('setup integrity — reformatting versus replacement', () => {
 
     // A guard that asked Git to ignore whitespace would see nothing at all
     // here, because `-w` equates `a b` with `ab`.
-    expect(numstatIgnoringWhitespace(directory, 'src/large.ts').deleted).toBe(0);
+    expect(numstatIgnoringWhitespace(directory, 'src/large.ts').deleted).toBe(
+      0,
+    );
 
     const result = analyzeSetupIntegrity(directory, digest);
 
@@ -1046,7 +1051,11 @@ describe('setup integrity — reformatting versus replacement', () => {
       {length: WHOLESALE_REPLACEMENT_THRESHOLD.minimumDeletedLines + 4},
       (_, index) => `.host-row-${index} {\n  color: CanvasText;\n}`,
     ).join('\n');
-    write(directory, 'src/index.css', `:root {\n  color-scheme: light dark;\n}\n${rules}\n`);
+    write(
+      directory,
+      'src/index.css',
+      `:root {\n  color-scheme: light dark;\n}\n${rules}\n`,
+    );
     git(directory, ['add', 'src/index.css']);
     git(directory, ['commit', '-qm', 'establish host stylesheet']);
     addValidAstryxChange(directory);
@@ -1151,6 +1160,84 @@ describe('setup integrity — hardcoded !important is syntactic', () => {
     expect(findings).toHaveLength(1);
     expect(findings[0].path).toBe('src/AstryxRegion.tsx');
     expect(findings[0].line).toBe(GUEST_CONTAINED_REGION.split('\n').length);
+  });
+
+  it('fails a run for an override hidden behind comment delimiters', () => {
+    // `<!--` opens a comment only in markup text, so this string is code: the
+    // override it carries reaches the host, and the check must see it.
+    const directory = repository();
+    addValidAstryxChange(directory);
+    write(
+      directory,
+      'public/boot.html',
+      [
+        '<div id="root"></div>',
+        '<script>',
+        "  const cloak = '<!-- color: red !important -->';",
+        '  document.body.style.cssText = cloak.slice(4, -3).trim();',
+        '</script>',
+        '',
+      ].join('\n'),
+    );
+
+    const findings = analyzeSetupIntegrity(
+      directory,
+      attest(directory),
+    ).escapeHatches.filter(finding => finding.kind === 'hardcoded-important');
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0].path).toBe('public/boot.html');
+    expect(findings[0].line).toBe(3);
+  });
+
+  it('still accepts a real markup comment that names the flag', () => {
+    const directory = repository();
+    addValidAstryxChange(directory);
+    write(
+      directory,
+      'public/notes.html',
+      '<!-- color: red !important is banned here -->\n<div id="root"></div>\n',
+    );
+
+    const result = analyzeSetupIntegrity(directory, attest(directory));
+
+    expect(kinds(result)).not.toContain('hardcoded-important');
+    expect(result.accepted).toBe(true);
+  });
+
+  it('fails a run for an unquoted style attribute override', () => {
+    // Valid HTML, and the form a quoted-only pattern never saw.
+    const directory = repository();
+    addValidAstryxChange(directory);
+    write(
+      directory,
+      'public/boot.html',
+      '<div id="root" style=color:red!important></div>\n',
+    );
+
+    const findings = analyzeSetupIntegrity(
+      directory,
+      attest(directory),
+    ).escapeHatches.filter(finding => finding.kind === 'hardcoded-important');
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0].line).toBe(1);
+  });
+
+  it('does not fail a run for a data-style attribute', () => {
+    // The browser never applies this as CSS, so it is not an override.
+    const directory = repository();
+    addValidAstryxChange(directory);
+    write(
+      directory,
+      'public/notes.html',
+      '<div data-style="color: red !important"></div>\n',
+    );
+
+    const result = analyzeSetupIntegrity(directory, attest(directory));
+
+    expect(kinds(result)).not.toContain('hardcoded-important');
+    expect(result.accepted).toBe(true);
   });
 
   it('judges a modified tracked file by its added lines only', () => {
@@ -1286,25 +1373,23 @@ describe('setup integrity — pattern hatches do not read prose', () => {
       kind: 'dark-mode-disabled',
       line: 2,
     },
-  ])('reports $name written beside the comment about it', ({
-    file,
-    source,
-    kind,
-    line,
-  }) => {
-    const directory = repository();
-    addValidAstryxChange(directory);
-    write(directory, file, source);
+  ])(
+    'reports $name written beside the comment about it',
+    ({file, source, kind, line}) => {
+      const directory = repository();
+      addValidAstryxChange(directory);
+      write(directory, file, source);
 
-    const findings = analyzeSetupIntegrity(
-      directory,
-      attest(directory),
-    ).escapeHatches.filter(finding => finding.kind === kind);
+      const findings = analyzeSetupIntegrity(
+        directory,
+        attest(directory),
+      ).escapeHatches.filter(finding => finding.kind === kind);
 
-    expect(findings).toHaveLength(1);
-    expect(findings[0].path).toBe(file);
-    expect(findings[0].line).toBe(line);
-  });
+      expect(findings).toHaveLength(1);
+      expect(findings[0].path).toBe(file);
+      expect(findings[0].line).toBe(line);
+    },
+  );
 
   it('fails a run for a hatch a script hides behind comment delimiters', () => {
     // `<!--` opens a comment only in markup text. A flat scan for the
