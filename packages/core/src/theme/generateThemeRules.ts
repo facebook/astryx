@@ -850,6 +850,7 @@ export function generateAdaptationCSS(theme: DefinedTheme): ThemeCSSOutput {
           theme.name,
           normalizeThemeAdaptations(theme.name, theme.__adaptations, undefined),
           theme.__axes ?? {},
+          theme.tokens,
           theme.localTokens,
         )
       : undefined);

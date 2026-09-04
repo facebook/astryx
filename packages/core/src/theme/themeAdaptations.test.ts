@@ -450,7 +450,291 @@ describe('theme-local adaptation values', () => {
           ],
         },
       }),
-    ).toThrow(/Theme-local token cycle detected/);
+    ).toThrow(/Theme token cycle detected/);
+  });
+
+  it('rejects a cycle formed only by simultaneously matching rules', () => {
+    const a = '--astryx-theme-overlap-cycle-a';
+    const b = '--astryx-theme-overlap-cycle-b';
+
+    expect(() =>
+      defineTheme({
+        name: 'overlap-cycle',
+        localTokens: {[a]: '1px', [b]: '2px'},
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {localTokens: {[a]: `var(${b})`}},
+            },
+            {
+              when: {contrast: 'more'},
+              value: {localTokens: {[b]: `var(${a})`}},
+            },
+          ],
+        },
+      }),
+    ).toThrow(/overlapping rules \[0, 1\].*cycle detected/i);
+  });
+
+  it('rejects cycles routed through portable adaptation tokens', () => {
+    const local = '--astryx-theme-portable-cycle-a';
+    expect(() =>
+      defineTheme({
+        name: 'portable-cycle',
+        localTokens: {[local]: '1px'},
+        tokens: {'--color-background-body': 'white'},
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {
+                tokens: {'--color-background-body': `var(${local})`},
+              },
+            },
+            {
+              when: {contrast: 'more'},
+              value: {
+                localTokens: {[local]: 'var(--color-background-body)'},
+              },
+            },
+          ],
+        },
+      }),
+    ).toThrow(/overlapping rules \[0, 1\].*cycle detected/i);
+
+    const singleLocal = '--astryx-theme-single-portable-cycle-a';
+    expect(() =>
+      defineTheme({
+        name: 'single-portable-cycle',
+        localTokens: {[singleLocal]: '1px'},
+        tokens: {'--color-background-body': 'white'},
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {
+                tokens: {
+                  '--color-background-body': `var(${singleLocal})`,
+                },
+                localTokens: {
+                  [singleLocal]: 'var(--color-background-body)',
+                },
+              },
+            },
+          ],
+        },
+      }),
+    ).toThrow(/adaptations rule \[0\].*cycle detected/i);
+
+    expect(() =>
+      defineTheme({
+        name: 'portable-only-cycle',
+        tokens: {
+          '--color-background-body': 'white',
+          '--color-background-surface': 'gray',
+        },
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {
+                tokens: {
+                  '--color-background-body': 'var(--color-background-surface)',
+                },
+              },
+            },
+            {
+              when: {contrast: 'more'},
+              value: {
+                tokens: {
+                  '--color-background-surface': 'var(--color-background-body)',
+                },
+              },
+            },
+          ],
+        },
+      }),
+    ).toThrow(/overlapping rules \[0, 1\].*cycle detected/i);
+  });
+
+  it('does not attribute an unrelated pre-existing root cycle to a rule', () => {
+    expect(() =>
+      defineTheme({
+        name: 'unrelated-root-cycle',
+        tokens: {
+          '--color-background-body': 'var(--color-background-surface)',
+          '--color-background-surface': 'var(--color-background-body)',
+        },
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {tokens: {'--spacing-4': '12px'}},
+            },
+          ],
+        },
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects a rule cycle that shares an edge with a root-only cycle', () => {
+    expect(() =>
+      defineTheme({
+        name: 'shared-cycle-edge',
+        tokens: {
+          '--color-background-body':
+            'linear-gradient(var(--color-background-surface), var(--color-background-muted))',
+          '--color-background-surface': 'var(--color-background-card)',
+          '--color-background-card': 'var(--color-background-body)',
+          '--color-background-muted': 'white',
+        },
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {
+                tokens: {
+                  '--color-background-muted': 'var(--color-background-card)',
+                },
+              },
+            },
+          ],
+        },
+      }),
+    ).toThrow(/adaptations rule \[0\].*cycle detected/i);
+  });
+
+  it('rejects a three-rule cycle that no pair creates', () => {
+    const a = '--astryx-theme-three-way-cycle-a';
+    const b = '--astryx-theme-three-way-cycle-b';
+    const c = '--astryx-theme-three-way-cycle-c';
+
+    expect(() =>
+      defineTheme({
+        name: 'three-way-cycle',
+        localTokens: {[a]: '1px', [b]: '2px', [c]: '3px'},
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {localTokens: {[a]: `var(${b})`}},
+            },
+            {
+              when: {contrast: 'more'},
+              value: {localTokens: {[b]: `var(${c})`}},
+            },
+            {
+              when: {motion: 'reduce'},
+              value: {localTokens: {[c]: `var(${a})`}},
+            },
+          ],
+        },
+      }),
+    ).toThrow(/overlapping rules \[0, 1, 2\].*cycle detected/i);
+  });
+
+  it('allows mutually exclusive writes and a later matching cycle repair', () => {
+    const exclusiveA = '--astryx-theme-exclusive-cycle-a';
+    const exclusiveB = '--astryx-theme-exclusive-cycle-b';
+    expect(() =>
+      defineTheme({
+        name: 'exclusive-cycle',
+        localTokens: {[exclusiveA]: '1px', [exclusiveB]: '2px'},
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {localTokens: {[exclusiveA]: `var(${exclusiveB})`}},
+            },
+            {
+              when: {pointer: 'fine'},
+              value: {localTokens: {[exclusiveB]: `var(${exclusiveA})`}},
+            },
+          ],
+        },
+      }),
+    ).not.toThrow();
+
+    const widthA = '--astryx-theme-width-exclusive-cycle-a';
+    const widthB = '--astryx-theme-width-exclusive-cycle-b';
+    expect(() =>
+      defineTheme({
+        name: 'width-exclusive-cycle',
+        localTokens: {[widthA]: '1px', [widthB]: '2px'},
+        adaptations: {
+          rules: [
+            {
+              when: {width: {below: 'md'}},
+              value: {localTokens: {[widthA]: `var(${widthB})`}},
+            },
+            {
+              when: {width: {from: 'md'}},
+              value: {localTokens: {[widthB]: `var(${widthA})`}},
+            },
+          ],
+        },
+      }),
+    ).not.toThrow();
+
+    const repairedA = '--astryx-theme-repaired-cycle-a';
+    const repairedB = '--astryx-theme-repaired-cycle-b';
+    expect(() =>
+      defineTheme({
+        name: 'repaired-cycle',
+        localTokens: {[repairedA]: '1px', [repairedB]: '2px'},
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {localTokens: {[repairedA]: `var(${repairedB})`}},
+            },
+            {
+              when: {contrast: 'more'},
+              value: {localTokens: {[repairedB]: `var(${repairedA})`}},
+            },
+            {
+              when: {pointer: 'coarse', contrast: 'more'},
+              value: {localTokens: {[repairedB]: '4px'}},
+            },
+          ],
+        },
+      }),
+    ).not.toThrow();
+  });
+
+  it('checks inherited and child rules in the same reachable cascade', () => {
+    const a = '--astryx-theme-cycle-base-a';
+    const b = '--astryx-theme-cycle-base-b';
+    const base = defineTheme({
+      name: 'cycle-base',
+      localTokens: {[a]: '1px', [b]: '2px'},
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {localTokens: {[a]: `var(${b})`}},
+          },
+        ],
+      },
+    });
+
+    expect(() =>
+      defineTheme({
+        name: 'cycle-child',
+        extends: base,
+        adaptations: {
+          rules: [
+            {
+              when: {contrast: 'more'},
+              value: {localTokens: {[b]: `var(${a})`}},
+            },
+          ],
+        },
+      }),
+    ).toThrow(
+      /overlapping rules \[0, 1\].*pointer: coarse.*prefers-contrast: more.*cycle detected/i,
+    );
   });
 });
 

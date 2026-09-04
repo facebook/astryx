@@ -115,8 +115,9 @@ style key, and CSS property rather than replacing the entire inherited target.
 - **INV8 — Local-token enrollment is explicit and closed.** Supplying
   `localTokens`, or extending an exact enrolled base, produces a flattened local
   declaration map plus ownership and lineage metadata. Enrolled themes validate
-  exact namespaces, case-insensitive `var()` references, cycles, and collisions
-  with `tokens`; unenrolled themes retain their legacy behavior.
+  exact namespaces, case-insensitive `var()` references, cycles—including cycles
+  reachable only after co-matching adaptation rules cascade—and collisions with
+  `tokens`; unenrolled themes retain their legacy behavior.
 - **INV9 — Authoring and output are separate systems.** This record owns the
   normalized theme definition. The shared compiler owns turning it into styles;
   runtime and build own using or saving that output.

@@ -43,7 +43,10 @@ function resolveTokenValue(value: TokenValue, path: string): string {
   );
 }
 
-function collectLocalReferences(value: unknown, refs: Set<string>): void {
+function collectCustomPropertyReferences(
+  value: unknown,
+  refs: Set<string>,
+): void {
   if (typeof value === 'string') {
     CSS_VAR_PATTERN.lastIndex = 0;
     for (
@@ -51,58 +54,144 @@ function collectLocalReferences(value: unknown, refs: Set<string>): void {
       match;
       match = CSS_VAR_PATTERN.exec(value)
     ) {
-      const name = match[1];
-      if (name.startsWith(LOCAL_TOKEN_PREFIX)) {
-        refs.add(name);
-      }
+      refs.add(match[1]);
     }
     return;
   }
   if (Array.isArray(value)) {
     for (const item of value) {
-      collectLocalReferences(item, refs);
+      collectCustomPropertyReferences(item, refs);
     }
     return;
   }
   if (value && typeof value === 'object') {
     for (const nested of Object.values(value)) {
-      collectLocalReferences(nested, refs);
+      collectCustomPropertyReferences(nested, refs);
     }
   }
 }
 
-function assertNoLocalTokenCycles(localTokens: Record<string, string>): void {
+function collectLocalReferences(value: unknown, refs: Set<string>): void {
+  const customProperties = new Set<string>();
+  collectCustomPropertyReferences(value, customProperties);
+  for (const name of customProperties) {
+    if (name.startsWith(LOCAL_TOKEN_PREFIX)) {
+      refs.add(name);
+    }
+  }
+}
+
+export function assertNoTokenCycles(
+  tokenValues: Record<string, string>,
+  context?: string,
+  relevantNames?: ReadonlySet<string>,
+): void {
   const dependencies = new Map<string, string[]>();
-  for (const [name, value] of Object.entries(localTokens)) {
+  for (const [name, value] of Object.entries(tokenValues)) {
     const refs = new Set<string>();
-    collectLocalReferences(value, refs);
+    collectCustomPropertyReferences(value, refs);
     dependencies.set(
       name,
-      [...refs].filter(reference => hasOwn(localTokens, reference)),
+      [...refs].filter(reference => hasOwn(tokenValues, reference)),
     );
   }
 
-  const visiting = new Set<string>();
-  const visited = new Set<string>();
-  const visit = (name: string, path: string[]): void => {
-    if (visiting.has(name)) {
-      const start = path.indexOf(name);
-      const cycle = [...path.slice(start), name].join(' -> ');
-      throw new Error(`Theme-local token cycle detected: ${cycle}.`);
-    }
-    if (visited.has(name)) {
-      return;
-    }
-    visiting.add(name);
-    for (const dependency of dependencies.get(name) ?? []) {
-      visit(dependency, [...path, name]);
-    }
-    visiting.delete(name);
-    visited.add(name);
+  const findCyclePath = (
+    start: string,
+    component: ReadonlySet<string>,
+  ): string[] => {
+    const path = [start];
+    const onPath = new Set(path);
+    const search = (name: string): boolean => {
+      for (const dependency of dependencies.get(name) ?? []) {
+        if (!component.has(dependency)) {
+          continue;
+        }
+        if (dependency === start) {
+          path.push(start);
+          return true;
+        }
+        if (onPath.has(dependency)) {
+          continue;
+        }
+        path.push(dependency);
+        onPath.add(dependency);
+        if (search(dependency)) {
+          return true;
+        }
+        onPath.delete(dependency);
+        path.pop();
+      }
+      return false;
+    };
+    search(start);
+    return path;
   };
 
-  for (const name of Object.keys(localTokens)) {
-    visit(name, []);
+  let nextIndex = 0;
+  const indexes = new Map<string, number>();
+  const lowlinks = new Map<string, number>();
+  const stack: string[] = [];
+  const onStack = new Set<string>();
+
+  const visit = (name: string): void => {
+    const index = nextIndex++;
+    indexes.set(name, index);
+    lowlinks.set(name, index);
+    stack.push(name);
+    onStack.add(name);
+
+    for (const dependency of dependencies.get(name) ?? []) {
+      if (!indexes.has(dependency)) {
+        visit(dependency);
+        lowlinks.set(
+          name,
+          Math.min(lowlinks.get(name) ?? index, lowlinks.get(dependency) ?? 0),
+        );
+      } else if (onStack.has(dependency)) {
+        lowlinks.set(
+          name,
+          Math.min(lowlinks.get(name) ?? index, indexes.get(dependency) ?? 0),
+        );
+      }
+    }
+
+    if (lowlinks.get(name) !== index) {
+      return;
+    }
+
+    const component: string[] = [];
+    let member: string;
+    do {
+      member = stack.pop() ?? name;
+      onStack.delete(member);
+      component.push(member);
+    } while (member !== name);
+
+    const hasCycle =
+      component.length > 1 ||
+      (dependencies.get(component[0]) ?? []).includes(component[0]);
+    if (
+      !hasCycle ||
+      (relevantNames &&
+        !component.some(componentName => relevantNames.has(componentName)))
+    ) {
+      return;
+    }
+
+    const start =
+      component.find(componentName => relevantNames?.has(componentName)) ??
+      component[0];
+    const cycle = findCyclePath(start, new Set(component)).join(' -> ');
+    throw new Error(
+      `${context ? `${context}: ` : ''}Theme token cycle detected: ${cycle}.`,
+    );
+  };
+
+  for (const name of Object.keys(tokenValues)) {
+    if (!indexes.has(name)) {
+      visit(name);
+    }
   }
 }
 
@@ -262,7 +351,7 @@ export function resolveLocalTokenContract(
   }
 
   assertDeclaredReferences(localTokens, components, onDark, onLight);
-  assertNoLocalTokenCycles(localTokens);
+  assertNoTokenCycles(localTokens, `defineTheme("${input.name}").localTokens`);
 
   return {
     localTokens,
@@ -330,7 +419,7 @@ export function resolveAdaptationLocalTokens(
       );
     }
   }
-  assertNoLocalTokenCycles(effective);
+  assertNoTokenCycles(effective, path);
 
   return Object.keys(resolved).length > 0 ? resolved : undefined;
 }

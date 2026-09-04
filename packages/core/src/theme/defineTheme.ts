@@ -599,6 +599,7 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
     input.name,
     __adaptations,
     __axes,
+    tokens,
     localTokenContract?.localTokens,
   );
 

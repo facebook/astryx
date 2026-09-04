@@ -65,7 +65,7 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: 'adaptations = ordered {when,value} rules over width/pointer/contrast/motion. widthBreakpoints fixed sm|md|lg|xl|2xl defaults 640|768|1024|1280|1536; map alone emits no CSS. width.from inclusive, width.below exclusive; condition fields AND. root first, then matching rules in authored order (later writes win), then onDark/onLight. rules can write typography/color/radius/motion/tokens/localTokens/components; local names and custom visual-prop values must already exist on root. extends inherits breakpoints + ordered rules, appends child rules, re-resolves against child axes. CSS-only; use built themes for SSR first paint.',
+          text: 'adaptations = ordered {when,value} rules over width/pointer/contrast/motion. widthBreakpoints fixed sm|md|lg|xl|2xl defaults 640|768|1024|1280|1536; map alone emits no CSS. width.from inclusive, width.below exclusive; condition fields AND. root first, then matching rules in authored order (later writes win), then onDark/onLight. rules can write typography/color/radius/motion/tokens/localTokens/components; local names and custom visual-prop values must already exist on root. Co-matching token/localToken writes are validated together; any reachable var() cycle fails. extends inherits breakpoints + ordered rules, appends child rules, re-resolves against child axes. CSS-only; use built themes for SSR first paint.',
         },
         null,
         null,

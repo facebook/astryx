@@ -423,6 +423,43 @@ describe('theme build adaptations', () => {
     expect(`${result.stdout}${result.stderr}`).toContain('private var');
   });
 
+  it('rejects cycles across co-matching rules before writing output', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themesDir = path.join(project, 'themes');
+    const a = '--astryx-theme-overlap-build-a';
+    const b = '--astryx-theme-overlap-build-b';
+    const themeFile = writePlainTheme(
+      themesDir,
+      'overlap-build',
+      `{
+        name: 'overlap-build',
+        localTokens: {'${a}': '1px', '${b}': '2px'},
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {localTokens: {'${a}': 'var(${b})'}},
+            },
+            {
+              when: {contrast: 'more'},
+              value: {localTokens: {'${b}': 'var(${a})'}},
+            },
+          ],
+        },
+      }`,
+    );
+
+    const result = await build(project, themeFile);
+    expect(result.code).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toMatch(
+      /overlapping rules \[0, 1\].*cycle detected/i,
+    );
+    expect(fs.existsSync(path.join(themesDir, 'overlap-build.css'))).toBe(
+      false,
+    );
+    expect(fs.existsSync(path.join(themesDir, 'overlap-build.js'))).toBe(false);
+  });
+
   it('reports invalid serialized adaptation metadata as ERR_THEME_INVALID', async () => {
     const project = path.join(tmpDir, 'project');
     const themesDir = path.join(project, 'themes');

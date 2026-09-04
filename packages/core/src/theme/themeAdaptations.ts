@@ -25,7 +25,7 @@ import type {MotionScaleConfig} from './expandMotionScale';
 import type {RadiusScaleConfig} from './expandRadiusScale';
 import type {ColorScaleConfig} from './expandColorScale';
 import {resolveThemeValues, type ThemeValuesInput} from './resolveThemeValues';
-import {resolveAdaptationLocalTokens} from './localTokens';
+import {assertNoTokenCycles, resolveAdaptationLocalTokens} from './localTokens';
 
 // =============================================================================
 // Public authoring vocabulary
@@ -195,7 +195,19 @@ function cloneData<T>(value: T): T {
 const BREAKPOINT_NAMES = new Set<string>(WIDTH_BREAKPOINT_NAMES);
 const ADAPTATION_KEYS = new Set(['widthBreakpoints', 'rules']);
 const RULE_KEYS = new Set(['when', 'value']);
-const CONDITION_KEYS = new Set(['width', 'pointer', 'contrast', 'motion']);
+const CONDITION_AXES = [
+  'width',
+  'pointer',
+  'contrast',
+  'motion',
+] as const satisfies ReadonlyArray<keyof ThemeAdaptationCondition>;
+type UnhandledConditionAxis = Exclude<
+  keyof ThemeAdaptationCondition,
+  (typeof CONDITION_AXES)[number]
+>;
+const CONDITION_KEYS: UnhandledConditionAxis extends never
+  ? ReadonlySet<keyof ThemeAdaptationCondition>
+  : never = new Set(CONDITION_AXES);
 const WIDTH_CONDITION_KEYS = new Set(['from', 'below']);
 const VALUE_KEYS = new Set([
   'typography',
@@ -623,6 +635,158 @@ function mediaQueryForCondition(
   return parts.join(' and ');
 }
 
+type PointerEnvironment =
+  NonNullable<ThemeAdaptationCondition['pointer']> | 'none';
+type ContrastEnvironment =
+  NonNullable<ThemeAdaptationCondition['contrast']> | 'custom';
+type MotionEnvironment = NonNullable<ThemeAdaptationCondition['motion']>;
+
+interface AdaptationEnvironment {
+  width: number;
+  pointer: PointerEnvironment;
+  contrast: ContrastEnvironment;
+  motion: MotionEnvironment;
+}
+
+const ENVIRONMENT_VALUES = {
+  pointer: ['coarse', 'fine', 'none'],
+  contrast: ['more', 'less', 'no-preference', 'custom'],
+  motion: ['reduce', 'no-preference'],
+} as const satisfies {
+  pointer: ReadonlyArray<PointerEnvironment>;
+  contrast: ReadonlyArray<ContrastEnvironment>;
+  motion: ReadonlyArray<MotionEnvironment>;
+};
+type EnvironmentTypes = {
+  pointer: PointerEnvironment;
+  contrast: ContrastEnvironment;
+  motion: MotionEnvironment;
+};
+const COMPLETE_ENVIRONMENT_VALUES: {
+  [Axis in keyof EnvironmentTypes]: Exclude<
+    EnvironmentTypes[Axis],
+    (typeof ENVIRONMENT_VALUES)[Axis][number]
+  > extends never
+    ? (typeof ENVIRONMENT_VALUES)[Axis]
+    : never;
+} = ENVIRONMENT_VALUES;
+
+/** Whether one normalized rule matches one representative environment cell. */
+function conditionMatchesEnvironment(
+  condition: ThemeAdaptationCondition,
+  points: WidthBreakpoints,
+  environment: AdaptationEnvironment,
+): boolean {
+  const from = condition.width?.from;
+  if (from !== undefined && environment.width < points[from]) {
+    return false;
+  }
+  const below = condition.width?.below;
+  if (below !== undefined && environment.width >= points[below]) {
+    return false;
+  }
+  if (
+    condition.pointer !== undefined &&
+    condition.pointer !== environment.pointer
+  ) {
+    return false;
+  }
+  if (
+    condition.contrast !== undefined &&
+    condition.contrast !== environment.contrast
+  ) {
+    return false;
+  }
+  if (
+    condition.motion !== undefined &&
+    condition.motion !== environment.motion
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Reject token cycles reachable in any matching adaptation-rule cascade.
+ *
+ * Conditions use a finite, closed vocabulary. Sampling zero and each named
+ * width boundary covers every distinct width truth region; the discrete axes
+ * enumerate every browser state relevant to the supported queries. For each
+ * reachable match set, portable and local writes are applied in authored order
+ * before checking the effective graph, so a later matching rule may
+ * intentionally repair an earlier cycle just as it does in CSS.
+ */
+function assertNoReachableTokenCycles(
+  themeName: string,
+  points: WidthBreakpoints,
+  rootTokens: Record<string, string>,
+  rootLocalTokens: Record<string, string> | undefined,
+  rules: ResolvedThemeAdaptationRule[],
+): void {
+  const tokenRuleIndexes = rules.flatMap((rule, index) =>
+    Object.keys(rule.tokens).length > 0 ||
+    (rule.localTokens && Object.keys(rule.localTokens).length > 0)
+      ? [index]
+      : [],
+  );
+  if (tokenRuleIndexes.length === 0) {
+    return;
+  }
+
+  const widthEnvironments = [
+    0,
+    ...WIDTH_BREAKPOINT_NAMES.map(name => points[name]),
+  ];
+  const checkedMatchSets = new Set<string>();
+
+  for (const width of widthEnvironments) {
+    for (const pointer of COMPLETE_ENVIRONMENT_VALUES.pointer) {
+      for (const contrast of COMPLETE_ENVIRONMENT_VALUES.contrast) {
+        for (const motion of COMPLETE_ENVIRONMENT_VALUES.motion) {
+          const environment = {width, pointer, contrast, motion};
+          const matchingRuleIndexes = tokenRuleIndexes.filter(index =>
+            conditionMatchesEnvironment(rules[index].when, points, environment),
+          );
+          if (matchingRuleIndexes.length === 0) {
+            continue;
+          }
+
+          const signature = matchingRuleIndexes.join(',');
+          if (checkedMatchSets.has(signature)) {
+            continue;
+          }
+          checkedMatchSets.add(signature);
+
+          const effective = {...rootTokens, ...rootLocalTokens};
+          const relevantNames = new Set<string>();
+          for (const index of matchingRuleIndexes) {
+            const rule = rules[index];
+            Object.assign(effective, rule.tokens, rule.localTokens);
+            for (const name of Object.keys(rule.tokens)) {
+              relevantNames.add(name);
+            }
+            for (const name of Object.keys(rule.localTokens ?? {})) {
+              relevantNames.add(name);
+            }
+          }
+
+          const indexes = matchingRuleIndexes.join(', ');
+          const queries = matchingRuleIndexes
+            .map(index => rules[index].query)
+            .join('; ');
+          assertNoTokenCycles(
+            effective,
+            `defineTheme("${themeName}").adaptations ${
+              matchingRuleIndexes.length === 1 ? 'rule' : 'overlapping rules'
+            } [${indexes}] (${queries})`,
+            relevantNames,
+          );
+        }
+      }
+    }
+  }
+}
+
 /**
  * Resolve the effective root generative metadata through a theme extension.
  * An explicitly supplied root axis replaces the inherited axis; omission inherits.
@@ -722,13 +886,14 @@ export function resolveThemeAdaptationRules(
   themeName: string,
   adaptations: NormalizedThemeAdaptations,
   axes: ThemeGenerativeAxes,
+  rootTokens: Record<string, string>,
   rootLocalTokens: Record<string, string> | undefined,
 ): ResolvedThemeAdaptationRule[] | undefined {
   if (adaptations.rules.length === 0) {
     return undefined;
   }
 
-  return adaptations.rules.map((rule, index) => {
+  const resolvedRules = adaptations.rules.map((rule, index) => {
     const resolved = resolveThemeValues(
       valueToThemeInput(themeName, index, rule.value, axes),
     );
@@ -778,4 +943,13 @@ export function resolveThemeAdaptationRules(
       components: resolved.components,
     };
   });
+
+  assertNoReachableTokenCycles(
+    themeName,
+    adaptations.widthBreakpoints,
+    rootTokens,
+    rootLocalTokens,
+    resolvedRules,
+  );
+  return resolvedRules;
 }
