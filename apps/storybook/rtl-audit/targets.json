@@ -232,5 +232,52 @@
       "overlay": "[data-toast-id]",
       "overlayRoot": "body"
     }
+  },
+  {
+    "component": "Drawer",
+    "storyId": "lab-drawer--showcase",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": "button:has-text(\"Open inspector\")"
+    },
+    "selectors": {
+      "overlay": "dialog.astryx-drawer[open]",
+      "overlayRoot": "body"
+    }
+  },
+  {
+    "component": "Tokenizer",
+    "storyId": "core-tokenizer--logical-order",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-token",
+      "next": ".astryx-input-clear-button"
+    }
+  },
+  {
+    "component": "TransferList",
+    "storyId": "lab-transferlist--default",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "[data-transfer-list-panel-body=\"selected\"]",
+      "next": "[data-transfer-list-panel-body=\"available\"]"
+    }
+  },
+  {
+    "component": "Typeahead",
+    "storyId": "core-typeahead--logical-order",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-token",
+      "next": ".astryx-input-clear-button"
+    }
   }
 ]

@@ -1,30 +1,902 @@
 [
   {
+    "component": "core/AlertDialog",
+    "reason": "AlertDialog renders a title, a description paragraph, and a Cancel/action Button pair inside Dialog's centred modal surface \u2014 no icons, no positioned decoration, no scrolling or dragging. Its one layout decision, stacking the actions and putting the destructive button above Cancel, is driven by a max-width media query, and the wide-viewport row is aligned with the logical `hAlign=\"end\"` that CSS mirrors on its own. Every style it declares is a width constraint.",
+    "evidence": {
+      "apps/storybook/stories/AlertDialog.stories.tsx": "sha256:126d8f76c718ae7149f95b411a6262fad5b18f3a4721f271be5f2999247ec915",
+      "packages/core/src/AlertDialog/AlertDialog.tsx": "sha256:15cc8d0e783a99153593fb07347a97a47c08495f131360b70ba3d86f192412b1"
+    }
+  },
+  {
+    "component": "core/AspectRatio",
+    "reason": "AspectRatio renders a ratio box and one absolutely-positioned child wrapper that fills it edge to edge (`inset-inline-start: 0; width: 100%; height: 100%`), so the child occupies the whole box and has no side to land on. Its only other visual is `border-radius: 50%` for the `ellipse` shape, which is symmetric about both axes. The fifteen stories render images, Skeletons and coloured placeholders inside Grid and HStack \u2014 no glyph, no separator, no positioned affordance, and no control the user can press.",
+    "evidence": {
+      "apps/storybook/stories/AspectRatio.stories.tsx": "sha256:36a2ec4dcc8a11e7c841eaeafc23b61de9933c127e69719924eb439dcb181b6d",
+      "packages/core/src/AspectRatio/AspectRatio.tsx": "sha256:304eaed26c09e5d6d8b21f72ddd908c501c85c443684b9dce4635a27b7ef81a8"
+    }
+  },
+  {
+    "component": "core/AvatarGroupOverflow",
+    "reason": "AvatarGroupOverflow renders a single circular/pill \"+N\" counter \u2014 one text node inside a relatively-positioned inline-flex box, with no icon, no positioned child, and no second control to order against. Its one inline-axis rule is the negative `marginInlineStart` overlap, a logical property that already reverses under RTL so the stack overlaps from the correct edge. There is no scroll, drag, keyboard, or overlay behaviour to invert.",
+    "evidence": {
+      "apps/storybook/stories/AvatarGroup.stories.tsx": "sha256:94acba2a288cf28418ab4eeb34db07e9748f32166d169bee19208f2e4c939d7c",
+      "packages/core/src/AvatarGroup/AvatarGroupContext.ts": "sha256:e5af6b93c996711965386e55457e20268873b654aaf44f94dfbe96d8eb1420e7",
+      "packages/core/src/AvatarGroup/AvatarGroupOverflow.tsx": "sha256:8ecde4d5f20c73556d27ae08c825ffcec1c2a7f4807d772c926072de837c202b"
+    }
+  },
+  {
+    "component": "core/Badge",
+    "reason": "Badge renders one inline-flex span containing an optional caller-supplied icon slot and a text label, spaced with `gap` and `padding-inline`. Nothing is positioned, transformed, or scrolled, and the built-in truncation is `text-overflow: ellipsis`, which the browser places on the inline-end edge in either direction. The label-order flip between icon and text is ordinary inline-flex reflow.",
+    "evidence": {
+      "apps/storybook/stories/Badge.stories.tsx": "sha256:b7ecdeb50e2d00d321105ba8fcddee728ce7a4179d08a5199c3fd3dd6ec8d00f",
+      "packages/core/src/Badge/Badge.tsx": "sha256:aa1f02a3ac0a7319c43d96bcc385e48a9181360ee2e071bdc5ff3a9b723d0731",
+      "packages/core/src/Badge/index.ts": "sha256:8a117898826ad265afa92fd795a0a38562dbe7ac0d7bd2ff8a88005686b44cc6"
+    }
+  },
+  {
+    "component": "core/Banner",
+    "reason": "Banner renders a single wrap-capable flex header row \u2014 status icon, title/description column, and an end area pushed over with `marginInlineStart: 'auto'` \u2014 above an optional content panel. Its status, close and expand glyphs (`info`, `warning`, `error`, `success`, `close`, `chevronDown`) are all radially symmetric or vertical, and the expanded state rotates the chevron 180\u00b0 about the block axis. Every inset, corner radius and border it draws is a logical property, so the whole banner mirrors under RTL with nothing positioned, ordered or animated along the inline axis for the audit to assert.",
+    "evidence": {
+      "apps/storybook/stories/Banner.stories.tsx": "sha256:15792a91bf7a7df1d6e15085cc42b9fc7f4df05135d09b6360b2a24ca2a6db5d",
+      "packages/core/src/Banner/Banner.tsx": "sha256:a17ff3f61b7ee40a407373486366877684c650e7d08ae9fc2d8606c0bae9de66",
+      "packages/core/src/Banner/index.ts": "sha256:64591b4c3a37ae382a910fc9314300c3045bf8d602b28cc60a681d7b8f3a17f6"
+    }
+  },
+  {
+    "component": "core/Blockquote",
+    "reason": "Blockquote renders a `<blockquote>` with an inline-start rule and an optional `<cite>` line, and nothing else. The quote rule and text indent are declared with `borderInlineStart*` and `paddingInlineStart`, so CSS moves them to the right edge under RTL with no component involvement. There is no icon, no positioned element, no control pair, and no scroll, drag or keyboard behavior for the audit to compare across directions.",
+    "evidence": {
+      "apps/storybook/stories/Blockquote.stories.tsx": "sha256:e6d2b037249ec9e0b10f461944281fdfdde83e43659b119c2ee2eac2829620b2",
+      "packages/core/src/Blockquote/Blockquote.tsx": "sha256:b86bb14638dd4a83f072a5665216d911c8e6a280218388d9c9daec85deea32a4"
+    }
+  },
+  {
+    "component": "core/BottomSheet",
+    "reason": "BottomSheet is a block-axis sheet: it spans the full inline axis (`insetInline: 0`) and all of its motion, gestures and snap points move it up and down (`translateY`, `touchAction: 'pan-y'`, block-end offsets). It renders no icon, its two aria-hidden elements are an empty grab-handle pill and an empty iOS toolbar-sampling strip, and it exposes no placement or side prop. Its edges, radii and spacing are written with logical properties, so the surface, its hairline borders and its top corners follow the document direction with nothing for the audit to compare.",
+    "evidence": {
+      "apps/storybook/stories/BottomSheet.stories.tsx": "sha256:a140739807b307ad1eb6d81df7d6a2b577499ebd5e7318bed2b30da165ccf102",
+      "packages/core/src/BottomSheet/BottomSheet.tsx": "sha256:c47afbd06927600460cee470d3e7fdbc40a12c81ac353e6b8336a3fcdc3720e3",
+      "packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx": "sha256:83df8b0fc02bc067cb5f88b35f5238d9fe1b968f91c62151527d8abed49e737c",
+      "packages/core/src/BottomSheet/BottomSheetPanel.tsx": "sha256:08eeaf295653e77b97ee000fb0496e222be1a2539afc27762c496a18ce440861",
+      "packages/core/src/BottomSheet/BottomSheetSwitcherContext.ts": "sha256:82c89a2aa2a72c82233e22ce5207f367a97afd0b57f6af8953d71c76959981ea"
+    }
+  },
+  {
+    "component": "core/BottomSheetSwitcher",
+    "reason": "BottomSheetSwitcher renders one full-viewport `<dialog>` (`position: fixed; inset: 0`) holding sheet panels centred by a full-width positioner, and coordinates their handoff purely in the block axis \u2014 the entering panel slides up on `translateY`, the retained panel moves down by an `alignmentOffset`, and both fade. It contributes no icon, no glyph, no inline-axis offset, and no horizontal gesture; its only affordances are Escape, scrim click, and a vertical swipe.",
+    "evidence": {
+      "apps/storybook/stories/BottomSheet.stories.tsx": "sha256:a140739807b307ad1eb6d81df7d6a2b577499ebd5e7318bed2b30da165ccf102",
+      "apps/storybook/stories/BottomSheetSwitcher.stories.tsx": "sha256:194746906decf7c68c69f782e8fb34256de96083465b8445372e8dfe8f914155",
+      "packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx": "sha256:83df8b0fc02bc067cb5f88b35f5238d9fe1b968f91c62151527d8abed49e737c",
+      "packages/core/src/BottomSheet/BottomSheetSwitcher.tsx": "sha256:0e3268100b681d518520eb791d1775dcc49b4e50dcbfd6d1912734a67a1b7bf2",
+      "packages/core/src/BottomSheet/BottomSheetSwitcherContext.ts": "sha256:82c89a2aa2a72c82233e22ce5207f367a97afd0b57f6af8953d71c76959981ea"
+    }
+  },
+  {
+    "component": "core/Button",
+    "reason": "Button lays out an optional icon, a label span and an optional end slot as one `inline-flex` row with `gap` and `paddingInline` \u2014 a plain row with logical spacing, which CSS reverses under RTL with nothing for the audit to assert. Its only positioned element is the loading spinner overlay, anchored with `insetInlineStart`/`insetInlineEnd` and carrying no transform, so it cannot land on the wrong side. Every icon in the fifteen stories is a gear, trash, plus or badge \u2014 none is a left/right glyph.",
+    "evidence": {
+      "apps/storybook/stories/Button.stories.tsx": "sha256:c43df5c0156a9db93b949dbca230a629ffa4834267ebe9fcd2b0ff9f15b0c871",
+      "packages/core/src/Button/Button.tsx": "sha256:716ec92f1597397576a7e084d5f47bff74bc6e13e9781694b4573fa3b15c8d06",
+      "packages/core/src/Button/index.ts": "sha256:2a9a369c3810d927edabcb83d4b73c12caadc7dd7fd74e05bb1af197a61529f7"
+    }
+  },
+  {
+    "component": "core/Card",
+    "reason": "Card is a single div that paints a background, border, radius and shadow, sets the container padding custom properties, and renders its children. All four padding edges are written as logical properties so the border-inset calculation mirrors with the writing direction, and the component has no positioned element, no icon, no overlay, and no interaction of its own.",
+    "evidence": {
+      "apps/storybook/stories/Card.stories.tsx": "sha256:467cfcf03cbee8598d519da5424b881ac3e1804b6f143b03ce3aab8e64d0ce02",
+      "packages/core/src/Card/Card.tsx": "sha256:6ba3210045e3ae0adba926776cd2e807d9b1e307f7fa99e8bc760edb32b963ae",
+      "packages/core/src/Card/index.ts": "sha256:dd875606a925420bf82a260adee476fe1cf4ee3471d2b28954fb854e6f1337ee"
+    }
+  },
+  {
+    "component": "core/Center",
+    "reason": "Center is a flex box that centres its children on one or both axes; it renders no glyph, no positioned element, and no control of its own. Its only spatial API is the spacing-scale padding set, which resolves entirely to `padding-inline-start/end` and `padding-block-start/end`, so every edge already follows the writing direction. Centring on the inline axis mirrors to itself, leaving nothing whose LTR and RTL renders can differ.",
+    "evidence": {
+      "apps/storybook/stories/Center.stories.tsx": "sha256:08bb72aa858a3ba7973d6c1384da5de2cd5ae4c07397bc7a99f83f1bd806656e",
+      "packages/core/src/Center/Center.tsx": "sha256:2026079865301812a2b89ec5030ce2613ccec6273580b6a54d7c13d7503e58b9"
+    }
+  },
+  {
+    "component": "core/ChatComposerDrawer",
+    "reason": "ChatComposerDrawer is a container that tucks behind a chat composer and collapses vertically: a `Badge` + label row and a centred drag-bar handle in one grid cell, over a content area whose height animates through `grid-template-rows`. Every edge it paints or spaces is logical (`paddingInline`, `marginBlockEnd`, `borderStartStartRadius`), the collapse axis is vertical, and it renders no icon, no positioned element and no overlay.",
+    "evidence": {
+      "apps/storybook/stories/Chat.stories.tsx": "sha256:ca10074f8b9a26cdb6b53152b31a1ec38c57e1cf783a79ff48e4a8deec91a2e7",
+      "apps/storybook/stories/ChatComposer.stories.tsx": "sha256:9472fadc58836f06dbee1ae74aa207b4836d7a9cadb1f210937c431f8782bfed",
+      "apps/storybook/stories/ChatComposerCustomInput.stories.tsx": "sha256:d3127e0c48a65cd6233ac0180045eb2efc90d8fd43e7b955b638cf0033449fa1",
+      "packages/core/src/Chat/ChatComposerDrawer.tsx": "sha256:d8b1adcc82df7b26cf49f99ed7483292c5e2a4510cf91000f57b50cfd0e93d8b"
+    }
+  },
+  {
+    "component": "core/chatdictation",
+    "reason": "These eight stories render a microphone toggle button that swaps its icon for five volume-reactive equalizer bars while listening. Every animated quantity is vertical or scalar \u2014 `scaleY` on the bars, a percentage-width volume meter, and band heights \u2014 and the bar row is a symmetric equalizer with no start or end meaning. The three composer-wrapped stories (`InSendActions`, `AsSendButton`, `Interactive`) add only slot layout whose inline spacing is logical, and the send glyph they surface is `arrowUp`, which does not mirror.",
+    "evidence": {
+      "apps/storybook/stories/ChatDictation.stories.tsx": "sha256:b0c49db8f59435ac65819dd41cc8c236eb25e34ddd62ae14c34a0665b2e2008f"
+    }
+  },
+  {
+    "component": "core/ChatDictationButton",
+    "reason": "ChatDictationButton renders a microphone Button plus, while listening, five equalizer bars that animate only on the vertical axis (`scaleY`). The bar overlay is absolutely positioned with no inset declared, so it sits at its static position and follows the inline direction automatically, and the bars themselves are ordinary flex children whose left-to-right sequence is a symmetric equalizer with no start/end meaning. Nothing here has a side, an order, or a directional glyph.",
+    "evidence": {
+      "apps/storybook/stories/Chat.stories.tsx": "sha256:ca10074f8b9a26cdb6b53152b31a1ec38c57e1cf783a79ff48e4a8deec91a2e7",
+      "apps/storybook/stories/ChatDictation.stories.tsx": "sha256:b0c49db8f59435ac65819dd41cc8c236eb25e34ddd62ae14c34a0665b2e2008f",
+      "packages/core/src/Chat/ChatDictationButton.tsx": "sha256:3c925d7e02560043912cfab665b527ea1d0c41da591a2781e5d98d933437b41d",
+      "packages/core/src/Chat/useSpeechRecognition.ts": "sha256:d541542cd4f708ac8750c3b5cc2463b8657b235e079364b1ada4861ec033c908"
+    }
+  },
+  {
+    "component": "core/ChatLayoutScrollButton",
+    "reason": "The scroll-to-bottom control is a horizontally centred pill holding one ghost button with a downward chevron, and it grows from 32px to 200px along the inline axis when given a label. The chevron points down the block axis, so it means the same thing in either reading direction, and the extra breathing room for label text is `paddingInlineEnd`, which already follows the reading direction. The component owns no positioned element and no side prop \u2014 the dock it sits in belongs to ChatLayout.",
+    "evidence": {
+      "apps/storybook/stories/Chat.stories.tsx": "sha256:ca10074f8b9a26cdb6b53152b31a1ec38c57e1cf783a79ff48e4a8deec91a2e7",
+      "apps/storybook/stories/ChatLayout.stories.tsx": "sha256:8322d8a617d21e00a314f5854bc8d8d6998aa0b150b00b6552bcd77a5fe1f067",
+      "packages/core/src/Chat/ChatLayoutScrollButton.tsx": "sha256:dcecce577b485c6b46875b570ca4ee48e0527cf55e50b8f1a8f0e70556e4a39b"
+    }
+  },
+  {
+    "component": "core/ChatMessage",
+    "reason": "ChatMessage lays a message out as a flex row whose direction is chosen by sender (`row` for assistant, `row-reverse` for user) with `flex-start`/`flex-end` cross-axis alignment, and its bubbles tighten their tail corners with logical radii (`borderEndStartRadius` / `borderEndEndRadius`). Every one of those flips with the writing direction on its own, and the component adds no icon, positioned element, glyph separator, or horizontal gesture for the audit to compare.",
+    "evidence": {
+      "apps/storybook/stories/Chat.stories.tsx": "sha256:ca10074f8b9a26cdb6b53152b31a1ec38c57e1cf783a79ff48e4a8deec91a2e7",
+      "packages/core/src/Chat/ChatContext.tsx": "sha256:f2c8628e9dc49bb7fdb0444c4a03960a13dcbcb318f1ba6bd315d50387218d5e",
+      "packages/core/src/Chat/ChatMessage.tsx": "sha256:9d20c6c080fa1055761b1757365911cae4de875291e691308905dfa5fc316959"
+    }
+  },
+  {
+    "component": "core/ChatMessageBubble",
+    "reason": "ChatMessageBubble is a padded text container with an optional name row above and metadata row below. Its one sender-dependent visual, the tightened \"tail\" corner, is written entirely with logical corner radii (`borderEndStartRadius`, `borderStartEndRadius`, \u2026) and its name/metadata alignment uses `textAlign: 'end'`, so the whole bubble mirrors through CSS with nothing left for the audit to compare. It draws no icon, no positioned decoration, and no glyph separators.",
+    "evidence": {
+      "apps/storybook/stories/Chat.stories.tsx": "sha256:ca10074f8b9a26cdb6b53152b31a1ec38c57e1cf783a79ff48e4a8deec91a2e7",
+      "packages/core/src/Chat/ChatContext.tsx": "sha256:f2c8628e9dc49bb7fdb0444c4a03960a13dcbcb318f1ba6bd315d50387218d5e",
+      "packages/core/src/Chat/ChatMessageBubble.tsx": "sha256:2b74fc5a5d20375948838009e8c3564ab9f5cb6f4d5edffca8e28c0c116111fe"
+    }
+  },
+  {
+    "component": "core/ChatMessageList",
+    "reason": "ChatMessageList is a `role=\"log\"` column (`flexDirection: 'column'`) that stacks message children with a density-derived gap and an optional flex spacer. Its two `aria-hidden` nodes are an empty scroll sentinel and an empty spacer, and its only scroll behaviour is the vertical load-older-messages observer. It renders no icon, positions nothing, and has no start/end affordance of its own \u2014 all inline padding is logical.",
+    "evidence": {
+      "apps/storybook/stories/Chat.stories.tsx": "sha256:ca10074f8b9a26cdb6b53152b31a1ec38c57e1cf783a79ff48e4a8deec91a2e7",
+      "packages/core/src/Chat/ChatContext.tsx": "sha256:f2c8628e9dc49bb7fdb0444c4a03960a13dcbcb318f1ba6bd315d50387218d5e",
+      "packages/core/src/Chat/ChatMessageList.tsx": "sha256:36f511ea564578cd320b625ecbb7b853a670b2f0d5a0fa9e03fac9ed840073e9"
+    }
+  },
+  {
+    "component": "core/ChatMessageMetadata",
+    "reason": "ChatMessageMetadata is a one-line flex row of timestamp \u00b7 footer \u00b7 status, where the status is a clock/check/double-check/error glyph plus its text label. Nothing in it points sideways: the row's sender-dependent `row-reverse` already follows the writing direction, the \"\u00b7\" separators are plain text rather than aria-hidden directional decoration, and the file declares no position, transform, or physical inset.",
+    "evidence": {
+      "apps/storybook/stories/Chat.stories.tsx": "sha256:ca10074f8b9a26cdb6b53152b31a1ec38c57e1cf783a79ff48e4a8deec91a2e7",
+      "packages/core/src/Chat/ChatContext.tsx": "sha256:f2c8628e9dc49bb7fdb0444c4a03960a13dcbcb318f1ba6bd315d50387218d5e",
+      "packages/core/src/Chat/ChatMessageMetadata.tsx": "sha256:f8c4e25af0d777d79e7b004c5628bb47fbe47f2662343f68cbf722ca55c76b79"
+    }
+  },
+  {
+    "component": "core/ChatSendButton",
+    "reason": "The send button is one circular icon-only Button that swaps between an upward arrow (send) and a square (stop) depending on composer state. Both glyphs sit on the block axis or are symmetric, so neither has a reading-direction meaning to mirror; the component adds only a full radius and `flexShrink: 0` and leaves all placement to whatever composer row it is dropped into.",
+    "evidence": {
+      "apps/storybook/stories/Chat.stories.tsx": "sha256:ca10074f8b9a26cdb6b53152b31a1ec38c57e1cf783a79ff48e4a8deec91a2e7",
+      "packages/core/src/Chat/ChatContext.tsx": "sha256:f2c8628e9dc49bb7fdb0444c4a03960a13dcbcb318f1ba6bd315d50387218d5e",
+      "packages/core/src/Chat/ChatSendButton.tsx": "sha256:10f78d49c0fbc9a06b01cac0e6395fbe91657dd7ccfbf3f9233091e25d01fe3d"
+    }
+  },
+  {
+    "component": "core/ChatSystemMessage",
+    "reason": "ChatSystemMessage renders one centred `role=\"status\"` line \u2014 a nowrap inline-flex run holding an optional icon slot and the message text \u2014 or, in the divider variant, delegates entirely to `<Divider label>`. Both are horizontally centred and symmetric about the inline axis, so the LTR and RTL renders are the same layout. The grep hit for a placement side is the phrase \"horizontal lines on each side\" in the `variant` doc comment, not a prop or a style.",
+    "evidence": {
+      "apps/storybook/stories/Chat.stories.tsx": "sha256:ca10074f8b9a26cdb6b53152b31a1ec38c57e1cf783a79ff48e4a8deec91a2e7",
+      "packages/core/src/Chat/ChatSystemMessage.tsx": "sha256:0c3bf23b4532eae8c34511f793de8d4e843d48ed69212bfaad96610e5a6a3382"
+    }
+  },
+  {
+    "component": "core/ChatTokenizedText",
+    "reason": "ChatTokenizedText splits a message string on token values and rebuilds it as inline text runs interleaved with `Badge` pills \u2014 a `display: inline` span containing `inline-flex` token spans, nothing more. It renders no icon, no separator, no positioned element and no transform, so there is no glyph to mirror, no absolutely-positioned box to land on the wrong side, and no aria-hidden directional decoration; the badge pill is a rounded box whose padding and radius are side-symmetric. The bubble side and text alignment that surround it in the stories belong to `ChatMessage`/`ChatMessageBubble` and are expressed as flex direction and logical `textAlign: 'end'` / logical border radii, which the browser flips from `dir` with nothing left for the audit to assert.",
+    "evidence": {
+      "apps/storybook/stories/Chat.stories.tsx": "sha256:ca10074f8b9a26cdb6b53152b31a1ec38c57e1cf783a79ff48e4a8deec91a2e7",
+      "apps/storybook/stories/ChatTokenizedText.stories.tsx": "sha256:9fa025cf085f98d0e837059ffe55a0f845216d1daba14d1e22469d300bde1562",
+      "packages/core/src/Chat/ChatComposerInput.tsx": "sha256:ea6d3e6f21b938be20242855b633b01c3228008af10ed48a4e37dfe53cdde3cd",
+      "packages/core/src/Chat/ChatTokenizedText.tsx": "sha256:9fc6ef9600b56d7ee13ece7bf41fe8991c2e8d21af8440cfb19bcce789e8ce39"
+    }
+  },
+  {
+    "component": "core/CheckboxInput",
+    "reason": "CheckboxInput renders a visually-hidden native `<input type=\"checkbox\">` stacked on a themeable indicator, with the label and description in a column beside it. The row is a `flex` line with `gap` that CSS reverses under RTL on its own. The one positioned element \u2014 the transparent input \u2014 is centred over its own 20/24px wrapper on touch pointers, so it mirrors onto itself; there is no icon, glyph separator, control pair, overlay side, or directional key handling.",
+    "evidence": {
+      "apps/storybook/stories/CheckboxInput.stories.tsx": "sha256:28ad0de5cd3aca69dd42787c2d1cd3561e23b82dbcb1a0bb3c0c920f8b650535",
+      "packages/core/src/CheckboxInput/CheckboxInput.tsx": "sha256:e318c0f84f2a7d7f0d00f7ef7a7d2e7c4d4f32b77805b6901006f2d4cc684598"
+    }
+  },
+  {
+    "component": "core/Citation",
+    "reason": "Citation renders one inline chip \u2014 an optional round favicon/icon, then the source title \u2014 or a numbered superscript badge, as an `inline-flex` run inside prose. Its spacing is entirely `paddingInline`/`marginInlineStart`, so the chip's leading gap follows the reading direction automatically. The single `aria-hidden` node wraps an image or icon rather than text, so there is no decoration glyph, and the component has no positioned element, control pair or overlay.",
+    "evidence": {
+      "apps/storybook/stories/Citation.stories.tsx": "sha256:c2cafac52d87682547ccfff6185008d704421ef770e22edd7759ccd4b9673554",
+      "packages/core/src/Citation/Citation.tsx": "sha256:745ccff23996fe45641b261af7554036f78abbd45dc0e3d995b7f4c0b36e810f"
+    }
+  },
+  {
+    "component": "core/ClickableCard",
+    "reason": "ClickableCard is a Card plus an interaction layer: a full-bleed `::after` hover/press tint inset to 0 on every side, a border whose width is subtracted from the logical padding so geometry matches across variants, and one visually-hidden anchor or button that carries the role and accessible name. Nothing it renders is placed on a side, ordered along the inline axis, or drawn as a glyph, and its own padding is expressed in logical properties, so an RTL render is the mirror of the LTR one with no assertion to make.",
+    "evidence": {
+      "apps/storybook/stories/ClickableCard.stories.tsx": "sha256:5ea103cffd48ffc8e06989c95ca4e999b54949ab962c909d457a5bbcdef8abaa",
+      "packages/core/src/ClickableCard/ClickableCard.tsx": "sha256:2ffa18a6c0edb39ba2bf5e7862ded459fd752fe0fa793569ba4a2fb0d2c9147d"
+    }
+  },
+  {
+    "component": "core/Collapsible",
+    "reason": "Collapsible is a full-width disclosure: a `space-between` trigger row holding the label and a down-chevron, over a content region that toggles `display: none`. The chevron is vertical and rotates about the block axis, so it reads identically in either direction, and the trigger's two children are laid out by flex with logical padding, which CSS reverses automatically. The group adds only hairlines on the block-start edge and block-axis density padding, so nothing in the component has an inline-axis side to land on.",
+    "evidence": {
+      "apps/storybook/stories/Collapsible.stories.tsx": "sha256:aab9d9c7b1c349eb4ae4b9117a6a47c16c2a27c607fb0e616ff1613160a65c43",
+      "packages/core/src/Collapsible/Collapsible.tsx": "sha256:729e6ebb20bc7f543a5b20280b90beb70805e3014fde213d765fd84ab58fce09",
+      "packages/core/src/Collapsible/CollapsibleGroupContext.tsx": "sha256:45ae561ff0d67f84cff738743805f3d0f70baf05110d17ee12398ce98dd6205a",
+      "packages/core/src/Collapsible/useCollapsible.ts": "sha256:023edc9a2aa6276a416b1d69e3e9e386266df0d4c76c808db83cdd81e925f952"
+    }
+  },
+  {
+    "component": "core/CollapsibleGroup",
+    "reason": "CollapsibleGroup is a coordination provider: by default it renders no DOM at all and returns `{children}` unchanged, and with `hasDividers` it renders one `display: flex; flex-direction: column` wrapper. Its whole API is open/close bookkeeping \u2014 `type`, `value`, `onChange` \u2014 plus two presentational flags it passes down by context; it draws no line, glyph, or control itself. The hairlines its items draw are `border-block-start` on the block axis, which is unaffected by writing direction.",
+    "evidence": {
+      "apps/storybook/stories/Collapsible.stories.tsx": "sha256:aab9d9c7b1c349eb4ae4b9117a6a47c16c2a27c607fb0e616ff1613160a65c43",
+      "packages/core/src/Collapsible/CollapsibleGroup.tsx": "sha256:ca4a29f3795797e93bebd8873394b96419e9e91a8b0d8c2f61f0d7238a790b68",
+      "packages/core/src/Collapsible/CollapsibleGroupContext.tsx": "sha256:45ae561ff0d67f84cff738743805f3d0f70baf05110d17ee12398ce98dd6205a"
+    }
+  },
+  {
+    "component": "core/CommandPalette",
+    "reason": "CommandPalette is a centred modal holding a search input, a vertically scrolling `role=\"listbox\"`, and a footer of keyboard hints. Its one icon is a magnifier, its hint keys are `\u2191`/`\u2193`, its navigation is ArrowUp/ArrowDown/Home/End/Enter/Escape, and every inline offset is written with `paddingInline` or `textAlign: 'start'`, so the whole surface reflows with the writing direction without any glyph, positioned affordance, or axis for the audit to compare.",
+    "evidence": {
+      "apps/storybook/stories/CommandPalette.stories.tsx": "sha256:7f5ccaf4d3d669d0bce626a1fc3d30e77463df04ce8ea7345b31cfc8d5f6d803",
+      "packages/core/src/CommandPalette/CommandPalette.tsx": "sha256:704ab95242d5630274d7bf943ba24219fd28ebe28c146d59ae172a29de34a09d",
+      "packages/core/src/CommandPalette/CommandPaletteContext.ts": "sha256:65c671807a5b2ad5dca1a0072a5b60c7327f81ba774f56bea7bc3ec478e775bf",
+      "packages/core/src/CommandPalette/CommandPaletteEmpty.tsx": "sha256:93fceb63482c551ad7fe07202cb559916fe6fd1f31ae64153ef6f2b74983e56d",
+      "packages/core/src/CommandPalette/CommandPaletteFooter.tsx": "sha256:312d035695e2cb21612bbd1ff33455d0ed31c65bec36e73714314aea6257ba3d",
+      "packages/core/src/CommandPalette/CommandPaletteGroup.tsx": "sha256:7c9a33733d68a42ea57a928a4d6ed20caa2562f53cb2340fe8122071bcc95924",
+      "packages/core/src/CommandPalette/CommandPaletteInput.tsx": "sha256:de19faf1a587cc63b62037d2dabf55a0dd50192d13300d2fb57ad3452f1fd348",
+      "packages/core/src/CommandPalette/CommandPaletteItem.tsx": "sha256:a6da8f430346502e3c8747a8ca647d8e3354d96d4f380ea4eb0dd8121f74ce60",
+      "packages/core/src/CommandPalette/CommandPaletteList.tsx": "sha256:5757438a05f474e852ab4a7a756927e3a83d727e7a1c99e2606086afbe697216"
+    }
+  },
+  {
+    "component": "core/CommandPaletteEmpty",
+    "reason": "CommandPaletteEmpty renders a single centred `<div>` of secondary text \u2014 \"No results\" or \"Type to search\" \u2014 with `paddingBlock`/`paddingInline` and `textAlign: 'center'`. It has no icon, no positioned element, no control, and no state; centred text occupies both halves of its box and reads identically in either direction.",
+    "evidence": {
+      "apps/storybook/stories/CommandPalette.stories.tsx": "sha256:7f5ccaf4d3d669d0bce626a1fc3d30e77463df04ce8ea7345b31cfc8d5f6d803",
+      "packages/core/src/CommandPalette/CommandPaletteEmpty.tsx": "sha256:93fceb63482c551ad7fe07202cb559916fe6fd1f31ae64153ef6f2b74983e56d"
+    }
+  },
+  {
+    "component": "core/CommandPaletteFooter",
+    "reason": "CommandPaletteFooter is a static hint bar: a flex row of three `Kbd`-plus-text groups for arrow navigation, Enter, and Escape. The only key glyphs it renders are up, down, Enter and Escape \u2014 none of them horizontal \u2014 and it draws no icon, no positioned element, and no control. Its spacing is entirely `gap` plus logical inline/block padding, so the row's order reverses with the writing direction on its own.",
+    "evidence": {
+      "apps/storybook/stories/CommandPalette.stories.tsx": "sha256:7f5ccaf4d3d669d0bce626a1fc3d30e77463df04ce8ea7345b31cfc8d5f6d803",
+      "packages/core/src/CommandPalette/CommandPaletteFooter.tsx": "sha256:312d035695e2cb21612bbd1ff33455d0ed31c65bec36e73714314aea6257ba3d"
+    }
+  },
+  {
+    "component": "core/CommandPaletteGroup",
+    "reason": "CommandPaletteGroup is a `role=\"group\"` wrapper that stacks a text heading above its items in a flex column. It declares five properties in total \u2014 flex layout, a gap, and logical block/inline padding \u2014 draws no icon or separator, and attaches no handlers. The heading is marked `aria-hidden` only because the group already carries it as `aria-label`; it is prose, not a directional mark.",
+    "evidence": {
+      "apps/storybook/stories/CommandPalette.stories.tsx": "sha256:7f5ccaf4d3d669d0bce626a1fc3d30e77463df04ce8ea7345b31cfc8d5f6d803",
+      "packages/core/src/CommandPalette/CommandPaletteGroup.tsx": "sha256:7c9a33733d68a42ea57a928a4d6ed20caa2562f53cb2340fe8122071bcc95924"
+    }
+  },
+  {
+    "component": "core/CommandPaletteInput",
+    "reason": "CommandPaletteInput renders three things: a magnifier `search` icon, a single-line `<input role=\"combobox\">`, and an optional trailing group holding a rotation-only Spinner plus consumer `endContent`. The magnifier is not a left/right glyph, nothing in the component is absolutely positioned or transformed, and its spacing is entirely logical (`paddingInline`, `paddingBlock`, `gap`), so the row's order and padding flip with `dir` on their own. Its keyboard handling forwards to `useCombobox`, which acts only on vertical arrows, Enter/Space, Escape, Tab, Home/End, PageUp/PageDown and Delete/Backspace \u2014 it never binds ArrowLeft or ArrowRight, so there is no directional behaviour to invert.",
+    "evidence": {
+      "apps/storybook/stories/CommandPalette.stories.tsx": "sha256:7f5ccaf4d3d669d0bce626a1fc3d30e77463df04ce8ea7345b31cfc8d5f6d803",
+      "packages/core/src/CommandPalette/CommandPaletteContext.ts": "sha256:65c671807a5b2ad5dca1a0072a5b60c7327f81ba774f56bea7bc3ec478e775bf",
+      "packages/core/src/CommandPalette/CommandPaletteInput.tsx": "sha256:de19faf1a587cc63b62037d2dabf55a0dd50192d13300d2fb57ad3452f1fd348"
+    }
+  },
+  {
+    "component": "core/CommandPaletteItem",
+    "reason": "CommandPaletteItem is a `role=\"option\"` row: a full-width flex line with logical inline/block padding, `textAlign: 'start'`, and hover/highlight/selected background states. It renders whatever children the caller passes and adds no glyph of its own, positions nothing, and its only scroll call is `scrollIntoView({block: 'nearest'})`, which moves the list vertically.",
+    "evidence": {
+      "apps/storybook/stories/CommandPalette.stories.tsx": "sha256:7f5ccaf4d3d669d0bce626a1fc3d30e77463df04ce8ea7345b31cfc8d5f6d803",
+      "packages/core/src/CommandPalette/CommandPaletteContext.ts": "sha256:65c671807a5b2ad5dca1a0072a5b60c7327f81ba774f56bea7bc3ec478e775bf",
+      "packages/core/src/CommandPalette/CommandPaletteItem.tsx": "sha256:a6da8f430346502e3c8747a8ca647d8e3354d96d4f380ea4eb0dd8121f74ce60"
+    }
+  },
+  {
+    "component": "core/CommandPaletteList",
+    "reason": "CommandPaletteList is a scroll container: one `<div role=\"listbox\">` that stacks its children in a `flex` column with uniform padding and a `gap`, and scrolls on the block axis only (`overflowY: 'auto'`). It paints no icon or text of its own, declares no `position`, and holds no keyboard or pointer handler \u2014 every result row it contains is a separate component with its own coverage.",
+    "evidence": {
+      "apps/storybook/stories/CommandPalette.stories.tsx": "sha256:7f5ccaf4d3d669d0bce626a1fc3d30e77463df04ce8ea7345b31cfc8d5f6d803",
+      "packages/core/src/CommandPalette/CommandPaletteContext.ts": "sha256:65c671807a5b2ad5dca1a0072a5b60c7327f81ba774f56bea7bc3ec478e775bf",
+      "packages/core/src/CommandPalette/CommandPaletteList.tsx": "sha256:5757438a05f474e852ab4a7a756927e3a83d727e7a1c99e2606086afbe697216"
+    }
+  },
+  {
+    "component": "core/DialogHeader",
+    "reason": "DialogHeader is a `space-between` flex row: optional start content, the `<h2>` title and subtitle, then optional end content and a close button. The only icon it renders is the close X, and the one edge it pulls is `marginInlineEnd`, which moves to the other side under RTL by itself. The start/end slots are leading and trailing positions in reading order rather than a fixed prev/next pair, so flex reverses them with nothing left to assert.",
+    "evidence": {
+      "apps/storybook/stories/Dialog.stories.tsx": "sha256:7168dac8d76db38dd821ba9614abeea3601b4b2d4a6ecb0227afab326f0e1faa",
+      "packages/core/src/Dialog/DialogContext.ts": "sha256:fc3fb6685356b791a0968fc13134322891805da6245c1c11faf2a01427c8435d",
+      "packages/core/src/Dialog/DialogHeader.tsx": "sha256:918c78cfdb792086f89f3963624eab05721478b66853ace944612b89876b1a60"
+    }
+  },
+  {
+    "component": "core/Divider",
+    "reason": "A Divider is one or two hairline `<div>`s that grow to fill a flex line, plus an optional centred label between them. Horizontally the line is `height: var(--border-width); flex-grow: 1`, vertically it is `width: var(--border-width)` in a column \u2014 neither has a start or end that means anything, and the label sits between the two segments by flex order, which CSS reverses on its own. `isFullBleed` escapes container padding with `margin-inline-start`/`margin-inline-end`, so it bleeds to the correct edges in either direction without any component-side branch.",
+    "evidence": {
+      "apps/storybook/stories/Divider.stories.tsx": "sha256:d5783270f8c553bc4c18b103e2fecb3f39927d9d967f9c02993f052dc2e10148",
+      "packages/core/src/Divider/Divider.tsx": "sha256:f302b5c9eecde40b486c09d49c71cb7dab158e2fcedcb38c0145671c45d9cf8d",
+      "packages/core/src/Divider/index.ts": "sha256:3763d70ed29a8ec76a8daaff607d62dfbf0ee3b64a97b61614a39542d71d549a"
+    }
+  },
+  {
+    "component": "core/DropdownMenuCheckboxItem",
+    "reason": "DropdownMenuCheckboxItem is a single `role=\"menuitemcheckbox\"` row: a decorative checkbox marker, an optional leading icon slot, a label, and an optional end slot. Its only side-dependent rule moves the marker to the trailing edge on coarse pointers, and it does that with `order` and `marginInlineStart: auto`, both of which follow the writing direction. Nothing it draws is a directional glyph and nothing is positioned out of flow.",
+    "evidence": {
+      "apps/storybook/stories/DropdownMenu.stories.tsx": "sha256:2628b4a7f01e0ce2873ec9fc309f45ed2619f1ea770ab7b0c46580c728173b33",
+      "packages/core/src/DropdownMenu/DropdownMenuCheckboxItem.tsx": "sha256:068984c312decdbbac44467fab4a980c59c68d41ef45cabfd2d4bf670ff2a974",
+      "packages/core/src/DropdownMenu/DropdownMenuContext.tsx": "sha256:3a5ed0b8c64743eb23bcf3a29d195d1ef2c45be311650fb431161e80d36dd51f",
+      "packages/core/src/DropdownMenu/menuItemHover.ts": "sha256:8c9891f81b46b33742f6e1029cc37812536c8b584aa1923cb505c8d5c419a7a6"
+    }
+  },
+  {
+    "component": "core/DropdownMenuDivider",
+    "reason": "DropdownMenuDivider is a horizontal rule between groups of menu rows: it forwards a ref, a class and a style to `Divider` and adds one declaration, `marginBlock`, on the block axis. There is no glyph, no positioned element and no interaction \u2014 a full-width rule spans both halves of its container, so it has no side to land on.",
+    "evidence": {
+      "apps/storybook/stories/DropdownMenu.stories.tsx": "sha256:2628b4a7f01e0ce2873ec9fc309f45ed2619f1ea770ab7b0c46580c728173b33",
+      "packages/core/src/DropdownMenu/DropdownMenuDivider.tsx": "sha256:97a5bb526f2f63eabc5e098da3b1395bbca8d04e807030240690205f15b9f721"
+    }
+  },
+  {
+    "component": "core/DropdownMenuItem",
+    "reason": "DropdownMenuItem is one menu row \u2014 start icon slot, label, description, end slot \u2014 with no glyph of its own, no positioned child, and no keyboard handling (arrow navigation lives on the parent `useListFocus`, per the file header). Its inline-axis styling is entirely logical: `paddingInline` and `textAlign: 'start'`, both of which reverse with the writing direction on their own. Any directional icon in a real menu comes from the consumer's `icon`/`endContent` props, not from this file.",
+    "evidence": {
+      "apps/storybook/stories/DropdownMenu.stories.tsx": "sha256:2628b4a7f01e0ce2873ec9fc309f45ed2619f1ea770ab7b0c46580c728173b33",
+      "packages/core/src/DropdownMenu/DropdownMenuContext.tsx": "sha256:3a5ed0b8c64743eb23bcf3a29d195d1ef2c45be311650fb431161e80d36dd51f",
+      "packages/core/src/DropdownMenu/DropdownMenuItem.tsx": "sha256:c8e2f7e8caf99da01845c9331512bc03277abb471f1d4fbd538c9258646f633a",
+      "packages/core/src/DropdownMenu/menuItemHover.ts": "sha256:8c9891f81b46b33742f6e1029cc37812536c8b584aa1923cb505c8d5c419a7a6"
+    }
+  },
+  {
+    "component": "core/DropdownMenuRadioGroup",
+    "reason": "DropdownMenuRadioGroup renders one `role=\"group\"` div that stacks its children in a flex column with a block-axis gap, and supplies selection state through context. It declares no icon, no positioned element, no inline-axis spacing, and no interaction; the popover that carries it is positioned by DropdownMenu, and the selectable rows are DropdownMenuRadioItem.",
+    "evidence": {
+      "apps/storybook/stories/DropdownMenu.stories.tsx": "sha256:2628b4a7f01e0ce2873ec9fc309f45ed2619f1ea770ab7b0c46580c728173b33",
+      "packages/core/src/DropdownMenu/DropdownMenuContext.tsx": "sha256:3a5ed0b8c64743eb23bcf3a29d195d1ef2c45be311650fb431161e80d36dd51f",
+      "packages/core/src/DropdownMenu/DropdownMenuRadioGroup.tsx": "sha256:c34fafccd33d890ad6f0c1e460ee2cf0720e65b45c585cb943adc97c21355818"
+    }
+  },
+  {
+    "component": "core/DropdownMenuRadioItem",
+    "reason": "DropdownMenuRadioItem renders one menu row: a decorative circular radio indicator in the marker slot, an optional caller-supplied start icon, a label, a description, and an optional endContent \u2014 no chevron, arrow or caret of its own. Its placement rules are `order` plus `marginInlineStart`, and the row primitive it composes uses `paddingInline`, `textAlign: 'start'` and `marginInlineStart: 'auto'`, so the marker's move to the row's inline end on touch, and the whole row's order, follow the inline axis in CSS with no physical value to correct. Nothing in it is positioned or transformed, and it binds no arrow keys \u2014 Enter/Space activation and vertical roving focus are the parent menu's.",
+    "evidence": {
+      "apps/storybook/stories/DropdownMenu.stories.tsx": "sha256:2628b4a7f01e0ce2873ec9fc309f45ed2619f1ea770ab7b0c46580c728173b33",
+      "packages/core/src/DropdownMenu/DropdownMenuContext.tsx": "sha256:3a5ed0b8c64743eb23bcf3a29d195d1ef2c45be311650fb431161e80d36dd51f",
+      "packages/core/src/DropdownMenu/DropdownMenuRadioItem.tsx": "sha256:b03d8355624474e304ed62e6cf8950d1f37dbed9b6fc74dfa7374c6426197b61",
+      "packages/core/src/DropdownMenu/menuItemHover.ts": "sha256:8c9891f81b46b33742f6e1029cc37812536c8b584aa1923cb505c8d5c419a7a6"
+    }
+  },
+  {
+    "component": "core/EmptyState",
+    "reason": "EmptyState stacks an optional decorative icon, a heading, a description and an actions row in one `flex-direction: column; align-items: center; text-align: center` container, so every child is centred on the inline axis and has no side. The actions row is a plain flex row with a gap, which CSS reverses under RTL with nothing for the audit to assert \u2014 and the two buttons it holds are alternative actions, not an ordered prev/next pair. All of its spacing is written in `padding-block`/`padding-inline` and `margin-top`, so nothing physical survives to be mirrored.",
+    "evidence": {
+      "apps/storybook/stories/EmptyState.stories.tsx": "sha256:75ad6531b98e48f3d353fe240ccfae0c73bbef36d85b806d7aa4027756e58c7f",
+      "packages/core/src/EmptyState/EmptyState.tsx": "sha256:6044cbc951db55ce4ca13e62da6a6e7dd8158a8b3fb45a1e00f0a3f088743149"
+    }
+  },
+  {
     "component": "core/Field",
-    "reason": "The Core/Field stories use block-flow labels, controls, descriptions, and status text without directional icons, side-specific placement, order, scrolling, dragging, overlays, or keyboard behavior."
+    "reason": "Field lays out labels, controls, descriptions, and status text in block flow. The attached-status change extends its background vertically behind the control using a block-axis overlap, `position: relative`, and isolated negative stacking; its size-dependent custom property has no inline-axis side. The stories contain no directional glyph, ordered prev/next pair, horizontal scroll or drag, side-specific overlay, or directional keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/Field.stories.tsx": "sha256:cfd2dc525128b69e74c5257da44b8f364c27a1902e703c16b7f77607d87fcdb0",
+      "packages/core/src/Field/Field.tsx": "sha256:7bbddc35588ad65a46fdb5c63404ea735df5f444bf7c7f5409bd4f3970ed9483",
+      "packages/core/src/Field/FieldLabel.tsx": "sha256:b6deb05e43c26b835f4a9ffb91d517fbcd6367354ababf52a002b05934a045d4"
+    }
+  },
+  {
+    "component": "core/FieldLabel",
+    "reason": "FieldLabel is a flex row of optional icon, label text, an \"\u2219 Optional/Required\" suffix and an info tooltip, with a description span below it. Its only positioned element is the screen-reader clip box, which is anchored with `insetInlineStart` and carries no transform, and its only placement prop puts the tooltip `above`. The \"\u2219\" suffix separator is a bullet, not a directional mark, and everything else is logical spacing.",
+    "evidence": {
+      "apps/storybook/stories/Field.stories.tsx": "sha256:cfd2dc525128b69e74c5257da44b8f364c27a1902e703c16b7f77607d87fcdb0",
+      "packages/core/src/Field/FieldLabel.tsx": "sha256:b6deb05e43c26b835f4a9ffb91d517fbcd6367354ababf52a002b05934a045d4"
+    }
   },
   {
     "component": "core/FieldStatus",
-    "reason": "FieldStatus uses block-flow message layout and logical padding and corner radii. Its status glyphs are non-directional, and it has no side-specific placement, order, scrolling, dragging, overlays, or directional keyboard behavior."
+    "reason": "FieldStatus uses block-flow message layout and logical padding and corner radii. Its status glyphs are non-directional, and it has no side-specific placement, order, scrolling, dragging, overlays, or directional keyboard behavior.",
+    "evidence": {
+      "packages/core/src/FieldStatus/FieldStatus.tsx": "sha256:558eef2b684fe67d9c5cd20a4ff30d944e2f06df3b35cac4a2bf781343200b18",
+      "packages/core/src/FieldStatus/index.ts": "sha256:f086701362cdfc3c878504be6652c4bd43893aa37dfd46530cf2a651f3dd41ab"
+    }
+  },
+  {
+    "component": "core/FileInput",
+    "reason": "FileInput renders a dashed dropzone or a compact field containing an upload arrow, the placeholder or file name, a status glyph and a clear button, laid out as a flex column or a flex row with `padding-inline` and `gap`. The arrow points up, so there is no glyph to mirror; the drag-and-drop accepts a file anywhere in the zone and reads no pointer coordinate, so it has no direction; and the disabled-reason tooltip is placed above and centre-aligned. The compact row's order is ordinary flex reflow, which the browser mirrors on its own.",
+    "evidence": {
+      "apps/storybook/stories/FileInput.stories.tsx": "sha256:4d03a811dce8f7d2445f396f8ff236c919afc37061e3f48389d5a41dca401195",
+      "packages/core/src/FileInput/FileInput.tsx": "sha256:951d67cf1e3053b3f8ae065238fb9f5dfb13d8e53afd5701b6df6dba42d42596"
+    }
+  },
+  {
+    "component": "core/Grid",
+    "reason": "Grid emits one `display: grid` box and sets track counts, gaps and item alignment on it; GridSpan sets `grid-column` / `grid-row` on a child. CSS Grid resolves all of that against the writing direction on its own, so a three-column grid fills right-to-left under RTL, `justify=\"end\"` lands on the left edge, and `1 / -1` still spans the row. It paints nothing itself \u2014 no icon, no positioned element, no separator glyph \u2014 and holds no scroll, drag or keyboard behaviour.",
+    "evidence": {
+      "apps/storybook/stories/Grid.stories.tsx": "sha256:e22c7cc2d971691cbf6175600b95234bfbb54094bc733d6ef50f918b94c127e1",
+      "packages/core/src/Grid/Grid.tsx": "sha256:37f96d2f1d596d07ab602dbc21076aa1f28403f5fc036b35acfad66aba3d473c"
+    }
+  },
+  {
+    "component": "core/GridSpan",
+    "reason": "GridSpan is a layout-only `<div>` whose entire job is to write `grid-column: span N` (or `1 / -1`) and `grid-row: span N` onto a grid item. Grid column indices are resolved against the container's writing mode, so column 1 is the inline-start column in both directions and the span mirrors with the grid itself. It paints nothing \u2014 no icon, no positioned child, no border or padding of its own.",
+    "evidence": {
+      "apps/storybook/stories/Grid.stories.tsx": "sha256:e22c7cc2d971691cbf6175600b95234bfbb54094bc733d6ef50f918b94c127e1",
+      "packages/core/src/Grid/GridSpan.tsx": "sha256:ac8443e77be488c5e37259d6334aeb061c0139a174676fc65ed63259e3225494"
+    }
+  },
+  {
+    "component": "core/heading",
+    "reason": "Heading's stories render text at six levels, in six colours, inline and block, truncated to one or two lines, plus two prose layouts. Truncation is `maxLines` and text wrapping; the only physical spacing is `marginTop`/`marginBottom`, which sit on the block axis and are unaffected by writing direction. Nothing here is positioned, no glyph is directional, and text alignment is left to the inherited direction.",
+    "evidence": {
+      "apps/storybook/stories/Heading.stories.tsx": "sha256:eae65a41c1b77bd907000d1ee3b2e0dd820d0a544da8a8e823407460f527f601"
+    }
+  },
+  {
+    "component": "core/hooks-useclipboard",
+    "reason": "The useClipboard stories exercise a hook that renders nothing of its own \u2014 it returns a `copy` promise and a transient `isCopied` boolean \u2014 through two thin controls: a ghost icon-only Button whose glyph toggles between the `copy` clipboard mark and the `check` tick, and a labelled Button doing the same. Neither glyph has a left/right sense, so there is nothing for icon-mirroring to assert, and the confirmation is a glyph swap plus a polite live-region announcement rather than any positional change. Nothing in the rendered tree is absolutely positioned with a transform: Button's only absolute element is a full-bleed loading overlay anchored with `insetInlineStart`/`insetInlineEnd` and no transform, which these stories never mount, and its attached tooltip is fixed to the block axis. The story layout is a flex row and a VStack with a `gap`, which CSS reverses on its own.",
+    "evidence": {
+      "apps/storybook/stories/useClipboard.stories.tsx": "sha256:4b285baef8636c8180f41d685fd60e503cdb1ef88b9d27b6456ea47e82cf85da"
+    }
+  },
+  {
+    "component": "core/hooks-usecontainerreveal",
+    "reason": "These stories are rows whose secondary actions fade in on hover or focus. The mechanism is inherited custom properties plus opacity and a `static`/`absolute` flip, with no transform and no inset, so nothing moves along the inline axis in either direction. Each row is `justify-content: space-between` with logical nesting indentation, which puts the label at the reading start and the edit/delete actions at the reading end automatically.",
+    "evidence": {
+      "apps/storybook/stories/UseContainerReveal.stories.tsx": "sha256:62b6923b2903069e3a5e63b646ee616d6fcdb7aa8e7160f62419cfa22ac6be83"
+    }
+  },
+  {
+    "component": "core/hooks-uselinkify",
+    "reason": "The story calls `useLinkify` on a string and renders the returned array of text and Link nodes inside a `Text`, in a padded box. The hook only splits a string on URL, email and caller-supplied regex patterns and returns nodes; nothing in the story is positioned, iconised, scrolled, or given an inline-axis offset. Ordering of the LTR URL and email runs inside surrounding text is the browser's bidi algorithm, not component geometry.",
+    "evidence": {
+      "apps/storybook/stories/useLinkify.stories.tsx": "sha256:18c821655e5c27169019984991cfdf291283c60fdbcce44e1e3df47a32834351"
+    }
+  },
+  {
+    "component": "core/hooks-usestreamingtext",
+    "reason": "These five stories type a fixed English code sample into a `<Text>` at different chunk sizes and speeds, above a Start button and a character counter. The hook returns a string; the story renders it in a plain padded box with `white-space: pre-wrap`. There is no glyph, no positioned element, no separator and no directional interaction \u2014 the text simply flows in whichever direction the document sets.",
+    "evidence": {
+      "apps/storybook/stories/useStreamingText.stories.tsx": "sha256:bd969c53c686368cf55cb70fdaec4cb7984ac2cf57a1f67c1cbf4ab2e55b4315"
+    }
+  },
+  {
+    "component": "core/IconButton",
+    "reason": "IconButton is a 53-line wrapper that renders `<Button {...props} icon={icon} isIconOnly />` and nothing else \u2014 it declares no styles and no DOM of its own. The square button it produces holds one centred consumer icon with no label, so there is no row order to reverse, and every icon its stories pass (gear, trash, plus, X, pencil, heart, bell, rocket emoji) is rotationally neutral rather than pointing left or right.",
+    "evidence": {
+      "apps/storybook/stories/IconButton.stories.tsx": "sha256:879d161575b6a3b19b3c1f528ca692d9ec98230828a40e54d8899459f9f99a48",
+      "packages/core/src/IconButton/IconButton.tsx": "sha256:706cc5bf5a44275fd9379be1fb67233b8d627110bb0d3141da1b8906c4beb813"
+    }
+  },
+  {
+    "component": "core/indicator",
+    "reason": "The Indicator stories render CheckIndicator, CheckboxIndicator and RadioIndicator directly, in every state and both sizes, plus the `children` spinner slot. Each is a square or circular box with its mark centred by flexbox \u2014 a check path, a horizontal bar, or a dot \u2014 and each is `aria-hidden` with no text content. A centred mark in a square box is its own mirror image, so there is no side, order, or glyph orientation that the writing direction can change.",
+    "evidence": {
+      "apps/storybook/stories/Indicator.stories.tsx": "sha256:f77754d70649faf5a22dd481896f51321ee1293f1e99f7c1301e499138735d6d"
+    }
+  },
+  {
+    "component": "core/InputGroup",
+    "reason": "InputGroup is a connected `inline-flex` row of an input plus text addons, wrapped in a Field for the group label, description and status. Which addon reads as prefix and which as suffix is DOM order, and the flex row resolves that against the document direction. The one detail that could have pinned a side \u2014 the rounded outer corners and the negative border overlap that fuses the seam \u2014 is written with logical corner and margin properties keyed off `:first-child` / `:last-child`, so the caps follow the reading direction rather than the left and right edges.",
+    "evidence": {
+      "apps/storybook/stories/InputGroup.stories.tsx": "sha256:db1c3d87097767949feffbe84d80481b607ef9350d37dcc5e1925b3ea4ba098c",
+      "packages/core/src/InputGroup/InputGroup.tsx": "sha256:63107c59f9a2080bd6f878cbdb11c8ec36fe8117cce5ce8c08915f9d300d9a22",
+      "packages/core/src/InputGroup/InputGroupContext.ts": "sha256:957a26fd439044f7a393ab4586444fda511946a61e8cdc7b7df6fb63067d56f6"
+    }
+  },
+  {
+    "component": "core/InputGroupText",
+    "reason": "InputGroupText is a single `<div>` holding a prefix or suffix string next to an input. Its only direction-relevant styling is the group seam, and that is already written logically: the negative overlap is `margin-inline-start` (zeroed on `:first-child`), and the rounded outer corners use the logical `border-start-start-radius` / `border-end-end-radius` family keyed on `:first-child` and `:last-child`. Because `:first-child` follows DOM order and the logical radii follow writing direction, the pill rounds its outer edge correctly in both directions with no component-side branch.",
+    "evidence": {
+      "apps/storybook/stories/InputGroup.stories.tsx": "sha256:db1c3d87097767949feffbe84d80481b607ef9350d37dcc5e1925b3ea4ba098c",
+      "packages/core/src/InputGroup/InputGroupText.tsx": "sha256:e3144fb076ad04fd7daf2f29a21b64ec82aa60db574df0441332a213c044bab6"
+    }
+  },
+  {
+    "component": "core/InternationalizationProvider",
+    "reason": "InternationalizationProvider emits no DOM at all \u2014 it computes a locale/direction/translator value and renders a context provider around `children`. It does carry direction logic (`getLocaleDirection`), but that value is only published on context and deliberately does not set the DOM `dir` attribute, so this component has no icon, geometry, order, or behaviour of its own for LTR/RTL renders to differ on.",
+    "evidence": {
+      "apps/storybook/stories/NumberInput.stories.tsx": "sha256:d19316f489055e0d9f05f33484deb1947166a2d4038b277a7fd91bf4605855ca",
+      "apps/storybook/stories/Pagination.stories.tsx": "sha256:2dcf6ef8566c6e67190f0cce4e454daaeed3fcc7db9943d38bd8b4e093b44d28",
+      "apps/storybook/stories/Timestamp.stories.tsx": "sha256:0134a69a58902d4334aedf1d5c9a21ce5374d60e867db0c3a5d5cacb59ac37d4",
+      "packages/core/src/i18n/InternationalizationContext.ts": "sha256:010be9384912141678c6583f60bb0f7a371401d8201c438ea0c0e23e0859f279",
+      "packages/core/src/i18n/InternationalizationProvider.tsx": "sha256:edee4432422c780022de1d59614248879a9b3cb81f1d8b3487cc99bcbb8d93fb",
+      "packages/core/src/i18n/getLocaleDirection.ts": "sha256:c50e97a1566ebc646e5517f262c8912d3cbae6ffe33a72fec68e7bb68eb4605d",
+      "packages/core/src/i18n/resolve.ts": "sha256:ed8aeba4df9c7caf9dcde7b58c5f97ae8352024ff9c86792542ec4fa0c5abf33",
+      "packages/core/src/i18n/types.ts": "sha256:a04573fa212c4db462d8a2d6a7398a56070e08ccfe1d79937e40fddd38eec6c6"
+    }
+  },
+  {
+    "component": "core/Item",
+    "reason": "Item is the shared \"start content + label + description + end content\" row: one `flex` line with `gap` and `paddingInline`, whose trailing slot is pushed out by `marginInlineStart: 'auto'` and whose text is `textAlign: 'start'` \u2014 all four flip with the writing mode on their own. It renders no icon or glyph itself, declares `position: relative` with no positioned descendant, and adds no scroll, drag or arrow-key behavior; the slots' contents are separate components with their own coverage.",
+    "evidence": {
+      "apps/storybook/stories/Item.stories.tsx": "sha256:4f9280a615af82c4b981f124caa4bccad1edfa024a9ba02d82c6df6b7788f13d",
+      "packages/core/src/Item/Item.tsx": "sha256:4188c8c1cd8c72a2318a1049983c22f20495909a13c868cbdb95317b18e27cba"
+    }
+  },
+  {
+    "component": "core/LayoutContent",
+    "reason": "LayoutContent is the scrolling body slot of Layout: it reads which sibling slots exist from LayoutSlotsContext and picks inner or outer padding per edge accordingly, then republishes those values as container-padding variables so bleed children such as Table and Divider can cancel them. Every one of those edges \u2014 its own padding and the four variables \u2014 is expressed with inline/block logical properties, so a missing start panel widens the reading-start edge in either direction. It renders no glyph, positions nothing, and adds no interaction beyond `overflow: auto`.",
+    "evidence": {
+      "apps/storybook/stories/Layout.stories.tsx": "sha256:59019d9c6b8b6bff2a093a3c8395af196b4e479e2f0630b7ef85b2d7320f9d7e",
+      "packages/core/src/Layout/LayoutContent.tsx": "sha256:bf0ebc5d4fd3b2da17de15b2213b9252e74b3241fa97fcb634cee9d352972da7",
+      "packages/core/src/Layout/LayoutSlotsContext.ts": "sha256:a3bc37162b4b3d0116758c2272353731930fa27195a336c2f03335794c4447c9",
+      "packages/core/src/Layout/padding.stylex.ts": "sha256:885e7452f243a1d1a95ef885335e4f2f7819489fbd371be0a63c871ded7ee213"
+    }
+  },
+  {
+    "component": "core/LayoutFooter",
+    "reason": "LayoutFooter is a bottom slot: a flex-shrink-0 shell that optionally draws a block-start divider, wrapping an inner box that centres itself with `marginInline: auto` up to `--layout-content-width` and applies the layout's padding. Every padding, margin and border it sets is a logical property, and the one border it draws runs along the block axis at the top edge, which is the same edge in RTL. It contributes no glyph, no positioned element and no ordering of its own \u2014 the children it hosts own whatever direction sensitivity exists.",
+    "evidence": {
+      "apps/storybook/stories/Layout.stories.tsx": "sha256:59019d9c6b8b6bff2a093a3c8395af196b4e479e2f0630b7ef85b2d7320f9d7e",
+      "packages/core/src/Layout/LayoutDividerContext.ts": "sha256:e6093b228bdae016da1f8d13d06942a2435412c4022407c0a555c56d1862bcb1",
+      "packages/core/src/Layout/LayoutFooter.tsx": "sha256:4c5745ec634f731e80e4a66c9420aa50a732dc42fec4d718811e56a3854b69b1",
+      "packages/core/src/Layout/padding.stylex.ts": "sha256:885e7452f243a1d1a95ef885335e4f2f7819489fbd371be0a63c871ded7ee213"
+    }
+  },
+  {
+    "component": "core/LayoutHeader",
+    "reason": "LayoutHeader is a two-element shell \u2014 an outer box that owns an optional block-end hairline and the header height, and an inner box that owns the content-width clamp and the padding. Every edge it sets is already logical (`padding-inline-start/end`, `margin-inline: auto`, `border-block-end`), including the container padding variables it publishes for descendants. It draws no glyph, positions nothing, and exposes no side, so its LTR and RTL renders are mirror-identical by construction.",
+    "evidence": {
+      "apps/storybook/stories/Layout.stories.tsx": "sha256:59019d9c6b8b6bff2a093a3c8395af196b4e479e2f0630b7ef85b2d7320f9d7e",
+      "packages/core/src/Layout/LayoutDividerContext.ts": "sha256:e6093b228bdae016da1f8d13d06942a2435412c4022407c0a555c56d1862bcb1",
+      "packages/core/src/Layout/LayoutHeader.tsx": "sha256:fb4a3d648fde7fb0e88667b5ee7fc603896bda535bb3fe7d274c9ea802fe7d7a",
+      "packages/core/src/Layout/padding.stylex.ts": "sha256:885e7452f243a1d1a95ef885335e4f2f7819489fbd371be0a63c871ded7ee213"
+    }
+  },
+  {
+    "component": "core/LinkProvider",
+    "reason": "LinkProvider is a two-line context provider that hands a link component down the tree; it renders no element of its own. There is no markup for LTR and RTL renders to differ on, and its single prop (`component`) carries no directional meaning.",
+    "evidence": {
+      "apps/storybook/stories/Link.stories.tsx": "sha256:ed6067638f129106ce670168ced24c8029af51d225d9cc84d6c0f4fa7be20003",
+      "packages/core/src/Link/LinkContext.ts": "sha256:677825df94b97c05be64717e135d8fe7d1b9fe2225dc13239033e09bd15a5ba6",
+      "packages/core/src/Link/LinkProvider.tsx": "sha256:753400ad0e87dafa7fc079c21a72e15c49aff08d61f7c3a6c91e5d7cfd431e94",
+      "packages/core/src/Link/types.ts": "sha256:d3d52c2b43c499c79459bdc10b7130a11b9216733e75a3f18e53afc409da8d6a"
+    }
+  },
+  {
+    "component": "core/ListItem",
+    "reason": "ListItem renders one `<li>` through the shared `Item` layout \u2014 an optional bullet/circle/number marker, a label, a description, and consumer-supplied start/end slots. Its markers are radially symmetric shapes or a CSS counter ending in \".\", never an arrow or chevron, and its own CSS is logical throughout (`borderBlockEnd*`, and `marginInlineStart: 'auto'` in Item). The `endContent` slot documents a chevron as a possible consumer payload, but this component ships none, and with no story file there is no rendered instance that supplies one.",
+    "evidence": {
+      "apps/storybook/stories/List.stories.tsx": "sha256:e25990d8ca25f3ee5859ff92e5f37cf3b7cd50aa7514e115c188963c1e2a5233",
+      "packages/core/src/List/ListContext.tsx": "sha256:af0b28f97431b2542012114daf95aaa2ed8f9d6e8790fdf20b3edea9f95a3741",
+      "packages/core/src/List/ListItem.tsx": "sha256:97d5a7da48dbb48bc3e0fb7c9b6dabbd330cacf06a082139404ca2af73f20c41"
+    }
+  },
+  {
+    "component": "core/markdowncitations",
+    "reason": "The four stories render a `Markdown` document \u2014 headings, paragraphs, `-` bullets, one inline link \u2014 whose citation markers become `Citation` chips laid out in normal inline flow: `Citation.tsx` `label: { display: 'inline-flex', alignItems: 'center', gap: spacingVars['--spacing-1'],`, spaced from the preceding word by the logical `marginInlineStart`, with the favicon simply preceding the title in DOM order, so CSS mirrors the chip and its icon under RTL with nothing for a relationship assertion to compare. The chip is never positioned or transformed, so D5 has no candidate, and its only aria-hidden node wraps an `<img>` rather than a directional glyph, so D6 has none either. The Streaming story reveals text by slicing the source string and fading it with opacity-only spans; there is no caret element and no positional affordance to land on a side.",
+    "evidence": {
+      "apps/storybook/stories/MarkdownCitations.stories.tsx": "sha256:cd6f54263e89a923efeb1cf4de53228780a0904e09301daa582c74e9acc79eb1"
+    }
+  },
+  {
+    "component": "core/MediaTheme",
+    "reason": "MediaTheme is a `display: contents` wrapper that sets a `data-astryx-media` attribute so the theme's CSS can hand children inverted colour tokens on a dark or light surface. It generates no box, paints nothing but a text colour, and its one prop chooses a luminance, not a side. There is no geometry here for a writing direction to act on.",
+    "evidence": {
+      "apps/storybook/stories/MediaTheme.stories.tsx": "sha256:13ab95dfbb93ada0a160671cba29034a0a37a9c3000e18ff6b17718357bbf8d2",
+      "apps/storybook/stories/Theme.stories.tsx": "sha256:c99d6b59bc5eb0c24a6d980bc721080f46d3aa092fba58adb9b68e4c7e026b33",
+      "packages/core/src/theme/MediaTheme.tsx": "sha256:f09953a27ab0164126820a38f8660cc3c0853622389abf3e0de34648e3f24350",
+      "packages/core/src/theme/tokens.stylex.ts": "sha256:7d5b5321220e0924213d9b37cf4acf9ba5bb16f3de1485710dd543f964676f81"
+    }
+  },
+  {
+    "component": "core/MetadataList",
+    "reason": "MetadataList renders a `<dl>` grid of `<dt>`/`<dd>` label-value pairs plus an optional show-more `<button>`; MetadataListItem renders one pair with an optional leading icon slot. Its side-label mode is a grid track order (`gridTemplateColumns: 'auto 1fr'`, MetadataList.tsx), not a physical placement, so the label column moves to the correct edge under RTL by itself, and `label.position` is already the logical keyword `'start'`. No story supplies a directional icon \u2014 the three used are info, calendar, and tag glyphs \u2014 and nothing in either file positions, transforms, scrolls, or reads direction.",
+    "evidence": {
+      "apps/storybook/stories/MetadataList.stories.tsx": "sha256:271a7ad91abf0ff6e424cd63e7d5200a8f7ee373b3787ce70288470249703d55",
+      "packages/core/src/MetadataList/MetadataList.tsx": "sha256:967e19b7024b5d56b7b18be8fba1e1c85b4a31d7bc07a6489dc2603dec963eb3",
+      "packages/core/src/MetadataList/MetadataListContext.tsx": "sha256:4541a9059c56b017993af93a3322ee24fa8a2b83f295748263279a9dd1ced268"
+    }
+  },
+  {
+    "component": "core/MetadataListItem",
+    "reason": "MetadataListItem renders one label/value pair as `<dt>` and `<dd>` \u2014 either as two grid children on one line, or stacked in a column when the list asks for a top label. Its only spacing is `gap` between an optional icon slot and the label text, and its only positional input resolves to `start` or `top`, so the inline arrangement is plain flex/grid flow that CSS reverses automatically. It draws no glyph, positions nothing, and reads no direction.",
+    "evidence": {
+      "apps/storybook/stories/MetadataList.stories.tsx": "sha256:271a7ad91abf0ff6e424cd63e7d5200a8f7ee373b3787ce70288470249703d55",
+      "packages/core/src/MetadataList/MetadataListContext.tsx": "sha256:4541a9059c56b017993af93a3322ee24fa8a2b83f295748263279a9dd1ced268",
+      "packages/core/src/MetadataList/MetadataListItem.tsx": "sha256:f4d6f5d660c9042d38f78dc7181ed029b46671273f22386be4221c4de278d3b0"
+    }
+  },
+  {
+    "component": "core/NumberInput",
+    "reason": "NumberInput is a text field that holds a number, with optional start icon, units text, clear button and a two-button stepper column. Everything that has a side is written logically: the stepper column is pinned to the field's inline-end by `paddingInlineEnd: 0`, `borderInlineStart*` and the `borderStartEndRadius`/`borderEndEndRadius` corners, so it moves to the other edge under RTL on its own. Its stepping affordances are all block-axis \u2014 ArrowUp/ArrowDown, `deltaY`, and one caret glyph used twice with a 180\u00b0 rotation between them \u2014 and no element is positioned with a horizontal translate.",
+    "evidence": {
+      "apps/storybook/stories/NumberInput.stories.tsx": "sha256:d19316f489055e0d9f05f33484deb1947166a2d4038b277a7fd91bf4605855ca",
+      "packages/core/src/NumberInput/NumberInput.tsx": "sha256:6b4fe1caf16ef27225ec79ca644e0dc043d6bebbd33945af1d4231e1ced66b6a",
+      "packages/core/src/NumberInput/numberInputCommit.ts": "sha256:1c9d9ea3a6601e1fdfb3c5a90d0c771f4be6c3a755358458f52dbf41fcfaffed",
+      "packages/core/src/NumberInput/numberParser.ts": "sha256:fc2280ff203f34758fd24b628d4863cd1e50b44d7c9750e752a1d374ce0bc16c"
+    }
+  },
+  {
+    "component": "core/SegmentedControlItem",
+    "reason": "SegmentedControlItem renders one segment \u2014 a `role=\"radio\"` button holding an optional icon slot and a label, centred with `justify-content: center` inside a pill whose radius is computed concentrically from the group's own radius. Its padding is `padding-inline`, its selected state is a background fill plus a shadow, and it is `position: relative` only to host that fill. Nothing it draws has a leading or trailing side, and its own keyboard surface is a click handler.",
+    "evidence": {
+      "apps/storybook/stories/SegmentedControl.stories.tsx": "sha256:d74cded9c451ec3ff439ea04f53d5fe51b1a4cd0b8b766562bdba8fa0874ef64",
+      "packages/core/src/SegmentedControl/SegmentedControlContext.ts": "sha256:c3053182d762ee17abb1206bba571daa3f0ad2a99345c8f34614df5955237667",
+      "packages/core/src/SegmentedControl/SegmentedControlItem.tsx": "sha256:d8c856c45a8b1c5d7d0b23aed19074970c4f8f5814624fbe3669d68d6f0cf06e"
+    }
+  },
+  {
+    "component": "core/SelectableCard",
+    "reason": "SelectableCard is a Card wrapper whose only visual states are a uniform 2 px inset ring (`inset 0 0 0 2px`), a full-bleed `::after` hover/press overlay pinned with `inset: 0`, and a 1\u00d71 visually-hidden checkbox. None of the three has a side: the ring surrounds all four edges, the overlay spans the whole card, and the hidden input is clipped to a point. Selection is a toggle, not an ordered pair, and the stories arrange cards in a plain `HStack` that CSS reverses without help.",
+    "evidence": {
+      "apps/storybook/stories/SelectableCard.stories.tsx": "sha256:35704da575bb80fc580309a5d4182ab4569abbd1449c665f69f1f00767b5790b",
+      "packages/core/src/SelectableCard/SelectableCard.tsx": "sha256:5fa8fcf087296e33415a2696b91e478608b737506f26775715132a3a63e9218e"
+    }
+  },
+  {
+    "component": "core/SelectorOption",
+    "reason": "SelectorOption is a thin adapter: it forwards `icon`, `label`, `description`, `layout` and `endContent` straight to Item and zeroes Item's padding and radius so the row sits flush inside a Selector. Every piece of geometry it inherits is written logically \u2014 the row is a flex line with `padding-inline`, `text-align: start`, and an end slot pushed over by `margin-inline-start: auto` \u2014 so the leading and trailing slots swap by themselves under RTL with nothing for the audit to assert. The one glyph the row can show is passed in by the caller through `renderOption`, so mirroring it is that caller's icon's concern, not this wrapper's.",
+    "evidence": {
+      "apps/storybook/stories/Selector.stories.tsx": "sha256:94f9389760fe587b40ff7753546b8dde021d81219cb394579edc0822387b8419",
+      "packages/core/src/Selector/SelectorOption.tsx": "sha256:c3e8f4b9ee2e50bee1532390276531c7fef8777faf05ace225d320fc788bfbef",
+      "packages/core/src/Selector/SelectorRowLayoutContext.ts": "sha256:e12d278b304c95552ae3478dc862dd9da78d693a732d56c67ff1f13c6e2052b8"
+    }
+  },
+  {
+    "component": "core/SideNavSection",
+    "reason": "SideNavSection is a `role=\"group\"` that stacks a header row above a column of nav items. The header is a flex row whose title container takes `flex: 1` and pushes the optional `endContent` to the far end \u2014 a layout CSS mirrors by itself, notwithstanding the prop doc's \"right-side\" wording. It renders no icon, no separator glyph and no positioned element, uses logical inline/block padding throughout, and attaches no handlers; collapsing merely swaps the header for a `VisuallyHidden` copy.",
+    "evidence": {
+      "apps/storybook/stories/SideNav.stories.tsx": "sha256:9cc4496b00e1e98a35f6360b9e688d38fdac5a5845695b0606d29c9c9ba4c7d4",
+      "packages/core/src/SideNav/SideNavCollapseContext.ts": "sha256:5fa02febc7f85cdaa649e9bb77ac203258131bcf381f3e8ed497338ba0be61ba",
+      "packages/core/src/SideNav/SideNavSection.tsx": "sha256:44864f219925df43d47f57208297429f30e7f760020217f542a058f42883067a"
+    }
+  },
+  {
+    "component": "core/Skeleton",
+    "reason": "Skeleton is one `aria-hidden` block with a width, a height, an all-corner radius and a staggered opacity pulse. It has no content, no children, no glyph and no interaction, and its corners are uniform, so an RTL render is pixel-identical to the LTR one. The stories arrange several of them in HStack/VStack rows, which mirror as ordinary flex layout with nothing of the skeleton's own to assert.",
+    "evidence": {
+      "apps/storybook/stories/Skeleton.stories.tsx": "sha256:1a56f132f13cdadbd3935375abe42ead459b1a53d6a2259dcca799554a28d569",
+      "packages/core/src/Skeleton/Skeleton.tsx": "sha256:0d6f178c0806d93cb4a5733a0b600563eb4e6a0934234226c9450a89421e2b87"
+    }
   },
   {
     "component": "core/Spinner",
-    "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG — two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
+    "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG \u2014 two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support.",
+    "evidence": {
+      "apps/storybook/stories/Spinner.stories.tsx": "sha256:a73f4c960c1439682775cc9b21e14935699c62b618f7edc36f150ace74df92fa",
+      "packages/core/src/Spinner/Spinner.tsx": "sha256:2a0f8ccb03a3a1d6d75475e710fc219bfaf10a32555d6557290e42debf59fa26"
+    }
+  },
+  {
+    "component": "core/Stack",
+    "reason": "Stack is a flex box plus tokens: a direction, a gap, main- and cross-axis alignment, per-edge logical padding, and an optional `overflow: auto`. Its horizontal variant is `flex-direction: row` with `flex-start`/`flex-end` alignment, all of which are flow-relative \u2014 the browser resolves them against the document direction, so `hAlign=\"start\"` sits at the reading start in both LTR and RTL with nothing for the audit to compare. StackItem adds only `flex` sizing and `align-self`. Neither renders a glyph, positions anything, or handles a key.",
+    "evidence": {
+      "apps/storybook/stories/Stack.stories.tsx": "sha256:d5ee02dccecc8ce6e970ea901ac030ceaf92b45d7361f7f47e65433665f438b0",
+      "packages/core/src/Stack/Stack.tsx": "sha256:01c6aa331e31a598a306db70cf8cff0c3786eb101fc1aec254d881dbcce19048",
+      "packages/core/src/Stack/stack.stylex.ts": "sha256:f1d1318f17349fd6eed021381440eb6899a1c48525c88b6af812c1a5ce825872"
+    }
+  },
+  {
+    "component": "core/StatusDot",
+    "reason": "StatusDot renders one fixed 8px inline-flex span that paints a coloured circle, optionally pulsing via an opacity keyframe, with an optional caller-supplied mark centred inside it. It is not positioned, carries no inline-axis spacing, and its optional tooltip takes the default placement above the dot, centre-aligned. There is no glyph, side, order, or scroll for direction to change.",
+    "evidence": {
+      "apps/storybook/stories/StatusDot.stories.tsx": "sha256:a2b6b02467564e3e4436e4a8004b7657cbf01412f5c885c22a432ab33df6b937",
+      "packages/core/src/StatusDot/StatusDot.tsx": "sha256:858966119e4c8ab9ff4ef30bc5b3ddab603f4629711e3efc3c3990c1b3c4c409",
+      "packages/core/src/StatusDot/index.ts": "sha256:86cd748788ddcf1fa0627fd8044bd8f4937cbc6cf971ab2f794e37f552a42001"
+    }
   },
   {
     "component": "core/Table",
-    "reason": "Base Table and row-status indicators have no direction-sensitive glyph, physical positioning, order, or interaction; directional Table plugins are audited separately."
+    "reason": "Base Table and row-status indicators have no direction-sensitive glyph, physical positioning, order, or interaction; directional Table plugins are audited separately.",
+    "evidence": {
+      "apps/storybook/stories/Table.stories.tsx": "sha256:64f34f3f119eb7ac938297f55c77bd4072aad75e2043c138b5c20f622384b18f",
+      "packages/core/src/Table/BaseTable.tsx": "sha256:7ae2992cff736283be1bfeba0922001cb38ebdc588e07579b567b96195443ae5",
+      "packages/core/src/Table/Table.tsx": "sha256:eacb3cd40dc2154e1cb24e274c8ed56d01727aca1953f4919c172d7e3ba49de3",
+      "packages/core/src/Table/TableContext.ts": "sha256:e38eae29ace3e3b14c88a3ac324570fad7751c9de1259160a883d6d4fe3241c2",
+      "packages/core/src/Table/types.ts": "sha256:3593db0a2c8859f4e1c9f9467cb94106f03e0e678171618a44a4fd725b069c7d",
+      "packages/core/src/Table/useBaseTablePlugins.ts": "sha256:e2873c140a910991729e95bcf5c8ebdeaa09deed943fb9e791176959110730d8"
+    }
+  },
+  {
+    "component": "core/TableBody",
+    "reason": "TableBody is a 38-line pass-through that renders a `<tbody>` with a theme target and whatever `xstyle`, `className`, and `style` the caller supplies. It declares no styles of its own \u2014 there is no `stylex.create` call in the file \u2014 so it contributes no glyph, no box, and no spacing. Row and cell appearance is owned by TableRow and TableCell; this element only supplies the table section HTML that grouping requires.",
+    "evidence": {
+      "apps/storybook/stories/Table.stories.tsx": "sha256:64f34f3f119eb7ac938297f55c77bd4072aad75e2043c138b5c20f622384b18f",
+      "packages/core/src/Table/TableBody.tsx": "sha256:531703b1ab97108a89fbf58b87d073769ce7d9dd1a023102ca5724287ab32b18"
+    }
+  },
+  {
+    "component": "core/TableCell",
+    "reason": "TableCell is a `<td>` wrapper that reads density from table context and applies padding, a `vertical-align`, an overflow or wrap rule, and divider borders. Its row divider is drawn on the block-end edge, which does not move under RTL, and its column divider is `border-inline-end`, which follows the reading direction on its own. It renders no glyph, positions nothing, and when a context menu is attached the padding simply moves onto a full-size trigger wrapper inside the same cell box.",
+    "evidence": {
+      "apps/storybook/stories/Table.stories.tsx": "sha256:64f34f3f119eb7ac938297f55c77bd4072aad75e2043c138b5c20f622384b18f",
+      "packages/core/src/Table/TableCell.tsx": "sha256:2d8dd97510f51bc77f5d50c563daff07be6ef70bb1af1d2ec5aebf8d8f03ffcd",
+      "packages/core/src/Table/table.stylex.ts": "sha256:f0ae25823290d697c41fd81e331406ca158fab9bc67c1339b6fd06b5669cade5",
+      "packages/core/src/Table/tableContextMenu.tsx": "sha256:6416c9601ee91483ceb9fff6842b89324a59286c339b096f63ae023e720663b9",
+      "packages/core/src/Table/types.ts": "sha256:3593db0a2c8859f4e1c9f9467cb94106f03e0e678171618a44a4fd725b069c7d",
+      "packages/core/src/Table/useTableCellStyles.ts": "sha256:9ce9b260dac4432f35b42c0869a5e9943436690fee8eb3c72950398924b67a93"
+    }
+  },
+  {
+    "component": "core/TableFooter",
+    "reason": "TableFooter is a 38-line passthrough that renders a `<tfoot>`, attaches the `astryx-table-footer` theme target, and merges the caller's `xstyle`, `className` and `style`. It declares no styles of its own, no icon, no positioned element and no behaviour, so there is nothing whose geometry or glyph could differ between directions.",
+    "evidence": {
+      "apps/storybook/stories/Table.stories.tsx": "sha256:64f34f3f119eb7ac938297f55c77bd4072aad75e2043c138b5c20f622384b18f",
+      "packages/core/src/Table/TableFooter.tsx": "sha256:0abc867b21322b2a85b998372977d6c1ac33d04595e5f8e9b7d3d3ca93b146b5"
+    }
+  },
+  {
+    "component": "core/TableHeader",
+    "reason": "TableHeader is a bare `<thead>` that adds a theme target and nothing else, and TableHeaderCell is a `<th>` that applies density padding, semibold secondary text aligned to `start`, the block-end rule that separates header from body, and an optional `border-inline-end` column divider. `text-align: start` and `border-inline-end` both follow the reading direction by themselves, and the header divider runs along the block axis, so a mirrored render differs from the LTR one only in where the browser has already put the text.",
+    "evidence": {
+      "apps/storybook/stories/Table.stories.tsx": "sha256:64f34f3f119eb7ac938297f55c77bd4072aad75e2043c138b5c20f622384b18f",
+      "packages/core/src/Table/TableHeader.tsx": "sha256:f562c6be0214fda2df43b85a0ece9a4fbd8b507900a5cf33041c5869f3c81783"
+    }
+  },
+  {
+    "component": "core/TableRow",
+    "reason": "TableRow is a `<tr>` that reads the table context and picks one of three background rules \u2014 striped, hover, or both \u2014 then republishes the resulting colour as `--table-row-overlay` so pinned cells can repaint it. All of that is colour and vertical row parity; the row draws no glyph, sets no inset and owns no interaction. Cell order inside it is the table's inline axis, which the browser mirrors on its own, and the sticky-column offsets that do have a side live in the sticky-columns plugin, not here.",
+    "evidence": {
+      "apps/storybook/stories/Table.stories.tsx": "sha256:64f34f3f119eb7ac938297f55c77bd4072aad75e2043c138b5c20f622384b18f",
+      "packages/core/src/Table/TableContext.ts": "sha256:e38eae29ace3e3b14c88a3ac324570fad7751c9de1259160a883d6d4fe3241c2",
+      "packages/core/src/Table/TableRow.tsx": "sha256:da685a9029b16d15de225390bd3bba61bf6bbe3e7caf445ba1060e173209edb3",
+      "packages/core/src/Table/table.stylex.ts": "sha256:f0ae25823290d697c41fd81e331406ca158fab9bc67c1339b6fd06b5669cade5"
+    }
   },
   {
     "component": "core/Text",
-    "reason": "Text sets typography — size, weight, colour, line-height, wrapping, truncation — and nothing else. Its one alignment prop is `justify`, which compiles to the logical `text-align: start | center | end` and defaults to `start`, so text hangs off the correct edge in either direction without a component-side branch. Truncation is `text-overflow: ellipsis` and `-webkit-line-clamp`, both of which put the ellipsis at the reading end on their own, and the tooltip that accompanies a clamped string is placed with the logical `above`/`below`/`start`/`end` vocabulary. Nothing is positioned, nothing is transformed, and the component renders no glyph, separator, or control."
+    "reason": "Text sets typography \u2014 size, weight, colour, line-height, wrapping, truncation \u2014 and nothing else. Its one alignment prop is `justify`, which compiles to the logical `text-align: start | center | end` and defaults to `start`, so text hangs off the correct edge in either direction without a component-side branch. Truncation is `text-overflow: ellipsis` and `-webkit-line-clamp`, both of which put the ellipsis at the reading end on their own, and the tooltip that accompanies a clamped string is placed with the logical `above`/`below`/`start`/`end` vocabulary. Nothing is positioned, nothing is transformed, and the component renders no glyph, separator, or control.",
+    "evidence": {
+      "apps/storybook/stories/Text.stories.tsx": "sha256:9254fd31665aa4a98d56bbfcb30284153db74f149a67944f23eb12778f0dc204",
+      "packages/core/src/Text/Text.tsx": "sha256:77d05ce76e389f87f1f0262c50bcbc8f5568597b3135f7d3393d9dffaeb98db6",
+      "packages/core/src/Text/text.stylex.ts": "sha256:ec41808d46c1ce3201f85458017eca6a2e060a9395ba56baad2e92742a90dced",
+      "packages/core/src/Text/useTruncation.ts": "sha256:8dc282f232f27d676acf2fd753c465cba201be0fcca91756ff89ef0ab2607cc4"
+    }
+  },
+  {
+    "component": "core/TextInput",
+    "reason": "TextInput renders a Field-wrapped row: an optional leading icon slot, the `<input>`, and trailing clear/spinner/status affordances in plain DOM order. Its two placement-shaped props are vertical \u2014 the status message sits below the input (`'attached'`/`'detached'`) and the disabled-reason tooltip is `placement: 'above'` \u2014 so neither can land on a physical side. The icons the stories use are a magnifier, an envelope, and a person, none directional, and the component writes no physical CSS: it resets padding and border to `0` and takes its inline spacing from the shared input wrapper.",
+    "evidence": {
+      "apps/storybook/stories/TextInput.stories.tsx": "sha256:89fb954a4739ffbdeb877a48527a0882790f89a2323046a2e885a2e3d382cac7",
+      "packages/core/src/TextInput/TextInput.tsx": "sha256:de64eb7b285d6c51fd3b22f81f74372c34f8cabce3a56f6add2c88cd9921060a"
+    }
+  },
+  {
+    "component": "core/Theme",
+    "reason": "Theme's wrapper is `display: contents`, so it creates no box, glyph, order, scroll, drag, or directional keyboard behavior of its own. It registers the theme, injects generated token/custom-property and component CSS into `<head>`, and syncs theme attributes so those rules reach portals; the newly supported theme-local tokens are CSS custom-property declarations and do not create geometry until a child component consumes them. The wrapper's authored styles remain color, font family, and `color-scheme`, none of which has an inline-axis side to measure.",
+    "evidence": {
+      "apps/storybook/stories/Theme.stories.tsx": "sha256:c99d6b59bc5eb0c24a6d980bc721080f46d3aa092fba58adb9b68e4c7e026b33",
+      "packages/core/src/theme/Theme.tsx": "sha256:2ba41ca2b798b86cee18661ca3bbb94b55d95391f5e92ff7998542ad7c1dbbb8",
+      "packages/core/src/theme/defineTheme.ts": "sha256:35d1269b1756aa44f155c18ee6c2c4c05f7611536453c4925abca18a8c0bd77c",
+      "packages/core/src/theme/generateThemeRules.ts": "sha256:5691ce195a495e508c231721680d1253c74fe3d74d0f4e29b39d670856f41f20",
+      "packages/core/src/theme/themeRegistry.ts": "sha256:8ff366f81cc1ed75a59f9012052a24aadad086e699928d19694f4d8cabe1e49e",
+      "packages/core/src/theme/tokens.stylex.ts": "sha256:7d5b5321220e0924213d9b37cf4acf9ba5bb16f3de1485710dd543f964676f81",
+      "packages/core/src/theme/types.ts": "sha256:686f81ce38f5d5e7751fe95f1ef62d181bb714a18bd003fa21ece1a9779475c6",
+      "packages/core/src/theme/useTheme.ts": "sha256:b15aff67df7924cc8e2e1cbd4c1fa8c5bd55b13b4b1bf8c965f53df46901fffd"
+    }
+  },
+  {
+    "component": "core/themes-mediatheme-auto",
+    "reason": "These stories exist to compare a hardcoded MediaTheme mode against `mode=\"auto\"`, which measures the painted surface and decides whether an inverted context is warranted at all. Everything they vary is colour: a theme whose \"inverted\" background is barely inverted, a saturated error surface, a photo the sampler declines to read, and a colour picker driving the decision live. The toasts are rendered as bare cards with no viewport, so the one part of Toast that does take a side \u2014 the fixed viewport's start/end placement \u2014 never mounts here, and nothing else in the stories has an inline-axis position, glyph or gesture.",
+    "evidence": {
+      "apps/storybook/stories/MediaThemeAuto.stories.tsx": "sha256:132b5dfbbc32bc3d5492969d3864f74c61da2607ed64f7d84b90c026bc0f4d96"
+    }
+  },
+  {
+    "component": "core/TimeInput",
+    "reason": "TimeInput lays a clock icon, a text input, an optional spinner, a clear button and a status glyph in a single flex row, and the row's order follows the writing direction on its own. Its keyboard contract is ArrowUp and ArrowDown to step the time by `increment`; there is no Left/Right handling, no drag, no horizontal scroll, and nothing positioned out of flow. The one overlay it owns, the disabled-reason tooltip, is placed `above`.",
+    "evidence": {
+      "apps/storybook/stories/TimeInput.stories.tsx": "sha256:23b76c992b3370688f3e0387d4eb423bc7a23d0e00acefa5533fdbd4a70d7ac9",
+      "packages/core/src/TimeInput/TimeInput.tsx": "sha256:a0874e8dd3d70a415795fc9cfbc3cd00907f011a9b2069be2dc7ea8e23ac0eab"
+    }
   },
   {
     "component": "core/Timestamp",
-    "reason": "Timestamp renders locale-formatted text and a direction-neutral hover card; it has no directional icons, contextual decorations, side-specific layout, order, scroll, drag, or directional keyboard behavior."
+    "reason": "Timestamp renders locale-formatted text and a direction-neutral hover card; it has no directional icons, contextual decorations, side-specific layout, order, scroll, drag, or directional keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/Timestamp.stories.tsx": "sha256:0134a69a58902d4334aedf1d5c9a21ce5374d60e867db0c3a5d5cacb59ac37d4",
+      "packages/core/src/Timestamp/Timestamp.tsx": "sha256:110adf6e059472a5f27bab157c6fefb07517b42a48f230cb00a9485bfb4134ac",
+      "packages/core/src/Timestamp/TimestampHoverCard.tsx": "sha256:b1b942b441b7ba2edea8030794d1df85e19defb0fa830e349294739f0e7aea45",
+      "packages/core/src/Timestamp/formatInstant.ts": "sha256:0ad1751027e467000eb69c2df9506d970865e6a35ca18d96765302e8e8752ecf",
+      "packages/core/src/Timestamp/formatRelativeTime.ts": "sha256:b57348ab84677c904df61c191edcb694154b95c15c0abbb200bac751ee50cd68",
+      "packages/core/src/Timestamp/tooltipEntries.ts": "sha256:8b8ab1cc6257b7b3955e93a7a32c4d64ff2752aacb1dc9b4f6a5976d673b3ba3"
+    }
+  },
+  {
+    "component": "core/ToggleButton",
+    "reason": "ToggleButton is a ghost Button with `aria-pressed`, an optional outline\u2192solid icon swap, and a pressed-weight label; ToggleButtonGroup is an `inline-flex` row (or column) that owns which values are selected. None of its glyphs is directional \u2014 the stories use formatting and reaction icons (bold, italic, star, bell) \u2014 and its one `aria-hidden` node is a zero-height duplicate of the label that reserves width against layout shift, not a decoration. Grouped buttons are independent toggles in DOM order with no roving arrow-key navigation, so there is no order, side, or behaviour for RTL to invert.",
+    "evidence": {
+      "apps/storybook/stories/ToggleButton.stories.tsx": "sha256:0fc67b490b0cdd9b11a29b1b2dd0669ca800f85f0e59999ae4ca48eb7a338b57",
+      "packages/core/src/ToggleButton/ToggleButton.tsx": "sha256:72d97c30764fb76afcd187092885b38db12704d970f752aa87b70e4d133a594a",
+      "packages/core/src/ToggleButton/ToggleButtonGroup.tsx": "sha256:db1aa90d37729161a1ba3db62e1a5dea697b12b6f879d579cfe124cfec2cb747"
+    }
+  },
+  {
+    "component": "core/ToggleButtonGroup",
+    "reason": "ToggleButtonGroup is a context provider wrapped around an `inline-flex` row (or a column when `orientation=\"vertical\"`) with a single gap between children. It owns selection state and nothing else \u2014 it renders no glyph, positions nothing, declares no inset or margin that could take a side, and attaches no keyboard handler, so the row order it produces is mirrored by CSS with nothing left to assert.",
+    "evidence": {
+      "apps/storybook/stories/ToggleButton.stories.tsx": "sha256:0fc67b490b0cdd9b11a29b1b2dd0669ca800f85f0e59999ae4ca48eb7a338b57",
+      "packages/core/src/ToggleButton/ToggleButtonGroup.tsx": "sha256:db1aa90d37729161a1ba3db62e1a5dea697b12b6f879d579cfe124cfec2cb747"
+    }
+  },
+  {
+    "component": "core/Token",
+    "reason": "Token is an inline-flex chip: optional icon, an ellipsis-truncated label, optional end content, and an optional close-X remove button. Its two absolutely-positioned rules are a 1\u00d71 visually-hidden label and the remove button's symmetric `inset: -14px` hit area \u2014 neither carries a transform or has a side. Content order inside the chip is plain DOM order in an `inline-flex` row, and the negative pull on the trailing button is written logically (`marginInlineEnd`, 183), so the whole chip reverses under RTL with no code.",
+    "evidence": {
+      "apps/storybook/stories/Token.stories.tsx": "sha256:c6466649f05cf0be96b396a7702ae7a1a0fa5d1c256dd98026b32b1cd78d20aa",
+      "packages/core/src/Token/Token.tsx": "sha256:8cf4b8f5a146f8ef55ddeee48ac0f17c0a9a593f49eb776e0b7d240d36d25b08",
+      "packages/core/src/Token/TokenLink.tsx": "sha256:17f79800414044aefd1615090e4c56e6d563b365ff4a47ec029cea8c4d29d019",
+      "packages/core/src/Token/index.ts": "sha256:5874975fc4e8a1507739ca06309cadeca494d0b112148bc080b2d1c288a2a934"
+    }
+  },
+  {
+    "component": "core/TopNavItem",
+    "reason": "TopNavItem is one anchor: an optional consumer-supplied icon, a label, and hover/selected/disabled colouring, laid out as an `inline-flex` row with a logical gap and logical padding. Its selected state is a background fill and a heavier weight, not an edge bar or a marker on one side, so there is no affordance that could land on the wrong edge. The disabled path only drops `href` and `target` to remove the item from the tab order. Nothing it draws, positions, or handles depends on the reading direction.",
+    "evidence": {
+      "apps/storybook/stories/TopNav.stories.tsx": "sha256:0255558299ab238ba908daa48c1c4fc67ff48003edb0ac34c194794ddde5f300",
+      "packages/core/src/TopNav/TopNavItem.tsx": "sha256:a973397f21dc52a89005553c9db716f5bf0e436b84251a39e324bcad67e3a27a",
+      "packages/core/src/TopNav/TopNavRenderContext.ts": "sha256:04638b66eb6868cbed2b12e4e90ed3101abf4283d71c49be30cbc2c86fabdf1b"
+    }
+  },
+  {
+    "component": "core/TopNavMegaMenuItem",
+    "reason": "TopNavMegaMenuItem renders one link or button as a flex row: an optional 40px (or 32px in the drawer) icon box, then a stacked title and description. Its spacing is written with logical padding and margin properties, its text alignment is `start`, and it declares no positioned element, no glyph of its own, and no interaction beyond navigation \u2014 so the row's left-to-right order is ordinary flex reflow, which the browser mirrors without help.",
+    "evidence": {
+      "apps/storybook/stories/TopNav.stories.tsx": "sha256:0255558299ab238ba908daa48c1c4fc67ff48003edb0ac34c194794ddde5f300",
+      "packages/core/src/TopNav/TopNavMegaMenuItem.tsx": "sha256:a2eabe6cc2857e7bc5c386cf82262980fe090746f13aea91d8ad340e7140f053",
+      "packages/core/src/TopNav/TopNavRenderContext.ts": "sha256:04638b66eb6868cbed2b12e4e90ed3101abf4283d71c49be30cbc2c86fabdf1b"
+    }
+  },
+  {
+    "component": "core/TypeaheadItem",
+    "reason": "TypeaheadItem is the default dropdown row: an optional consumer icon followed by a label and an optional description in a `flex` line spaced with `gap`. It declares no `position`, no transform, no event handler and no text beyond the item's own label \u2014 the row simply reverses with the writing mode. When `item.element` is set it returns that node untouched, so even then it contributes no direction-sensitive markup of its own.",
+    "evidence": {
+      "apps/storybook/stories/Typeahead.stories.tsx": "sha256:67dca97b65bf5c3e6dd00de7ceaf5c5115c2c3d5528e5b445b62a25b1ee3ad55",
+      "packages/core/src/Typeahead/TypeaheadItem.tsx": "sha256:cfd4d60e7c9931f2a51e581f8450334d52645a56118d34db2b3c56af53e367be",
+      "packages/core/src/Typeahead/types.ts": "sha256:3e56d17e359c0abaa9040d0c95f586d41ff8155ffe04daeacb74679d047af65f"
+    }
+  },
+  {
+    "component": "core/VisuallyHidden",
+    "reason": "VisuallyHidden exists to render nothing visible: it pins a 1\u00d71 px box with `clip: rect(0, 0, 0, 0)`, `overflow: hidden`, `pointer-events: none` and `user-select: none`, so there is no rendered geometry to mirror in either direction. Its anchor is already logical (`inset-block-start: 0; inset-inline-start: 0`), which puts the invisible box at the reading-start corner rather than a physical one. The component deliberately omits `xstyle`, `className` and `style`, so a consumer cannot introduce direction-sensitive styling through it either.",
+    "evidence": {
+      "apps/storybook/stories/VisuallyHidden.stories.tsx": "sha256:c163e87a911bc4d9413c86b24f9a6dc878a71fdab648bc4475a14b7305a9721e",
+      "packages/core/src/VisuallyHidden/VisuallyHidden.tsx": "sha256:59d74418e096c39644a1244a046a778d20644f2e0d88177b1e8eb264020a0be4"
+    }
+  },
+  {
+    "component": "lab/ChatReasoning",
+    "reason": "ChatReasoning renders one collapsible row \u2014 a dashed-circle \"thinking\" glyph, a text label, an optional duration, an ellipsized single-line preview, and a disclosure chevron \u2014 above a grid-height-animated content region. Its only icons are radially symmetric circles and a down chevron whose open state is `transform: rotate(180deg)`, a vertical flip that reads identically in both directions; the audit excludes vertical glyphs from icon-mirroring by contract. Nothing in the component is absolutely positioned, so there is no anchor-plus-translate pair to land on the wrong side, and its `\u00b7` and `\u2014` separators are plain, non-aria-hidden text rather than directional decorations. Layout is a logical-property flex row (`paddingInlineStart`, `marginBlockStart`, `paddingBlock`) with a single Enter/Space disclosure toggle \u2014 no ordered control pair, no horizontal scroll, drag or arrow-key behaviour, no placement prop, and no code that reads direction \u2014 so CSS flips the row on its own and there is no LTR\u2194RTL relationship left to assert.",
+    "evidence": {
+      "apps/storybook/stories/ChatReasoning.stories.tsx": "sha256:1811a0229a3666738a3eba704442d6923b5af2e057f574a583b74d8fbaac57b3",
+      "packages/lab/src/ChatReasoning/ChatReasoning.tsx": "sha256:c58f661956771b77d9682ff760cd93c230cb1a3bf3da2ef443d43f885b36929a"
+    }
+  },
+  {
+    "component": "lab/ChatTypingIndicator",
+    "reason": "ChatTypingIndicator renders a `role=\"status\"` flex row holding three bouncing dots and, when names are supplied, a \"\u2026 is typing\u2026\" label. The dots are empty spans with a border-radius and a vertical-only bounce keyframe, the row is spaced with `gap`, and the label is plain text. Nothing is positioned, no glyph points anywhere, and the dot-then-label order is ordinary flex reflow that the browser mirrors on its own.",
+    "evidence": {
+      "apps/storybook/stories/ChatAdditions.stories.tsx": "sha256:03eb94d04959a62246277c1bf537f5c55e5655eb729709d7241e3bd9cdb3ba2f",
+      "packages/lab/src/Chat/ChatTypingIndicator.tsx": "sha256:a193e54a9808937612c46421a24cc8f65932c10058ea5a354599ef1fe73aee0d"
+    }
+  },
+  {
+    "component": "lab/ChatUnreadDivider",
+    "reason": "ChatUnreadDivider is a flex row holding a one-pixel error-coloured rule that grows to fill, followed by a short bold label. Which end the label sits at is DOM order in a `flex-direction: row` box with a logical gap, so it rides at the reading end in either direction and the rule fills the rest \u2014 the same layout, mirrored, with nothing pinned to a physical edge. It draws no glyph, positions nothing, and has no interaction; its only prop is the label text.",
+    "evidence": {
+      "apps/storybook/stories/ChatAdditions.stories.tsx": "sha256:03eb94d04959a62246277c1bf537f5c55e5655eb729709d7241e3bd9cdb3ba2f",
+      "packages/lab/src/Chat/ChatUnreadDivider.tsx": "sha256:a066d23c1d4194b3d0b1e60edd9fb1e4f752799594fdac0a1aaf5e0a6954a08a"
+    }
   },
   {
     "component": "lab/CircularProgress",
-    "reason": "No direction-sensitive visual, layout, or behavior. The track and fill are concentric SVG circles sharing one center; size, stroke, dash, and clockwise rotation are intentionally identical in LTR and RTL. The optional label is vertically stacked and centered, with no inline positioning or directional glyph."
+    "reason": "No direction-sensitive visual, layout, or behavior. The track and fill are concentric SVG circles sharing one center; size, stroke, dash, and clockwise rotation are intentionally identical in LTR and RTL. The optional label is vertically stacked and centered, with no inline positioning or directional glyph.",
+    "evidence": {
+      "apps/storybook/stories/CircularProgress.stories.tsx": "sha256:32c3ef7c36d7056c35d745adb4aa11f09cdec489b7fa56a5e06e593c58256150",
+      "packages/lab/src/CircularProgress/CircularProgress.tsx": "sha256:1f0f167f7f0e2650903f3acafed11718355575c977d6678a18ef51da3709750d"
+    }
+  },
+  {
+    "component": "lab/InfoTip",
+    "reason": "InfoTip renders one circular icon button carrying an `aria-label`, wrapped in a Tooltip that opens above it and centred. It exposes no placement, alignment or side prop, declares no positioned element, and its only glyph is the non-directional \"info\" mark. The stories place it beside a text label in an `HStack`, which is a plain inline row the browser mirrors without any assertion to make.",
+    "evidence": {
+      "apps/storybook/stories/InfoTip.stories.tsx": "sha256:9a1393c150c677a5d77eebc4d94a7dc6c77ddc268a175d32939d97f8e55f86ac",
+      "packages/lab/src/InfoTip/InfoTip.tsx": "sha256:c0447f270d8d6ef6421a0430e1f04132e48b7b947047eb4891ce6ba2b14caecc"
+    }
   }
 ]

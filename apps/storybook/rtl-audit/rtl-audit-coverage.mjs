@@ -2,9 +2,10 @@
 
 /**
  * @file Shared RTL coverage and directional-decoration helpers.
- * @input Rendered DOM decorations plus D1/D5/D6/curated audit results.
+ * @input Rendered DOM decorations, D1/D5/D6/curated audit results, and
+ *   source/story evidence manifests for verified-N/A declarations.
  * @output Contextual decoration candidates, pair verdicts, component-filter
- *   reconciliation, and per-component measured / verified-N-A / coverage-gap
+ *   reconciliation, and fail-closed measured / verified-N-A / coverage-gap
  *   classifications.
  * @position Pure support layer for rtl-audit.mjs and its unit tests.
  */
@@ -265,6 +266,41 @@ function componentName(component) {
   return component.split('/').at(-1)?.toLowerCase() ?? component.toLowerCase();
 }
 
+/** Compare an authored evidence manifest with the files currently on disk. */
+export function compareVerifiedNaEvidence(stored, current) {
+  const storedEntries =
+    stored != null && typeof stored === 'object' && !Array.isArray(stored)
+      ? stored
+      : {};
+  const currentEntries =
+    current != null && typeof current === 'object' && !Array.isArray(current)
+      ? current
+      : {};
+  const added = Object.keys(currentEntries).filter(
+    file => !(file in storedEntries),
+  );
+  const removed = Object.keys(storedEntries).filter(
+    file => !(file in currentEntries),
+  );
+  const changed = Object.keys(currentEntries).filter(
+    file =>
+      file in storedEntries && currentEntries[file] !== storedEntries[file],
+  );
+  const hasEvidence =
+    Object.keys(storedEntries).length > 0 &&
+    Object.keys(currentEntries).length > 0;
+  return {
+    matches:
+      hasEvidence &&
+      added.length === 0 &&
+      removed.length === 0 &&
+      changed.length === 0,
+    added,
+    removed,
+    changed,
+  };
+}
+
 /**
  * Build the component roster for a scoped audit.
  *
@@ -315,6 +351,7 @@ export function buildComponentCoverage({
   decorationResults = [],
   curatedResults = [],
   verifiedNa = [],
+  currentVerifiedNaEvidence = new Map(),
   enforced = true,
 }) {
   const byName = new Map();
@@ -358,30 +395,47 @@ export function buildComponentCoverage({
   const verified = new Map();
   for (const declaration of verifiedNa) {
     if (declaration?.component && declaration?.reason?.trim()) {
-      verified.set(
-        declaration.component.toLowerCase(),
-        declaration.reason.trim(),
-      );
+      verified.set(declaration.component.toLowerCase(), {
+        reason: declaration.reason.trim(),
+        evidence: declaration.evidence,
+      });
     }
   }
 
   const results = Array.from(byName.values())
     .sort((left, right) => left.component.localeCompare(right.component))
     .map(entry => {
-      const reason = verified.get(entry.component.toLowerCase());
-      if (entry.applicable.length > 0 && reason) {
+      const declaration = verified.get(entry.component.toLowerCase());
+      if (entry.applicable.length > 0 && declaration != null) {
         return {
           ...entry,
           status: 'stale-verified-na',
-          reason,
+          reason: declaration.reason,
           note: 'verified-N/A declaration conflicts with applicable RTL behavior',
         };
       }
       if (entry.applicable.length > 0) {
         return {...entry, status: 'measured'};
       }
-      if (reason) {
-        return {...entry, status: 'verified-na', reason};
+      if (declaration != null) {
+        const evidence = compareVerifiedNaEvidence(
+          declaration.evidence,
+          currentVerifiedNaEvidence.get(entry.component.toLowerCase()),
+        );
+        if (evidence.matches) {
+          return {
+            ...entry,
+            status: 'verified-na',
+            reason: declaration.reason,
+          };
+        }
+        return {
+          ...entry,
+          status: 'coverage-gap',
+          reason: declaration.reason,
+          note: 'verified-N/A evidence changed; re-review the component source and stories',
+          evidence,
+        };
       }
       return {
         ...entry,

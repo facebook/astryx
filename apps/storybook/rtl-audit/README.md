@@ -218,21 +218,46 @@ report merely because there was nothing to render.
 
 A verified-N/A declaration is not an allowlist. If an automatic or curated
 dimension later becomes applicable, the declaration is reported as
-**stale-verified-na** and must be removed or replaced with real coverage.
+**stale-verified-na** and must be removed or replaced with real coverage. Each
+declaration also carries an `evidence` manifest: the SHA-256 digest of its main
+component source, its directly imported helpers/styles within the same top-level
+component directory, and every owned Storybook story. A changed, added, removed, or
+renamed evidence file invalidates the declaration and returns the component to a
+**coverage gap** until a contributor reads the changed source and stories again.
 
-Add a declaration only after reading the component's source and every story:
+Add a declaration only after reading the component's source and every owned
+story:
 
 ```json
 [
   {
     "component": "core/Text",
-    "reason": "No direction-sensitive visual, positioned element, order, scroll, drag, overlay, or keyboard behavior."
+    "reason": "No direction-sensitive visual, positioned element, order, scroll, drag, overlay, or keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/Text.stories.tsx": "sha256:<digest>",
+      "packages/core/src/Text/Text.tsx": "sha256:<digest>"
+    }
   }
 ]
 ```
 
-An all-N/A scorecard without such a checked-in reason means **unmeasured**, not
-RTL-ready.
+After re-reviewing one component, refresh only that declaration:
+
+```bash
+pnpm build
+pnpm storybook:build
+pnpm rtl:audit:verify-na -- --component core/Text --write
+pnpm rtl:audit:verify-na
+```
+
+The write command deliberately refuses a bulk refresh: regenerated hashes are
+proof that a person re-reviewed those files, not a way to silence drift across
+the registry. The check command names added, removed, and changed evidence files.
+The required Storybook `build` command runs that check after every successful
+build, including component-, story-, and registry-only pull requests; the
+soft-gated `pr-rtl` job is not the enforcement path for evidence freshness. An
+all-N/A scorecard without a current checked-in reason and evidence manifest
+means **unmeasured**, not RTL-ready.
 
 ## Why relationship-based, not pixel baselines
 

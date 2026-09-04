@@ -25,10 +25,9 @@
  *         or reported as a coverage gap. An all-N/A result is never called clean.
  * @input --storybook-dir <path> --output <file> [--targets <path>]
  *   [--verified-not-applicable <path>] [--filter <csv>] [--auto-only]
- *   [--curated-only]
+ *   [--curated-only]; verified-N/A rows carry source/story evidence manifests.
  * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4 results,
- *   and a component coverage rollup. Mirrors the pr-a11y accessibility-audit
- *   harness.
+ *   and fail-closed component coverage that invalidates changed N/A evidence.
  * @position internal test harness; run by the soft-gated `pr-rtl` CI job and
  *   locally via `pnpm -F @astryxdesign/storybook rtl-audit`.
  *
@@ -47,6 +46,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {discoverComponents} from '../../../packages/cli/foundation/discovery/component-discovery.mjs';
+import {
+  buildCurrentVerifiedNaEvidence,
+  componentFromStoryId,
+  validateVerifiedNaRegistry,
+} from './verified-na-evidence.mjs';
 import {
   buildAuditedComponentRoster,
   buildComponentCoverage,
@@ -804,14 +808,6 @@ async function scoreCurated(page, coarsePage, port, t) {
 }
 
 // ---------------------------------------------------------------------------
-function componentFromId(id) {
-  // core-tabletree--default -> core/tabletree (best-effort display name)
-  // lab-listinput--tag-options -> lab/listinput
-  const packageName = id.startsWith('lab-') ? 'lab' : 'core';
-  const seg = id.replace(AUDITED_STORY_PREFIX, '').split('--')[0];
-  return `${packageName}/${seg}`;
-}
-
 function matchesFilter(component) {
   const name = component.split('/').at(-1)?.toLowerCase() ?? component;
   return !FILTER.length || FILTER.includes(name);
@@ -880,7 +876,7 @@ async function mapPool(items, pages, fn) {
   }
   const auditedComponents = buildAuditedComponentRoster({
     sourceComponents,
-    storyComponents: storyIds.map(componentFromId),
+    storyComponents: storyIds.map(componentFromStoryId),
     filters: FILTER,
   });
 
@@ -895,7 +891,7 @@ async function mapPool(items, pages, fn) {
     // the offending element), so we don't collapse to one-per-component.
     const perComponent = new Map();
     for (const id of storyIds) {
-      const comp = componentFromId(id);
+      const comp = componentFromStoryId(id);
       if (!perComponent.has(comp)) perComponent.set(comp, id);
     }
     const d1Targets = [...perComponent]
@@ -917,7 +913,7 @@ async function mapPool(items, pages, fn) {
     );
     // D5 positional-mirror over every audited story.
     const pmTargets = storyIds
-      .map(id => ({id, comp: componentFromId(id)}))
+      .map(id => ({id, comp: componentFromStoryId(id)}))
       .filter(({comp}) => matchesFilter(comp));
     pmResults.push(
       ...(await mapPool(pmTargets, pages, async ({id, comp}, workerPage) => {
@@ -960,7 +956,7 @@ async function mapPool(items, pages, fn) {
     let targets = [];
     try { targets = JSON.parse(fs.readFileSync(TARGETS_PATH, 'utf8')); } catch {}
     for (const t of targets) {
-      const component = componentFromId(t.storyId);
+      const component = componentFromStoryId(t.storyId);
       if (!matchesFilter(component)) continue;
       if (!entries[t.storyId]) {
         curatedResults.push({component, storyId: t.storyId, rollup: 'MISSING-STORY', dims: {}, notes: ['story not in index.json']});
@@ -980,13 +976,28 @@ async function mapPool(items, pages, fn) {
   }
 
   let verifiedNa = [];
+  let currentVerifiedNaEvidence = new Map();
   let verifiedNaError = null;
   try {
     const parsed = JSON.parse(fs.readFileSync(VERIFIED_NA_PATH, 'utf8'));
-    if (!Array.isArray(parsed)) throw new Error('verified-not-applicable registry must be a JSON array');
+    if (!Array.isArray(parsed)) {
+      throw new Error('verified-not-applicable registry must be a JSON array');
+    }
     verifiedNa = parsed;
+    const registryErrors = validateVerifiedNaRegistry(verifiedNa);
+    const evidence = buildCurrentVerifiedNaEvidence({
+      declarations: verifiedNa,
+      projectRoot: PROJECT_ROOT,
+      sourceComponents,
+      storyEntries: Object.values(entries),
+    });
+    currentVerifiedNaEvidence = evidence.evidenceByComponent;
+    const errors = [...registryErrors, ...evidence.errors];
+    if (errors.length > 0) {
+      verifiedNaError = errors.join('; ').slice(0, 1000);
+    }
   } catch (error) {
-    verifiedNaError = String(error).slice(0, 200);
+    verifiedNaError = String(error).slice(0, 1000);
   }
 
   const coverage = buildComponentCoverage({
@@ -996,6 +1007,7 @@ async function mapPool(items, pages, fn) {
     decorationResults,
     curatedResults,
     verifiedNa,
+    currentVerifiedNaEvidence,
     // Partial modes intentionally omit dimensions, so they report but do not
     // enforce applicability gaps.
     enforced: !AUTO_ONLY && !CURATED_ONLY,

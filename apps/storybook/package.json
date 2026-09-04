@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "storybook dev -p 6006",
-    "build": "storybook build -o dist",
+    "build": "storybook build -o dist && node rtl-audit/verify-na-evidence.mjs",
     "rtl-audit": "node rtl-audit/rtl-audit.mjs --storybook-dir dist --output rtl-audit-report.json",
     "typecheck": "tsc --noEmit"
   },
