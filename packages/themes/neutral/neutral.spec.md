@@ -23,13 +23,11 @@ references:
 
 # Neutral theme specification
 
-This record is the current approved palette record. It does not decide
-cross-theme local-token, palette-generation, compiler, or artifact APIs;
-current `spec:AST-006` owns the accepted local-token contract. This record keeps
-Neutral's package adoption separate. DEC-2 ratifies the exact palette shipped
-by this change. Token remapping, proposed local-token roles, and additional
-component mappings remain separate work; they are not part of this release and
-must not be treated as an approved public contract.
+This record is the current approved palette and token-mapping record. It does
+not decide cross-theme local-token, palette-generation, compiler, or artifact
+APIs; current `spec:AST-006` owns the accepted local-token contract. DEC-2
+ratifies the palette, and DEC-3 ratifies the reviewed mappings. Proposed
+local-token roles and additional component mappings remain separate.
 
 ## Intent and audience
 
@@ -99,13 +97,13 @@ not authorize a broader meaning.
 
 ## Tonal palette definitions
 
-Candidate source work contains complete light and dark ramps for neutral, red,
-orange, yellow, green, teal, cyan, blue, purple, and pink. The committed request,
-generated module, and receipt make the reviewed `astryx-oklch-v1` result
-reproducible. Draft `spec:AST-018` separately owns the cross-theme authoring and
-validation contract. Regeneration is an explicit reviewed palette change and
-never occurs during a normal theme build. Mapping runtime tokens to these stops
-is reviewed in a separate stacked change.
+Neutral contains complete light and dark ramps for neutral, red, orange, yellow,
+green, teal, cyan, blue, purple, and pink. The committed request, generated
+module, and receipt make the reviewed `astryx-oklch-v1` result reproducible.
+Draft `spec:AST-018` separately owns the cross-theme authoring and validation
+contract. Theme source references named stops directly, and tests verify the
+resolved mappings. Regeneration is an explicit reviewed theme change and never
+occurs during a normal theme build.
 
 ## Component and state mappings
 
@@ -121,11 +119,11 @@ geometry/shadow changes, which are reviewed independently.
 
 ## Compatibility and migration
 
-This knowledge-only record changes no package output. Existing Neutral authoring,
-portable token overrides, runtime behavior, and package exports remain unchanged.
-Neutral stays unenrolled until it explicitly supplies `localTokens`; merely
-emitting or referencing the same prefix today does not activate validation or
-create the public contract.
+The reviewed mapping changes resolved color values without renaming tokens or
+changing package exports. Existing consumers receive the new values when they
+upgrade. Neutral stays unenrolled in the local-token contract until that
+separate implementation ships; merely emitting or referencing the same prefix
+does not activate validation or create a public local-token contract.
 
 Implementation requires the parent AST-006 implementation to ship first,
 followed by complete rendered evidence and exact-head approval for every
@@ -156,9 +154,10 @@ measurement-tool implementation.
 ## Build and artifact contract
 
 The package manifest and build tests define Neutral's runtime, CSS, declaration,
-and export outputs. The palette remains in a theme-owned source file for
-authoring and audits. It is not part of `defineTheme`, the package's runtime
-exports, generated CSS, or generic theme-build artifacts.
+and export outputs. The source theme imports its theme-owned palette so mappings
+remain reviewable by name. The prebuilt theme and generated CSS materialize only
+the selected values; the palette is not attached to the `defineTheme` result or
+emitted as a set of CSS palette variables.
 
 ## Verification map
 
@@ -172,10 +171,9 @@ exports, generated CSS, or generic theme-build artifacts.
 
 ## Decision log
 
-The decisions below record settled input for the portions they name. This
-record's approval covers the exact palette only. Token mappings, local-token
-roles, and rendered-evidence questions stay explicitly separate for later
-review and release.
+The decisions below record settled input for the portions they name. Remaining
+local-token roles and rendered-evidence questions stay explicitly proposed for
+later review.
 
 ### DEC-1 — Own one exact Neutral filled-accent-status role
 
@@ -207,19 +205,39 @@ or applying it merely because two contexts currently share a color.
 
 Neutral's exact palette values are approved as the stable starting point for
 subsequent color and contrast decisions. The request, generated result, receipt,
-and visual review must change together. Runtime token mappings are deliberately
-excluded from this decision and reviewed in a separate stacked change. The
-complete authoring palette is not added to the runtime theme object or generated
-CSS.
+and visual review must change together. Runtime token mappings are reviewed in a
+separate change. The complete authoring palette is not attached to the runtime
+theme object or emitted as CSS palette variables.
 
 Neutral is the repository reference implementation for palette-aware theme
 templates. Templates may reuse its ownership, review, and alignment workflow;
 they do not inherit Neutral's values, mappings, or stop layout as requirements.
 
 Rejected: regenerating the palette during a normal build, silently changing
-runtime token mappings as part of palette generation, or requiring complete
+runtime token mappings as part of generation, or requiring complete
 component-level contrast conformance before the palette can serve as the
 baseline for measuring and improving those mappings.
+
+### DEC-3 — Map Neutral roles through reviewed palette references
+
+**Reference:** `theme:neutral/DEC-3`
+
+**Decider:** `rubyycheung`, `2026-09-04`
+
+Neutral's semantic, categorical, syntax, and color-bearing effect values use
+named palette-stop references when an approved match exists. Token names and
+meanings remain unchanged. Alpha variants derive from the referenced stop rather
+than duplicating its hex value.
+
+The mapping is role-aware rather than a blind nearest-color conversion. Very
+dark foregrounds preserve their darker role, ordinary backgrounds do not become
+true black automatically, and a reviewed token may use the closer value from
+the companion ramp. Intentional values without an approved palette match remain
+explicit theme-local values.
+
+Rejected: duplicating generated palette hex values in mapped roles, forcing
+every literal into a visibly poor stop, or selecting true black for an ordinary
+background solely because it is numerically nearby.
 
 ## Open questions
 
