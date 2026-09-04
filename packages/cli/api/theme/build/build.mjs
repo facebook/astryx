@@ -47,10 +47,7 @@ import {
   collectThemingTargets,
   targetsByKey,
 } from '../../../foundation/discovery/theming-targets.mjs';
-import {
-  collectUnloadedFonts,
-  formatFontLoadingHelp,
-} from './font-warning.mjs';
+import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -343,7 +340,6 @@ function readComponentDeclarations(pascalName) {
   return contents;
 }
 
-
 /** @type {Map<string, Array<{moduleName: string, interfacePrefix: string}>>} */
 const _augmentationTargetCache = new Map();
 
@@ -402,7 +398,8 @@ async function resolveAugmentationTargetCandidates(componentName) {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+        if (entry.name === 'node_modules' || entry.name === '__tests__')
+          continue;
         await scan(full);
         continue;
       }
@@ -445,7 +442,15 @@ async function resolveAugmentationTargetCandidates(componentName) {
   }
 
   await scan(coreSrc);
-  const resolved = matches.length > 0 ? matches : fallback;
+  // A target documented by a parent component may also have its own public
+  // subpath and augmentation interface (Heading is documented under Text but
+  // owns @astryxdesign/core/Heading). Keep the direct-name candidate after
+  // discovered owners so both shapes are reachable without guessing which one
+  // the source tree uses.
+  for (const candidate of fallback) {
+    addCandidate(candidate.moduleName, candidate.interfacePrefix);
+  }
+  const resolved = matches;
   _augmentationTargetCache.set(componentName, resolved);
   return resolved;
 }
@@ -539,12 +544,13 @@ async function generateVariantDeclarationsAsync(themeDef) {
       if (values.size === 0) continue;
 
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const target = (await resolveAugmentationTargetCandidates(component)).find(
-        candidate =>
-          componentHasAugmentableInterface(
-            candidate.moduleName,
-            `${candidate.interfacePrefix}${propPascal}Map`,
-          ),
+      const target = (
+        await resolveAugmentationTargetCandidates(component)
+      ).find(candidate =>
+        componentHasAugmentableInterface(
+          candidate.moduleName,
+          `${candidate.interfacePrefix}${propPascal}Map`,
+        ),
       );
 
       // Only augment interfaces that actually exist as an extension point in
@@ -1031,6 +1037,49 @@ function validatePrivateVars(themeDef) {
   return errors;
 }
 
+const BUILTIN_HEADING_TYPES = new Set(['display-1', 'display-2', 'display-3']);
+
+/**
+ * A generated type augmentation makes a custom Heading type callable with the
+ * type prop, so that name needs a standalone visual rule of its own. A value
+ * that appears only in a combined selector (or has an empty rule) would
+ * type-check but fall back for ordinary `type="name"` use.
+ *
+ * @param {{components?: Record<string, Record<string, unknown>>}} themeDef
+ * @returns {string[]}
+ */
+function validateCustomHeadingTypes(themeDef) {
+  const headingRules = themeDef.components?.heading;
+  if (!headingRules || typeof headingRules !== 'object') return [];
+
+  const customTypes = new Set();
+  for (const key of Object.keys(headingRules)) {
+    for (const pair of key.split('+')) {
+      const colon = pair.indexOf(':');
+      if (colon === -1 || pair.slice(0, colon) !== 'type') continue;
+      const value = pair.slice(colon + 1);
+      if (value && !BUILTIN_HEADING_TYPES.has(value)) customTypes.add(value);
+    }
+  }
+
+  const errors = [];
+  for (const type of customTypes) {
+    const standalone = headingRules[`type:${type}`];
+    if (
+      standalone == null ||
+      typeof standalone !== 'object' ||
+      Array.isArray(standalone) ||
+      Object.keys(standalone).length === 0
+    ) {
+      errors.push(
+        `Custom Heading type "${type}" needs a non-empty standalone ` +
+          `components.heading["type:${type}"] rule.`,
+      );
+    }
+  }
+  return errors;
+}
+
 /**
  * Compile a defineTheme file to CSS + JS + .d.ts (and an optional
  * `.variants.d.ts`). Performs the writes and returns a `theme.build` receipt,
@@ -1117,6 +1166,15 @@ export async function themeBuild(
   if (privateVarErrors.length > 0) {
     logger.error(
       `\n  ${privateVarErrors.length} private var error(s). Use standard CSS properties instead.`,
+    );
+  }
+
+  const customHeadingErrors = validateCustomHeadingTypes(themeDef);
+  if (customHeadingErrors.length > 0) {
+    throw new AstryxError(
+      customHeadingErrors.join('\n'),
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
     );
   }
 

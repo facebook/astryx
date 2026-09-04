@@ -47,6 +47,7 @@ import {mergeProps} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import type {HeadingTypeMap} from './index';
 
 const LazyXDSTooltip = lazy(async () =>
   import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
@@ -61,7 +62,13 @@ export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
  * Display type variants for headings. Applies display-scale sizing
  * (larger, lighter) while preserving the semantic heading element.
  */
-export type HeadingType = 'display-1' | 'display-2' | 'display-3';
+export type HeadingType = keyof HeadingTypeMap;
+
+type BuiltinHeadingType = 'display-1' | 'display-2' | 'display-3';
+
+function isBuiltinHeadingType(type: HeadingType): type is BuiltinHeadingType {
+  return type === 'display-1' || type === 'display-2' || type === 'display-3';
+}
 
 export interface HeadingProps extends Omit<
   BaseProps<HTMLHeadingElement>,
@@ -231,6 +238,11 @@ export function Heading({
   // Resolve display - force block when maxLines > 0 or hasCapsize
   const resolvedDisplay = maxLines > 0 || hasCapsize ? 'block' : display;
 
+  // A custom type receives its visual treatment from theme CSS. Keep the
+  // semantic level's baseline until that CSS is available instead of indexing
+  // the closed built-in StyleX maps with an unknown name.
+  const builtinType = type && isBuiltinHeadingType(type) ? type : undefined;
+
   // Truncation detection
   const truncation = useTruncation({maxLines});
 
@@ -257,8 +269,10 @@ export function Heading({
           themeProps('heading', {level, color, ...(type && {type})}),
           stylex.props(
             colorStyles[resolveStyleColor(color)],
-            type ? sizeByTypeStyles[type] : sizeByLevelStyles[level],
-            type && defaultWeightByTypeStyles[type],
+            builtinType
+              ? sizeByTypeStyles[builtinType]
+              : sizeByLevelStyles[level],
+            builtinType && defaultWeightByTypeStyles[builtinType],
             // Display: use truncation styles when maxLines > 0
             maxLines === 1
               ? truncationStyles.singleLine
