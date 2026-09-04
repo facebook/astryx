@@ -49,11 +49,14 @@ review. It does not claim that one automated pass proves complete accessibility.
 
 ### Normative basis and scope
 
-- **FR1 — WCAG 2.2 A and AA are the conformance baseline.** Every conformance
-  expectation MUST cite an applicable WCAG 2.2 Level A or AA success criterion.
-  WCAG 3.0 principles MAY inform plain-language intent, user needs, and future
-  research, but a WCAG 3.0 draft requirement MUST NOT create or clear a pass/fail
-  check without a later current Astryx record.
+- **FR1 — WCAG 2.2 A and AA are the conformance baseline.** Every WCAG
+  conformance expectation MUST cite an applicable WCAG 2.2 Level A or AA success
+  criterion. A pattern expectation MAY instead cite an exact APG requirement when
+  APG supplies the interaction detail. In that case it MUST identify the WCAG 2.2
+  user outcome it supports without inventing a success-criterion mapping. WCAG 3.0
+  principles MAY inform plain-language intent, user needs, and future research, but
+  a WCAG 3.0 draft requirement MUST NOT create or clear a pass/fail check without a
+  later current Astryx record.
 - **FR2 — APG defines an adopted widget pattern, not universal conformance.** When
   Astryx adopts a WAI-ARIA APG pattern, the pattern contract MUST cite the exact APG
   roles, states, properties, or keyboard interaction it adopts and the WCAG 2.2
@@ -70,7 +73,8 @@ review. It does not claim that one automated pass proves complete accessibility.
 ### Expectation contract
 
 - **FR4 — Every expectation is traceable.** An expectation MUST have a stable id,
-  a short user outcome, exact WCAG 2.2 and when applicable APG references,
+  a short user outcome, an exact normative source (WCAG 2.2 success criterion, APG
+  requirement, current Astryx contract, or an applicable combination),
   applicability conditions, an evidence layer, and an enforcement class. The test
   name and failure output MUST expose the expectation id and source reference so a
   failure can be understood without opening the runner implementation.
@@ -94,23 +98,47 @@ review. It does not claim that one automated pass proves complete accessibility.
   pointer, state, and focus expectations MUST exercise the relevant starting state,
   action, resulting state, and reverse or dismissal path when the pattern supports
   one. Merely finding a role or proving one direction of a toggle is insufficient.
-- **FR9 — Enforcement is separate from severity and tool coverage.** An expectation
-  is `required` only when a current Astryx record adopts the user outcome and the
-  selected layer can objectively verify it. Required expectations gate new or
-  changed behavior. `advisory` expectations report a best practice, an unsettled
-  choice, or an outcome not yet adopted as an Astryx contract. A coverage score,
-  tool capability, or ease of automation MUST NOT promote or demote either class.
+- **FR9 — Enforcement is separate from severity and tool coverage.** A directly
+  applicable WCAG 2.2 Level A or AA expectation is `required`. An APG or
+  Astryx-specific expectation is `required` only when a current Astryx record adopts
+  that outcome. `Advisory` expectations report best practice, an unsettled choice,
+  or an outcome not yet adopted as an Astryx contract. `Advisory` expectations
+  report only; `required` expectations gate new or changed behavior at a layer that
+  can objectively verify them. A coverage score, tool capability, or ease of
+  automation MUST NOT promote or demote either class.
 
 ### Completeness and review
 
-- **FR10 — Every pattern uses one completeness review.** At minimum, the review MUST
-  consider non-text content; information and relationships; meaningful sequence;
-  name, role, value, and state; keyboard operation; focus order and visibility; link
-  purpose; headings and labels; labels and instructions; consistent identification;
-  status messages; contrast; target size; forced colors; and the pattern's APG
-  interactions. Page title and page language are considered only for fixtures or
-  surfaces that own a page. Each item follows FR5 and FR6 rather than being forced
-  into the reusable runtime contract.
+- **FR10 — Every pattern uses one completeness review.** The review starts with
+  the source map below, then adds applicable WCAG 2.2 component outcomes such as
+  focus not obscured, status messages, target size, contrast, forced colors, and
+  the pattern's APG interactions. Page-owned rows are considered only for fixtures
+  or surfaces that own a page. Every row follows FR5 and FR6 rather than being
+  forced into the reusable runtime contract.
+
+| WCAG 2.2 source                     | Outcome to consider                                                                        | Usual ownership                       |
+| ----------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------- |
+| 1.1.1 Non-text Content              | Informative non-text content has an equivalent alternative; decorative content is ignored. | Component or content                  |
+| 1.3.1 Info and Relationships        | Visual structure and relationships are programmatically available.                         | Component or composition              |
+| 1.3.2 Meaningful Sequence           | Programmatic reading sequence preserves meaning.                                           | Component or composition              |
+| 1.4.1 Use of Color                  | Color is not the only way to convey information or state.                                  | Component, theme, and caller content  |
+| 1.4.3 Contrast (Minimum)            | Text and images of text meet the required contrast.                                        | Component and theme                   |
+| 1.4.11 Non-text Contrast            | Controls, states, and meaningful graphics meet non-text contrast.                          | Component and theme                   |
+| 2.1.1 Keyboard                      | Every component-owned function is operable by keyboard.                                    | Component                             |
+| 2.1.2 No Keyboard Trap              | Keyboard focus can leave any component unless the user has a documented exit.              | Component or composition              |
+| 2.4.2 Page Titled                   | A page has a descriptive title.                                                            | Page only                             |
+| 2.4.3 Focus Order                   | Sequential focus preserves meaning and operation.                                          | Component or composition              |
+| 2.4.4 Link Purpose (In Context)     | A link's purpose is determinable.                                                          | Component and caller content          |
+| 2.4.6 Headings and Labels           | Headings and labels describe their topic or purpose.                                       | Component and caller content          |
+| 2.4.7 Focus Visible                 | Keyboard focus has a visible indicator.                                                    | Component and theme                   |
+| 2.4.11 Focus Not Obscured (Minimum) | Focused content is not entirely hidden by author-created content.                          | Component or composition              |
+| 2.5.8 Target Size (Minimum)         | Pointer targets meet the minimum size or an allowed exception.                             | Component or composition              |
+| 3.1.1 Language of Page              | The page language is programmatically available.                                           | Page only                             |
+| 3.2.4 Consistent Identification     | Repeated functions are identified consistently.                                            | System, component, and caller content |
+| 3.3.2 Labels or Instructions        | Inputs have persistent labels or needed instructions.                                      | Component and caller content          |
+| 4.1.2 Name, Role, Value             | Name, role, state, value, and changes are programmatically available.                      | Component                             |
+| 4.1.3 Status Messages               | Status changes are exposed without moving focus.                                           | Component or composition              |
+
 - **FR11 — The contract itself has positive and negative proof.** Each expectation
   MUST pass against a minimally conforming fixture or binding and fail when its
   required outcome is deliberately removed. Pattern-level tests MUST distinguish a

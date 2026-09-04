@@ -95,11 +95,12 @@ implementation-specific regression coverage.
   standards reference, evidence layer, public tracking issue, and reason the
   migration does not fix it. Wildcards, whole-pattern suppression, and unowned text
   reasons are prohibited.
-- **FR9 — A known failure suppresses only its recorded result.** A binding with a
-  known failure still runs the expectation. A different error, another state, a new
-  expectation, or a wider failure MUST fail. When the expectation starts passing,
-  CI MUST report an unexpected pass and require removal of the stale record rather
-  than continuing to count it as debt.
+- **FR9 — A known failure changes only its exact gate result.** A binding with a
+  known failure still runs the expectation and reports `known-failure`, never
+  `pass`. Only that exact expected result stops gating the first migration. A
+  different error, another state, a new expectation, or a wider failure MUST fail.
+  When the expectation starts passing, CI MUST report an unexpected pass and
+  require removal of the stale record rather than continuing to count it as debt.
 - **FR10 — Migration locks the baseline without calling debt conformance.** Required
   expectations that pass gate immediately for that binding. Recorded historical
   failures remain visibly failing debt but do not prevent the first migration.
@@ -234,44 +235,11 @@ conformant or waiting for a repository-wide remediation.
 Rejected: all-or-nothing migration, silent skips, and enabling one broad report-only
 suite that cannot stop regressions.
 
-### DEC-2 — Keep migration separate from remediation
-
-**Reference:** `spec:AST-021/DEC-2`
-**Decider:** `cixzhang`, `2026-09-03`
-
-A migration identifies shared ownership, moves equivalent assertions, and records
-what fails. Behavior fixes follow their component, family, browser, or AT contract in
-separately reviewable work. This keeps each change understandable and revertible and
-prevents test infrastructure from smuggling product decisions.
-
-Rejected: changing component behavior until the new contract turns green inside the
-same migration pull request.
-
-### DEC-3 — Preserve component-specific tests
-
-**Reference:** `spec:AST-021/DEC-3`
-**Decider:** `cixzhang`, `2026-09-03`
-
-Move only standards-derived outcomes that are identical across bindings. Keep public
-API effects, callback payloads, composition, form behavior, styling, and deliberate
-component exceptions with the component that owns them.
-
-Rejected: replacing a component suite with only a pattern binding or keeping every
-old assertion as duplicate “extra coverage.”
-
-### DEC-4 — Coverage is a ledger, not an accessibility score
-
-**Reference:** `spec:AST-021/DEC-4`
-**Decider:** `cixzhang`, `2026-09-03`
-
-Report what is applicable, passing, failing, exempt, or unrun. Do not average unlike
-requirements into a number that can make one required failure look acceptable.
-This keeps progress measurable without turning test count into a false product
-quality claim.
-
-Rejected: a 0–100 component conformance score as the primary rollout or quality
-signal.
+The remaining migration, test-ownership, and reporting rules are proposals in this
+draft. No repository decision has approved them yet.
 
 ## Open questions
 
-None.
+- **OQ1 — Migration policy.** Should approval adopt FR5–FR14 as written: migrate
+  separately from remediation, retain component-specific tests, use exact runnable
+  known failures, and report a factual ledger rather than one score? (`human-api`)
