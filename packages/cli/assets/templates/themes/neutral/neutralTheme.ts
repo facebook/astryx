@@ -225,6 +225,7 @@ export const neutralTheme = defineTheme({
     '--color-success': ['#007004', '#9fe59b'],
     '--color-error': ['#a50c25', '#ffc6c1'],
     '--color-warning': ['#745b00', '#fdcf4f'],
+    '--color-info-muted': ['#c4ddfb', '#9eb7ff3D'],
     '--color-success-muted': ['#c5e5c0', '#84c9803D'],
     '--color-error-muted': ['#facecb', '#ff9e973D'],
     '--color-warning-muted': ['#f8da9d', '#deb4333D'],
@@ -517,7 +518,6 @@ export const neutralTheme = defineTheme({
           'var(--astryx-theme-neutral-color-on-tint-overlay-pressed)',
       },
       'status:info': {
-        '--color-accent-muted': 'var(--color-background-blue)',
         '--color-text-primary': 'var(--color-text-blue)',
         '--color-text-secondary': 'var(--color-text-blue)',
         '--color-accent': 'var(--color-text-blue)',
@@ -533,7 +533,6 @@ export const neutralTheme = defineTheme({
         '--color-warning': 'var(--color-text-yellow)',
       },
       'status:error': {
-        '--color-error-muted': 'var(--color-background-red)',
         '--color-text-primary': 'var(--color-text-red)',
         '--color-text-secondary': 'var(--color-text-red)',
         '--color-error': 'var(--color-text-red)',

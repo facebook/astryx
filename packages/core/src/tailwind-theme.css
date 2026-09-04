@@ -73,6 +73,7 @@
   --color-tint-hover: var(--color-tint-hover);
 
   /* --- Status --- */
+  --color-info-muted: var(--color-info-muted);
   --color-success: var(--color-success);
   --color-success-muted: var(--color-success-muted);
   --color-on-success: var(--color-on-success);
