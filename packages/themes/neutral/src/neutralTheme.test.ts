@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it} from 'vitest';
+import {contrastRatio} from '../../../core/src/theme/contrast';
 import {neutralPalettes} from './neutralPalettes';
 import {neutralTheme} from './neutralTheme';
 
@@ -197,6 +198,7 @@ describe('neutral theme palette mappings', () => {
 
 describe('neutral syntax contrast', () => {
   it('keeps light CodeBlock comments and operators at normal-text AA', () => {
+    const background = neutralPalettes.neutral.light[100];
     for (const token of ['comment', 'operator'] as const) {
       expect(neutralTheme.tokens[`--color-syntax-${token}`]).toBe(
         lightDark(
@@ -204,6 +206,9 @@ describe('neutral syntax contrast', () => {
           neutralPalettes.neutral.dark[65],
         ),
       );
+      expect(
+        contrastRatio(neutralPalettes.neutral.light[45], background),
+      ).toBeGreaterThanOrEqual(4.5);
     }
   });
 });
