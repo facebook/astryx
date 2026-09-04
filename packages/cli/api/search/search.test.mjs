@@ -80,6 +80,7 @@ describe('search leaf — exact keyword phrase outranks incidental token matches
     // pushing it out of the results entirely at the default limit.
     const r = await search('table of contents', {cwd});
     expect(r.data.results[0]?.name).toBe('Outline');
+    expect(r.data.results[0]).toMatchObject({matchedTerms: 2, queryTerms: 2});
   }, SLOW);
 
   it('surfaces Outline for its own declared keyword "heading navigation", ranked first', async () => {
