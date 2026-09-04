@@ -363,6 +363,40 @@ describe('generateThemeRules with weight overrides', () => {
   });
 });
 
+describe('generateThemeRules with an explicit Heading weight prop', () => {
+  const theme = defineTheme({
+    name: 'custom-heading-type',
+    components: {
+      heading: {
+        'type:hero': {
+          fontSize: '4rem',
+          fontWeight: 'var(--font-weight-normal)',
+        },
+      },
+    },
+  });
+  const rules = generateThemeRules(theme);
+
+  it('emits named weight rules after the custom type default', () => {
+    const typeIndex = rules.findIndex(rule =>
+      rule.includes('.astryx-heading.hero'),
+    );
+    const boldIndex = rules.findIndex(rule =>
+      rule.includes('.astryx-heading.bold'),
+    );
+
+    expect(typeIndex).toBeGreaterThanOrEqual(0);
+    expect(boldIndex).toBeGreaterThan(typeIndex);
+    expect(rules[boldIndex]).toContain('font-weight: var(--font-weight-bold)');
+  });
+
+  it('keeps explicit weight rules in the component theme layer', () => {
+    const {component, prose} = generateThemeCSS(theme);
+    expect(component).toContain('.astryx-heading.bold');
+    expect(prose).not.toContain('.astryx-heading.bold');
+  });
+});
+
 // =============================================================================
 // Derived var expansion
 // =============================================================================
