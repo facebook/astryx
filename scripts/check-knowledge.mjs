@@ -10,6 +10,10 @@ import {collectThemingTargets} from '../packages/cli/foundation/discovery/themin
 
 const require = createRequire(import.meta.url);
 const {
+  COMPONENT_PACKAGE_NAMES,
+  packageHasPublicComponent,
+} = require('./component-packages.cjs');
+const {
   parseAuthority,
   parseOwnerFile,
 } = require('../.github/scripts/knowledge-frontmatter.cjs');
@@ -205,7 +209,7 @@ export function discoverKnowledgeRecords(root = DEFAULT_ROOT) {
 
   records.push(...discoverThemeRecordCandidates(root).records);
 
-  for (const packageName of ['core', 'lab']) {
+  for (const packageName of COMPONENT_PACKAGE_NAMES) {
     const sourceRoot = path.join(root, `packages/${packageName}/src`);
     records.push(
       ...matchingFilesRecursively(
@@ -235,6 +239,16 @@ function componentRecordLocation(root, absolutePath) {
       'src',
       classified.componentRoot,
     ),
+    componentSourcePath:
+      classified.layout === 'flat'
+        ? path.join(root, 'packages', classified.packageName, 'src')
+        : path.join(
+            root,
+            'packages',
+            classified.packageName,
+            'src',
+            classified.componentRoot,
+          ),
   };
 }
 
@@ -313,7 +327,7 @@ export function validateComponentModuleRelationships(
     const location = componentRecordLocation(root, record.absolutePath);
     if (!location) {
       problems.push(
-        `${record.filePath}: ${kind} records must live under packages/{core,lab}/src/<component-root>/.`,
+        `${record.filePath}: ${kind} records must live under a registered component package source root.`,
       );
       continue;
     }
@@ -332,9 +346,17 @@ export function validateComponentModuleRelationships(
         );
       }
       if (
+        location.layout === 'flat' &&
+        !packageHasPublicComponent(root, location.packageName, publicName)
+      ) {
+        problems.push(
+          `${record.filePath}: flat-package component record ${expectedId} must match a public named export and TSX module in packages/${location.packageName}/src.`,
+        );
+      }
+      if (
         publicName !== location.componentRoot &&
         !componentRootDefinesPublicComponent(
-          location.componentRootPath,
+          location.componentSourcePath,
           publicName,
         )
       ) {
@@ -835,7 +857,7 @@ function loadModuleContract(root, specPath, moduleName) {
 
   const candidates = [];
   for (const docPath of matchingFilesRecursively(
-    location.componentRootPath,
+    location.componentSourcePath,
     name => name.endsWith('.doc.mjs'),
     {skipDirectory: isIgnoredComponentKnowledgeSegment},
   )) {

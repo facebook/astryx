@@ -24,7 +24,7 @@ import path from 'node:path';
 const LAB_SRC = 'packages/lab/src';
 const STORIES_DIR = 'apps/storybook/stories';
 const CI_WORKFLOW = '.github/workflows/ci.yml';
-const RTL_AUDIT = 'apps/storybook/rtl-audit/rtl-audit.mjs';
+const COMPONENT_REGISTRY = 'scripts/component-packages.cjs';
 
 /** Read a repo-relative file, or null when it does not exist. */
 function read(repoRoot, relPath) {
@@ -104,13 +104,13 @@ function ciComponentRoots(repoRoot) {
   return filtered ? filtered[1].split('|').map(name => `packages/${name}/src/`) : [];
 }
 
-/** Story-id prefixes the RTL auto-discovery sweep covers. */
+/** Story-id prefixes the shared component-package registry assigns. */
 function rtlAuditedPrefixes(repoRoot) {
-  const rtl = read(repoRoot, RTL_AUDIT);
-  if (!rtl) return [];
-  const match = rtl.match(/AUDITED_STORY_PREFIXES\s*=\s*\[([^\]]+)\]/);
-  if (!match) return [];
-  return [...match[1].matchAll(/['"]([^'"]+)['"]/g)].map(m => m[1]);
+  const registry = read(repoRoot, COMPONENT_REGISTRY);
+  if (!registry) return [];
+  return [...registry.matchAll(/storyPrefix:\s*['"]([^'"]+)['"]/g)].map(
+    match => match[1],
+  );
 }
 
 /** Pass/fail helper: `passed` when every requirement holds, else `in_progress`. */
@@ -489,7 +489,7 @@ export function deriveChecks(repoRoot, candidate) {
       evidence.push(
         ev(
           `The RTL sweep only walks ${prefixes.join(', ') || '(unparsed)'} story ids.`,
-          RTL_AUDIT,
+          COMPONENT_REGISTRY,
         ),
       );
     }

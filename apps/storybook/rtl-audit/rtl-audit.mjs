@@ -6,9 +6,9 @@
  * @description RTL semantic audit. Grades component stories against the astryx
  *   RTL contract by comparing their LTR vs RTL render in the SAME run
  *   (relationship-based, no golden screenshots). Two layers:
- *     (A) AUTO-DISCOVERY — runs over EVERY `core-*` and `lab-*` story with zero
- *         curated selectors, so a NEW component that ships without RTL handling
- *         is caught automatically. Three auto passes:
+ *     (A) AUTO-DISCOVERY — runs over every registered component-package story
+ *         prefix with zero curated selectors, so a new public component that
+ *         ships without RTL handling is caught automatically. Three auto passes:
  *           - D1 (icon-mirror): directional SVG icons must flip/swap under RTL.
  *           - D5 (positional-mirror): an absolutely/fixed-positioned element
  *             with a LOGICAL anchor (insetInlineStart/End) + an UNFLIPPED
@@ -24,8 +24,8 @@
  *     (C) APPLICABILITY: every component is measured, explicitly verified N/A,
  *         or reported as a coverage gap. An all-N/A result is never called clean.
  * @input --storybook-dir <path> --output <file> [--targets <path>]
- *   [--verified-not-applicable <path>] [--filter <csv>] [--auto-only]
- *   [--curated-only]
+ *   [--verified-not-applicable <path>] [--component-stories <path>]
+ *   [--filter <csv>] [--auto-only] [--curated-only]
  * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4 results,
  *   and a component coverage rollup. Mirrors the pr-a11y accessibility-audit
  *   harness.
@@ -46,12 +46,14 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {discoverComponents} from '../../../packages/cli/foundation/discovery/component-discovery.mjs';
+import {listComponents} from '../../../scripts/score-ledger.mjs';
 import {
+  STORY_PACKAGE_PREFIXES,
   buildAuditedComponentRoster,
   buildComponentCoverage,
   collectDirectionalDecorations,
   evaluateDirectionalDecorations,
+  storyComponentsForId,
 } from './rtl-audit-coverage.mjs';
 
 const args = process.argv.slice(2);
@@ -68,15 +70,14 @@ const TARGETS_PATH = getArg('targets') || path.join(HERE, 'targets.json');
 const VERIFIED_NA_PATH =
   getArg('verified-not-applicable') ||
   path.join(HERE, 'verified-not-applicable.json');
+const COMPONENT_STORIES_PATH =
+  getArg('component-stories') || path.join(HERE, 'component-stories.json');
 const FILTER = (getArg('filter') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
-// Story-id prefixes the auto-discovery layer sweeps. These mirror the
-// publishable component packages in analyze-pr.js — a component the PR job can
-// name in --filter must also be discoverable here, or the audit silently
-// reports zero targets. Lab stories (`lab-*`) were excluded until this list
-// existed, so no lab component had ever been RTL-audited.
-const AUDITED_STORY_PREFIXES = ['core-', 'lab-'];
+// Story-id prefixes the auto-discovery layer sweeps. They are derived from the
+// component-bearing package registry rather than maintained as a second roster.
+const AUDITED_STORY_PREFIXES = Object.keys(STORY_PACKAGE_PREFIXES);
 const AUDITED_STORY_PREFIX = new RegExp(`^(?:${AUDITED_STORY_PREFIXES.join('|')})`);
 // Worker pool size. Each worker owns its own Playwright page; stories are
 // independent, and the run is dominated by page-load latency rather than CPU.
@@ -804,12 +805,26 @@ async function scoreCurated(page, coarsePage, port, t) {
 }
 
 // ---------------------------------------------------------------------------
-function componentFromId(id) {
-  // core-tabletree--default -> core/tabletree (best-effort display name)
-  // lab-listinput--tag-options -> lab/listinput
-  const packageName = id.startsWith('lab-') ? 'lab' : 'core';
-  const seg = id.replace(AUDITED_STORY_PREFIX, '').split('--')[0];
-  return `${packageName}/${seg}`;
+function loadComponentStoryOwners(filePath) {
+  const byStory = new Map();
+  let mappings = [];
+  try {
+    mappings = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    throw new Error(`cannot read component story map: ${String(error).slice(0, 160)}`);
+  }
+  if (!Array.isArray(mappings)) {
+    throw new Error('component story map must be a JSON array');
+  }
+  for (const mapping of mappings) {
+    if (!mapping?.component || !mapping?.storyId) {
+      throw new Error('every component story mapping needs component and storyId');
+    }
+    const owners = byStory.get(mapping.storyId) ?? [];
+    owners.push(mapping.component);
+    byStory.set(mapping.storyId, owners);
+  }
+  return byStory;
 }
 
 function matchesFilter(component) {
@@ -865,22 +880,21 @@ async function mapPool(items, pages, fn) {
       AUDITED_STORY_PREFIX.test(id) &&
       !/--docs$/.test(id),
   );
-  const sourceComponents = [];
-  for (const packageName of ['core', 'lab']) {
-    try {
-      const grouped = discoverComponents(path.join(PROJECT_ROOT, 'packages', packageName));
-      sourceComponents.push(
-        ...Object.values(grouped)
-          .flat()
-          .map(component => `${packageName}/${component}`),
-      );
-    } catch (error) {
-      console.error(`WARN: cannot discover ${packageName} component roster: ${String(error).slice(0, 120)}`);
+  const componentStoryOwners = loadComponentStoryOwners(COMPONENT_STORIES_PATH);
+  for (const storyId of componentStoryOwners.keys()) {
+    if (!entries[storyId]) {
+      throw new Error(`component story map references missing story ${storyId}`);
     }
   }
+  const sourceComponents = listComponents(PROJECT_ROOT).map(
+    ({package: packageName, component}) => `${packageName}/${component}`,
+  );
+  const storyComponents = storyIds.flatMap(id =>
+    storyComponentsForId(id, componentStoryOwners),
+  );
   const auditedComponents = buildAuditedComponentRoster({
     sourceComponents,
-    storyComponents: storyIds.map(componentFromId),
+    storyComponents,
     filters: FILTER,
   });
 
@@ -890,13 +904,14 @@ async function mapPool(items, pages, fn) {
   const decorationResults = []; // D6 contextual directional decoration
   if (!CURATED_ONLY) {
     // D1 runs one representative story per component (extra stories add little
-    // D1 signal). D5 (positional-mirror) runs over EVERY core story — a
+    // D1 signal). D5 and D6 run over every registered-package story because a
     // positioned bug can be story-specific (only a `withStatus` variant mounts
     // the offending element), so we don't collapse to one-per-component.
     const perComponent = new Map();
     for (const id of storyIds) {
-      const comp = componentFromId(id);
-      if (!perComponent.has(comp)) perComponent.set(comp, id);
+      for (const comp of storyComponentsForId(id, componentStoryOwners)) {
+        if (!perComponent.has(comp)) perComponent.set(comp, id);
+      }
     }
     const d1Targets = [...perComponent]
       .filter(([comp]) => matchesFilter(comp))
@@ -917,7 +932,9 @@ async function mapPool(items, pages, fn) {
     );
     // D5 positional-mirror over every audited story.
     const pmTargets = storyIds
-      .map(id => ({id, comp: componentFromId(id)}))
+      .flatMap(id =>
+        storyComponentsForId(id, componentStoryOwners).map(comp => ({id, comp})),
+      )
       .filter(({comp}) => matchesFilter(comp));
     pmResults.push(
       ...(await mapPool(pmTargets, pages, async ({id, comp}, workerPage) => {
@@ -960,7 +977,13 @@ async function mapPool(items, pages, fn) {
     let targets = [];
     try { targets = JSON.parse(fs.readFileSync(TARGETS_PATH, 'utf8')); } catch {}
     for (const t of targets) {
-      const component = componentFromId(t.storyId);
+      const storyOwners = storyComponentsForId(t.storyId, componentStoryOwners);
+      const component =
+        storyOwners.find(
+          owner =>
+            owner.split('/').at(-1)?.toLowerCase() ===
+            String(t.component ?? '').toLowerCase(),
+        ) ?? storyOwners[0];
       if (!matchesFilter(component)) continue;
       if (!entries[t.storyId]) {
         curatedResults.push({component, storyId: t.storyId, rollup: 'MISSING-STORY', dims: {}, notes: ['story not in index.json']});

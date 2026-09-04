@@ -11,10 +11,39 @@ import {
   buildComponentCoverage,
   classifyDirectionalDecorationPair,
   collectDirectionalDecorations,
+  storyComponentsForId,
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 
 const IDENTITY = [1, 0, 0, 1];
 const MIRROR = [-1, 0, 0, 1];
+
+describe('story component ownership', () => {
+  it('recognizes every audited package prefix', () => {
+    expect(storyComponentsForId('core-button--default')).toEqual(['core/button']);
+    expect(storyComponentsForId('lab-tour--default')).toEqual(['lab/tour']);
+    expect(storyComponentsForId('charts-area--gradient')).toEqual([
+      'charts/Chart',
+    ]);
+    expect(storyComponentsForId('richtext-richtexteditor--default')).toEqual([
+      'richtext/RichTextEditor',
+    ]);
+    expect(storyComponentsForId('vega-vegachart--radial-plot')).toEqual([
+      'vega/VegaChart',
+    ]);
+  });
+
+  it('uses explicit owners for shared or differently titled stories', () => {
+    const owners = new Map([
+      [
+        'charts-chrome-axes-grids--playground',
+        ['charts/ChartAxis', 'charts/ChartGrid'],
+      ],
+    ]);
+    expect(
+      storyComponentsForId('charts-chrome-axes-grids--playground', owners),
+    ).toEqual(['charts/Chart', 'charts/ChartAxis', 'charts/ChartGrid']);
+  });
+});
 
 function decoration(glyph, policy, matrix = IDENTITY) {
   return {glyph, policy, matrix};
@@ -194,6 +223,15 @@ describe('buildAuditedComponentRoster', () => {
         filters: ['chat'],
       }),
     ).toEqual(['core/chat']);
+  });
+
+  it('preserves the canonical source identity when a story differs only by case', () => {
+    expect(
+      buildAuditedComponentRoster({
+        sourceComponents: ['richtext/RichTextEditor'],
+        storyComponents: ['richtext/richtexteditor'],
+      }),
+    ).toEqual(['richtext/RichTextEditor']);
   });
 
   it('retains an unknown entry when neither source nor stories match', () => {

@@ -15,11 +15,19 @@ it governs. Consumer documentation remains in component `.doc.mjs` files and
 - `templates/knowledge/`: authoring templates. Templates never live among records.
 - `schemas/knowledge/`: versioned structural requirements for templates and records.
 
-Component contracts are direct children of their Core or Lab component root and
-use `<PublicName>.spec.md`. `<PublicName>` normally matches the root directory;
+Component contracts live beside the public component in every component-bearing
+package registered by `scripts/component-packages.cjs`:
+
+- directory-layout packages (`core`, `lab`) use
+  `packages/<package>/src/<ComponentRoot>/<PublicName>.spec.md`;
+- flat packages (`charts`, `richtext`, `vega`) use
+  `packages/<package>/src/<PublicName>.spec.md`.
+
+In a directory-layout package, `<PublicName>` normally matches the root directory;
 a public member such as `NavMenu/NavHeadingMenu.spec.md` is valid only when an
 exact top-level or full inline consumer-doc entry in that root declares the same
-public name. A flat filename and matching `component:` id alone are not enough.
+public name. In a flat package, the public named export and matching TSX module
+define the component boundary.
 
 Independently contractible public hooks, plugins, utilities, and subsystems use
 `kind: module` records named `<PublicName>.spec.md` at least one directory below
@@ -27,6 +35,12 @@ the same component root. Their canonical id is
 `module:<ParentComponent>/<PublicName>`; the module's `parent_component` and the
 parent component's `modules` list must agree. Private transform helpers do not
 require records.
+
+Use the [component-specification guide](contributing/component-specs.md) to create
+or complete a component contract from the current template, gather evidence
+without turning observed code into policy, link the applicable current owners,
+and prepare the exact-head approval and verification. A whole-component audit
+follows that workflow before it applies the wiki rubric for procedure and scoring.
 
 Component-local discovery and PR routing ignore hidden path segments,
 `*.generated.spec.md`, and fixture, test, generated, build-output, coverage, and

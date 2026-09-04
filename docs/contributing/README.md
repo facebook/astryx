@@ -4,6 +4,9 @@ These guides turn current Astryx owner records into practical contribution steps
 They do not create policy or replace architecture, specifications, family
 contracts, or component contracts.
 
+- [Component specifications](component-specs.md): create or complete a component
+  contract, link its current owners, resolve evidence and human decisions, and
+  prepare it for audit and exact-head approval.
 - [API conventions](api-conventions.md): shape, propose, implement, and review a
   public component API.
 - [CLI conventions](cli-conventions.md): propose, implement, and review a change

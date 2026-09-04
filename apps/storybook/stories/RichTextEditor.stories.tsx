@@ -16,7 +16,7 @@ import {BOLD_STAR, ITALIC_STAR, UNORDERED_LIST} from '@lexical/markdown';
 import {$getRoot} from 'lexical';
 
 const meta: Meta<typeof RichTextEditor> = {
-  title: 'Lab/RichTextEditor',
+  title: 'RichText/RichTextEditor',
   component: RichTextEditor,
   tags: ['autodocs'],
   argTypes: {

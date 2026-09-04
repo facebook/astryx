@@ -1,0 +1,46 @@
+[
+  {
+    "component": "charts/Chart",
+    "storyId": "charts-area--gradient"
+  },
+  {
+    "component": "charts/ChartAxis",
+    "storyId": "charts-chrome-axes-grids--playground"
+  },
+  {
+    "component": "charts/ChartGrid",
+    "storyId": "charts-chrome-axes-grids--playground"
+  },
+  {
+    "component": "charts/ChartLegend",
+    "storyId": "charts-chrome-legend--default"
+  },
+  {
+    "component": "charts/ChartSwatch",
+    "storyId": "charts-chrome-swatch--gallery"
+  },
+  {
+    "component": "charts/ChartTooltip",
+    "storyId": "charts-chrome-tooltip--default"
+  },
+  {
+    "component": "richtext/RichTextEditor",
+    "storyId": "richtext-richtexteditor--default"
+  },
+  {
+    "component": "richtext/RichTextEditorAutoLinkPlugin",
+    "storyId": "richtext-richtexteditor--with-auto-link"
+  },
+  {
+    "component": "richtext/RichTextEditorToolbar",
+    "storyId": "richtext-richtexteditor--with-toolbar"
+  },
+  {
+    "component": "richtext/RichTextView",
+    "storyId": "richtext-richtexteditor--controlled-persistence"
+  },
+  {
+    "component": "vega/VegaChart",
+    "storyId": "vega-vegachart--radial-plot"
+  }
+]

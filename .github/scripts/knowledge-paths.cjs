@@ -4,10 +4,17 @@
 /* global module */
 
 /**
- * One dependency-free path contract for component-local knowledge records.
- * Validation, change classification, and the spec-owner gate all consume this
- * helper so ignored paths cannot become records on only one surface.
+ * One shared path contract for component-local knowledge records. It consumes the
+ * component-package registry; validation, change classification, and the spec-owner
+ * gate all consume this helper so ignored paths cannot become records on only one
+ * surface.
  */
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const {
+  COMPONENT_PACKAGE_NAMES,
+  componentPackage,
+} = require('../../scripts/component-packages.cjs');
 
 const IGNORED_COMPONENT_KNOWLEDGE_SEGMENTS = new Set([
   '__fixtures__',
@@ -43,27 +50,45 @@ function isIgnoredComponentKnowledgeSegment(segment) {
  */
 function classifyComponentKnowledgePath(filePath) {
   const normalized = normalizePath(filePath);
-  const match = /^packages\/(core|lab)\/src\/([^/]+)\/(.+\.spec\.md)$/.exec(
-    normalized,
-  );
+  const match = /^packages\/([^/]+)\/src\/(.+\.spec\.md)$/.exec(normalized);
   if (!match) return null;
 
   const packageName = match[1];
-  const componentRoot = match[2];
-  const relativePath = match[3];
-  const segments = [componentRoot, ...relativePath.split('/')];
-  if (segments.some(isIgnoredComponentKnowledgeSegment)) return null;
+  const packageConfig = componentPackage(packageName);
+  if (!packageConfig) return null;
 
-  const fileName = segments.at(-1);
+  const packageRelativePath = match[2];
+  const packageSegments = packageRelativePath.split('/');
+  if (packageSegments.some(isIgnoredComponentKnowledgeSegment)) return null;
+
+  const fileName = packageSegments.at(-1);
   if (fileName.endsWith('.generated.spec.md')) return null;
   const publicName = fileName.slice(0, -'.spec.md'.length);
   if (!/^[A-Za-z][A-Za-z0-9]*$/.test(publicName)) return null;
 
+  if (packageConfig.layout === 'flat') {
+    const nested = packageSegments.length > 1;
+    const componentRoot = nested ? packageSegments[0] : publicName;
+    return {
+      componentRoot,
+      fileName,
+      kind: nested ? 'module' : 'component',
+      layout: packageConfig.layout,
+      packageName,
+      publicName,
+      relativePath: packageRelativePath,
+    };
+  }
+
+  if (packageSegments.length < 2) return null;
+  const componentRoot = packageSegments[0];
+  const relativePath = packageSegments.slice(1).join('/');
   const nested = relativePath.includes('/');
   return {
     componentRoot,
     fileName,
     kind: nested ? 'module' : 'component',
+    layout: packageConfig.layout,
     packageName,
     publicName,
     relativePath,
@@ -75,6 +100,7 @@ function isComponentSpecRecordPath(filePath) {
 }
 
 module.exports = {
+  COMPONENT_PACKAGE_NAMES,
   IGNORED_COMPONENT_KNOWLEDGE_SEGMENTS,
   classifyComponentKnowledgePath,
   isComponentSpecRecordPath,

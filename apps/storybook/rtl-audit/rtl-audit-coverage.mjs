@@ -9,6 +9,11 @@
  * @position Pure support layer for rtl-audit.mjs and its unit tests.
  */
 
+import {createRequire} from 'node:module';
+
+const require = createRequire(import.meta.url);
+const {STORY_PACKAGE_PREFIXES} = require('../../../scripts/component-packages.cjs');
+
 const EXPLICIT_GLYPH_PAIRS = new Map([
   ['/', '\\'],
   ['\\', '/'],
@@ -261,6 +266,35 @@ function resultIsApplicable(result) {
   return result?.verdict === 'pass' || result?.verdict === 'fail';
 }
 
+export {STORY_PACKAGE_PREFIXES};
+
+/** Resolve one Storybook id to one or more package-qualified component owners. */
+export function storyComponentsForId(id, explicitOwners = new Map()) {
+  const explicit = explicitOwners.get(id) ?? [];
+  const prefix = Object.keys(STORY_PACKAGE_PREFIXES).find(value =>
+    id.startsWith(value),
+  );
+  if (!prefix) return [...new Set([`unknown/${id.split('--')[0]}`, ...explicit])];
+
+  const packageName = STORY_PACKAGE_PREFIXES[prefix];
+  let inferred;
+  if (packageName === 'charts') {
+    // Every Charts story renders the Chart composition; Chrome stories can add
+    // ChartAxis/ChartGrid/ChartLegend/ChartSwatch/ChartTooltip explicitly.
+    inferred = ['charts/Chart'];
+  } else if (packageName === 'richtext') {
+    // Rich Text stories are compositions rooted in RichTextEditor; individual
+    // plugin/toolbar/view owners are additive aliases.
+    inferred = ['richtext/RichTextEditor'];
+  } else if (packageName === 'vega') {
+    inferred = ['vega/VegaChart'];
+  } else {
+    const segment = id.slice(prefix.length).split('--')[0];
+    inferred = [`${packageName}/${segment}`];
+  }
+  return [...new Set([...inferred, ...explicit])];
+}
+
 function componentName(component) {
   return component.split('/').at(-1)?.toLowerCase() ?? component.toLowerCase();
 }
@@ -289,14 +323,12 @@ export function buildAuditedComponentRoster({
     )
     .map(filter => `unknown/${filter}`);
 
-  return Array.from(
-    new Map(
-      [...knownComponents, ...unmatchedFilters].map(component => [
-        component.toLowerCase(),
-        component,
-      ]),
-    ).values(),
-  ).filter(
+  const unique = new Map();
+  for (const component of [...knownComponents, ...unmatchedFilters]) {
+    const key = component.toLowerCase();
+    if (!unique.has(key)) unique.set(key, component);
+  }
+  return [...unique.values()].filter(
     component =>
       normalizedFilters.length === 0 ||
       normalizedFilters.includes(componentName(component)),

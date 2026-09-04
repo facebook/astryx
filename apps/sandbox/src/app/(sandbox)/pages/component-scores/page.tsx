@@ -878,15 +878,28 @@ export default function ComponentScoresPage() {
                 <Heading level={1}>Component Audits</Heading>
                 <Text>
                   To audit a component, open its <strong>Actions</strong> menu,
-                  choose <strong>Copy audit prompt</strong>, run the prompt
-                  against the component in the repository, then record and
-                  publish the completed result to the{' '}
+                  choose <strong>Copy audit prompt</strong>, and run the prompt
+                  against the repository. The prompt starts from the component's
+                  current specification. If it is missing, the audit continues
+                  from current authority and checkable evidence; you may{' '}
+                  <Link
+                    href="https://github.com/facebook/astryx/blob/main/docs/contributing/component-specs.md"
+                    isExternalLink>
+                    optionally prepare a draft observational worksheet
+                  </Link>{' '}
+                  for owner review. The copied prompt preserves the selected mode's
+                  issue and recording rules. Night Watch may combine that draft
+                  worksheet with objective tests, snapshots, doc-drift fixes,
+                  and bugs, but every such PR remains manual-review-only until a
+                  current repository spec and versioned schema activate the
+                  proposed auto-merge gate. Publish each result to the{' '}
                   <Link href={LEDGER_WIKI_URL} isExternalLink>
                     central audit ledger
-                  </Link>
-                  . This page automatically shows recorded scores and evidence;
-                  components without a recorded result remain{' '}
-                  <strong>TBD</strong>.
+                  </Link>{' '}
+                  when that mode requires it. This page fetches recorded scores
+                  and evidence at runtime; its roster comes from the same
+                  package registry as the audit queue, and components without a
+                  result remain <strong>TBD</strong>.
                 </Text>
                 <Link href={RUBRIC_URL} isExternalLink>
                   How components are graded, and how to get one audited

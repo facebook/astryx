@@ -22,6 +22,7 @@ import http from 'node:http';
 import {describe, it, expect} from 'vitest';
 
 import {
+  AUDIT_PROMPT,
   SCORES_PAGE_URL,
   SECTION_WEIGHTS,
   SECTION_IDS,
@@ -39,6 +40,7 @@ import {
   listComponents,
   LEDGER_FETCH_TIMEOUT_MS,
   loadLedger,
+  modeFilesBlockIssues,
   repoFromWikiRemote,
   resolveName,
   runRatchet,
@@ -71,6 +73,20 @@ const entry = (over = {}) => ({
 const withBlocks = (...blocks) => ({
   count: blocks.length,
   open: blocks.map(b => (typeof b === 'string' ? {id: b, summary: b, issue: null} : b)),
+});
+
+describe('the shared audit prompt', () => {
+  it('preserves mode policy and fails closed while the backfill contract is draft', () => {
+    expect(AUDIT_PROMPT).toContain('component-package registry');
+    expect(AUDIT_PROMPT).toContain('optional draft observational worksheet');
+    expect(AUDIT_PROMPT).toContain('Do not make grading depend');
+    expect(AUDIT_PROMPT).toContain('current family');
+    expect(AUDIT_PROMPT).toContain('follow that mode exactly');
+    expect(AUDIT_PROMPT).toContain('remains manual-review-only');
+    expect(AUDIT_PROMPT).toContain('versioned component schema/template');
+    expect(AUDIT_PROMPT).toMatch(/Other modes keep the\s+rubric/);
+    expect(AUDIT_PROMPT).toContain('without a hand-maintained list');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -327,37 +343,53 @@ describe('the canonical component predicate', () => {
     const names = all.map(c => c.component);
     expect(names).toContain('Button');
     expect(names).toContain('Stepper');
+    expect(names).toContain('TransferListSelector');
+    expect(names).toContain('TourStep');
     expect(names).not.toContain('hooks');
     expect(names).not.toContain('NavItem');
     expect([...names].sort((a, b) => a.localeCompare(b))).toEqual(names);
     expect(new Set(all.map(c => c.package))).toEqual(
-      new Set(['core', 'lab', 'richtext']),
+      new Set(['charts', 'core', 'lab', 'richtext', 'vega']),
     );
   });
 
-  it('covers flat packages by their .doc.mjs, not a per-component dir', () => {
-    // richtext was promoted out of lab into its own package with a flat src
-    // (`RichTextEditor.tsx` at the root, no directory per component). It must
-    // still land in the roster or a score recorded for it has no row.
-    const all = listComponents(REPO_ROOT);
-    const richtext = all.filter(c => c.package === 'richtext');
-    expect(richtext).toEqual([{component: 'RichTextEditor', package: 'richtext'}]);
+  it('covers every public component in flat component packages', () => {
+    const byPackage = new Map();
+    for (const item of listComponents(REPO_ROOT)) {
+      const names = byPackage.get(item.package) ?? [];
+      names.push(item.component);
+      byPackage.set(item.package, names);
+    }
+    expect(byPackage.get('charts')).toEqual([
+      'Chart',
+      'ChartAxis',
+      'ChartGrid',
+      'ChartLegend',
+      'ChartSwatch',
+      'ChartTooltip',
+    ]);
+    expect(byPackage.get('richtext')).toEqual([
+      'RichTextEditor',
+      'RichTextEditorAutoLinkPlugin',
+      'RichTextEditorToolbar',
+      'RichTextView',
+    ]);
+    expect(byPackage.get('vega')).toEqual(['VegaChart']);
   });
 });
 
 describe('the flat-package component predicate', () => {
   const richtextSrc = path.join(REPO_ROOT, 'packages/richtext/src');
 
-  it('keeps the documented component', () => {
-    expect(flatPackageComponents(richtextSrc)).toContain('RichTextEditor');
-  });
-
-  it('drops undocumented sub-parts and helpers that still render', () => {
-    // These render but carry no `.doc.mjs`, so they are not audited rows.
+  it('keeps public exported components and drops private helpers', () => {
     const names = flatPackageComponents(richtextSrc);
-    expect(names).not.toContain('RichTextView');
-    expect(names).not.toContain('RichTextEditorToolbar');
-    expect(names).not.toContain('RichTextEditorAutoLinkPlugin');
+    expect(names).toEqual([
+      'RichTextEditor',
+      'RichTextEditorAutoLinkPlugin',
+      'RichTextEditorToolbar',
+      'RichTextView',
+    ]);
+    expect(names).not.toContain('LexicalErrorBoundary');
   });
 
   it('returns nothing for a src dir that does not exist', () => {
@@ -640,6 +672,15 @@ describe('recording a scorecard', () => {
   });
 });
 
+describe('mode-specific issue handling', () => {
+  it('files per-BLOCK issues only for grading and promotion', () => {
+    expect(modeFilesBlockIssues({mode: 'O'})).toBe(true);
+    expect(modeFilesBlockIssues({mode: 'P'})).toBe(true);
+    expect(modeFilesBlockIssues({mode: 'N'})).toBe(false);
+    expect(modeFilesBlockIssues({mode: 'R'})).toBe(false);
+  });
+});
+
 describe('issue plumbing', () => {
   it('links a filed BLOCK and says so when one is not filed', () => {
     expect(blockLink({id: 'A8', summary: 'x', issue: 3885})).toContain(
@@ -722,6 +763,58 @@ const scorecard = (over = {}) => ({
   mode: 'O',
   commit: 'abc1234567',
   ...over,
+});
+
+describe('mode-specific CLI issue handling', () => {
+  it('does not prompt Night Watch to file ordinary BLOCK issues', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'score-ledger-mode-'));
+    const ledger = path.join(root, 'component-scores.json');
+    fs.writeFileSync(ledger, `${JSON.stringify(ledgerWith(), null, 2)}\n`);
+    const result = cli(
+      [
+        '--record',
+        'Button',
+        '--package',
+        'core',
+        '--from',
+        '-',
+        '--ledger',
+        ledger,
+        '--dry-run',
+      ],
+      {
+        input: JSON.stringify(
+          scorecard({mode: 'N', blocks: withBlocks('A1')}),
+        ),
+      },
+    );
+    expect(result.code).toBe(0);
+    expect(result.out).not.toContain('--file-issues');
+    fs.rmSync(root, {recursive: true, force: true});
+  });
+
+  it('retains per-BLOCK issue prompts for grading', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'score-ledger-mode-'));
+    const ledger = path.join(root, 'component-scores.json');
+    fs.writeFileSync(ledger, `${JSON.stringify(ledgerWith(), null, 2)}\n`);
+    const result = cli(
+      [
+        '--record',
+        'Button',
+        '--package',
+        'core',
+        '--from',
+        '-',
+        '--ledger',
+        ledger,
+        '--dry-run',
+      ],
+      {input: JSON.stringify(scorecard({mode: 'O', blocks: withBlocks('A1')}))},
+    );
+    expect(result.code).toBe(0);
+    expect(result.out).toContain('--file-issues');
+    fs.rmSync(root, {recursive: true, force: true});
+  });
 });
 
 /**

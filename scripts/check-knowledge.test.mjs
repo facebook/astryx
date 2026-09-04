@@ -41,6 +41,9 @@ function fixtureRoot() {
     'docs/themes',
     'packages/core/src',
     'packages/lab/src',
+    'packages/charts/src',
+    'packages/richtext/src',
+    'packages/vega/src',
   ]) {
     fs.mkdirSync(path.join(root, relative), {recursive: true});
   }
@@ -792,6 +795,44 @@ describe('knowledge validation', () => {
     fs.mkdirSync(directory);
     fs.writeFileSync(path.join(directory, 'Button.spec.md'), componentRecord());
     expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('accepts a draft component record in a flat component package', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/vega/src');
+    fs.writeFileSync(
+      path.join(directory, 'index.ts'),
+      "export {VegaChart} from './VegaChart';\n",
+    );
+    fs.writeFileSync(
+      path.join(directory, 'VegaChart.tsx'),
+      'export function VegaChart() {}\n',
+    );
+    fs.writeFileSync(
+      path.join(directory, 'VegaChart.spec.md'),
+      componentRecord({id: 'component:VegaChart'}),
+    );
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('rejects a flat-package spec with no matching public component', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/charts/src');
+    fs.writeFileSync(
+      path.join(directory, 'index.ts'),
+      "export {Chart} from './Chart';\n",
+    );
+    fs.writeFileSync(
+      path.join(directory, 'Chart.tsx'),
+      'export function Chart() {}\n',
+    );
+    fs.writeFileSync(
+      path.join(directory, 'Ghost.spec.md'),
+      componentRecord({id: 'component:Ghost'}),
+    );
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /must match a public named export and TSX module/,
+    );
   });
 
   it('accepts a flat public member record backed by the root consumer doc', async () => {

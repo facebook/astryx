@@ -3,10 +3,10 @@
 /**
  * @file generate-score-ledger.mjs
  * @description Generates apps/sandbox/src/generated/componentScores.ts — the
- *   ROSTER of components (read from the ledger packages — core, lab and
- *   richtext — by the canonical predicate in scripts/score-ledger.mjs) plus a
- *   build-time SNAPSHOT of the audit ledger fetched from the wiki.
- * @input packages/{core,lab,richtext}/src, and the wiki ledger over the network.
+ *   ROSTER of public components (read from every component-bearing package in
+ *   scripts/component-packages.cjs by the canonical predicate in
+ *   scripts/score-ledger.mjs) plus a build-time SNAPSHOT of the wiki ledger.
+ * @input Registered component-package source roots and the wiki ledger over the network.
  * @output src/generated/componentScores.ts
  * @position Sandbox build step, run by `pnpm generate`.
  *
@@ -91,14 +91,18 @@ const KNOWN_ENTRY_KEYS = new Set([
  * same repo-wide red one layer down.
  */
 const ENTRY_KEY_SHAPES = {
-  evidence: {check: value => Array.isArray(value) && value.every(isEvidenceItem)},
+  evidence: {
+    check: value => Array.isArray(value) && value.every(isEvidenceItem),
+  },
   // `blocks` is a REQUIRED field of LedgerEntry, so dropping a malformed one
   // trades one tsc error for another. A bare array is the shape that has
   // actually occurred and it is losslessly repairable, so repair it.
   blocks: {
     check: isBlocksShape,
     repair: value =>
-      Array.isArray(value) ? {count: value.length, open: value} : {count: 0, open: []},
+      Array.isArray(value)
+        ? {count: value.length, open: value}
+        : {count: 0, open: []},
   },
 };
 
@@ -123,12 +127,20 @@ const malformedKeys = new Set();
 
 /** Prune each section object to the keys `LedgerSection` declares. */
 function pruneSections(sections) {
-  if (sections == null || typeof sections !== 'object' || Array.isArray(sections)) {
+  if (
+    sections == null ||
+    typeof sections !== 'object' ||
+    Array.isArray(sections)
+  ) {
     return sections;
   }
   const kept = {};
   for (const [id, section] of Object.entries(sections)) {
-    if (section == null || typeof section !== 'object' || Array.isArray(section)) {
+    if (
+      section == null ||
+      typeof section !== 'object' ||
+      Array.isArray(section)
+    ) {
       kept[id] = section;
       continue;
     }
@@ -175,7 +187,8 @@ try {
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const parsed = JSON.parse(await res.text());
-  if (!Array.isArray(parsed.components)) throw new Error('missing a components array');
+  if (!Array.isArray(parsed.components))
+    throw new Error('missing a components array');
   snapshot = {...parsed, components: parsed.components.map(pruneEntry)};
   snapshotFetchedAt = new Date().toISOString();
   console.log(
@@ -184,7 +197,8 @@ try {
 } catch (e) {
   // Never fail the build over this — and never hang it either. The page
   // fetches the same URL at runtime and says which copy it is showing.
-  const why = e.name === 'TimeoutError' ? 'no response within 5000ms' : e.message;
+  const why =
+    e.name === 'TimeoutError' ? 'no response within 5000ms' : e.message;
   console.warn(
     `componentScores: could not snapshot the ledger (${why}) — the page will rely on its runtime fetch.`,
   );
@@ -212,8 +226,9 @@ const banner = `// Copyright (c) Meta Platforms, Inc. and affiliates.
  * GENERATED FILE — do not edit.
  * Regenerate: node apps/sandbox/scripts/generate-score-ledger.mjs
  *
- * \`roster\` is read from packages/{core,lab,richtext}/src by the canonical component
- * predicate. \`snapshot\` is a build-time copy of the wiki ledger, used only
+ * \`roster\` is read from every component-bearing package registered in
+ * scripts/component-packages.cjs. \`snapshot\` is a build-time copy of the wiki
+ * ledger, used only
  * until the page's runtime fetch of LEDGER_URL resolves.
  */
 `;
@@ -312,7 +327,7 @@ export const SECTION_TITLES: Record<string, string> = ${JSON.stringify(SECTION_T
 
 export const SECTION_WEIGHTS: Record<string, number> = ${JSON.stringify(SECTION_WEIGHTS, null, 2)};
 
-/** Every component in packages/{core,lab,richtext}/src, by the canonical predicate. */
+/** Every component in the registered component-package source roots. */
 export const roster: RosterEntry[] = ${JSON.stringify(roster, null, 2)};
 
 /**

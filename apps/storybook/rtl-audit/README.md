@@ -11,7 +11,7 @@ is the `pr-rtl` job — the RTL sibling of `pr-a11y`.
 
 ## Three layers
 
-### A. Auto-discovery — over every `core-*` and `lab-*` story in scope
+### A. Auto-discovery—over every registered component-package story in scope
 
 The point of the audit is to auto-catch **new or changed** components, so the
 auto-discovery layer runs with **zero curated selectors**. There are three
@@ -82,7 +82,7 @@ Real instances found this way (all logical-anchor + physical-translate): the
 Avatar **status-dot**, the Table **sticky-column shadow**, the **ResizeHandle**
 hit-area, and the Carousel **pill**.
 
-For each core story it:
+For each registered-package story it:
 
 1. Loads the story LTR and RTL (reusing the same `settle()` + **reveal step** as
    D1, so interaction-gated positioned elements — dialogs/popovers/menus — are
@@ -201,10 +201,15 @@ hand-written selectors, run **in addition** to auto-discovery:
 D1 and D6 are intentionally **not** in `targets.json`; auto-discovery covers
 them universally.
 
+Public components whose Storybook title does not map directly to
+`<Package>/<Component>` use `component-stories.json` to name one representative
+story. Several components may share one composition story. The audit fails closed
+when a mapped story is missing.
+
 ### C. Applicability: no unexplained all-N/A components
 
-The report rolls every component in the live Core and Lab source roster into one
-of three states:
+The report rolls every public component in the shared component-package registry
+(Core, Lab, Charts, Rich Text, and Vega) into one of three states:
 
 - **measured**: at least one D1/D5/D6 or curated dimension was applicable;
 - **verified N-A**: `verified-not-applicable.json` records a specific reason

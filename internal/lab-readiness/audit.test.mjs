@@ -42,8 +42,10 @@ function scaffold(overrides = {}) {
   const files = {
     '.github/workflows/ci.yml':
       'CHANGED=$(git diff --name-only origin/main...HEAD -- packages/core/src/ packages/lab/src/ | grep -v x)\n',
+    'scripts/component-packages.cjs':
+      "const COMPONENT_PACKAGES = [{name: 'core', storyPrefix: 'core-'}, {name: 'lab', storyPrefix: 'lab-'}];\n",
     'apps/storybook/rtl-audit/rtl-audit.mjs':
-      "const AUDITED_STORY_PREFIXES = ['core-', 'lab-'];\n",
+      "const AUDITED_STORY_PREFIXES = Object.keys(STORY_PACKAGE_PREFIXES);\n",
     'packages/lab/package.json': JSON.stringify({
       name: '@astryxdesign/lab',
       dependencies: {'d3-scale': '^4.0.2'},
@@ -102,10 +104,10 @@ describe('automated derivation', () => {
     expect(derived.accessibilityContracts.note).toMatch(/excludes packages\/lab/);
   });
 
-  it('fails the keyboard check when the RTL sweep stops covering lab', () => {
+  it('fails the keyboard check when the shared registry stops covering lab', () => {
     scaffold({
-      'apps/storybook/rtl-audit/rtl-audit.mjs':
-        "const AUDITED_STORY_PREFIXES = ['core-'];\n",
+      'scripts/component-packages.cjs':
+        "const COMPONENT_PACKAGES = [{name: 'core', storyPrefix: 'core-'}];\n",
     });
     const derived = deriveChecks(root, candidate);
     expect(derived.keyboardAccessibility.state).not.toBe('passed');
@@ -350,9 +352,15 @@ describe('CI wiring parsers', () => {
     expect(roots).toContain('packages/lab/src/');
   });
 
-  it('reads the audited story prefixes out of the real rtl-audit', () => {
+  it('reads audited story prefixes from the shared component registry', () => {
     const repoRoot = path.resolve(import.meta.dirname, '..', '..');
-    expect(_internal.rtlAuditedPrefixes(repoRoot)).toEqual(['core-', 'lab-']);
+    expect(_internal.rtlAuditedPrefixes(repoRoot)).toEqual([
+      'core-',
+      'lab-',
+      'charts-',
+      'richtext-',
+      'vega-',
+    ]);
   });
 
   it('derives the component name pr-a11y matches against', () => {
