@@ -1170,3 +1170,190 @@ describe('setup integrity — hardcoded !important is syntactic', () => {
     ).not.toContain('hardcoded-important');
   });
 });
+
+/**
+ * `blanket-reset` and `dark-mode-disabled` at the sandbox level.
+ *
+ * These are the two hatches still found by matching a line, and both used to
+ * match prose: guidance that names `all: unset`, or a comment recording that
+ * the host's own light arm was deliberately left alone, failed the run for
+ * saying the right thing. The line is now read with its comments blanked (see
+ * `setup-comments.mjs`), so what remains judged is what the host actually
+ * gained. The unit-level behavior lives in `setup-comments.test.mjs`.
+ */
+describe('setup integrity — pattern hatches do not read prose', () => {
+  it.each([
+    {
+      name: 'a comment naming a blanket reset',
+      file: 'src/AstryxRegion.tsx',
+      source: [
+        '/**',
+        ' * Scope the design system to this region.',
+        ' *',
+        ' * TRADEOFF: do NOT flatten the host with `all: unset` to stop its',
+        ' * cascade reaching in — that would take the host apart.',
+        ' */',
+        'export function AstryxRegion({children}) {',
+        '  return <div className="astryx-region">{children}</div>;',
+        '}',
+        '',
+      ].join('\n'),
+      kind: 'blanket-reset',
+    },
+    {
+      name: 'a stylesheet comment naming a blanket reset',
+      file: 'src/region.css',
+      source: [
+        '/* Deliberately narrow: `all: unset` here would strip the host too. */',
+        '.astryx-region {',
+        '  color: CanvasText;',
+        '}',
+        '',
+      ].join('\n'),
+      kind: 'blanket-reset',
+    },
+    {
+      name: 'a comment recording that the host light arm was left alone',
+      file: 'src/notes.ts',
+      source: [
+        '// The host declares `color-scheme: light` on its own root and we did',
+        '// not touch it; setting `darkMode: false` would have been the easy',
+        '// way out.',
+        'export const migrated = true;',
+        '',
+      ].join('\n'),
+      kind: 'dark-mode-disabled',
+    },
+    {
+      name: 'an HTML comment naming the meta tag',
+      file: 'public/notes.html',
+      source: [
+        '<!doctype html>',
+        '<!-- Not this: <meta name="color-scheme" content="light"> -->',
+        '<div id="root"></div>',
+        '',
+      ].join('\n'),
+      kind: 'dark-mode-disabled',
+    },
+  ])('does not fail a run for $name', ({file, source, kind}) => {
+    const directory = repository();
+    addValidAstryxChange(directory);
+    write(directory, file, source);
+
+    const result = analyzeSetupIntegrity(directory, attest(directory));
+
+    expect(kinds(result)).not.toContain(kind);
+    expect(result.accepted).toBe(true);
+  });
+
+  it.each([
+    {
+      name: 'a blanket reset',
+      file: 'src/region.css',
+      source: '.astryx-region {\n  all: unset;\n}\n',
+      kind: 'blanket-reset',
+    },
+    {
+      name: 'a disabled dark mode',
+      file: 'src/config.ts',
+      source: 'export const config = {darkMode: false};\n',
+      kind: 'dark-mode-disabled',
+    },
+  ])('still fails a run for $name', ({file, source, kind}) => {
+    const directory = repository();
+    addValidAstryxChange(directory);
+    write(directory, file, source);
+
+    const result = analyzeSetupIntegrity(directory, attest(directory));
+
+    expect(kinds(result)).toContain(kind);
+    expect(result.accepted).toBe(false);
+  });
+
+  it.each([
+    {
+      name: 'a blanket reset',
+      file: 'src/region.css',
+      source: '.astryx-region {\n  all: unset; /* not prose */\n}\n',
+      kind: 'blanket-reset',
+      line: 2,
+    },
+    {
+      name: 'a disabled dark mode',
+      file: 'src/config.ts',
+      source:
+        '// The host owns this decision.\nexport const config = {darkMode: false}; // not prose\n',
+      kind: 'dark-mode-disabled',
+      line: 2,
+    },
+  ])('reports $name written beside the comment about it', ({
+    file,
+    source,
+    kind,
+    line,
+  }) => {
+    const directory = repository();
+    addValidAstryxChange(directory);
+    write(directory, file, source);
+
+    const findings = analyzeSetupIntegrity(
+      directory,
+      attest(directory),
+    ).escapeHatches.filter(finding => finding.kind === kind);
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0].path).toBe(file);
+    expect(findings[0].line).toBe(line);
+  });
+
+  it('fails a run for a hatch a script hides behind comment delimiters', () => {
+    // `<!--` opens a comment only in markup text. A flat scan for the
+    // delimiters would blank this string, and the reset it reconstructs would
+    // reach the host unexamined.
+    const directory = repository();
+    addValidAstryxChange(directory);
+    write(
+      directory,
+      'public/boot.html',
+      [
+        '<div id="root"></div>',
+        '<script>',
+        "  const cloak = '<!-- all: unset -->';",
+        '  document.body.style.cssText = cloak.slice(4, -3).trim();',
+        '</script>',
+        '',
+      ].join('\n'),
+    );
+
+    const findings = analyzeSetupIntegrity(
+      directory,
+      attest(directory),
+    ).escapeHatches.filter(finding => finding.kind === 'blanket-reset');
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0].path).toBe('public/boot.html');
+    expect(findings[0].line).toBe(3);
+  });
+
+  it('still exempts a paired mode arm, which is not a comment', () => {
+    const directory = repository();
+    addValidAstryxChange(directory);
+    write(
+      directory,
+      'src/theme.css',
+      [
+        'html[data-theme="light"] {',
+        '  color-scheme: light;',
+        '}',
+        'html[data-theme="dark"] {',
+        '  color-scheme: dark;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = analyzeSetupIntegrity(directory, attest(directory));
+
+    expect(kinds(result)).not.toContain('dark-mode-disabled');
+  });
+});

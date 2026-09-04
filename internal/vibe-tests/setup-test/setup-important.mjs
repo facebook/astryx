@@ -63,8 +63,14 @@ const IMPORTANT_FLAG = /!\s*important\b/gi;
 const DECLARATION_WITH_FLAG =
   /(?:^|[;{}])\s*(?:--[\w-]+|[A-Za-z][\w-]*)\s*:\s*[^;{}]*?!\s*important\b/gi;
 
-const CSS_EXTENSIONS = new Set(['.css', '.less', '.pcss', '.sass', '.scss']);
-const SCRIPT_KINDS = new Map([
+export const CSS_EXTENSIONS = new Set([
+  '.css',
+  '.less',
+  '.pcss',
+  '.sass',
+  '.scss',
+]);
+export const SCRIPT_KINDS = new Map([
   ['.cjs', ts.ScriptKind.JS],
   ['.js', ts.ScriptKind.JS],
   ['.jsx', ts.ScriptKind.JSX],
@@ -72,7 +78,7 @@ const SCRIPT_KINDS = new Map([
   ['.ts', ts.ScriptKind.TS],
   ['.tsx', ts.ScriptKind.TSX],
 ]);
-const MARKUP_EXTENSIONS = new Set(['.html', '.svelte', '.vue']);
+export const MARKUP_EXTENSIONS = new Set(['.html', '.svelte', '.vue']);
 
 /* ---------------------------------------------------------------------------
  * CSS property vocabulary
