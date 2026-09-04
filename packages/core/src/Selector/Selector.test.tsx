@@ -3111,6 +3111,49 @@ describe('Selector indicator (chevron) icon theme target', () => {
     expect(icon).toHaveAttribute('data-state', 'collapsed');
   });
 
+  it('can omit the chevron without changing editable keyboard behavior', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={onChange}
+        triggerIndicator="none"
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+
+    expect(
+      container.querySelector('.astryx-selector-indicator-icon'),
+    ).toBeNull();
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.tab();
+    expect(trigger).toHaveFocus();
+    await user.keyboard('{Enter}{ArrowDown}{Enter}');
+
+    expect(onChange).toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps a status icon when the chevron is omitted', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        status={{type: 'error', message: 'Required'}}
+        triggerIndicator="none"
+      />,
+    );
+
+    expect(
+      container.querySelector('.astryx-selector-indicator-icon'),
+    ).toBeNull();
+    expect(container.querySelector('.astryx-icon')).not.toBeNull();
+  });
+
   it('reflects the expanded state on the chevron when the popover is open', async () => {
     const user = userEvent.setup();
     const {container} = render(

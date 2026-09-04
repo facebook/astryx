@@ -51,6 +51,9 @@ connection between the closed trigger and its selection surface.
 - `isReadOnly` is additive and defaults to `false`. It preserves the selected
   value, focus, and form participation while removing selection-surface and
   editing affordances. `isDisabled` takes precedence when both are set.
+- `triggerIndicator` is additive and defaults to `chevron`. `none` removes only
+  the editable trigger's disclosure chevron; interaction and accessibility
+  behavior remain unchanged.
 - `spec:AST-004/DEC-1` accepts a future change that collapses an empty indicator
   column. It is not shipped behavior and does not replace FR3 until implementation,
   visual verification, and an update to this current contract land together.
@@ -89,6 +92,7 @@ and examples remain in `Selector.doc.mjs`.
 | popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                 | Popover; bottom sheet                     | `listbox` | Selector | released  | No separate role prop is public |
 | option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                  | Every rendered option                     | neither   | Selector | released  | Unknown states are not emitted  |
 | read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance | Closed trigger                            | `false`   | Caller   | additive  | Boolean normalization           |
+| trigger indicator      | `chevron`, `none`                      | Shows or omits the editable trigger's disclosure chevron | Editable closed trigger                   | `chevron` | Caller   | additive  | TypeScript rejects other values |
 
 ## Behavioral and layout contract
 
@@ -102,6 +106,7 @@ These requirements describe shipped behavior on current `main`.
 | FR4 | `popover` uses an anchored Popover. `bottom-sheet` uses a modal BottomSheet. `adaptive` resolves to the modal bottom sheet on compact coarse-pointer screens and Popover otherwise.                               | Presentation controller and adaptive-presentation tests     |
 | FR5 | While `isLoading` is true, the trigger exposes busy state and the listbox suppresses empty and no-results output.                                                                                                 | Loading, empty-state, and announcement tests                |
 | FR6 | While `isReadOnly` is true, the selected value remains focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.              | Read-only interaction, form, and accessibility tests        |
+| FR7 | `triggerIndicator="none"` omits the editable trigger's disclosure chevron without changing popup semantics, keyboard behavior, selection, clear actions, or status icons.                                         | Trigger-indicator interaction and status tests              |
 
 ### Allowed variation
 
@@ -126,6 +131,7 @@ These requirements describe shipped behavior on current `main`.
 | loading                  | Trigger is busy; empty and no-results output is suppressed                                | Consumer loading duration                              |
 | disabled with reason     | Trigger remains focusable enough to expose the reason while activation stays blocked      | Consumer reason text                                   |
 | read-only                | Value stays focusable and submittable; menu, clear, and disclosure affordances are absent | Value rendering, status, and busy presentation         |
+| editable without chevron | Trigger remains focusable and editable with unchanged popup and keyboard semantics        | Consumer context supplies sufficient disclosure        |
 | selected/unselected rows | Row semantics and theming state are correct; both reserve the indicator column            | Start/end position and themed indicator representation |
 
 ### Transformation and precedence order
@@ -136,6 +142,9 @@ These requirements describe shipped behavior on current `main`.
 - **ORD2 — Caller-selected content wins deliberately.** `startIcon` takes
   precedence over a selected option's icon; explicit placement takes precedence
   over selected-item overlay alignment.
+- **ORD3 — Status remains visible.** Attached and tooltip status icons retain
+  their trailing slot when `triggerIndicator="none"`; read-only state still
+  removes ordinary disclosure affordances.
 
 ### Performance and resources
 
@@ -282,6 +291,7 @@ in `spec:AST-004` as current runtime behavior.
 | FR4, AR1, AR2         | presentation tests plus `aria-haspopup` source review                                      | pointer, compact coarse pointer, search/non-search                | Wrong Popover/dialog roles or focus destinations fail tests; `aria-haspopup` values require source/a11y review | `audit:Selector/accessibility`   |
 | FR5                   | loading, empty-state, and live-region tests                                                | empty options, unmatched search, loading                          | Empty/no-results output appears or is announced while loading                                                  | `audit:Selector/behavior`        |
 | FR6, AR4              | read-only interaction, form, ARIA, and theme-state tests                                   | search/non-search, clearable, open→read-only, disabled precedence | A value changes, popup or edit affordance remains, form value disappears, or read-only semantics are absent    | `audit:Selector/accessibility`   |
+| FR7                   | trigger-indicator interaction and status tests                                             | default chevron, omitted chevron, status                          | Omission changes keyboard/popup semantics or suppresses status feedback                                        | `audit:Selector/behavior`        |
 | source-build contract | `Selector.source-build.test.mjs`                                                           | package source compiled by consumer Babel                         | Moving evaluated StyleX values outside the supported source form fails compilation                             | `audit:Selector/code-health`     |
 
 ## Decision log

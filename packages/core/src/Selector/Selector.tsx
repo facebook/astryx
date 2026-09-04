@@ -464,6 +464,8 @@ export type SelectorSize = 'sm' | 'md' | 'lg';
 
 export type SelectorVariant = 'input' | 'ghost';
 
+export type SelectorTriggerIndicator = 'chevron' | 'none';
+
 export type SelectorPresentation = AdaptivePresentation;
 
 export type SelectorStatusType = 'warning' | 'error' | 'success';
@@ -584,6 +586,14 @@ interface SelectorPropsBase<
    * @default 'input'
    */
   variant?: SelectorVariant;
+
+  /**
+   * Disclosure indicator shown at the end of an editable trigger.
+   * `none` removes only the chevron; popup semantics, keyboard behavior, and
+   * status icons are unchanged.
+   * @default 'chevron'
+   */
+  triggerIndicator?: SelectorTriggerIndicator;
 
   /**
    * Status indicator for the selector.
@@ -835,6 +845,7 @@ export function Selector<T extends SelectorOptionType>(
     placeholder: placeholderFromProps,
     size: sizeProp,
     variant = 'input',
+    triggerIndicator = 'chevron',
     status,
     statusVariant = 'attached',
     labelTooltip,
@@ -1865,7 +1876,7 @@ export function Selector<T extends SelectorOptionType>(
               xstyle={styles.triggerIcon}
             />
           )
-        ) : !isEffectivelyReadOnly ? (
+        ) : !isEffectivelyReadOnly && triggerIndicator === 'chevron' ? (
           <Icon
             icon="chevronDown"
             size="sm"

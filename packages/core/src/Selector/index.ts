@@ -15,6 +15,7 @@ export {
   type SelectorSize,
   type SelectorStatus,
   type SelectorStatusType,
+  type SelectorTriggerIndicator,
 } from './Selector';
 export {SelectorOption} from './SelectorOption';
 export type {

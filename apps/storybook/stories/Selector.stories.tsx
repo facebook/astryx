@@ -65,6 +65,12 @@ const meta: Meta<typeof Selector> = {
       options: ['input', 'ghost'],
       description: 'Visual trigger style',
     },
+    triggerIndicator: {
+      control: 'radio',
+      options: ['chevron', 'none'],
+      description:
+        'Disclosure indicator shown at the end of an editable trigger',
+    },
     placement: {
       control: 'select',
       options: ['above', 'below', 'start', 'end'],
@@ -152,6 +158,21 @@ export const ReadOnly: Story = {
     hasSearch: true,
     htmlName: 'owner',
     isReadOnly: true,
+  },
+};
+
+export const WithoutTriggerIndicator: Story = {
+  render: () => {
+    const [value, setValue] = useState('In progress');
+    return (
+      <Selector
+        label="Status"
+        options={['Open', 'In progress', 'Done']}
+        value={value}
+        onChange={setValue}
+        triggerIndicator="none"
+      />
+    );
   },
 };
 

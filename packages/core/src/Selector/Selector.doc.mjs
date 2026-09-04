@@ -42,7 +42,7 @@ const anatomy = [
     name: 'Indicator icon',
     required: false,
     description:
-      'Trailing chevron shown when status presentation does not replace it; reflects collapsed or expanded state.',
+      'Optional trailing chevron shown when status presentation does not replace it; reflects collapsed or expanded state.',
   },
   {
     name: 'Search row',
@@ -253,6 +253,13 @@ export const docs = {
       description:
         'Visual trigger style. input is the bordered input treatment for forms; ghost is borderless and matches ghost buttons for toolbar usage.',
       default: "'input'",
+    },
+    {
+      name: 'triggerIndicator',
+      type: "'chevron' | 'none'",
+      description:
+        'Disclosure indicator shown at the end of an editable trigger. none removes only the chevron; popup semantics, keyboard behavior, and status icons are unchanged.',
+      default: "'chevron'",
     },
     {
       name: 'isDisabled',
