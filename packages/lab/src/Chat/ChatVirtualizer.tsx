@@ -64,6 +64,30 @@ const spacerStyle: React.CSSProperties = {flexShrink: 0};
 // place. Sniffing the UA would only have made this path miss touchscreens.
 const TOUCH_SETTLE_MS = 150;
 
+// The list owns its scroller's position in both modes (follow-at-end and the
+// identity anchor), so the browser's own scroll anchoring must not move it.
+// The switch rides on an attribute and one injected rule rather than the
+// element's inline style: in attach mode the scroller is the caller's, and
+// whatever `overflow-anchor` they set — before or during our tenure — is
+// never read, written or restored; it simply applies again once the
+// attribute is gone. `!important` so an inline `auto` cannot switch native
+// anchoring back on under a list that is anchoring by itself.
+const VIRTUALIZED_ATTR = 'data-astryx-chat-virtualized';
+const VIRTUALIZED_STYLE_ATTR = 'data-astryx-chat-virtualized-style';
+
+function ensureVirtualizedStyle(): void {
+  if (
+    typeof document === 'undefined' ||
+    document.head.querySelector(`[${VIRTUALIZED_STYLE_ATTR}]`)
+  ) {
+    return;
+  }
+  const style = document.createElement('style');
+  style.setAttribute(VIRTUALIZED_STYLE_ATTR, '');
+  style.textContent = `[${VIRTUALIZED_ATTR}]{overflow-anchor:none !important}`;
+  document.head.appendChild(style);
+}
+
 export type ChatVirtualizerMeasureMode = 'ro' | 'sync';
 
 /** Imperative surface — both methods are declarations, not scroll actions. */
@@ -939,9 +963,15 @@ export function ChatVirtualizer<T>(
     if (!el) {
       return;
     }
+    // The position the machinery last WROTE, kept before the echo slot is
+    // cleared below: the user's displacement is measured from there, not
+    // from the last event seen. A wheel that lands between two of our
+    // writes coalesces with the next write into one event carrying the net,
+    // and against the previous event's value that net can still read as
+    // "moved down" — the user's own upward step erased by the re-pin.
+    const lastWrite = progTarget.current;
     const isEcho =
-      progTarget.current !== null &&
-      Math.abs(el.scrollTop - progTarget.current) <= 1;
+      lastWrite !== null && Math.abs(el.scrollTop - lastWrite) <= 1;
     // STICKY echo: k offset changes within one frame queue up to k scroll
     // events, dispatched across successive frames, EACH reading the same
     // final scrollTop. A consume-once slot matches the first and misreads
@@ -963,6 +993,12 @@ export function ChatVirtualizer<T>(
     if (!isEcho && !converging.current) {
       const g = geo.current;
       const dist = el.scrollHeight - el.clientHeight - el.scrollTop;
+      // With native anchoring off, the one move the browser still makes on
+      // its own is the clamp onto a new, smaller bottom (a row shrinking in
+      // a way no commit announced — an image, a font). It lands exactly on
+      // the bottom, where a user scrolling up never lands, so it is not
+      // displacement.
+      const landedAtBottom = dist < 1;
       const anchorHere = (): void => {
         mode.current = anchorAt(el.scrollTop);
         userAway.current = 0;
@@ -978,11 +1014,13 @@ export function ChatVirtualizer<T>(
         // 25-59px, flipping to anchor and stranding the reader mid-stream).
         // Accumulating means a slow, persistent upward scroll still wins even
         // when each individual step is erased by a re-pin.
-        userAway.current = Math.max(
-          0,
-          userAway.current +
-            (prevEventST === null ? 0 : prevEventST - el.scrollTop),
-        );
+        const from = lastWrite ?? prevEventST;
+        if (from !== null && !landedAtBottom) {
+          userAway.current = Math.max(
+            0,
+            userAway.current + (from - el.scrollTop),
+          );
+        }
         if (userAway.current > endThresholdRef.current) {
           anchorHere();
         }
@@ -1027,24 +1065,16 @@ export function ChatVirtualizer<T>(
     // Intent signals break convergence early: wheel/touchstart are USER INPUT,
     // unlike scroll events, which mix in our own writes and clamps.
     //
-    // Wheel-up additionally unpins follow IMMEDIATELY: during a stream a follow
-    // write can land between the browser moving scrollTop and our handler
-    // reading it, so the user's own upward movement reads back as our echo and
-    // the disengage is swallowed. The wheel event itself needs no scrollTop
-    // read, so there is no window to race. Re-engaging stays position-based.
-    const onWheel = (e: Event): void => {
+    // A wheel does NOT unpin by itself. One this scroller never consumes —
+    // over a nested scroller with room above, over one with
+    // `overscroll-behavior: contain`, an overscroll at the bottom — moves
+    // nothing here, and unpinning on it strands the reader off the tail.
+    // Whether the container moved is what onScroll measures, against the
+    // position the machinery last wrote, so a wheel the next write outruns
+    // still shows there.
+    const onWheel = (): void => {
       converging.current = false;
       priceFreeze.current = false;
-      if (
-        (e as WheelEvent).deltaY < 0 &&
-        mode.current.kind === 'end' &&
-        el.scrollTop > 0
-      ) {
-        mode.current = anchorAt(el.scrollTop);
-        userAway.current = 0;
-        userScrolledRef.current = true;
-        lastUserEventT.current = performance.now();
-      }
     };
     // Touch write-gate state machine (see gesturePhase for why it exists).
     // touchstart is also an INTENT signal and breaks convergence, the way a
@@ -1133,8 +1163,8 @@ export function ChatVirtualizer<T>(
       gesturePhase.current = 'settling';
       touchSettleTimer.current = setTimeout(flushGesture, TOUCH_SETTLE_MS);
     };
-    const prevAnchor = el.style.overflowAnchor;
-    el.style.overflowAnchor = 'none';
+    ensureVirtualizedStyle();
+    el.setAttribute(VIRTUALIZED_ATTR, '');
     const scrollHandler = (): void => onScrollRef.current();
     el.addEventListener('scroll', scrollHandler, {passive: true});
     el.addEventListener('wheel', onWheel, {passive: true});
@@ -1147,7 +1177,7 @@ export function ChatVirtualizer<T>(
     // no data-pkey — the RO callback marks the geometry dirty for them.
     roRef.current?.observe(el);
     return () => {
-      el.style.overflowAnchor = prevAnchor;
+      el.removeAttribute(VIRTUALIZED_ATTR);
       el.removeEventListener('scroll', scrollHandler);
       el.removeEventListener('wheel', onWheel);
       el.removeEventListener('touchstart', onTouchStart);
@@ -1233,7 +1263,6 @@ export function ChatVirtualizer<T>(
       className={className}
       style={{
         overflowY: 'auto',
-        overflowAnchor: 'none',
         position: 'relative',
         ...style,
       }}>

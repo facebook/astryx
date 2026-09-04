@@ -122,6 +122,120 @@ describe('ChatVirtualizer', () => {
     });
   };
 
+  // ---- Who moved the scroller ----------------------------------------------
+  // The list follows by writing its own bottom on every commit; the question
+  // every scroll event answers is whether the USER moved the scroller since.
+  // jsdom dispatches no scroll events and clamps nothing, so each test writes
+  // the position the browser would have reported and dispatches the event.
+  // Follow is observable as the next growth commit writing a larger bottom.
+
+  const tallScroller = (): HTMLElement => {
+    const el = document.createElement('div');
+    Object.defineProperty(el, 'clientHeight', {value: 400, writable: true});
+    Object.defineProperty(el, 'scrollHeight', {value: 1e6, writable: true});
+    document.body.appendChild(el);
+    return el;
+  };
+  const attachedTo = (data: Row[], el: HTMLElement) => (
+    <ChatVirtualizer<Row>
+      data={data}
+      keyExtractor={m => String(m.id)}
+      renderItem={({item}) => <span>{item.text}</span>}
+      estimatedItemSize={100}
+      scrollElement={el}
+    />
+  );
+  // The mount landing is a declared target in flight; its release (and the
+  // end of convergence, during which scroll events may not flip the mode)
+  // is a rAF away.
+  const settled = async (): Promise<void> => {
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 40));
+    });
+  };
+  const scrollEvent = (el: HTMLElement, at: number): void => {
+    el.scrollTop = at;
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+  };
+  const followsAfterGrowth = (
+    el: HTMLElement,
+    rerender: (ui: React.ReactElement) => void,
+    written: number,
+  ): boolean => {
+    act(() => {
+      rerender(attachedTo(rows(60), el));
+    });
+    return el.scrollTop > written + 1;
+  };
+
+  it('a wheel by itself does not disengage follow', async () => {
+    // A wheel this scroller never consumes — over a nested scroller with
+    // room above, one with overscroll-behavior: contain, an overscroll at
+    // the bottom — moves nothing here. Only the container moving counts.
+    const el = tallScroller();
+    const {rerender} = render(attachedTo(rows(50), el));
+    await settled();
+    const written = el.scrollTop;
+    act(() => {
+      el.dispatchEvent(new WheelEvent('wheel', {deltaY: -120}));
+    });
+    expect(followsAfterGrowth(el, rerender, written)).toBe(true);
+    el.remove();
+  });
+
+  it('a scroll-up the next write outruns still disengages', async () => {
+    // The list wrote the bottom; the reader wheeled up 100px and the event
+    // reporting it carries that net. Against the last write the reader's
+    // move shows, whatever the previous event said (here: nothing).
+    const el = tallScroller();
+    const {rerender} = render(attachedTo(rows(50), el));
+    await settled();
+    const written = el.scrollTop;
+    // jsdom clamps nothing: make the box agree with where the list put it.
+    Object.defineProperty(el, 'scrollHeight', {
+      value: written + el.clientHeight,
+      writable: true,
+    });
+    scrollEvent(el, written - 100);
+    expect(followsAfterGrowth(el, rerender, written)).toBe(false);
+    el.remove();
+  });
+
+  it('a clamp onto a new, smaller bottom is not displacement', async () => {
+    // A row above shrank outside any commit (an image, a font); the browser
+    // pinned the position to the new maximum. The reader did not move.
+    const el = tallScroller();
+    const {rerender} = render(attachedTo(rows(50), el));
+    await settled();
+    const written = el.scrollTop;
+    scrollEvent(el, written); // the write's own echo
+    Object.defineProperty(el, 'scrollHeight', {
+      value: written - 300 + el.clientHeight,
+      writable: true,
+    });
+    scrollEvent(el, written - 300);
+    expect(followsAfterGrowth(el, rerender, written - 300)).toBe(true);
+    el.remove();
+  });
+
+  it('turns native anchoring off through an attribute, never the inline style', () => {
+    const el = tallScroller();
+    el.style.overflowAnchor = 'auto';
+    const {unmount} = render(attachedTo(rows(50), el));
+    expect(el.hasAttribute('data-astryx-chat-virtualized')).toBe(true);
+    expect(el.style.overflowAnchor).toBe('auto');
+    const rule = document.head.querySelector(
+      '[data-astryx-chat-virtualized-style]',
+    );
+    expect(rule?.textContent).toContain('overflow-anchor:none !important');
+    unmount();
+    expect(el.hasAttribute('data-astryx-chat-virtualized')).toBe(false);
+    expect(el.style.overflowAnchor).toBe('auto');
+    el.remove();
+  });
+
   it('suppresses scroll writes while a finger is down', () => {
     const el = scroller();
     attachedList(el);

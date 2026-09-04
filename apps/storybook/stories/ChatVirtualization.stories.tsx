@@ -2,9 +2,16 @@
 
 /**
  * Demonstrates windowed (virtualized) rendering inside the Chat family:
- * ChatLayout keeps the scroller, ChatMessageList keeps the semantics
- * (role="log", aria-busy), and the experimental lab ChatVirtualizer renders
- * only the rows near the viewport between two document-flow spacers.
+ * the experimental lab ChatVirtualizer owns the scroller and renders only
+ * the rows near the viewport between two document-flow spacers, while
+ * ChatMessageList keeps the semantics (role="log", aria-busy) around it and
+ * the composer sits in a dock below.
+ *
+ * Why the virtualizer owns the scroller rather than attaching to
+ * ChatLayout's: ChatLayout runs its own follow (useChatStreamScroll) on the
+ * container it renders, with no way to hand that off, and a position with
+ * two writers is a position nobody owns. Attach mode stays available for a
+ * host that provides a scroller with no follow of its own.
  *
  * Related: facebook/astryx#4102 (virtualized chat survey),
  * facebook/astryx#2282 (auto-scroll ownership), facebook/astryx#3942
@@ -34,7 +41,6 @@ import {
   ChatMessage,
   ChatMessageBubble,
   ChatComposer,
-  useChatLayoutContext,
 } from '@astryxdesign/core/Chat';
 import {ChatVirtualizer, type ChatVirtualizerHandle} from '@astryxdesign/lab';
 import {Markdown} from '@astryxdesign/core/Markdown';
@@ -42,6 +48,7 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Button} from '@astryxdesign/core/Button';
 import {Text} from '@astryxdesign/core/Text';
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import * as stylex from '@stylexjs/stylex';
 
 const meta: Meta = {
@@ -88,6 +95,52 @@ const styles = stylex.create({
   // runs with gap=0 and every row carries its own padding.
   rowPad: {
     paddingBottom: 12,
+  },
+  // The virtualized shell: a bounded column the list fills, with the dock
+  // stuck to its bottom — the same skeleton ChatLayout builds, minus the
+  // follow it would run on the scroller.
+  transcript: {
+    flex: 1,
+    minHeight: 0,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    position: 'relative',
+  },
+  // The list's own scroller is a flex child of ChatMessageList's inner
+  // column, so its height is the leftover space — bounded without a
+  // percentage, which is what own-container mode requires.
+  virtScroller: {
+    flex: 1,
+    minHeight: 0,
+    paddingInline: spacingVars['--spacing-4'],
+  },
+  dockContainer: {
+    position: 'sticky',
+    bottom: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
+    flexShrink: 0,
+    isolation: 'isolate',
+    pointerEvents: 'none',
+  },
+  blurLayer: {
+    position: 'absolute',
+    bottom: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
+    pointerEvents: 'none',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    height: 100,
+    maskImage: 'linear-gradient(to bottom, transparent, black 36px)',
+    WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 36px)',
+  },
+  dock: {
+    position: 'relative',
+    zIndex: 1,
+    pointerEvents: 'auto',
+    paddingInline: spacingVars['--spacing-3'],
+    paddingBlockEnd: spacingVars['--spacing-3'],
   },
 });
 
@@ -234,39 +287,25 @@ function StatusPill({
 }
 
 // =============================================================================
-// Virtualized message area. The layout formula: ChatLayout owns the
-// scroller, ChatMessageList keeps its shell semantics with gap=0, and the
-// virtualizer attaches to the layout's scroll element from context.
+// Virtualized message area. The virtualizer renders and owns its scroller;
+// ChatMessageList wraps it for the log semantics with gap=0 and align="top"
+// (the bottom alignment's spacer would otherwise share the column's height).
 // =============================================================================
-
 function VirtualizedMessages({
   messages,
   isStreaming,
   apiRef,
-  scrollElRef,
   endThreshold,
 }: {
   messages: DemoMessage[];
   isStreaming: boolean;
   apiRef: React.RefObject<ChatVirtualizerHandle | null>;
-  scrollElRef: React.RefObject<HTMLElement | null>;
   endThreshold: number;
 }) {
-  const ctx = useChatLayoutContext();
-  const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
-  // The layout's ref is populated during commit, after this child's effects,
-  // so read it on a passive effect and keep it in state (null keeps the
-  // virtualizer in attach-pending mode — it must never fall back to its own
-  // container inside a parent that doesn't bound its height).
-  useEffect(() => {
-    const el = ctx?.scrollContainerRef?.current ?? null;
-    setScrollEl(el);
-    scrollElRef.current = el;
-  }, [ctx, scrollElRef]);
   return (
-    <ChatMessageList gap={0} isStreaming={isStreaming}>
+    <ChatMessageList gap={0} align="top" isStreaming={isStreaming}>
       <ChatVirtualizer<DemoMessage>
-        scrollElement={scrollEl}
+        className={stylex.props(styles.virtScroller).className}
         apiRef={apiRef}
         data={messages}
         keyExtractor={m => m.id}
@@ -291,13 +330,13 @@ function VirtualizedMessages({
   );
 }
 
-// The layout's own scroll button springs to the scrollHeight captured at
-// click time — but traversing a virtualized list replaces estimates with
+// ChatLayout's scroll button springs to the scrollHeight captured at click
+// time — but traversing a virtualized list replaces estimates with
 // measurements, so the bottom moves mid-flight and a DOM-space spring lands
-// short. The layout's documented `scrollButton` override exists for exactly
-// this: the same visual button, wired to the virtualizer's declarative jump,
-// which computes the window from the desired bottom and converges regardless
-// of estimate drift.
+// short. The same visual button, wired to the virtualizer's declarative
+// jump, computes the window from the desired bottom and converges regardless
+// of estimate drift. It finds the scroller by the attribute the virtualizer
+// marks it with.
 function VirtScrollButton({
   apiRef,
   getScrollEl,
@@ -361,7 +400,14 @@ function TranscriptDemo({
   const olderPages = useRef(0);
   const streamRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const virtApiRef = useRef<ChatVirtualizerHandle | null>(null);
-  const scrollElRef = useRef<HTMLElement | null>(null);
+  const transcriptRef = useRef<HTMLDivElement | null>(null);
+  const getVirtScroller = useCallback(
+    () =>
+      transcriptRef.current?.querySelector<HTMLElement>(
+        '[data-astryx-chat-virtualized]',
+      ) ?? null,
+    [],
+  );
 
   // Rebuild the corpus when the control changes.
   const countRef = useRef(messageCount);
@@ -461,33 +507,38 @@ function TranscriptDemo({
           isStreaming={isStreaming}
         />
       </div>
-      <ChatLayout
-        {...(virtualized
-          ? {
-              scrollButton: (
-                <VirtScrollButton
-                  apiRef={virtApiRef}
-                  getScrollEl={() => scrollElRef.current}
-                />
-              ),
-            }
-          : {})}
-        composer={
-          <ChatComposer
-            onSubmit={handleSubmit}
-            placeholder="Send a message to stream a reply…"
-            isStopShown={isStreaming}
-          />
-        }>
-        {virtualized ? (
+      {virtualized ? (
+        <div ref={transcriptRef} {...stylex.props(styles.transcript)}>
           <VirtualizedMessages
             messages={messages}
             isStreaming={isStreaming}
             apiRef={virtApiRef}
-            scrollElRef={scrollElRef}
             endThreshold={endThreshold}
           />
-        ) : (
+          <div {...stylex.props(styles.dockContainer)}>
+            <VirtScrollButton
+              apiRef={virtApiRef}
+              getScrollEl={getVirtScroller}
+            />
+            <div {...stylex.props(styles.blurLayer)} />
+            <div {...stylex.props(styles.dock)}>
+              <ChatComposer
+                onSubmit={handleSubmit}
+                placeholder="Send a message to stream a reply…"
+                isStopShown={isStreaming}
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <ChatLayout
+          composer={
+            <ChatComposer
+              onSubmit={handleSubmit}
+              placeholder="Send a message to stream a reply…"
+              isStopShown={isStreaming}
+            />
+          }>
           <ChatMessageList isStreaming={isStreaming}>
             {messages.map(msg => (
               <ChatMessage key={msg.id} sender={msg.role}>
@@ -501,8 +552,8 @@ function TranscriptDemo({
               </ChatMessage>
             ))}
           </ChatMessageList>
-        )}
-      </ChatLayout>
+        </ChatLayout>
+      )}
     </div>
   );
 }
