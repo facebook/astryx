@@ -308,6 +308,34 @@ describe('useChatStreamScroll — reader intent while content arrives', () => {
   });
 });
 
+describe('useChatStreamScroll — a consumer-owned overflow-anchor', () => {
+  it('is put back on unlock and on unmount, not cleared', () => {
+    // The consumer set overflow-anchor: none themselves before the hook took
+    // the element over; the hook must hand that back, not '', whenever it
+    // stops owning the position.
+    const {api, el, rerender, unmount} = renderHook({enabled: false});
+    el.style.overflowAnchor = 'none';
+    rerender(<Harness options={{}} api={api} />);
+    expect(el.style.overflowAnchor).toBe('none');
+
+    setGeometry(el, {scrollHeight: 1000, clientHeight: 400});
+    flushRaf();
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+    setGeometry(el, {scrollHeight: 1400, clientHeight: 400});
+    el.scrollTop = 300;
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+    expect(api.current!.isLocked).toBe(false);
+    expect(el.style.overflowAnchor).toBe('none');
+
+    unmount();
+    expect(el.style.overflowAnchor).toBe('none');
+  });
+});
+
 describe('useChatStreamScroll — spring cancellation', () => {
   it('an instant jump leaves at most one live animation loop', () => {
     const {api, el} = renderHook();

@@ -150,18 +150,25 @@ export function useChatStreamScroll({
   // For scroll direction detection
   const lastScrollTopRef = useRef(0);
 
+  // The scroll element's own inline overflow-anchor, captured when the hook
+  // takes the element over and put back whenever it lets go, so a consumer
+  // who set it themselves keeps it.
+  const priorOverflowAnchorRef = useRef('');
+
   // While following, this hook is the only thing that should move the
   // container: scroll anchoring is off, so the browser's one remaining move
   // is the resize clamp onto the bottom, and every other upward move is the
-  // reader. Unlocked, anchoring is restored — a reader up in the history
-  // wants it when content above them changes.
+  // reader. Unlocked, the element's own anchoring is restored — a reader up
+  // in the history wants it when content above them changes.
   const setLocked = useCallback(
     (locked: boolean) => {
       lockedRef.current = locked;
       setIsLocked(locked);
       const el = scrollRef.current;
       if (el) {
-        el.style.overflowAnchor = locked ? 'none' : '';
+        el.style.overflowAnchor = locked
+          ? 'none'
+          : priorOverflowAnchorRef.current;
       }
     },
     [scrollRef],
@@ -333,7 +340,10 @@ export function useChatStreamScroll({
     }
 
     lastScrollTopRef.current = el.scrollTop;
-    el.style.overflowAnchor = lockedRef.current ? 'none' : '';
+    priorOverflowAnchorRef.current = el.style.overflowAnchor;
+    if (lockedRef.current) {
+      el.style.overflowAnchor = 'none';
+    }
 
     const onScroll = () => {
       const {scrollTop, scrollHeight, offsetHeight} = el;
@@ -379,7 +389,7 @@ export function useChatStreamScroll({
     return () => {
       el.removeEventListener('scroll', onScroll);
       el.removeEventListener('scrollend', onScrollEnd);
-      el.style.overflowAnchor = '';
+      el.style.overflowAnchor = priorOverflowAnchorRef.current;
     };
   }, [scrollRef, enabled, lockThreshold, buttonThreshold, setLocked]);
 
