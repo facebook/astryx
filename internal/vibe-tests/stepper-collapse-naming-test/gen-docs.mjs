@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 // Generates one skill doc per arm from a single template.
 //
 // Checker Protocol §2 ("only the system under test varies") is enforced here
@@ -101,7 +103,7 @@ const ARMS = {
     PROP_ROWS:
       "| `collapsedSummary` | `'auto' \\| 'label' \\| 'controls' \\| 'none'` | `'auto'` |",
     PROP_PROSE:
-      "`collapsedSummary` sets what the collapsed stepper shows beneath the track.\n" +
+      '`collapsedSummary` sets what the collapsed stepper shows beneath the track.\n' +
       "`'auto'` shows the current step's name, plus Previous/Next controls when\n" +
       "`onStepClick` is set. `'label'` shows the name only. `'controls'` shows the\n" +
       "controls only. `'none'` shows nothing, leaving the bare track. The name stays\n" +
