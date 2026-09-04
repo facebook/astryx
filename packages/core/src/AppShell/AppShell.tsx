@@ -8,7 +8,7 @@ import React from 'react';
  * @file AppShell.tsx
  * @input Uses React, Layout, LayoutHeader, LayoutPanel, LayoutContent, StyleX
  * @output Exports AppShell component and AppShellProps type
- * @position Application-level layout shell — the top-level wrapper for any app.
+ * @position Page shell for an application — the top-level wrapper for any app.
  *   Composes Layout internally to provide header, sideNav, and main content areas.
  *   Use for any app that needs a top nav, side navigation, and scrollable content.
  *
@@ -53,7 +53,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps, isRenderable} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
-import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {observeResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {AppShellVariantMap} from './index';
@@ -269,6 +269,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
+    overflow: 'clip',
   },
   variantWash: {
     backgroundColor: colorVars['--color-background-body'],
@@ -430,7 +431,7 @@ const styles = stylex.create({
 // =============================================================================
 
 /**
- * Application-level layout shell. Provides the structural frame for an app:
+ * Page shell for an application. Provides the structural frame for an app:
  * top navigation, side navigation, and main content area.
  *
  * Slot-based API with `topNav`, `sideNav`, `banner`, and `children`.
@@ -554,6 +555,11 @@ export function AppShell({
       : variant === 'surface'
         ? styles.navAreaSurface
         : undefined;
+  // Section normally inherits the shell's surface background. Its auto-height
+  // header needs to paint that surface itself while content scrolls beneath it.
+  const headerAreaStyle =
+    navAreaStyle ??
+    (isAuto && variant === 'section' ? styles.navAreaSurface : undefined);
   const contentAreaStyle =
     variant === 'wash'
       ? styles.contentBgWash
@@ -587,8 +593,7 @@ export function AppShell({
       shellEl.style.setProperty('--_app-shell-header-height', `${height}px`);
     };
 
-    observeResize(headerEl, () => updateHeight());
-    return () => unobserveResize(headerEl);
+    return observeResize(headerEl, () => updateHeight());
   }, [isAuto]);
 
   // =========================================================================
@@ -684,7 +689,7 @@ export function AppShell({
       role="banner"
       {...mergeProps(
         themeProps('app-shell-header', {variant}),
-        stylex.props(navAreaStyle, isAuto && styles.headerSticky),
+        stylex.props(headerAreaStyle, isAuto && styles.headerSticky),
       )}>
       {headerInner}
     </div>
@@ -773,7 +778,7 @@ export function AppShell({
         role={headerContent == null ? 'banner' : undefined}
         {...mergeProps(
           themeProps('app-shell-header', {variant}),
-          stylex.props(navAreaStyle, isAuto && styles.headerSticky),
+          stylex.props(headerAreaStyle, isAuto && styles.headerSticky),
         )}>
         <LayoutHeader padding={0} hasDivider={navHasDividers}>
           <div

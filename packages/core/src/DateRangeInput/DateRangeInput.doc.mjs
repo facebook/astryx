@@ -6,7 +6,7 @@ export const docs = {
   name: 'DateRangeInput',
   displayName: 'Date Range Input',
   group: 'DateInput',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'daterangepicker',
     'daterange',

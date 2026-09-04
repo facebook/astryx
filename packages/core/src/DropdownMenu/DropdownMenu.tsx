@@ -4,8 +4,10 @@
 
 /**
  * @file DropdownMenu.tsx
- * @input Uses React, StyleX, usePopover, Button, Icon, useListFocus
- * @output Exports DropdownMenu component
+ * @input Uses React, StyleX, usePopover, MenuBottomSheet, Button, List,
+ *   useListFocus, and the shared viewport-safe menu-width resolver
+ * @output Exports DropdownMenu with caller-selected popover or bottom-sheet
+ *   presentation
  * @position Core implementation; consumed by index.ts
  *
  * Supports two modes with a single keyboard/focus path:
@@ -39,6 +41,7 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import {usePopoverInternal} from '../Popover/usePopover';
 import {Button, type ButtonProps} from '../Button';
+import {Heading} from '../Heading';
 import {Icon} from '../Icon';
 
 import {renderDropdownItems} from './renderDropdownItems';
@@ -54,27 +57,65 @@ import {
 } from './DropdownMenuContext';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
+import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
+import {useMenuOverflow} from './useMenuOverflow';
+import {resolveMenuWidth} from './menuWidth';
+import {
+  useAdaptivePresentation,
+  type AdaptivePresentation,
+} from '../hooks/useAdaptivePresentation';
+import {MenuBottomSheet} from './MenuBottomSheet';
+import {MenuBottomSheetActionList} from './MenuBottomSheetActionList';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
   spacingVars,
+  colorVars,
   radiusVars,
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {useTranslator} from '../i18n';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+
+const MENU_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
+const MENU_MAX_INLINE_SIZE = `calc(100vi - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
+const MENU_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER})`;
+const MENU_MAX_BLOCK_SIZE = `min(300px, calc(100dvb - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))))`;
+const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(300px, calc(100vh - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER}))`;
+const MENU_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
+const MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${MENU_VIEWPORT_GUTTER})`;
+const MENU_INLINE_EDGE_GUTTER = `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))`;
+const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 
 const styles = stylex.create({
+  triggerOpen: {
+    backgroundImage: MENU_TRIGGER_OPEN_BACKGROUND,
+  },
   dropdown: {
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
-    maxHeight: '300px',
-    overflowY: 'auto',
+    // Pointer opens focus this container so subsequent arrow keys and Escape
+    // stay owned by the menu. It is an internal focus target, not a control,
+    // so suppress the browser ring; keyboard focus moves to an item instead.
+    outline: 'none',
+    maxInlineSize: stylex.firstThatWorks(
+      MENU_MAX_INLINE_SIZE,
+      MENU_MAX_INLINE_SIZE_FALLBACK,
+    ),
+    maxHeight: stylex.firstThatWorks(
+      MENU_MAX_BLOCK_SIZE,
+      MENU_MAX_BLOCK_SIZE_FALLBACK,
+    ),
     '--_dropdown-menu-radius': radiusVars['--radius-container'],
     '--_dropdown-menu-padding': spacingVars['--spacing-1'],
     padding: spacingVars['--spacing-1'],
@@ -84,12 +125,93 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  popover: {
-    minWidth: 'anchor-size(width)',
+  scrollable: {
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    overscrollBehavior: 'contain',
   },
-  popoverCustomWidth: (width: string | number) => ({
-    minWidth: typeof width === 'number' ? `${width}px` : width,
+  popoverViewport: {
+    boxSizing: 'border-box',
+    maxBlockSize: stylex.firstThatWorks(
+      MENU_MAX_BLOCK_SIZE,
+      MENU_MAX_BLOCK_SIZE_FALLBACK,
+    ),
+  },
+  popoverViewportAligned: {
+    maxInlineSize: stylex.firstThatWorks(
+      MENU_POSITION_AREA_MAX_INLINE_SIZE,
+      MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
+    ),
+  },
+  popoverViewportStart: {
+    marginInlineEnd: MENU_INLINE_EDGE_GUTTER,
+  },
+  popoverViewportEnd: {
+    marginInlineStart: MENU_INLINE_EDGE_GUTTER,
+  },
+  popoverViewportBlockStart: {
+    marginBlockEnd: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
+  },
+  popoverViewportBlockEnd: {
+    marginBlockStart: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
+  },
+  popoverViewportCentered: {
+    marginInlineStart: MENU_INLINE_EDGE_GUTTER,
+    marginInlineEnd: MENU_INLINE_EDGE_GUTTER,
+    maxInlineSize: stylex.firstThatWorks(
+      MENU_MAX_INLINE_SIZE,
+      MENU_MAX_INLINE_SIZE_FALLBACK,
+    ),
+  },
+  popoverViewportBlockCentered: {
+    marginBlockStart: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
+    marginBlockEnd: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
+    maxInlineSize: stylex.firstThatWorks(
+      MENU_MAX_INLINE_SIZE,
+      MENU_MAX_INLINE_SIZE_FALLBACK,
+    ),
+  },
+  popoverAligned: {
+    minWidth: stylex.firstThatWorks(
+      `min(anchor-size(width), ${MENU_POSITION_AREA_MAX_INLINE_SIZE})`,
+      `min(anchor-size(width), ${MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK})`,
+      'anchor-size(width)',
+    ),
+  },
+  popoverCentered: {
+    minWidth: stylex.firstThatWorks(
+      `min(anchor-size(width), ${MENU_MAX_INLINE_SIZE})`,
+      `min(anchor-size(width), ${MENU_MAX_INLINE_SIZE_FALLBACK})`,
+      'anchor-size(width)',
+    ),
+  },
+  popoverCustomWidth: (width: string) => ({
+    minWidth: width,
   }),
+  popoverCustomIntrinsicWidth: (width: string) => ({
+    inlineSize: width,
+  }),
+});
+
+const bottomSheetStyles = stylex.create({
+  content: {
+    width: '100%',
+  },
+  header: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    marginBottom: spacingVars['--spacing-2'],
+  },
+  rootHeading: {
+    // Match the content edge of a spacious ListItem. Icon-bearing rows place
+    // their icon here; rows without an icon place their label here.
+    marginInlineStart: spacingVars['--spacing-3'],
+  },
+  viewHeading: {
+    outline: 'none',
+  },
 });
 
 // =============================================================================
@@ -157,22 +279,31 @@ export type DropdownMenuOption =
 
 export type DropdownMenuButtonProps = Omit<ButtonProps, 'onClick'>;
 
+export type DropdownMenuPresentation = AdaptivePresentation;
+
 interface DropdownMenuBaseProps extends BaseProps {
   button?: DropdownMenuButtonProps;
   isMenuOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
+  /**
+   * Minimum popover width. The menu may grow for its content but is capped to
+   * the available viewport space. Ignored by bottom-sheet presentation.
+   * Defaults to the trigger width.
+   */
   menuWidth?: number | string;
   onClick?: () => void;
   hasChevron?: boolean;
   /**
-   * Position placement relative to the trigger.
+   * Popover position relative to the trigger. Ignored by bottom-sheet
+   * presentation.
    * Uses the same placement values as other Astryx layer-based components.
    * @default 'below'
    */
   placement?: LayerPlacement;
 
   /**
-   * Alignment along the placement axis.
+   * Popover alignment along the placement axis. Ignored by bottom-sheet
+   * presentation.
    * Uses the same alignment values as other Astryx layer-based components.
    * @default 'start'
    */
@@ -182,11 +313,19 @@ interface DropdownMenuBaseProps extends BaseProps {
 }
 
 interface DropdownMenuDataProps extends DropdownMenuBaseProps {
+  /**
+   * Surface used to present the actions. Pass a value selected by product
+   * policy (for example, a compact-touch media query) when the presentation
+   * should adapt. Bottom-sheet presentation is intended for short action sets.
+   * @default 'popover'
+   */
+  presentation?: DropdownMenuPresentation;
   items: DropdownMenuOption[];
   children?: undefined;
 }
 
 interface DropdownMenuCompoundProps extends DropdownMenuBaseProps {
+  presentation?: 'popover';
   items?: undefined;
   children: ReactNode;
 }
@@ -202,15 +341,16 @@ export type DropdownMenuProps =
  * A dropdown menu component that displays a list of actionable items.
  *
  * Supports two modes:
- * - **Data-driven**: pass `items` for static menus with optional custom rendering
- * - **Compound-component**: pass JSX children for dynamic, stateful, or lazy-loaded menus
- *
- * Both modes share the same DOM-based keyboard navigation via useListFocus.
+ * - **Data-driven**: pass `items` and choose either the default anchored
+ *   popover or the modal bottom-sheet presentation.
+ * - **Compound-component**: pass JSX children for dynamic, stateful, or
+ *   lazy-loaded anchored popover menus.
  *
  * @example
  * ```
  * <DropdownMenu
  *   button={{ label: 'Actions' }}
+ *   presentation={useBottomSheet ? 'bottom-sheet' : 'popover'}
  *   items={[
  *     { label: 'Edit', onClick: () => handleEdit() },
  *     { label: 'Delete', onClick: () => handleDelete() },
@@ -223,7 +363,210 @@ export type DropdownMenuProps =
 // locale.
 const DEFAULT_BUTTON_I18N_KEY = '@astryx.dropdownMenu.label' as const;
 
-export function DropdownMenu({
+function DropdownMenuBottomSheet({
+  button: buttonFromProps,
+  isMenuOpen: controlledIsOpen,
+  onOpenChange,
+  onClick,
+  hasChevron = true,
+  items,
+  presentation: _presentation,
+  menuWidth: _menuWidth,
+  placement: _placement,
+  alignment: _alignment,
+  className,
+  style,
+  xstyle,
+  'data-testid': testId,
+  ...rest
+}: DropdownMenuDataProps & {presentation: 'bottom-sheet'}) {
+  const t = useTranslator();
+  const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
+  const backLabel = t('@astryx.dropdownMenu.back');
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const actionListRef = useRef<HTMLDivElement>(null);
+  const openModalityRef = useRef<'keyboard' | 'pointer'>('pointer');
+  const {
+    isFocusRingSuppressed,
+    onFocusReturnTargetFocus,
+    prepareFocusReturn,
+    resetFocusReturn,
+  } = useFocusReturnVisibility();
+  const viewHeadingRef = useRef<HTMLHeadingElement>(null);
+  const previousSubmenuDepthRef = useRef(0);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const [submenuPath, setSubmenuPath] = useState<DropdownMenuItemData[]>([]);
+  const isControlled = controlledIsOpen !== undefined;
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+  const [previousIsOpen, setPreviousIsOpen] = useState(isOpen);
+  if (previousIsOpen !== isOpen) {
+    setPreviousIsOpen(isOpen);
+    if (!isOpen && submenuPath.length > 0) {
+      setSubmenuPath([]);
+    }
+  }
+  const currentSubmenu = submenuPath.at(-1);
+  const currentItems = currentSubmenu?.items ?? items;
+  const currentTitle = currentSubmenu?.label ?? button.label;
+  const sheetLabel =
+    typeof currentTitle === 'string' ? currentTitle : button.label;
+
+  const setOpen = useCallback(
+    (nextIsOpen: boolean) => {
+      if (!nextIsOpen) {
+        setSubmenuPath([]);
+        prepareFocusReturn();
+      } else {
+        resetFocusReturn();
+      }
+      onOpenChange?.(nextIsOpen);
+      if (!isControlled) {
+        setInternalIsOpen(nextIsOpen);
+      }
+    },
+    [isControlled, onOpenChange, prepareFocusReturn, resetFocusReturn],
+  );
+
+  const handleSelect = useCallback(
+    (item: DropdownMenuItemData) => {
+      if (item.isDisabled) {
+        return;
+      }
+      item.onClick?.();
+      if (item.hasCloseOnSelect !== false) {
+        setOpen(false);
+      }
+    },
+    [setOpen],
+  );
+
+  const isIconOnly = button.isIconOnly === true;
+  const resolvedEndContent =
+    button.endContent ??
+    (hasChevron && !isIconOnly ? (
+      <Icon icon="chevronDown" size="sm" color="inherit" />
+    ) : undefined);
+
+  useEffect(() => {
+    if (!isOpen || openModalityRef.current !== 'keyboard') {
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      actionListRef.current
+        ?.querySelector<HTMLElement>('button:not(:disabled), a[href]')
+        ?.focus({preventScroll: true});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [currentItems, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      previousSubmenuDepthRef.current = 0;
+      return;
+    }
+    if (submenuPath.length === previousSubmenuDepthRef.current) {
+      return;
+    }
+    previousSubmenuDepthRef.current = submenuPath.length;
+    const frame = requestAnimationFrame(() => {
+      viewHeadingRef.current?.focus({preventScroll: true});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, submenuPath.length]);
+
+  return (
+    <>
+      <Button
+        {...button}
+        ref={buttonRef}
+        xstyle={[
+          isOpen && styles.triggerOpen,
+          button.xstyle,
+          isFocusRingSuppressed && focusOutlineStyles.suppressed,
+        ]}
+        tooltip={isOpen ? undefined : button.tooltip}
+        endContent={resolvedEndContent}
+        onPointerDown={event => {
+          button.onPointerDown?.(event);
+          openModalityRef.current = 'pointer';
+        }}
+        onKeyDown={event => {
+          button.onKeyDown?.(event);
+          if (
+            event.key === 'ArrowDown' ||
+            event.key === 'Enter' ||
+            event.key === ' '
+          ) {
+            openModalityRef.current = 'keyboard';
+          }
+        }}
+        onFocus={event => {
+          button.onFocus?.(event);
+          onFocusReturnTargetFocus();
+        }}
+        onClick={() => {
+          onClick?.();
+          setOpen(!isOpen);
+        }}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        data-testid={testId}
+      />
+
+      <MenuBottomSheet
+        isOpen={isOpen}
+        onOpenChange={setOpen}
+        finalFocusRef={buttonRef}
+        label={sheetLabel}>
+        <div
+          ref={actionListRef}
+          {...rest}
+          {...mergeProps(
+            themeProps('dropdown-menu', {presentation: 'bottom-sheet'}),
+            stylex.props(bottomSheetStyles.content, xstyle),
+            className,
+            style,
+          )}>
+          <div {...stylex.props(bottomSheetStyles.header)}>
+            {submenuPath.length > 0 && (
+              <Button
+                label={backLabel}
+                variant="ghost"
+                size="sm"
+                icon={
+                  <Icon
+                    icon="chevronLeft"
+                    size="sm"
+                    xstyle={rtlStyles.mirror}
+                  />
+                }
+                isIconOnly
+                onClick={() => setSubmenuPath(path => path.slice(0, -1))}
+              />
+            )}
+            <Heading
+              ref={viewHeadingRef}
+              level={3}
+              tabIndex={-1}
+              xstyle={[
+                bottomSheetStyles.viewHeading,
+                submenuPath.length === 0 && bottomSheetStyles.rootHeading,
+              ]}>
+              {currentTitle}
+            </Heading>
+          </div>
+          <MenuBottomSheetActionList
+            items={currentItems}
+            onSelect={handleSelect}
+            onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
+          />
+        </div>
+      </MenuBottomSheet>
+    </>
+  );
+}
+
+function DropdownMenuPopover({
   button: buttonFromProps,
   isMenuOpen: controlledIsOpen,
   onOpenChange,
@@ -232,6 +575,7 @@ export function DropdownMenu({
   hasChevron = true,
   placement = 'below',
   alignment = 'start',
+  presentation: _presentation,
   className,
   style,
   xstyle,
@@ -261,13 +605,23 @@ export function DropdownMenu({
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
 
-  // Close menu + return focus to trigger
+  useInteractionModalityTracking();
+
+  // Keyboard dismissal returns focus to the trigger. Pointer dismissal leaves
+  // focus where the browser put it; Safari can otherwise paint a focus-visible
+  // ring on the trigger after a touch selection. Native popover restoration
+  // can happen before `toggle`, so explicitly blur that pointer-restored case.
   const handleLayerHide = useCallback(() => {
     onOpenChange?.(false);
     if (!isControlled) {
       setInternalIsOpen(false);
     }
-    buttonRef.current?.focus();
+    const trigger = buttonRef.current;
+    if (getInteractionModality() === 'keyboard') {
+      trigger?.focus();
+    } else if (document.activeElement === trigger) {
+      trigger?.blur();
+    }
   }, [isControlled, onOpenChange]);
 
   // Defer item focus until the layer has committed open, so focus restore
@@ -469,9 +823,21 @@ export function DropdownMenu({
       <Icon icon="chevronDown" size="sm" color="inherit" />
     ) : undefined);
 
-  const popoverXstyle = menuWidth
-    ? styles.popoverCustomWidth(menuWidth)
-    : styles.popover;
+  const requestedWidthLimit =
+    alignment === 'center'
+      ? MENU_MAX_INLINE_SIZE_FALLBACK
+      : MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK;
+  const resolvedMenuWidth = menuWidth
+    ? resolveMenuWidth(menuWidth, requestedWidthLimit)
+    : null;
+  const popoverXstyle = resolvedMenuWidth
+    ? resolvedMenuWidth.property === 'inlineSize'
+      ? styles.popoverCustomIntrinsicWidth(resolvedMenuWidth.value)
+      : styles.popoverCustomWidth(resolvedMenuWidth.value)
+    : alignment === 'center'
+      ? styles.popoverCentered
+      : styles.popoverAligned;
+  const isSidePlacement = placement === 'start' || placement === 'end';
   // Context for compound items
   const contextValue = useMemo<DropdownMenuContextValue>(
     () => ({closeMenu, menuSize}),
@@ -481,6 +847,7 @@ export function DropdownMenu({
   // Resolve menu content: data-driven items become components
   const menuContent =
     props.items !== undefined ? renderDropdownItems(items) : children;
+  const hasOverflow = useMenuOverflow(listRef, menuContent, popover.isOpen);
 
   return (
     <>
@@ -498,6 +865,7 @@ export function DropdownMenu({
             /* eslint-enable react-compiler/react-compiler */
           }
         }}
+        xstyle={[isOpen && styles.triggerOpen, button.xstyle]}
         tooltip={isOpen ? undefined : button.tooltip}
         endContent={resolvedEndContent}
         onClick={handleButtonClick}
@@ -514,11 +882,11 @@ export function DropdownMenu({
           ref={listRef}
           id={menuId}
           role="menu"
-          // Focus target for pointer opens (not in the Tab order): holding
-          // focus on the container keeps key events (arrows, typeahead,
-          // Escape, Tab) inside the menu without highlighting any item.
-          // Mirrors the DropdownMenuSubMenu flyout container.
-          tabIndex={-1}
+          // Pointer opens focus the container so arrows, typeahead, Escape and
+          // Tab remain owned by the menu without pre-highlighting an item.
+          // An overflowing menu joins the Tab order so its scrollable region is
+          // keyboard-accessible; Tab still dismisses through listKeyDown.
+          tabIndex={hasOverflow ? 0 : -1}
           // Give the menu an accessible name from its trigger's label, so
           // screen readers announce e.g. "Actions menu" rather than an unnamed
           // menu (menus-13).
@@ -526,7 +894,11 @@ export function DropdownMenu({
           onKeyDown={listKeyDown}
           {...mergeProps(
             themeProps('dropdown-menu'),
-            stylex.props(styles.dropdown, xstyle),
+            stylex.props(
+              styles.dropdown,
+              hasOverflow && styles.scrollable,
+              xstyle,
+            ),
             className,
             style,
           )}>
@@ -538,11 +910,68 @@ export function DropdownMenu({
           placement,
           alignment,
           offset: spacingVars['--spacing-1'],
-          xstyle: [popoverXstyle, layerAnimations[placement]],
+          xstyle: [
+            styles.popoverViewport,
+            alignment === 'center'
+              ? isSidePlacement
+                ? styles.popoverViewportBlockCentered
+                : styles.popoverViewportCentered
+              : [
+                  styles.popoverViewportAligned,
+                  isSidePlacement
+                    ? alignment === 'start'
+                      ? styles.popoverViewportBlockStart
+                      : styles.popoverViewportBlockEnd
+                    : alignment === 'start'
+                      ? styles.popoverViewportStart
+                      : styles.popoverViewportEnd,
+                ],
+            popoverXstyle,
+            layerAnimations[placement],
+          ],
         },
       )}
     </>
   );
+}
+
+export function DropdownMenu(props: DropdownMenuProps) {
+  const {onOpenChange} = props;
+  const requestedPresentation =
+    'items' in props ? (props.presentation ?? 'popover') : 'popover';
+  const resolvedPresentation = useAdaptivePresentation(requestedPresentation);
+  const isControlled = props.isMenuOpen !== undefined;
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = isControlled ? props.isMenuOpen : internalIsOpen;
+  const handleOpenChange = useCallback(
+    (nextIsOpen: boolean) => {
+      onOpenChange?.(nextIsOpen);
+      if (!isControlled) {
+        setInternalIsOpen(nextIsOpen);
+      }
+    },
+    [isControlled, onOpenChange],
+  );
+  const sharedProps = {
+    ...props,
+    isMenuOpen: isOpen,
+    onOpenChange: handleOpenChange,
+  };
+
+  if (
+    resolvedPresentation === 'bottom-sheet' &&
+    'items' in props &&
+    props.items !== undefined
+  ) {
+    return (
+      <DropdownMenuBottomSheet
+        {...(sharedProps as DropdownMenuDataProps)}
+        presentation="bottom-sheet"
+      />
+    );
+  }
+
+  return <DropdownMenuPopover {...sharedProps} presentation="popover" />;
 }
 
 DropdownMenu.displayName = 'DropdownMenu';

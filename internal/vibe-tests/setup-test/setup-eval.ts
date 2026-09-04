@@ -54,6 +54,12 @@ export type LayerSurfaceReading =
       clippingAncestor: string | null;
       centerHitSelf: boolean;
       centerHitProbe: string | null;
+      /**
+       * The host token-scoping selectors this surface is inside, nearest first,
+       * discovered from the app's own emitted CSS. Absent on measurements taken
+       * before this was recorded, which compare as an empty list.
+       */
+      tokenScopes?: string[];
       topLayer: {
         tagName: string;
         role: string | null;
@@ -117,6 +123,20 @@ export type AllowedHostChange = {
   fixture: string;
   probe: string;
   fields: string[];
+  /**
+   * Whether this probe's accumulated text may *gain* content.
+   *
+   * A task that mandates inserting a control into an existing host container
+   * necessarily adds that control's text to the container's text, so comparing
+   * the container's text exactly reports the mandated insertion as host damage.
+   * This permits added text and nothing else: every baseline word must still be
+   * present, in its original order. Losing a word, changing one, or reordering
+   * them is still a regression, so the container's existing content stays as
+   * protected as it was. It is deliberately separate from `fields` — putting
+   * `text` in `fields` would exempt the comparison outright and let an executor
+   * delete host copy.
+   */
+  textInsertionOnly?: boolean;
 };
 
 export type ReplacedHostProbe = {
@@ -213,12 +233,36 @@ export type Regression = {
 const stringValue = (value: unknown) =>
   value === undefined ? '(missing)' : String(value);
 
+/**
+ * Whether `after` is `before` with text added and nothing removed.
+ *
+ * Words are compared in order: every baseline word must still appear, in the
+ * same sequence, with new words allowed between them. A deletion, a
+ * substitution, and a reordering all fail, so a container whose text may grow
+ * still cannot lose or rewrite the host's own copy.
+ */
+export function isTextInsertionOnly(before: string, after: string): boolean {
+  const baseline = before.trim().split(/\s+/).filter(Boolean);
+  const current = after.trim().split(/\s+/).filter(Boolean);
+  if (current.length < baseline.length) {
+    return false;
+  }
+  let index = 0;
+  for (const word of current) {
+    if (index < baseline.length && word === baseline[index]) {
+      index += 1;
+    }
+  }
+  return index === baseline.length;
+}
+
 /** Compare the complete captured style and geometry key union exactly. */
 export function regressions(
   before: SchemeReading,
   after: SchemeReading,
   allowedFields: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
   replacedProbes: ReadonlySet<string> = new Set(),
+  textInsertionProbes: ReadonlySet<string> = new Set(),
 ): {changed: Regression[]; missing: string[]} {
   const changed: Regression[] = [];
   const missing: string[] = [];
@@ -262,18 +306,29 @@ export function regressions(
       ...Object.keys(beforeValues),
       ...Object.keys(afterValues),
     ])) {
-      if (
-        beforeValues[property] !== afterValues[property] &&
-        !allowed.has(property)
-      ) {
-        changed.push({
-          probe,
-          property,
-          category: categoryOf(property),
-          before: stringValue(beforeValues[property]),
-          after: stringValue(afterValues[property]),
-        });
+      if (beforeValues[property] === afterValues[property]) {
+        continue;
       }
+      if (allowed.has(property)) {
+        continue;
+      }
+      if (
+        property === 'text' &&
+        textInsertionProbes.has(probe) &&
+        isTextInsertionOnly(
+          stringValue(beforeValues.text),
+          stringValue(afterValues.text),
+        )
+      ) {
+        continue;
+      }
+      changed.push({
+        probe,
+        property,
+        category: categoryOf(property),
+        before: stringValue(beforeValues[property]),
+        after: stringValue(afterValues[property]),
+      });
     }
   }
   return {changed, missing};
@@ -695,6 +750,31 @@ function taskContractFailures(
             `${scheme}:${interaction.id}:${surfaceContract.name}:host-style`,
           );
         }
+        /**
+         * Relocated host UI must still sit inside the host token scopes that
+         * were painting it.
+         *
+         * Reported separately from `host-style` because they are different
+         * problems with opposite fixes, and a style diff alone cannot tell them
+         * apart. Losing the boundary means the host's own rules stopped
+         * reaching the element: the fix is to restore the boundary, and
+         * restating the colours instead produces a surface that matches today
+         * and silently desynchronizes the next time the host retunes its
+         * palette. A style difference *inside* the right scopes is a real
+         * restyle. Neither is excused by the other, so both are reported.
+         */
+        if (
+          surface &&
+          reference &&
+          !('missing' in surface) &&
+          !('missing' in reference) &&
+          JSON.stringify(reference.tokenScopes ?? []) !==
+            JSON.stringify(surface.tokenScopes ?? [])
+        ) {
+          failures.push(
+            `${scheme}:${interaction.id}:${surfaceContract.name}:host-boundary`,
+          );
+        }
       }
     }
   }
@@ -801,6 +881,24 @@ function allowedHostFields(arm: Measurement) {
   return fields;
 }
 
+/**
+ * The probes whose accumulated text may gain the mandated insertion's own text,
+ * and only gain it. See `AllowedHostChange.textInsertionOnly`.
+ */
+function textInsertionProbes(arm: Measurement) {
+  if (!arm.fixture || !arm.task) {
+    return new Set<string>();
+  }
+  return new Set(
+    arm.task.contract.allowedHostChanges
+      .filter(
+        allowed =>
+          allowed.fixture === arm.fixture && allowed.textInsertionOnly === true,
+      )
+      .map(allowed => allowed.probe),
+  );
+}
+
 function replacedHostProbes(arm: Measurement) {
   if (!arm.fixture || !arm.task) {
     return new Set<string>();
@@ -865,6 +963,7 @@ export function scoreArm(baseline: Measurement, arm: Measurement): SetupScore {
   const allowedFields = allowedHostFields(arm);
   const replacedProbes = replacedHostProbes(arm);
   const overlayFields = allowedOverlayFields(arm);
+  const insertionProbes = textInsertionProbes(arm);
   const regressionDetails = uniqueObjects(
     (['light', 'dark'] as const).flatMap(scheme =>
       [
@@ -873,6 +972,7 @@ export function scoreArm(baseline: Measurement, arm: Measurement): SetupScore {
           arm.schemes[scheme],
           allowedFields,
           replacedProbes,
+          insertionProbes,
         ).changed,
         ...overlayStyleRegressions(
           baseline.schemes[scheme],
@@ -891,6 +991,7 @@ export function scoreArm(baseline: Measurement, arm: Measurement): SetupScore {
             arm.schemes[scheme],
             allowedFields,
             replacedProbes,
+            insertionProbes,
           ).missing,
       ),
     ),
@@ -992,6 +1093,76 @@ export function passesAcceptance(score: SetupScore): boolean {
     score.integrityFailures.length === 0 &&
     verdict(score) === 'clean'
   );
+}
+
+/**
+ * The kinds of failure a run can have. They are different things and a report
+ * that adds them together says nothing useful.
+ *
+ * - `hostDamage` — the measurement found the host changed: computed styles,
+ *   geometry, missing probes, contrast, layering, cascade order, mode
+ *   dependence. This is the thing the whole stage exists to detect.
+ * - `runtime` — the built app logged errors or failed requests.
+ * - `integrity` — an escape hatch or a broken attestation in the source diff.
+ *   The host may be pixel-perfect and this still fails.
+ * - `task` — the run did not do what it was asked to do.
+ * - `telemetry` — the run's own reporting is unusable: the executor was
+ *   classified as failing, the measurement errored, or the baseline capture was
+ *   incomplete. Nothing here says anything about the host; it says the cell has
+ *   to be run again.
+ *
+ * `verdict` deliberately collapses several of these into `silent-damage`,
+ * because a run with any of them is not acceptable. That is right for a gate
+ * and wrong for a report: `silent-damage` from a comment misread as an
+ * `!important` and `silent-damage` from a repainted host are the same word for
+ * two unrelated problems. Report the breakdown next to the verdict.
+ */
+export type FailureKind =
+  'hostDamage' | 'runtime' | 'integrity' | 'task' | 'telemetry';
+
+export type FailureBreakdown = Record<FailureKind, number>;
+
+export function failureBreakdown(score: SetupScore): FailureBreakdown {
+  return {
+    hostDamage:
+      score.regressions +
+      score.missingProbes.length +
+      score.contrastFailures.length +
+      score.layeringFailures.length +
+      score.layerOrderFailures.length +
+      score.modeDependent.length +
+      (score.cascadeInverted ? 1 : 0),
+    runtime: score.consoleErrors + score.failedRequests,
+    integrity: score.integrityFailures.length,
+    task: score.taskFailures.length,
+    telemetry:
+      (score.executionSucceeded ? 0 : 1) +
+      score.measurementErrors.length +
+      score.baselineFailures.length,
+  };
+}
+
+/** The failure kinds actually present, in report order. */
+export function failureCauses(score: SetupScore): FailureKind[] {
+  const breakdown = failureBreakdown(score);
+  return (Object.keys(breakdown) as FailureKind[]).filter(
+    kind => breakdown[kind] > 0,
+  );
+}
+
+/**
+ * Whether this run's measurement may be compared with another run's.
+ *
+ * A run the executor did not complete is still measured and still scored — the
+ * sandbox exists and the evaluator reads it — but its verdict describes an
+ * unfinished attempt. An operator run produced exactly that: a cell scored
+ * `clean` on a run whose executor stopped early, because nothing damaged the
+ * host once the work stopped. Counting that as a clean run makes the condition
+ * look better than the evidence supports, so comparison excludes it and says
+ * so.
+ */
+export function isComparableRun(score: SetupScore): boolean {
+  return score.validRun && score.executionSucceeded;
 }
 
 export type HardDimension =

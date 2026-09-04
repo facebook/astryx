@@ -27,12 +27,15 @@ import React, {
   type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {useBusyIndicatorLane} from './busyIndicatorLane';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {isImeKeyEvent} from '../utils/ime';
 import {TypeaheadItem} from './TypeaheadItem';
 import {Icon} from '../Icon';
+import {Spinner} from '../Spinner';
 import {
   colorVars,
   spacingVars,
@@ -310,10 +313,15 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },
-  loadingSpinner: {
+  // The indicator a direct caller gets. In flow, where it has always been, so
+  // it reserves its own width and the input's text never runs under it.
+  // Typeahead and Tokenizer take the indicator over and paint it in their own
+  // inline-end lane instead; this is what renders for everyone else.
+  loadingStatus: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
     padding: spacingVars['--spacing-1'],
   },
 });
@@ -424,6 +432,40 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
+  // Report the busy state to a wrapper that has taken the indicator over.
+  //
+  // Through a ref, and at the call site rather than from an effect: an effect
+  // would run after this component had already committed, so the wrapper's
+  // own state change landed in a second commit — two renders of the whole
+  // field per transition, four across a search. Called here, the wrapper's
+  // setState batches with ours into the one commit that React was already
+  // doing. The ref keeps the identity of a caller's inline arrow from
+  // mattering, and the guard makes the report edge-triggered: the redundant
+  // `false` on every keystroke below the query threshold reports nothing.
+  //
+  // The ref is synced in a layout effect rather than during render, following
+  // `onMotionStartRef` in BottomSheetPanel — a render that React discards
+  // must not leave the ref pointing at the callback from the abandoned pass.
+  // This effect only writes a ref, so it commits nothing and no wrapper
+  // re-renders for it; every caller of `setLoading` runs from an event or an
+  // awaited continuation, long after the first commit.
+  // A wrapper that owns the inline-end lane subscribes through context; see
+  // busyIndicatorLane.tsx for why this is not a prop.
+  const busyLane = useBusyIndicatorLane();
+  const onLoadingChangeRef = useRef(busyLane?.onBusyChange);
+  useIsomorphicLayoutEffect(() => {
+    onLoadingChangeRef.current = busyLane?.onBusyChange;
+  }, [busyLane]);
+  const loadingRef = useRef(false);
+  const setLoading = useCallback((next: boolean) => {
+    if (loadingRef.current === next) {
+      return;
+    }
+    loadingRef.current = next;
+    setIsLoading(next);
+    onLoadingChangeRef.current?.(next);
+  }, []);
+
   // Track active pointer to defer popover.show() past click events.
   // With popover="auto", showing the popover between pointerdown and
   // pointerup/click causes the browser's light-dismiss to immediately
@@ -499,7 +541,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       // in-flight response for an older query fails the gen check below
       // instead of overwriting the newer results.
       const gen = ++searchGenRef.current;
-      setIsLoading(true);
+      setLoading(true);
       setHasSearched(true);
       try {
         const searchResults = await searchSource.search(searchQuery);
@@ -534,7 +576,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         setHighlightedIndex(-1);
       } finally {
         if (searchGenRef.current === gen) {
-          setIsLoading(false);
+          setLoading(false);
         }
       }
     },
@@ -545,37 +587,68 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       announce,
       emptySearchResultsText,
       __queryEntries,
+      setLoading,
       t,
     ],
   );
 
-  // Perform bootstrap
-  const performBootstrap = useCallback(async () => {
-    const gen = ++searchGenRef.current;
-    setIsLoading(true);
-    try {
-      const bootstrapResults = await searchSource.bootstrap();
+  const applyBootstrapResults = useCallback(
+    (bootstrapResults: T[], gen: number) => {
       if (searchGenRef.current !== gen) {
         return;
       }
       resultsGenRef.current = gen;
       const shown = bootstrapResults.slice(0, maxMenuItems);
+      const nextHighlightedIndex = shown.length > 0 ? 0 : -1;
+      if (
+        results.length === 0 &&
+        shown.length === 0 &&
+        highlightedIndex === -1
+      ) {
+        return;
+      }
       setResults(shown);
-      setHighlightedIndex(shown.length > 0 ? 0 : -1);
+      setHighlightedIndex(nextHighlightedIndex);
       if (bootstrapResults.length > 0) {
         showLayer();
       }
+    },
+    [highlightedIndex, maxMenuItems, results.length, showLayer],
+  );
+
+  // Perform bootstrap
+  const performBootstrap = useCallback(async () => {
+    const gen = ++searchGenRef.current;
+    let bootstrapResult: T[] | Promise<T[]>;
+    try {
+      bootstrapResult = searchSource.bootstrap();
     } catch {
-      if (searchGenRef.current !== gen) {
-        return;
+      if (searchGenRef.current === gen) {
+        setResults([]);
+        setLoading(false);
       }
-      setResults([]);
+      return;
+    }
+
+    if (Array.isArray(bootstrapResult)) {
+      setLoading(false);
+      applyBootstrapResults(bootstrapResult, gen);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      applyBootstrapResults(await bootstrapResult, gen);
+    } catch {
+      if (searchGenRef.current === gen) {
+        setResults([]);
+      }
     } finally {
       if (searchGenRef.current === gen) {
-        setIsLoading(false);
+        setLoading(false);
       }
     }
-  }, [searchSource, maxMenuItems, showLayer]);
+  }, [searchSource, applyBootstrapResults, setLoading]);
 
   // Handle query change
   const handleQueryChange = useCallback(
@@ -608,7 +681,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         // its own `finally` will decline to clear this — so clear it here or
         // the field spins forever. Backspacing below the threshold on a remote
         // source is the everyday way to hit that.
-        setIsLoading(false);
+        setLoading(false);
         // Clear any lingering result-count / no-results announcement.
         announce('');
         if (derived.length > 0) {
@@ -645,6 +718,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       debounceMs,
       searchSource,
       announce,
+      setLoading,
     ],
   );
 
@@ -673,11 +747,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       // Same reason as in handleQueryChange: the invalidated search will not
       // clear this itself. Selecting a stale result while the next search is
       // still in flight would otherwise leave the field spinning.
-      setIsLoading(false);
+      setLoading(false);
       popover.hide();
       inputRef.current?.focus();
     },
-    [onChange, popover, searchSource],
+    [onChange, popover, searchSource, setLoading],
   );
 
   // Handle focus
@@ -889,6 +963,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             : undefined
         }
         aria-autocomplete="list"
+        aria-busy={isLoading || undefined}
         aria-describedby={ariaDescribedBy}
         aria-labelledby={ariaLabelledBy}
         aria-disabled={isFocusableDisabled ? 'true' : undefined}
@@ -923,15 +998,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           inputXStyle,
         )}
       />
-      {isLoading && (
-        <span
-          role="status"
-          aria-label={t('@astryx.typeahead.loading')}
-          {...stylex.props(styles.loadingSpinner)}>
-          <Icon icon="clock" size="sm" color="secondary" />
+      {isLoading && busyLane == null && (
+        <span {...stylex.props(styles.loadingStatus)}>
+          <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
         </span>
       )}
-
       {popover.render(
         <div
           id={listboxId}

@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {useEffect, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -8,6 +9,7 @@ import {
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
+import {percent, pixel} from '@astryxdesign/core/Resizable/utils';
 import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
 
 const s = stylex.create({
@@ -29,10 +31,150 @@ const s = stylex.create({
     borderRadius: radiusVars['--radius-container'],
     margin: spacingVars['--spacing-2'],
   },
+  structuredStack: {
+    display: 'grid',
+    gap: spacingVars['--spacing-4'],
+  },
+  structuredFrame: {height: 180},
+  structuredLayout: {height: 80},
 });
 
 function HookDemo({children}: {children: React.ReactNode}) {
   return <div>{children}</div>;
+}
+
+function StructuredPercentProbe({
+  kind,
+  width,
+}: {
+  kind: 'default-wide' | 'default-narrow' | 'minimum' | 'maximum';
+  width: number;
+}) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const isDefault = kind.startsWith('default');
+  const isMinimum = kind === 'minimum';
+  const storageKey = `storybook-structured-percent-${kind}`;
+  const region = useResizable({
+    ...(isDefault
+      ? {defaultSize: percent(40, {min: pixel(333)})}
+      : isMinimum
+        ? {defaultSize: 0, minSize: percent(40, {min: pixel(333)})}
+        : {defaultSize: 500, maxSize: percent(10, {max: pixel(400)})}),
+    containerRef: frameRef,
+    direction: 'horizontal',
+    autoSaveId: storageKey,
+  });
+  const resolvedBound = isDefault
+    ? null
+    : isMinimum
+      ? region.props._minSizePx
+      : region.props._maxSizePx;
+  const label = isDefault
+    ? `defaultSize: percent(40, {min: pixel(333)})`
+    : isMinimum
+      ? `minSize: percent(40, {min: pixel(333)})`
+      : `maxSize: percent(10, {max: pixel(400)})`;
+
+  return (
+    <div
+      ref={frameRef}
+      data-testid={`structured-percent-${kind}-frame`}
+      data-width={width}
+      data-size={region.size}
+      data-resolved-bound={resolvedBound ?? undefined}
+      data-storage-key={`astryx-resizable:${storageKey}`}
+      {...stylex.props(s.shell, s.structuredFrame)}
+      style={{width}}>
+      <div {...stylex.props(s.card)}>
+        <strong>
+          {width}px outer / {width - 2}px content
+        </strong>
+        <div>
+          <code>{label}</code>
+        </div>
+        <div>
+          {Math.round(region.size)}px selected
+          {resolvedBound == null
+            ? ' initially'
+            : ` · ${Math.round(resolvedBound)}px resolved bound`}
+        </div>
+      </div>
+      <div {...stylex.props(s.structuredLayout)}>
+        <Layout
+          height="fill"
+          start={
+            <>
+              <LayoutPanel
+                width={region.size}
+                hasDivider={false}
+                data-testid={`structured-percent-${kind}-panel`}>
+                {Math.round(region.size)}px
+              </LayoutPanel>
+              <ResizeHandle
+                direction="horizontal"
+                hasDivider
+                label={`Resize structured percent ${kind} example`}
+                resizable={region.props}
+              />
+            </>
+          }
+          content={
+            <LayoutContent>
+              {isDefault
+                ? 'Later basis changes do not rescale this selected pixel size.'
+                : 'The percentage bound follows later basis changes.'}
+            </LayoutContent>
+          }
+        />
+      </div>
+    </div>
+  );
+}
+
+function StructuredPercentSizingStory() {
+  const [storageReady, setStorageReady] = useState(false);
+  const [resized, setResized] = useState(false);
+
+  useEffect(() => {
+    for (const kind of [
+      'default-wide',
+      'default-narrow',
+      'minimum',
+      'maximum',
+    ]) {
+      localStorage.removeItem(
+        `astryx-resizable:storybook-structured-percent-${kind}`,
+      );
+    }
+    setStorageReady(true);
+  }, []);
+
+  if (!storageReady) {
+    return null;
+  }
+
+  return (
+    <div
+      data-testid="structured-percent-sizing"
+      {...stylex.props(s.structuredStack)}>
+      <button
+        type="button"
+        data-testid="structured-percent-toggle-bases"
+        onClick={() => setResized(value => !value)}>
+        {resized ? 'Restore initial bases' : 'Change bases'}
+      </button>
+      <StructuredPercentProbe
+        kind="default-wide"
+        width={resized ? 500 : 1000}
+      />
+      <StructuredPercentProbe
+        kind="default-narrow"
+        width={resized ? 1000 : 500}
+      />
+      <StructuredPercentProbe kind="minimum" width={resized ? 1000 : 500} />
+      <StructuredPercentProbe kind="maximum" width={resized ? 500 : 1000} />
+    </div>
+  );
 }
 
 const meta: Meta<typeof HookDemo> = {
@@ -91,6 +233,7 @@ export const Vertical: Story = {
       defaultSize: 150,
       minSizePx: 60,
       maxSizePx: 250,
+      direction: 'vertical',
     });
     return (
       <div {...stylex.props(s.shell)}>
@@ -176,6 +319,7 @@ export const Nested: Story = {
       defaultSize: 200,
       minSizePx: 80,
       maxSizePx: 250,
+      direction: 'vertical',
     });
     return (
       <div {...stylex.props(s.shell)}>
@@ -277,6 +421,7 @@ export const MixedContainers: Story = {
       defaultSize: 200,
       minSizePx: 80,
       maxSizePx: 250,
+      direction: 'vertical',
     });
     return (
       <div {...stylex.props(s.shell)}>
@@ -324,6 +469,93 @@ export const MixedContainers: Story = {
               </div>
             </LayoutContent>
           }
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * Percentage configuration, resolved against a container.
+ *
+ * `containerRef` marks what a percentage is a share of. The panel starts at 40%
+ * of the frame's content box and cannot be dragged past 60% of it. Narrow the
+ * frame and the BOUNDS follow — but the size you dragged to stays the pixel
+ * size you chose, clamped rather than rescaled. That is the whole contract:
+ * percentages configure pixels, they do not create a responsive mode.
+ */
+export const PercentageSizing: Story = {
+  render: () => {
+    const frameRef = useRef<HTMLDivElement>(null);
+    const region = useResizable({
+      defaultSize: '40%',
+      minSize: '15%',
+      maxSize: '60%',
+      containerRef: frameRef,
+    });
+    return (
+      <div ref={frameRef} {...stylex.props(s.shell)}>
+        <Layout
+          height="fill"
+          start={
+            <>
+              <LayoutPanel width={region.size} hasDivider={false}>
+                <div {...stylex.props(s.card)}>{Math.round(region.size)}px</div>
+              </LayoutPanel>
+              <ResizeHandle
+                direction="horizontal"
+                hasDivider
+                resizable={region.props}
+              />
+            </>
+          }
+          content={<LayoutContent>Content</LayoutContent>}
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * Structured percentages support one explicit pixel floor or ceiling.
+ *
+ * `defaultSize: percent(40, {min: pixel(333)})` is an initial choice only. The same
+ * value on `minSize` remains a live floor, while `percent(10, {max: pixel(400)})` on
+ * `maxSize` remains a live ceiling. Numbers and exact `Npx` remain pixels; state,
+ * storage, callbacks, panel geometry, and ARIA all use resolved pixel values.
+ */
+export const StructuredPercentSizing: Story = {
+  render: () => <StructuredPercentSizingStory />,
+};
+
+/**
+ * The compatibility path: a percentage with no `containerRef`.
+ *
+ * This is what shipped before percentages could name a container, and it is
+ * unchanged — `'25%'` resolves once against `window.innerWidth` (1200px on the
+ * server), then behaves as pixels. Resize the window and the panel stays where
+ * it is; only a percentage BOUND would follow.
+ */
+export const ViewportPercentage: Story = {
+  render: () => {
+    const region = useResizable({defaultSize: '25%', minSize: 80});
+    return (
+      <div {...stylex.props(s.shell)} data-testid="viewport-pct">
+        <Layout
+          height="fill"
+          start={
+            <>
+              <LayoutPanel width={region.size} hasDivider={false}>
+                <div {...stylex.props(s.card)}>{Math.round(region.size)}px</div>
+              </LayoutPanel>
+              <ResizeHandle
+                direction="horizontal"
+                hasDivider
+                resizable={region.props}
+              />
+            </>
+          }
+          content={<LayoutContent>Content</LayoutContent>}
         />
       </div>
     );

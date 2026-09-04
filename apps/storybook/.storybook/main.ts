@@ -1,7 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {StorybookConfig} from '@storybook/react-vite';
-import {astryxStylex} from '@astryxdesign/build/vite';
+// Source, not the `@astryxdesign/build/vite` export: Storybook evaluates this
+// file with Node's ESM resolver before any alias below it applies, and that
+// export map points at `dist/vite.mjs`, which does not exist until
+// `@astryxdesign/build` is built. Importing the source keeps `pnpm install &&
+// pnpm dev` working from a cold clone (#5128) and matches what this app's
+// tsconfig already resolves for typecheck.
+import {astryxStylex} from '../../../packages/build/src/vite.ts';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 

@@ -13,6 +13,22 @@ import {
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
+
+/**
+ * pnpm is a .cmd (batch) file on Windows. spawnSync can only run a batch
+ * file through a shell — a bare 'pnpm' fails with ENOENT (never resolved
+ * through PATHEXT) and an explicit 'pnpm.cmd' fails with EINVAL (batch files
+ * still require a shell even named exactly). Shelling out through cmd.exe
+ * /c directly, rather than spawnSync's shell:true, avoids Node's
+ * shell-argument-escaping deprecation warning (DEP0190) — every argument
+ * passed through here is a hardcoded literal, never user input, so we build
+ * the argv ourselves instead of asking spawnSync to build a shell string.
+ */
+function spawnPnpmSync(args, options) {
+  return process.platform === 'win32'
+    ? spawnSync('cmd.exe', ['/d', '/s', '/c', 'pnpm', ...args], options)
+    : spawnSync('pnpm', args, options);
+}
 export const FIXTURES_ROOT = path.join(
   REPO_ROOT,
   'internal',
@@ -447,8 +463,7 @@ function gitFixtureFiles(fixtureId, repoRoot = REPO_ROOT) {
 }
 
 function workspacePackagePaths(repoRoot = REPO_ROOT) {
-  const result = spawnSync(
-    'pnpm',
+  const result = spawnPnpmSync(
     ['list', '--recursive', '--depth', '-1', '--json'],
     {
       cwd: repoRoot,
@@ -456,7 +471,9 @@ function workspacePackagePaths(repoRoot = REPO_ROOT) {
     },
   );
   if (result.status !== 0)
-    fail(`pnpm workspace discovery failed: ${result.stderr.trim()}`);
+    fail(
+      `pnpm workspace discovery failed: ${(result.stderr ?? result.error?.message ?? '').trim()}`,
+    );
   return JSON.parse(result.stdout).map(entry => entry.path);
 }
 
@@ -618,15 +635,15 @@ export function refreshManifest(
   fs.writeFileSync(file, `${JSON.stringify(recipe, null, 2)}\n`);
 }
 
-function run(command, args, cwd) {
-  const result = spawnSync(command, args, {
+function runPnpm(args, cwd) {
+  const result = spawnPnpmSync(args, {
     cwd,
     encoding: 'utf8',
     stdio: 'pipe',
   });
   if (result.status !== 0) {
     fail(
-      `${command} ${args.join(' ')} failed in ${cwd}\n${result.stdout}${result.stderr}`,
+      `pnpm ${args.join(' ')} failed in ${cwd}\n${result.stdout ?? ''}${result.stderr ?? result.error?.message ?? ''}`,
     );
   }
   return `${result.stdout}${result.stderr}`.trim();
@@ -639,13 +656,12 @@ export function buildFixture(fixtureId) {
   const sandbox = path.join(sandboxParent, fixtureId);
   try {
     copyFixture(fixtureId, sandbox);
-    const installOutput = run(
-      'pnpm',
+    const installOutput = runPnpm(
       ['install', '--frozen-lockfile', '--ignore-scripts'],
       sandbox,
     );
-    const typecheckOutput = run('pnpm', ['typecheck'], sandbox);
-    const buildOutput = run('pnpm', ['build'], sandbox);
+    const typecheckOutput = runPnpm(['typecheck'], sandbox);
+    const buildOutput = runPnpm(['build'], sandbox);
     return {fixtureId, installOutput, typecheckOutput, buildOutput};
   } finally {
     fs.rmSync(sandboxParent, {recursive: true, force: true});

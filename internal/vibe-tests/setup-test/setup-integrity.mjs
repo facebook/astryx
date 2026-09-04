@@ -21,6 +21,18 @@
  * removes whitespace between tokens, so it cannot be used to hide a rewrite:
  * minifying a file onto one line, or stripping the spaces inside its lines,
  * leaves nothing that matches the baseline and still trips the guard.
+ *
+ * The `dark-mode-disabled` escape hatch reads `color-scheme` semantically
+ * rather than lexically. A single-mode `color-scheme` declaration is exempt
+ * only when it is a *paired mode arm* — see `pairedModeArmSpans` — because a
+ * mode arm implements the light/dark switch instead of disabling it. Every
+ * other form of the declaration, and every non-CSS form of the hatch
+ * (`forcedTheme`, `darkMode: false`, a `color-scheme` meta tag), is unchanged.
+ *
+ * The `hardcoded-important` escape hatch is likewise syntactic rather than
+ * lexical — see `setup-important.mjs`. The flag is found by parsing, so a
+ * comment, a JSDoc block, or a prose string that merely names `!important`
+ * is silent, while a declaration that carries it fails wherever it is written.
  */
 
 import * as crypto from 'node:crypto';
@@ -28,6 +40,7 @@ import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {importantDeclarationLines} from './setup-important.mjs';
 
 export const WHOLESALE_REPLACEMENT_THRESHOLD = Object.freeze({
   minimumDeletedLines: 20,
@@ -51,12 +64,13 @@ const HOST_SOURCE_EXTENSIONS = new Set([
   '.vue',
 ]);
 
+/**
+ * The escape hatches found by matching the added line itself.
+ *
+ * `hardcoded-important` is deliberately absent: it is found by parsing the
+ * file rather than by matching a line, in `syntacticFindings`.
+ */
 const ESCAPE_HATCHES = [
-  {
-    kind: 'hardcoded-important',
-    pattern: /!\s*important\b/i,
-    message: 'added a hardcoded !important declaration',
-  },
   {
     kind: 'blanket-reset',
     pattern: /\ball\s*:\s*(?:unset|initial|revert)\b/i,
@@ -69,6 +83,11 @@ const ESCAPE_HATCHES = [
     message: 'explicitly disabled dark-mode behavior',
   },
 ];
+
+const HARDCODED_IMPORTANT = Object.freeze({
+  kind: 'hardcoded-important',
+  message: 'added a hardcoded !important declaration',
+});
 
 const compareText = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 
@@ -247,6 +266,313 @@ function isHostSource(relativePath) {
   return HOST_SOURCE_EXTENSIONS.has(path.extname(relativePath).toLowerCase());
 }
 
+/* ---------------------------------------------------------------------------
+ * Semantic `color-scheme` analysis
+ *
+ * `astryx theme build` emits, for any theme with `light-dark()` values:
+ *
+ *   :root { color-scheme: light dark; }
+ *   html[data-theme="light"] { color-scheme: light; }
+ *   html[data-theme="dark"] { color-scheme: dark; }
+ *
+ * Those three rules *implement* mode support — they are what lets a mode
+ * attribute resolve `light-dark()` — but a lexical `color-scheme: light` scan
+ * reads the second one as disabling dark mode. Established hosts write the same
+ * shape by hand (the `enterprise-scoped-synthetic` fixture pairs
+ * `.fixture-shell[data-mode='light']` with its dark twin), so this is not a
+ * generated-file problem and is not fixed by ignoring generated files.
+ *
+ * A declaration is exempt only as a *paired mode arm*: its own selector scopes
+ * it to exactly one mode, its value is that same mode, and the complementary
+ * arm exists at the same scope in the same file. Both halves of the switch have
+ * to be present for the pair to mean "this file implements light and dark".
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Selector and at-rule syntax that scopes a rule to one color mode:
+ * a mode-valued attribute (`[data-theme="dark"]`, `[data-mode='light']`,
+ * `[data-astryx-media="dark"]`), a `prefers-color-scheme` media condition, or a
+ * `.light`/`.dark` mode class. A theme-name attribute such as
+ * `[data-astryx-theme="apptheme"]` names no mode and is not one of these.
+ */
+const MODE_DISCRIMINATOR_PATTERN =
+  /\[\s*[A-Za-z_][\w-]*(?:theme|mode|scheme|appearance|media)\s*=\s*["']?(light|dark)["']?\s*\]|\(\s*prefers-color-scheme\s*:\s*(light|dark)\s*\)|\.(light|dark)(?![\w-])/gi;
+
+/** `color-scheme: light`, `color-scheme: only dark`, `color-scheme: dark only`. */
+const SINGLE_MODE_VALUE = /^(?:only\s+)?(light|dark)(?:\s+only)?$/i;
+
+/**
+ * The mode discriminators in a selector or at-rule prelude, plus the same text
+ * with every discriminator's mode replaced by a placeholder. Two arms belong to
+ * the same switch when their placeholder text is identical, so
+ * `html[data-theme="light"]` pairs with `html[data-theme="dark"]` and not with
+ * `.widget[data-theme="dark"]`.
+ */
+function modeDiscriminators(text) {
+  const modes = new Set();
+  const skeleton = text.replace(
+    MODE_DISCRIMINATOR_PATTERN,
+    (match, attribute, media, className) => {
+      modes.add((attribute ?? media ?? className).toLowerCase());
+      return match
+        .replace(/["']/g, '')
+        .replace(/\s+/g, '')
+        .replace(/(?<![\w-])(?:light|dark)(?![\w-])/i, '<mode>');
+    },
+  );
+  return {modes, skeleton: skeleton.replace(/\s+/g, ' ').trim()};
+}
+
+/**
+ * Every declaration in a stylesheet, with the selector/at-rule preludes it is
+ * nested inside and its absolute character span.
+ *
+ * Quoted strings and comments are read as opaque text: their braces and
+ * semicolons are not structure, so `content: "}"` cannot desynchronize the
+ * scan, and a `color-scheme` declaration written inside a JavaScript string
+ * literal never becomes a block-scoped declaration that could be exempted.
+ */
+export function scanStyleDeclarations(text) {
+  const declarations = [];
+  const stack = [];
+  let buffer = '';
+  let bufferStart = -1;
+  let index = 0;
+
+  const append = (chunk, at) => {
+    if (bufferStart === -1 && chunk.trim() !== '') {
+      bufferStart = at + (chunk.length - chunk.trimStart().length);
+    }
+    buffer += chunk;
+  };
+  const reset = () => {
+    buffer = '';
+    bufferStart = -1;
+  };
+  const flushDeclaration = end => {
+    const match = /^([A-Za-z-]+)\s*:\s*([\s\S]+)$/.exec(buffer.trim());
+    if (match && bufferStart !== -1) {
+      declarations.push({
+        property: match[1].toLowerCase(),
+        value: match[2].trim(),
+        context: [...stack],
+        start: bufferStart,
+        end,
+      });
+    }
+    reset();
+  };
+
+  while (index < text.length) {
+    const character = text[index];
+    if (character === '/' && text[index + 1] === '*') {
+      const close = text.indexOf('*/', index + 2);
+      index = close === -1 ? text.length : close + 2;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      const start = index;
+      index += 1;
+      while (index < text.length && text[index] !== '\n') {
+        if (text[index] === '\\') {
+          index += 2;
+          continue;
+        }
+        if (text[index] === character) {
+          index += 1;
+          break;
+        }
+        index += 1;
+      }
+      append(text.slice(start, index), start);
+      continue;
+    }
+    if (character === '{') {
+      stack.push(buffer.trim());
+      reset();
+      index += 1;
+      continue;
+    }
+    if (character === '}') {
+      flushDeclaration(index);
+      stack.pop();
+      index += 1;
+      continue;
+    }
+    if (character === ';') {
+      flushDeclaration(index);
+      index += 1;
+      continue;
+    }
+    append(character, index);
+    index += 1;
+  }
+  return declarations;
+}
+
+function lineSpans(text, spans) {
+  const starts = [0];
+  for (let index = 0; index < text.length; index += 1) {
+    if (text[index] === '\n') starts.push(index + 1);
+  }
+  const byLine = new Map();
+  const lineOf = offset => {
+    let low = 0;
+    let high = starts.length - 1;
+    while (low < high) {
+      const middle = Math.ceil((low + high) / 2);
+      if (starts[middle] <= offset) low = middle;
+      else high = middle - 1;
+    }
+    return low;
+  };
+  for (const span of spans) {
+    let line = lineOf(span.start);
+    while (line < starts.length && starts[line] < span.end) {
+      const lineStart = starts[line];
+      const lineEnd =
+        line + 1 < starts.length ? starts[line + 1] - 1 : text.length;
+      const start = Math.max(span.start, lineStart) - lineStart;
+      const end = Math.min(span.end, lineEnd) - lineStart;
+      if (end > start) {
+        const existing = byLine.get(line + 1) ?? [];
+        existing.push({start, end});
+        byLine.set(line + 1, existing);
+      }
+      line += 1;
+    }
+  }
+  return byLine;
+}
+
+/**
+ * The character spans of every `color-scheme` declaration in `text` that is a
+ * paired mode arm, keyed by 1-based line number.
+ *
+ * An arm qualifies when its enclosing selectors and at-rules name exactly one
+ * mode, its value is that same mode, and a complementary arm for the other mode
+ * exists at the same scope. An arm whose value contradicts its own selector
+ * (`html[data-theme="dark"] { color-scheme: light; }`), an unpaired arm, and any
+ * declaration outside a mode-scoped rule (`:root { color-scheme: light; }`) are
+ * all absent from the result and stay subject to the escape-hatch scan.
+ */
+export function pairedModeArmSpans(text) {
+  const arms = [];
+  for (const declaration of scanStyleDeclarations(text)) {
+    if (declaration.property !== 'color-scheme') continue;
+    const value = SINGLE_MODE_VALUE.exec(declaration.value);
+    if (!value) continue;
+    const {modes, skeleton} = modeDiscriminators(declaration.context.join(' '));
+    if (modes.size !== 1) continue;
+    const [mode] = modes;
+    if (mode !== value[1].toLowerCase()) continue;
+    arms.push({mode, skeleton, start: declaration.start, end: declaration.end});
+  }
+
+  const modesByScope = new Map();
+  for (const arm of arms) {
+    const seen = modesByScope.get(arm.skeleton) ?? new Set();
+    seen.add(arm.mode);
+    modesByScope.set(arm.skeleton, seen);
+  }
+  return lineSpans(
+    text,
+    arms.filter(arm => modesByScope.get(arm.skeleton).size === 2),
+  );
+}
+
+/** Text that participates in a light/dark switch, for removal detection. */
+function mentionsMode(text) {
+  return (
+    /\bcolor-scheme\s*:/i.test(text) ||
+    new RegExp(MODE_DISCRIMINATOR_PATTERN.source, 'i').test(text)
+  );
+}
+
+/**
+ * True when this change deleted a line that carried part of a mode switch and
+ * did not put it back. Deleting one arm of a host's switch and adding a fresh
+ * pair elsewhere in the same file would otherwise buy an exemption for the
+ * added pair, so an exemption is withheld from a file that lost a mode line.
+ */
+function droppedModeLine(removedLines, currentSource) {
+  if (removedLines.length === 0) return false;
+  const remaining = new Set(
+    currentSource.split('\n').map(normalizeLine).filter(Boolean),
+  );
+  return removedLines.some(
+    removed =>
+      mentionsMode(removed.text) && !remaining.has(normalizeLine(removed.text)),
+  );
+}
+
+const GENERATED_BANNER = /@generated by `astryx theme build`/;
+
+/**
+ * Whether a file's claim to be a generated theme artifact holds up.
+ *
+ * `astryx theme build <source>` writes its output next to the source file (or
+ * where an explicit `--out` in the recorded command says), and stamps a header
+ * naming that source. A file carrying the header is checked against it: the
+ * declared source must be a relative path inside the sandbox that still exists,
+ * and this file must be where that build would have written it. A file with no
+ * header makes no claim and is judged on its content alone; a file whose header
+ * does not hold up is treated as hostile and gets no exemption, so pasting a
+ * generated banner on top of an edited host stylesheet buys nothing.
+ *
+ * @returns {'unclaimed'|'valid'|'forged'}
+ */
+function generatedThemeProvenance(appDir, relativePath, text) {
+  const header = text.slice(0, 2048);
+  if (!GENERATED_BANNER.test(header)) return 'unclaimed';
+  const source = /^[\s*/]*Source:\s*(\S.*?)\s*$/m.exec(header)?.[1];
+  if (!source) return 'forged';
+  if (path.isAbsolute(source)) return 'forged';
+  const sourcePath = path.normalize(source);
+  if (sourcePath.split(/[\\/]/).includes('..')) return 'forged';
+  if (!fs.existsSync(path.join(appDir, sourcePath))) return 'forged';
+
+  const emitted = /^[\s*/]*Command:\s*(\S.*?)\s*$/m.exec(header)?.[1] ?? '';
+  const out = /--out(?:=|\s+)(\S+)/.exec(emitted)?.[1];
+  const destination = out ? path.normalize(out) : null;
+  if (destination !== null) {
+    return destination === path.normalize(relativePath) ? 'valid' : 'forged';
+  }
+  return path.dirname(sourcePath) === path.dirname(path.normalize(relativePath))
+    ? 'valid'
+    : 'forged';
+}
+
+/**
+ * The exempt `color-scheme` spans for one file: empty unless the file's own
+ * content proves it implements both modes, it did not lose a mode line in this
+ * change, and any generated-artifact claim it makes is true.
+ */
+function modeArmExemptions(appDir, relativePath, currentSource, removedLines) {
+  if (!currentSource.includes('color-scheme')) return new Map();
+  if (droppedModeLine(removedLines, currentSource)) return new Map();
+  if (
+    generatedThemeProvenance(appDir, relativePath, currentSource) === 'forged'
+  )
+    return new Map();
+  return pairedModeArmSpans(currentSource);
+}
+
+/** The line with its exempt spans blanked out, for escape-hatch matching. */
+function maskSpans(text, spans) {
+  if (!spans || spans.length === 0) return text;
+  let masked = text;
+  for (const span of spans) {
+    const end = Math.min(span.end, masked.length);
+    if (end <= span.start) continue;
+    masked =
+      masked.slice(0, span.start) +
+      ' '.repeat(end - span.start) +
+      masked.slice(end);
+  }
+  return masked;
+}
+
 function addedLinesFromPatch(patch) {
   const lines = [];
   let newLine = 0;
@@ -348,11 +674,30 @@ function evidenceFor(relativePath, lines) {
   return evidence;
 }
 
-function findingsFor(relativePath, lines) {
+/**
+ * Escape hatches on the lines this change added.
+ *
+ * `importantLines` carries the parser's verdict for the whole file: the line
+ * numbers where a `!important` is an applied CSS declaration. Intersecting it
+ * with the added lines keeps the rule unchanged — only what this change added
+ * is judged — while the judgment itself is now syntactic.
+ */
+function findingsFor(relativePath, lines, exemptSpans, importantLines) {
   const findings = [];
   for (const added of lines) {
+    if (importantLines?.has(added.line)) {
+      findings.push({
+        kind: HARDCODED_IMPORTANT.kind,
+        path: relativePath,
+        line: added.line,
+        message: HARDCODED_IMPORTANT.message,
+      });
+    }
+    const masked = maskSpans(added.text, exemptSpans?.get(added.line));
     for (const escapeHatch of ESCAPE_HATCHES) {
-      if (escapeHatch.pattern.test(added.text)) {
+      const subject =
+        escapeHatch.kind === 'dark-mode-disabled' ? masked : added.text;
+      if (escapeHatch.pattern.test(subject)) {
         findings.push({
           kind: escapeHatch.kind,
           path: relativePath,
@@ -486,7 +831,22 @@ export function analyzeSetupIntegrity(appDir, attestedDiffSha256) {
     if (status !== 'deleted' && !file.binary) {
       const addedLines = trackedAddedLines(resolvedAppDir, file.path);
       if (isHostSource(file.path)) {
-        escapeHatches.push(...findingsFor(file.path, addedLines));
+        const currentSource = fs.readFileSync(absolutePath, 'utf8');
+        escapeHatches.push(
+          ...findingsFor(
+            file.path,
+            addedLines,
+            modeArmExemptions(
+              resolvedAppDir,
+              file.path,
+              currentSource,
+              existedAtBaseline
+                ? trackedRemovedLines(resolvedAppDir, file.path)
+                : [],
+            ),
+            importantDeclarationLines(file.path, currentSource),
+          ),
+        );
       }
       astryxEvidence.push(...evidenceFor(file.path, addedLines));
     }
@@ -504,7 +864,19 @@ export function analyzeSetupIntegrity(appDir, attestedDiffSha256) {
     });
     const addedLines = untrackedAddedLines(untrackedByPath.get(file.path));
     if (isHostSource(file.path)) {
-      escapeHatches.push(...findingsFor(file.path, addedLines));
+      const currentSource = file.binary ? null : file.bytes.toString('utf8');
+      escapeHatches.push(
+        ...findingsFor(
+          file.path,
+          addedLines,
+          currentSource === null
+            ? undefined
+            : modeArmExemptions(resolvedAppDir, file.path, currentSource, []),
+          currentSource === null
+            ? undefined
+            : importantDeclarationLines(file.path, currentSource),
+        ),
+      );
     }
     astryxEvidence.push(...evidenceFor(file.path, addedLines));
   }

@@ -19,6 +19,7 @@ import {
   createSetupProvenance,
   expandSetupMatrix,
   fixtureManifestSha256,
+  setupEnvironmentHash,
   sha256Text,
   taskContractText,
   validatePromptContracts,
@@ -144,12 +145,26 @@ function appendGuidance(sandboxDir, guidanceFile) {
   );
 }
 
-const PATCHES = {
-  'patch:pointer': sandboxDir => appendGuidance(sandboxDir, 'pointer.md'),
-  'patch:existing-app': sandboxDir =>
-    appendGuidance(sandboxDir, 'existing-app.md'),
-  'patch:directed': sandboxDir => appendGuidance(sandboxDir, 'directed.md'),
+const PATCH_FILES = {
+  'patch:pointer': 'pointer.md',
+  'patch:existing-app': 'existing-app.md',
+  'patch:directed': 'directed.md',
+  'patch:host-aligned': 'host-aligned.md',
+  'patch:guest-contained': 'guest-contained.md',
 };
+
+function guidanceFileFor(patch) {
+  const file = PATCH_FILES[patch];
+  if (!file) throw new Error(`unknown patch: ${patch}`);
+  return file;
+}
+
+const PATCHES = Object.fromEntries(
+  Object.entries(PATCH_FILES).map(([patch, file]) => [
+    patch,
+    sandboxDir => appendGuidance(sandboxDir, file),
+  ]),
+);
 
 function taskPrompt(prompt, fixtureId) {
   return `You are working in an existing application.
@@ -273,25 +288,14 @@ for (const entry of entries) {
   const task = taskPrompt(prompt, entry.fixture);
   const recipe = readRecipe(entry.fixture);
   const fixtureSha256 = fixtureManifestSha256(recipe);
-  const guidanceHash = sha256Text(
-    JSON.stringify({
-      fixtureSha256,
-      condition: entry.condition,
-      patches: (condition.patches ?? []).map(patch => [
-        patch,
-        read(
-          path.join(
-            GUIDANCE,
-            patch === 'patch:pointer'
-              ? 'pointer.md'
-              : patch === 'patch:existing-app'
-                ? 'existing-app.md'
-                : 'directed.md',
-          ),
-        ),
-      ]),
-    }),
-  );
+  const guidanceHash = setupEnvironmentHash({
+    fixtureSha256,
+    condition: entry.condition,
+    patches: (condition.patches ?? []).map(patch => [
+      patch,
+      read(path.join(GUIDANCE, guidanceFileFor(patch))),
+    ]),
+  });
   const provenance = createSetupProvenance({
     entry,
     taskSha256: sha256Text(task),

@@ -72,6 +72,28 @@ describe('search leaf — --type filter', () => {
   });
 });
 
+describe('search leaf — exact keyword phrase outranks incidental token matches (issue #5239)', () => {
+  it('surfaces Outline for its own declared keyword "table of contents", ranked first', async () => {
+    // Before the fix, "table" and "contents" each separately matched dozens
+    // of unrelated Table-related templates by coincidence, and their
+    // combined token-sum score outranked Outline's single exact match,
+    // pushing it out of the results entirely at the default limit.
+    const r = await search('table of contents', {cwd});
+    expect(r.data.results[0]?.name).toBe('Outline');
+    expect(r.data.results[0]).toMatchObject({matchedTerms: 2, queryTerms: 2});
+  }, SLOW);
+
+  it('surfaces Outline for its own declared keyword "heading navigation", ranked first', async () => {
+    const r = await search('heading navigation', {cwd});
+    expect(r.data.results[0]?.name).toBe('Outline');
+  }, SLOW);
+
+  it('still returns no results for a nonsense query (the fix does not loosen matching)', async () => {
+    const r = await search('zzzzqqqx', {cwd});
+    expect(r.data.results).toEqual([]);
+  }, SLOW);
+});
+
 describe('search leaf — error paths (pinned)', () => {
   it('throws ERR_INVALID_ARGUMENT when the query is empty/whitespace', async () => {
     await expect(search('   ', {cwd})).rejects.toMatchObject({
@@ -239,5 +261,76 @@ describe('search scoring — derived keywords rank below authored ones', () => {
   it('explains a derived hit as something the template renders', () => {
     const derived = scoreCandidate('dialog', {name: 'x', weakKeywords: ['Dialog']});
     expect(derived?.reason).toMatch(/renders Dialog/);
+  });
+});
+
+describe('search — usage guidance is indexed, a tier below description', () => {
+  // The vocabulary a reader types usually lives in a component's guidance, not
+  // in its one-line description. Banner calls itself "a persistent message";
+  // only its best practices name "caution", "problems", "form errors". Before
+  // this, none of those words found it.
+  const banner = {
+    name: 'Banner',
+    keywords: ['alert', 'notification'],
+    description: 'A persistent message shown above content.',
+    guidance: [
+      'Pick a status that matches the message: info for updates, warning for caution.',
+      'Use error for problems the reader must resolve before continuing.',
+    ],
+  };
+
+  it('finds a term that appears ONLY in guidance', () => {
+    // Red before this change: guidance was never read, so this scored null.
+    const hit = scoreCandidate('caution', banner);
+    expect(hit).not.toBeNull();
+    expect(hit?.reason).toMatch(/guidance mentions "caution"/);
+  });
+
+  it('scores guidance BELOW description, so a component about X outranks one that merely mentions X', () => {
+    const own = scoreCandidate('persistent', banner);
+    const mention = scoreCandidate('caution', banner);
+    expect(own?.score).toBe(50);
+    expect(mention?.score).toBe(45);
+    expect(mention.score).toBeLessThan(own.score);
+  });
+
+  it('never lets guidance outrank a name or keyword hit', () => {
+    expect(scoreCandidate('banner', banner)?.score).toBe(100);
+    expect(scoreCandidate('notification', banner)?.score).toBe(90);
+  });
+
+  it('prefers the stronger signal when a term is in both description and guidance', () => {
+    const both = scoreCandidate('message', banner);
+    expect(both?.score).toBe(50);
+    expect(both?.reason).toMatch(/description mentions/);
+  });
+
+  it('stays below MIN_TOKEN_SCORE, so guidance never counts as a matched CONCEPT', () => {
+    // Measured regression this prevents: counting guidance as a matched term
+    // moved `nested menu` from SideNav to List, and `explain why a field is
+    // required` from Field to TextInput — in both cases a component whose
+    // guidance happens to mention the other word displaced the real answer.
+    // Guidance decides single-word queries; it must not win multi-word ones on
+    // breadth. Same reason weakKeywords are capped.
+    expect(scoreCandidate('caution', banner)?.score).toBeLessThan(50);
+    // Both words are in this candidate's guidance and nowhere else, so if
+    // guidance counted as a concept this would come back as a 2/2 match.
+    const multi = scoreQuery('caution problems', tokenizeQuery('caution problems'), banner);
+    expect(multi).toBeNull();
+  });
+
+  it('lets a real description hit still win the multi-word pass', () => {
+    // The floor must exclude guidance without muting the tiers above it.
+    const hit = scoreQuery('persistent message', tokenizeQuery('persistent message'), banner);
+    expect(hit?.reason).toMatch(/matches 2\/2 terms/);
+  });
+
+  it('tolerates the object-shaped bestPractices entries core actually ships', () => {
+    // Core writes `{guidance: true, description: '...'}`, not plain strings.
+    const hit = scoreCandidate('resolve', {
+      name: 'X',
+      guidance: ['Use error for problems the reader must resolve.'],
+    });
+    expect(hit?.score).toBe(45);
   });
 });

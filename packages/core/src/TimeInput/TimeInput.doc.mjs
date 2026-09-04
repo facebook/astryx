@@ -5,7 +5,7 @@
 export const docs = {
   name: 'TimeInput',
   displayName: 'Time Input',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'timeinput',
     'timepicker',
@@ -21,12 +21,12 @@ export const docs = {
 
   usage: {
     description:
-      'TimeInput lets users enter a time of day and converts it to a standard format. It also allows users to adjust times using the arrow keys. Use it in forms, scheduling flows, or any interface where users need to select a specific time.',
+      "TimeInput uses a browser/OS time picker on coarse pointers by default and Astryx's typed field on fine pointers. It converts values to a standard format and supports arrow-key adjustment on the typed surface. Use it in forms, scheduling flows, or any interface where users need to select a specific time.",
     bestPractices: [
       {
         guidance: true,
         description:
-          'Choose the hour format (12h or 24h) that matches your audience\'s locale: 12-hour with AM/PM for US-centric UIs, 24-hour for international or technical contexts.',
+          "Choose the hour format (12h or 24h) that matches your audience's locale: 12-hour with AM/PM for US-centric UIs, 24-hour for international or technical contexts.",
       },
       {
         guidance: true,
@@ -56,12 +56,12 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Don\'t use TimeInput for combined date-and-time selection; pair it with a separate DateInput instead.',
+          "Don't use TimeInput for combined date-and-time selection; pair it with a separate DateInput instead.",
       },
       {
         guidance: false,
         description:
-          'Don\'t hide the label; even when space is tight, keep the label visible or provide a description so the purpose is clear.',
+          "Don't hide the label; even when space is tight, keep the label visible or provide a description so the purpose is clear.",
       },
       {
         guidance: false,
@@ -74,13 +74,13 @@ export const docs = {
         name: 'Clock icon',
         required: false,
         description:
-          'A leading clock icon that identifies the field as a time input.',
+          'A leading clock icon that identifies the field and opens the browser/OS picker in native mode.',
       },
       {
-        name: 'Text input',
+        name: 'Time control',
         required: true,
         description:
-          'The editable text field where users type or see the formatted time.',
+          'A real input type=time in native modes, or Astryx\'s editable text field for fine pointers, nativePicker="never", seconds, and custom increments.',
       },
       {
         name: 'Clear button',
@@ -211,6 +211,13 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'nativePicker',
+      type: "'touch' | 'always' | 'never'",
+      description:
+        "Which surface selects the time. 'touch' (the default) uses the browser/OS input type=time on a coarse pointer and Astryx's typed field on a fine pointer; 'always' requests the native control on every pointer; 'never' keeps Astryx's typed field everywhere. Native mode forwards min/max and enforces them on commit. hasSeconds or increment other than 1 automatically retains the typed field because iOS has no seconds wheel and treats step as validation rather than picker cadence. hourFormat formats the closed value; the open OS picker follows the device locale.",
+      default: "'touch'",
+    },
+    {
       name: 'placeholder',
       type: 'string',
       description:
@@ -257,7 +264,11 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-time-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-time-input',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
     ],
   },
 };
@@ -367,6 +378,13 @@ export const docsZh = {
       default: '1',
     },
     {
+      name: 'nativePicker',
+      type: "'touch' | 'always' | 'never'",
+      description:
+        "选择时间所用的界面。'touch'（默认）在粗指针设备上使用浏览器/操作系统的 input type=time，在精细指针设备上使用 Astryx 文本字段；'always' 在所有指针类型上请求原生控件；'never' 始终使用 Astryx 文本字段。原生模式会传递 min/max 并在提交时强制校验。hasSeconds 或 increment 不为 1 时会自动保留文本字段，因为 iOS 没有秒滚轮，并且只把 step 当作校验规则而非选择器步进。hourFormat 控制关闭状态的显示；打开的系统选择器遵循设备区域设置。",
+      default: "'touch'",
+    },
+    {
       name: 'placeholder',
       type: 'string',
       description:
@@ -406,17 +424,21 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-time-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-time-input',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
     ],
   },
   usage: {
     description:
-      'TimeInput lets users enter a time of day and converts it to a standard format. It also allows users to adjust times using the arrow keys. Use it in forms, scheduling flows, or any interface where users need to select a specific time.',
+      'TimeInput 默认在粗指针设备上使用浏览器/操作系统的时间选择器，在精细指针设备上使用 Astryx 文本字段。它将时间转换为标准格式，并在文本字段界面支持方向键调整。适用于表单、排期流程和其他时间选择场景。',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Choose the hour format (12h or 24h) that matches your audience\'s locale: 12-hour with AM/PM for US-centric UIs, 24-hour for international or technical contexts.',
+          "Choose the hour format (12h or 24h) that matches your audience's locale: 12-hour with AM/PM for US-centric UIs, 24-hour for international or technical contexts.",
       },
       {
         guidance: true,
@@ -441,12 +463,12 @@ export const docsZh = {
       {
         guidance: false,
         description:
-          'Don\'t use TimeInput for combined date-and-time selection; pair it with a separate DateInput instead.',
+          "Don't use TimeInput for combined date-and-time selection; pair it with a separate DateInput instead.",
       },
       {
         guidance: false,
         description:
-          'Don\'t hide the label; even when space is tight, keep the label visible or provide a description so the purpose is clear.',
+          "Don't hide the label; even when space is tight, keep the label visible or provide a description so the purpose is clear.",
       },
       {
         guidance: false,
@@ -459,13 +481,13 @@ export const docsZh = {
         name: 'Clock icon',
         required: false,
         description:
-          'A leading clock icon that identifies the field as a time input.',
+          '用于识别时间字段的前置时钟图标；在原生模式下也可打开浏览器/操作系统选择器。',
       },
       {
-        name: 'Text input',
+        name: 'Time control',
         required: true,
         description:
-          'The editable text field where users type or see the formatted time.',
+          '原生模式下使用真正的 input type=time；精细指针、nativePicker="never"、秒或自定义步进场景使用 Astryx 可编辑文本字段。',
       },
       {
         name: 'Clear button',
@@ -492,10 +514,10 @@ export const docsZh = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Time input that converts free-text entry to standard format with arrow-key adjustment.',
+    'Time input with browser/OS picker on touch by default and Astryx typed-field fallbacks for seconds or custom increments.',
   usage: {
     description:
-      'TimeInput lets users enter a time of day and converts it to a standard format. It also allows users to adjust times using the arrow keys. Use it in forms, scheduling flows, or any interface where users need to select a specific time.',
+      'TimeInput uses a browser/OS picker on coarse pointers by default and Astryx typed entry on fine pointers. It standardizes values and supports arrow-key adjustment on the typed surface.',
     bestPractices: [
       {
         guidance: true,
@@ -525,17 +547,16 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Don\'t use for date-and-time; pair with DateInput instead.',
+          "Don't use for date-and-time; pair with DateInput instead.",
+      },
+      {
+        guidance: false,
+        description: "Don't hide the label; keep it visible for clarity.",
       },
       {
         guidance: false,
         description:
-          'Don\'t hide the label; keep it visible for clarity.',
-      },
-      {
-        guidance: false,
-        description:
-          'Don\'t wrap a disabled TimeInput in Tooltip; use the disabledMessage prop instead.',
+          "Don't wrap a disabled TimeInput in Tooltip; use the disabledMessage prop instead.",
       },
     ],
   },
@@ -562,10 +583,13 @@ export const docsDense = {
     hourFormat:
       "Display format. '12h' shows AM/PM; '24h' uses 24-hour notation.",
     increment: 'Minutes to add/subtract on arrow up/down.',
+    nativePicker:
+      "picker surface: 'touch' (default) = browser/OS on coarse pointer, 'always' = native wherever compatible, 'never' = Astryx typed field. hasSeconds or increment!=1 retains typed field; min/max enforced on commit.",
     placeholder: 'Placeholder when empty. Focused+empty shows format hint.',
     size: 'Input element height.',
     status: 'Colored border+icon. Message rendered below input.',
-    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
+    statusVariant:
+      'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'Tooltip as info icon at label row end.',
     xstyle:
       'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',

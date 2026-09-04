@@ -14,7 +14,7 @@ export const docs = {
       name: 'label',
       type: 'ReactNode',
       description:
-        'Primary text label for the item. A plain string names the checkbox automatically; a rich (ReactNode) label should be paired with aria-label so screen readers get a concise name.',
+        'Primary text label for the item. Rich labels may contain links or buttons, which keep their own behavior without toggling the item. Pair a ReactNode label with aria-label so screen readers get a concise checkbox name.',
       required: true,
     },
     {
@@ -30,8 +30,8 @@ export const docs = {
     },
     {
       name: 'description',
-      type: 'string',
-      description: 'Secondary text below the label.',
+      type: 'ReactNode',
+      description: 'Secondary content below the label. String or ReactNode.',
     },
     {
       name: 'endContent',
@@ -98,8 +98,9 @@ export const docsZh = {
   props: [
     {
       name: 'label',
-      type: 'string',
-      description: '选项的主要文本标签。',
+      type: 'ReactNode',
+      description:
+        '选项的主标签。富内容标签可包含链接或按钮，它们保留自身行为且不会切换该选项。ReactNode 标签应同时传入 aria-label，为屏幕阅读器提供简洁的复选框名称。',
       required: true,
     },
     {
@@ -115,8 +116,8 @@ export const docsZh = {
     },
     {
       name: 'description',
-      type: 'string',
-      description: '标签下方的辅助文本。',
+      type: 'ReactNode',
+      description: '标签下方的辅助内容。可为字符串或 ReactNode。',
     },
     {
       name: 'endContent',
@@ -156,11 +157,12 @@ export const docsDense = {
   description:
     'Individual checkbox item w/ label, description, end content slot.',
   propDescriptions: {
-    label: 'Primary text label for item.',
+    label:
+      'Primary label. String or ReactNode; nested controls keep their behavior.',
     'aria-label':
       'Plain-text checkbox name when label is a ReactNode. Without it, rich-label items all announce as "Checkbox".',
     value: 'Identity key (required inside CheckboxList).',
-    description: 'Secondary text below label.',
+    description: 'Secondary content below label. String or ReactNode.',
     endContent: 'Content rendered after label area.',
     isDisabled: 'Whether this individual item disabled.',
     isLoading:

@@ -71,9 +71,19 @@ const meta: Meta<typeof Selector> = {
       description:
         'Explicit menu placement. Leave unset for selected-item overlay behavior.',
     },
+    presentation: {
+      control: 'radio',
+      options: ['popover', 'bottom-sheet', 'adaptive'],
+      description: 'Popover, bottom sheet, or responsive presentation.',
+    },
     isDisabled: {
       control: 'boolean',
       description: 'Whether the selector is disabled',
+    },
+    isReadOnly: {
+      control: 'boolean',
+      description:
+        'Whether the selected value is visible and submittable without selection controls',
     },
     disabledMessage: {
       control: 'text',
@@ -129,6 +139,34 @@ export const Default: Story = {
   },
   args: {
     placeholder: 'Select a fruit...',
+  },
+};
+
+export const ReadOnly: Story = {
+  args: {
+    label: 'Assigned owner',
+    options: ['Alice', 'Bob', 'Charlie'],
+    value: 'Alice',
+    onChange: () => {},
+    hasClear: true,
+    hasSearch: true,
+    htmlName: 'owner',
+    isReadOnly: true,
+  },
+};
+
+export const BottomSheetPresentation: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>();
+    return (
+      <Selector
+        label="Team"
+        options={['Design', 'Engineering', 'Marketing', 'Operations']}
+        value={value}
+        onChange={setValue}
+        presentation="bottom-sheet"
+      />
+    );
   },
 };
 
@@ -949,10 +987,11 @@ export const StatusVariantComparison: Story = {
 /**
  * Theme the clear and chevron glyphs precisely via `defineTheme`.
  *
- * - `components['selector-clear-icon'].base` scopes overrides to the clear icon
- *   itself (via the `astryx-selector-clear-icon` target), so a theme can
- *   recolor it, morph its color on hover, and resize it — without a fragile
- *   descendant selector or raw CSS.
+ * - `components['input-clear-icon'].base` scopes overrides to the clear icon
+ *   itself (via the shared canonical `astryx-input-clear-icon` target), so a
+ *   theme can recolor it, morph its color on hover, and resize it — without a
+ *   fragile descendant selector or raw CSS. Selector still emits
+ *   `astryx-selector-clear-icon` only as a deprecated compatibility alias.
  * - `components['selector-indicator-icon']` scopes overrides to the chevron,
  *   and its `state:expanded` restyles the open state, which the icon reflects
  *   as a `data-state` attribute.
@@ -963,7 +1002,7 @@ export const StatusVariantComparison: Story = {
 const iconTheme = defineTheme({
   name: 'selector-icon-demo',
   components: {
-    'selector-clear-icon': {
+    'input-clear-icon': {
       base: {
         width: '12px',
         height: '12px',

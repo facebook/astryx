@@ -18,19 +18,16 @@
  * no longer reflected, cascade order changed) is invisible until someone looks
  * at the pixels. That is what this plan aims the camera at.
  *
- * Two tiers, both derived rather than hand-listed, so coverage tracks the
- * system instead of drifting from it:
+ * The canonical release baseline is deliberately small and closed:
  *
- *   theme-matrix — for every component override a theme actually authors, the
- *     components declaring that target, in that theme, light and dark. This is
- *     the targeted net: one shot per (theme, target, component) the system
- *     claims to support.
- *   surface — one representative story per component in the default theme.
- *     The broad net for ordinary visual regressions, and the reason a
- *     component with no theme override still has a before/after.
+ *   surface — one representative story per Core component, plus explicit
+ *     visual-baseline / visual-theme-matrix stories, in Neutral light and dark.
+ *   probe — the smallest story set that renders every theming target, in the
+ *     generated Probe fixture light and dark.
  *
- * `full` widens `surface` to every story in the index; it is the same tier
- * with the representative-story filter removed.
+ * `theme-matrix` remains available for focused theme evidence, but it does not
+ * own permanent baseline keys. `full` widens `surface` to every story for an
+ * explicit audit.
  */
 
 import * as crypto from 'node:crypto';
@@ -42,6 +39,12 @@ export const MODES = ['light', 'dark'];
 
 /** Story names preferred as a component's representative, most preferred first. */
 const REPRESENTATIVE_NAMES = ['Default', 'Basic', 'Primary', 'Overview', 'Example'];
+
+/** A story carrying this tag is captured in the default theme for a touched component. */
+export const VISUAL_BASELINE_TAG = 'visual-baseline';
+
+/** A story carrying this tag is captured in every accepted theme for a touched component. */
+export const VISUAL_THEME_MATRIX_TAG = 'visual-theme-matrix';
 
 /** A story carrying this tag is never captured (see visual-gate.config.json for the reasoned list). */
 export const SKIP_TAG = 'no-visual';
@@ -99,22 +102,30 @@ function titlePackage(title, catalog, candidates = null) {
 
 function storyPackageNames(entry, storybookDir, repoRoot, catalog) {
   const fromComponent = packageFromComponentPath(entry.componentPath);
+  const titleOwner = titlePackage(entry.title, catalog);
   let names = fromComponent ? [fromComponent] : [];
   if (!fromComponent) {
     const relative = entry.importPath?.replace(/^\.\//, '');
     const source = relative && path.resolve(path.dirname(storybookDir), relative);
-    if (!source || !fs.existsSync(source)) {
+    if (source && fs.existsSync(source)) {
+      const text = fs.readFileSync(source, 'utf8');
+      names = [...new Set([...text.matchAll(/(?:from\s+|import\s*)['"](@astryxdesign\/[^/'"]+)/g)].map(match => match[1]))].sort();
+    } else if (titleOwner) {
+      // Trusted workflow_run jobs inspect PR-built Storybook artifacts from a
+      // default-branch checkout. A new PR-only story has no local source yet,
+      // so use its package-scoped Storybook title when that title names one
+      // known workspace package.
+      names = [titleOwner];
+    } else {
       throw new Error(`Story ${entry.id} has no resolvable package metadata.`);
     }
-    const text = fs.readFileSync(source, 'utf8');
-    names = [...new Set([...text.matchAll(/(?:from\s+|import\s*)['"](@astryxdesign\/[^/'"]+)/g)].map(match => match[1]))].sort();
   }
-  const titleOwner = titlePackage(entry.title, catalog, names);
-  const themeOwner = titlePackage(entry.title, catalog);
+  const scopedTitleOwner = titlePackage(entry.title, catalog, names);
+  const themeOwner = titleOwner?.startsWith('@astryxdesign/theme-') ? titleOwner : null;
   const owner =
     fromComponent ??
-    (themeOwner?.startsWith('@astryxdesign/theme-') ? themeOwner : null) ??
-    titleOwner ??
+    themeOwner ??
+    scopedTitleOwner ??
     (names.length === 1 ? names[0] : null);
   if (!owner) throw new Error(`Story ${entry.id} has ambiguous package ownership: ${names.join(', ')}.`);
   for (const name of new Set([...names, owner])) {
@@ -127,8 +138,13 @@ function storyPackageNames(entry, storybookDir, repoRoot, catalog) {
   };
 }
 
-export function readThemeCatalog(repoRoot) {
+/**
+ * @param {string} repoRoot
+ * @param {string[]} [fixtureThemes] - private generated themes allowed to own baseline coverage
+ */
+export function readThemeCatalog(repoRoot, fixtureThemes = []) {
   const catalog = readPackageCatalog(repoRoot);
+  const fixtures = new Set(fixtureThemes);
   const themes = {};
   const parent = path.join(repoRoot, 'packages/themes');
   if (!fs.existsSync(parent)) return themes;
@@ -138,7 +154,10 @@ export function readThemeCatalog(repoRoot) {
     if (!manifest) continue;
     themes[entry.name] = {
       packageName: manifest.name,
-      stableVisual: manifest.private !== true && manifest.astryx?.canaryOnly !== true,
+      stableVisual:
+        fixtures.has(entry.name) ||
+        (manifest.private !== true && manifest.astryx?.canaryOnly !== true),
+      coverageFixture: fixtures.has(entry.name),
     };
   }
   return themes;
@@ -192,12 +211,11 @@ export function accountBaseline(manifest, stories, themes, repoRoot) {
     const storedTheme = shot.themePackageName
       ? catalog.get(shot.themePackageName)
       : null;
-    const theme = storedTheme
-      ? {
-          packageName: storedTheme.name,
-          stableVisual: eligible(storedTheme),
-        }
-      : themes[shot.theme];
+    const currentTheme = themes[shot.theme];
+    const theme =
+      storedTheme && currentTheme?.packageName !== storedTheme.name
+        ? null
+        : currentTheme;
     if (!owner || !catalog.has(owner.packageName) || !theme) {
       categories.unclassified.push(key);
       continue;
@@ -231,19 +249,31 @@ export function accountBaseline(manifest, stories, themes, repoRoot) {
 
 export function summarizeBaselineAccounting(account, releaseShots) {
   const planned = new Set(releaseShots.map(shot => shot.key));
-  const missing = account.categories.currentStable.filter(key => !planned.has(key));
-  const unclassified = [...new Set([...account.categories.unclassified, ...missing])].sort();
-  const plannedCurrentStable = account.categories.currentStable.length - missing.length;
+  const policyExcluded = account.categories.currentStable.filter(
+    key => !planned.has(key),
+  );
+  const unclassified = [...account.categories.unclassified];
+  const plannedCurrentStable =
+    account.categories.currentStable.length - policyExcluded.length;
   const counts = {
     total: account.total,
     plannedCurrentStable,
+    policyExcluded: policyExcluded.length,
     intentionallyExcluded: account.categories.intentionallyExcluded.length,
     preservedLegacy: account.categories.preservedLegacy.length,
     unclassified: unclassified.length,
   };
-  const sum = counts.plannedCurrentStable + counts.intentionallyExcluded + counts.preservedLegacy + counts.unclassified;
+  const sum =
+    counts.plannedCurrentStable +
+    counts.policyExcluded +
+    counts.intentionallyExcluded +
+    counts.preservedLegacy +
+    counts.unclassified;
   if (sum !== counts.total) throw new Error(`Baseline accounting overlap: ${sum} states for ${counts.total} keys.`);
-  return {...counts, ...(unclassified.length ? {unclassifiedKeys: unclassified} : {})};
+  return {
+    ...counts,
+    ...(unclassified.length ? {unclassifiedKeys: unclassified} : {}),
+  };
 }
 
 export function stableBaseline(manifest, stories, themes, repoRoot) {
@@ -365,6 +395,13 @@ export function storiesInPackages(stories, packages) {
   return stories.filter(story => story.stableVisual && story.packageNames.some(name => wanted.has(name)));
 }
 
+/** Restrict canonical baselines to named Storybook title groups. */
+export function storiesInStorybookGroups(stories, groups) {
+  if (groups.includes('*')) return stories;
+  const wanted = new Set(groups);
+  return stories.filter(story => wanted.has(String(story.title).split('/')[0]));
+}
+
 /**
  * One story per component: the first match against REPRESENTATIVE_NAMES, else
  * the first story in index order (which is source order, so it is stable).
@@ -380,6 +417,117 @@ export function representativeStories(stories) {
     if (!current || rank(story.name) < rank(current.name)) byComponent.set(story.component, story);
   }
   return byComponent;
+}
+
+/**
+ * Select the focused PR stories for touched components and fail closed when a
+ * requested component has no stable representative in the built Storybook.
+ *
+ * @param {ReturnType<typeof readStoryIndex>} stories
+ * @param {string[]} components
+ */
+export function componentVisualStories(stories, components) {
+  const wanted = [...new Set(components)];
+  const representatives = representativeStories(stories);
+  const missing = wanted.filter(component => !representatives.has(component));
+  if (missing.length > 0) {
+    throw new Error(
+      `Touched component(s) have no stable visual representative: ${missing.join(', ')}`,
+    );
+  }
+  return stories
+    .filter(story => {
+      if (!wanted.includes(story.component)) return false;
+      return (
+        representatives.get(story.component)?.id === story.id ||
+        (story.tags ?? []).includes(VISUAL_BASELINE_TAG) ||
+        (story.tags ?? []).includes(VISUAL_THEME_MATRIX_TAG)
+      );
+    })
+    .map(story => ({
+      story,
+      useThemeMatrix:
+        representatives.get(story.component)?.id === story.id ||
+        (story.tags ?? []).includes(VISUAL_THEME_MATRIX_TAG),
+    }));
+}
+
+function isComponentScopeReason(reason) {
+  return reason === 'component' || /^theme:[^:]+$/.test(reason);
+}
+
+/**
+ * A component edit may compare an accepted baseline contract, but it may not
+ * create one. Keep independently selected theme/probe shots even when the same
+ * key is also part of the component scope.
+ */
+export function existingComponentBaselinePlan(plan, manifest) {
+  const accepted = new Set(Object.keys(manifest?.shots ?? {}));
+  return plan.filter(shot => {
+    const reasons = shot.reasons ?? [];
+    const componentScoped = reasons.some(isComponentScopeReason);
+    const independentlyScoped = reasons.some(
+      reason => !isComponentScopeReason(reason),
+    );
+    return !componentScoped || independentlyScoped || accepted.has(shot.key);
+  });
+}
+
+/**
+ * Themes already represented by the accepted stable baseline. The default
+ * theme is always present for a focused component capture.
+ */
+export function acceptedVisualThemes(manifest, themes, defaultTheme) {
+  const accepted = new Set(
+    Object.values(manifest?.shots ?? {})
+      .map(shot => shot.theme)
+      .filter(theme => themes[theme]?.stableVisual === true),
+  );
+  if (themes[defaultTheme]?.stableVisual === true) accepted.add(defaultTheme);
+  return [...accepted].sort();
+}
+
+/** Current stable stories that own at least one accepted baseline contract. */
+export function baselineVisualStories(stories, manifest) {
+  const indexed = new Map(stories.map(story => [story.id, story]));
+  const selected = new Map();
+  for (const shot of Object.values(manifest?.shots ?? {})) {
+    const story = indexed.get(shot.storyId);
+    if (story) selected.set(story.id, story);
+  }
+  return [...selected.values()].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** Resolve the total-plan ceiling: review budget for broad plans, safety budget for focused scopes. */
+export function resolvePrVisualTotalShotLimit({
+  explicitMaxShots,
+  components,
+  matrixThemes,
+  tiers,
+  configuredLimit,
+  safetyLimit,
+}) {
+  if (!Number.isSafeInteger(safetyLimit) || safetyLimit <= 0) {
+    throw new Error('Visual plan safety limit must be a positive integer.');
+  }
+  if (explicitMaxShots != null) {
+    const explicit = Number(explicitMaxShots);
+    if (!Number.isSafeInteger(explicit) || explicit < 0) {
+      throw new Error('--max-shots must be a non-negative integer.');
+    }
+    return Math.min(explicit, safetyLimit);
+  }
+  const focusedComponent =
+    tiers.includes('component') && components.length > 0;
+  const focusedTheme =
+    tiers.includes('theme-matrix') && matrixThemes.length > 0;
+  if (focusedComponent || focusedTheme) return safetyLimit;
+  return Math.min(configuredLimit, safetyLimit);
+}
+
+/** Component review budgets are shared by the ordinary and trusted planners. */
+export function exceedsPrVisualShotLimit(count, limit) {
+  return count > limit;
 }
 
 /**
@@ -402,7 +550,9 @@ function rank(name) {
  * @param {string} options.defaultTheme
  * @param {string[]} options.tiers - any of 'theme-matrix', 'surface', 'full', 'component', 'probe'
  * @param {string[]} [options.components] - for the 'component' tier: the components to cover
+ * @param {string[]} [options.componentThemes] - accepted themes for representative and matrix-tagged stories
  * @param {string[]} [options.matrixThemes] - restrict theme-matrix to changed shipped themes
+ * @param {ReturnType<typeof readStoryIndex>} [options.themeStories] - accepted stories to render for changed themes
  * @param {string} [options.probeTheme] - name of the generated coverage theme
  * @returns {Shot[]}
  */
@@ -414,7 +564,9 @@ export function buildPlan({
   defaultTheme,
   tiers,
   components = [],
+  componentThemes = [],
   matrixThemes = [],
+  themeStories = [],
   probeTheme = 'probe',
 }) {
   /** @type {Map<string, Shot>} */
@@ -433,7 +585,14 @@ export function buildPlan({
   };
 
   if (tiers.includes('surface') || tiers.includes('full')) {
-    const subject = tiers.includes('full') ? stories : [...representatives.values()];
+    const subject = tiers.includes('full')
+      ? stories
+      : stories.filter(
+          story =>
+            representatives.get(story.component)?.id === story.id ||
+            (story.tags ?? []).includes(VISUAL_BASELINE_TAG) ||
+            (story.tags ?? []).includes(VISUAL_THEME_MATRIX_TAG),
+        );
     for (const story of subject) {
       for (const mode of MODES) {
         add({...toShotBase(story), theme: defaultTheme, mode}, 'surface');
@@ -442,24 +601,19 @@ export function buildPlan({
   }
 
   if (tiers.includes('component')) {
-    // The PR tier: every story of the named components, in the default theme
-    // and in every theme that styles them. Deeper than `surface` (which shoots
-    // one story per component), and narrow enough to run per PR.
-    const themesByComponent = new Map();
-    for (const target of targets) {
-      for (const [theme, keys] of Object.entries(themeOverrides)) {
-        if (!Object.hasOwn(keys, target.key)) continue;
-        if (!themesByComponent.has(target.component)) {
-          themesByComponent.set(target.component, new Set());
-        }
-        themesByComponent.get(target.component).add(theme);
-      }
-    }
-    for (const story of stories) {
-      if (!components.includes(story.component)) continue;
+    // The PR tier: one representative story in every accepted theme.
+    // visual-baseline adds a default-theme story; visual-theme-matrix opts a
+    // visually dense story into the same all-theme matrix. Behavioral and
+    // audit-only fixtures remain available to their dedicated checks without
+    // multiplying the baseline.
+    for (const {story, useThemeMatrix} of componentVisualStories(
+      stories,
+      components,
+    )) {
       for (const mode of MODES) {
         add({...toShotBase(story), theme: defaultTheme, mode}, 'component');
-        for (const theme of themesByComponent.get(story.component) ?? []) {
+        if (!useThemeMatrix) continue;
+        for (const theme of componentThemes) {
           if (theme === defaultTheme) continue;
           add({...toShotBase(story), theme, mode}, `theme:${theme}`);
         }
@@ -468,18 +622,31 @@ export function buildPlan({
   }
 
   if (tiers.includes('theme-matrix')) {
-    const matrixOverrides = matrixThemes.length
-      ? Object.fromEntries(
-          Object.entries(themeOverrides).filter(([theme]) => matrixThemes.includes(theme)),
-        )
-      : themeOverrides;
-    for (const shot of themeMatrix({
-      stories,
-      targets,
-      themeOverrides: matrixOverrides,
-      observations,
-    })) {
-      add(shot.shot, shot.reason);
+    if (matrixThemes.length > 0) {
+      if (themeStories.length === 0) {
+        throw new Error(
+          `Changed theme(s) have no accepted visual stories: ${matrixThemes.join(', ')}`,
+        );
+      }
+      for (const theme of matrixThemes) {
+        for (const story of themeStories) {
+          for (const mode of MODES) {
+            add(
+              {...toShotBase(story), theme, mode},
+              `changed-theme:${theme}`,
+            );
+          }
+        }
+      }
+    } else {
+      for (const shot of themeMatrix({
+        stories,
+        targets,
+        themeOverrides,
+        observations,
+      })) {
+        add(shot.shot, shot.reason);
+      }
     }
   }
 
@@ -496,6 +663,13 @@ export function buildPlan({
       probeTheme,
     })) {
       add(shot, reason);
+    }
+    for (const story of stories.filter(candidate =>
+      (candidate.tags ?? []).includes(VISUAL_THEME_MATRIX_TAG),
+    )) {
+      for (const mode of MODES) {
+        add({...toShotBase(story), theme: probeTheme, mode}, 'probe:opt-in');
+      }
     }
   }
 

@@ -39,14 +39,14 @@
  * that use it, not public API.
  */
 
-import {useCallback, useEffect, useState, type Ref} from 'react';
+import {useCallback, useState, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {InputClearButton} from './InputClearButton';
 import {mergeProps} from '../utils';
 import {
   getInteractionModality,
-  trackInteractionModality,
+  useInteractionModalityTracking,
 } from '../utils/interactionModality';
 import {
   colorVars,
@@ -207,9 +207,7 @@ export function PanelSearchInput({
   // stays `:focus-visible`, this only narrows it.
   const [isKeyboardFocus, setIsKeyboardFocus] = useState(false);
 
-  useEffect(() => {
-    trackInteractionModality();
-  }, []);
+  useInteractionModalityTracking();
 
   const handleFocus = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {

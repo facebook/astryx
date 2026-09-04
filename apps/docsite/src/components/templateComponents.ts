@@ -46,9 +46,9 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/dashboard/page'),
   ),
-  'dashboard-portfolio': lazy(
+  'dashboard-composition': lazy(
     () =>
-      import('../../../../packages/cli/assets/templates/pages/dashboard-portfolio/page'),
+      import('../../../../packages/cli/assets/templates/pages/dashboard-composition/page'),
   ),
   'detail-page': lazy(
     () =>
@@ -161,6 +161,10 @@ export const TEMPLATE_COMPONENTS: Record<
   'table-grouped': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-grouped/page'),
+  ),
+  'table-inbox': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-inbox/page'),
   ),
   'table-page': lazy(
     () =>

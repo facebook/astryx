@@ -23,10 +23,7 @@ import type {
   ColumnWidth,
 } from '../../types';
 import {DEFAULT_MIN_COLUMN_WIDTH} from '../../columnUtils';
-import {
-  observeResize,
-  unobserveResize,
-} from '../../../utils/sharedResizeObserver';
+import {observeResize} from '../../../utils/sharedResizeObserver';
 
 // =============================================================================
 // Config Type
@@ -727,12 +724,12 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
   // --table-resize-height on the <table> element. This is initialized
   // entirely by the resize plugin — the base table has no knowledge of it.
   const observedTableRef = useRef<HTMLTableElement | null>(null);
+  const unobserveTableRef = useRef<(() => void) | null>(null);
 
   const measureRef = useCallback((el: HTMLDivElement | null) => {
-    if (observedTableRef.current) {
-      unobserveResize(observedTableRef.current);
-      observedTableRef.current = null;
-    }
+    unobserveTableRef.current?.();
+    unobserveTableRef.current = null;
+    observedTableRef.current = null;
     if (!el) {
       return;
     }
@@ -743,7 +740,7 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
     }
 
     if (table && typeof ResizeObserver !== 'undefined') {
-      observeResize(table, () => {
+      unobserveTableRef.current = observeResize(table, () => {
         const height = table.getBoundingClientRect().height;
         table.style.setProperty('--table-resize-height', `${height}px`);
       });
@@ -754,9 +751,8 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
   // Clean up observer on unmount
   useEffect(() => {
     return () => {
-      if (observedTableRef.current) {
-        unobserveResize(observedTableRef.current);
-      }
+      unobserveTableRef.current?.();
+      unobserveTableRef.current = null;
     };
   }, []);
 

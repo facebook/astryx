@@ -44,8 +44,8 @@ let output;
 let baseline;
 let scope;
 
-function png(red = 255, green = 0, blue = 0) {
-  const image = new PNG({width: 2, height: 2});
+function pngWithSize(width, height, red = 255, green = 0, blue = 0) {
+  const image = new PNG({width, height});
   for (let i = 0; i < image.data.length; i += 4) {
     image.data[i] = red;
     image.data[i + 1] = green;
@@ -53,6 +53,10 @@ function png(red = 255, green = 0, blue = 0) {
     image.data[i + 3] = 255;
   }
   return PNG.sync.write(image);
+}
+
+function png(red = 255, green = 0, blue = 0) {
+  return pngWithSize(2, 2, red, green, blue);
 }
 
 function writeJSON(file, value) {
@@ -319,11 +323,50 @@ describe('trusted PR visual publisher', () => {
     expect(fs.existsSync(path.join(output, 'after', `${key}.png`))).toBe(true);
   });
 
+  it('publishes trusted evidence for a theme-only bundle above the component limit', () => {
+    writeBaseline({});
+    writeJSON(scope, {
+      hasStableVisual: true,
+      broadStableVisual: false,
+      stableComponents: [],
+      stableThemes: ['neutral'],
+    });
+    const shots = {};
+    const bytes = png(0, 255, 0);
+    for (let index = 0; index < 242; index += 1) {
+      const key = `core-theme-${index}--default__neutral-light`;
+      shots[key] = {
+        shot: {
+          ...SHOT,
+          storyId: `core-theme-${index}--default`,
+          component: `Theme${index}`,
+        },
+        bytes,
+      };
+    }
+    writeCapture(shots);
+
+    run();
+
+    const evidence = JSON.parse(
+      fs.readFileSync(path.join(output, 'evidence.json'), 'utf8'),
+    );
+    expect(evidence.verdict).toMatchObject({
+      status: 'changed',
+      counts: {total: 242, added: 242, failed: 0},
+    });
+    expect(evidence.deltas).toHaveLength(242);
+    expect(fs.readdirSync(path.join(output, 'after'))).toHaveLength(242);
+  });
+
   it('does not derive removals from a scoped PR capture', () => {
     const other = 'core-card--default__neutral-light';
     writeBaseline({
       [KEY]: {shot: SHOT, bytes: png()},
-      [other]: {shot: {...SHOT, storyId: 'core-card--default', component: 'Card'}, bytes: png()},
+      [other]: {
+        shot: {...SHOT, storyId: 'core-card--default', component: 'Card'},
+        bytes: png(),
+      },
     });
     run();
     const verdict = JSON.parse(
@@ -351,6 +394,27 @@ describe('trusted PR visual publisher', () => {
   it('rejects capture bytes that are not a PNG', () => {
     fs.writeFileSync(path.join(input, 'shots', `${KEY}.png`), 'not png');
     expect(() => run()).toThrow(/not a valid PNG/);
+  });
+
+  it('accepts tall sheets that stay within the existing pixel budget', () => {
+    const tall = pngWithSize(2, 7673, 0, 0, 255);
+    writeCapture({[KEY]: {shot: SHOT, bytes: tall}});
+
+    run();
+
+    const evidence = JSON.parse(
+      fs.readFileSync(path.join(output, 'evidence.json'), 'utf8'),
+    );
+    expect(evidence.deltas[0].shot).toMatchObject({width: 2, height: 7673});
+  });
+
+  it('rejects PNG headers above the pixel budget before decoding', () => {
+    const oversized = Buffer.from(png());
+    oversized.writeUInt32BE(5000, 16);
+    oversized.writeUInt32BE(5001, 20);
+    fs.writeFileSync(path.join(input, 'shots', `${KEY}.png`), oversized);
+
+    expect(() => run()).toThrow(/invalid dimensions 5000x5001/);
   });
 
   it('rejects an empty capture for an unbaselined stable scope', () => {

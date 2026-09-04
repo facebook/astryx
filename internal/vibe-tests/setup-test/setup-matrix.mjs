@@ -3,14 +3,27 @@
 import {createHash} from 'node:crypto';
 
 const SHA256 = /^[a-f0-9]{64}$/;
+/**
+ * The host-probe fields a task contract may ever exempt.
+ *
+ * A task that inserts a control into an existing container moves what follows
+ * it and makes the container taller, so those consequences can be declared as
+ * intended. Nothing else can: no computed style, no width, and no container
+ * text. `text` is deliberately absent — a task that adds copy to a container
+ * declares `textInsertionOnly`, which permits text the container *gains* and
+ * still reports text it loses or rewrites, where a `text` field would exempt
+ * the comparison outright and let an executor delete host copy.
+ */
 const ALLOWABLE_HOST_FIELDS = new Set([
-  'text',
   'geometry.x',
   'geometry.y',
   'geometry.top',
   'geometry.right',
   'geometry.bottom',
   'geometry.left',
+  // Block-axis growth only: an insertion makes a container taller, never wider.
+  'height',
+  'geometry.height',
 ]);
 const ALLOWABLE_OVERLAY_FIELDS = new Set([
   'geometry.x',
@@ -181,6 +194,14 @@ export function validatePromptContracts(prompts, probeConfig, matrixConfig) {
         allowed.fields,
         `prompt ${prompt.id} ${allowed.fixture}:${allowed.probe} fields`,
       );
+      if (
+        'textInsertionOnly' in allowed &&
+        typeof allowed.textInsertionOnly !== 'boolean'
+      ) {
+        throw new Error(
+          `prompt ${prompt.id} ${allowed.fixture}:${allowed.probe} textInsertionOnly must be a boolean`,
+        );
+      }
       for (const field of allowed.fields) {
         if (!ALLOWABLE_HOST_FIELDS.has(field)) {
           throw new Error(
@@ -374,6 +395,47 @@ export function validateSetupMatrixConfig(config) {
         );
       }
     }
+    if (stage.cells !== undefined) {
+      requireNonEmpty(stage.cells, `stage ${stage.id} cells`);
+      const stageConditions = new Set(stage.conditions);
+      const stageFixtures = new Set(stage.fixtures);
+      const stagePrompts = new Set(stage.prompts);
+      const seenCells = new Set();
+      for (const cell of stage.cells) {
+        for (const field of ['condition', 'fixture', 'prompt']) {
+          if (typeof cell?.[field] !== 'string' || cell[field].length === 0) {
+            throw new Error(
+              `stage ${stage.id} cell ${field} must be a non-empty string`,
+            );
+          }
+        }
+        if (!stageConditions.has(cell.condition)) {
+          throw new Error(
+            `stage ${stage.id} cell names condition ${cell.condition}, which the stage does not list`,
+          );
+        }
+        if (!stageFixtures.has(cell.fixture)) {
+          throw new Error(
+            `stage ${stage.id} cell names fixture ${cell.fixture}, which the stage does not list`,
+          );
+        }
+        if (!stagePrompts.has(cell.prompt)) {
+          throw new Error(
+            `stage ${stage.id} cell names prompt ${cell.prompt}, which the stage does not list`,
+          );
+        }
+        if (!config.promptFixtures[cell.prompt].includes(cell.fixture)) {
+          throw new Error(
+            `stage ${stage.id} cell pairs prompt ${cell.prompt} with unsupported fixture ${cell.fixture}`,
+          );
+        }
+        const key = `${cell.condition}__${cell.fixture}__${cell.prompt}`;
+        if (seenCells.has(key)) {
+          throw new Error(`stage ${stage.id} duplicates cell ${key}`);
+        }
+        seenCells.add(key);
+      }
+    }
     seenStages.add(stage.id);
   }
 
@@ -417,12 +479,36 @@ function rawEntries(config, stage, selections = {}) {
     throw new Error('reps must be a positive integer');
   }
   const bundleById = new Map(config.bundles.map(bundle => [bundle.id, bundle]));
+  /**
+   * An optional allowlist of the exact condition/fixture/prompt triples a stage
+   * covers.
+   *
+   * A stage is otherwise the full cross product of its dimensions, which cannot
+   * describe a stage that reruns a named handful of earlier cells: the four
+   * cells this exists for span two conditions and two fixtures, and their cross
+   * product is eight. Listing them keeps the expected set equal to the intended
+   * set, so coverage and acceptance stay honest instead of reporting a stage
+   * that can never be complete.
+   */
+  const allowedCells = stage.cells
+    ? new Set(
+        stage.cells.map(
+          cell => `${cell.condition}__${cell.fixture}__${cell.prompt}`,
+        ),
+      )
+    : null;
   const entries = [];
 
   for (const fixture of fixtures) {
     for (const condition of conditions) {
       for (const prompt of prompts) {
         if (!config.promptFixtures[prompt].includes(fixture)) continue;
+        if (
+          allowedCells &&
+          !allowedCells.has(`${condition}__${fixture}__${prompt}`)
+        ) {
+          continue;
+        }
         for (const bundleId of bundleIds) {
           const bundle = bundleById.get(bundleId);
           for (let rep = 1; rep <= reps; rep += 1) {
@@ -492,6 +578,37 @@ export function expandSetupMatrix(
 
 export function sha256Text(value) {
   return createHash('sha256').update(value).digest('hex');
+}
+
+/**
+ * The digest that records *which guidance text* a run was actually given.
+ *
+ * This is the only durable link between a recorded run and the instructions it
+ * received, and it is what makes stale evidence detectable. The strategy pilot
+ * needed it: every host-aligned sandbox it produced was missing the rule
+ * against ignoring generated theme output, because the rule was written into
+ * the guidance after those runs happened. The recorded digests do not match the
+ * digest recomputed from the current text, which is how that is provable rather
+ * than arguable — an executor cannot be said to have ignored an instruction it
+ * was never handed.
+ *
+ * Recompute this against current guidance before treating any recorded run as
+ * evidence about current guidance. A mismatch means the run predates the text
+ * and has to be rerun under a new condition id, not reinterpreted.
+ */
+export function setupEnvironmentHash({fixtureSha256, condition, patches}) {
+  if (!SHA256.test(fixtureSha256)) {
+    throw new Error('fixtureSha256 must be a SHA-256 digest');
+  }
+  if (typeof condition !== 'string' || condition.length === 0) {
+    throw new Error('condition must be a non-empty string');
+  }
+  for (const entry of patches) {
+    if (!Array.isArray(entry) || entry.length !== 2) {
+      throw new Error('each patch must be a [id, text] pair');
+    }
+  }
+  return sha256Text(JSON.stringify({fixtureSha256, condition, patches}));
 }
 
 export function fixtureManifestSha256(recipe) {

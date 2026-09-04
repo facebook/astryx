@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  270 targets, 875 selectors (generated from the docs)
+//   components  274 targets, 885 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -578,6 +578,14 @@ export const probeTheme = defineTheme({
         outlineColor: 'hsl(62.1 85% 25%)',
       },
     },
+    'banner-description': {
+      base: {
+        backgroundColor: 'hsl(347.7 94% 62%)',
+        color: 'hsl(118.1 87% 12%)',
+        borderColor: 'hsl(166.3 80% 25%)',
+        outlineColor: 'hsl(35.6 93% 25%)',
+      },
+    },
     'banner-icon': {
       base: {
         backgroundColor: 'hsl(262.3 84% 51%)',
@@ -972,6 +980,14 @@ export const probeTheme = defineTheme({
         color: 'hsl(193.2 91% 12%)',
         borderColor: 'hsl(161.1 93% 25%)',
         outlineColor: 'hsl(157.5 84% 25%)',
+      },
+    },
+    'carousel-scroller': {
+      base: {
+        backgroundColor: 'hsl(330.8 89% 63%)',
+        color: 'hsl(272.4 89% 12%)',
+        borderColor: 'hsl(38.3 84% 25%)',
+        outlineColor: 'hsl(243.2 82% 25%)',
       },
     },
     center: {
@@ -2031,6 +2047,24 @@ export const probeTheme = defineTheme({
         borderColor: 'hsl(170.7 73% 25%)',
         outlineColor: 'hsl(74.0 75% 25%)',
       },
+      'presentation:popover': {
+        backgroundColor: 'hsl(152.7 88% 51%)',
+        color: 'hsl(290.9 87% 12%)',
+        borderColor: 'hsl(252.4 93% 25%)',
+        outlineColor: 'hsl(80.4 87% 25%)',
+      },
+      'presentation:bottom-sheet': {
+        backgroundColor: 'hsl(211.4 72% 62%)',
+        color: 'hsl(32.5 82% 12%)',
+        borderColor: 'hsl(244.1 72% 25%)',
+        outlineColor: 'hsl(196.5 89% 25%)',
+      },
+      'presentation:adaptive': {
+        backgroundColor: 'hsl(64.2 82% 63%)',
+        color: 'hsl(35.5 86% 12%)',
+        borderColor: 'hsl(42.5 73% 25%)',
+        outlineColor: 'hsl(88.3 82% 25%)',
+      },
     },
     'dropdown-menu-divider': {
       base: {
@@ -3012,6 +3046,12 @@ export const probeTheme = defineTheme({
         color: 'hsl(318.7 81% 12%)',
         borderColor: 'hsl(40.4 92% 25%)',
         outlineColor: 'hsl(177.8 82% 25%)',
+      },
+      readonly: {
+        backgroundColor: 'hsl(291.7 88% 52%)',
+        color: 'hsl(213.7 89% 12%)',
+        borderColor: 'hsl(50.2 86% 25%)',
+        outlineColor: 'hsl(214.5 74% 25%)',
       },
     },
     'multi-selector-clear-icon': {
@@ -4102,6 +4142,12 @@ export const probeTheme = defineTheme({
         borderColor: 'hsl(298.2 93% 25%)',
         outlineColor: 'hsl(59.6 86% 25%)',
       },
+      readonly: {
+        backgroundColor: 'hsl(149.0 90% 62%)',
+        color: 'hsl(226.6 78% 12%)',
+        borderColor: 'hsl(25.9 71% 25%)',
+        outlineColor: 'hsl(86.5 79% 25%)',
+      },
     },
     'selector-check': {
       base: {
@@ -4360,6 +4406,12 @@ export const probeTheme = defineTheme({
         borderColor: 'hsl(22.0 83% 25%)',
         outlineColor: 'hsl(220.9 77% 25%)',
       },
+      'size:xl': {
+        backgroundColor: 'hsl(66.5 82% 64%)',
+        color: 'hsl(228.9 83% 12%)',
+        borderColor: 'hsl(259.5 74% 25%)',
+        outlineColor: 'hsl(299.9 71% 25%)',
+      },
       'shade:default': {
         backgroundColor: 'hsl(94.7 82% 60%)',
         color: 'hsl(304.2 86% 12%)',
@@ -4501,12 +4553,28 @@ export const probeTheme = defineTheme({
         outlineColor: 'hsl(142.0 87% 25%)',
       },
     },
+    'step-description': {
+      base: {
+        backgroundColor: 'hsl(28.6 77% 50%)',
+        color: 'hsl(226.0 70% 12%)',
+        borderColor: 'hsl(354.8 93% 25%)',
+        outlineColor: 'hsl(33.0 90% 25%)',
+      },
+    },
     'step-indicator': {
       base: {
         backgroundColor: 'hsl(326.1 89% 62%)',
         color: 'hsl(66.4 77% 12%)',
         borderColor: 'hsl(109.9 93% 25%)',
         outlineColor: 'hsl(179.2 75% 25%)',
+      },
+    },
+    'step-label': {
+      base: {
+        backgroundColor: 'hsl(25.1 77% 47%)',
+        color: 'hsl(323.4 90% 12%)',
+        borderColor: 'hsl(185.0 92% 25%)',
+        outlineColor: 'hsl(186.3 83% 25%)',
       },
     },
     stepper: {

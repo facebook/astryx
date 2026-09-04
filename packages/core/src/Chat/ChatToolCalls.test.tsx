@@ -1,7 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {render, screen, fireEvent} from '@testing-library/react';
 import {describe, it, expect} from 'vitest';
+import {render, screen, fireEvent} from '@testing-library/react';
+import {Theme} from '../theme/Theme';
+import {defineTheme} from '../theme/defineTheme';
 import {ChatToolCalls} from './ChatToolCalls';
 
 describe('ChatToolCalls', () => {
@@ -20,6 +22,36 @@ describe('ChatToolCalls', () => {
     expect(screen.getByText('1.2s')).toBeInTheDocument();
     // No group header / expand button for single call
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('resolves complete and error marks through the themed semantic icon registry', () => {
+    const theme = defineTheme({
+      name: 'chat-tool-call-semantic-icons',
+      icons: {
+        success: <svg data-testid="themed-success" />,
+        error: <svg data-testid="themed-error" />,
+      },
+    });
+
+    render(
+      <Theme theme={theme}>
+        <ChatToolCalls
+          defaultIsExpanded
+          calls={[
+            {key: 'done', name: 'read', status: 'complete'},
+            {
+              key: 'failed',
+              name: 'bash',
+              status: 'error',
+              errorMessage: 'Command failed',
+            },
+          ]}
+        />
+      </Theme>,
+    );
+
+    expect(screen.getByTestId('themed-success')).toBeInTheDocument();
+    expect(screen.getByTestId('themed-error')).toBeInTheDocument();
   });
 
   it('renders latest call as surface for multiple calls', () => {
@@ -44,6 +76,50 @@ describe('ChatToolCalls', () => {
       />,
     );
     expect(screen.queryByText('1.2s')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['pending', 'Pending'],
+    ['running', 'Running'],
+    ['complete', 'Complete'],
+    ['error', 'Failed'],
+  ] as const)(
+    'names the %s status for assistive technology',
+    (status, label) => {
+      render(<ChatToolCalls calls={[{name: 'bash', status}]} />);
+      expect(screen.getByText(label)).toBeInTheDocument();
+    },
+  );
+
+  it('includes the status in an expandable row accessible name', () => {
+    render(
+      <ChatToolCalls
+        calls={[
+          {
+            name: 'readFile',
+            status: 'running',
+            resultDetail: <div>file contents</div>,
+          },
+        ]}
+      />,
+    );
+    expect(
+      screen.getByRole('button', {name: /Running.*readFile/}),
+    ).toBeInTheDocument();
+  });
+
+  it('includes the latest status in a collapsed group accessible name', () => {
+    render(
+      <ChatToolCalls
+        calls={[
+          {name: 'searchCode', status: 'complete'},
+          {name: 'editFile', status: 'running'},
+        ]}
+      />,
+    );
+    expect(
+      screen.getByRole('button', {name: /Running.*editFile/}),
+    ).toBeInTheDocument();
   });
 
   it('defaults to collapsed', () => {

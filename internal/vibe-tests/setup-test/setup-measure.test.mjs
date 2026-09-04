@@ -3,6 +3,7 @@
 import {describe, expect, it} from 'vitest';
 import {
   classifyCssAssets,
+  loopbackOrigin,
   measurementPrivateValues,
   normalizeSubpixel,
   parseLayerOrder,
@@ -197,5 +198,97 @@ describe('setup browser measurement helpers', () => {
     );
     expect(exported.owner).toBe('<private-value>');
     expect(exported.message).toBe('owner-420 can rebuild');
+  });
+});
+
+/**
+ * The local file server has to be fetchable at the address it was bound to.
+ *
+ * It was not. `server.listen(0, …)` with no host binds the wildcard — `::`
+ * wherever Node has IPv6 — while the page fetch was a hardcoded
+ * `http://127.0.0.1:<port>`. Those two agree only where the host maps v4-in-v6.
+ * Where they do not, every page load fails to connect, and the measurement
+ * reports it as a broken app rather than a broken harness. An operator worked
+ * around it by running the whole measurer inside a network namespace with
+ * loopback forced up; nothing about measuring a built app should need that.
+ *
+ * The server now binds IPv4 loopback explicitly, and the origin is still read
+ * back from the socket rather than assumed.
+ */
+describe('local server origin', () => {
+  it.each([
+    {
+      name: 'the IPv6 wildcard, bracketed',
+      // The exact case that broke: bound to `::`, fetched at `127.0.0.1`.
+      address: {address: '::', family: 'IPv6', port: 4321},
+      expected: 'http://[::1]:4321',
+    },
+    {
+      name: 'the IPv4 wildcard',
+      address: {address: '0.0.0.0', family: 'IPv4', port: 8080},
+      expected: 'http://127.0.0.1:8080',
+    },
+    {
+      name: 'a concrete bound address, as bound',
+      address: {address: '127.0.0.1', family: 'IPv4', port: 5173},
+      expected: 'http://127.0.0.1:5173',
+    },
+  ])('resolves $name', ({address, expected}) => {
+    expect(loopbackOrigin(address)).toBe(expected);
+  });
+
+  it('rejects anything that is not an AddressInfo rather than guessing', () => {
+    // A pipe server's address() is a string; silently inventing an origin from
+    // one would put the old hardcoded assumption back.
+    expect(() => loopbackOrigin('/tmp/sock')).toThrow(/AddressInfo/);
+  });
+});
+
+describe('local server binding', () => {
+  it('binds IPv4 loopback and is reachable at the origin it reports', async () => {
+    const http = await import('node:http');
+    const server = http.createServer((_request, response) => {
+      response.end('ok');
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    try {
+      expect(address.address).toBe('127.0.0.1');
+      const origin = loopbackOrigin(address);
+      expect(origin).toBe(`http://127.0.0.1:${address.port}`);
+      // The pairing that matters: fetch the origin the bind actually produced.
+      const response = await fetch(`${origin}/`);
+      expect(await response.text()).toBe('ok');
+    } finally {
+      server.close();
+    }
+  });
+
+  it('is not reachable on a non-loopback interface', async () => {
+    const http = await import('node:http');
+    const os = await import('node:os');
+    const external = Object.values(os.networkInterfaces())
+      .flat()
+      .find(entry => entry && entry.family === 'IPv4' && !entry.internal);
+    const server = http.createServer((_request, response) =>
+      response.end('ok'),
+    );
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    const {port} = server.address();
+    try {
+      if (!external) {
+        expect(true).toBe(true);
+        return;
+      }
+      // An explicit loopback bind is also a smaller surface than the wildcard:
+      // the app under measurement is only ever fetched by this process.
+      await expect(
+        fetch(`http://${external.address}:${port}/`, {
+          signal: AbortSignal.timeout(2000),
+        }),
+      ).rejects.toThrow();
+    } finally {
+      server.close();
+    }
   });
 });

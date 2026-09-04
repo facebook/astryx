@@ -20,11 +20,18 @@ import {
 } from './authorization.mjs';
 import {canonicalizePng} from './lib/canonical-png.mjs';
 import {
+  acceptedVisualThemes,
+  baselineVisualStories,
+  componentVisualStories,
+  exceedsPrVisualShotLimit,
   readStoryIndex,
   readThemeCatalog,
+  representativeStories,
   shotKey,
   stableBaseline,
   storiesInPackages,
+  storiesInStorybookGroups,
+  VISUAL_BASELINE_TAG,
   withThemeMetadata,
 } from './lib/plan.mjs';
 import {renderReport} from './lib/report.mjs';
@@ -35,7 +42,7 @@ const REPO_ROOT = path.resolve(
   '../../..',
 );
 const config = loadConfig(REPO_ROOT);
-const themeCatalog = readThemeCatalog(REPO_ROOT);
+const themeCatalog = readThemeCatalog(REPO_ROOT, config.baselineThemes);
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -197,7 +204,10 @@ function validateEvidence(evidence, expected) {
   ) {
     fail('evidence verdict is invalid');
   }
-  if (!Array.isArray(evidence.deltas) || evidence.deltas.length > 5000) {
+  if (
+    !Array.isArray(evidence.deltas) ||
+    evidence.deltas.length > config.visualPlanSafetyLimit
+  ) {
     fail('evidence delta list is invalid');
   }
   if (evidence.verdict.status === 'skipped') {
@@ -364,8 +374,10 @@ function accept() {
   if (evidence.verdict.status !== 'changed' || evidence.deltas.length === 0) {
     fail('current visual bundle has no delta to accept');
   }
-  if (evidence.deltas.some(delta => delta.kind === 'removed')) {
-    fail('scoped PR acceptance cannot authorize baseline removals');
+  if (evidence.deltas.some(delta => delta.kind !== 'changed')) {
+    fail(
+      'scoped PR acceptance can only authorize changes to existing baseline frames',
+    );
   }
   const manifestFile = path.join(
     pages,
@@ -622,8 +634,13 @@ function readTrustedBaseline(stories = null) {
     fail('trusted visual baseline is invalid');
   }
   const entries = Object.entries(baseline.shots);
-  if (entries.length === 0 || entries.length > 5000) {
-    fail(`trusted visual baseline has invalid size ${entries.length}`);
+  if (
+    entries.length === 0 ||
+    entries.length > config.visualPlanSafetyLimit
+  ) {
+    fail(
+      `trusted visual baseline has invalid size ${entries.length}; safety limit is ${config.visualPlanSafetyLimit}`,
+    );
   }
   return {baseline, entries};
 }
@@ -717,20 +734,31 @@ function trustedPlan() {
   const storybookDir = path.resolve(flag('storybook-dir'));
   const output = path.resolve(flag('output'));
   const allIndexed = readStoryIndex(storybookDir, [], REPO_ROOT);
-  const indexed = storiesInPackages(
+  const packageStories = storiesInPackages(
     allIndexed,
     config.stableStoryPackages,
   );
-  const {entries: baselineEntries} = readTrustedBaseline(allIndexed);
+  const indexed = storiesInStorybookGroups(
+    packageStories,
+    config.stableStoryGroups,
+  );
+  const {baseline} = readTrustedBaseline(allIndexed);
+  const baselineKeys = new Set(Object.keys(baseline.shots));
 
-  const baselineThemes = [
-    ...new Set(baselineEntries.map(([, shot]) => shot.theme)),
-  ].filter(Boolean);
+  const baselineThemes = acceptedVisualThemes(
+    baseline,
+    themeCatalog,
+    config.defaultTheme,
+  );
   const shots = [];
 
   if (scope.stableComponents.length > 0 || scope.stableThemes.length > 0) {
-    const indexedStories = new Map(indexed.map(story => [story.id, story]));
-    const add = (story, theme) => {
+    const add = (
+      story,
+      theme,
+      componentKeys = null,
+      existingBaselineOnly = false,
+    ) => {
       for (const mode of ['light', 'dark']) {
         const shot = {
           storyId: story.storyId ?? story.id,
@@ -744,30 +772,43 @@ function trustedPlan() {
           mode,
           reasons: ['trusted:pr-scope'],
         };
-        shots.push({...shot, key: shotKey(shot)});
+        const keyed = {...shot, key: shotKey(shot)};
+        if (existingBaselineOnly && !baselineKeys.has(keyed.key)) continue;
+        shots.push(keyed);
+        componentKeys?.add(keyed.key);
       }
     };
 
-    const componentStories = new Map();
-    for (const story of indexedStories.values()) {
-      if (scope.stableComponents.includes(story.component)) {
-        componentStories.set(story.storyId ?? story.id, story);
-      }
-    }
-    for (const story of componentStories.values()) {
-      for (const theme of baselineThemes) add(story, theme);
-    }
-
-    for (const theme of scope.stableThemes) {
-      const isNew = !baselineThemes.includes(theme);
-      const themeStories = new Map();
-      for (const [, shot] of baselineEntries) {
-        const story = indexedStories.get(shot.storyId) ?? shot;
-        if (isNew || shot.theme === theme) {
-          themeStories.set(shot.storyId, story);
+    const componentKeys = new Set();
+    for (const {story, useThemeMatrix} of componentVisualStories(
+      indexed,
+      scope.stableComponents,
+    )) {
+      add(story, config.defaultTheme, componentKeys, true);
+      if (!useThemeMatrix) continue;
+      for (const theme of baselineThemes) {
+        if (theme !== config.defaultTheme) {
+          add(story, theme, componentKeys, true);
         }
       }
-      for (const story of themeStories.values()) add(story, theme);
+    }
+    if (
+      exceedsPrVisualShotLimit(
+        componentKeys.size,
+        config.prVisualShotLimit,
+      )
+    ) {
+      fail(
+        `trusted component plan has invalid size ${componentKeys.size}; focused PR limit is ${config.prVisualShotLimit}`,
+      );
+    }
+
+    const themeStories = baselineVisualStories(indexed, baseline);
+    for (const theme of scope.stableThemes) {
+      if (themeStories.length === 0) {
+        fail(`changed theme ${theme} has no accepted visual stories`);
+      }
+      for (const story of themeStories) add(story, theme);
     }
   }
   const unique = withThemeMetadata(
@@ -777,8 +818,15 @@ function trustedPlan() {
   if (unique.some(shot => shot.stableThemeVisual !== true)) {
     fail('trusted stable plan includes a private or canary theme');
   }
-  if (unique.length === 0 || unique.length > 5000) {
-    fail(`trusted visual plan has invalid size ${unique.length}`);
+  if (unique.length === 0) {
+    fail(
+      'trusted component scope has no existing baseline frames; seed coverage through the manual baseline workflow',
+    );
+  }
+  if (unique.length > config.visualPlanSafetyLimit) {
+    fail(
+      `trusted visual plan has invalid size ${unique.length}; safety limit is ${config.visualPlanSafetyLimit}`,
+    );
   }
   writeJSON(output, unique);
   process.stdout.write(
@@ -787,8 +835,10 @@ function trustedPlan() {
 }
 
 function acceptedStableShots(acceptance) {
-  if (acceptance.keys.some(entry => entry.kind === 'removed')) {
-    fail('scoped PR promotion cannot remove baseline keys');
+  if (acceptance.keys.some(entry => entry.kind !== 'changed')) {
+    fail(
+      'scoped PR promotion can only update existing baseline frames',
+    );
   }
   const shots = withThemeMetadata(
     acceptance.keys.map(entry => ({...entry.shot, key: entry.key})),
