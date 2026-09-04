@@ -20,7 +20,13 @@
 
 import {useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
+import {
+  spacingVars,
+  colorVars,
+  radiusVars,
+  borderVars,
+} from '../../../theme/tokens.stylex';
+import {tableRowMarker} from '../../table.stylex';
 import {Icon} from '../../../Icon';
 import {VisuallyHidden} from '../../../VisuallyHidden';
 import {resolveContextActions} from '../../tableContextMenu';
@@ -169,6 +175,33 @@ const expansionStyles = stylex.create({
 });
 
 /**
+ * An expanded row and its panel are one unit, so the row divider belongs after
+ * the pair rather than between them — left alone, the row's own bottom border
+ * draws a line cutting it off from the detail it just opened, and the panel
+ * then runs flush into the next row, which is the wrong way round.
+ *
+ * So the row gives up its border and the panel takes one. On a table with no
+ * row dividers the suppression is a no-op (there was no border to remove) and
+ * the panel's is never applied, so neither needs to consult the divider mode.
+ */
+const dividerStyles = stylex.create({
+  expandedRowCell: {
+    borderBottomWidth: 0,
+  },
+  panelCell: {
+    borderBottomWidth: {
+      default: borderVars['--border-width'],
+      // Same rule TableCell uses: no trailing line under the last row of the
+      // table. Scoped to the marker so <tbody>, also a :last-child, does not
+      // match and suppress every panel's border.
+      [stylex.when.ancestor(':last-child', tableRowMarker)]: '0',
+    },
+    borderBottomStyle: 'solid',
+    borderBottomColor: colorVars['--color-border'],
+  },
+});
+
+/**
  * Start inset for the detail panel, one per density.
  *
  * The panel is one cell spanning the whole row, so left to itself its content
@@ -234,9 +267,10 @@ function ExpansionChevron({
 
 /**
  * The detail panel's cell. A component rather than a bare `<td>` so it can
- * read the table's density off the context and indent itself to match the
- * first column — the plugin builds this row outside the Table's own render,
- * where that context is not otherwise in hand.
+ * read the table's density and divider mode off the context — to indent itself
+ * to match the first column, and to carry the row divider its own row gave up.
+ * The plugin builds this row outside the Table's own render, where that
+ * context is not otherwise in hand.
  */
 function ExpansionPanelCell({
   colSpan,
@@ -246,12 +280,14 @@ function ExpansionPanelCell({
   children: ReactNode;
 }) {
   const ctx = useTableContext();
+  const hasRowDividers = ctx?.dividers === 'rows' || ctx?.dividers === 'grid';
   return (
     <td
       colSpan={colSpan}
       {...stylex.props(
         expansionStyles.expandedCell,
         panelIndentStyles[ctx?.density ?? 'balanced'],
+        hasRowDividers && dividerStyles.panelCell,
       )}>
       {children}
     </td>
@@ -364,6 +400,11 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         const isExpanded = expandedKeys.has(key);
         return {
           ...props,
+          // Hand the row divider to the panel below, so the line closes the
+          // row-plus-panel pair instead of splitting it.
+          xstyle: isExpanded
+            ? [...props.xstyle, dividerStyles.expandedRowCell]
+            : props.xstyle,
           contextMenuActions: () => [
             ...resolveContextActions(props.contextMenuActions),
             {
@@ -437,6 +478,9 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
           <tr
             key={`${key}-expanded`}
             {...stylex.props(
+              // Carries the marker so the panel cell's divider can ask whether
+              // this row is the table's last, the same way TableCell does.
+              tableRowMarker,
               panelVariant === 'muted' && expansionStyles.expandedRow,
             )}>
             <ExpansionPanelCell colSpan={columnCountRef.current}>

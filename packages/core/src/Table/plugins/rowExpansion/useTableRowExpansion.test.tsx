@@ -62,6 +62,7 @@ function Harness({
   hasRowClickExpansion,
   columnsOverride,
   panelVariant,
+  dividers,
 }: {
   initialExpanded?: Set<string>;
   isItemExpandable?: (item: Row) => boolean;
@@ -70,6 +71,7 @@ function Harness({
   hasRowClickExpansion?: boolean;
   columnsOverride?: TableColumn<Row>[];
   panelVariant?: 'muted' | 'transparent';
+  dividers?: 'rows' | 'columns' | 'grid' | 'none';
 }) {
   const [expandedKeys, setExpandedKeys] = useState(initialExpanded);
   const expansion = useTableRowExpansion<Row>({
@@ -96,6 +98,7 @@ function Harness({
       columns={columnsOverride ?? columns}
       idKey="id"
       density={density}
+      dividers={dividers}
       plugins={{expansion}}
     />
   );
@@ -237,6 +240,48 @@ describe('useTableRowExpansion (detail panel)', () => {
     render(<Harness initialExpanded={new Set(['a'])} density="spacious" />);
     expect(screen.getByTestId('panel').closest('td')).toHaveStyle({
       paddingInlineStart: 'calc(40px + var(--spacing-4))',
+    });
+  });
+
+  describe('row divider placement', () => {
+    const panelCell = () =>
+      screen.getByTestId('panel').closest('td') as HTMLTableCellElement;
+    const cellsOf = (name: string) => [
+      ...(screen.getByText(name).closest('tr') as HTMLTableRowElement).cells,
+    ];
+
+    it('closes the pair below the panel rather than splitting it', () => {
+      // The row and its panel are one unit. A divider between them cuts the
+      // row off from the detail it opened, and leaves the panel running flush
+      // into the next row — the wrong way round on both counts.
+      render(<Harness initialExpanded={new Set(['a'])} />);
+      for (const cell of cellsOf('Ada')) {
+        expect(cell).toHaveStyle({borderBottomWidth: '0'});
+      }
+      expect(panelCell()).toHaveStyle({
+        borderBottomWidth: 'var(--border-width)',
+      });
+    });
+
+    it('leaves collapsed rows keeping their own divider', () => {
+      render(<Harness initialExpanded={new Set(['a'])} />);
+      for (const cell of cellsOf('Bo')) {
+        expect(cell).not.toHaveStyle({borderBottomWidth: '0'});
+      }
+    });
+
+    it('draws no panel divider on a table without row dividers', () => {
+      render(<Harness initialExpanded={new Set(['a'])} dividers="none" />);
+      expect(panelCell()).not.toHaveStyle({
+        borderBottomWidth: 'var(--border-width)',
+      });
+    });
+
+    it('draws the panel divider under grid dividers too', () => {
+      render(<Harness initialExpanded={new Set(['a'])} dividers="grid" />);
+      expect(panelCell()).toHaveStyle({
+        borderBottomWidth: 'var(--border-width)',
+      });
     });
   });
 
