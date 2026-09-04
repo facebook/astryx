@@ -60,7 +60,7 @@ describe('DebugEvent result summary', () => {
   );
 
   it(
-    'records a single kind for a filtered search',
+    'records the match total, not the --limit cap, for a filtered search',
     async () => {
       const {run, event} = await runWithDebug([
         '--json',
@@ -72,8 +72,13 @@ describe('DebugEvent result summary', () => {
         '2',
       ]);
       const response = JSON.parse(run.stdout);
+      // The regression: the recorded count was the length of the LIMITED list,
+      // so every capped run filed "2" and no usage query could tell a query
+      // that matched twice from one that matched fifty.
+      expect(response.data.results).toHaveLength(2);
+      expect(response.data.matchCount).toBeGreaterThan(2);
       expect(event.output).toMatchObject({
-        resultCount: response.data.results.length,
+        resultCount: response.data.matchCount,
         emptyResult: false,
         resultKind: 'component',
         directMatch: null,

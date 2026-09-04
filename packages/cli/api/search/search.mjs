@@ -772,7 +772,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
  * @param {string} [options.cwd]
  * @param {'component'|'hook'|'doc'|'template'} [options.type] - Restrict to one domain.
  * @param {number} [options.limit] - Max results (default 20).
- * @returns {Promise<{type: 'search', data: {query: string, results: Array<object>}}>}
+ * @returns {Promise<{type: 'search', data: {query: string, matchCount: number, results: Array<object>}}>}
  */
 export async function search(query, options = {}) {
   const {cwd = process.cwd(), type, limit = 20} = options;
@@ -847,7 +847,19 @@ export async function search(query, options = {}) {
       a.name.localeCompare(b.name),
   );
 
+  // `results` is bounded by `limit` so a caller (and the recorded run that
+  // quotes it) never carries an unbounded payload. `matchCount` is the number
+  // of matches that bound was applied TO — reporting `results.length` there
+  // would report the cap back as if it were the answer, so a query matching
+  // 57 things and one matching exactly 20 would be indistinguishable.
   const limited = scored.slice(0, limit);
 
-  return {type: 'search', data: {query: String(query).trim(), results: limited}};
+  return {
+    type: 'search',
+    data: {
+      query: String(query).trim(),
+      matchCount: scored.length,
+      results: limited,
+    },
+  };
 }

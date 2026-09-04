@@ -71,7 +71,13 @@ export interface DebugEventOutput {
   handled: boolean;
   /** Whether the run ended by printing help rather than doing work. */
   helpDisplayed: boolean;
-  /** Number of matches before presentation-only grouping or caps. */
+  /**
+   * How many results the command MATCHED, counted before any `--limit`, score
+   * floor, or presentation grouping was applied. A command that answers with a
+   * bounded slice still reports the size of the set it sliced, so a capped
+   * answer and an exactly-cap-sized one are distinguishable. Null when the
+   * command has no result set.
+   */
   resultCount: number | null;
   /** Whether the command's underlying match set was empty. */
   emptyResult: boolean | null;

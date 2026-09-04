@@ -418,6 +418,13 @@ const RESULT_KINDS = new Set(['component', 'template', 'doc', 'hook']);
 /**
  * Record a stable summary of a command's result set and presentation.
  *
+ * `results` is only read for `resultKind`, so passing the bounded, surfaced
+ * slice is correct. `resultCount` is NOT that slice's length: pass the total
+ * the command matched before its limit and score floors, because a count that
+ * silently reports the cap makes "matched exactly 20" and "matched 200, showed
+ * 20" the same row. It falls back to `results.length` only for a command whose
+ * surfaced set IS the whole match set.
+ *
  * @param {Array<{domain?: unknown}>} results Surfaced results used for kind.
  * @param {{directMatch?: boolean, resultCount?: number, emptyResult?: boolean}} [options]
  */

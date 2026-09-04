@@ -33,7 +33,7 @@ describe('build API', () => {
     expect(r.data.query).toBe('dashboard');
     expect(r.data.hasResults).toBe(true);
     const raw = await search('dashboard', {cwd: REPO, limit: 60});
-    expect(r.data.matchCount).toBe(raw.data.results.length);
+    expect(r.data.matchCount).toBe(raw.data.matchCount);
     expect(r.data.frame).toContain('AppShell');
     expect(r.data.foundation).toContain('Button');
     expect(Array.isArray(r.data.pages)).toBe(true);
@@ -106,6 +106,29 @@ describe('build API', () => {
     expect(r.data.pages).toHaveLength(0);
     expect(r.data.blocks).toHaveLength(0);
     expect(r.data.domain).toHaveLength(0);
+  });
+
+  it('reports the total match count, not the search limit it was capped to', async () => {
+    // The regression: matchCount was the length of the LIMITED result list, so
+    // it reported the cap rather than what the query matched. A reader (and
+    // the recorded run that quotes it) then reads "this idea matched 1 thing"
+    // for a query that matched dozens, and cannot tell a thin kit caused by a
+    // narrow query from one caused by the cap.
+    const capped = await build('dashboard', {cwd: REPO, limit: 1});
+    const full = await build('dashboard', {cwd: REPO, limit: 60});
+    if (capped.type !== 'build.kit' || full.type !== 'build.kit') {
+      throw new Error('expected build.kit');
+    }
+    expect(capped.data.matchCount).toBe(full.data.matchCount);
+    expect(capped.data.matchCount).toBeGreaterThan(1);
+
+    // The payload still respects the limit it was given — the truthful count
+    // is not an excuse to return an unbounded kit.
+    const surfaced =
+      capped.data.pages.length +
+      capped.data.blocks.length +
+      capped.data.domain.length;
+    expect(surfaced).toBeLessThanOrEqual(1);
   });
 });
 
