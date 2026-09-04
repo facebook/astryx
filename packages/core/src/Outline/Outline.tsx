@@ -43,6 +43,7 @@ import {useScrollSpy} from './useScrollSpy';
 import type {OutlineItem} from './types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -209,12 +210,8 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-overlay-hover'],
         color: colorVars['--color-text-primary'],
       },
-    },
-    ':active': {
-      backgroundColor: colorVars['--color-overlay-pressed'],
     },
   },
   activeLink: {
@@ -476,6 +473,7 @@ export function Outline({
                   }),
                   focusOutlineProps.focusVisible(
                     styles.link,
+                    interactionOverlayStyles.backgroundColor,
                     densityStyles[density],
                     getIndentStyle(item.level),
                     isActive && styles.activeLink,

@@ -17,7 +17,10 @@ export const doc = {
   description:
     'The single "I\'m looking for X" entry point across every content domain. ' +
     'Ranking is keyword + fuzzy (not embeddings); name and keyword signals outrank ' +
-    'incidental prose mentions, so an exact match always sorts first.',
+    'incidental prose mentions, so an exact match always sorts first. A component\'s ' +
+    'usage guidance (its best practices) is indexed one tier below its description, ' +
+    'so the words a reader types still find it — but a component that IS the answer ' +
+    'always outranks one whose advice merely mentions the term.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'search(query: string, options?: SearchOptions): Promise<SearchResponse>',

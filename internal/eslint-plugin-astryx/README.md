@@ -21,7 +21,7 @@ This plugin implements a two-tier linting strategy:
 ### `@astryx/no-raw-intl-locale`
 
 `InternationalizationProvider` is the sole user-facing locale source. This
-rule forbids two independent things, anywhere in the lint scope:
+rule forbids three independent things, anywhere in the lint scope:
 
 1. **Raw `Intl` access** — constructing a locale-sensitive `Intl` formatter,
    calling `toLocaleString`/`toLocaleDateString`/`toLocaleTimeString`/
@@ -40,12 +40,17 @@ Intl.DateTimeFormat`), destructuring (`const {DateTimeFormat} = Intl`),
    _any_ position, not only as an argument to an `Intl`/locale-method call.
    `recognition.lang = lang ?? navigator.language` is flagged even though no
    `Intl` API is involved.
+3. **Date-helper calls without a locale** — calls to `plainDateFormat`,
+   `formatSharedDate`, `parseDateInput`, and `isLocaleDayFirst` imported from
+   the Astryx helper modules must pass their locale argument. The rule follows
+   named imports, aliases, and namespace imports without matching unrelated
+   local functions that happen to use the same name.
 
 Shipped component code should read the locale through the public
 provider-aware utilities instead — `useLocale()`/`useCollator()` (exported
-from `@astryxdesign/core/i18n`) — or an existing formatting helper such as
-`plainDateFormat`/`formatInstant`/`formatFilterValue`, so the value always
-traces back to the provider.
+from `@astryxdesign/core/i18n`) — or use an existing formatting helper such as
+`plainDateFormat`/`formatInstant`/`formatFilterValue`. Date-helper callers pass
+`useLocale()` explicitly so the value always traces back to the provider.
 
 **Raw `Intl` is controlled by two closed file lists in the rule source:**
 
@@ -53,20 +58,24 @@ traces back to the provider.
   implementations. Direct Intl calls there still require a syntactically
   explicit locale; `Intl.NumberFormat(undefined)`, an omitted locale, and
   locale methods without their locale argument are errors. Aliasing or
-  destructuring Intl is also rejected. The only temporary ambient exceptions
-  are the existing calls inside the named `plainDateFormat` and
-  `isLocaleDayFirst` functions, pending #5120.
+  destructuring Intl is also rejected.
 - `APPROVED_TEST_ORACLE_FILES` contains named tests that deliberately construct
   independent Intl expectations so assertions are not circular.
+- `DATE_HELPER_DEFAULT_TEST_FILES` contains only the two helper suites that
+  verify the backward-compatible default locale. This exemption applies only
+  to the helper-call locale requirement, not to raw Intl or navigator access.
 
 Approved implementations:
 
 - `packages/core/src/utils/plainDate.ts`, `.../utils/dateParser.ts` — date
   formatting/parsing core
 - `packages/core/src/Timestamp/formatInstant.ts`,
-  `.../Timestamp/tooltipEntries.ts` — Timestamp formatting and its
-  non-display time-zone validity probe
+  `.../Timestamp/formatRelativeTime.ts`, `.../Timestamp/tooltipEntries.ts` —
+  Timestamp absolute/relative formatting and its non-display time-zone validity
+  probe
 - `packages/core/src/PowerSearch/formatFilterValue.ts`
+- `packages/core/src/NumberInput/numberParser.ts` — reads typed and pasted
+  numbers under the field's locale
 - `packages/core/src/i18n/useCollator.ts`
 - `packages/charts/src/formatters.ts`
 
@@ -75,10 +84,17 @@ Named test oracles:
 - `packages/charts/src/formatters.test.ts`
 - `packages/core/src/Calendar/Calendar.test.tsx`
 - `packages/core/src/NumberInput/NumberInput.test.tsx`
+- `packages/core/src/NumberInput/numberParser.test.ts`
+- `packages/core/src/NumberInput/numberParser.docblock.test.ts`
 - `packages/core/src/Table/plugins/tree/useTableTreeState.test.tsx`
 - `packages/core/src/Timestamp/tooltipEntries.test.ts`
 - `packages/core/src/PowerSearch/formatFilterValue.test.ts`
 - `packages/core/src/Timestamp/Timestamp.test.tsx`
+
+Named helper-default test files:
+
+- `packages/core/src/utils/plainDate.test.ts`
+- `packages/core/src/utils/dateParser.test.ts`
 
 These lists are the **only** exception mechanism. There is no rule option or
 `eslint.config.js` override that widens them. A new entry requires a rule-source
@@ -289,6 +305,34 @@ The rule is an error in both tiers because core contains no render-time
 Recommends adding `letterSpacing` when `fontSize` is defined (common design pattern for badges, labels).
 
 **Strict mode only.** Helps catch missing letter-spacing in compact text elements.
+
+### `@astryx/require-baseprops-passthrough`
+
+Ensures a component actually forwards the styling props it accepts via `BaseProps`:
+`xstyle`, `className`, and `style`. A component's props may promise consumers these
+escape hatches, but the implementation can silently drop them:
+
+- **Unused** — a styling prop is destructured but never referenced, so the override is dropped.
+- **Not forwarded** — a styling prop the type promises is never destructured and never reaches
+  the root element.
+
+Forwarding paths differ by what each prop _is_:
+
+- `className` and `style` are real DOM attributes, so they survive a `{...rest}` spread onto
+  the root element (native or composed) — that counts as forwarding them.
+- `xstyle` is a StyleX style object, **not** a DOM attribute. It cannot ride a `{...rest}`
+  spread onto a native element (it renders inert); the only valid un-destructured path is a
+  rest spread onto a composed Astryx component, which re-accepts `xstyle` via its own `BaseProps`.
+
+Fix by threading each prop into the root `mergeProps(...)` / `stylex.props(...)` call, or
+forwarding to a composed component.
+
+Scoped to public components (those with a `.displayName`). Opt out by omitting the prop from
+the type, e.g. `Omit<BaseProps, 'className' | 'style'>` (as `VisuallyHidden` does),
+or mark an intentionally-unused binding with a leading underscore (`className: _className`).
+
+Currently `warn` in both tiers because known violations remain on main. Promote it
+deliberately only once the repository is clean.
 
 ## Usage
 

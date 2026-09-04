@@ -18,9 +18,9 @@ export const doc = {
     'Enumerates the whole themeable surface: each `defineTheme` components key, the stable ' +
     'class it paints, the component that declares it, and the props and states that are legal ' +
     'override keys under it. Same source as the Theming table `astryx component <Name>` prints ' +
-    '— the component docs — so the list cannot drift from the components, and `theme build` ' +
+    '(the component docs), so the list cannot drift from the components, and `theme build` ' +
     'validates overrides against this exact set. A filter naming a component gives that ' +
-    'component\u2019s set; anything else is a substring search over the keys.',
+    'component\'s set; anything else is a substring search over the keys.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'themeTargets(filter?: string, ctx?: {cwd?: string}): Promise<ThemeTargetsResponse>',
@@ -35,7 +35,7 @@ export const doc = {
     {
       name: 'ctx.cwd',
       type: 'string',
-      description: 'Directory the project’s @astryxdesign/core is resolved from.',
+      description: 'Directory the project\'s @astryxdesign/core is resolved from.',
     },
   ],
   returns: [

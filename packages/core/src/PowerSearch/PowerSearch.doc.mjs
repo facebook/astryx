@@ -5,7 +5,7 @@
 export const docs = {
   name: 'PowerSearch',
   displayName: 'Power Search',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'powersearch',
     'search',
@@ -203,6 +203,51 @@ export const docs = {
         'StyleX styles for layout customization. Must be a stylex.create() value.',
     },
   ],
+  // `config` and `filters` are custom values the docsite preview cannot
+  // generate automatically. Keep this small, but include an initial token so
+  // the Properties tab demonstrates a realistic controlled PowerSearch.
+  playground: {
+    defaults: {
+      config: {
+        name: 'IssueSearch',
+        fields: [
+          {
+            key: 'status',
+            label: 'Status',
+            defaultOperator: 'is',
+            operators: [
+              {
+                key: 'is',
+                label: 'is',
+                value: {
+                  type: 'enum',
+                  values: [
+                    {value: 'open', label: 'Open'},
+                    {value: 'closed', label: 'Closed'},
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            key: 'title',
+            label: 'Title',
+            defaultOperator: 'contains',
+            operators: [
+              {key: 'contains', label: 'contains', value: {type: 'string'}},
+            ],
+          },
+        ],
+      },
+      filters: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: {type: 'enum', value: 'open'},
+        },
+      ],
+    },
+  },
   usage: {
     description:
       'PowerSearch is a structured filter bar where each token represents a field, operator, and value. Use it for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',

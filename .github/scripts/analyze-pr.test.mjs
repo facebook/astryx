@@ -56,6 +56,8 @@ function buildFixture() {
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Card'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Button'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Line'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/themes/neutral/src'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/themes/probe/src'), {recursive: true});
 
   git(upstream, ['init', '-q', '-b', 'main']);
   git(upstream, ['config', 'user.email', 'test@test.co']);
@@ -64,6 +66,16 @@ function buildFixture() {
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), 'export {}\n');
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Button/index.ts'), 'export {}\n');
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Line/index.ts'), 'export {}\n');
+  fs.writeFileSync(
+    path.join(upstream, 'packages/themes/neutral/package.json'),
+    JSON.stringify({name: '@astryxdesign/theme-neutral', private: false}),
+  );
+  fs.writeFileSync(path.join(upstream, 'packages/themes/neutral/src/theme.ts'), 'export {}\n');
+  fs.writeFileSync(
+    path.join(upstream, 'packages/themes/probe/package.json'),
+    JSON.stringify({name: '@astryxdesign/theme-probe', private: true}),
+  );
+  fs.writeFileSync(path.join(upstream, 'packages/themes/probe/src/theme.ts'), 'export {}\n');
   git(upstream, ['add', '-A']);
   git(upstream, ['commit', '-qm', 'branch point']);
   const branchPoint = git(upstream, ['rev-parse', 'HEAD']);
@@ -80,6 +92,8 @@ function buildFixture() {
   git(upstream, ['branch', 'feature', branchPoint]);
   git(upstream, ['checkout', '-q', 'feature']);
   fs.appendFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), 'export const Card = {}\n');
+  fs.appendFileSync(path.join(upstream, 'packages/themes/neutral/src/theme.ts'), 'export const changed = true\n');
+  fs.appendFileSync(path.join(upstream, 'packages/themes/probe/src/theme.ts'), 'export const changed = true\n');
   git(upstream, ['add', '-A']);
   git(upstream, ['commit', '-qm', 'touch Card only']);
 
@@ -114,6 +128,7 @@ describe('analyze-pr shallow-clone recovery', () => {
       expect(analysis.diffMode).toBe('three-dot');
       expect(analysis.modifiedComponents).toEqual(['Card']);
       expect(analysis.changedPackages).toEqual(['@astryxdesign/core']);
+      expect(analysis.changedStableThemes).toEqual(['neutral']);
     } finally {
       fs.rmSync(base, {recursive: true, force: true});
     }

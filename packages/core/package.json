@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/core",
-  "version": "0.5.0",
+  "version": "0.5.2",
   "displayName": "Astryx Core",
   "description": "The component library. Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling.",
   "author": "Meta Open Source",
@@ -629,6 +629,11 @@
       "types": "./dist/PowerSearch/utils.d.ts",
       "default": "./dist/PowerSearch/utils.js"
     },
+    "./Resizable/utils": {
+      "source": "./src/Resizable/utils.ts",
+      "types": "./dist/Resizable/utils.d.ts",
+      "default": "./dist/Resizable/utils.js"
+    },
     "./Selector/utils": {
       "source": "./src/Selector/utils.ts",
       "types": "./dist/Selector/utils.d.ts",
@@ -649,6 +654,7 @@
     "dist",
     "src",
     "scripts/postinstall.mjs",
+    "scripts/agent-doc-state.mjs",
     "locales",
     "docs.mjs",
     "groups.doc.mjs",
@@ -658,7 +664,7 @@
   "scripts": {
     "prepack": "pnpm build",
     "postinstall": "node scripts/postinstall.mjs",
-    "build": "rimraf dist && pnpm build:i18n && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
+    "build": "node ../../scripts/clean-dist.mjs && pnpm build:i18n && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
     "build:i18n": "node scripts/build-pseudo-locale.mjs",
     "build:esm": "babel src --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.json",
     "build:css": "node ../../scripts/build-css.mjs",
@@ -683,8 +689,7 @@
     "@stylexjs/babel-plugin": "catalog:",
     "@testing-library/dom": "^10.0.0",
     "@testing-library/jest-dom": "^6.6.0",
-    "@testing-library/react": "^16.3.2",
-    "rimraf": "^6.0.1"
+    "@testing-library/react": "^16.3.2"
   },
   "dependencies": {
     "intl-messageformat": "^11.2.9"

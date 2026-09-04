@@ -29,7 +29,6 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {usePopover} from '../Popover/usePopover';
 import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {useIndicator} from '../Indicator';
@@ -37,7 +36,6 @@ import type {IndicatorPosition} from '../Indicator';
 import type {IconName} from '../Icon';
 import {
   Field,
-  InputClearButton,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
@@ -45,7 +43,8 @@ import {
 } from '../Field';
 import {Divider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
-import type {LayerPlacement} from '../Layer/useLayer';
+import {useKeepLayerOpenProps, type LayerPlacement} from '../Layer/useLayer';
+import {InternalInputClearButton} from '../Field/InputClearButton';
 import {Spinner} from '../Spinner';
 import {PanelSearchInput} from '../Field/PanelSearchInput';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -80,11 +79,16 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTranslator} from '../i18n';
+import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
+import {SelectorBottomSheet} from './SelectorBottomSheet';
+import {useSelectorPresentation} from './useSelectorPresentation';
+import {selectorPresentationStyles} from './selectorPresentation.stylex';
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
@@ -217,13 +221,6 @@ const styles = stylex.create({
     width: 'auto',
     borderWidth: 0,
     backgroundColor: 'transparent',
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
     boxShadow: {
       default: 'none',
       ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
@@ -241,6 +238,16 @@ const styles = stylex.create({
     },
   },
   triggerGhostDisabled: {
+    backgroundImage: 'none',
+    transform: {
+      default: 'none',
+      ':active': 'none',
+    },
+  },
+  triggerReadOnly: {
+    cursor: 'default',
+  },
+  triggerGhostReadOnly: {
     backgroundImage: 'none',
     transform: {
       default: 'none',
@@ -271,6 +278,7 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     maxHeight: '300px',
     overflowY: 'auto',
+    outline: 'none',
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
     opacity: 1,
@@ -395,21 +403,22 @@ const styles = stylex.create({
 // `--spacing-5` is one line here because `triggerContainer` pins its
 // line-height to exactly that; the two must stay in step, which is why both
 // read the same token rather than one hardcoding 20px.
-const linePad = (token: string) =>
-  `calc((${token} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`;
+// Keep these calculations inline: a consumer's Babel preset can lower a
+// module-scope helper to a function expression before StyleX evaluates this
+// object, and StyleX cannot constant-evaluate that transformed helper.
 
 const sizeStyles = stylex.create({
   sm: {
     minHeight: sizeVars['--size-element-sm'],
-    paddingBlock: linePad(sizeVars['--size-element-sm']),
+    paddingBlock: `calc((${sizeVars['--size-element-sm']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   md: {
     minHeight: sizeVars['--size-element-md'],
-    paddingBlock: linePad(sizeVars['--size-element-md']),
+    paddingBlock: `calc((${sizeVars['--size-element-md']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   lg: {
     minHeight: sizeVars['--size-element-lg'],
-    paddingBlock: linePad(sizeVars['--size-element-lg']),
+    paddingBlock: `calc((${sizeVars['--size-element-lg']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
   },
 });
 
@@ -454,6 +463,8 @@ const STATUS_BUTTON_LABEL_KEY: Record<SelectorStatusType, string> = {
 export type SelectorSize = 'sm' | 'md' | 'lg';
 
 export type SelectorVariant = 'input' | 'ghost';
+
+export type SelectorPresentation = AdaptivePresentation;
 
 export type SelectorStatusType = 'warning' | 'error' | 'success';
 
@@ -504,6 +515,17 @@ interface SelectorPropsBase<
    * @default false
    */
   isDisabled?: boolean;
+
+  /**
+   * Whether the selector is read-only.
+   * The selected value stays visible, focusable, and included in form
+   * submission, and retains its combobox identity with `aria-readonly`. The
+   * selection surface and editing affordances are removed.
+   * Unlike `isDisabled`, a read-only selector is not dimmed and stays in the
+   * tab order. `isDisabled` takes precedence when both are set.
+   * @default false
+   */
+  isReadOnly?: boolean;
 
   /**
    * Explains why the selector is disabled. When set together with
@@ -649,6 +671,25 @@ interface SelectorPropsBase<
   searchPlaceholder?: string;
 
   /**
+   * Content shown in the panel when there are no options to show, and
+   * announced in a polite live region when the panel opens. Not shown while
+   * `isLoading` — the options have not arrived yet.
+   * @default 'No options'
+   */
+  emptyText?: ReactNode;
+
+  /**
+   * Content shown in the panel when a search query matches no options, and
+   * announced in a polite live region at the same time.
+   *
+   * The panel message is `role="presentation"`, so the live region is the only
+   * route to assistive tech: a string is announced verbatim, a richer node
+   * falls back to the default text since it cannot be spoken.
+   * @default 'No results found'
+   */
+  emptySearchText?: ReactNode;
+
+  /**
    * Position placement relative to the trigger.
    *
    * Omit to use the selector's default selected-item overlay behavior: the
@@ -657,6 +698,15 @@ interface SelectorPropsBase<
    * `placement="above"` for bottom-fixed toolbars).
    */
   placement?: LayerPlacement;
+
+  /**
+   * How the option list is presented.
+   * - 'popover': anchored to the trigger
+   * - 'bottom-sheet': modal sheet suited to compact touch screens
+   * - 'adaptive': bottom sheet on compact coarse-pointer screens, otherwise popover
+   * @default 'popover'
+   */
+  presentation?: SelectorPresentation;
 
   /**
    * Whether the dropdown starts open on mount.
@@ -775,6 +825,7 @@ export function Selector<T extends SelectorOptionType>(
     isOptional = false,
     isRequired = false,
     isDisabled = false,
+    isReadOnly = false,
     disabledMessage,
     options,
     value,
@@ -794,43 +845,59 @@ export function Selector<T extends SelectorOptionType>(
     indicatorPosition = 'end',
     hasSearch = false,
     searchPlaceholder: searchPlaceholderFromProps,
+    emptyText: emptyTextFromProps,
+    emptySearchText: emptySearchTextFromProps,
     placement,
+    presentation = 'popover',
     isDefaultOpen = false,
     'data-testid': testId,
     width,
     xstyle,
     className,
     style,
+    onFocus,
     hasClear: hasClearProp,
+    id,
     ...rest
   } = props as SelectorPropsClearable<T>;
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
   const searchPlaceholder =
     searchPlaceholderFromProps ?? t('@astryx.selector.searchPlaceholder');
+  const emptyText = emptyTextFromProps ?? t('@astryx.selector.empty');
+  const emptySearchText =
+    emptySearchTextFromProps ?? t('@astryx.selector.emptySearchResults');
   const hasClear = hasClearProp === true;
   const size = useSize(sizeProp, 'md');
   const effectiveStatusVariant =
     variant === 'ghost' && statusVariant === 'attached'
       ? 'detached'
       : statusVariant;
+  const isEffectivelyReadOnly = isReadOnly && !isDisabled;
 
   // Normalize null to undefined for internal use (null is the clear sentinel)
   const normalizedValue = value === null ? undefined : value;
-  const triggerId = useId();
+  const generatedTriggerId = useId();
+  // A caller's `id` lands on the trigger either way, so the internal identity
+  // has to be that same value or the label and listbox point at nothing.
+  const triggerId = id ?? generatedTriggerId;
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputLabelId = useId();
+  const readOnlyDescriptionId = useId();
   const searchId = useId();
   // Measure from the same outer control that usePopover anchors to; using the
   // shorter inner button makes every size's selected row land too low.
   const anchorRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
+  // Mirrors searchQuery for the seed path, which runs before focus reaches the
+  // input and so cannot read the rendered state.
+  const searchQueryRef = useRef('');
   // A typed query shows the search row's clear (✕) button, which becomes
   // the next tab stop after the search input.
   const hasQuery = searchQuery.length > 0;
@@ -839,6 +906,17 @@ export function Selector<T extends SelectorOptionType>(
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
   const isBusy = isLoading || optimisticValue !== normalizedValue;
   const announce = useAnnounce();
+
+  // The panel's empty message is role="presentation" and reaches assistive tech
+  // only through this live region, so the region has to speak whatever the
+  // panel shows. A ReactNode override cannot be spoken; fall back to the
+  // catalog copy for that case rather than announcing nothing.
+  const emptyAnnouncement =
+    typeof emptyText === 'string' ? emptyText : t('@astryx.selector.empty');
+  const emptySearchAnnouncement =
+    typeof emptySearchText === 'string'
+      ? emptySearchText
+      : t('@astryx.selector.emptySearchResults');
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the trigger container (which already exists)
@@ -869,6 +947,7 @@ export function Selector<T extends SelectorOptionType>(
         ? statusTooltip.describedBy
         : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      isEffectivelyReadOnly ? readOnlyDescriptionId : null,
     ],
     inputGroup,
   );
@@ -907,55 +986,120 @@ export function Selector<T extends SelectorOptionType>(
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
+    searchQueryRef.current = '';
     resetTypeaheadRef.current();
     // Clear any lingering result count when the popover closes so stale status
     // text does not linger in the a11y tree.
     announce('');
-    triggerRef.current?.focus();
   }, [announce]);
 
-  const popover = usePopover({
+  const surface = useSelectorPresentation({
+    presentation,
     onHide: handleLayerHide,
-    hasLightDismiss: true,
-    hasCloseButton: false,
-    hasAutoFocus: false,
-    // The popup's own role="listbox" is the exposed semantics; the trigger
-    // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
-    role: 'none',
-    // The theme target belongs on the SURFACE that paints the popup, which
-    // `usePopover` owns — not on the scrolling list inside it.
-    surfaceTarget: 'selector-popup',
+    triggerRef,
+    popoverOptions: {
+      hasLightDismiss: true,
+      hasCloseButton: false,
+      hasAutoFocus: false,
+      // The popup's own role="listbox" is the exposed semantics; the trigger
+      // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
+      role: 'none',
+      // The theme target belongs on the SURFACE that paints the popup, which
+      // `usePopover` owns — not on the scrolling list inside it.
+      surfaceTarget: 'selector-popup',
+    },
   });
+  const {popover} = surface;
+  const hideSurface = surface.hide;
+  const isSurfaceOpen = surface.isOpen;
+  const keepOpenProps = useKeepLayerOpenProps(popover.id, popover.isOpen);
 
-  // Open dropdown on mount when isDefaultOpen is true
+  // Open dropdown on mount when isDefaultOpen is true and interaction is allowed.
   useEffect(() => {
-    if (isDefaultOpen) {
-      popover.show();
+    if (isDefaultOpen && !isEffectivelyReadOnly) {
+      surface.show();
     }
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
 
-  // Announce the filtered result count from the query-change handler (matching
+  // Read-only is controlled by caller policy, so an already-open surface must
+  // close when that policy changes. The presentation controller keeps a sheet
+  // mounted through its exit and lets BottomSheet return final focus.
+  useEffect(() => {
+    if (isEffectivelyReadOnly && isSurfaceOpen) {
+      hideSurface();
+    }
+  }, [isEffectivelyReadOnly, isSurfaceOpen, hideSurface]);
+
+  // Announce the filtered result count from the query-change handlers (matching
   // BaseTypeahead) rather than a reactive effect: computing the count for the
   // next query here fires the announcement exactly once per keystroke and does
-  // not re-speak on unrelated re-renders.
-  const handleSearchChange = useCallback(
+  // not re-speak on unrelated re-renders. Split out from handleSearchChange so
+  // the type-to-open seed below reaches the same live region — a query the user
+  // typed is a query however it arrived.
+  const announceSearchResults = useCallback(
     (nextQuery: string) => {
-      setSearchQuery(nextQuery);
       if (nextQuery.length === 0) {
         // Emptying the query clears the region rather than announcing a count.
+        announce('');
+        return;
+      }
+      // While isLoading the panel deliberately shows nothing, so announcing a
+      // result would put a claim in the one channel the screen has gone quiet
+      // for.
+      if (isLoading) {
         announce('');
         return;
       }
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
       announce(
         count === 0
-          ? t('@astryx.selector.emptySearchResults')
+          ? emptySearchAnnouncement
           : t('@astryx.selector.resultCount', {count}),
       );
     },
-    [announce, selectableItems, t],
+    [announce, isLoading, selectableItems, emptySearchAnnouncement, t],
   );
+
+  const handleSearchChange = useCallback(
+    (nextQuery: string) => {
+      setSearchQuery(nextQuery);
+      searchQueryRef.current = nextQuery;
+      announceSearchResults(nextQuery);
+    },
+    [announceSearchResults],
+  );
+
+  // The panel's empty message is role="presentation", so this region is the
+  // only route to assistive tech. It has to watch the STATE rather than the
+  // open event: the panel can become empty either on open or when a fetch
+  // lands with nothing in it, and an open-only announcement leaves the second
+  // case silent while the message sits on screen. The ref makes it fire once
+  // per arrival at that state rather than on every re-render.
+  const announcedEmptyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const isPanelEmpty =
+      surface.isOpen &&
+      !isLoading &&
+      searchQuery === '' &&
+      selectableItems.length === 0;
+    if (!isPanelEmpty) {
+      announcedEmptyRef.current = null;
+      return;
+    }
+    if (announcedEmptyRef.current === emptyAnnouncement) {
+      return;
+    }
+    announcedEmptyRef.current = emptyAnnouncement;
+    announce(emptyAnnouncement);
+  }, [
+    surface.isOpen,
+    isLoading,
+    searchQuery,
+    selectableItems.length,
+    emptyAnnouncement,
+    announce,
+  ]);
 
   // Calculate offset to position selected item over trigger. Explicit
   // placement opts out of the selector-specific overlay behavior and uses the
@@ -992,10 +1136,20 @@ export function Selector<T extends SelectorOptionType>(
   }, [onChange, changeAction, startTransition, setOptimisticValue]);
 
   // Type-to-find appends to the query rather than replacing it: characters
-  // typed before focus reaches the search input must not be dropped.
-  const appendSearchQuery = useCallback((char: string) => {
-    setSearchQuery(query => query + char);
-  }, []);
+  // typed before focus reaches the search input must not be dropped. The ref
+  // is what makes that safe without a state updater — it advances
+  // synchronously, so a second character seeded in the same tick still sees
+  // the first, and the announcement can be computed here rather than inside a
+  // setState callback.
+  const appendSearchQuery = useCallback(
+    (char: string) => {
+      const nextQuery = searchQueryRef.current + char;
+      searchQueryRef.current = nextQuery;
+      setSearchQuery(nextQuery);
+      announceSearchResults(nextQuery);
+    },
+    [announceSearchResults],
+  );
 
   const commitValue = useCallback(
     (newValue: string) => {
@@ -1021,16 +1175,17 @@ export function Selector<T extends SelectorOptionType>(
     onItemMouseEnter,
   } = useCombobox({
     selectableItems: filteredItems,
+    wasJustDismissed: surface.wasJustDismissed,
     // The optimistic value, not the raw prop: with a pending changeAction the
     // prop still holds the old selection, so the popup would open with the
     // highlight on it and Delete/Backspace could clear a value the action has
     // already replaced.
     value: optimisticValue,
-    isDisabled,
-    isOpen: popover.isOpen,
+    isDisabled: isDisabled || isEffectivelyReadOnly,
+    isOpen: surface.isOpen,
     hasSearch,
     onOpen: useCallback(() => {
-      popover.show();
+      surface.show();
       if (hasSearch) {
         requestAnimationFrame(() => {
           const input = searchRef.current;
@@ -1042,8 +1197,8 @@ export function Selector<T extends SelectorOptionType>(
           }
         });
       }
-    }, [popover, hasSearch]),
-    onClose: popover.hide,
+    }, [surface, hasSearch]),
+    onClose: surface.hide,
     onSelect: commitValue,
     onClear: hasClear ? clearValue : undefined,
     onSearchSeed: appendSearchQuery,
@@ -1063,10 +1218,10 @@ export function Selector<T extends SelectorOptionType>(
     // cycling on the first match. -1 means nothing is selected or highlighted,
     // which the hook reads as "search from the top".
     getCurrentIndex: () =>
-      popover.isOpen ? highlightedIndex : selectedItemIndex,
+      surface.isOpen ? highlightedIndex : selectedItemIndex,
     onMatch: index => {
       const item = selectableItems[index];
-      if (popover.isOpen) {
+      if (surface.isOpen) {
         setHighlightedIndex(index);
       } else if (item.value !== optimisticValue) {
         commitValue(item.value);
@@ -1078,14 +1233,17 @@ export function Selector<T extends SelectorOptionType>(
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (isDisabled || isEffectivelyReadOnly) {
+        return;
+      }
       // With hasSearch the query input owns typing, so type-to-select is off.
-      if (!isDisabled && !hasSearch && typeahead.onKeyDown(e)) {
+      if (!hasSearch && typeahead.onKeyDown(e)) {
         e.preventDefault();
         return;
       }
       onKeyDown(e);
     },
-    [isDisabled, hasSearch, typeahead, onKeyDown],
+    [isDisabled, isEffectivelyReadOnly, hasSearch, typeahead, onKeyDown],
   );
 
   // Keep the highlighted option visible during keyboard navigation. The
@@ -1093,13 +1251,13 @@ export function Selector<T extends SelectorOptionType>(
   // cursor walks off-screen once navigation passes the visible window. Mirrors
   // CommandPaletteItem's scrollIntoView({block: 'nearest'}) behavior.
   useEffect(() => {
-    if (!popover.isOpen || highlightedIndex < 0) {
+    if (!surface.isOpen || highlightedIndex < 0) {
       return;
     }
     document
       .getElementById(getItemId(highlightedIndex))
       ?.scrollIntoView?.({block: 'nearest'});
-  }, [popover.isOpen, highlightedIndex, getItemId]);
+  }, [surface.isOpen, highlightedIndex, getItemId]);
 
   // Handle clear button click
   const handleClear = useCallback(
@@ -1131,17 +1289,21 @@ export function Selector<T extends SelectorOptionType>(
           label: t('@astryx.selector.searchOptions'),
         })}
         {...themeProps('selector-search')}
-        xstyle={variant !== 'ghost' && styles.searchRowInput}
+        xstyle={
+          surface.activePresentation === 'popover' &&
+          variant !== 'ghost' &&
+          styles.searchRowInput
+        }
         // When hasSearch is set, focus moves into this input on open, so it —
         // not the trigger — must be the combobox that reports the highlighted
         // option via aria-activedescendant (comboboxes-4). A bare searchbox
         // left the highlight silent to screen readers.
         role="combobox"
-        aria-expanded={popover.isOpen}
+        aria-expanded={surface.isOpen}
         aria-controls={listboxId}
         aria-autocomplete="list"
         aria-activedescendant={
-          popover.isOpen && highlightedIndex >= 0
+          surface.isOpen && highlightedIndex >= 0
             ? getItemId(highlightedIndex)
             : undefined
         }
@@ -1204,7 +1366,8 @@ export function Selector<T extends SelectorOptionType>(
     searchPlaceholder,
     handleSearchChange,
     onKeyDown,
-    popover.isOpen,
+    surface.isOpen,
+    surface.activePresentation,
     highlightedIndex,
     getItemId,
     variant,
@@ -1313,8 +1476,11 @@ export function Selector<T extends SelectorOptionType>(
   const renderOptions = useCallback(() => {
     const isSearching = hasSearch && Boolean(searchQuery);
 
-    // Nothing matched across every group/option: show the empty state.
-    if (isSearching && filteredItems.length === 0) {
+    // Nothing to show — either the query matched nothing, or no options were
+    // given at all. Both render the same slot with different copy. While
+    // isLoading the options have not arrived yet, so asserting either would be
+    // a claim the component cannot make; the trigger's spinner covers it.
+    if (filteredItems.length === 0 && !isLoading) {
       // role="presentation" keeps the message out of the listbox's
       // accessibility tree (role="listbox" only permits option/group
       // children); the no-results outcome is announced via the
@@ -1327,7 +1493,7 @@ export function Selector<T extends SelectorOptionType>(
             themeProps('selector-empty-state'),
             stylex.props(styles.emptyState),
           )}>
-          No results found
+          {isSearching ? emptySearchText : emptyText}
         </div>,
       ];
     }
@@ -1401,7 +1567,16 @@ export function Selector<T extends SelectorOptionType>(
     }
 
     return elements;
-  }, [options, renderItem, hasSearch, searchQuery, filteredItems]);
+  }, [
+    options,
+    renderItem,
+    hasSearch,
+    searchQuery,
+    filteredItems,
+    isLoading,
+    emptyText,
+    emptySearchText,
+  ]);
 
   // The detached message box renders its own leading status icon, so the
   // on-field icon would duplicate it — keep the chevron indicator instead.
@@ -1444,6 +1619,104 @@ export function Selector<T extends SelectorOptionType>(
       </>
     );
 
+  const panelContent = hasSearch ? (
+    <div>
+      {renderSearch()}
+      <Divider />
+      <div
+        ref={listboxRef}
+        id={listboxId}
+        role="listbox"
+        aria-labelledby={triggerId}
+        {...stylex.props(
+          styles.dropdown,
+          surface.activePresentation === 'popover' &&
+            variant !== 'ghost' &&
+            styles.dropdownInput,
+        )}>
+        {renderOptions()}
+      </div>
+    </div>
+  ) : (
+    <div
+      ref={listboxRef}
+      id={listboxId}
+      role="listbox"
+      aria-labelledby={triggerId}
+      aria-activedescendant={
+        surface.isOpen && highlightedIndex >= 0
+          ? getItemId(highlightedIndex)
+          : undefined
+      }
+      tabIndex={surface.activePresentation === 'bottom-sheet' ? 0 : undefined}
+      onKeyDown={
+        surface.activePresentation === 'bottom-sheet'
+          ? handleTriggerKeyDown
+          : undefined
+      }
+      {...stylex.props(
+        styles.dropdown,
+        surface.activePresentation === 'popover' &&
+          variant !== 'ghost' &&
+          styles.dropdownInput,
+        surface.activePresentation === 'popover' &&
+          !isPositioned &&
+          styles.dropdownHidden,
+      )}>
+      {renderOptions()}
+    </div>
+  );
+
+  let selectionSurface: ReactNode = null;
+  if (surface.activePresentation === 'bottom-sheet') {
+    if (!isEffectivelyReadOnly || surface.isSheetPresented) {
+      selectionSurface = (
+        <SelectorBottomSheet
+          isOpen={surface.isSheetOpen}
+          onOpenChange={surface.onSheetOpenChange}
+          finalFocusRef={triggerRef}
+          initialFocusRef={hasSearch ? searchRef : listboxRef}
+          label={label}>
+          {panelContent}
+        </SelectorBottomSheet>
+      );
+    }
+  } else if (!isEffectivelyReadOnly) {
+    selectionSurface = popover.render(panelContent, {
+      placement: popoverPlacement,
+      alignment: 'start',
+      // The system's standard menu clearance, except in overlay mode:
+      // there the measured negative margin owns the block geometry and
+      // the menu is meant to sit on the trigger, not clear it.
+      offset: shouldOverlaySelectedItem
+        ? undefined
+        : spacingVars['--spacing-1'],
+      xstyle: [styles.popover, layerAnimations[popoverPlacement]],
+      style: popoverOffsetStyle,
+    });
+  }
+
+  const triggerSharedProps: React.HTMLAttributes<HTMLElement> = {
+    ...rest,
+    id: triggerId,
+    'aria-describedby': ariaDescribedBy,
+    'aria-labelledby': ariaLabelledBy,
+    'aria-required': isEffectivelyRequired ? 'true' : undefined,
+    'aria-invalid': status?.type === 'error' ? 'true' : undefined,
+    'aria-busy': isBusy || undefined,
+    onKeyDown: handleTriggerKeyDown,
+    onFocus: event => {
+      onFocus?.(event);
+      surface.onTriggerFocus(event);
+    },
+    tabIndex: isDisabled && !showsDisabledMessage ? -1 : 0,
+    ...stylex.props(
+      styles.trigger,
+      isEffectivelyReadOnly && styles.triggerReadOnly,
+      inputGroup && styles.triggerButtonInGroup,
+    ),
+  };
+
   const selectorContent = (
     <>
       <div
@@ -1463,15 +1736,23 @@ export function Selector<T extends SelectorOptionType>(
             size,
             status: status?.type ?? null,
             disabled: isDisabled ? 'disabled' : null,
+            readonly: isEffectivelyReadOnly ? 'readonly' : null,
           }),
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,
             sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
+            variant === 'ghost' && interactionOverlayStyles.backgroundImage,
             variant === 'ghost' && focusOutlineStyles.focusWithin,
+            surface.isTriggerFocusRingSuppressed &&
+              selectorPresentationStyles.pointerRestoredFocus,
             isDisabled && inputWrapperStyles.disabled,
+            isEffectivelyReadOnly && styles.triggerReadOnly,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
+            variant === 'ghost' &&
+              isEffectivelyReadOnly &&
+              styles.triggerGhostReadOnly,
             !selectedItem && styles.triggerPlaceholder,
             variant !== 'ghost' &&
               status &&
@@ -1492,39 +1773,43 @@ export function Selector<T extends SelectorOptionType>(
         {inputGroup && (
           <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>
         )}
+        {isEffectivelyReadOnly && (
+          <VisuallyHidden id={readOnlyDescriptionId}>
+            {t('@astryx.input.readOnly')}
+          </VisuallyHidden>
+        )}
         <button
-          ref={triggerRef}
-          id={triggerId}
+          {...triggerSharedProps}
+          ref={triggerRef as React.Ref<HTMLButtonElement>}
           type="button"
-          // In hasSearch mode the popup's search input is the combobox (it owns
-          // focus + aria-activedescendant, comboboxes-4), so the trigger is a
-          // plain button that opens the listbox — not a second combobox.
-          role={hasSearch ? undefined : 'combobox'}
-          {...rest}
-          aria-haspopup="listbox"
-          aria-expanded={popover.isOpen}
-          aria-controls={listboxId}
+          // The read-only trigger stays a combobox even when hasSearch is set:
+          // no search input is rendered in that state, and preserving the role
+          // keeps the control's programmatic identity stable. Editable search
+          // mode still moves combobox semantics to the popup input.
+          role={isEffectivelyReadOnly || !hasSearch ? 'combobox' : undefined}
+          aria-haspopup={
+            isEffectivelyReadOnly
+              ? undefined
+              : surface.activePresentation === 'bottom-sheet'
+                ? 'dialog'
+                : 'listbox'
+          }
+          aria-expanded={isEffectivelyReadOnly ? false : surface.isOpen}
+          aria-controls={isEffectivelyReadOnly ? undefined : listboxId}
+          aria-readonly={isEffectivelyReadOnly || undefined}
           aria-activedescendant={
-            !hasSearch && popover.isOpen && highlightedIndex >= 0
+            !isEffectivelyReadOnly &&
+            !hasSearch &&
+            surface.isOpen &&
+            highlightedIndex >= 0
               ? getItemId(highlightedIndex)
               : undefined
           }
-          aria-describedby={ariaDescribedBy}
-          aria-labelledby={ariaLabelledBy}
-          aria-required={isEffectivelyRequired ? 'true' : undefined}
-          aria-invalid={status?.type === 'error' ? 'true' : undefined}
-          aria-busy={isBusy || undefined}
           // With a disabledMessage the trigger keeps focusability via
           // aria-disabled so the reason is focus-discoverable; activation is
           // still blocked by the isDisabled guards in useCombobox.
           disabled={isDisabled && !showsDisabledMessage}
-          aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          onKeyDown={handleTriggerKeyDown}
-          tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-          {...stylex.props(
-            styles.trigger,
-            inputGroup && styles.triggerButtonInGroup,
-          )}>
+          aria-disabled={showsDisabledMessage ? 'true' : undefined}>
           {valueContent}
         </button>
         {htmlName != null && (
@@ -1538,8 +1823,9 @@ export function Selector<T extends SelectorOptionType>(
           />
         )}
         {isBusy && <Spinner size="sm" />}
-        {hasClear && value != null && !isDisabled && (
-          <InputClearButton
+        {hasClear && value != null && !isDisabled && !isEffectivelyReadOnly && (
+          <InternalInputClearButton
+            {...keepOpenProps}
             label={t('@astryx.selector.clearLabel', {label})}
             onClick={handleClear}
             iconClassName={stableClassName('selector-clear-icon')}
@@ -1558,6 +1844,7 @@ export function Selector<T extends SelectorOptionType>(
               type="button"
               aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
               aria-describedby={statusTooltip.describedBy}
+              {...keepOpenProps}
               onClick={e => e.stopPropagation()}
               {...stylex.props(
                 focusOutlineStyles.focusVisible,
@@ -1578,7 +1865,7 @@ export function Selector<T extends SelectorOptionType>(
               xstyle={styles.triggerIcon}
             />
           )
-        ) : (
+        ) : !isEffectivelyReadOnly ? (
           <Icon
             icon="chevronDown"
             size="sm"
@@ -1589,7 +1876,7 @@ export function Selector<T extends SelectorOptionType>(
             xstyle={[
               styles.triggerIcon,
               styles.triggerIconRotation,
-              popover.isOpen && styles.triggerIconOpen,
+              surface.isOpen && styles.triggerIconOpen,
             ]}
             // Stable theme target on the chevron glyph itself, so a theme can
             // restyle just this icon (color, size, hover) — and its
@@ -1597,61 +1884,13 @@ export function Selector<T extends SelectorOptionType>(
             // @layer astryx-theme win over the icon's own base color/size,
             // which a button-level target could not reach.
             {...themeProps('selector-indicator-icon', {
-              state: popover.isOpen ? 'expanded' : 'collapsed',
+              state: surface.isOpen ? 'expanded' : 'collapsed',
             })}
           />
-        )}
+        ) : null}
       </div>
 
-      {popover.render(
-        hasSearch ? (
-          <div>
-            {renderSearch()}
-            {/*
-              Separates the header from the options and spans the panel: the
-              search row and the listbox each hold their own inline padding,
-              the line does not, so it reads as the panel's own edge.
-            */}
-            <Divider />
-            <div
-              ref={listboxRef}
-              id={listboxId}
-              role="listbox"
-              aria-labelledby={triggerId}
-              {...stylex.props(
-                styles.dropdown,
-                variant !== 'ghost' && styles.dropdownInput,
-              )}>
-              {renderOptions()}
-            </div>
-          </div>
-        ) : (
-          <div
-            ref={listboxRef}
-            id={listboxId}
-            role="listbox"
-            aria-labelledby={triggerId}
-            {...stylex.props(
-              styles.dropdown,
-              variant !== 'ghost' && styles.dropdownInput,
-              !isPositioned && styles.dropdownHidden,
-            )}>
-            {renderOptions()}
-          </div>
-        ),
-        {
-          placement: popoverPlacement,
-          alignment: 'start',
-          // The system's standard menu clearance, except in overlay mode:
-          // there the measured negative margin owns the block geometry and
-          // the menu is meant to sit on the trigger, not clear it.
-          offset: shouldOverlaySelectedItem
-            ? undefined
-            : spacingVars['--spacing-1'],
-          xstyle: [styles.popover, layerAnimations[popoverPlacement]],
-          style: popoverOffsetStyle,
-        },
-      )}
+      {selectionSurface}
 
       {showStatusTooltip && statusTooltip.renderTooltip(status?.message ?? '')}
 

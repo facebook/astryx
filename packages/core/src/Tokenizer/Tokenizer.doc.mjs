@@ -5,7 +5,7 @@
 export const docs = {
   name: 'Tokenizer',
   displayName: 'Tokenizer',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
   props: [
     {
@@ -132,13 +132,19 @@ export const docs = {
     {
       name: 'maxMenuItems',
       type: 'number',
-      description: 'Maximum number of dropdown items to display.',
+      description: 'Maximum number of search results to display. The hasCreate entry is offered on top of them, so a menu can show one more than this.',
       default: '10',
     },
     {
       name: 'menuWidth',
       type: 'number',
       description: 'Fixed dropdown width in pixels. The menu never shrinks below its anchor width.',
+    },
+    {
+      name: 'minQueryLength',
+      type: 'number',
+      description: 'Minimum query length before the search source is queried. Below it no search runs, and the menu stays closed — unless hasCreate is set, in which case the "Create ..." entry is still offered, being derived from the typed text rather than fetched for it.',
+      default: '1',
     },
     {
       name: 'emptySearchResultsText',
@@ -252,6 +258,7 @@ export const docs = {
       {name: 'Token chips', required: false, description: 'Removable chips representing each selected item. Each chip shows a label and a remove button.'},
       {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Hides when maxEntries is reached.'},
       {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types.'},
+      {name: 'Spinner', required: false, description: 'Loading indicator shown at the end of the field while a search is in flight.'},
       {name: 'End content', required: false, description: 'A trailing slot after the input for action buttons, counts, or other controls.'},
       {name: 'Clear button', required: false, description: 'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.'},
     ],
@@ -386,13 +393,19 @@ export const docsZh = {
     {
       name: 'maxMenuItems',
       type: 'number',
-      description: '\u4e0b\u62c9\u5217\u8868\u663e\u793a\u7684\u6700\u5927\u9879\u76ee\u6570\u3002',
+      description: '下拉列表显示的最大搜索结果数。“创建 ...”条目会在此之外额外提供，因此菜单可能比该数量多显示一项。',
       default: '10',
     },
     {
       name: 'menuWidth',
       type: 'number',
       description: '下拉菜单的固定像素宽度。菜单不会小于其锚点宽度。',
+    },
+    {
+      name: 'minQueryLength',
+      type: 'number',
+      description: '查询搜索源前的最小查询长度。低于该长度不会发起搜索，菜单保持关闭；但设置 hasCreate 时仍会提供“创建 ...”条目——该条目由输入的文本推导而来，并非通过搜索获取。',
+      default: '1',
     },
     {
       name: 'emptySearchResultsText',
@@ -471,6 +484,7 @@ export const docsZh = {
       {name: 'Token chips', required: false, description: 'Removable chips representing each selected item. Each chip shows a label and a remove button.'},
       {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Hides when maxEntries is reached.'},
       {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types.'},
+      {name: 'Spinner', required: false, description: 'Loading indicator shown at the end of the field while a search is in flight.'},
       {name: 'End content', required: false, description: 'A trailing slot after the input for action buttons, counts, or other controls.'},
       {name: 'Clear button', required: false, description: 'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.'},
     ],
@@ -515,8 +529,9 @@ export const docsDense = {
     isOptional: 'Shows optional indicator on label.',
     labelTooltip: 'Tooltip on label.',
     hasEntriesOnFocus: 'Show bootstrap results on focus before typing.',
-    maxMenuItems: 'Max dropdown items to display.',
+    maxMenuItems: 'Max search results shown; the hasCreate entry sits on top of them.',
     menuWidth: 'Fixed dropdown width in pixels.',
+    minQueryLength: 'Min query length before searching. Menu stays closed below it, except the hasCreate entry.',
     emptySearchResultsText: 'Text when search returns no results.',
     hasAutoFocus: 'Auto-focus input on mount.',
     size: 'Input+token size.',

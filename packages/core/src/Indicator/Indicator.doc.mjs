@@ -6,7 +6,7 @@ export const docs = {
   name: 'Indicator',
   displayName: 'Indicator',
   group: 'Indicator',
-  category: 'Data Input',
+  category: 'Form Controls',
   isHiddenFromOverview: true,
   keywords: [
     'indicator',
@@ -89,6 +89,9 @@ export const docs = {
             'Rendered INSTEAD of the mark, in every state: a host showing a pending Spinner passes it through whether or not the row is chosen.',
         },
       ],
+      playground: {
+        defaults: {state: 'checked'},
+      },
     },
     {
       name: 'RadioIndicator',

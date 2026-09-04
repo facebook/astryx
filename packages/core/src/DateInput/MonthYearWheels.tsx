@@ -17,12 +17,14 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/TouchDateField.tsx
+ * - /packages/core/src/DateTimeInput/TouchDateTimeField.tsx
  * - /packages/core/src/DateInput/DateInput.doc.mjs
  * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  */
 
 import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {useLocale} from '../i18n';
 import {DATE_FORMAT_MONTH_ONLY, plainDateFormat} from '../utils';
 import {spacingVars} from '../theme/tokens.stylex';
 import {dateInputTouchGeometry} from './tokens.stylex';
@@ -66,6 +68,7 @@ export function MonthYearWheels({
   yearLabel,
   isActive = true,
 }: MonthYearWheelsProps) {
+  const locale = useLocale();
   const {year, month} = fromMonthIndex(monthIndex);
 
   // Day 15 of a fixed year: no timezone can push it into an adjacent month
@@ -73,18 +76,18 @@ export function MonthYearWheels({
   //
   // `plainDateFormat` rather than a raw `Intl.DateTimeFormat`, which the
   // shared lint rule forbids and which would duplicate the format vocabulary
-  // besides. It resolves the locale itself, so there is nothing here for the
-  // memo to depend on — the same is true of Calendar's own month labels, and
-  // is why this list is constant for the life of the component.
+  // besides. Recompute when the provider locale changes so the wheel labels
+  // stay in sync with the field and calendar.
   const monthNames = useMemo(
     () =>
       Array.from({length: 12}, (_, index) =>
         plainDateFormat(
           {year: 2021, month: index + 1, day: 15},
           DATE_FORMAT_MONTH_ONLY,
+          locale,
         ),
       ),
-    [],
+    [locale],
   );
 
   // Months outside the range stay on the wheel rather than vanishing: a list

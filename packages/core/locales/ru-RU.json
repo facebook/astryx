@@ -277,7 +277,7 @@
   },
   "@astryx.banner.dismiss": {
     "defaultMessage": "Закрыть",
-    "description": "\"Dismiss\" = close/hide this notification (not \"reject a person\"). Aria label AND tooltip on the small X button on a Banner."
+    "description": "\"Dismiss\" = close/hide this notification (not \"reject a person\"). Tooltip on the small X button on a Banner, and its aria label when the banner's title is not plain text."
   },
   "@astryx.calendar.previousMonth": {
     "defaultMessage": "Предыдущий месяц",
@@ -647,10 +647,6 @@
     "defaultMessage": "Выберите дату",
     "description": "Grey placeholder inside an empty DateTimeInput field. Note: the English says only \"date\" though the field is date+time — do not add \"and time\" unless natural."
   },
-  "@astryx.dateTimeInput.dialogLabel": {
-    "defaultMessage": "Выбор даты",
-    "description": "Screen-reader-only accessible name for the DateTimeInput picker dialog. Same English-only \"date\" phrasing as the placeholder — don't add \"and time\" unless natural."
-  },
   "@astryx.link.newTab": {
     "defaultMessage": "(откроется в новой вкладке)",
     "description": "Visually-hidden (screen-reader-only) suffix appended to a Link's accessible name when it opens in a new tab. Example: `Documentation (opens in new tab)`."
@@ -697,7 +693,7 @@
   },
   "@astryx.table.pagination.label": {
     "defaultMessage": "Постраничная навигация таблицы",
-    "description": "Screen-reader-only accessible name for the pagination `<nav>` appended below a data table. Kept separate from `@astryx.pagination.label` so translations may diverge."
+    "description": "Screen-reader-only accessible name for a table's pagination `<nav>` (rendered below and/or above the table per the plugin's position config). Kept separate from `@astryx.pagination.label` so translations may diverge. When position='both', this string is interpolated as the {label} value into `@astryx.table.pagination.labelAbove`/`labelBelow` — keep it compatible with those suffix templates."
   },
   "@astryx.timeInput.placeholder": {
     "defaultMessage": "Выберите время",
@@ -905,23 +901,23 @@
   },
   "@astryx.step.goToStep": {
     "defaultMessage": "Перейти к шагу {stepNumber, number}: {label}",
-    "description": "Accessible name for a clickable step in the lab Stepper. {stepNumber} is the 1-based position, {label} is the step's visible label."
+    "description": "Accessible name for a clickable step in the Stepper. {stepNumber} is the 1-based position, {label} is the step's visible label."
   },
   "@astryx.step.goToStepWithStatus": {
     "defaultMessage": "Перейти к шагу {stepNumber, number}: {label}, {status}",
-    "description": "Accessible name for a clickable lab Stepper step that also carries a status. {status} is one of the translated `step.status.*` words (completed/warning/error). Keep the pattern parallel to `step.goToStep`."
+    "description": "Accessible name for a clickable Stepper step that also carries a status. {status} is one of the translated `step.status.*` words (completed/warning/error). Keep the pattern parallel to `step.goToStep`."
   },
   "@astryx.step.status.completed": {
     "defaultMessage": "завершено",
-    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when the step is done (either progress-completed or status=success). Lowercase adjective; it is read mid-sentence after the step label."
+    "description": "Screen-reader-only status word rendered next to a Stepper step label when the step is done (either progress-completed or status=success). Lowercase adjective; it is read mid-sentence after the step label."
   },
   "@astryx.step.status.warning": {
     "defaultMessage": "предупреждение",
-    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when status=warning. Lowercase noun/adjective; read mid-sentence after the step label."
+    "description": "Screen-reader-only status word rendered next to a Stepper step label when status=warning. Lowercase noun/adjective; read mid-sentence after the step label."
   },
   "@astryx.step.status.error": {
     "defaultMessage": "ошибка",
-    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
+    "description": "Screen-reader-only status word rendered next to a Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
   },
   "@astryx.tableTree.collapseRow": {
     "defaultMessage": "Свернуть строку",

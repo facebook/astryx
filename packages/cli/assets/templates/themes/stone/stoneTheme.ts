@@ -40,7 +40,7 @@ const INPUT_STATUS_VARS = {
  * the stone neutral palette doesn't carry a distinct green stop.
  */
 const stoneSyntax = defineSyntaxTheme({
-  name: 'xds-stone',
+  name: 'astryx-stone',
   tokens: {
     keyword: ['#645a72', '#b2a7c1'], // Purple T40 / T70
     string: ['#4e6357', '#9bb19a'], // Teal T40 / Green T70
@@ -105,7 +105,9 @@ export const stoneTheme = defineTheme({
 
     // Text — H=291
     '--color-text-primary': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
-    '--color-text-secondary': ['#83838a', '#9d9da3'], // T55 C=4 / T65 C=3
+    // T40/T70 keeps normal secondary text above AA on every stone surface,
+    // including the muted and tinted fills that components pair it with.
+    '--color-text-secondary': ['#5e5e63', '#ababb0'], // Stone Neutral T40 / T70
     '--color-text-disabled': ['#d7d7da', '#5e5e61'], // T86 C=1.6 / T40 C=2
     '--color-text-accent': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
     '--color-on-dark': '#FFFFFF',

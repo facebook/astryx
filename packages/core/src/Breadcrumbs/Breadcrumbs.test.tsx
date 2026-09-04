@@ -74,6 +74,18 @@ describe('Breadcrumbs', () => {
     expect(separators[0].textContent).toBe('/');
   });
 
+  it('wraps the contextual default slash in the RTL mirror style', () => {
+    const {container} = render(
+      <Breadcrumbs>
+        <BreadcrumbItem href="/">Home</BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Page</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    const separators = container.querySelectorAll('span[aria-hidden="true"]');
+    expect(separators[1].firstElementChild).toHaveTextContent('/');
+    expect(separators[1].firstElementChild).toHaveAttribute('class');
+  });
+
   it('supports custom separator', () => {
     const {container} = render(
       <Breadcrumbs separator={<span>›</span>}>

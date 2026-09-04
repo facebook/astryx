@@ -41,6 +41,7 @@ import {fileURLToPath} from 'node:url';
 import {useState} from 'react';
 import type {ISODateString} from '../utils';
 import {InputGroup} from '../InputGroup';
+import {InternationalizationProvider} from '../i18n';
 import {stableClassName} from '../naming';
 import {DateInput} from './DateInput';
 import {
@@ -335,7 +336,12 @@ describe('DateInput — surface selection', () => {
     setViewport('desktop');
     const onChange = vi.fn();
     render(
-      <DateInput nativePicker="never" label="Event date" onChange={onChange} min={undefined} />,
+      <DateInput
+        nativePicker="never"
+        label="Event date"
+        onChange={onChange}
+        min={undefined}
+      />,
     );
     fireEvent.change(field(), {target: {value: '2026-03-25'}});
     expect(onChange).toHaveBeenCalledWith('2026-03-25');
@@ -350,6 +356,41 @@ describe('DateInput — surface selection', () => {
     expect(input).toHaveAttribute('readonly');
     // What actually keeps the virtual keyboard from covering the sheet.
     expect(input).toHaveAttribute('inputmode', 'none');
+  });
+
+  it('updates the field and open picker when the provider locale changes', () => {
+    const renderDateInput = (locale: 'en-US' | 'es-ES') => (
+      <InternationalizationProvider locale={locale}>
+        <Controlled initial="2026-03-21" />
+      </InternationalizationProvider>
+    );
+
+    withLayout(() => {
+      const {rerender} = render(renderDateInput('en-US'));
+      expect(field()).toHaveValue('March 21, 2026');
+
+      fireEvent.click(field());
+      expect(
+        document.querySelector('[data-title="month-year"]'),
+      ).toHaveTextContent('March 2026');
+      expect(pane('March 2026')).toBeInTheDocument();
+
+      rerender(renderDateInput('es-ES'));
+      expect(field()).toHaveValue('21 de marzo de 2026');
+      expect(
+        document.querySelector('[data-title="month-year"]'),
+      ).toHaveTextContent('marzo de 2026');
+      expect(pane('marzo de 2026')).toBeInTheDocument();
+
+      const nextButton = document.querySelector<HTMLButtonElement>(
+        '[data-arrows="months"] button:last-child',
+      );
+      expect(nextButton).not.toBeNull();
+      fireEvent.click(nextButton!);
+      expect(
+        document.querySelector('[data-title="month-year"]'),
+      ).toHaveTextContent('abril de 2026');
+    });
   });
 
   it('forwards ref to the input on both surfaces', () => {
@@ -380,7 +421,12 @@ describe('DateInput — field parity', () => {
     expect(field()).toHaveValue('');
     expect(field()).toHaveAttribute('placeholder', 'Select a date');
     rerender(
-      <DateInput nativePicker="never" label="Ship date" value="2026-03-21" onChange={() => {}} />,
+      <DateInput
+        nativePicker="never"
+        label="Ship date"
+        value="2026-03-21"
+        onChange={() => {}}
+      />,
     );
     expect(field()).toHaveValue('March 21, 2026');
   });
@@ -477,7 +523,13 @@ describe('DateInput — field parity', () => {
 
   it('does not open the picker until the field is tapped', () => {
     withLayout(() => {
-      render(<DateInput nativePicker="never" label="Ship date" onChange={() => {}} />);
+      render(
+        <DateInput
+          nativePicker="never"
+          label="Ship date"
+          onChange={() => {}}
+        />,
+      );
       expect(field()).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByRole('grid')).not.toBeInTheDocument();
       fireEvent.click(field());
@@ -495,7 +547,14 @@ describe('DateInput — field parity', () => {
   });
 
   it('is not openable while disabled', () => {
-    render(<DateInput nativePicker="never" label="Ship date" isDisabled onChange={() => {}} />);
+    render(
+      <DateInput
+        nativePicker="never"
+        label="Ship date"
+        isDisabled
+        onChange={() => {}}
+      />,
+    );
     expect(field()).toBeDisabled();
     fireEvent.click(field());
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
@@ -538,12 +597,21 @@ describe('DateInput — field parity', () => {
   });
 
   it('marks required for assistive technology', () => {
-    render(<DateInput nativePicker="never" label="Ship date" isRequired onChange={() => {}} />);
+    render(
+      <DateInput
+        nativePicker="never"
+        label="Ship date"
+        isRequired
+        onChange={() => {}}
+      />,
+    );
     expect(field()).toHaveAttribute('aria-required', 'true');
   });
 
   it('associates the label natively, so the field is named without ARIA', () => {
-    render(<DateInput nativePicker="never" label="Ship date" onChange={() => {}} />);
+    render(
+      <DateInput nativePicker="never" label="Ship date" onChange={() => {}} />,
+    );
     expect(screen.getByLabelText('Ship date')).toBe(field());
   });
 
@@ -666,7 +734,13 @@ describe('DateInput — calendar surface', () => {
   it('Save closes even with no date chosen, committing nothing', () => {
     const onChange = vi.fn();
     withLayout(() => {
-      render(<DateInput nativePicker="never" label="Ship date" onChange={onChange} />);
+      render(
+        <DateInput
+          nativePicker="never"
+          label="Ship date"
+          onChange={onChange}
+        />,
+      );
       fireEvent.click(field());
       fireEvent.click(screen.getByRole('button', {name: 'Save'}));
     });
@@ -1542,12 +1616,22 @@ describe('DateInput — month/year wheels', () => {
     expect(title()).toHaveTextContent('May 2027');
   });
 
-  it('offers Reset only on the calendar, beside Save', () => {
+  it('offers Reset only on the calendar, in the header corner', () => {
     renderAndOpen();
-    expect(screen.getByRole('button', {name: 'Reset'})).toBeInTheDocument();
+    const reset = screen.getByRole('button', {name: 'Reset'});
+    // The trailing-most thing in the header, past the arrows — not the
+    // footer, which is Save's alone.
+    const header = reset.closest('[data-action="reset"]')!.parentElement!;
+    expect(header.querySelector('[data-title="month-year"]')).not.toBeNull();
+    expect(header.lastElementChild).toHaveAttribute('data-action', 'reset');
+
     openWheels();
     // The wheels choose a month; there is no date there to clear.
     expect(screen.queryByRole('button', {name: 'Reset'})).toBeNull();
+    // Hidden, not unmounted, so the header cannot change height mid-swap.
+    expect(
+      document.querySelector('dialog[open] [data-action="reset"]'),
+    ).toHaveAttribute('inert');
   });
 
   it('Save closes the whole picker; Done only leaves the wheels', () => {
@@ -2413,18 +2497,27 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(footer).not.toContain('paddingInline');
   });
 
-  it('floors the touch target without discarding the size prop', () => {
-    const source = read('TouchDateField.tsx');
-    // Each size keeps its own height AND cannot render below a thumb's reach.
-    const sizeMap = source.slice(
-      source.indexOf('const sizeStyles = stylex.create('),
-      source.indexOf('const styles = stylex.create('),
+  it('sizes the closed field the same on both surfaces', () => {
+    // `DateInput` picks a surface from the pointer and `nativePicker`, so a
+    // field that sizes itself differently on one of them changes height for
+    // a reason the call site never asked about.
+    //
+    // Compared with formatting normalized away: the two files write the same
+    // declarations differently, one entry per line against one per size.
+    const sizeMap = (file: string) => {
+      const source = read(file);
+      const start = source.indexOf('const sizeStyles = stylex.create(');
+      expect(start).toBeGreaterThan(-1);
+      return source
+        .slice(start, source.indexOf('});', start))
+        .replace(/\/\/.*$/gm, '')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\s+/g, '')
+        .replace(/,(?=[}\]])/g, '');
+    };
+    expect(sizeMap('TouchDateField.tsx')).toEqual(
+      sizeMap('NativeDateField.tsx'),
     );
-    expect(
-      sizeMap.match(
-        /minBlockSize: \{default: null, '@media \(pointer: coarse\)': TOUCH_TARGET\}/g,
-      ),
-    ).toHaveLength(3);
   });
 
   it('floors the month arrows too — Button tops out at 36px', () => {
@@ -2546,16 +2639,14 @@ describe('DateInput — scroll CSS (definition-level)', () => {
   });
 
   /**
-   * Both footer actions span the sheet. A full-width primary is the shape a
+   * The footer action spans the sheet. A full-width primary is the shape a
    * phone form ends with, and it puts the target under the thumb wherever
    * the hand is.
    */
-  it('spans the footer with its actions', () => {
+  it('spans the footer with its action', () => {
     const source = read('TouchDateField.tsx');
-    // Reset + Save share the calendar's cell; Done is the wheels'. Each
-    // fills the space it is given, so the row divides evenly rather than by
-    // label length.
-    expect(source.match(/width="100%"/g)).toHaveLength(3);
+    // One per surface: Save on the calendar, Done on the wheels.
+    expect(source.match(/width="100%"/g)).toHaveLength(2);
   });
 
   /**
@@ -2604,7 +2695,7 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(
       styles.match(/transitionTimingFunction: easeVars\['--ease-standard'\]/g),
     ).toHaveLength(1);
-    expect(styles.match(/transitionTimingFunction: 'linear'/g)).toHaveLength(3);
+    expect(styles.match(/transitionTimingFunction: 'linear'/g)).toHaveLength(4);
   });
 
   /**
@@ -2622,9 +2713,9 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     const styles = source.slice(
       source.indexOf('const styles = stylex.create('),
     );
-    // The arrows, the weekday row, the layer beneath, the layer above, and
-    // the chevron.
-    expect(styles.match(/transitionDuration: SWAP_DURATION/g)).toHaveLength(5);
+    // The arrows, Reset, the weekday row, the layer beneath, the layer
+    // above, and the chevron.
+    expect(styles.match(/transitionDuration: SWAP_DURATION/g)).toHaveLength(6);
     // And no leftover hand-rolled timing beside them.
     expect(styles).not.toContain('PANEL_FADE_MS');
     expect(source).toContain(

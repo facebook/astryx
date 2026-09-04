@@ -795,3 +795,75 @@ describe('useTableSortable — i18n', () => {
     ).toBeInTheDocument();
   });
 });
+
+// =============================================================================
+// Header Alignment
+// =============================================================================
+
+describe('useTableSortable — header alignment', () => {
+  // A column's `align` lands as `textAlign` on the <th>, which cannot position
+  // the contents of the full-width flex button the plugin renders inside it.
+  // The plugin has to mirror the alignment onto the button's main axis, or a
+  // numeric column gets a left-hugging header over right-aligned figures.
+  const buttonFor = (name: RegExp) => screen.getByRole('button', {name});
+
+  it('gives an end-aligned column a different button style than a default one', () => {
+    render(
+      <SortableTable
+        columns={[
+          {key: 'name', header: 'Name', sortable: true},
+          {key: 'age', header: 'Age', sortable: true, align: 'end'},
+        ]}
+      />,
+    );
+
+    expect(buttonFor(/sort by age/i).className).not.toBe(
+      buttonFor(/sort by name/i).className,
+    );
+  });
+
+  it('gives a center-aligned column a different button style than a default one', () => {
+    render(
+      <SortableTable
+        columns={[
+          {key: 'name', header: 'Name', sortable: true},
+          {key: 'age', header: 'Age', sortable: true, align: 'center'},
+        ]}
+      />,
+    );
+
+    expect(buttonFor(/sort by age/i).className).not.toBe(
+      buttonFor(/sort by name/i).className,
+    );
+  });
+
+  it('distinguishes end from center', () => {
+    render(
+      <SortableTable
+        columns={[
+          {key: 'name', header: 'Name', sortable: true, align: 'end'},
+          {key: 'age', header: 'Age', sortable: true, align: 'center'},
+        ]}
+      />,
+    );
+
+    expect(buttonFor(/sort by name/i).className).not.toBe(
+      buttonFor(/sort by age/i).className,
+    );
+  });
+
+  it('leaves a start-aligned column styled like an unaligned one', () => {
+    render(
+      <SortableTable
+        columns={[
+          {key: 'name', header: 'Name', sortable: true},
+          {key: 'age', header: 'Age', sortable: true, align: 'start'},
+        ]}
+      />,
+    );
+
+    expect(buttonFor(/sort by age/i).className).toBe(
+      buttonFor(/sort by name/i).className,
+    );
+  });
+});

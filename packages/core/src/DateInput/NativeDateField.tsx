@@ -4,7 +4,7 @@
 
 /**
  * @file NativeDateField.tsx
- * @input Uses React, Field, Icon, InputClearButton, Spinner, useCalendarConstraints
+ * @input Uses React, Field, Icon, InputClearButton, Spinner, useCalendarConstraints, hasEditableDateSegments
  * @output Exports NativeDateField — the OS-picker touch surface
  * @position One of DateInput's three surfaces. `DateInput` picks the pointer
  *   field on a mouse and, on touch, either `TouchDateField` (the default) or
@@ -22,13 +22,15 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DateInput/DateInput.tsx (the `nativePicker` prop)
  * - /packages/core/src/DateInput/DateInput.doc.mjs (prop table)
- * - /packages/core/src/DateInput/DateInputNative.test.tsx (tests)
+ * - /packages/core/src/DateInput/nativeDateSegments.ts (the engine probe)
+ * - /packages/core/src/DateInput/NativeDateField.test.tsx (tests)
  */
 
 import {useCallback, useEffect, useId, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useCalendarConstraints} from '../Calendar';
 import type {DateInputProps} from './DateInput';
+import {hasEditableDateSegments} from './nativeDateSegments';
 import {
   Field,
   InputClearButton,
@@ -38,6 +40,7 @@ import {
   inputWrapperStyles,
 } from '../Field';
 import {useInputStatusIcon, useMergedRefs} from '../hooks';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {Icon} from '../Icon';
 import {useLocale, useTranslator} from '../i18n';
@@ -254,6 +257,8 @@ export function NativeDateField({
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateInput.placeholder');
   const size = useSize(sizeProp, 'md');
+  // Only breaks a tie the engine probe cannot: see ./nativeDateSegments.
+  const isTouchPointer = useMediaQuery('(pointer: coarse)');
 
   const id = useId();
   const inputLabelID = useId();
@@ -301,6 +306,10 @@ export function NativeDateField({
   // Whether the control has focus — which, on a touch device, means its
   // picker is open.
   const [isFocused, setIsFocused] = useState(false);
+  // Whether the engine draws this control as editable segments rather than a
+  // picker-only run. Latched on focus rather than read during render: the
+  // probe touches the DOM, and unfocused the answer changes nothing.
+  const [isSegmentEditable, setIsSegmentEditable] = useState(false);
   // The raw value the control last reported and we acted on, so the same edit
   // arriving through both commit paths only fires one change.
   const lastCommitRef = useRef<string | null>(null);
@@ -328,10 +337,14 @@ export function NativeDateField({
   );
 
   // This field paints the closed control's text itself, which is what keeps
-  // `format` and `placeholder` applying: the OS picker has no segments to
-  // edit, so our text holds even while the picker is open, and tracks it live.
+  // `format` and `placeholder` applying: a picker-only control has no
+  // segments to edit, so our text holds even while the picker is open, and
+  // tracks it live. An editable control is the opposite case — its text IS
+  // the edit surface, and it reports no `value` until every segment is
+  // filled, so the overlay has nothing to paint mid-edit — so step aside for
+  // as long as it has focus. See ./nativeDateSegments.
   const overlayText = nativeValue ? formatValue(nativeValue) : placeholder;
-  const showsOverlay = !!overlayText;
+  const showsOverlay = !!overlayText && !(isFocused && isSegmentEditable);
 
   const commitValue = useCallback(
     (newValue: string) => {
@@ -434,6 +447,11 @@ export function NativeDateField({
     }
   }, [isFocused, nativeValue]);
 
+  const handleFocus = useCallback(() => {
+    setIsSegmentEditable(hasEditableDateSegments(isTouchPointer));
+    setIsFocused(true);
+  }, [isTouchPointer]);
+
   const handleBlur = useCallback(() => {
     const domValue = inputRef.current?.value;
     setIsFocused(false);
@@ -533,7 +551,7 @@ export function NativeDateField({
           // mount — see `initialValueRef` and the sync effect above.
           defaultValue={initialValueRef.current ?? ''}
           onChange={handleChange}
-          onFocus={() => setIsFocused(true)}
+          onFocus={handleFocus}
           onBlur={handleBlur}
           min={min}
           max={max}

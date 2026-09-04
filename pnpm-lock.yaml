@@ -49,6 +49,9 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.6.0(jiti@2.7.0))
+      '@formatjs/icu-messageformat-parser':
+        specifier: ^3.5.12
+        version: 3.5.12
       '@playwright/test':
         specifier: ^1.61.1
         version: 1.61.1
@@ -324,6 +327,9 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+      vitest:
+        specifier: ^4.1.9
+        version: 4.1.10(@types/node@25.9.4)(@vitest/coverage-v8@4.1.10)(happy-dom@20.11.1)(jsdom@27.4.0)(vite@8.1.3(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
 
   apps/storybook:
     dependencies:
@@ -354,6 +360,9 @@ importers:
       '@astryxdesign/theme-neutral':
         specifier: '*'
         version: link:../../packages/themes/neutral
+      '@astryxdesign/theme-probe':
+        specifier: '*'
+        version: link:../../packages/themes/probe
       '@astryxdesign/theme-stone':
         specifier: '*'
         version: link:../../packages/themes/stone
@@ -587,7 +596,7 @@ importers:
   packages/charts:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../core
       '@stylexjs/stylex':
         specifier: '>=0.10.0'
@@ -617,9 +626,6 @@ importers:
       '@types/d3-shape':
         specifier: ^3.1.8
         version: 3.1.8
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
 
   packages/cli:
     dependencies:
@@ -694,14 +700,11 @@ importers:
       '@testing-library/react':
         specifier: ^16.3.2
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
 
   packages/lab:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../core
       '@stylexjs/stylex':
         specifier: '>=0.10.0'
@@ -734,14 +737,11 @@ importers:
       '@types/d3-shape':
         specifier: ^3.1.8
         version: 3.1.8
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
 
   packages/richtext:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../core
       '@stylexjs/stylex':
         specifier: '>=0.10.0'
@@ -789,14 +789,11 @@ importers:
       lexical:
         specifier: ^0.46.0
         version: 0.46.0(typescript@6.0.3)
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
 
   packages/themes/butter:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -806,16 +803,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../cli
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
 
   packages/themes/chocolate:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -825,16 +819,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../cli
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
 
   packages/themes/gothic:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -844,16 +835,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../cli
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
 
   packages/themes/matcha:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -863,16 +851,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../cli
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
 
   packages/themes/neutral:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -882,16 +867,29 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../cli
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
+
+  packages/themes/probe:
+    dependencies:
+      '@astryxdesign/core':
+        specifier: 0.5.2
+        version: link:../../core
+      react:
+        specifier: '>=19'
+        version: 19.2.7
+    devDependencies:
+      '@astryxdesign/cli':
+        specifier: 0.5.2
+        version: link:../../cli
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.25)(tsx@4.23.0)(typescript@6.0.3)(yaml@2.9.0)
 
   packages/themes/stone:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -901,16 +899,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../cli
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
 
   packages/themes/y2k:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -920,11 +915,8 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.5.0
+        specifier: 0.5.2
         version: link:../../cli
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
 
   packages/vega:
     dependencies:
@@ -5304,9 +5296,6 @@ packages:
     resolution: {integrity: sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ==}
     engines: {node: '>=6'}
 
-  package-json-from-dist@1.0.1:
-    resolution: {integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==}
-
   package-manager-detector@0.2.11:
     resolution: {integrity: sha512-BEnLolu+yuz22S56CU1SUKq3XC3PkwD5wv4ikR4MfGvnRVcmzXR9DwSlW2fEamyTPyXHomBJRzgapeuBvRNzJQ==}
 
@@ -5603,11 +5592,6 @@ packages:
 
   rfdc@1.4.1:
     resolution: {integrity: sha512-q1b3N5QkRUWUl7iyylaaj3kOpIT0N2i9MqIEQXP73GVsN9cw3fdx8X63cEmWhJGi2PPCF23Ijp7ktmd39rawIA==}
-
-  rimraf@6.1.3:
-    resolution: {integrity: sha512-LKg+Cr2ZF61fkcaK1UdkH2yEBBKnYjTyWzTJT6KNPcSPaiT7HSdhtMXQuN5wkTX0Xu72KQ1l8S42rlmexS2hSA==}
-    engines: {node: 20 || >=22}
-    hasBin: true
 
   robust-predicates@3.0.3:
     resolution: {integrity: sha512-NS3levdsRIUOmiJ8FZWCP7LG3QpJyrs/TE0Zpf1yvZu8cAJJ6QMW92H1c7kWpdIHo8RvmLxN/o2JXTKHp74lUA==}
@@ -10703,8 +10687,6 @@ snapshots:
 
   p-try@2.2.0: {}
 
-  package-json-from-dist@1.0.1: {}
-
   package-manager-detector@0.2.11:
     dependencies:
       quansync: 0.2.11
@@ -10972,11 +10954,6 @@ snapshots:
   reusify@1.1.0: {}
 
   rfdc@1.4.1: {}
-
-  rimraf@6.1.3:
-    dependencies:
-      glob: 13.0.6
-      package-json-from-dist: 1.0.1
 
   robust-predicates@3.0.3: {}
 

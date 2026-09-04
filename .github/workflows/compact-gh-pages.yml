@@ -10,13 +10,14 @@ on:
 permissions: {}
 
 concurrency:
-  group: "pages-deploy"
+  group: 'pages-deploy'
   cancel-in-progress: false
 
 jobs:
   compact:
     runs-on: ubuntu-slim
     permissions:
+      actions: read
       contents: write
     steps:
       - name: Checkout maintenance scripts
@@ -27,4 +28,4 @@ jobs:
       - name: Compact gh-pages history
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: .github/scripts/compact-gh-pages-history.sh
+        run: node .github/scripts/gh-pages-publisher.mjs compact

@@ -55,7 +55,12 @@ function listThemeSlugs() {
         'src',
         `${toIdentifier(slug)}Theme.ts`,
       );
-      return fs.existsSync(pkg) && fs.existsSync(themeFile);
+      if (!fs.existsSync(pkg) || !fs.existsSync(themeFile)) return false;
+      // A PRIVATE theme package is not a theme a user can pick — it is a test
+      // fixture that happens to live here (packages/themes/probe). These
+      // assets ship inside the CLI tarball, so without this the fixture
+      // becomes a selectable theme in `astryx theme add`.
+      return readJSON(pkg).private !== true;
     })
     .sort();
 }

@@ -272,6 +272,7 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--button-focus-offset',
   '--button-icon-only-aspect',
   '--_avatar-group-overlap',
+  '--_field-status-overlap',
   '--_codeblock-gutter-width',
   '--_tab-indicator-bottom',
   // Hit-area outset on a ::after overlay, and whether that overlay is
@@ -280,6 +281,13 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--_thumbnail-hit-inset',
   '--_input-clear-hit-inset',
   '--_input-clear-hit-content',
+  // Placement and swipe lifecycle values are private Toast behavior. A theme
+  // author controls the surface transform/opacity as a whole, not these values.
+  '--_toast-slide-y',
+  '--_toast-swipe-y',
+  '--_toast-swipe-exit-y',
+  '--_toast-swipe-opacity',
+  '--_toast-swipe-scale',
   // Indentation and row-spacing metrics: --tree-list-indent is the authorable
   // step, --_tree-indent the per-row distance TreeListItem computes from it.
   // --tree-list-row-gap is applied as half a padding-block on each row wrapper,
@@ -288,11 +296,29 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--tree-list-indent',
   '--_tree-indent',
   '--tree-list-row-gap',
+  // Clipped on the ONE side each on-track connector segment faces the
+  // indicator from — trailing above the node, leading below it, mirrored
+  // again per axis. No standard property maps onto this purpose-based seam:
+  // one clip must cover the segment and its pseudo-element fill together.
+  '--step-connector-gap',
   // Composed into a single box-shadow list on the card, so neither maps 1:1
   // onto boxShadow — setting one through a derived entry would clobber the
   // other.
   '--_card-elevation',
   '--_card-ring',
+  // The colour inside that composed ring, for a variant only a theme knows.
+  // It is one component of one shadow in the list, so no standard property
+  // maps onto it either — a theme sets it beside the fill it has to contrast.
+  '--selectable-card-ring-color',
+  // The spinner's ring is drawn as an SVG circle, so none of its four vars is
+  // a CSS property of the element carrying the theme target: `width` and
+  // `borderWidth` would name a box the ring is not, and a `color` mapping
+  // would take the label's text color with it. They are public vars a theme
+  // sets directly under a size- or shade-variant key.
+  '--spinner-diameter',
+  '--spinner-stroke-width',
+  '--spinner-color',
+  '--spinner-track-color',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -456,4 +482,52 @@ describe('getDerivedVars', () => {
       expect(result[0].replaces).toBe(true);
     }
   });
+});
+
+// ---------------------------------------------------------------------------
+// Read check: a registered var nothing reads is a dead theming knob
+// ---------------------------------------------------------------------------
+
+/**
+ * Every source file under packages/core/src, concatenated once.
+ *
+ * `--_popover-radius` shipped documented and registered while `usePopover`
+ * hardcoded its radius, so `popover: {borderRadius}` set a var no element ever
+ * read. Sync between source, docs and registry cannot catch that: the three
+ * agreed with each other, and none of them required a reader.
+ */
+function readAllSource(dir: string): string {
+  let out = '';
+  for (const entry of readdirSync(dir, {withFileTypes: true})) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out += readAllSource(path);
+    } else if (
+      (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) &&
+      !entry.name.includes('.test.') &&
+      !entry.name.endsWith('.d.ts')
+    ) {
+      out += readFileSync(path, 'utf-8');
+    }
+  }
+  return out;
+}
+
+describe('registered derived vars are read by component styles', () => {
+  const source = readAllSource(SRC_DIR);
+
+  for (const [component, entries] of Object.entries(derivedVarRegistry)) {
+    for (const varName of entries.flatMap(e => e.vars ?? [])) {
+      it(`${component}: ${varName} is read via var()`, () => {
+        expect(
+          source.includes(`var(${varName})`) ||
+            source.includes(`var(${varName},`),
+          `${varName} is registered as the derived var for a CSS property on ` +
+            `\`${component}\`, but no component reads it. A theme setting that ` +
+            `property would write a var nothing consumes. Read it in the ` +
+            `element's StyleX styles, or drop the derived entry.`,
+        ).toBe(true);
+      });
+    }
+  }
 });

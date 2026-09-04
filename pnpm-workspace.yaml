@@ -9,6 +9,9 @@ packages:
   - 'packages/*'
   - 'packages/themes/*'
   - 'internal/*'
+  # Canonical vibe-test fixtures are standalone consumer apps. They carry their
+  # own exact dependencies and lockfiles and are copied to sandboxes before use.
+  - '!internal/vibe-tests/fixtures/**'
 
 # Migrated from .npmrc: pnpm 11 reads these hoisting/linker settings from
 # pnpm-workspace.yaml, not .npmrc. Keeps the flat, Yarn-1-style node_modules

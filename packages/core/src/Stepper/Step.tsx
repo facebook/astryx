@@ -5,7 +5,8 @@
 /**
  * @file Step.tsx
  * @input Uses React, stylex, theme tokens (including the motion duration token
- *   the connector fill animates on), StepperContext
+ *   the connector fill animates on), StepperContext, and per-step theme selector
+ *   state
  * @output Exports Step component and StepProps
  * @position Individual step item; used inside Stepper
  *
@@ -51,6 +52,7 @@ import {
   isRenderable,
   themeProps,
 } from '../utils';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import type {BaseProps} from '../BaseProps';
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -196,6 +198,37 @@ function CurrentIcon() {
 // --- Styles ---
 
 const BAR_WIDTH = spacingVars['--spacing-1'];
+
+/**
+ * How much of itself a connector gives up where it meets the indicator, read
+ * from the public `--step-connector-gap` declared on the Stepper root.
+ *
+ * Clipped, not padded. The gap has to apply to two layers — the track, which is
+ * the segment's own background, and the accent fill, which is an absolutely
+ * placed `::before`. Spending it on each separately meant two declarations on
+ * two boxes: a percentage then resolved against a different containing block
+ * for each and stopped them ~1.2px apart. `clip-path` is ONE declaration on the
+ * segment that clips the element and its pseudo-element together, against one
+ * reference box — so every accepted value behaves the same way on both layers,
+ * which is what a public input owes its full value domain.
+ *
+ * Clipping also cannot change layout: the segment keeps its box, so the node it
+ * positions cannot move and the Stepper cannot grow. A raw `1rem` padding grew
+ * a 180px stepper to 240px.
+ *
+ * Still clamped, because the value arrives with nothing in between to reject
+ * it. Both halves earn their place, and not for the reasons padding needed:
+ *
+ * - `max(0px, …)` — `inset()` ACCEPTS a negative length. Chromium computes
+ *   `inset(0 0 -4px 0)` as-is rather than dropping it, which is the opposite
+ *   of padding (there CSS clamps a negative to `0` for you). This normalises
+ *   it to `0` so a negative gap means "no gap" rather than a clip rect
+ *   stretched outside the segment's own box.
+ * - `min(…, --spacing-2)` — the flexible segment's own `min-height`, so an
+ *   oversized gap leaves a short track rather than an unbounded one.
+ */
+const CONNECTOR_GAP = `max(0px, min(var(--step-connector-gap, 0px), ${spacingVars['--spacing-2']}))`;
+
 // Every indicator — check, ring, custom icon, number badge — occupies the same
 // box, so the `auto` mode swapping a number for a check as a step completes
 // never nudges the label or the track.
@@ -655,13 +688,7 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundColor: {
-      default: 'transparent',
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
+    backgroundColor: 'transparent',
   },
 
   // ===================== ON-TRACK LAYOUT =====================
@@ -702,13 +729,7 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundColor: {
-      default: 'transparent',
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
+    backgroundColor: 'transparent',
   },
 
   otRowWrap: {
@@ -740,6 +761,43 @@ const styles = stylex.create({
     width: BAR_WIDTH,
     flexShrink: 0,
     borderRadius: 0,
+  },
+  // The gap a connector leaves where it meets the indicator, spent on the side
+  // that faces the node so the pair leaves a symmetric hole around it.
+  //
+  // Clip the segment rather than changing its box: one `clip-path` clips the
+  // segment's own track and its absolutely positioned `::before` fill against
+  // the same reference box. The indicator stays put, the Stepper cannot grow,
+  // and percentage values cannot resolve differently between the two layers.
+  // The inherited value is clamped in CONNECTOR_GAP; its default is declared
+  // once on the Stepper root, where a generated theme override can replace it.
+  //
+  // A public var rather than a per-segment theme vocabulary: "do not touch the
+  // indicator" is one intent, and naming the segments would publish which
+  // pieces this layout happens to be drawn from today.
+  otSegGapLeadV: {
+    clipPath: `inset(0 0 ${CONNECTOR_GAP} 0)`,
+  },
+  otSegGapRailV: {
+    clipPath: `inset(${CONNECTOR_GAP} 0 0 0)`,
+  },
+  // The horizontal pair is PHYSICAL: `clip-path: inset()` takes top/right/
+  // bottom/left and has no logical form, while the row itself reverses under
+  // `dir="rtl"`. Left unflipped, the leading segment sits to the RIGHT of the
+  // node in RTL and still clips its right edge — opening the hole at the join
+  // between steps instead of at the indicator. The block axis needs no such
+  // handling: `dir` does not reverse it.
+  otSegGapLeadH: {
+    clipPath: {
+      default: `inset(0 ${CONNECTOR_GAP} 0 0)`,
+      ':is([dir="rtl"] *)': `inset(0 0 0 ${CONNECTOR_GAP})`,
+    },
+  },
+  otSegGapRailH: {
+    clipPath: {
+      default: `inset(0 0 0 ${CONNECTOR_GAP})`,
+      ':is([dir="rtl"] *)': `inset(0 ${CONNECTOR_GAP} 0 0)`,
+    },
   },
   // Flexible segment (below the node) — grows to fill the step height and
   // meets the next node's leading segment.
@@ -1190,11 +1248,33 @@ export function Step({
         ? styles.labelInProgress
         : undefined;
 
+  // Both text parts carry {progress, status}, the phase vocabulary of
+  // `step-indicator` above. The label additionally owns Stepper's disabled
+  // paint, so it alone carries disabled below.
+  const labelThemeProps = themeProps('step-label', {
+    progress,
+    status: status ?? undefined,
+    // The label owns Stepper's disabled paint (`styles.labelDisabled` above),
+    // so it owns the selector too. The description does not change under
+    // disabled and deliberately keeps the smaller {progress, status} surface.
+    disabled: isDisabled ? 'disabled' : null,
+  });
+  const descriptionThemeProps = themeProps('step-description', {
+    progress,
+    status: status ?? undefined,
+  });
+
   // Indicator + Label row
   const iconLabelNode = (
     <div {...stylex.props(styles.iconLabelRow)}>
       {indicatorNode}
-      <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
+      <span
+        {...mergeProps(
+          labelThemeProps,
+          stylex.props(styles.label, labelColorStyle),
+        )}>
+        {label}
+      </span>
       {statusTextNode}
       {isOptional && (
         <>
@@ -1215,7 +1295,13 @@ export function Step({
           ? styles.descriptionRowWithIndicator
           : styles.descriptionRow,
       )}>
-      <span {...stylex.props(styles.description)}>{description}</span>
+      <span
+        {...mergeProps(
+          descriptionThemeProps,
+          stylex.props(styles.description),
+        )}>
+        {description}
+      </span>
     </div>
   ) : null;
 
@@ -1297,7 +1383,13 @@ export function Step({
         {...stylex.props(
           isVertical ? styles.otLabelRowStart : styles.otLabelRowCenter,
         )}>
-        <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
+        <span
+          {...mergeProps(
+            labelThemeProps,
+            stylex.props(styles.label, labelColorStyle),
+          )}>
+          {label}
+        </span>
         {statusTextNode}
         {isOptional && (
           <>
@@ -1312,7 +1404,13 @@ export function Step({
     );
 
     const otDescriptionNode = isRenderable(description) ? (
-      <span {...stylex.props(styles.description)}>{description}</span>
+      <span
+        {...mergeProps(
+          descriptionThemeProps,
+          stylex.props(styles.description),
+        )}>
+        {description}
+      </span>
     ) : null;
 
     const otContentNode = !isRenderable(children) ? null : isVertical ? (
@@ -1363,6 +1461,7 @@ export function Step({
                   styles.otSegBaseV,
                   styles.otSegLeadV(densitySpace),
                   styles.connectorTrack,
+                  hasIndicator && styles.otSegGapLeadV,
                   beforeSegStyle,
                   beforeTiming,
                   styles.otSegHiddenIfFirst,
@@ -1378,6 +1477,7 @@ export function Step({
                   styles.otSegBaseV,
                   styles.otSegFlexV,
                   styles.connectorTrack,
+                  hasIndicator && styles.otSegGapRailV,
                   afterSegStyle,
                   railTiming,
                   styles.otSegHiddenIfLast,
@@ -1411,6 +1511,7 @@ export function Step({
               aria-label={stepAriaLabel}
               {...stylex.props(
                 styles.otInteractive,
+                interactionOverlayStyles.backgroundColor,
                 styles.otRowWrap,
                 styles.otRowPadV(densitySpace),
                 focusOutlineStyles.focusVisible,
@@ -1442,6 +1543,7 @@ export function Step({
               stylex.props(
                 styles.otSegH,
                 styles.connectorTrack,
+                hasIndicator && styles.otSegGapLeadH,
                 beforeSegStyle,
                 beforeTiming,
                 styles.otSegHiddenIfFirst,
@@ -1456,6 +1558,7 @@ export function Step({
               stylex.props(
                 styles.otSegH,
                 styles.connectorTrack,
+                hasIndicator && styles.otSegGapRailH,
                 afterSegStyle,
                 railTiming,
                 styles.otSegHiddenIfLast,
@@ -1493,6 +1596,7 @@ export function Step({
             aria-label={stepAriaLabel}
             {...stylex.props(
               styles.otInteractive,
+              interactionOverlayStyles.backgroundColor,
               styles.otColWrap,
               styles.otPadBlock(densitySpace),
               focusOutlineStyles.focusVisible,
@@ -1549,6 +1653,7 @@ export function Step({
               aria-label={stepAriaLabel}
               {...stylex.props(
                 styles.buttonReset,
+                interactionOverlayStyles.backgroundColor,
                 focusOutlineStyles.focusVisible,
                 density === 'compact' && styles.densityCompact,
                 density === 'balanced' && styles.densityBalanced,
@@ -1609,6 +1714,7 @@ export function Step({
           aria-label={stepAriaLabel}
           {...stylex.props(
             styles.buttonReset,
+            interactionOverlayStyles.backgroundColor,
             focusOutlineStyles.focusVisible,
             density === 'compact' && styles.densityCompact,
             density === 'balanced' && styles.densityBalanced,

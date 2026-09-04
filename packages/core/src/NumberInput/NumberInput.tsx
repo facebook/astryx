@@ -9,6 +9,8 @@
  * @position Core implementation; consumed by index.ts, tested by NumberInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/NumberInput/numberParser.ts (locale-aware parsing)
+ * - /packages/core/src/NumberInput/numberInputCommit.ts (draft commit policy)
  * - /packages/core/src/NumberInput/NumberInput.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/NumberInput/NumberInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/NumberInput/index.ts (exports if types change)
@@ -49,6 +51,7 @@ import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
@@ -159,13 +162,6 @@ const styles = stylex.create({
     borderStyle: 'none',
     color: colorVars['--color-icon-secondary'],
     backgroundColor: colorVars['--color-background-surface'],
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -213,7 +209,9 @@ import {isImeKeyEvent, mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useTranslator, useLocale} from '../i18n';
+import {formatEditableNumber} from './numberParser';
+import {parseNumberInput, resolveNumberInputCommit} from './numberInputCommit';
 
 interface NumberInputPropsBase extends Omit<
   BaseProps,
@@ -348,10 +346,12 @@ interface NumberInputPropsBase extends Omit<
   autoComplete?: string;
   /**
    * The minimum value allowed.
+   * A smaller entry commits at this value on blur or Enter.
    */
   min?: number | null;
   /**
    * The maximum value allowed.
+   * A larger entry commits at this value on blur or Enter.
    */
   max?: number | null;
   /**
@@ -425,46 +425,6 @@ type NumberInputPropsClearable = NumberInputPropsBase & {
 export type NumberInputProps =
   NumberInputPropsNonClearable | NumberInputPropsClearable;
 
-/**
- * Parse and validate a string input as a number.
- * Returns null if the input is not a valid number or fails validation.
- */
-function parseNumberInput(
-  input: string,
-  options: {
-    min?: number | null;
-    max?: number | null;
-    isIntegerOnly?: boolean;
-  },
-): number | null {
-  const trimmed = input.trim();
-  if (trimmed === '' || trimmed === '-') {
-    return null;
-  }
-
-  const num = Number(trimmed);
-  if (!Number.isFinite(num)) {
-    return null;
-  }
-
-  // Check integer constraint
-  if (options.isIntegerOnly && !Number.isInteger(num)) {
-    return null;
-  }
-
-  // Check min constraint
-  if (options.min != null && num < options.min) {
-    return null;
-  }
-
-  // Check max constraint
-  if (options.max != null && num > options.max) {
-    return null;
-  }
-
-  return num;
-}
-
 type StepDirection = -1 | 1;
 
 function getDecimalPlaces(value: number): number {
@@ -525,6 +485,14 @@ function getSteppedValue({
     nextValue = stepBase + nextStepPosition * effectiveStep;
   }
 
+  const precision = Math.min(
+    12,
+    Math.max(getDecimalPlaces(effectiveStep), getDecimalPlaces(stepBase)),
+  );
+  nextValue = Number(nextValue.toFixed(precision));
+
+  // Clamp after rounding so a bound with finer precision than the step cannot
+  // be rounded back out of its own range.
   if (min != null) {
     nextValue = Math.max(min, nextValue);
   }
@@ -535,21 +503,16 @@ function getSteppedValue({
   if (!Number.isFinite(nextValue)) {
     return currentValue;
   }
-
-  const precision = Math.min(
-    12,
-    Math.max(getDecimalPlaces(effectiveStep), getDecimalPlaces(stepBase)),
-  );
-  const roundedValue = Number(nextValue.toFixed(precision));
-  if (isIntegerOnly && !Number.isInteger(roundedValue)) {
+  if (isIntegerOnly && !Number.isInteger(nextValue)) {
     return currentValue;
   }
-  return Object.is(roundedValue, -0) ? 0 : roundedValue;
+  return Object.is(nextValue, -0) ? 0 : nextValue;
 }
 
 /**
  * A number input component for collecting numeric user input.
- * Only calls onChange when the entered value passes validation.
+ * Commits text edits on blur or Enter and only calls onChange when the whole
+ * draft passes validation.
  *
  * @example
  * ```
@@ -599,6 +562,7 @@ export function NumberInput({
   ...rest
 }: NumberInputProps) {
   const t = useTranslator();
+  const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const size = useSize(sizeProp, 'md');
   const id = useId();
@@ -653,6 +617,11 @@ export function NumberInput({
     inputGroup,
   );
 
+  const parseInput = useCallback(
+    (text: string) => parseNumberInput(text, {min, max, isIntegerOnly, locale}),
+    [isIntegerOnly, locale, max, min],
+  );
+
   const formattedValue = useMemo(() => {
     if (value == null) {
       return '';
@@ -669,36 +638,29 @@ export function NumberInput({
     if (value == null) {
       return '';
     }
-    return isFocused ? String(value) : formattedValue;
-  }, [formattedValue, isFocused, pendingInput, value]);
+    return isFocused ? formatEditableNumber(value, locale) : formattedValue;
+  }, [formattedValue, isFocused, locale, pendingInput, value]);
 
   // Check if current pending input is valid (for styling purposes)
   const isInputValid = useMemo(() => {
     if (pendingInput === null || !pendingInput.trim()) {
       return true;
     }
-    return parseNumberInput(pendingInput, {min, max, isIntegerOnly}) !== null;
-  }, [pendingInput, min, max, isIntegerOnly]);
+    return parseInput(pendingInput) !== null;
+  }, [pendingInput, parseInput]);
 
-  // Handle input text change - update immediately if valid
+  // Keep the whole text edit as a draft until an explicit commit boundary.
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       // Value can't change while showing a disabled message (the field is
       // read-only and non-native-disabled), but guard the handler too so the
-      // pending value and onChange never fire.
+      // pending value never changes.
       if (isDisabled || isReadOnly) {
         return;
       }
-      const newValue = e.target.value;
-      setPendingInput(newValue);
-
-      // If the input is valid, update immediately
-      const parsed = parseNumberInput(newValue, {min, max, isIntegerOnly});
-      if (parsed !== null && parsed !== value) {
-        onChange(parsed);
-      }
+      setPendingInput(e.target.value);
     },
-    [value, onChange, min, max, isIntegerOnly, isDisabled, isReadOnly],
+    [isDisabled, isReadOnly],
   );
 
   // Handle focus
@@ -710,34 +672,45 @@ export function NumberInput({
     [onFocus],
   );
 
-  // Handle blur - validate and clear pending input
-  const handleBlur = useCallback(
-    (e: FocusEvent<HTMLInputElement>) => {
-      if (pendingInput !== null) {
-        if (hasClear && pendingInput.trim() === '') {
-          // Keyboard clearing honors the clearable contract: an emptied
-          // input commits null instead of silently reverting on blur.
-          if (value != null) {
-            onChange(null);
-          }
-        } else {
-          const parsed = parseNumberInput(pendingInput, {
-            min,
-            max,
-            isIntegerOnly,
-          });
-          if (parsed !== null && parsed !== value) {
-            onChange(parsed);
-          }
-        }
+  const commitPendingInput = useCallback(
+    (trigger: 'blur' | 'Enter') => {
+      if (pendingInput === null) {
+        return;
       }
 
-      // Clear pending input - display will revert to formatted value
-      setPendingInput(null);
+      const decision = resolveNumberInputCommit(pendingInput, {
+        min,
+        max,
+        isIntegerOnly,
+        locale,
+        hasClear: !!hasClear,
+      });
+      if (
+        trigger === 'blur' ||
+        (decision.type === 'commit' && decision.didClamp)
+      ) {
+        setPendingInput(null);
+      }
+
+      if (decision.type === 'clear') {
+        if (hasClear && value != null) {
+          onChange(null);
+        }
+      } else if (decision.type === 'commit' && decision.value !== value) {
+        onChange(decision.value);
+      }
+    },
+    [hasClear, isIntegerOnly, locale, max, min, onChange, pendingInput, value],
+  );
+
+  // Blur ends the edit and displays the resulting committed value.
+  const handleBlur = useCallback(
+    (e: FocusEvent<HTMLInputElement>) => {
+      commitPendingInput('blur');
       setIsFocused(false);
       onBlur?.(e);
     },
-    [pendingInput, value, onChange, min, max, isIntegerOnly, onBlur, hasClear],
+    [commitPendingInput, onBlur],
   );
 
   const valueForStepping = useMemo(() => {
@@ -747,10 +720,8 @@ export function NumberInput({
     if (pendingInput.trim() === '') {
       return null;
     }
-    return (
-      parseNumberInput(pendingInput, {min, max, isIntegerOnly}) ?? value ?? null
-    );
-  }, [isIntegerOnly, max, min, pendingInput, value]);
+    return parseInput(pendingInput) ?? value ?? null;
+  }, [parseInput, pendingInput, value]);
 
   const getNextValue = useCallback(
     (direction: StepDirection) =>
@@ -806,41 +777,12 @@ export function NumberInput({
         return;
       }
       if (e.key === 'Enter') {
-        // Validate and commit on Enter
-        if (pendingInput !== null) {
-          if (hasClear && pendingInput.trim() === '') {
-            // Same clearable contract as blur: Enter on an emptied input
-            // commits null instead of reverting.
-            if (value != null) {
-              onChange(null);
-            }
-          } else {
-            const parsed = parseNumberInput(pendingInput, {
-              min,
-              max,
-              isIntegerOnly,
-            });
-            if (parsed !== null && parsed !== value) {
-              onChange(parsed);
-            }
-          }
-        }
+        commitPendingInput('Enter');
         onEnter?.();
       }
       onKeyDown?.(e);
     },
-    [
-      pendingInput,
-      value,
-      onChange,
-      min,
-      max,
-      isIntegerOnly,
-      onEnter,
-      onKeyDown,
-      hasClear,
-      stepValue,
-    ],
+    [commitPendingInput, onEnter, onKeyDown, stepValue],
   );
 
   // React's delegated wheel listener can be passive, so use a native,
@@ -963,6 +905,8 @@ export function NumberInput({
         data-autofocus={hasAutoFocus || undefined}
         aria-valuemin={min ?? undefined}
         aria-valuemax={max ?? undefined}
+        // The ARIA value and hidden form input expose the committed value;
+        // pendingInput is still an uncommitted edit and may be invalid.
         aria-valuenow={value ?? undefined}
         aria-valuetext={
           value == null || !formatValue ? undefined : formattedValue
@@ -1020,11 +964,12 @@ export function NumberInput({
             }}
             {...stylex.props(
               styles.numberStepperButton,
+              interactionOverlayStyles.backgroundImage,
               (isDisabled || isReadOnly || !canIncrement) &&
                 styles.numberStepperButtonDisabled,
             )}>
             <Icon
-              icon="chevronDown"
+              icon="numberInput:stepperDown"
               size="xsm"
               color="inherit"
               xstyle={styles.incrementIcon}
@@ -1042,11 +987,12 @@ export function NumberInput({
             }}
             {...stylex.props(
               styles.numberStepperButton,
+              interactionOverlayStyles.backgroundImage,
               styles.decrementButton,
               (isDisabled || isReadOnly || !canDecrement) &&
                 styles.numberStepperButtonDisabled,
             )}>
-            <Icon icon="chevronDown" size="xsm" color="inherit" />
+            <Icon icon="numberInput:stepperDown" size="xsm" color="inherit" />
           </button>
         </div>
       )}

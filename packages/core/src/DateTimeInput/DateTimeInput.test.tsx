@@ -12,6 +12,7 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateTimeInput} from './DateTimeInput';
 import type {ISODateTimeString} from './DateTimeInput';
@@ -33,10 +34,54 @@ function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
   return [prose, component].filter(Boolean).join('\n\n');
 }
+
+// jsdom does not perform flex layout, so these probe classes verify the
+// declarations that switch between horizontal and stacked intrinsic layouts.
+const responsiveLayoutProbe = stylex.create({
+  responsiveRow: {
+    flexWrap: 'wrap',
+  },
+  responsiveSegment: {
+    flexBasis: 196,
+    minWidth: 0,
+  },
+});
+
+function expectResponsiveProbeClasses(
+  element: HTMLElement,
+  style: (typeof responsiveLayoutProbe)[keyof typeof responsiveLayoutProbe],
+): void {
+  const classes = (stylex.props(style).className ?? '')
+    .split(' ')
+    .filter(className => className !== '' && !className.includes('__'));
+  expect(classes.length).toBeGreaterThan(0);
+  for (const className of classes) {
+    expect(element).toHaveClass(className);
+  }
+}
+
 describe('DateTimeInput', () => {
   it('renders with label', () => {
     render(<DateTimeInput label="Meeting time" onChange={() => {}} />);
     expect(screen.getByLabelText('Meeting time')).toBeInTheDocument();
+  });
+
+  it('updates the committed date display when provider locale changes', () => {
+    const renderDateTimeInput = (locale: 'en-US' | 'es-ES') => (
+      <InternationalizationProvider locale={locale}>
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-01-25T14:30' as ISODateTimeString}
+          onChange={() => {}}
+        />
+      </InternationalizationProvider>
+    );
+    const {rerender} = render(renderDateTimeInput('en-US'));
+
+    expect(screen.getByRole('combobox')).toHaveValue('January 25, 2026');
+
+    rerender(renderDateTimeInput('es-ES'));
+    expect(screen.getByRole('combobox')).toHaveValue('25 de enero de 2026');
   });
 
   it('derives the time input label from the field label (forms-15)', () => {
@@ -95,6 +140,37 @@ describe('DateTimeInput', () => {
     render(<DateTimeInput label="Meeting" onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
     expect(screen.getByLabelText('Meeting time')).toBeInTheDocument();
+  });
+
+  it('allows the date and time segments to wrap when they no longer fit', () => {
+    const {container} = render(
+      <DateTimeInput label="Meeting" onChange={() => {}} />,
+    );
+    const row = container.querySelector(
+      '.astryx-date-time-input',
+    ) as HTMLElement;
+    expect(row).not.toBeNull();
+    expectResponsiveProbeClasses(row, responsiveLayoutProbe.responsiveRow);
+  });
+
+  it('gives both segments the intrinsic wrap threshold and allows them to shrink', () => {
+    const {container} = render(
+      <DateTimeInput label="Meeting" onChange={() => {}} />,
+    );
+    const dateSegment = container.querySelector(
+      '.astryx-date-time-input-date-segment',
+    ) as HTMLElement;
+    const timeSegment = container.querySelector(
+      '.astryx-date-time-input-time-segment',
+    ) as HTMLElement;
+    expectResponsiveProbeClasses(
+      dateSegment,
+      responsiveLayoutProbe.responsiveSegment,
+    );
+    expectResponsiveProbeClasses(
+      timeSegment,
+      responsiveLayoutProbe.responsiveSegment,
+    );
   });
 
   it('does not commit the date on a composing Enter (IME)', () => {

@@ -27,6 +27,7 @@ import type {DateRange} from './DateRangeInput';
 import {Icon} from '../Icon';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {InternationalizationProvider} from '../i18n';
 
 describe('DateRangeInput', () => {
   it('renders with label', () => {
@@ -70,6 +71,29 @@ describe('DateRangeInput', () => {
     expect(trigger.textContent).toMatch(/Mar/);
     expect(trigger.textContent).toMatch(/15/);
     expect(trigger.textContent).toMatch(/22/);
+  });
+
+  it('updates the committed range display when provider locale changes', () => {
+    const range: DateRange = {
+      start: '2025-01-02',
+      end: '2025-01-05',
+    };
+    const renderDateRangeInput = (locale: 'en-US' | 'es-ES') => (
+      <InternationalizationProvider locale={locale}>
+        <DateRangeInput
+          label="Range"
+          value={range}
+          onChange={() => {}}
+          hasClear={false}
+        />
+      </InternationalizationProvider>
+    );
+    const {rerender} = render(renderDateRangeInput('en-US'));
+
+    expect(screen.getByText('Jan 2, 2025 – Jan 5, 2025')).toBeInTheDocument();
+
+    rerender(renderDateRangeInput('es-ES'));
+    expect(screen.getByText('2 ene 2025 – 5 ene 2025')).toBeInTheDocument();
   });
 
   it('forwards ref to trigger button', () => {
@@ -729,6 +753,28 @@ describe('DateRangeInput range-span forwarding', () => {
   // data-date (ISO) attribute — the same approach Calendar's own tests use.
   const dayButton = (iso: string): HTMLButtonElement | null =>
     document.querySelector<HTMLButtonElement>(`button[data-date="${iso}"]`);
+
+  it('allows selecting a one-day range when minRangeSpan is 1', () => {
+    const handleChange = vi.fn();
+    render(
+      <DateRangeInput
+        label="Reporting period"
+        value={null}
+        onChange={handleChange}
+        minRangeSpan={1}
+        numberOfMonths={1}
+      />,
+    );
+
+    fireEvent.click(getButton('Open calendar'));
+    fireEvent.click(dayButton('2026-01-10') as HTMLButtonElement);
+    fireEvent.click(dayButton('2026-01-10') as HTMLButtonElement);
+
+    expect(handleChange).toHaveBeenCalledWith({
+      start: '2026-01-10',
+      end: '2026-01-10',
+    });
+  });
 
   it('forwards maxRangeSpan so the window caps after a start is picked', () => {
     render(

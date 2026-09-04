@@ -98,6 +98,7 @@ export const VerticalSplit: Story = {
       defaultSize: 250,
       minSizePx: 100,
       maxSizePx: 350,
+      direction: 'vertical',
     });
     return (
       <div {...stylex.props(ps.shell)}>
@@ -157,9 +158,7 @@ export const Collapsible: Story = {
                     <Text>
                       <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
                     </Text>
-                    <Text>
-                      Double-click handle or press Enter to collapse.
-                    </Text>
+                    <Text>Double-click handle or press Enter to collapse.</Text>
                   </Stack>
                 </LayoutPanel>
               )}
@@ -206,6 +205,7 @@ export const ThreePanelIDE: Story = {
       defaultSize: 280,
       minSizePx: 100,
       maxSizePx: 350,
+      direction: 'vertical',
     });
     return (
       <div {...stylex.props(ps.shell)}>
@@ -288,9 +288,7 @@ export const SnapPoints: Story = {
                     <Text>
                       <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
                     </Text>
-                    <Text>
-                      Snaps to 56 \u00b7 160 \u00b7 260 \u00b7 400px.
-                    </Text>
+                    <Text>Snaps to 56 \u00b7 160 \u00b7 260 \u00b7 400px.</Text>
                   </Stack>
                 )}
               </LayoutPanel>
@@ -504,10 +502,61 @@ export const WithAppShell: Story = {
                   {nav.isCollapsed ? 'Collapsed' : 'Expanded'}
                 </Text>
                 <Text>
-                  SideNav width driven by useResizable. Double-click handle
-                  to collapse.
+                  SideNav width driven by useResizable. Double-click handle to
+                  collapse.
                 </Text>
               </Stack>
+            </LayoutContent>
+          }
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * Panel whose content is an embedded frame. The drag must survive the cursor
+ * crossing the frame: pointer events over a frame are dispatched into the
+ * guest document, so a drag that stays armed only while the host keeps
+ * receiving them dies mid-gesture here.
+ */
+export const WithEmbeddedFrame: Story = {
+  render: () => {
+    const sidebar = useResizable({
+      defaultSize: 200,
+      minSizePx: 120,
+      maxSizePx: 520,
+    });
+    return (
+      <div {...stylex.props(ps.shell)}>
+        <Layout
+          height="fill"
+          start={
+            <>
+              <LayoutPanel width={sidebar.size} hasDivider={false}>
+                <Stack gap={2}>
+                  <Heading level={4}>Sidebar</Heading>
+                  <Text>
+                    <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
+                  </Text>
+                  <Text>Drag right, across the preview, and back.</Text>
+                </Stack>
+              </LayoutPanel>
+              <ResizeHandle
+                direction="horizontal"
+                hasDivider
+                resizable={sidebar.props}
+                label="Resize sidebar"
+              />
+            </>
+          }
+          content={
+            <LayoutContent padding={0}>
+              <iframe
+                title="Preview"
+                srcDoc="<!doctype html><body style='margin:0;font:14px system-ui;display:grid;place-items:center;height:100vh;background:#eef'>Embedded preview</body>"
+                style={{width: '100%', height: '100%', border: 0}}
+              />
             </LayoutContent>
           }
         />

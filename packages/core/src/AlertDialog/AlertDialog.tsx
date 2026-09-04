@@ -4,7 +4,7 @@
 
 /**
  * @file AlertDialog.tsx
- * @input Uses React, Dialog, Layout, Heading, Text, Button
+ * @input Uses React, StyleX, Dialog, Layout, Heading, Text, Button
  * @output Exports AlertDialog component, AlertDialogProps type
  * @position Core implementation; consumed by index.ts, tested by AlertDialog.test.tsx
  *
@@ -17,11 +17,12 @@
  */
 
 import React, {useId, useCallback} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {Dialog} from '../Dialog';
 import {Layout} from '../Layout/Layout';
 import {LayoutContent} from '../Layout/LayoutContent';
 import {LayoutFooter} from '../Layout/LayoutFooter';
-import {HStack} from '../Stack';
+import {Stack} from '../Stack';
 import {Heading} from '../Heading/Heading';
 import {Text} from '../Text/Text';
 import {Button, type ButtonVariant} from '../Button';
@@ -29,6 +30,19 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {useMediaQuery} from '../hooks';
+
+const SMALL_SCREEN_QUERY = '(max-width: 640px)';
+
+const styles = stylex.create({
+  action: {
+    maxWidth: '100%',
+    minWidth: 0,
+  },
+  stackedAction: {
+    width: '100%',
+  },
+});
 
 export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   ref?: React.Ref<HTMLDialogElement>;
@@ -147,10 +161,43 @@ export function AlertDialog({
   const cancelLabel = cancelLabelFromProps ?? t('@astryx.alertDialog.cancel');
   const titleId = useId();
   const descriptionId = useId();
+  // Width stays delegated to Dialog: this query exists only so AlertDialog can
+  // keep narrow visual, DOM, and tab order aligned for its destructive/cancel
+  // semantics without coupling action order to pointer or hover capability.
+  const isSmallScreen = useMediaQuery(SMALL_SCREEN_QUERY);
 
   const handleCancel = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);
+
+  const buttonActionStyle = [
+    styles.action,
+    isSmallScreen && styles.stackedAction,
+  ];
+  const cancelButton = (
+    <Button
+      key="cancel"
+      variant="ghost"
+      label={cancelLabel}
+      onClick={handleCancel}
+      xstyle={buttonActionStyle}
+      // Dialog focuses [data-autofocus] itself after showModal(), because
+      // React's autoFocus runs during commit while the dialog is invisible.
+      // Cancel is least destructive, so it remains the autofocus target even
+      // when small-screen visual order places the destructive action above it.
+      data-autofocus
+    />
+  );
+  const actionButton = (
+    <Button
+      key="action"
+      variant={actionVariant}
+      label={actionLabel}
+      onClick={onAction}
+      isLoading={isActionLoading}
+      xstyle={buttonActionStyle}
+    />
+  );
 
   return (
     <Dialog
@@ -185,24 +232,19 @@ export function AlertDialog({
         }
         footer={
           <LayoutFooter>
-            <HStack gap={2} hAlign="end">
-              <Button
-                variant="ghost"
-                label={cancelLabel}
-                onClick={handleCancel}
-                // Dialog focuses [data-autofocus] itself after showModal(),
-                // because React's autoFocus runs during commit while the
-                // dialog is still invisible. Cancel is the least destructive
-                // choice, so it is the one that should be preselected.
-                data-autofocus
-              />
-              <Button
-                variant={actionVariant}
-                label={actionLabel}
-                onClick={onAction}
-                isLoading={isActionLoading}
-              />
-            </HStack>
+            {/* Generic Dialog footers should wrap, but their consumers own
+                action semantics and order. AlertDialog keeps this
+                destructive-above-Cancel narrow order because confirmation
+                actions have component-specific meaning here. */}
+            <Stack
+              direction={isSmallScreen ? 'vertical' : 'horizontal'}
+              gap={2}
+              hAlign={isSmallScreen ? 'stretch' : 'end'}
+              wrap={isSmallScreen ? 'nowrap' : 'wrap'}>
+              {isSmallScreen
+                ? [actionButton, cancelButton]
+                : [cancelButton, actionButton]}
+            </Stack>
           </LayoutFooter>
         }
       />

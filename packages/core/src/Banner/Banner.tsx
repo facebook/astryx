@@ -15,6 +15,11 @@
  * - Status icon (themeProps 'banner-icon'): the target rides on the default
  *   <Icon> itself — the element that paints — so 'status:X' overrides reach
  *   the glyph (#4166); for a custom `icon` node it stays on the layout wrapper
+ * - Description (themeProps 'banner-description'): the supporting line owns its
+ *   own colour and type, and the space between it and the title
+ * - The end area carries no target: it is a layout row (flex, wrap, edge
+ *   compensation) rather than a painted surface, and a theme that wants the
+ *   header to grow around its buttons sets `padding-block` on 'banner'
  * - No left border accent — color is expressed through the full header background
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
  * - Children are collapsible by default: a toggle appears in the header end
@@ -118,6 +123,15 @@ export interface BannerProps extends BaseProps<HTMLDivElement> {
    * The banner will hide itself regardless of whether this callback is provided.
    */
   onDismiss?: () => void;
+  /**
+   * Accessible name and visible tooltip for the dismiss button, replacing the default.
+   * Pass an already-translated string.
+   *
+   * The default is "Dismiss {title}" when `title` is a string, so stacked
+   * banners are told apart by a screen reader; a non-string `title` falls back
+   * to "Dismiss" and should set this.
+   */
+  dismissLabel?: string;
   /**
    * Action button rendered in the header area (end-aligned).
    * Typically an Button with a secondary or ghost variant.
@@ -440,6 +454,7 @@ export function Banner({
   icon,
   isDismissable = false,
   onDismiss,
+  dismissLabel,
   endContent,
   container = 'card',
   elevation = 'none',
@@ -490,6 +505,15 @@ export function Banner({
   const role = statusRole[status] ?? FALLBACK_ROLE;
   const iconColor = statusIconColor[status];
   const hasChildren = isRenderable(children);
+  // Keep the default tooltip concise while the accessible name identifies
+  // the banner; an explicit translated override names both surfaces.
+  const dismiss = t('@astryx.banner.dismiss');
+  const dismissTooltip = dismissLabel ?? dismiss;
+  const dismissName =
+    dismissLabel ??
+    (typeof title === 'string'
+      ? t('@astryx.banner.dismissTitled', {dismiss, title})
+      : dismiss);
 
   if (isDismissed) {
     return null;
@@ -612,7 +636,13 @@ export function Banner({
           )}>
           <div {...stylex.props(styles.title)}>{title}</div>
           {isRenderable(description) && (
-            <div {...stylex.props(styles.description)}>{description}</div>
+            <div
+              {...mergeProps(
+                themeProps('banner-description'),
+                stylex.props(styles.description),
+              )}>
+              {description}
+            </div>
           )}
         </div>
         {showEndArea && (
@@ -657,8 +687,8 @@ export function Banner({
               <Button
                 variant="ghost"
                 size="sm"
-                label={t('@astryx.banner.dismiss')}
-                tooltip={t('@astryx.banner.dismiss')}
+                label={dismissName}
+                tooltip={dismissTooltip}
                 icon={<Icon icon="close" size="sm" color="inherit" />}
                 onClick={handleDismiss}
                 isIconOnly
