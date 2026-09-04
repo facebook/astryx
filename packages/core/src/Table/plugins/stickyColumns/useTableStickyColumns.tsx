@@ -15,12 +15,7 @@
 
 import {useCallback, useMemo, useRef, type CSSProperties} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  appearanceVars,
-  colorVars,
-  durationVars,
-  easeVars,
-} from '../../../theme/tokens.stylex';
+import {colorVars, durationVars, easeVars} from '../../../theme/tokens.stylex';
 import type {
   TableColumn,
   TablePlugin,
@@ -203,11 +198,10 @@ const stickyStyles = stylex.create({
   },
   headerCell: {
     // Header cells stack above body cells; both stack above non-sticky cells.
-    zIndex:
-      `calc(${appearanceVars['--appearance-container-nesting']} + 2)` as unknown as number,
+    zIndex: 3,
   },
   bodyCell: {
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
   },
 });
 

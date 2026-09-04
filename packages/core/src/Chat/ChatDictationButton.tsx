@@ -21,7 +21,7 @@
 import React from 'react';
 import type {UseSpeechRecognitionReturn} from './useSpeechRecognition';
 import * as stylex from '@stylexjs/stylex';
-import {appearanceVars, colorVars, radiusVars} from '../theme/tokens.stylex';
+import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
@@ -62,7 +62,7 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     pointerEvents: 'none',
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
   },
   bar: {
     borderRadius: radiusVars['--radius-full'],

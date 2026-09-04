@@ -30,7 +30,6 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  appearanceVars,
   colorVars,
   spacingVars,
   typographyVars,
@@ -69,7 +68,7 @@ const styles = stylex.create({
   // container corners. This keeps the native resize grip in the true
   // bottom-right corner and lets the scrollbar represent the full input area.
   wrapper: {
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
     display: 'block',
     // Zero the shared wrapper inset with matching longhands, not the `padding`
     // shorthand: StyleX ranks longhands above shorthands regardless of merge

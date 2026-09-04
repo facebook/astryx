@@ -15,7 +15,6 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {
-  appearanceVars,
   colorVars,
   spacingVars,
   sizeVars,
@@ -211,7 +210,7 @@ export const dayCellStyles = stylex.create({
     fontSize: typeScaleVars['--text-body-size'],
     padding: 0,
     position: 'relative',
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
     transitionProperty: {
       default: 'background-color, color',
       '@media (prefers-reduced-motion: reduce)': 'none',

@@ -38,7 +38,6 @@ import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {devWarn} from '../utils/devWarning';
 import {
-  appearanceVars,
   colorVars,
   durationVars,
   easeVars,
@@ -128,8 +127,7 @@ const styles = stylex.create({
   // must stay within a parent's overflow: clip bounds.
   overlay: {
     position: 'absolute',
-    zIndex:
-      `calc(${appearanceVars['--appearance-container-nesting']} + 1)` as unknown as number,
+    zIndex: 2,
     backgroundColor: 'transparent',
   },
   overlayHorizontal: {
@@ -181,7 +179,7 @@ const styles = stylex.create({
 
   hitArea: {
     position: 'absolute',
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
     touchAction: 'none',
     userSelect: 'none',
   },
@@ -214,8 +212,7 @@ const styles = stylex.create({
   // Pill base — themes target .astryx-resize-handle-pill for size/shape.
   pill: {
     position: 'absolute',
-    zIndex:
-      `calc(${appearanceVars['--appearance-container-nesting']} + 1)` as unknown as number,
+    zIndex: 2,
     pointerEvents: 'none',
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-border'],

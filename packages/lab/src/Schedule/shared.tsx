@@ -13,7 +13,6 @@ import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Locale} from '@astryxdesign/core/i18n';
 import {
-  appearanceVars,
   borderVars,
   colorVars,
   fontWeightVars,
@@ -778,7 +777,7 @@ export const styles = stylex.create({
     marginInlineEnd: `calc(${spacingVars['--spacing-0-5']} + ${borderVars['--border-width']})`,
     marginBlockStart: `${30 + level * 29}px`,
     pointerEvents: 'auto',
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
   }),
   eventPill: {
     ...baseText,
@@ -1025,8 +1024,7 @@ export const styles = stylex.create({
         ? spacingVars['--spacing-0-5']
         : `calc(${spacingVars['--spacing-0-5']} + ${level * 8}%)`,
     insetInlineEnd: spacingVars['--spacing-0-5'],
-    zIndex:
-      `calc(${appearanceVars['--appearance-container-nesting']} + ${level})` as unknown as number,
+    zIndex: level + 1,
   }),
   currentTimeLine: (top: number) => ({
     position: 'absolute',
@@ -1035,8 +1033,7 @@ export const styles = stylex.create({
     borderTopWidth: '2px',
     borderTopStyle: 'solid',
     borderTopColor: colorVars['--color-border-orange'],
-    zIndex:
-      `calc(${appearanceVars['--appearance-container-nesting']} + 19)` as unknown as number,
+    zIndex: 20,
     pointerEvents: 'none',
     '::before': {
       content: '""',

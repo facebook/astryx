@@ -1,7 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it} from 'vitest';
-import {appearanceVars} from './tokens.stylex';
 import {defineTheme} from './defineTheme';
 import {
   resolveThemeToken,
@@ -33,18 +32,6 @@ describe('tokenVars', () => {
   it('contains var() references for known tokens', () => {
     expect(tokenVars['--color-text-primary']).toBe('var(--color-text-primary)');
     expect(tokenVars['--spacing-4']).toBe('var(--spacing-4)');
-    expect(tokenVars['--appearance-container-nesting']).toBe(
-      'var(--appearance-container-nesting)',
-    );
-    expect(tokenVars['--appearance-layer-nesting']).toBe(
-      'var(--appearance-layer-nesting)',
-    );
-    expect(appearanceVars['--appearance-container-nesting']).toBe(
-      'var(--appearance-container-nesting)',
-    );
-    expect(appearanceVars['--appearance-layer-nesting']).toBe(
-      'var(--appearance-layer-nesting)',
-    );
   });
 });
 
@@ -54,8 +41,6 @@ describe('resolveThemeTokens', () => {
     expect(tokens['--color-text-primary']).toBe('#0A1317');
     expect(tokens['--spacing-1']).toBe('4px');
     expect(tokens['--border-width']).toBe('1px');
-    expect(tokens['--appearance-container-nesting']).toBe('10');
-    expect(tokens['--appearance-layer-nesting']).toBe('50');
   });
 
   it('resolves --border-width when overridden in defineTheme', () => {

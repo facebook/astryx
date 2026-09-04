@@ -25,12 +25,7 @@ import {
 } from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  appearanceVars,
-  spacingVars,
-  durationVars,
-  easeVars,
-} from '../theme/tokens.stylex';
+import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -49,7 +44,7 @@ const TOAST_EDGE_DRIFT_NEGATIVE = `calc(-1 * ${TOAST_EDGE_DRIFT})`;
 const styles = stylex.create({
   viewport: {
     position: 'fixed',
-    zIndex: appearanceVars['--appearance-layer-nesting'],
+    zIndex: 500,
     display: 'flex',
     boxSizing: 'border-box',
     flexDirection: 'column',

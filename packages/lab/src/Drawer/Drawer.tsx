@@ -54,7 +54,6 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {
-  appearanceVars,
   borderVars,
   colorVars,
   durationVars,
@@ -87,8 +86,9 @@ import {useDrawerDialogPresence} from './useDrawerDialogPresence';
 type DrawerRegistryEntry = {id: string; close: () => void};
 
 // Without the top layer (hasScrim={false} uses show(), not showModal())
-// the panel uses the shared floating-layer band. Sibling offsets preserve LIFO
-// paint order without creating another application-level stacking scale.
+// the panel needs explicit stacking. No z-index token exists in the theme;
+// 1000 matches the app-level drawer convention.
+const NON_MODAL_BASE_Z = 1000;
 
 const openDrawerStack: DrawerRegistryEntry[] = [];
 let registrationCounter = 0;
@@ -96,7 +96,7 @@ let registrationCounter = 0;
 function registerDrawer(id: string, close: () => void): number {
   openDrawerStack.push({id, close});
   registrationCounter += 1;
-  return registrationCounter - 1;
+  return NON_MODAL_BASE_Z + registrationCounter - 1;
 }
 
 function unregisterDrawer(id: string): void {
@@ -267,7 +267,7 @@ const styles = stylex.create({
     insetInlineEnd: spacingVars['--spacing-2'],
     display: 'flex',
     gap: spacingVars['--spacing-1'],
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
   },
 });
 
@@ -282,9 +282,8 @@ const dynamicStyles = stylex.create({
     },
     maxWidth: '100dvw',
   }),
-  stackZ: (offset: number) => ({
-    zIndex:
-      `calc(${appearanceVars['--appearance-layer-nesting']} + ${offset})` as unknown as number,
+  stackZ: (z: number) => ({
+    zIndex: z,
   }),
 });
 
@@ -425,7 +424,7 @@ export function Drawer({
     onOpenChangeRef.current = onOpenChange;
   }, [onOpenChange]);
   // z-index assigned by the registry on open (non-modal stacking only).
-  const [stackZ, setStackZ] = useState(0);
+  const [stackZ, setStackZ] = useState(NON_MODAL_BASE_Z);
   // Whether the panel paints: true while open and for the whole slide-out.
   const [isRendered, setIsRendered] = useState(isOpen);
 

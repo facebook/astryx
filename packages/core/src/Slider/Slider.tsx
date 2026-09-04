@@ -28,7 +28,6 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  appearanceVars,
   colorVars,
   spacingVars,
   radiusVars,
@@ -268,7 +267,7 @@ const styles = stylex.create({
       default: 'grab',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
   },
   thumbHorizontal: {
     top: '50%',

@@ -27,12 +27,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  appearanceVars,
-  colorVars,
-  spacingVars,
-  typeScaleVars,
-} from '../theme/tokens.stylex';
+import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -218,7 +213,7 @@ const styles = stylex.create({
     position: 'absolute',
     top: spacingVars['--spacing-3'],
     insetInlineEnd: spacingVars['--spacing-3'],
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
   },
   navButton: {
     position: 'absolute',
@@ -229,7 +224,7 @@ const styles = stylex.create({
     // firing. `translate` composes with them, reproducing exactly what the
     // removed wrapper element did (wrapper translated, button scaled).
     translate: '0 -50%',
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
   },
   navPrev: {
     insetInlineStart: spacingVars['--spacing-3'],
@@ -244,7 +239,7 @@ const styles = stylex.create({
     color: colorVars['--color-on-dark'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
   },
   controlButton: {
     color: colorVars['--color-on-dark'],

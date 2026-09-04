@@ -3,7 +3,7 @@
 // AUTO-GENERATED — do not edit manually.
 // Source: packages/core/src/theme/tokens.stylex.ts
 // Run: node scripts/generate-token-docs.mjs
-// Total: 190 tokens across 14 categories.
+// Total: 188 tokens across 13 categories.
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
@@ -692,32 +692,6 @@ export const docs = {
         }
       ],
       "previewType": "shadow-box"
-    },
-    {
-      "title": "Appearance Tokens",
-      "content": [
-        {
-          "type": "prose",
-          "text": "Relative stacking steps for ordinary nested containers and floating layers. Native popovers and modal dialogs use the browser top layer instead."
-        },
-        {
-          "type": "table",
-          "headers": [
-            "Token",
-            "Value"
-          ],
-          "rows": [
-            [
-              "--appearance-container-nesting",
-              "10"
-            ],
-            [
-              "--appearance-layer-nesting",
-              "50"
-            ]
-          ]
-        }
-      ]
     },
     {
       "title": "Duration Tokens",

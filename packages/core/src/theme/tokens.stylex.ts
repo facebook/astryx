@@ -258,27 +258,6 @@ export const shadowDefaults = {
 export const shadowVars = stylex.defineVars(shadowDefaults);
 
 // =============================================================================
-// Appearance Tokens
-// =============================================================================
-// Relative stacking steps for ordinary DOM surfaces. Native popovers and modal
-// dialogs use the browser top layer instead and do not need these values.
-
-const APPEARANCE_CONTAINER_NESTING = 10;
-const APPEARANCE_LAYER_NESTING = 50;
-
-export const appearanceDefaults = {
-  '--appearance-container-nesting': `${APPEARANCE_CONTAINER_NESTING}`,
-  '--appearance-layer-nesting': `${APPEARANCE_LAYER_NESTING}`,
-} as const;
-
-export const appearanceVars = stylex.defineVars({
-  '--appearance-container-nesting': stylex.types.integer(
-    APPEARANCE_CONTAINER_NESTING,
-  ),
-  '--appearance-layer-nesting': stylex.types.integer(APPEARANCE_LAYER_NESTING),
-});
-
-// =============================================================================
 // Motion Tokens — Duration
 // =============================================================================
 // Duration primitives: pick a duration that matches the visual weight.
@@ -371,7 +350,6 @@ export type SpacingVarName = keyof typeof spacingDefaults;
 export type SizeVarName = keyof typeof sizeDefaults;
 export type RadiusVarName = keyof typeof radiusDefaults;
 export type ShadowVarName = keyof typeof shadowDefaults;
-export type AppearanceVarName = keyof typeof appearanceDefaults;
 export type TypographyVarName = keyof typeof typographyDefaults;
 export type TextSizeVarName = keyof typeof textSizeDefaults;
 export type FontWeightVarName = keyof typeof fontWeightDefaults;

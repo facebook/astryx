@@ -22,7 +22,6 @@ import * as React from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
-  appearanceVars,
   colorVars,
   spacingVars,
   radiusVars,
@@ -126,7 +125,7 @@ const styles = stylex.create({
     backgroundColor: 'var(--color-syntax-background)',
     position: 'sticky',
     top: 0,
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
   },
   header: {
     display: 'flex',

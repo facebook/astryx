@@ -82,6 +82,16 @@ const styles = stylex.create({
   triggerLabel: {
     textBoxEdge: 'cap alphabetic',
     textBoxTrim: 'trim-both',
+    // Fill the row rather than hug the label. For a text trigger this changes
+    // nothing — `space-between` already had it against the start edge and the
+    // chevron against the end — but it is what lets a composed trigger put
+    // something out at the far edge, next to the chevron, rather than trailing
+    // the label with the free space stranded after it.
+    //
+    // Growing only. The flex floor stays at `auto`, so a label still cannot be
+    // squeezed narrower than its own content and nothing that used to fit
+    // starts overlapping the chevron.
+    flexGrow: 1,
   },
   // Disabled trigger — non-interactive, dimmed. Native `disabled` on the
   // button blocks click + keyboard activation; these styles restore the

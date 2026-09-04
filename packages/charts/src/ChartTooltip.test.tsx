@@ -4,8 +4,8 @@
  * @file ChartTooltip.test.tsx
  * @input Uses vitest, @testing-library/react, ChartTooltip, ChartProvider,
  *        d3-scale
- * @output Functional tests for the grouped tooltip — owner-local popover
- *         lifecycle, pointer subscription, card content/visibility, hover dots, crosshair vs band
+ * @output Functional tests for the grouped tooltip — portal lifecycle, pointer
+ *         subscription, card content/visibility, hover dots, crosshair vs band
  *         highlight, and the custom render contract
  * @position Colocated test for ChartTooltip.tsx (issue #4295 viz coverage).
  *           Renders under a hand-built ChartProvider so the pointer stream can
@@ -97,7 +97,7 @@ function renderTooltip(
 ) {
   return render(
     <ChartProvider value={harness.ctx}>
-      <svg ref={harness.ctx.svgRef}>
+      <svg>
         <g>
           <ChartTooltip series={[makeSeries()]} {...props} />
         </g>
@@ -122,59 +122,15 @@ const pointerLeave: ChartPointerEvent = {
 
 const card = () => document.querySelector('[role="tooltip"]') as HTMLElement;
 
-function cssDeclarationsOf(el: Element): string[] {
-  const classes = new Set(
-    (el as HTMLElement).className.split(/\s+/).filter(Boolean),
-  );
-  const declarations: string[] = [];
-
-  for (const sheet of Array.from(document.styleSheets)) {
-    for (const rule of Array.from(sheet.cssRules)) {
-      const text = rule.cssText;
-      const brace = text.indexOf('{');
-      if (brace === -1) {
-        continue;
-      }
-      const selector = text.slice(0, brace).replaceAll(':not(#\\#)', '').trim();
-      const match = /^\.([\w-]+)(.*)$/.exec(selector);
-      if (!match || !classes.has(match[1])) {
-        continue;
-      }
-      declarations.push(
-        text
-          .slice(brace + 1, text.lastIndexOf('}'))
-          .trim()
-          .replace(/;$/, ''),
-      );
-    }
-  }
-
-  return declarations;
-}
-
 describe('ChartTooltip card', () => {
-  it('hosts the manual popover beside its owning chart', () => {
+  it('portals an initially empty tooltip card into document.body', () => {
     const harness = makeHarness();
     const {container} = renderTooltip(harness);
     expect(card()).not.toBeNull();
-    expect(card().parentElement).toBe(container);
-    expect(card()).toHaveAttribute('popover', 'manual');
+    expect(card().parentElement).toBe(document.body);
+    // The card lives outside the chart subtree.
+    expect(container.querySelector('[role="tooltip"]')).toBeNull();
     expect(card().textContent).toBe('');
-  });
-
-  it('resets native popover centering before applying fixed coordinates', () => {
-    const harness = makeHarness();
-    renderTooltip(harness);
-    const declarations = cssDeclarationsOf(card());
-    expect(declarations.some(value => value.startsWith('inset: auto'))).toBe(
-      true,
-    );
-    expect(
-      declarations.some(value => value.startsWith('margin-block: 0')),
-    ).toBe(true);
-    expect(
-      declarations.some(value => value.startsWith('margin-inline: 0')),
-    ).toBe(true);
   });
 
   it('shows the hovered x value and the bare value for a single series', () => {

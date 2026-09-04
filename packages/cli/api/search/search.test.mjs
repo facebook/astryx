@@ -31,107 +31,70 @@ import {
   SEARCH_DOMAINS,
 } from './search.mjs';
 
-const REPO = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../../../..',
-);
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const cwd = REPO;
 const SLOW = 30_000;
 
 describe('search leaf — envelope + ranking', () => {
-  it(
-    'returns a `search` envelope with query + results',
-    async () => {
-      const r = await search('button', {cwd});
-      expect(r.type).toBe('search');
-      expect(r.data.query).toBe('button');
-      expect(Array.isArray(r.data.results)).toBe(true);
-      expect(r.data.results.length).toBeGreaterThan(0);
-    },
-    SLOW,
-  );
+  it('returns a `search` envelope with query + results', async () => {
+    const r = await search('button', {cwd});
+    expect(r.type).toBe('search');
+    expect(r.data.query).toBe('button');
+    expect(Array.isArray(r.data.results)).toBe(true);
+    expect(r.data.results.length).toBeGreaterThan(0);
+  }, SLOW);
 
-  it(
-    'keeps tokenizer coverage out of the public result shape',
-    async () => {
-      const r = await search('table of contents', {cwd});
-      expect(r.data.results.length).toBeGreaterThan(0);
-      for (const result of r.data.results) {
-        expect(result).not.toHaveProperty('matchedTerms');
-        expect(result).not.toHaveProperty('queryTerms');
-      }
-    },
-    SLOW,
-  );
+  it('keeps tokenizer coverage out of the public result shape', async () => {
+    const r = await search('table of contents', {cwd});
+    expect(r.data.results.length).toBeGreaterThan(0);
+    for (const result of r.data.results) {
+      expect(result).not.toHaveProperty('matchedTerms');
+      expect(result).not.toHaveProperty('queryTerms');
+    }
+  }, SLOW);
 
-  it(
-    'returns an empty result set (not an error) for a no-match query',
-    async () => {
-      const r = await search('zzznomatch99', {cwd});
-      expect(r.type).toBe('search');
-      expect(r.data.results).toEqual([]);
-    },
-    SLOW,
-  );
+  it('returns an empty result set (not an error) for a no-match query', async () => {
+    const r = await search('zzznomatch99', {cwd});
+    expect(r.type).toBe('search');
+    expect(r.data.results).toEqual([]);
+  }, SLOW);
 
-  it(
-    'defaults to at most 20 results',
-    async () => {
-      const r = await search('button', {cwd});
-      expect(r.data.results.length).toBeLessThanOrEqual(20);
-    },
-    SLOW,
-  );
+  it('defaults to at most 20 results', async () => {
+    const r = await search('button', {cwd});
+    expect(r.data.results.length).toBeLessThanOrEqual(20);
+  }, SLOW);
 
-  it(
-    'caps results to a positive limit',
-    async () => {
-      const r = await search('button', {cwd, limit: 2});
-      expect(r.data.results.length).toBeLessThanOrEqual(2);
-    },
-    SLOW,
-  );
+  it('caps results to a positive limit', async () => {
+    const r = await search('button', {cwd, limit: 2});
+    expect(r.data.results.length).toBeLessThanOrEqual(2);
+  }, SLOW);
 });
 
 describe('search leaf — --type filter', () => {
-  it(
-    'restricts results to the requested domain',
-    async () => {
-      const r = await search('button', {cwd, type: 'component'});
-      expect(r.data.results.every(x => x.domain === 'component')).toBe(true);
-    },
-    SLOW,
-  );
+  it('restricts results to the requested domain', async () => {
+    const r = await search('button', {cwd, type: 'component'});
+    expect(r.data.results.every(x => x.domain === 'component')).toBe(true);
+  }, SLOW);
 
   it('exposes the valid domain list', () => {
-    expect(SEARCH_DOMAINS).toEqual(
-      expect.arrayContaining(['component', 'hook', 'doc', 'template']),
-    );
+    expect(SEARCH_DOMAINS).toEqual(expect.arrayContaining(['component', 'hook', 'doc', 'template']));
   });
 });
 
 describe('search leaf — exact keyword phrase outranks incidental token matches (issue #5239)', () => {
-  it(
-    'surfaces Outline for its own declared keyword "table of contents", ranked first',
-    async () => {
-      // Before the fix, "table" and "contents" each separately matched dozens
-      // of unrelated Table-related templates by coincidence, and their
-      // combined token-sum score outranked Outline's single exact match,
-      // pushing it out of the results entirely at the default limit.
-      const r = await search('table of contents', {cwd});
-      expect(r.data.results[0]?.name).toBe('Outline');
-    },
-    SLOW,
-  );
+  it('surfaces Outline for its own declared keyword "table of contents", ranked first', async () => {
+    // Before the fix, "table" and "contents" each separately matched dozens
+    // of unrelated Table-related templates by coincidence, and their
+    // combined token-sum score outranked Outline's single exact match,
+    // pushing it out of the results entirely at the default limit.
+    const r = await search('table of contents', {cwd});
+    expect(r.data.results[0]?.name).toBe('Outline');
+  }, SLOW);
 
-  it(
-    'surfaces Outline for its own declared keyword "heading navigation", ranked first',
-    async () => {
-      const r = await search('heading navigation', {cwd});
-      expect(r.data.results[0]?.name).toBe('Outline');
-    },
-    SLOW,
-  );
+  it('surfaces Outline for its own declared keyword "heading navigation", ranked first', async () => {
+    const r = await search('heading navigation', {cwd});
+    expect(r.data.results[0]?.name).toBe('Outline');
+  }, SLOW);
 
   it('preserves query coverage metadata on the promoted exact phrase', () => {
     const query = 'table of contents';
@@ -144,69 +107,45 @@ describe('search leaf — exact keyword phrase outranks incidental token matches
     ).toMatchObject({matched: tokens.length, total: tokens.length});
   });
 
-  it(
-    'still returns no results for a nonsense query (the fix does not loosen matching)',
-    async () => {
-      const r = await search('zzzzqqqx', {cwd});
-      expect(r.data.results).toEqual([]);
-    },
-    SLOW,
-  );
+  it('still returns no results for a nonsense query (the fix does not loosen matching)', async () => {
+    const r = await search('zzzzqqqx', {cwd});
+    expect(r.data.results).toEqual([]);
+  }, SLOW);
 });
 
 describe('search leaf — error paths (pinned)', () => {
-  it(
-    'throws ERR_INVALID_ARGUMENT when the query is empty/whitespace',
-    async () => {
-      await expect(search('   ', {cwd})).rejects.toMatchObject({
-        code: 'ERR_INVALID_ARGUMENT',
-        message: expect.stringMatching(/query is required/i),
-      });
-    },
-    SLOW,
-  );
+  it('throws ERR_INVALID_ARGUMENT when the query is empty/whitespace', async () => {
+    await expect(search('   ', {cwd})).rejects.toMatchObject({
+      code: 'ERR_INVALID_ARGUMENT',
+      message: expect.stringMatching(/query is required/i),
+    });
+  }, SLOW);
 
-  it(
-    'throws ERR_INVALID_ARGUMENT for an unknown --type',
-    async () => {
-      await expect(
-        search('button', {cwd, type: /** @type {any} */ ('bogus')}),
-      ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
-    },
-    SLOW,
-  );
+  it('throws ERR_INVALID_ARGUMENT for an unknown --type', async () => {
+    await expect(
+      search('button', {cwd, type: /** @type {any} */ ('bogus')}),
+    ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+  }, SLOW);
 });
 
 describe('search leaf — limit validation (API matches the CLI contract)', () => {
-  it(
-    'throws ERR_INVALID_ARGUMENT for a limit of 0 (no longer returns everything)',
-    async () => {
-      await expect(search('button', {cwd, limit: 0})).rejects.toMatchObject({
-        code: 'ERR_INVALID_ARGUMENT',
-      });
-    },
-    SLOW,
-  );
+  it('throws ERR_INVALID_ARGUMENT for a limit of 0 (no longer returns everything)', async () => {
+    await expect(search('button', {cwd, limit: 0})).rejects.toMatchObject({
+      code: 'ERR_INVALID_ARGUMENT',
+    });
+  }, SLOW);
 
-  it(
-    'throws ERR_INVALID_ARGUMENT for a negative limit',
-    async () => {
-      await expect(search('button', {cwd, limit: -5})).rejects.toMatchObject({
-        code: 'ERR_INVALID_ARGUMENT',
-      });
-    },
-    SLOW,
-  );
+  it('throws ERR_INVALID_ARGUMENT for a negative limit', async () => {
+    await expect(search('button', {cwd, limit: -5})).rejects.toMatchObject({
+      code: 'ERR_INVALID_ARGUMENT',
+    });
+  }, SLOW);
 
-  it(
-    'throws ERR_INVALID_ARGUMENT for a non-integer limit',
-    async () => {
-      await expect(search('button', {cwd, limit: 2.5})).rejects.toMatchObject({
-        code: 'ERR_INVALID_ARGUMENT',
-      });
-    },
-    SLOW,
-  );
+  it('throws ERR_INVALID_ARGUMENT for a non-integer limit', async () => {
+    await expect(search('button', {cwd, limit: 2.5})).rejects.toMatchObject({
+      code: 'ERR_INVALID_ARGUMENT',
+    });
+  }, SLOW);
 });
 
 describe('search leaf — integration components', () => {
@@ -217,10 +156,7 @@ describe('search leaf — integration components', () => {
    */
   function makeConsumerWithIntegrationComponent() {
     const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-search-it-'));
-    fs.writeFileSync(
-      path.join(dir, 'package.json'),
-      JSON.stringify({name: 'consumer'}),
-    );
+    fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({name: 'consumer'}));
     fs.writeFileSync(
       path.join(dir, 'astryx.config.mjs'),
       `export default { integrations: ['@acme/widgets'] };\n`,
@@ -253,34 +189,26 @@ describe('search leaf — integration components', () => {
     return dir;
   }
 
-  it(
-    'includes a component contributed by a configured integration',
-    async () => {
-      const dir = makeConsumerWithIntegrationComponent();
-      try {
-        const r = await search('gizmo', {cwd: dir, type: 'component'});
-        expect(r.data.results.some(x => x.name === 'FancyGizmo')).toBe(true);
-      } finally {
-        fs.rmSync(dir, {recursive: true, force: true});
-      }
-    },
-    SLOW,
-  );
+  it('includes a component contributed by a configured integration', async () => {
+    const dir = makeConsumerWithIntegrationComponent();
+    try {
+      const r = await search('gizmo', {cwd: dir, type: 'component'});
+      expect(r.data.results.some(x => x.name === 'FancyGizmo')).toBe(true);
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  }, SLOW);
 
-  it(
-    'reports the contributing package as the import hint',
-    async () => {
-      const dir = makeConsumerWithIntegrationComponent();
-      try {
-        const r = await search('FancyGizmo', {cwd: dir, type: 'component'});
-        const hit = r.data.results.find(x => x.name === 'FancyGizmo');
-        expect(hit?.import).toBe('@acme/widgets');
-      } finally {
-        fs.rmSync(dir, {recursive: true, force: true});
-      }
-    },
-    SLOW,
-  );
+  it('reports the contributing package as the import hint', async () => {
+    const dir = makeConsumerWithIntegrationComponent();
+    try {
+      const r = await search('FancyGizmo', {cwd: dir, type: 'component'});
+      const hit = r.data.results.find(x => x.name === 'FancyGizmo');
+      expect(hit?.import).toBe('@acme/widgets');
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  }, SLOW);
 });
 
 describe('search scoring — multi-token aggregation is monotonic', () => {
@@ -289,8 +217,7 @@ describe('search scoring — multi-token aggregation is monotonic', () => {
    * @param {object} candidate
    * @returns {number}
    */
-  const score = (q, candidate) =>
-    scoreQuery(q, tokenizeQuery(q), candidate)?.score ?? 0;
+  const score = (q, candidate) => scoreQuery(q, tokenizeQuery(q), candidate)?.score ?? 0;
 
   it('ranks matching both terms above matching only the stronger one', () => {
     // The shipped regression: scoring averaged over MATCHED tokens, so the
@@ -304,9 +231,7 @@ describe('search scoring — multi-token aggregation is monotonic', () => {
       keywords: ['file'],
       description: 'Column browser for nested folders',
     };
-    expect(score('file browser', complete)).toBeGreaterThan(
-      score('file browser', partial),
-    );
+    expect(score('file browser', complete)).toBeGreaterThan(score('file browser', partial));
   });
 
   it('never scores a superset of matched terms below a subset', () => {
@@ -317,9 +242,7 @@ describe('search scoring — multi-token aggregation is monotonic', () => {
       {name: 'zzz-none', keywords: ['alpha'], weakKeywords: ['beta']},
     ];
     for (const superset of supersets) {
-      expect(score('alpha beta', superset)).toBeGreaterThanOrEqual(
-        score('alpha beta', subset),
-      );
+      expect(score('alpha beta', superset)).toBeGreaterThanOrEqual(score('alpha beta', subset));
     }
   });
 
@@ -327,22 +250,15 @@ describe('search scoring — multi-token aggregation is monotonic', () => {
     // Guards the reason the mean was used: a long prompt matching one concept
     // strongly must not be crushed by dividing across every query token.
     const candidate = {name: 'kanban', keywords: ['kanban']};
-    expect(
-      score('i need a kanban somewhere in this rambling request', candidate),
-    ).toBeGreaterThanOrEqual(90);
+    expect(score('i need a kanban somewhere in this rambling request', candidate))
+      .toBeGreaterThanOrEqual(90);
   });
 });
 
 describe('search scoring — derived keywords rank below authored ones', () => {
   it('scores an authored keyword above a derived one', () => {
-    const authored = scoreCandidate('dialog', {
-      name: 'x',
-      keywords: ['Dialog'],
-    });
-    const derived = scoreCandidate('dialog', {
-      name: 'x',
-      weakKeywords: ['Dialog'],
-    });
+    const authored = scoreCandidate('dialog', {name: 'x', keywords: ['Dialog']});
+    const derived = scoreCandidate('dialog', {name: 'x', weakKeywords: ['Dialog']});
     expect(authored?.score).toBe(90);
     expect(derived?.score).toBe(60);
   });
@@ -351,27 +267,18 @@ describe('search scoring — derived keywords rank below authored ones', () => {
     // PAGE_DIRECT in api/build/kit is 95: at full keyword strength a page that
     // renders one of everything got a 90-point shot per component and was
     // returned as a confident match for queries it had nothing to do with.
-    const derived = scoreCandidate('dialog', {
-      name: 'x',
-      weakKeywords: ['Dialog'],
-    });
+    const derived = scoreCandidate('dialog', {name: 'x', weakKeywords: ['Dialog']});
     expect(derived?.score).toBeLessThan(95);
   });
 
   it('still surfaces a derived match above the page floor', () => {
     // PAGE_FLOOR is 50 — weakening the signal must not make it invisible.
-    const derived = scoreCandidate('dialog', {
-      name: 'x',
-      weakKeywords: ['Dialog'],
-    });
+    const derived = scoreCandidate('dialog', {name: 'x', weakKeywords: ['Dialog']});
     expect(derived?.score).toBeGreaterThanOrEqual(50);
   });
 
   it('explains a derived hit as something the template renders', () => {
-    const derived = scoreCandidate('dialog', {
-      name: 'x',
-      weakKeywords: ['Dialog'],
-    });
+    const derived = scoreCandidate('dialog', {name: 'x', weakKeywords: ['Dialog']});
     expect(derived?.reason).toMatch(/renders Dialog/);
   });
 });
@@ -427,21 +334,13 @@ describe('search — usage guidance is indexed, a tier below description', () =>
     expect(scoreCandidate('caution', banner)?.score).toBeLessThan(50);
     // Both words are in this candidate's guidance and nowhere else, so if
     // guidance counted as a concept this would come back as a 2/2 match.
-    const multi = scoreQuery(
-      'caution problems',
-      tokenizeQuery('caution problems'),
-      banner,
-    );
+    const multi = scoreQuery('caution problems', tokenizeQuery('caution problems'), banner);
     expect(multi).toBeNull();
   });
 
   it('lets a real description hit still win the multi-word pass', () => {
     // The floor must exclude guidance without muting the tiers above it.
-    const hit = scoreQuery(
-      'persistent message',
-      tokenizeQuery('persistent message'),
-      banner,
-    );
+    const hit = scoreQuery('persistent message', tokenizeQuery('persistent message'), banner);
     expect(hit?.reason).toMatch(/matches 2\/2 terms/);
   });
 

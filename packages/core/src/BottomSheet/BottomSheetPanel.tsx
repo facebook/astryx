@@ -34,7 +34,6 @@ import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {useDevWarning} from '../hooks';
 import {
-  appearanceVars,
   borderVars,
   colorVars,
   durationVars,
@@ -187,7 +186,7 @@ const styles = stylex.create({
     insetBlockStart: 0,
     insetInlineStart: 0,
     insetInlineEnd: 0,
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

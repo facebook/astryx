@@ -334,6 +334,21 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('Tokenizer satisfies its required value prop via playground defaults', () => {
+    const core = components['@astryxdesign/core'];
+    const tokenizer = core.find(c => c.name === 'Tokenizer');
+    expect(tokenizer).toBeDefined();
+    // `value` is an array of custom items the preview cannot auto-generate;
+    // without this default the properties tab has no interactive preview.
+    expect(tokenizer!.playground?.defaults).toMatchObject({
+      label: 'Tags',
+      value: [
+        {id: '1', label: 'Design'},
+        {id: '2', label: 'Engineering'},
+      ],
+    });
+  });
+
   it('MetadataListItem declares a playground wrapper for realistic preview structure', () => {
     const core = components['@astryxdesign/core'];
     const metadataListItem = core.find(c => c.name === 'MetadataListItem');

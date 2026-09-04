@@ -26,7 +26,6 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  appearanceVars,
   colorVars,
   sizeVars,
   spacingVars,
@@ -132,7 +131,7 @@ const styles = stylex.create({
   dropzone: {
     boxSizing: 'border-box',
     position: 'relative',
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -180,7 +179,7 @@ const styles = stylex.create({
   compact: {
     boxSizing: 'border-box',
     position: 'relative',
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],

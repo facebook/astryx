@@ -30,7 +30,6 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  appearanceVars,
   colorVars,
   sizeVars,
   spacingVars,
@@ -85,7 +84,7 @@ const padBlockEnd = `var(--astryx-number-input-padding-block-end, ${padBlockAll}
 
 const styles = stylex.create({
   wrapper: {
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
     // Applied per side rather than through the shared field base's
     // `paddingBlock`/`paddingInline` shorthands, because the stepper column
     // has to cancel the block padding edge by edge — an asymmetric

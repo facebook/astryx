@@ -13,7 +13,6 @@
 import {type CSSProperties, useCallback, useRef, useEffect} from 'react';
 import {createPortal} from 'react-dom';
 import {IconButton} from '@astryxdesign/core/IconButton';
-import {appearanceVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {useChart} from './ChartContext';
 import {isBandScale} from './utils';
 import type {ScaleLinear} from 'd3-scale';
@@ -326,7 +325,7 @@ export function ChartZoom({
       display: 'flex',
       flexDirection: 'column',
       gap: 4,
-      zIndex: appearanceVars['--appearance-container-nesting'],
+      zIndex: 1,
     };
     switch (pos) {
       case 'top-right':

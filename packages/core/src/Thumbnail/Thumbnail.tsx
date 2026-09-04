@@ -28,7 +28,6 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  appearanceVars,
   colorVars,
   radiusVars,
   spacingVars,
@@ -209,7 +208,7 @@ const styles = stylex.create({
     position: 'absolute',
     top: spacingVars['--spacing-1'],
     insetInlineEnd: spacingVars['--spacing-1'],
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
     lineHeight: 0,
   },
   removeButtonOverrides: {
@@ -244,7 +243,7 @@ const styles = stylex.create({
     justifyContent: 'center',
     backgroundColor: colorVars['--color-overlay'],
     borderRadius: 'inherit',
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
     lineHeight: 0,
   },
 });

@@ -4,9 +4,7 @@
  * @file Programmatic API for the unified `search` command.
  *
  * Returns the same typed envelope { type, data } that `xds --json search`
- * outputs. Ranked results include `matchedTerms` and `queryTerms` coverage so
- * callers can distinguish exact concept matches from partial matches. The CLI
- * command handler is a thin wrapper around this function.
+ * outputs. The CLI command handler is a thin wrapper around this function.
  *
  * `search(query)` is the single "I'm looking for X" entry point across ALL
  * content domains — components, hooks, docs topics, and templates (page +
@@ -60,10 +58,7 @@ import {
   findComponentReadme,
   resolveImportPath,
 } from '../../foundation/discovery/component-discovery.mjs';
-import {
-  discoverHooks,
-  findHookDoc,
-} from '../../foundation/discovery/hook-discovery.mjs';
+import {discoverHooks, findHookDoc} from '../../foundation/discovery/hook-discovery.mjs';
 import {loadIntegrationsSafely} from '../component/_adapter.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
@@ -96,17 +91,7 @@ import {setResultCoverage} from './coverage.mjs';
  * and its siblings). Lowercase, single words or short phrases.
  */
 const SYNONYMS = {
-  dashboard: [
-    'overview',
-    'analytics',
-    'kpi',
-    'kpis',
-    'metrics',
-    'stats',
-    'reporting',
-    'insights',
-    'control',
-  ],
+  dashboard: ['overview', 'analytics', 'kpi', 'kpis', 'metrics', 'stats', 'reporting', 'insights', 'control'],
   login: ['signin', 'auth', 'authentication', 'sso', 'credentials', 'account'],
   signup: ['register', 'registration', 'onboarding'],
   payment: ['checkout', 'billing', 'card', 'pay', 'purchase', 'order'],
@@ -167,6 +152,7 @@ export function stem(w) {
   return s;
 }
 
+
 /** Valid domain filters for `--type`. */
 export const SEARCH_DOMAINS = ['component', 'hook', 'doc', 'template'];
 
@@ -175,66 +161,12 @@ export const SEARCH_DOMAINS = ['component', 'hook', 'doc', 'template'];
  * ("a page where you can see business stats") ranks on its content words.
  */
 const STOPWORDS = new Set([
-  'a',
-  'an',
-  'the',
-  'of',
-  'for',
-  'to',
-  'with',
-  'and',
-  'or',
-  'in',
-  'on',
-  'at',
-  'by',
-  'that',
-  'this',
-  'my',
-  'your',
-  'our',
-  'their',
-  'is',
-  'are',
-  'be',
-  'it',
-  'its',
-  'as',
-  'from',
-  'page',
-  'screen',
-  'app',
-  'application',
-  'view',
-  'where',
-  'you',
-  'can',
-  'some',
-  'like',
-  'just',
-  'basically',
-  'kinda',
-  'want',
-  'wants',
-  'need',
-  'needs',
-  'something',
-  'thing',
-  'things',
-  'build',
-  'make',
-  'create',
-  'i',
-  'me',
-  'we',
-  'us',
-  'so',
-  'up',
-  'out',
-  'over',
-  'side',
-  'one',
-  'big',
+  'a', 'an', 'the', 'of', 'for', 'to', 'with', 'and', 'or', 'in', 'on', 'at',
+  'by', 'that', 'this', 'my', 'your', 'our', 'their', 'is', 'are', 'be', 'it',
+  'its', 'as', 'from', 'page', 'screen', 'app', 'application', 'view', 'where',
+  'you', 'can', 'some', 'like', 'just', 'basically', 'kinda', 'want', 'wants',
+  'need', 'needs', 'something', 'thing', 'things', 'build', 'make', 'create',
+  'i', 'me', 'we', 'us', 'so', 'up', 'out', 'over', 'side', 'one', 'big',
 ]);
 
 /**
@@ -245,14 +177,12 @@ const STOPWORDS = new Set([
  * @returns {string[]}
  */
 export function tokenizeQuery(term) {
-  return (
-    term
-      .split(/\s+/)
-      // Strip only leading/trailing punctuation; keep joined identifiers intact
-      // (e.g. "foo_bar" stays one token) so gibberish stays gibberish.
-      .map(t => t.replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, ''))
-      .filter(t => t.length >= 2 && !STOPWORDS.has(t))
-  );
+  return term
+    .split(/\s+/)
+    // Strip only leading/trailing punctuation; keep joined identifiers intact
+    // (e.g. "foo_bar" stays one token) so gibberish stays gibberish.
+    .map(t => t.replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, ''))
+    .filter(t => t.length >= 2 && !STOPWORDS.has(t));
 }
 
 /**
@@ -296,8 +226,7 @@ function bestForToken(tok, candidate) {
       const h = scoreCandidate(s, candidate);
       if (h) {
         const score = Math.round(h.score * 0.85);
-        if (!best || score > best.score)
-          best = {score, reason: `${h.reason} (~${tok})`};
+        if (!best || score > best.score) best = {score, reason: `${h.reason} (~${tok})`};
       }
     }
   }
@@ -329,8 +258,7 @@ export function scoreQuery(term, tokens, candidate) {
   // single words), but if stopwords left exactly one DIFFERENT token (e.g.
   // "pricing page" → "pricing"), score that token too and take the stronger.
   if (tokens.length <= 1) {
-    const single =
-      tokens.length === 1 ? bestForToken(tokens[0], candidate) : null;
+    const single = tokens.length === 1 ? bestForToken(tokens[0], candidate) : null;
     if (full && (!single || full.score >= single.score)) return asFull(full);
     return single ? asFull(single) : null;
   }
@@ -384,9 +312,7 @@ export function scoreQuery(term, tokens, candidate) {
   // terms can never score lower, since every term of the expression is
   // non-decreasing in the set of matched tokens.
   const coverage = matched / tokens.length;
-  const tokenScore = Math.round(
-    strongest + Math.min(matched - 1, 3) * 12 + coverage * 15,
-  );
+  const tokenScore = Math.round(strongest + Math.min(matched - 1, 3) * 12 + coverage * 15);
 
   if (full && full.score >= tokenScore) return asFull(full);
   return {
@@ -414,14 +340,7 @@ export function scoreQuery(term, tokens, candidate) {
  */
 export function scoreCandidate(
   term,
-  {
-    name,
-    keywords = [],
-    weakKeywords = [],
-    description = '',
-    prose = [],
-    guidance = [],
-  },
+  {name, keywords = [], weakKeywords = [], description = '', prose = [], guidance = []},
 ) {
   let best = 0;
   let reason = '';
@@ -445,11 +364,7 @@ export function scoreCandidate(
     // Substring (both directions), min 4 chars, >=50% coverage.
     const shorter = term.length < nameLower.length ? term : nameLower;
     const longer = term.length < nameLower.length ? nameLower : term;
-    if (
-      shorter.length >= 4 &&
-      longer.includes(shorter) &&
-      shorter.length / longer.length >= 0.5
-    ) {
+    if (shorter.length >= 4 && longer.includes(shorter) && shorter.length / longer.length >= 0.5) {
       consider(60, `name contains "${shorter}"`);
     }
     const dist = levenshteinDistance(term, nameLower);
@@ -564,20 +479,12 @@ async function loadModuleDoc(docPath, exportName = 'docs') {
 function guidanceFrom(doc) {
   if (!doc) return [];
   const features = Array.isArray(doc.features) ? doc.features : [];
-  const practices = Array.isArray(doc.usage?.bestPractices)
-    ? doc.usage.bestPractices
-    : [];
+  const practices = Array.isArray(doc.usage?.bestPractices) ? doc.usage.bestPractices : [];
   return [...features, ...practices]
     .map(entry =>
       typeof entry === 'string'
         ? entry
-        : [
-            entry?.title,
-            entry?.text,
-            entry?.description,
-            entry?.do,
-            entry?.dont,
-          ]
+        : [entry?.title, entry?.text, entry?.description, entry?.do, entry?.dont]
             .filter(Boolean)
             .join(' '),
     )
@@ -776,9 +683,7 @@ async function gatherTemplates(cwd) {
     // category words are a deliberate statement of what the template is for,
     // while scraped JSX tags only say what it happens to render. See the
     // scoring table at the top of this file for why the derived set is capped.
-    const keywords = Array.isArray(t.componentsUsed)
-      ? [...t.componentsUsed]
-      : [];
+    const keywords = Array.isArray(t.componentsUsed) ? [...t.componentsUsed] : [];
     /** @type {string[]} */
     let weakKeywords = [];
     if (t.type === 'page') {
@@ -789,8 +694,7 @@ async function gatherTemplates(cwd) {
           // Best-effort: skip keyword enrichment if the source can't be read.
         }
       }
-      if (t.category)
-        keywords.push(...t.category.split(/[^A-Za-z0-9]+/).filter(Boolean));
+      if (t.category) keywords.push(...t.category.split(/[^A-Za-z0-9]+/).filter(Boolean));
     }
     return {
       domain: 'template',
@@ -892,7 +796,10 @@ export async function search(query, options = {}) {
   // Validate limit here (not just in the CLI) so direct API callers get the same
   // contract: a non-positive or non-integer limit is an error, never a silent
   // "return everything". (Previously `limit <= 0` fell through to the full set.)
-  if (limit != null && (!Number.isInteger(limit) || limit <= 0)) {
+  if (
+    limit != null &&
+    (!Number.isInteger(limit) || limit <= 0)
+  ) {
     throw new AstryxError(
       `Invalid limit "${limit}". Must be a positive integer.`,
       undefined,
@@ -927,10 +834,7 @@ export async function search(query, options = {}) {
   const scored = [];
   for (const candidate of all) {
     const hit = scoreQuery(term, tokens, candidate);
-    if (hit)
-      scored.push(
-        toResult(candidate, hit.score, hit.reason, hit.matched, hit.total),
-      );
+    if (hit) scored.push(toResult(candidate, hit.score, hit.reason, hit.matched, hit.total));
   }
 
   // Sort by score desc, then domain (stable order), then name.
@@ -945,8 +849,5 @@ export async function search(query, options = {}) {
 
   const limited = scored.slice(0, limit);
 
-  return {
-    type: 'search',
-    data: {query: String(query).trim(), results: limited},
-  };
+  return {type: 'search', data: {query: String(query).trim(), results: limited}};
 }

@@ -25,7 +25,7 @@ import {useCallback, useImperativeHandle, useRef, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {appearanceVars, spacingVars} from '../theme/tokens.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {
   SideNavCollapseContext,
@@ -154,7 +154,7 @@ const styles = stylex.create({
     flexShrink: 0,
     position: 'sticky',
     top: 0,
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
     backgroundColor: 'inherit',
     paddingBlockStart: spacingVars['--spacing-2'],
     paddingBlockEnd: spacingVars['--spacing-2'],

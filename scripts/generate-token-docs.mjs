@@ -28,13 +28,6 @@ const TOKENS_DOC = resolve(ROOT, 'packages/cli/assets/docs/tokens.doc.mjs');
 
 const src = readFileSync(TOKENS_SRC, 'utf-8');
 
-const numericConstants = new Map(
-  Array.from(src.matchAll(/^const ([A-Z][A-Z0-9_]*) = (-?\d+);$/gm), match => [
-    match[1],
-    match[2],
-  ]),
-);
-
 /**
  * Extract key-value pairs from a `const xxxDefaults = { ... } as const;` block.
  * Returns array of [tokenName, defaultValue].
@@ -50,19 +43,11 @@ function extractDefaults(name) {
 
   const body = m[1];
   const pairs = [];
-  // Match quoted values and numeric constants interpolated into template strings.
-  // The latter lets typed StyleX variables and plain theme defaults share one
-  // numeric source of truth (for example, z-index integer tokens).
-  const entryRe = /'(--[^']+)':\s*(?:'([^']*)'|`\$\{([A-Z][A-Z0-9_]*)\}`)/g;
+  // Match quoted values from each defaults entry.
+  const entryRe = /'(--[^']+)':\s*'([^']*)'/g;
   let em;
   while ((em = entryRe.exec(body)) !== null) {
-    const value = em[2] ?? numericConstants.get(em[3]);
-    if (value == null) {
-      throw new Error(
-        `Could not resolve ${em[3]} while reading ${name}.${em[1]}`,
-      );
-    }
-    pairs.push([em[1], value]);
+    pairs.push([em[1], em[2]]);
   }
   return pairs;
 }
@@ -138,15 +123,6 @@ const groups = [
     title: 'Shadow Tokens',
     description:
       'Elevation shadows (low to med to high) and inset shadows for input state rings.',
-    headers: ['Token', 'Value'],
-    formatRow: (name, value) => [name, value],
-  },
-  {
-    key: 'appearance',
-    exportName: 'appearanceDefaults',
-    title: 'Appearance Tokens',
-    description:
-      'Relative stacking steps for ordinary nested containers and floating layers. Native popovers and modal dialogs use the browser top layer instead.',
     headers: ['Token', 'Value'],
     formatRow: (name, value) => [name, value],
   },

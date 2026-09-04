@@ -29,19 +29,6 @@ describe('defineTheme', () => {
     expect(theme.tokens['--color-background-surface']).toBeUndefined();
   });
 
-  it('accepts appearance nesting token overrides', () => {
-    const theme = defineTheme({
-      name: 'nested-surfaces',
-      tokens: {
-        '--appearance-container-nesting': '20',
-        '--appearance-layer-nesting': '100',
-      },
-    });
-
-    expect(theme.tokens['--appearance-container-nesting']).toBe('20');
-    expect(theme.tokens['--appearance-layer-nesting']).toBe('100');
-  });
-
   it('converts [light, dark] tuples to light-dark()', () => {
     const theme = defineTheme({
       name: 'tuple-test',

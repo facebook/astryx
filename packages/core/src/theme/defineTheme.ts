@@ -61,7 +61,6 @@ import {
   focusDefaults,
   radiusDefaults,
   shadowDefaults,
-  appearanceDefaults,
   durationDefaults,
   easeDefaults,
   typographyDefaults,
@@ -98,7 +97,6 @@ export type CoreTokenName =
   | keyof typeof focusDefaults
   | keyof typeof radiusDefaults
   | keyof typeof shadowDefaults
-  | keyof typeof appearanceDefaults
   | keyof typeof durationDefaults
   | keyof typeof easeDefaults
   | keyof typeof typographyDefaults
@@ -445,7 +443,6 @@ export const tokenDefaults: Record<string, string> = {
   ...focusDefaults,
   ...radiusDefaults,
   ...shadowDefaults,
-  ...appearanceDefaults,
   ...durationDefaults,
   ...easeDefaults,
   ...typographyDefaults,

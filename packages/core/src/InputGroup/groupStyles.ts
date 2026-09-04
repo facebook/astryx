@@ -8,7 +8,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {appearanceVars, radiusVars, borderVars} from '../theme/tokens.stylex';
+import {radiusVars, borderVars} from '../theme/tokens.stylex';
 
 // A grouped control may be followed by context-layer infrastructure rather
 // than another control. Neither the inert marker nor the popover is a visual
@@ -41,7 +41,7 @@ export const groupStyles = stylex.create({
       [IS_LAST_ITEM]: radiusVars['--radius-element'],
     },
     ':focus-within': {
-      zIndex: appearanceVars['--appearance-container-nesting'],
+      zIndex: 1,
     },
   },
 });

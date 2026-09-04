@@ -31,7 +31,7 @@
 
 import {type ReactNode, useMemo, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {appearanceVars, spacingVars} from '../theme/tokens.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {useChatStreamScroll} from './useChatStreamScroll';
@@ -184,7 +184,7 @@ const styles = stylex.create({
 
   dock: {
     position: 'relative',
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
     pointerEvents: 'auto',
     paddingInline: spacingVars['--spacing-3'],
     paddingBlockEnd: spacingVars['--spacing-3'],

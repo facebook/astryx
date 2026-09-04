@@ -22,7 +22,6 @@ import {useFocusTrap} from '../hooks/useFocusTrap';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
-  appearanceVars,
   colorVars,
   spacingVars,
   radiusVars,
@@ -86,7 +85,7 @@ const styles = stylex.create({
   closeButtonWrapper: {
     position: 'absolute',
     bottom: 0,
-    zIndex: appearanceVars['--appearance-container-nesting'],
+    zIndex: 1,
     // sr-only by default
     width: {
       default: 1,

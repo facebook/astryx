@@ -202,7 +202,6 @@ export const myTheme = defineTheme({
   //   --border-width   hairline thickness shared by bordered surfaces
   //   --radius-*       none · inner · element · container · page · chat · full
   //   --shadow-*       low/med/high + inset-{hover,selected,success,warning,error}
-  //   --appearance-*   container-nesting · layer-nesting
   //   --duration-*     {fast,medium,slow} × {-min, base, -max}
   //   --ease-standard
   //   --font-family-*  body · heading · code
