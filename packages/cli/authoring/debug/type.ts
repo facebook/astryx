@@ -41,6 +41,13 @@ export type DebugOutcome =
 export type DebugOptionSource =
   'cli' | 'default' | 'env' | 'config' | 'implied';
 
+/** The kind of content represented by a command's result set. */
+export type DebugResultKind =
+  'component' | 'template' | 'doc' | 'hook' | 'mixed';
+
+/** What initiated the CLI invocation, based only on positive evidence. */
+export type DebugInvocationSource = 'human' | 'ai' | 'automation' | 'unknown';
+
 /** The failure, when there was one. */
 export interface DebugEventError {
   name: string;
@@ -64,6 +71,14 @@ export interface DebugEventOutput {
   handled: boolean;
   /** Whether the run ended by printing help rather than doing work. */
   helpDisplayed: boolean;
+  /** Number of matches before presentation-only grouping or caps. */
+  resultCount: number | null;
+  /** Whether the command's underlying match set was empty. */
+  emptyResult: boolean | null;
+  /** One surfaced result kind, `mixed`, or null when none was surfaced. */
+  resultKind: DebugResultKind | null;
+  /** Whether the command found a confident direct match, when it defines one. */
+  directMatch: boolean | null;
   /**
    * Everything the command printed to stdout — the answer the user actually
    * got. Scrubbed like every other captured value, and truncated past
@@ -81,9 +96,9 @@ export interface DebugEventOutput {
 }
 
 /**
- * Machine and runtime facts. Deliberately coarse: no hostname, no username,
- * no network identity — everything here is either a bucket or something the
- * user could read off their own `astryx doctor` output.
+ * Machine, runtime, and invocation-attribution facts. There is no hostname,
+ * username, or network identity. Agent session values come only from explicit
+ * environment signals supplied by the invoking tool.
  */
 export interface DebugEventEnv {
   cliVersion: string | null;
@@ -95,8 +110,25 @@ export interface DebugEventEnv {
   ci: boolean;
   /** Detected CI provider, e.g. 'github-actions'. Null outside CI. */
   ciName: string | null;
-  /** Coding agent that invoked the CLI, e.g. 'cursor' | 'claude-code'. */
+  /** Legacy broad detector, retained for compatibility with existing consumers. */
   agent: string | null;
+  /**
+   * Coding-agent identity from `ASTRYX_AGENT_ID`, `AGENT`,
+   * `ASTRYX_AGENT_METADATA`, or a known public agent signal.
+   */
+  agentIdentity: string | null;
+  /**
+   * Opaque session identifier from `ASTRYX_AGENT_SESSION_ID`,
+   * `AGENT_SESSION_ID`, or `ASTRYX_AGENT_METADATA`. It is included verbatim so
+   * a handler can choose the raw value or the hash below.
+   */
+  agentSessionId: string | null;
+  /** SHA-256 of `agentSessionId`, for joins that do not need the raw value. */
+  agentSessionIdHash: string | null;
+  /** Public environment signal that supplied `agentSessionId`. */
+  agentSessionIdSource: string | null;
+  /** Whether a human, AI agent, or automation invoked the CLI. */
+  invocationSource: DebugInvocationSource;
   /** Run one-off via npx/dlx rather than an installed binary. */
   oneOff: boolean;
   packageManager: string | null;

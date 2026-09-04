@@ -41,7 +41,7 @@ const REPO_ROOT = path.resolve(
   '../../..',
 );
 const config = loadConfig(REPO_ROOT);
-const themeCatalog = readThemeCatalog(REPO_ROOT);
+const themeCatalog = readThemeCatalog(REPO_ROOT, config.baselineThemes);
 
 const KEY = /^[A-Za-z0-9._-]{1,240}$/;
 const NAME = /^[A-Za-z0-9._-]{1,120}$/;

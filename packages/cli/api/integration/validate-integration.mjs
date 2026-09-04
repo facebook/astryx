@@ -35,7 +35,7 @@ import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {
   findManifestPaths,
-  loadManifestObject,
+  loadManifest,
   resolvePackageDir,
 } from '../../foundation/integrations/integrations.mjs';
 // The on-disk contribution validators live in foundation: Project and
@@ -121,16 +121,18 @@ async function validateAtPackageDir(packageDir, identity) {
   const manifestFile = manifests[0];
   result.manifestFile = manifestFile;
 
-  // loadManifestObject loads the default export and validates it against the
+  // loadManifest loads the default export and validates it against the
   // integration schema (the shared load boundary). A missing default export or
   // a schema failure throws; we convert either into a single invalid_manifest
   // error issue so validate-integration stays exit-1-but-not-crash.
   let manifest;
+  /** @type {string[]} */
+  let unknownKeys;
   try {
-    manifest = await loadManifestObject(
+    ({manifest, unknownKeys} = await loadManifest(
       manifestFile,
       `Integration manifest (${path.basename(manifestFile)})`,
-    );
+    ));
   } catch (err) {
     issues.push(error('invalid_manifest', /** @type {any} */ (err).message));
     return result;
@@ -160,6 +162,7 @@ async function validateAtPackageDir(packageDir, identity) {
     codemods: resolveRoot(manifest.codemods),
     docs: resolveRoot(manifest.docs),
     issuesUrl: manifest.issuesUrl,
+    __unknownKeys: unknownKeys,
     __spec: identity.name,
     __packageDir: packageDir,
     __manifestFile: manifestFile,

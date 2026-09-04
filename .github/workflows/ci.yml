@@ -569,6 +569,16 @@ jobs:
       - name: Run theme var reachability guard
         run: node .github/scripts/theme-var-reachability.js --storybook-dir apps/storybook/dist
 
+      # A story play function is where geometry assertions live (they need
+      # getBoundingClientRect, so jsdom is out), but nothing else observes the
+      # result: Vitest never collects stories, and pr-visual loads stories
+      # without awaiting `play` — and is soft while it earns trust. This guard
+      # loads each listed story in Chromium and fails when its play assertions
+      # throw. Hosted here with the sibling Chromium guards because pr-a11y is
+      # the blocking job that runs whenever components change.
+      - name: Run story play guard
+        run: node .github/scripts/story-play-guard.js --storybook-dir apps/storybook/dist
+
   # The layer order Astryx promises is Astryx < theme < product, and which
   # declaration paints is a cascade fact no jsdom test can settle: the build has
   # been wrong in both directions inside one week — unsplit, so StyleX outranked
@@ -626,11 +636,12 @@ jobs:
       - name: Verify guest fixture contrast
         run: pnpm -F @astryxdesign/vibe-tests fixtures:contrast
 
-  # Stable-package visual regression. Core components get one representative
-  # story in every accepted baseline theme. `visual-baseline` adds default-theme
-  # stories; `visual-theme-matrix` adds all-theme stories. A changed shipped
-  # theme gets its relevant matrix. Packages marked `astryx.canaryOnly` (Lab,
-  # richtext, vega) do not compare pixels and do not own a baseline.
+  # Stable-package visual regression. Core component changes compare only
+  # representative or explicitly tagged story keys already present in the
+  # accepted baseline. A changed shipped theme gets its relevant matrix, but PR
+  # acceptance cannot add or remove baseline keys. Packages marked
+  # `astryx.canaryOnly` (Lab, richtext, vega) do not compare pixels and do not
+  # own a baseline.
   #
   # Deeper than the daily gate only where the component declares it: audit and
   # interaction fixtures stay available to their dedicated checks without

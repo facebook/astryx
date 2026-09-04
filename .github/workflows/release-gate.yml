@@ -3,8 +3,9 @@
 # Release gate — the checks a release must clear, run before the daily cut.
 #
 # Two of them, and they answer different questions:
-#   visual  — did anything on screen change, in any theme, since the last
-#             accepted baseline? (.github/scripts/visual-gate)
+#   visual  — did the canonical Neutral component surface or generated Probe
+#             coverage fixture change since the last accepted baseline?
+#             (.github/scripts/visual-gate)
 #   a11y    — did any NEW accessibility violation appear against the baseline?
 #             (the same full-suite audit a11y-weekly runs, run daily here)
 #
@@ -91,12 +92,11 @@ jobs:
             echo "::notice::No baseline on gh-pages yet — this run establishes one."
           fi
 
-      # The derived surface/matrix stays representative, but an accepted
-      # stable key is a durable release promise: recapture every still-valid
-      # baseline key until a reviewed removal prunes it. Package filtering is
-      # applied to the baseline too, so legacy canary keys do not block Core.
-      # The gate constructs the canonical stable tiers internally. A caller may
-      # not expand, rename, or narrow the plan that owns removal authority.
+      # The canonical release plan is a closed policy: representative and
+      # explicitly tagged Core stories in Neutral, plus generated Probe coverage.
+      # Existing keys outside that set are reported as reviewed removals so the
+      # manual baseline workflow can prune them deliberately. A caller may not
+      # expand, rename, or narrow the plan that owns removal authority.
       # Exit 2 means "changed", which is a release decision; only a crash (1)
       # fails this job mechanically.
       - name: Run the visual gate

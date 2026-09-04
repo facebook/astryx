@@ -20,7 +20,7 @@ export const doc = {
     {
       value: 'init.run',
       description:
-        "The install receipt: the `mode` (`default` | `features`), the features run, agent-doc files written, any soft `docsError`, whether theme guidance was emitted, the template outcome (`workflow` | `created` | `skipped`) plus its path, and whether the next-steps were emitted.",
+        'The install receipt: the `mode` (`default` | `features`), the features run, agent-doc files written, any soft `docsError`, whether theme guidance was emitted, the template outcome (`workflow` | `created` | `skipped`) plus its path, and whether the next-steps were emitted.',
     },
     {
       value: 'init.remove',
@@ -123,7 +123,7 @@ export const doc = {
     {
       value: 'build.kit',
       description:
-        'The grouped composition kit: echoed query, hasResults/directMatch flags, the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.',
+        'The grouped composition kit: echoed query, hasResults/matchCount/directMatch fields, the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.',
     },
 
     // swizzle
@@ -192,7 +192,7 @@ export const doc = {
     {
       value: 'theme.build.batch',
       description:
-        'Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme\'s theme.build (or theme.build.check) envelope, or null when it produced no CSS.',
+        "Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme's theme.build (or theme.build.check) envelope, or null when it produced no CSS.",
     },
     {
       value: 'theme.list',

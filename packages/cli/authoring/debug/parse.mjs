@@ -41,6 +41,16 @@ const optionSourceSchema = z.enum([
   'implied',
 ]);
 
+const resultKindSchema = z.enum([
+  'component',
+  'template',
+  'doc',
+  'hook',
+  'mixed',
+]);
+
+const invocationSourceSchema = z.enum(['human', 'ai', 'automation', 'unknown']);
+
 const errorSchema = z
   .object({
     name: z.string(),
@@ -56,6 +66,10 @@ const outputSchema = z
     envelopeTypes: z.array(z.string()),
     handled: z.boolean(),
     helpDisplayed: z.boolean(),
+    resultCount: z.number().int().nonnegative().nullable().default(null),
+    emptyResult: z.boolean().nullable().default(null),
+    resultKind: resultKindSchema.nullable().default(null),
+    directMatch: z.boolean().nullable().default(null),
     stdout: z.string(),
     stderr: z.string(),
     stdoutBytes: z.number(),
@@ -73,6 +87,11 @@ const envSchema = z
     ci: z.boolean(),
     ciName: z.string().nullable(),
     agent: z.string().nullable(),
+    agentIdentity: z.string().nullable().default(null),
+    agentSessionId: z.string().nullable().default(null),
+    agentSessionIdHash: z.string().nullable().default(null),
+    agentSessionIdSource: z.string().nullable().default(null),
+    invocationSource: invocationSourceSchema.default('unknown'),
     oneOff: z.boolean(),
     packageManager: z.string().nullable(),
     tty: z.boolean(),

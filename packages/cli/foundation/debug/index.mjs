@@ -12,6 +12,7 @@
  *
  *   begin()                  once, before Commander parses
  *   setCommand/setArgs/…     as facts become known
+ *   recordResultSummary()    when a command returns a result set
  *   setOutcome()             from every terminal path (error, fatal, gate)
  *   finish()                 automatic, via the exit listener begin() installs
  *
@@ -32,6 +33,7 @@ export {
   setOptions,
   setGlobalOptions,
   setProject,
+  recordResultSummary,
   setEventHandler,
   noteConfigGateSkipped,
   setOutcome,

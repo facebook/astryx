@@ -88,8 +88,8 @@ export default defineConfig({
     execArgv: ['--max-old-space-size=4096'],
     // Test projects (migrated from vitest.workspace.ts). Partitioning rule
     // (nothing can fall through):
-    //   - `ui`   = packages/core + packages/lab + packages/charts + packages/richtext —
-    //              need jsdom, the StyleX babel
+    //   - `ui`   = packages/core + packages/lab + packages/charts + packages/richtext
+    //              + packages/vega — need jsdom, the StyleX babel
     //              transform, and the jest-dom setup; inherit all of that from
     //              the root config via `extends: true`.
     //   - `node` = everything else (CLI, build tooling, scripts, internal
@@ -116,6 +116,7 @@ export default defineConfig({
             'packages/lab/src/**/*.test.{ts,tsx,mjs}',
             'packages/charts/src/**/*.test.{ts,tsx,mjs}',
             'packages/richtext/src/**/*.test.{ts,tsx,mjs}',
+            'packages/vega/src/**/*.test.{ts,tsx,mjs}',
           ],
         },
       },
@@ -159,6 +160,7 @@ export default defineConfig({
             'packages/lab/**',
             'packages/charts/**',
             'packages/richtext/**',
+            'packages/vega/**',
           ],
         },
       },

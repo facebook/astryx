@@ -36,6 +36,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
+import {devWarn} from '../utils/devWarning';
 import {
   colorVars,
   durationVars,
@@ -426,6 +427,28 @@ export function ResizeHandle({
 
   const isInteracting = isHovered || isFocused;
 
+  // A handle whose axis disagrees with its hook drags along one axis while the
+  // hook measures percentage bounds on the other. `ResizableProps` is exported,
+  // so `_direction` is optional for old hand-built objects; absent means there
+  // is no hook axis to compare, not that the hook is horizontal.
+  const didWarnAxisRef = useRef(false);
+  useEffect(() => {
+    const hookDirection = resizable?._direction;
+    if (
+      hookDirection != null &&
+      hookDirection !== direction &&
+      !didWarnAxisRef.current
+    ) {
+      didWarnAxisRef.current = true;
+      devWarn(
+        'ResizeHandle',
+        `direction="${direction}" but its useResizable region is ` +
+          `"${hookDirection}". They must match: the hook measures one axis ` +
+          'and the handle drags the other.',
+      );
+    }
+  }, [direction, resizable]);
+
   // --- Pointer drag ---
   const clearDrag = useCallback(() => {
     dragRef.current = null;
@@ -489,8 +512,11 @@ export function ResizeHandle({
         return;
       }
       clearDrag();
+      // Not a resize end, but still the end of the gesture: the region froze
+      // state for the duration of the drag and has to be told it is over.
+      resizable?._onResizeCancel?.();
     },
-    [clearDrag],
+    [clearDrag, resizable],
   );
 
   // --- Keyboard ---
@@ -568,12 +594,16 @@ export function ResizeHandle({
   // its listeners with it, so an in-flight drag stops driving the region on
   // its own. The body cursor/user-select overrides are not on the element,
   // though, so they have to be released here or they stick after the handle
-  // is gone.
+  // is gone — and the region, which outlives this handle, still has to hear
+  // that its gesture is over.
+  const cancelOnUnmountRef = useRef<(() => void) | undefined>(undefined);
+  cancelOnUnmountRef.current = resizable?._onResizeCancel;
   useEffect(() => {
     return () => {
       if (dragRef.current) {
         dragRef.current = null;
         clearBodyDragStyles();
+        cancelOnUnmountRef.current?.();
       }
     };
   }, []);

@@ -406,7 +406,7 @@ Every response has a `type` discriminant. The full set is below (generated from 
 | `discover.search`           | The echoed query plus the matching {package, component} pairs, when a free-text term matches several components.                                                                                                                                                                    |
 | `search`                    | The echoed query plus a ranked SearchResultEntry[] (domain, name, score, reason, description, follow-up command, and import path where relevant).                                                                                                                                   |
 | `build.help`                | A marker (`playbook: true`) that the renderer expands into the how-to-build-a-page workflow; emitted when no query is given.                                                                                                                                                        |
-| `build.kit`                 | The grouped composition kit: echoed query, hasResults/directMatch flags, the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.                                                            |
+| `build.kit`                 | The grouped composition kit: echoed query, hasResults/matchCount/directMatch fields, the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.                                                |
 | `swizzle.list`              | The names of swizzlable components discoverable from cwd's @astryxdesign/core.                                                                                                                                                                                                      |
 | `swizzle.copy`              | An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer note.                                                                                                      |
 | `template.list`             | Every discovered template (page + block); each entry carries id, name, description, kind, owning package, optional category and componentsUsed, and readiness flags.                                                                                                                |
@@ -601,9 +601,11 @@ from `@astryxdesign/cli/authoring` for editor autocomplete and type-checking.
 
 Every command loads the consumer's `astryx.config`, resolves each listed
 integration's manifest from `node_modules`, and discovers its contributions.
-Everything is validated against one strict schema at the load boundary, so the
-CLI presents core and integration contributions through a single, uniform
-surface.
+Everything is parsed at the load boundary, so the CLI presents core and
+integration contributions through a single, uniform surface. A field of the
+wrong type fails there; a field this CLI does not know is ignored with a
+warning naming it, so a manifest written against a newer CLI still contributes
+everything this one understands.
 
 Discovery is resilient: a broken or misconfigured integration is skipped with a
 one-line warning on stderr instead of crashing the CLI, and it never corrupts a

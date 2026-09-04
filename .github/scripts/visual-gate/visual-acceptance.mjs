@@ -30,6 +30,7 @@ import {
   shotKey,
   stableBaseline,
   storiesInPackages,
+  storiesInStorybookGroups,
   VISUAL_BASELINE_TAG,
   withThemeMetadata,
 } from './lib/plan.mjs';
@@ -41,7 +42,7 @@ const REPO_ROOT = path.resolve(
   '../../..',
 );
 const config = loadConfig(REPO_ROOT);
-const themeCatalog = readThemeCatalog(REPO_ROOT);
+const themeCatalog = readThemeCatalog(REPO_ROOT, config.baselineThemes);
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -373,8 +374,10 @@ function accept() {
   if (evidence.verdict.status !== 'changed' || evidence.deltas.length === 0) {
     fail('current visual bundle has no delta to accept');
   }
-  if (evidence.deltas.some(delta => delta.kind === 'removed')) {
-    fail('scoped PR acceptance cannot authorize baseline removals');
+  if (evidence.deltas.some(delta => delta.kind !== 'changed')) {
+    fail(
+      'scoped PR acceptance can only authorize changes to existing baseline frames',
+    );
   }
   const manifestFile = path.join(
     pages,
@@ -731,11 +734,16 @@ function trustedPlan() {
   const storybookDir = path.resolve(flag('storybook-dir'));
   const output = path.resolve(flag('output'));
   const allIndexed = readStoryIndex(storybookDir, [], REPO_ROOT);
-  const indexed = storiesInPackages(
+  const packageStories = storiesInPackages(
     allIndexed,
     config.stableStoryPackages,
   );
+  const indexed = storiesInStorybookGroups(
+    packageStories,
+    config.stableStoryGroups,
+  );
   const {baseline} = readTrustedBaseline(allIndexed);
+  const baselineKeys = new Set(Object.keys(baseline.shots));
 
   const baselineThemes = acceptedVisualThemes(
     baseline,
@@ -745,7 +753,12 @@ function trustedPlan() {
   const shots = [];
 
   if (scope.stableComponents.length > 0 || scope.stableThemes.length > 0) {
-    const add = (story, theme, componentKeys = null) => {
+    const add = (
+      story,
+      theme,
+      componentKeys = null,
+      existingBaselineOnly = false,
+    ) => {
       for (const mode of ['light', 'dark']) {
         const shot = {
           storyId: story.storyId ?? story.id,
@@ -760,6 +773,7 @@ function trustedPlan() {
           reasons: ['trusted:pr-scope'],
         };
         const keyed = {...shot, key: shotKey(shot)};
+        if (existingBaselineOnly && !baselineKeys.has(keyed.key)) continue;
         shots.push(keyed);
         componentKeys?.add(keyed.key);
       }
@@ -770,10 +784,12 @@ function trustedPlan() {
       indexed,
       scope.stableComponents,
     )) {
-      add(story, config.defaultTheme, componentKeys);
+      add(story, config.defaultTheme, componentKeys, true);
       if (!useThemeMatrix) continue;
       for (const theme of baselineThemes) {
-        if (theme !== config.defaultTheme) add(story, theme, componentKeys);
+        if (theme !== config.defaultTheme) {
+          add(story, theme, componentKeys, true);
+        }
       }
     }
     if (
@@ -802,10 +818,12 @@ function trustedPlan() {
   if (unique.some(shot => shot.stableThemeVisual !== true)) {
     fail('trusted stable plan includes a private or canary theme');
   }
-  if (
-    unique.length === 0 ||
-    unique.length > config.visualPlanSafetyLimit
-  ) {
+  if (unique.length === 0) {
+    fail(
+      'trusted component scope has no existing baseline frames; seed coverage through the manual baseline workflow',
+    );
+  }
+  if (unique.length > config.visualPlanSafetyLimit) {
     fail(
       `trusted visual plan has invalid size ${unique.length}; safety limit is ${config.visualPlanSafetyLimit}`,
     );
@@ -817,8 +835,10 @@ function trustedPlan() {
 }
 
 function acceptedStableShots(acceptance) {
-  if (acceptance.keys.some(entry => entry.kind === 'removed')) {
-    fail('scoped PR promotion cannot remove baseline keys');
+  if (acceptance.keys.some(entry => entry.kind !== 'changed')) {
+    fail(
+      'scoped PR promotion can only update existing baseline frames',
+    );
   }
   const shots = withThemeMetadata(
     acceptance.keys.map(entry => ({...entry.shot, key: entry.key})),

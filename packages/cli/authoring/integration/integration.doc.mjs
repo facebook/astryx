@@ -77,8 +77,11 @@ export const doc = {
       type: 'prose',
       text:
         'Validate a manifest with `astryx validate-integration`. It is checked ' +
-        'at the load boundary with a strict schema (parseIntegration): unknown ' +
-        'keys are errors, and issuesUrl must be a valid URL.',
+        'at the load boundary (parseIntegration): a known field of the wrong ' +
+        'type is an error, and issuesUrl must be a valid URL. A field this CLI ' +
+        'does not know is ignored with a warning rather than rejected, so a ' +
+        'manifest written against a newer CLI still contributes everything ' +
+        'this one understands.',
     },
   ],
 };

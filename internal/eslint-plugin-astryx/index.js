@@ -13,6 +13,8 @@
  * - no-nullish-jsx-guard: Flags `!= null` JSX render guards for rendered values (use isRenderable so false/''/true slots don't leak an empty element)
  * - no-raw-intl-locale: Forbids raw Intl formatting/comparison outside the approved i18n infrastructure boundary, navigator.language(s) as a locale source, and date-helper calls without provider locale
  * - no-unguarded-ime-keydown: Flags an onKeyDown on an editable surface that branches on command keys without an IME composition guard (isImeKeyEvent/isComposing)
+ * - no-physical-properties: Flags physical left/right CSS properties and unsafe logical-centering transform pairs
+ * - prefer-center-inline: Nudges correct hand-rolled fixed centering toward rtlStyles.centerInline()
  * - no-classname-clobber: Flags two className sources on one JSX element — a literal className/style beside {...stylex.props()}, or two spreads that each carry a className (the later one silently wins)
  * - no-hover-on-disabled: Flags a :hover condition that can still match a disabled element (browsers suppress a disabled control's events, not its hover styling)
  * - require-table-section: Requires TableRow/tr to sit inside TableHeader/TableBody/TableFooter (a row directly inside a table emits <table><tr>, which browsers repair on parse and React does not)
@@ -41,6 +43,7 @@ import noRawIntlLocaleRule from './no-raw-intl-locale.js';
 import noUnguardedImeKeydownRule from './no-unguarded-ime-keydown.js';
 import noBorderShorthandRule from './no-border-shorthand.js';
 import noPhysicalPropertiesRule from './no-physical-properties.js';
+import preferCenterInlineRule from './prefer-center-inline.js';
 import focusOutlineKeyboardOnlyRule from './focus-outline-keyboard-only.js';
 import focusOutlineSharedRule from './focus-outline-shared.js';
 import noHoverOnDisabledRule from './no-hover-on-disabled.js';
@@ -342,6 +345,7 @@ const plugin = {
     'no-unguarded-ime-keydown': noUnguardedImeKeydownRule,
     'no-border-shorthand': noBorderShorthandRule,
     'no-physical-properties': noPhysicalPropertiesRule,
+    'prefer-center-inline': preferCenterInlineRule,
     'focus-outline-keyboard-only': focusOutlineKeyboardOnlyRule,
     'focus-outline-shared': focusOutlineSharedRule,
     'no-hover-on-disabled': noHoverOnDisabledRule,
@@ -403,6 +407,8 @@ plugin.configs.strict = {
     '@astryx/no-border-shorthand': 'error',
     // RTL physical→logical migration complete; errors to prevent regressions.
     '@astryx/no-physical-properties': 'error',
+    // Correct hand-rolled fixed centering still duplicates shared geometry.
+    '@astryx/prefer-center-inline': 'warn',
     // A focus outline drawn for pointer users is an accessibility defect, and
     // core is clean — error in both tiers so it stays that way.
     '@astryx/focus-outline-keyboard-only': 'error',
@@ -478,6 +484,8 @@ plugin.configs.recommended = {
     '@astryx/no-border-shorthand': 'warn',
     // RTL physical→logical migration complete; errors to prevent regressions.
     '@astryx/no-physical-properties': 'error',
+    // Correct hand-rolled fixed centering still duplicates shared geometry.
+    '@astryx/prefer-center-inline': 'warn',
     // A focus outline drawn for pointer users is an accessibility defect, and
     // core is clean — error in both tiers so it stays that way.
     '@astryx/focus-outline-keyboard-only': 'error',

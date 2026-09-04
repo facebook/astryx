@@ -3,17 +3,18 @@
 /**
  * @file Guards the docsite's query-driven PPR boundaries and global footer.
  * @input Reads the relevant docsite source files
- * @output Invariants for narrow Suspense boundaries, named fallbacks, and
- *   CSS-driven footer responsiveness
+ * @output Invariants for narrow Suspense boundaries, shaped visible fallbacks,
+ *   invisible URL synchronizers, and CSS-driven footer responsiveness
  * @position Cross-cutting meta-test; no runtime behavior of its own
  *
  * The docsite runs with `cacheComponents: true` (Partial Prerendering).
  * Request state such as `searchParams` is valid, but everything up to its
- * nearest Suspense boundary becomes a PPR hole. The component detail page and
- * theme explorer deliberately keep their existing deep-link behavior; these
- * tests make sure their boundaries stay narrow and never regress to an empty
- * fallback. The global footer must be CSS-responsive because a JavaScript
- * media query cannot know the viewport during prerendering.
+ * nearest Suspense boundary becomes a PPR hole. The component detail page,
+ * templates gallery, and theme explorer deliberately keep their deep-link
+ * behavior; these tests keep visible content outside the query-dependent hole
+ * or reserve a shaped fallback. An invisible URL synchronizer may render no
+ * fallback because it owns no layout. The global footer must be CSS-responsive
+ * because a JavaScript media query cannot know the viewport during prerendering.
  */
 
 import {describe, it, expect} from 'vitest';
@@ -40,6 +41,28 @@ describe('docsite static shell', () => {
     expect(detail.indexOf('<Text type="display-1">')).toBeLessThan(
       detail.indexOf('<Suspense'),
     );
+  });
+
+  it('keeps the templates gallery outside its URL sync boundary', () => {
+    const templates = source('app/(site)/templates/page.tsx');
+    const galleryStart = templates.indexOf('function TemplatesGallery()');
+    const heading = templates.indexOf('<Heading level={1}', galleryStart);
+    const grid = templates.indexOf('<Grid', heading);
+    const boundary = templates.indexOf(
+      '<Suspense fallback={null}>',
+      galleryStart,
+    );
+    const boundaryEnd = templates.indexOf('</Suspense>', boundary);
+    const boundarySource = templates.slice(boundary, boundaryEnd);
+
+    expect(templates).toContain('function TemplatePreviewURLSync');
+    expect(templates).toContain('const searchParams = useSearchParams()');
+    expect(templates).toContain('return <TemplatesGallery />;');
+    expect(heading).toBeGreaterThan(galleryStart);
+    expect(grid).toBeGreaterThan(heading);
+    expect(boundary).toBeGreaterThan(grid);
+    expect(boundarySource).toContain('<TemplatePreviewURLSync');
+    expect(boundarySource).not.toContain('<TemplatesGallery');
   });
 
   it('reuses the same theme heading in fallback and resolved layouts', () => {

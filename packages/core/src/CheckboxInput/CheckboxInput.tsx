@@ -44,7 +44,7 @@ import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
@@ -78,6 +78,7 @@ const styles = stylex.create({
   },
   input: {
     position: 'absolute',
+    top: '50%',
     margin: 0,
     padding: 0,
     opacity: 0,
@@ -86,25 +87,11 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     zIndex: 1,
-    minInlineSize: {
-      default: null,
-      '@media (pointer: coarse)': '24px',
-    },
-    minBlockSize: {
-      default: null,
-      '@media (pointer: coarse)': '24px',
-    },
-    insetBlockStart: {
-      default: null,
-      '@media (pointer: coarse)': '50%',
-    },
-    insetInlineStart: {
-      default: null,
-      '@media (pointer: coarse)': '50%',
-    },
-    transform: {
-      default: null,
-      '@media (pointer: coarse)': 'translate(-50%, -50%)',
+  },
+  inputCoarse: {
+    '@media (pointer: coarse)': {
+      minInlineSize: 24,
+      minBlockSize: 24,
     },
   },
   inputDisabled: {
@@ -451,6 +438,8 @@ export function CheckboxInput({
             aria-busy={isBusy || undefined}
             {...stylex.props(
               styles.input,
+              rtlStyles.centerInline('-50%'),
+              styles.inputCoarse,
               wrapperSizeStyles[size],
               isDisabled && styles.inputDisabled,
             )}

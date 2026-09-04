@@ -59,6 +59,22 @@ beforeEach(() => {
 
 afterEach(() => fs.rmSync(root, {recursive: true, force: true}));
 
+describe('stable release plan authority', () => {
+  it('owns a closed Neutral and Probe baseline without preserving obsolete keys', () => {
+    const source = fs.readFileSync(SCRIPT, 'utf8');
+    expect(source).toContain("const RELEASE_TIERS = ['surface', 'probe'];");
+    expect(source).toContain('storiesInStorybookGroups(');
+    expect(source).not.toContain('shots = withBaselineCoverage(');
+    expect(source).toContain('const baselineManifest = rawBaseline;');
+    expect(source).toContain(
+      'configuredLimit: releaseMode\n    ? config.visualPlanSafetyLimit',
+    );
+    expect(source).toContain(
+      'readThemeCatalog(REPO_ROOT, config.baselineThemes)',
+    );
+  });
+});
+
 describe('visual gate capture identity', () => {
   it('records the GitHub run identity by default', () => {
     expect(

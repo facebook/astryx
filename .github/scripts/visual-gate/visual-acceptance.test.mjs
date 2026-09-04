@@ -483,6 +483,14 @@ describe('visual acceptance', () => {
     );
   });
 
+  it('refuses to accept an added baseline frame from a scoped PR', () => {
+    const key = 'core-button--new__neutral-light';
+    writeEvidence({kind: 'added', key});
+    expect(fail('accept', acceptanceFlags())).toMatch(
+      /changes to existing baseline frames/,
+    );
+  });
+
   it('returns success for a clean trusted capture without acceptance', () => {
     writeEvidence({run: 124, status: 'pass'});
     expect(JSON.parse(run('state', {pages, pr: 42, head: HEAD}))).toMatchObject(
@@ -562,18 +570,7 @@ describe('visual acceptance', () => {
     });
     expect(
       JSON.parse(fs.readFileSync(output, 'utf8')).map(shot => shot.key),
-    ).toEqual([
-      'core-button--default__neutral-light',
-      'core-button--default__neutral-dark',
-      'core-button--default__y2k-light',
-      'core-button--default__y2k-dark',
-      'core-button--separator__neutral-light',
-      'core-button--separator__neutral-dark',
-      'core-button--variants__neutral-light',
-      'core-button--variants__neutral-dark',
-      'core-button--variants__y2k-light',
-      'core-button--variants__y2k-dark',
-    ]);
+    ).toEqual(['core-button--default__neutral-light']);
   });
 
   it('fails closed when any touched component has no representative story', () => {
@@ -630,12 +627,23 @@ describe('visual acceptance', () => {
       'manifest.json',
     );
     const baseline = JSON.parse(fs.readFileSync(baselineFile, 'utf8'));
-    baseline.shots['core-button--default__y2k-light'] = {
-      ...baseline.shots[KEY],
-      key: 'core-button--default__y2k-light',
-      theme: 'y2k',
-      mode: 'light',
-    };
+    for (let index = 0; index < 61; index += 1) {
+      const storyId = `core-button--story-${index}`;
+      for (const theme of ['neutral', 'probe']) {
+        for (const mode of ['light', 'dark']) {
+          const key = `${storyId}__${theme}-${mode}`;
+          baseline.shots[key] = {
+            ...baseline.shots[KEY],
+            key,
+            storyId,
+            name: entries[`story-${index}`].name,
+            theme,
+            themePackageName: `@astryxdesign/theme-${theme}`,
+            mode,
+          };
+        }
+      }
+    }
     writeJSON(baselineFile, baseline);
     const scope = path.join(root, 'scope-shot-limit.json');
     writeJSON(scope, {
@@ -710,7 +718,7 @@ describe('visual acceptance', () => {
     expect(new Set(plan.map(shot => shot.theme))).toEqual(new Set(['neutral']));
   });
 
-  it('includes newly targeted components for an existing changed theme', () => {
+  it('limits changed themes to stories in the canonical baseline', () => {
     const storybook = path.join(root, 'storybook-existing-theme');
     fs.mkdirSync(storybook);
     writeJSON(path.join(storybook, 'index.json'), {
@@ -769,8 +777,6 @@ describe('visual acceptance', () => {
     ).toEqual([
       'core-button--default__y2k-light',
       'core-button--default__y2k-dark',
-      'core-card--default__y2k-light',
-      'core-card--default__y2k-dark',
     ]);
   });
 
@@ -938,7 +944,7 @@ describe('visual acceptance', () => {
     expect(printed).toContain('520 shots');
   });
 
-  it('accepts a trusted 520-delta broad bundle', () => {
+  it('rejects a trusted 520-delta added bundle', () => {
     const runId = 130;
     const dir = path.join(
       pages,
@@ -977,9 +983,10 @@ describe('visual acceptance', () => {
       deltas,
       verdict: {version: 1, status: 'changed'},
     });
-    run('accept', acceptanceFlags({'run-id': runId}));
-    const record = JSON.parse(fs.readFileSync(acceptanceFile(runId), 'utf8'));
-    expect(record.keys).toHaveLength(520);
+    expect(
+      fail('accept', acceptanceFlags({'run-id': runId})),
+    ).toMatch(/changes to existing baseline frames/);
+    expect(fs.existsSync(acceptanceFile(runId))).toBe(false);
   });
 
   it('emits an exact recapture plan without allowing stored metadata to replace the key', () => {
@@ -1058,74 +1065,69 @@ describe('visual acceptance', () => {
     });
   });
 
-  it.each([
-    {kind: 'changed', key: KEY, runId: 123},
-    {kind: 'added', key: 'core-new--default__neutral-light', runId: 124},
-  ])(
-    'canonicalizes equivalent raw PNG bytes when promoting a $kind shot',
-    ({kind, key, runId}) => {
-      if (kind === 'added') writeEvidence({kind, key, run: runId});
-      run('accept', acceptanceFlags({'run-id': runId}));
-      const record = acceptanceFile(runId);
-      const accepted = fs.readFileSync(
-        path.join(path.dirname(record), 'after', `${key}.png`),
-      );
-      const decoded = PNG.sync.read(accepted);
-      decoded.gamma = 0.45455;
-      const rawRecapture = PNG.sync.write(decoded, {deflateLevel: 0});
-      expect(rawRecapture).not.toEqual(accepted);
-      expect(PNG.sync.read(rawRecapture).data).toEqual(
-        PNG.sync.read(accepted).data,
-      );
-      expect(canonicalizePng(rawRecapture).bytes).toEqual(accepted);
+  it('canonicalizes equivalent raw PNG bytes when promoting a changed shot', () => {
+    const key = KEY;
+    const runId = 123;
+    run('accept', acceptanceFlags({'run-id': runId}));
+    const record = acceptanceFile(runId);
+    const accepted = fs.readFileSync(
+      path.join(path.dirname(record), 'after', `${key}.png`),
+    );
+    const decoded = PNG.sync.read(accepted);
+    decoded.gamma = 0.45455;
+    const rawRecapture = PNG.sync.write(decoded, {deflateLevel: 0});
+    expect(rawRecapture).not.toEqual(accepted);
+    expect(PNG.sync.read(rawRecapture).data).toEqual(
+      PNG.sync.read(accepted).data,
+    );
+    expect(canonicalizePng(rawRecapture).bytes).toEqual(accepted);
 
-      const capture = path.join(root, `capture-${kind}`);
-      fs.mkdirSync(path.join(capture, 'shots'), {recursive: true});
-      fs.writeFileSync(path.join(capture, 'shots', `${key}.png`), rawRecapture);
-      writeJSON(path.join(capture, 'manifest.json'), {
-        version: 1,
-        platform: 'linux-arm64',
-        browser: 'chromium-140.0',
-        viewport: {width: 1280, height: 900},
-        capturedAt: '2026-08-26T22:00:00.000Z',
-        context: {sha: MERGE},
-        shots: {
-          [key]: {
-            ...SHOT,
-            sha256: digest(rawRecapture),
-            width: 2,
-            height: 2,
-          },
+    const capture = path.join(root, 'capture-changed');
+    fs.mkdirSync(path.join(capture, 'shots'), {recursive: true});
+    fs.writeFileSync(path.join(capture, 'shots', `${key}.png`), rawRecapture);
+    writeJSON(path.join(capture, 'manifest.json'), {
+      version: 1,
+      platform: 'linux-arm64',
+      browser: 'chromium-140.0',
+      viewport: {width: 1280, height: 900},
+      capturedAt: '2026-08-26T22:00:00.000Z',
+      context: {sha: MERGE},
+      shots: {
+        [key]: {
+          ...SHOT,
+          sha256: digest(rawRecapture),
+          width: 2,
+          height: 2,
         },
-      });
+      },
+    });
 
-      expect(
-        run('promote', {
-          pages,
-          acceptance: record,
-          capture,
-          'merge-sha': MERGE,
-        }),
-      ).toContain('Promoted accepted visual bundle');
-      expect(
-        fs.readFileSync(
-          path.join(pages, 'visual-gate', 'baseline', 'shots', `${key}.png`),
-        ),
-      ).toEqual(accepted);
-      const baselineManifest = JSON.parse(
-        fs.readFileSync(
-          path.join(pages, 'visual-gate', 'baseline', 'manifest.json'),
-          'utf8',
-        ),
-      );
-      expect(baselineManifest.shots[key].sha256).toBe(digest(accepted));
-    },
-  );
+    expect(
+      run('promote', {
+        pages,
+        acceptance: record,
+        capture,
+        'merge-sha': MERGE,
+      }),
+    ).toContain('Promoted accepted visual bundle');
+    expect(
+      fs.readFileSync(
+        path.join(pages, 'visual-gate', 'baseline', 'shots', `${key}.png`),
+      ),
+    ).toEqual(accepted);
+    const baselineManifest = JSON.parse(
+      fs.readFileSync(
+        path.join(pages, 'visual-gate', 'baseline', 'manifest.json'),
+        'utf8',
+      ),
+    );
+    expect(baselineManifest.shots[key].sha256).toBe(digest(accepted));
+  });
 
   it('rejects removed PR evidence and preserves the baseline', () => {
     writeEvidence({kind: 'removed', run: 125});
     expect(fail('accept', acceptanceFlags({'run-id': 125}))).toMatch(
-      /scoped PR acceptance cannot authorize baseline removals/,
+      /changes to existing baseline frames/,
     );
     expect(fs.existsSync(acceptanceFile(125))).toBe(false);
     expect(fs.existsSync(path.join(pages, 'visual-gate', 'baseline', 'shots', `${KEY}.png`))).toBe(true);
@@ -1220,19 +1222,18 @@ describe('visual acceptance', () => {
     ).toMatch(/baseline conflict/);
   });
 
-  it('records added shots but rejects removed evidence', () => {
+  it('rejects both added and removed scoped PR evidence', () => {
     const added = 'core-new--default__neutral-light';
     writeEvidence({kind: 'added', key: added, run: 124});
-    run('accept', acceptanceFlags({'run-id': 124}));
-    expect(JSON.parse(fs.readFileSync(acceptanceFile(124), 'utf8')).keys[0]).toMatchObject({
-      key: added,
-      kind: 'added',
-      beforeSha256: null,
-    });
-    fs.rmSync(path.join(pages, 'visual-gate', 'acceptances'), {recursive: true, force: true});
+    expect(
+      fail('accept', acceptanceFlags({'run-id': 124})),
+    ).toMatch(/changes to existing baseline frames/);
+    expect(fs.existsSync(acceptanceFile(124))).toBe(false);
+
     writeEvidence({kind: 'removed', run: 125});
-    expect(fail('accept', acceptanceFlags({'comment-id': 1235, 'run-id': 125}))).toMatch(
-      /scoped PR acceptance cannot authorize baseline removals/,
-    );
+    expect(
+      fail('accept', acceptanceFlags({'comment-id': 1235, 'run-id': 125})),
+    ).toMatch(/changes to existing baseline frames/);
+    expect(fs.existsSync(acceptanceFile(125))).toBe(false);
   });
 });

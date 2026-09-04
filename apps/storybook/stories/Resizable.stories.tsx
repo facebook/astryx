@@ -28,7 +28,7 @@ const ps = stylex.create({
 });
 
 const meta: Meta<typeof ResizeHandle> = {
-  title: 'Lab/Resizable',
+  title: 'Core/Resizable',
   component: ResizeHandle,
   tags: ['autodocs'],
   parameters: {
@@ -98,6 +98,7 @@ export const VerticalSplit: Story = {
       defaultSize: 250,
       minSizePx: 100,
       maxSizePx: 350,
+      direction: 'vertical',
     });
     return (
       <div {...stylex.props(ps.shell)}>
@@ -204,6 +205,7 @@ export const ThreePanelIDE: Story = {
       defaultSize: 280,
       minSizePx: 100,
       maxSizePx: 350,
+      direction: 'vertical',
     });
     return (
       <div {...stylex.props(ps.shell)}>

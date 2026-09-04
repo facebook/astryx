@@ -61,12 +61,11 @@ CI and never gain this auto-merge path.
 
 ## Sources of truth
 
-| File                                                 | Meaning                                                          |
-| ---------------------------------------------------- | ---------------------------------------------------------------- |
-| `.github/ENGOWNERS`                                  | Engineering team. Self-serve **code**.                           |
-| `.github/DESIGNOWNERS`                               | Design team. Self-serve **design**. Checked first.               |
-| `.github/CODEOWNERS` (`*` line)                      | Who can **clear** the code gate (and native review requirement). |
-| `.github/copilot-instructions.md` + `instructions/*` | Copilot reviewer guidance (advisory).                            |
+| File                            | Meaning                                                          |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `.github/ENGOWNERS`             | Engineering team. Self-serve **code**.                           |
+| `.github/DESIGNOWNERS`          | Design team. Self-serve **design**. Checked first.               |
+| `.github/CODEOWNERS` (`*` line) | Who can **clear** the code gate (and native review requirement). |
 
 Author bucket is resolved in order: **design owner → eng owner → contributor.**
 A handle in `DESIGNOWNERS` is treated as a design owner even if also an eng
@@ -166,10 +165,3 @@ to failure).
 
 Use it if a PR's `review-required` ever gets stuck (e.g. the workflow was added
 after the PR was opened, or a stale check run lingers).
-
-## The Copilot reviewer is separate
-
-GitHub Copilot reviews PRs using `.github/copilot-instructions.md` and the
-path-scoped `.github/instructions/*`. It is **advisory** — it posts a summary
-(leading 🔴/🟡/🟢) and inline comments, and reads the gate labels to focus its
-review, but it never sets or clears the gate.
