@@ -67,6 +67,11 @@ const TARGETS = [
     guards: 'long metadata stays within the 320px narrow-container fixture',
   },
   {
+    component: 'PowerSearch',
+    story: 'core-powersearch--near-full-token-row',
+    guards: 'an empty trailing combobox stays on the nearly full token row',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:
