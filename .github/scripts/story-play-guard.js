@@ -39,6 +39,11 @@ const port = Number(getArg('port') || 6010);
 // whole cost of promoting its play function into required CI.
 const TARGETS = [
   {
+    component: 'PowerSearch',
+    story: 'core-powersearch--near-full-token-row',
+    guards: 'an empty trailing combobox stays on the nearly full token row',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:

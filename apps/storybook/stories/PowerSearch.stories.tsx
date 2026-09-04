@@ -535,6 +535,64 @@ export const WithPresetFilters: Story = {
   name: 'Pre-set Filters',
 };
 
+/**
+ * A nearly full token row keeps its empty combobox on that row instead of
+ * growing the field with a blank trailing row. Typing still restores the
+ * input's normal editing width and may wrap visibly when space is exhausted.
+ */
+export const NearFullTokenRow: Story = {
+  render: args => {
+    const [filters, setFilters] = useState<PowerSearchFilter[]>([
+      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+      {
+        field: 'priority',
+        operator: 'is',
+        value: {type: 'enum', value: 'p1'},
+      },
+      {
+        field: 'title',
+        operator: 'contains',
+        value: {type: 'string', value: 'aaaaaaaaaaaaaaaaaaaaaaaa'},
+      },
+    ]);
+    return (
+      <PowerSearch
+        {...args}
+        config={basicConfig}
+        filters={filters}
+        onChange={newFilters => setFilters([...newFilters])}
+      />
+    );
+  },
+  args: {
+    placeholder: 'Add more filters...',
+  },
+  name: 'Near-full Token Row',
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+
+    const wrapper =
+      canvasElement.querySelector<HTMLElement>('.astryx-tokenizer');
+    const input = wrapper?.querySelector<HTMLInputElement>('[role="combobox"]');
+    const tokens = wrapper?.querySelectorAll<HTMLElement>(':scope > span');
+    const finalToken = tokens?.item((tokens?.length ?? 0) - 1);
+    if (!wrapper || !input || !finalToken) {
+      throw new Error('Near-full token-row fixture did not render as expected');
+    }
+
+    const inputRect = input.getBoundingClientRect();
+    const tokenRect = finalToken.getBoundingClientRect();
+    if (inputRect.top >= tokenRect.bottom) {
+      throw new Error(
+        `Empty combobox wrapped onto a blank row: input top ${inputRect.top.toFixed(2)}, final token bottom ${tokenRect.bottom.toFixed(2)}`,
+      );
+    }
+  },
+};
+
 export const FullFeatured: Story = {
   render: args => {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([]);

@@ -243,6 +243,9 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
 // How far the end lane sits from the field's inline-end border, named once
 // because the input's reserve is derived from the same value.
 const END_LANE_INSET = spacingVars['--spacing-2'];
+// Kept in sync with useEndLaneReserve: inputCompact reads the custom property
+// directly so its empty-query pseudo-class can suppress the reserve.
+const END_LANE_RESERVE_VAR = '--_tokenizer-end-lane-reserve';
 
 const styles = stylex.create({
   wrapper: {
@@ -294,12 +297,32 @@ const styles = stylex.create({
     position: 'absolute',
   },
   inputCompact: {
-    minWidth: '40px',
-    flex: '1 1 40px',
+    minWidth: {
+      default: '40px',
+      ':placeholder-shown': 0,
+    },
+    flex: {
+      default: '1 1 40px',
+      ':placeholder-shown': '1 1 0',
+    },
     width: 0,
-    // Restore normal text inset when input follows tokens, since the
-    // wrapper padding is reduced for border concentricity.
-    paddingInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
+    // An empty flex item must not become an otherwise blank final row when
+    // tokens leave less than the normal 40px editing width. The negative
+    // margin cancels the flex gap in the item's outer size, while equal inner
+    // padding preserves the visual gap before the caret. As soon as a query
+    // exists, the normal editing width and end-lane reserve return.
+    marginInlineStart: {
+      default: 0,
+      ':placeholder-shown': `calc(-1 * ${spacingVars['--spacing-1']})`,
+    },
+    paddingInlineStart: {
+      default: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
+      ':placeholder-shown': spacingVars['--spacing-1'],
+    },
+    paddingInlineEnd: {
+      default: `var(${END_LANE_RESERVE_VAR}, 0px)`,
+      ':placeholder-shown': 0,
+    },
   },
   truncatedWrapper: {
     flexWrap: 'nowrap',
@@ -874,7 +897,9 @@ export function Tokenizer<T extends SearchableItem>({
           value={null}
           onChange={handleAdd}
           renderItem={renderItem}
-          placeholder={value.length === 0 ? placeholder : ''}
+          // A space keeps :placeholder-shown available as the CSS-only empty
+          // query signal without painting placeholder text beside tokens.
+          placeholder={value.length === 0 ? placeholder : ' '}
           hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
           maxMenuItems={maxMenuItems}
           menuWidth={menuWidth}
@@ -897,12 +922,10 @@ export function Tokenizer<T extends SearchableItem>({
               : value.length > 0
                 ? styles.inputCompact
                 : undefined,
-            // Not for the collapsed states above: those give the input no width
-            // to pad, and `inputAtMax` zeroes its padding outright.
-            // Applied whether or not a lane is up: the reserve resolves to
-            // zero until the lane publishes a width, so this does not need to
-            // know about the busy state.
-            !(isAtMax || isTruncated) && laneReserve,
+            // The compact-token style owns the same reserve with an empty-query
+            // exception. This standalone rule is only for an empty Tokenizer;
+            // it still resolves to zero until the lane publishes a width.
+            !(isAtMax || isTruncated || value.length > 0) && laneReserve,
           ]}
         />
       </BusyIndicatorLaneProvider>
