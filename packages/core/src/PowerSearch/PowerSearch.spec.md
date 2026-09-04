@@ -123,16 +123,20 @@ until its implementation and verification complete.
   configurations may replace the main typeahead and filter-editor popover with one
   field-wide trigger and a filter-management bottom sheet. Capsules in the field are
   display-only and expose no edit or remove controls. The management sheet owns
-  string-valued content search backed by the standard PowerSearch suggestion source,
-  a selected-list Add filter action, and footer Clear all and Done actions; each
-  selected row has a separate remove action and opens its update sheet when pressed.
+  a top-right header Add filter action and footer Clear all and Done actions; each
+  selected row has a trailing navigation chevron and opens its update sheet when
+  pressed, where explicit Cancel and Delete actions are available alongside the edit confirmation.
+  The Add filter sheet owns string-valued content search backed by the standard
+  PowerSearch suggestion source, rendered as an in-flow divided list directly below
+  its input rather than a popover.
+  Single- and multi-value enum choices use the same divided value list, with a
+  trailing checkmark on each selected row.
   The selected-filter list has no separate visible heading. When there are no selected
-  filters, structured-only configurations open directly to Add filter; content-search
-  configurations retain management so search remains immediately available. Back from
+  filters, every interactive configuration opens directly to Add filter. Back from
   direct Add filter entry dismisses to the field-wide trigger, while Add filter opened
   from management returns there. Clear all removes every editable filter and dismisses the sheet. Every sheet button action MUST
   expose at least a 44×44 CSS px touch target. Input controls retain their established
-  component sizes. Back and the mode-specific Add filter or Edit filter confirmation
+  component sizes. Field-picker Back, value-sheet Cancel, and the mode-specific Add filter or Edit filter confirmation
   MUST return focus to the control that launched the preceding step; removing a row
   MUST prefer the adjacent row before falling back to Add filter. FR1–FR9 apply whenever
   the popover surface is active; they do not impose popover geometry on the bottom
@@ -193,7 +197,7 @@ until its implementation and verification complete.
 - **AR3 — Visible content.** Viewport clamping MUST keep all editor controls
   horizontally reachable without requiring page-level horizontal scrolling.
 
-- **AR4 — Adaptive focus continuity.** Touch-sheet Back and confirmation actions MUST
+- **AR4 — Adaptive focus continuity.** Touch-sheet Back, Cancel, and confirmation actions MUST
   restore focus to the control that launched the preceding step. Removing a
   selected-filter row MUST move focus to the nearest remaining editable row, or Add
   filter when no such row remains. Clear all MUST dismiss the sheet and restore focus
@@ -201,15 +205,16 @@ until its implementation and verification complete.
 
 ## Design relationships
 
-| Anatomy or state        | Design requirement                                                                                                                                                         | Representation authority       | Hierarchy role | Component contract      |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | -------------- | ----------------------- |
-| Search field and tokens | Continue presenting the structured query and its current interaction states.                                                                                               | Current source and public docs | Prominent      | FR8                     |
-| Main field/search menu  | Retain its exact `menuWidth` surface and current selection behavior; it does not inherit the editor's 720 px cap.                                                          | Current source and public docs | Prominent      | Ownership boundary, FR9 |
-| Touch field             | Act as one field-wide launcher; render capsules without per-capsule edit or remove controls.                                                                               | `component:PowerSearch/AV5`    | Prominent      | AV5                     |
-| Touch management sheet  | Own suggestion-backed content search and selected-row removal; omit a redundant list heading, place Add filter after the list, and keep Clear all plus Done in the footer. | `component:PowerSearch/AV5`    | Prominent      | AV5                     |
-| Filter-editor popover   | Stay within the readable 400–720 px range before viewport clamping.                                                                                                        | `component:PowerSearch/DEC-1`  | Prominent      | FR1–FR3, FR7            |
-| Width-capped editor     | Prefer the outer edge nearest the stable opening control, independent of activation modality.                                                                              | `component:PowerSearch/DEC-2`  | Prominent      | FR4–FR8                 |
-| Keyboard-opened editor  | Use the same control-geometry rule and preserve current focus behavior.                                                                                                    | Accessibility contract         | Prominent      | FR5, FR8, AR1           |
+| Anatomy or state        | Design requirement                                                                                                                                                                                           | Representation authority       | Hierarchy role | Component contract      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ | -------------- | ----------------------- |
+| Search field and tokens | Continue presenting the structured query and its current interaction states.                                                                                                                                 | Current source and public docs | Prominent      | FR8                     |
+| Main field/search menu  | Retain its exact `menuWidth` surface and current selection behavior; it does not inherit the editor's 720 px cap.                                                                                            | Current source and public docs | Prominent      | Ownership boundary, FR9 |
+| Touch field             | Act as one field-wide launcher; render capsules without per-capsule edit or remove controls.                                                                                                                 | `component:PowerSearch/AV5`    | Prominent      | AV5                     |
+| Touch management sheet  | Own selected-row navigation; omit a redundant list heading, place Add filter at the header's top-right, keep Clear all plus Done in the footer, and expose explicit Cancel and deletion from the edit sheet. | `component:PowerSearch/AV5`    | Prominent      | AV5                     |
+| Touch Add filter sheet  | Own structured field selection and content search, rendering suggestion results as an inline divided list below the input rather than a popover.                                                             | `component:PowerSearch/AV5`    | Prominent      | AV5                     |
+| Filter-editor popover   | Stay within the readable 400–720 px range before viewport clamping.                                                                                                                                          | `component:PowerSearch/DEC-1`  | Prominent      | FR1–FR3, FR7            |
+| Width-capped editor     | Prefer the outer edge nearest the stable opening control, independent of activation modality.                                                                                                                | `component:PowerSearch/DEC-2`  | Prominent      | FR4–FR8                 |
+| Keyboard-opened editor  | Use the same control-geometry rule and preserve current focus behavior.                                                                                                                                      | Accessibility contract         | Prominent      | FR5, FR8, AR1           |
 
 The pointer proposal changes editor geometry only. The adaptive touch variation
 changes interaction placement without introducing a public configuration concept or

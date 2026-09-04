@@ -879,10 +879,6 @@
     "defaultMessage": "No filters selected",
     "description": "Empty-state message in PowerSearch's touch management sheet when there are no active filters."
   },
-  "@astryx.powersearch.mobile.removeSelectedFilter": {
-    "defaultMessage": "Remove {filter}",
-    "description": "Accessible label and tooltip for a filter row's remove button in PowerSearch's touch management sheet. {filter} names the full filter."
-  },
   "@astryx.powersearch.mobile.done": {
     "defaultMessage": "Done",
     "description": "Primary footer button in the PowerSearch touch management sheet that closes the sheet after filter management."
