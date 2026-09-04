@@ -13,9 +13,9 @@
  * field, and an edit popover that lays field / operator / value out in a row.
  * Neither survives a phone: the edit popover fights the on-screen keyboard, and
  * the row has nowhere to go at 390px. This variant keeps the same props, filter
- * model, and tokens. A configured content-search field moves into the management
- * sheet and reuses the existing PowerSearch suggestion source; structured filter
- * building drills down field -> (operator) -> value.
+ * model, and tokens. A configured content-search field moves into Add filter
+ * and reuses the existing PowerSearch suggestion source in an inline list;
+ * structured filter building drills down field -> (operator) -> value.
  *
  * The sheets are pinned tall on purpose. The field list resizes as it is
  * searched and the editor's content changes with the operator, so a sheet that
@@ -52,12 +52,10 @@ import {
 } from '../Field';
 import {Heading} from '../Heading';
 import {Icon, renderIconSlot} from '../Icon';
-import {IconButton} from '../IconButton';
 import {List, ListItem} from '../List';
 import {RadioList, RadioListItem} from '../RadioList';
 import {Text} from '../Text';
 import {TextInput} from '../TextInput';
-import {Typeahead} from '../Typeahead';
 import {useSize} from '../SizeContext/SizeContext';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useClickableContainer} from '../hooks/useClickableContainer';
@@ -72,7 +70,7 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {isRenderable, mergeProps} from '../utils';
+import {isImeKeyEvent, isRenderable, mergeProps} from '../utils';
 import {rtlStyles} from '../utils/rtlStyles';
 import {themeProps} from '../utils/themeProps';
 import {formatFilterValue} from './formatFilterValue';
@@ -265,8 +263,8 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     marginInlineStart: 'auto',
   },
-  // Alone in the footer, the confirm button takes the whole row — the reach
-  // target a thumb expects at the bottom of a sheet.
+  // When read-only state removes the mutation actions, Cancel takes the whole
+  // row — the reach target a thumb expects at the bottom of a sheet.
   footerSoleAction: {
     flexGrow: 1,
   },
@@ -278,6 +276,11 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-6'],
     textAlign: 'center',
   },
+  contentSearch: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-2'],
+  },
 });
 
 // =============================================================================
@@ -288,7 +291,7 @@ type SheetStep = 'manage' | 'fields' | 'value';
 
 type PendingSheetFocus =
   | {readonly type: 'manager-add'}
-  | {readonly type: 'manager-search'}
+  | {readonly type: 'content-search'}
   | {
       readonly type: 'manager-filter';
       readonly sourceFilter: PowerSearchFilter;
@@ -299,8 +302,10 @@ type PendingSheetFocus =
 
 interface FilterDraft {
   readonly mode: 'create' | 'edit';
-  /** Sheet a newly-created filter returns to when Back is pressed. */
+  /** Sheet a newly-created filter returns to when Cancel is pressed. */
   readonly returnStep?: 'fields' | 'manage';
+  /** Control within the return sheet that launched this draft. */
+  readonly returnFocus?: 'field' | 'content-search';
   /** Index in `filters` when edit mode opened. */
   readonly filterIndex?: number;
   /** Original controlled filter identity, used to follow immutable reorders. */
@@ -413,12 +418,14 @@ const MAX_BROWSE_MENU_ITEMS = 1000;
 /**
  * Private coarse-pointer surface for PowerSearch. The outer field keeps active
  * filters as display-only capsules and acts as one sheet trigger. The first sheet
- * centralizes content search plus add, edit, clear, and per-filter removal.
+ * centralizes selected-filter navigation, while Add filter owns content search
+ * and structured-filter creation.
  *
- * Each selected-filter row opens its value editor, while a separate remove
- * button leaves the management sheet open. Add filter follows the selected list,
- * while Clear all and Done stay in the footer. The value-sheet confirmation says
- * Add filter or Edit filter and returns to management.
+ * Each selected-filter row opens its value editor and uses a chevron to signal
+ * that navigation; deletion lives in that edit sheet. Add filter stays in the
+ * management header, while Clear all and Done stay in the footer. The value-sheet
+ * footer provides Cancel plus Add filter or Delete and Edit filter, returning
+ * to management.
  */
 export function PowerSearchTouchSurface({
   config: configProp,
@@ -481,10 +488,12 @@ export function PowerSearchTouchSurface({
 
   const triggerId = useId();
   const statusMessageId = useId();
+  const contentResultsId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const managerAddButtonRef = useRef<HTMLButtonElement>(null);
-  const managerSearchRef = useRef<HTMLDivElement>(null);
+  const contentSearchRef = useRef<HTMLDivElement>(null);
+  const contentSuggestionListRef = useRef<HTMLUListElement>(null);
   const managerRowsRef = useRef(new Map<number, HTMLLIElement>());
   const fieldRowsRef = useRef(new Map<string, HTMLLIElement>());
   const fieldPickerOriginRef = useRef<'manage' | 'trigger'>('manage');
@@ -499,11 +508,28 @@ export function PowerSearchTouchSurface({
   // draft with the step would blank that sheet mid-transition.
   const [draft, setDraft] = useState<FilterDraft | null>(null);
   const [fieldQuery, setFieldQuery] = useState('');
+  const [contentQuery, setContentQuery] = useState('');
   const saveButtonLabel =
     saveButtonLabelFromProps ??
     (draft?.mode === 'edit' ? editFilterTitle : addFilterTitle);
 
   const isInteractive = !isDisabled && !isReadOnly;
+  const contentResults = useMemo(() => {
+    if (step !== 'fields' || !hasContentSearch || !isInteractive) {
+      return [];
+    }
+    const results =
+      contentQuery.trim() === ''
+        ? contentSearchSource.bootstrap()
+        : contentSearchSource.search(contentQuery);
+    return results.slice(0, MAX_BROWSE_MENU_ITEMS);
+  }, [
+    contentQuery,
+    contentSearchSource,
+    hasContentSearch,
+    isInteractive,
+    step,
+  ]);
 
   const focusPrimaryControl = useCallback((preventScroll = false) => {
     triggerRef.current?.focus(
@@ -522,8 +548,8 @@ export function PowerSearchTouchSurface({
         managerAddButtonRef.current?.focus({preventScroll: true});
         return;
       }
-      if (target.type === 'manager-search') {
-        managerSearchRef.current
+      if (target.type === 'content-search') {
+        contentSearchRef.current
           ?.querySelector<HTMLInputElement>('input')
           ?.focus({preventScroll: true});
         return;
@@ -626,15 +652,16 @@ export function PowerSearchTouchSurface({
       return;
     }
     shouldRestoreTriggerAfterCloseRef.current = true;
-    if (filters.length === 0 && isInteractive && !hasContentSearch) {
+    if (filters.length === 0 && isInteractive) {
       fieldPickerOriginRef.current = 'trigger';
       setFieldQuery('');
+      setContentQuery('');
       setStep('fields');
       return;
     }
     fieldPickerOriginRef.current = 'manage';
     setStep('manage');
-  }, [filters.length, hasContentSearch, isDisabled, isInteractive]);
+  }, [filters.length, isDisabled, isInteractive]);
 
   const clickableWrapper = useClickableContainer({
     containerRef: wrapperRef,
@@ -648,20 +675,18 @@ export function PowerSearchTouchSurface({
     }
     fieldPickerOriginRef.current = 'manage';
     setFieldQuery('');
+    setContentQuery('');
     setStep('fields');
   }, [isInteractive]);
 
-  const queueDraftOriginFocus = useCallback((next: FilterDraft) => {
-    pendingSheetFocusRef.current =
-      next.mode === 'create' && next.returnStep === 'manage'
-        ? {type: 'manager-search'}
-        : {type: 'manager-add'};
+  const queueManagerAddFocus = useCallback(() => {
+    pendingSheetFocusRef.current = {type: 'manager-add'};
   }, []);
 
   const commitSavedFilter = useCallback(
     (next: FilterDraft, filter: PowerSearchFilter) => {
       if (!isInteractive) {
-        queueDraftOriginFocus(next);
+        queueManagerAddFocus();
         setStep('manage');
         return;
       }
@@ -688,12 +713,12 @@ export function PowerSearchTouchSurface({
         updated[filterIndex] = filter;
         onChange(updated, 'edit', filterIndex);
       } else {
-        queueDraftOriginFocus(next);
+        queueManagerAddFocus();
         onChange([...filters, filter], 'add', filters.length);
       }
       setStep('manage');
     },
-    [filters, isInteractive, onChange, queueDraftOriginFocus],
+    [filters, isInteractive, onChange, queueManagerAddFocus],
   );
 
   const commitFilter = useCallback(
@@ -710,18 +735,20 @@ export function PowerSearchTouchSurface({
     [commitSavedFilter],
   );
 
-  // Opening a new filter can come from either the explicit field picker or a
-  // suggestion in the management search. Keep that origin so Back returns to
-  // the control the user actually came from.
+  // Opening a new filter can come from either a field row or a content-search
+  // suggestion in Add filter. Keep that origin so Cancel returns to the control
+  // the user actually came from.
   const openCreateEditor = useCallback(
     (
       field: PowerSearchField,
       operator: PowerSearchOperator,
       returnStep: 'fields' | 'manage',
+      returnFocus: 'field' | 'content-search' = 'field',
     ) => {
       const next: FilterDraft = {
         mode: 'create',
         returnStep,
+        returnFocus,
         field: field.key,
         operator: operator.key,
         value: operator.value.type === 'empty' ? {type: 'empty'} : undefined,
@@ -766,21 +793,26 @@ export function PowerSearchTouchSurface({
       if (field == null || operator == null || !isSupportedOperator(operator)) {
         return;
       }
+      setContentQuery('');
       if (filterValue != null) {
-        pendingSheetFocusRef.current = {type: 'manager-search'};
+        const nextFilter = {
+          field: field.key,
+          operator: operator.key,
+          value: filterValue,
+        };
+        pendingSheetFocusRef.current = {
+          type: 'manager-filter',
+          sourceFilter: nextFilter,
+          sourceSignature: filterSignature(nextFilter),
+          preferredIndex: filters.length,
+        };
         pendingMutationFocusRef.current = true;
-        onChange(
-          [
-            ...filters,
-            {field: field.key, operator: operator.key, value: filterValue},
-          ],
-          'add',
-          filters.length,
-        );
+        onChange([...filters, nextFilter], 'add', filters.length);
         announce(t('@astryx.tokenizer.tokenAdded', {label: item.label}));
+        setStep('manage');
         return;
       }
-      openCreateEditor(field, operator, 'manage');
+      openCreateEditor(field, operator, 'fields', 'content-search');
     },
     [announce, config, filters, isInteractive, onChange, openCreateEditor, t],
   );
@@ -925,9 +957,13 @@ export function PowerSearchTouchSurface({
       setStep('manage');
       return;
     }
-    if (draft.mode === 'create' && draft.returnStep === 'manage') {
-      pendingSheetFocusRef.current = {type: 'manager-search'};
-      setStep('manage');
+    if (
+      draft.mode === 'create' &&
+      draft.returnStep === 'fields' &&
+      draft.returnFocus === 'content-search'
+    ) {
+      pendingSheetFocusRef.current = {type: 'content-search'};
+      setStep('fields');
       return;
     }
     pendingSheetFocusRef.current = {type: 'field', fieldKey: draft.field};
@@ -1140,8 +1176,6 @@ export function PowerSearchTouchSurface({
   const isEditorDisabled = isDisabled || isReadOnly;
   const isSaveDisabled =
     isEditorDisabled || draft?.operator == null || draft.value == null;
-  const isEditorFooterShown = !isReadOnly;
-
   return (
     <>
       <Field
@@ -1243,24 +1277,16 @@ export function PowerSearchTouchSurface({
                 <div {...stylex.props(styles.headerText)}>
                   <Heading level={3}>{manageFiltersTitle}</Heading>
                 </div>
+                {isInteractive && (
+                  <Button
+                    ref={managerAddButtonRef}
+                    label={addFilterTitle}
+                    variant="ghost"
+                    xstyle={styles.touchAction}
+                    onClick={openFieldList}
+                  />
+                )}
               </div>
-              {hasContentSearch && isInteractive && (
-                <Typeahead
-                  ref={managerSearchRef}
-                  label={searchLabel}
-                  isLabelHidden
-                  searchSource={contentSearchSource}
-                  value={null}
-                  onChange={handleContentSuggestionSelect}
-                  placeholder={contentSearchPlaceholder}
-                  hasEntriesOnFocus
-                  maxMenuItems={MAX_BROWSE_MENU_ITEMS}
-                  debounceMs={0}
-                  hasClear={false}
-                  startIcon={<Icon icon="search" size="sm" color="secondary" />}
-                  width="100%"
-                />
-              )}
             </div>
             <div {...stylex.props(styles.body)}>
               {filterRows.length === 0 ? (
@@ -1273,10 +1299,6 @@ export function PowerSearchTouchSurface({
                 <List hasDividers density="spacious" xstyle={styles.flushList}>
                   {filterRows.map(row => {
                     const canEdit = isInteractive && !row.filter.isReadOnly;
-                    const removeLabel = t(
-                      '@astryx.powersearch.mobile.removeSelectedFilter',
-                      {filter: row.accessibleLabel},
-                    );
                     return (
                       <ListItem
                         key={row.key}
@@ -1295,16 +1317,11 @@ export function PowerSearchTouchSurface({
                         }
                         endContent={
                           canEdit ? (
-                            <IconButton
-                              label={removeLabel}
-                              tooltip={removeLabel}
-                              icon={
-                                <Icon icon="close" size="sm" color="inherit" />
-                              }
-                              variant="ghost"
+                            <Icon
+                              icon="chevronRight"
                               size="sm"
-                              xstyle={styles.touchIconAction}
-                              onClick={() => handleRemoveFilter(row.index)}
+                              color="secondary"
+                              xstyle={rtlStyles.mirror}
                             />
                           ) : undefined
                         }
@@ -1312,16 +1329,6 @@ export function PowerSearchTouchSurface({
                     );
                   })}
                 </List>
-              )}
-              {isInteractive && (
-                <Button
-                  ref={managerAddButtonRef}
-                  label={addFilterTitle}
-                  variant="secondary"
-                  xstyle={styles.touchAction}
-                  onClick={openFieldList}
-                  width="100%"
-                />
               )}
             </div>
             <div {...stylex.props(styles.footer)}>
@@ -1380,7 +1387,43 @@ export function PowerSearchTouchSurface({
                   <Heading level={3}>{addFilterTitle}</Heading>
                 </div>
               </div>
-              {isFieldSearchShown && (
+              {hasContentSearch ? (
+                <div
+                  ref={contentSearchRef}
+                  {...stylex.props(styles.contentSearch)}>
+                  <TextInput
+                    label={searchLabel}
+                    isLabelHidden
+                    role="searchbox"
+                    aria-controls={contentResultsId}
+                    value={contentQuery}
+                    onChange={setContentQuery}
+                    onKeyDown={event => {
+                      if (isImeKeyEvent(event.nativeEvent)) {
+                        return;
+                      }
+                      if (event.key === 'Enter' && contentResults[0] != null) {
+                        event.preventDefault();
+                        handleContentSuggestionSelect(contentResults[0]);
+                        return;
+                      }
+                      if (event.key === 'ArrowDown') {
+                        event.preventDefault();
+                        contentSuggestionListRef.current
+                          ?.querySelector<HTMLButtonElement>('button')
+                          ?.focus();
+                      }
+                    }}
+                    placeholder={contentSearchPlaceholder}
+                    hasClear
+                    startIcon={
+                      <Icon icon="search" size="sm" color="secondary" />
+                    }
+                    isDisabled={!isInteractive}
+                    width="100%"
+                  />
+                </div>
+              ) : isFieldSearchShown ? (
                 <TextInput
                   label={t('@astryx.powersearch.mobile.searchFields')}
                   isLabelHidden
@@ -1393,10 +1436,65 @@ export function PowerSearchTouchSurface({
                   isDisabled={!isInteractive}
                   width="100%"
                 />
-              )}
+              ) : null}
             </div>
             <div {...stylex.props(styles.body)}>
-              {groupedFields.length === 0 ? (
+              {hasContentSearch ? (
+                contentResults.length > 0 ? (
+                  <List
+                    ref={contentSuggestionListRef}
+                    id={contentResultsId}
+                    aria-label={t('@astryx.typeahead.searchResults')}
+                    hasDividers
+                    density="spacious"
+                    xstyle={styles.flushList}>
+                    {contentResults.map((item, index) => (
+                      <ListItem
+                        key={item.id}
+                        label={item.element ?? item.label}
+                        isDisabled={!isInteractive}
+                        onClick={() => handleContentSuggestionSelect(item)}
+                        onKeyDown={event => {
+                          if (
+                            isImeKeyEvent(event.nativeEvent) ||
+                            (event.key !== 'ArrowDown' &&
+                              event.key !== 'ArrowUp')
+                          ) {
+                            return;
+                          }
+                          event.preventDefault();
+                          const buttons = [
+                            ...(contentSuggestionListRef.current?.querySelectorAll<HTMLButtonElement>(
+                              'button',
+                            ) ?? []),
+                          ];
+                          const nextIndex =
+                            event.key === 'ArrowDown'
+                              ? Math.min(index + 1, buttons.length - 1)
+                              : index === 0
+                                ? -1
+                                : index - 1;
+                          if (nextIndex < 0) {
+                            contentSearchRef.current
+                              ?.querySelector<HTMLInputElement>('input')
+                              ?.focus();
+                          } else {
+                            buttons[nextIndex]?.focus();
+                          }
+                        }}
+                      />
+                    ))}
+                  </List>
+                ) : (
+                  contentQuery.trim() !== '' && (
+                    <div {...stylex.props(styles.empty)}>
+                      <Text type="supporting" color="secondary">
+                        {t('@astryx.typeahead.emptySearchResults')}
+                      </Text>
+                    </div>
+                  )
+                )
+              ) : groupedFields.length === 0 ? (
                 <div {...stylex.props(styles.empty)}>
                   <Text type="supporting" color="secondary">
                     {t('@astryx.powersearch.mobile.noFields')}
@@ -1440,23 +1538,6 @@ export function PowerSearchTouchSurface({
           <div {...stylex.props(styles.sheet)}>
             <div {...stylex.props(styles.header)}>
               <div {...stylex.props(styles.headerRow)}>
-                {draft != null && (
-                  <Button
-                    label={t('@astryx.powersearch.mobile.back')}
-                    icon={
-                      <Icon
-                        icon="chevronLeft"
-                        size="sm"
-                        xstyle={rtlStyles.mirror}
-                      />
-                    }
-                    isIconOnly
-                    variant="ghost"
-                    size="sm"
-                    xstyle={styles.touchIconAction}
-                    onClick={returnFromValue}
-                  />
-                )}
                 <div {...stylex.props(styles.headerText)}>
                   <Heading level={3} maxLines={1}>
                     {editorTitle}
@@ -1481,7 +1562,7 @@ export function PowerSearchTouchSurface({
                         if (draft.mode === 'edit') {
                           handleDelete();
                         } else {
-                          queueDraftOriginFocus(draft);
+                          queueManagerAddFocus();
                           setStep('manage');
                         }
                         return;
@@ -1534,24 +1615,39 @@ export function PowerSearchTouchSurface({
                       timezoneID={timezoneID}
                     />
                   </div>
-                  {isEditorFooterShown && (
-                    <div {...stylex.props(styles.footer)}>
-                      <div
-                        {...stylex.props(
-                          styles.footerActions,
-                          styles.footerSoleAction,
-                        )}>
+                  <div {...stylex.props(styles.footer)}>
+                    {draft.mode === 'edit' && !isReadOnly && (
+                      <Button
+                        label={t('@astryx.powersearch.editor.delete')}
+                        variant="ghost"
+                        isDisabled={isEditorDisabled}
+                        xstyle={styles.touchAction}
+                        onClick={handleDelete}
+                      />
+                    )}
+                    <div
+                      {...stylex.props(
+                        styles.footerActions,
+                        isReadOnly && styles.footerSoleAction,
+                      )}>
+                      <Button
+                        label={t('@astryx.powersearch.editor.cancel')}
+                        variant="ghost"
+                        xstyle={styles.touchAction}
+                        onClick={returnFromValue}
+                        width={isReadOnly ? '100%' : undefined}
+                      />
+                      {!isReadOnly && (
                         <Button
                           label={saveButtonLabel}
                           variant="primary"
                           isDisabled={isSaveDisabled}
                           xstyle={styles.touchAction}
                           onClick={handleSave}
-                          width="100%"
                         />
-                      </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </>
               )
             ) : null}

@@ -11,10 +11,10 @@
  * The desktop value editor renders `enum` and `enum_list` as Selectors, which
  * open a dropdown layer. Inside a bottom sheet that stacks a second overlay on
  * a surface the user is already inside, so those two types are re-rendered here
- * as the sheet's own list: a staged single-select list and a CheckboxList,
- * both confirmed from the footer. Every other type is a real input rather than
- * a menu, so it falls through to the shared PowerSearchValueEditor while still
- * requiring the sheet's Add filter or Edit filter confirmation.
+ * as sheet-native controls: staged single- and multi-select lists with trailing
+ * checkmarks, both confirmed from the footer. Every other type is a real input
+ * rather than a menu, so it falls through to the shared PowerSearchValueEditor
+ * while still requiring the sheet's Add filter or Edit filter confirmation.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
@@ -22,7 +22,6 @@
 
 import React, {useCallback, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {CheckboxList, CheckboxListItem} from '../CheckboxList';
 import {Icon} from '../Icon';
 import {List, ListItem} from '../List';
 import {spacingVars} from '../theme/tokens.stylex';
@@ -136,24 +135,45 @@ export function PowerSearchTouchValueEditor({
 
   if (operatorValue.type === 'enum_list') {
     return (
-      <CheckboxList
-        label={t('@astryx.powersearch.valueEditor.values')}
-        isLabelHidden
-        hasDividers
-        density="spacious"
-        value={enumListSelection}
-        onChange={handleEnumListChange}
-        isDisabled={isDisabled}
-        xstyle={styles.flush}>
-        {operatorValue.values.map(item => (
-          <CheckboxListItem
-            key={item.value}
-            label={item.label}
-            value={item.value}
-            endContent={item.icon}
-          />
-        ))}
-      </CheckboxList>
+      <List hasDividers density="spacious" xstyle={styles.flush}>
+        {operatorValue.values.map(item => {
+          const isSelected = enumListSelection.includes(item.value);
+          return (
+            <ListItem
+              key={item.value}
+              label={
+                isSelected ? (
+                  <>
+                    <span aria-hidden="true">{item.label}</span>
+                    <VisuallyHidden>
+                      {t('@astryx.powersearch.mobile.selectedValue', {
+                        value: item.label,
+                      })}
+                    </VisuallyHidden>
+                  </>
+                ) : (
+                  item.label
+                )
+              }
+              startContent={item.icon}
+              isSelected={isSelected}
+              isDisabled={isDisabled}
+              endContent={
+                isSelected ? (
+                  <Icon icon="check" size="sm" color="accent" />
+                ) : undefined
+              }
+              onClick={() =>
+                handleEnumListChange(
+                  isSelected
+                    ? enumListSelection.filter(value => value !== item.value)
+                    : [...enumListSelection, item.value],
+                )
+              }
+            />
+          );
+        })}
+      </List>
     );
   }
 

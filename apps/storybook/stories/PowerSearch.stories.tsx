@@ -298,6 +298,11 @@ const fullConfig: PowerSearchConfig = {
   ],
 };
 
+const touchConfig: PowerSearchConfig = {
+  ...fullConfig,
+  contentSearchFieldKey: 'title',
+};
+
 function simpleField(
   key: string,
   label: string,
@@ -560,7 +565,7 @@ export const TouchSurface: Story = {
       <div style={{width: 390, maxWidth: '100%'}}>
         <CoarsePointerPowerSearch
           {...args}
-          config={fullConfig}
+          config={touchConfig}
           filters={filters}
           onChange={newFilters => setFilters([...newFilters])}
         />
