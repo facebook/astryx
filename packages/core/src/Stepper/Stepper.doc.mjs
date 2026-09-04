@@ -29,12 +29,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use the vertical orientation when steps carry longer descriptions. A horizontal stepper handles narrow containers itself: once the frame gives each step less than minStepWidth (112px by default) it drops the labels for a segmented track and names the current step beneath it.',
+          'Use the vertical orientation when steps carry longer descriptions. A horizontal stepper handles narrow containers itself: once the frame gives each step less than horizontalOptions.minimumStepWidth (112px by default) it drops the labels for a segmented track and uses the configured collapsedVariant beneath it.',
       },
       {
         guidance: true,
         description:
-          'Turn off hasCollapsedControls or hasCollapsedLabel when the page already supplies its own Back/Continue or its own step heading, so a phone does not show either of them twice.',
+          "Set horizontalOptions.collapsedVariant to 'withLabel' when the page already supplies Back/Continue, or to 'hiddenLabel' when the page already supplies its own step heading.",
       },
       {
         guidance: true,
@@ -74,7 +74,7 @@ export const docs = {
         name: 'Compact summary',
         required: false,
         description:
-          'The row a horizontal Stepper adds directly beneath the track once it is too narrow to label every step: the current step name and optional Previous/Next controls. The on-track layout keeps its indicators on the rail instead of repeating the active indicator beside this label. Turn either half off with hasCollapsedLabel or hasCollapsedControls when the page already provides it. Every step keeps its name in the accessible sequence at any width.',
+          'The row a horizontal Stepper adds directly beneath the track once it is too narrow to label every step. horizontalOptions.collapsedVariant chooses a label with Previous/Next controls, the label alone, or controls with the label hidden. The on-track layout keeps its indicators on the rail instead of repeating the active indicator beside the label. Every step keeps its name in the accessible sequence at any width.',
       },
       {
         name: 'Step',
@@ -195,25 +195,12 @@ export const docs = {
           default: "'separated'",
         },
         {
-          name: 'minStepWidth',
-          type: 'number | string',
+          name: 'horizontalOptions',
+          type: "{ minimumStepWidth: number | string; collapsedVariant: 'withLabelAndControls' | 'withLabel' | 'hiddenLabel' }",
           description:
-            'Minimum width each horizontal step needs before the Stepper collapses. Numbers are pixels; strings accept CSS lengths such as 7rem, calc(6rem + 8px), or var(--step-width). The browser resolves CSS units, and changes to the resolved value update the layout.',
-          default: '112',
-        },
-        {
-          name: 'hasCollapsedControls',
-          type: 'boolean',
-          description:
-            'Whether a collapsed stepper shows Previous/Next controls beneath the track. They only ever appear when onStepClick is set; turn them off for a flow that already has its own Back/Continue. The compact track is presentational in both layouts, so turning these controls off makes the collapsed stepper a progress indicator until it is wide again.',
-          default: 'true',
-        },
-        {
-          name: 'hasCollapsedLabel',
-          type: 'boolean',
-          description:
-            'Whether a collapsed stepper names the current step beneath the track. Turn it off when the page already heads the step itself. Only the visible copy goes; every step keeps its name in the accessible sequence.',
-          default: 'true',
+            'Options for horizontal collapse. minimumStepWidth is the per-step threshold: numbers are pixels and strings accept CSS lengths such as 7rem, calc(6rem + 8px), or var(--step-width). collapsedVariant selects a label with controls, the label alone, or controls with the visible label hidden. Controls appear only when onStepClick is set, and every step keeps its accessible name.',
+          default:
+            "{ minimumStepWidth: 112, collapsedVariant: 'withLabelAndControls' }",
         },
         {
           name: 'xstyle',
@@ -257,12 +244,12 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Keep step labels short. Horizontal collapses under minStepWidth per step (112px by default); vertical is for long descriptions.',
+          'Keep step labels short. Horizontal collapses under horizontalOptions.minimumStepWidth per step (112px by default); vertical is for long descriptions.',
       },
       {
         guidance: true,
         description:
-          'Drop hasCollapsedControls/hasCollapsedLabel when the page has its own Back/Continue or step heading.',
+          'Choose horizontalOptions.collapsedVariant when the page has its own Back/Continue or step heading.',
       },
       {
         guidance: true,
@@ -289,12 +276,8 @@ export const docsDense = {
         label: 'ordered-list aria-label',
         density: 'padding of all steps',
         indicatorPosition: 'indicators separated from or on the track',
-        minStepWidth:
-          'per-step collapse threshold; number = px, string = CSS length',
-        hasCollapsedControls:
-          'prev/next under a collapsed track; needs onStepClick; off makes the track progress-only',
-        hasCollapsedLabel:
-          'name the current step under a collapsed track; visual only',
+        horizontalOptions:
+          'horizontal collapse threshold and label/control presentation',
         xstyle: 'StyleX layout customization',
       },
     },
@@ -330,12 +313,12 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          '当步骤有较长描述时使用垂直方向。水平步骤器会自行处理窄容器：当每个步骤的可用宽度不足 minStepWidth（默认为 112px）时，它会收起标签，改为显示分段轨道，并在下方显示当前步骤的名称。',
+          '当步骤有较长描述时使用垂直方向。水平步骤器会自行处理窄容器：当每个步骤的可用宽度不足 horizontalOptions.minimumStepWidth（默认为 112px）时，它会收起标签，并按 collapsedVariant 显示紧凑内容。',
       },
       {
         guidance: true,
         description:
-          '当页面已有自己的返回/继续控件或步骤标题时，关闭 hasCollapsedControls 或 hasCollapsedLabel，避免在手机上重复显示。',
+          "当页面已有返回/继续控件时，将 horizontalOptions.collapsedVariant 设为 'withLabel'；当页面已有步骤标题时，将其设为 'hiddenLabel'。",
       },
       {guidance: true, description: '为非线性工作流程提供 onStepClick。'},
       {guidance: false, description: '少于3个步骤时使用步骤器。'},
@@ -421,25 +404,12 @@ export const docsZh = {
           default: "'separated'",
         },
         {
-          name: 'minStepWidth',
-          type: 'number | string',
+          name: 'horizontalOptions',
+          type: "{ minimumStepWidth: number | string; collapsedVariant: 'withLabelAndControls' | 'withLabel' | 'hiddenLabel' }",
           description:
-            '每个水平步骤在步骤器收起前所需的最小宽度。数字按像素处理；字符串接受 7rem、calc(6rem + 8px) 或 var(--step-width) 等 CSS 长度。CSS 单位由浏览器解析，解析后的值变化时布局会随之更新。',
-          default: '112',
-        },
-        {
-          name: 'hasCollapsedControls',
-          type: 'boolean',
-          description:
-            '收起后是否在轨道下方显示上一步/下一步控件。仅在设置了 onStepClick 时出现；当流程已有自己的返回/继续按钮时关闭。两种布局的紧凑轨道都只用于展示进度，因此关闭这些控件后，步骤器会保持为进度指示器，直到宽度恢复。',
-          default: 'true',
-        },
-        {
-          name: 'hasCollapsedLabel',
-          type: 'boolean',
-          description:
-            '收起后是否在轨道下方显示当前步骤的名称。当页面本身已有步骤标题时关闭。仅隐藏视觉文本，每个步骤在无障碍序列中仍保留名称。',
-          default: 'true',
+            '水平布局的收起选项。minimumStepWidth 是每个步骤的阈值：数字按像素处理，字符串接受 7rem、calc(6rem + 8px) 或 var(--step-width) 等 CSS 长度。collapsedVariant 可选择显示标签和控件、仅显示标签，或隐藏可见标签并保留控件。仅在设置 onStepClick 时显示控件，每个步骤始终保留无障碍名称。',
+          default:
+            "{ minimumStepWidth: 112, collapsedVariant: 'withLabelAndControls' }",
         },
         {
           name: 'xstyle',

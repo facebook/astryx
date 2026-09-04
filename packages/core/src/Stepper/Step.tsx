@@ -1023,7 +1023,7 @@ export function Step({
     registerStep,
     isCompact,
     summarySlot,
-    minStepWidth,
+    minimumStepWidth,
     minStepWidthMeasureRef,
   } = ctx;
 
@@ -1427,7 +1427,7 @@ export function Step({
       ref={minStepWidthMeasureRef}
       aria-hidden="true"
       {...mergeProps(stylex.props(styles.minStepWidthMeasure), {
-        style: {width: minStepWidth},
+        style: {width: minimumStepWidth},
       })}
     />
   ) : null;

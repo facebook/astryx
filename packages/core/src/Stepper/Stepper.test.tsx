@@ -1153,7 +1153,16 @@ describe('Stepper', () => {
     });
 
     it('treats a numeric minimum step width as pixels', () => {
-      atWidth(360, fourSteps({minStepWidth: 80}), 80);
+      atWidth(
+        360,
+        fourSteps({
+          horizontalOptions: {
+            minimumStepWidth: 80,
+            collapsedVariant: 'withLabelAndControls',
+          },
+        }),
+        80,
+      );
 
       expect(document.querySelector(SUMMARY)).toBeNull();
       const measure = Array.from(
@@ -1168,7 +1177,10 @@ describe('Stepper', () => {
       atWidth(
         360,
         fourSteps({
-          minStepWidth: 'var(--checkout-step-width)',
+          horizontalOptions: {
+            minimumStepWidth: 'var(--checkout-step-width)',
+            collapsedVariant: 'withLabelAndControls',
+          },
           style: {'--checkout-step-width': '6rem'} as React.CSSProperties,
         }),
         96,
@@ -1217,7 +1229,14 @@ describe('Stepper', () => {
 
       let view: ReturnType<typeof render> | null = null;
       try {
-        view = render(fourSteps({minStepWidth: 'var(--step-width, 5rem)'}));
+        view = render(
+          fourSteps({
+            horizontalOptions: {
+              minimumStepWidth: 'var(--step-width, 5rem)',
+              collapsedVariant: 'withLabelAndControls',
+            },
+          }),
+        );
         expect(document.querySelector(SUMMARY)).toBeNull();
         const measure = Array.from(
           document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
@@ -1475,7 +1494,13 @@ describe('Stepper', () => {
       // controls rather than two.
       atWidth(
         320,
-        fourSteps({onStepClick: vi.fn(), hasCollapsedControls: false}),
+        fourSteps({
+          onStepClick: vi.fn(),
+          horizontalOptions: {
+            minimumStepWidth: 112,
+            collapsedVariant: 'withLabel',
+          },
+        }),
       );
       expect(screen.queryByRole('button', {name: 'Next step'})).toBeNull();
       expect(screen.queryByRole('button', {name: 'Previous step'})).toBeNull();
@@ -1488,7 +1513,16 @@ describe('Stepper', () => {
     it('drops the name but keeps the controls on request', () => {
       // The inverse: a page that heads each step itself, and navigates by the
       // stepper alone. Nothing is named twice and the way through survives.
-      atWidth(320, fourSteps({onStepClick: vi.fn(), hasCollapsedLabel: false}));
+      atWidth(
+        320,
+        fourSteps({
+          onStepClick: vi.fn(),
+          horizontalOptions: {
+            minimumStepWidth: 112,
+            collapsedVariant: 'hiddenLabel',
+          },
+        }),
+      );
       const summary = document.querySelector<HTMLElement>(SUMMARY);
       expect(summary).not.toBeNull();
       expect(within(summary!).queryByText('Shipping')).toBeNull();
@@ -1498,16 +1532,14 @@ describe('Stepper', () => {
       ).toBeInTheDocument();
     });
 
-    it('leaves the bare track when neither half is wanted', () => {
-      // Both off is a reachable state, not a combination to guard against —
-      // and the row goes with them rather than staying on as an empty box
-      // still spending the frame's gap.
+    it('leaves the bare track when the label is hidden and there is no handler', () => {
       atWidth(
         320,
         fourSteps({
-          onStepClick: vi.fn(),
-          hasCollapsedControls: false,
-          hasCollapsedLabel: false,
+          horizontalOptions: {
+            minimumStepWidth: 112,
+            collapsedVariant: 'hiddenLabel',
+          },
         }),
       );
       expect(document.querySelector(SUMMARY)).toBeNull();
@@ -1515,16 +1547,16 @@ describe('Stepper', () => {
       expect(screen.getAllByRole('listitem')).toHaveLength(4);
     });
 
-    it('keeps the sequence whole for a screen reader with both halves off', () => {
-      // The invariant that makes both props safe to reach for: the visible row
-      // was only ever a repeat of the list, so suppressing it cannot shorten
+    it('keeps the sequence whole for a screen reader when the label is hidden', () => {
+      // The visible row only repeats the list, so suppressing it cannot shorten
       // what a screen reader hears. Same expectation as the default collapse.
       atWidth(
         320,
         fourSteps({
-          onStepClick: vi.fn(),
-          hasCollapsedControls: false,
-          hasCollapsedLabel: false,
+          horizontalOptions: {
+            minimumStepWidth: 112,
+            collapsedVariant: 'hiddenLabel',
+          },
         }),
       );
       const items = screen.getAllByRole('listitem');
@@ -1538,15 +1570,15 @@ describe('Stepper', () => {
     });
 
     it('leaves a stepper that has room for its labels alone', () => {
-      // Both props are scoped to the collapse and nothing else. Stated as a
-      // test because it is the question consumers ask first — whether turning
-      // the phone row off also strips the desktop labels.
+      // The variant is scoped to the collapse and does not strip desktop labels.
       atWidth(
         600,
         fourSteps({
           onStepClick: vi.fn(),
-          hasCollapsedControls: false,
-          hasCollapsedLabel: false,
+          horizontalOptions: {
+            minimumStepWidth: 112,
+            collapsedVariant: 'hiddenLabel',
+          },
         }),
       );
       for (const name of ['Cart', 'Shipping', 'Delivery', 'Payment']) {
@@ -1566,7 +1598,10 @@ describe('Stepper', () => {
         fourSteps({
           indicatorPosition: 'on-track',
           onStepClick: vi.fn(),
-          hasCollapsedControls: false,
+          horizontalOptions: {
+            minimumStepWidth: 112,
+            collapsedVariant: 'withLabel',
+          },
         }),
       );
       expect(screen.queryByRole('button', {name: 'Next step'})).toBeNull();
