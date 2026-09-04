@@ -173,3 +173,49 @@ describe('a broken integration manifest degrades gracefully (skip + warn)', () =
     expect(issues.some(i => /boom manifest/.test(i.message))).toBe(true);
   });
 });
+
+describe('the `debug` named export', () => {
+  // A NAMED export, not a manifest key. A key would have to be understood by
+  // every CLI version already installed against the integration, and an older
+  // one rejects an unknown key by discarding the whole manifest — components,
+  // templates and codemods with it (#5119). A named export is simply not read
+  // by a CLI that does not know about it.
+  it('is carried out of the manifest module as __debug', async () => {
+    writeManifestPackage(tmpDir, {
+      body: `export const debug = () => {};\nexport default {issuesUrl: 'https://example.com/i'};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(typeof loaded.__debug).toBe('function');
+    expect(loaded.issuesUrl).toBe('https://example.com/i');
+  });
+
+  it('leaves __debug undefined when the module does not export one', async () => {
+    writeManifestPackage(tmpDir, {body: `export default {};\n`});
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(loaded.__debug).toBeUndefined();
+  });
+
+  it('leaves __debug undefined when the export is not a function', async () => {
+    writeManifestPackage(tmpDir, {
+      body: `export const debug = 'not a function';\nexport default {};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(loaded.__debug).toBeUndefined();
+  });
+
+  it('does not become a manifest key, so it is not reported as an unknown one', async () => {
+    writeManifestPackage(tmpDir, {
+      body: `export const debug = () => {};\nexport default {};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(loaded.__unknownKeys).toEqual([]);
+  });
+});

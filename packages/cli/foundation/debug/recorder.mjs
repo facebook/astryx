@@ -66,8 +66,21 @@ export const MAX_CAPTURED_OUTPUT = 32 * 1024;
 
 /** @type {import('./event.mjs').InFlightEvent | null} */
 let _event = null;
-/** @type {import('../../authoring/debug/type').DebugEventHandler | null} */
-let _handler = null;
+/**
+ * The project's own handler, from `debug` in `astryx.config`.
+ * @type {import('../../authoring/debug/type').DebugEventHandler | null}
+ */
+let _projectHandler = null;
+/**
+ * Handlers contributed by loaded integrations, in integration load order.
+ *
+ * A separate list from the project's own because the two arrive from different
+ * places and neither replaces the other: an app that sets `debug` for its own
+ * debugging must not thereby remove itself from an integration's debug logs, and
+ * an integration must not silence the app. Both are delivered to.
+ * @type {import('../../authoring/debug/type').DebugEventHandler[]}
+ */
+let _integrationHandlers = [];
 let _finished = false;
 let _listenerInstalled = false;
 let _signalsArmed = false;
@@ -178,15 +191,68 @@ export function currentEvent() {
  * {@link begin} — the recorder collects provisionally and only needs a
  * destination by the time the event is sealed at exit.
  *
+ * This does NOT displace handlers contributed by integrations, and they do not
+ * displace this one. See {@link setIntegrationEventHandlers}.
+ *
  * @param {import('../../authoring/debug/type').DebugEventHandler | null | undefined} handler
  */
 export function setEventHandler(handler) {
   guard(() => {
-    _handler = typeof handler === 'function' ? handler : null;
-    if (!_event || !_handler) return;
-    armSignalHandlers();
-    if (_configGateSkipped) reportConfigGateMiss();
+    _projectHandler = typeof handler === 'function' ? handler : null;
+    afterHandlersChanged();
   });
+}
+
+/**
+ * Register the handlers contributed by loaded integrations, replacing any
+ * previously registered set.
+ *
+ * REPLACE, not append. `Project.load` is a plain factory — nothing memoizes it
+ * process-wide — so a single command can load the same project more than once
+ * (the pre-parse handler load, then the command's own). Appending would deliver
+ * the same event to the same integration twice.
+ *
+ * Non-functions are dropped, and the list is deduplicated by function identity
+ * so the same handler reached through two specs is still called once.
+ *
+ * @param {ReadonlyArray<import('../../authoring/debug/type').DebugEventHandler | null | undefined>} [handlers]
+ */
+export function setIntegrationEventHandlers(handlers = []) {
+  guard(() => {
+    const next = [];
+    const seen = new Set();
+    for (const handler of handlers ?? []) {
+      if (typeof handler !== 'function' || seen.has(handler)) continue;
+      seen.add(handler);
+      next.push(handler);
+    }
+    _integrationHandlers = next;
+    afterHandlersChanged();
+  });
+}
+
+/**
+ * Every handler this event will be delivered to, in delivery order: the
+ * project's own first, then integrations in load order. Deduplicated by
+ * identity, so a project that re-exports its integration's handler as its own
+ * `debug` still gets one call.
+ *
+ * @returns {import('../../authoring/debug/type').DebugEventHandler[]}
+ */
+function effectiveHandlers() {
+  /** @type {import('../../authoring/debug/type').DebugEventHandler[]} */
+  const all = _projectHandler ? [_projectHandler] : [];
+  for (const handler of _integrationHandlers) {
+    if (!all.includes(handler)) all.push(handler);
+  }
+  return all;
+}
+
+/** Arm signals and report a missed config gate once a destination exists. */
+function afterHandlersChanged() {
+  if (!_event || effectiveHandlers().length === 0) return;
+  armSignalHandlers();
+  if (_configGateSkipped) reportConfigGateMiss();
 }
 
 export function noteConfigGateSkipped() {
@@ -200,9 +266,10 @@ function reportConfigGateMiss() {
     const write = _originalWrites?.err ?? process.stderr.write;
     write.call(
       process.stderr,
-      'astryx: your astryx.config sets `debug`, but the file does not contain ' +
-        'the word, so commands that do not otherwise read the config are not ' +
-        'recorded. Name the key literally in the config file.\n',
+      'astryx: a debug handler was registered, but your astryx.config file ' +
+        'contains neither the word `debug` nor `integrations`, so commands ' +
+        'that do not otherwise read the config are not recorded. Name the key ' +
+        'literally in the config file.\n',
     );
   } catch {
     /* best effort */
@@ -249,7 +316,7 @@ export function begin({argv = process.argv.slice(2), cliVersion} = {}) {
     // setEventHandler arms the signals. Arm here too, so a caller that already
     // had one does not silently lose every signal-terminated run to lifecycle
     // ordering.
-    if (_handler) armSignalHandlers();
+    if (effectiveHandlers().length > 0) armSignalHandlers();
     started = true;
   });
   return started;
@@ -527,9 +594,11 @@ export function finish({exitCode} = {}) {
     // Stop teeing before doing anything else, so nothing the handler prints
     // ends up in the record it was handed.
     releaseOutput();
-    // No destination — the project did not set `debug`. Nothing to do, and
-    // nothing was paid for: the environment probe below never runs.
-    if (!_handler) return;
+    // No destination — neither the project nor any loaded integration supplied
+    // a handler. Nothing to do, and nothing was paid for: the environment probe
+    // below never runs.
+    const handlers = effectiveHandlers();
+    if (handlers.length === 0) return;
 
     _event.env = captureEnv({cliVersion: _cliVersion});
     _event.output.stdout = collected(_stdout);
@@ -604,9 +673,15 @@ export function finish({exitCode} = {}) {
         : null,
     };
 
-    // A COPY. Handing over the live object would let third-party code mutate
-    // the record mid-flight; its errors are swallowed for the same reason.
-    delivered = callHandler(_handler, structuredClone(sealed));
+    // A COPY PER HANDLER. Handing over the live object would let third-party
+    // code mutate the record mid-flight, and handing the same copy to two
+    // handlers would let the first one edit what the second is told. Each call
+    // is isolated in turn — one handler throwing, printing, or calling
+    // process.exit changes nothing for the others or for the command.
+    for (const handler of handlers) {
+      const ran = callHandler(handler, structuredClone(sealed));
+      delivered = delivered || ran;
+    }
   });
   return delivered;
 }
@@ -680,7 +755,8 @@ export function resetRecorder() {
   _stderr.chunks.length = 0;
   _stderr.bytes = 0;
   _event = null;
-  _handler = null;
+  _projectHandler = null;
+  _integrationHandlers = [];
   _finished = false;
   _configGateSkipped = false;
   _startedAt = 0;
