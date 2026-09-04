@@ -295,7 +295,7 @@ export const stoneTheme = defineTheme({
     // to the categorical bg in our scope.
     banner: {
       'status:info': {
-        '--color-accent-muted': 'var(--color-background-blue)',
+        '--color-info-muted': 'var(--color-background-blue)',
         '--color-text-primary': 'var(--color-text-blue)',
         '--color-text-secondary': 'var(--color-text-blue)',
         '--color-accent': 'var(--color-text-blue)',
