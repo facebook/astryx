@@ -39,7 +39,7 @@ import {
   captureProject,
   captureEnv,
 } from './event.mjs';
-import {createRedactor, redactArgv} from './redact.mjs';
+import {createRedactor, redactArgv, redactEnv} from './redact.mjs';
 import {ERROR_CODES} from '../response/error-codes.mjs';
 
 /**
@@ -651,8 +651,15 @@ export function finish({exitCode} = {}) {
       endedAt,
       durationMs,
       // Filled in just above — `env` is null only while the event is still in
-      // flight, which a sealed one never is.
-      env: /** @type {import('./event.mjs').DebugEvent['env']} */ (_event.env),
+      // flight, which a sealed one never is. The snapshot mixes values we
+      // derive with free text the environment supplied, so it gets its own
+      // classified pass rather than the generic one.
+      env: /** @type {import('./event.mjs').DebugEvent['env']} */ (
+        redactEnv(
+          /** @type {import('./event.mjs').DebugEvent['env']} */ (_event.env),
+          redact,
+        )
+      ),
       argv: /** @type {string[]} */ (redactArgv(_event.argv, redact)),
       args: /** @type {Record<string, unknown>} */ (redact(_event.args)),
       options: /** @type {Record<string, unknown>} */ (redact(_event.options)),
@@ -678,6 +685,11 @@ export function finish({exitCode} = {}) {
                 : String(redact(_event.error.stack) ?? ''),
           }
         : null,
+      // Every pass above has now run, so the claim is true. It is set HERE and
+      // nowhere else: an in-flight event carries `redacted: false` until this
+      // copy is built, so the flag can never say "scrubbed" about values that
+      // are not.
+      redacted: true,
     };
 
     // A COPY PER HANDLER. Handing over the live object would let third-party
