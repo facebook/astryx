@@ -324,7 +324,7 @@ export const butterTheme = defineTheme({
     // matching the badge palette. Scoped to the banner root, doesn't leak.
     banner: {
       'status:info': {
-        '--color-info-muted': '#4883fd',
+        '--color-accent-muted': '#4883fd',
         '--color-text-primary': '#ffffff',
         '--color-text-secondary': '#ffffff',
         '--color-accent': '#ffffff',

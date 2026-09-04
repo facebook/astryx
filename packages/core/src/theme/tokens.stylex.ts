@@ -57,7 +57,6 @@ export const colorDefaults = {
   '--color-background-error-inverted': 'light-dark(#AA071E, #E3193B)',
 
   // Status/Sentiment
-  '--color-info-muted': 'var(--color-accent-muted)',
   '--color-success': 'light-dark(#0D8626, #0D8626)',
   '--color-success-muted': 'light-dark(#0B991F33, #0B991F3F)',
   '--color-on-success': 'light-dark(#FFFFFF, #FFFFFF)',

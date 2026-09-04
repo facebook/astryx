@@ -1,9 +1,5 @@
 [
   {
-    "component": "core/Banner",
-    "reason": "Banner uses logical inline padding and block-flow layout. Its status icons are non-directional, and it has no physical left/right positioning, directional transforms, horizontal scrolling, dragging, or directional keyboard behavior."
-  },
-  {
     "component": "core/Collapsible",
     "reason": "Nothing in the trigger or the panel is side-specific. The trigger is a `space-between` flex row, so the label hangs off the reading-start edge and the chevron off the reading-end edge in either direction, with no physical left or right anywhere in the styles. The chevron itself rotates between down and up — the one axis that does not mirror, because a panel opens downward in every locale — and it is a vertical glyph to begin with, so there is nothing in it to flip. The panel is a block-flow region whose only geometry is a height transition, and the group's dividers are horizontal rules. No inset, offset, order, transform, drag, scroll, or overlay."
   },

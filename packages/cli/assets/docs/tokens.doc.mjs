@@ -3,7 +3,7 @@
 // AUTO-GENERATED — do not edit manually.
 // Source: packages/core/src/theme/tokens.stylex.ts
 // Run: node scripts/generate-token-docs.mjs
-// Total: 189 tokens across 13 categories.
+// Total: 188 tokens across 13 categories.
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
@@ -147,11 +147,6 @@ export const docs = {
               "--color-background-error-inverted",
               "#AA071E",
               "#E3193B"
-            ],
-            [
-              "--color-info-muted",
-              "var(--color-accent-muted)",
-              "var(--color-accent-muted)"
             ],
             [
               "--color-success",

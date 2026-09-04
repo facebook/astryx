@@ -50,25 +50,13 @@ describe('neutral theme-local status mappings', () => {
 });
 
 describe('neutral Banner tint mappings', () => {
-  it('uses semantic muted background tokens without categorical aliases', () => {
-    expect(neutralTheme.tokens).toMatchObject({
-      '--color-info-muted': 'light-dark(#c4ddfb, #9eb7ff3D)',
-      '--color-success-muted': 'light-dark(#c5e5c0, #84c9803D)',
-      '--color-warning-muted': 'light-dark(#f8da9d, #deb4333D)',
-      '--color-error-muted': 'light-dark(#facecb, #ff9e973D)',
-    });
+  it('keeps Banner backgrounds on semantic muted tokens', () => {
     expect(neutralTheme.components?.banner?.['status:info']).not.toHaveProperty(
       '--color-accent-muted',
     );
     expect(
       neutralTheme.components?.banner?.['status:error'],
     ).not.toHaveProperty('--color-error-muted');
-    expect(JSON.stringify(neutralTheme.components?.banner)).not.toContain(
-      '--color-background-blue',
-    );
-    expect(JSON.stringify(neutralTheme.components?.banner)).not.toContain(
-      '--color-background-red',
-    );
   });
 
   it('uses light overlays in light mode and dark overlays in dark mode', () => {

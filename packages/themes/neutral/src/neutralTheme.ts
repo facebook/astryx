@@ -225,7 +225,6 @@ export const neutralTheme = defineTheme({
     '--color-success': ['#007004', '#9fe59b'],
     '--color-error': ['#a50c25', '#ffc6c1'],
     '--color-warning': ['#745b00', '#fdcf4f'],
-    '--color-info-muted': ['#c4ddfb', '#9eb7ff3D'],
     '--color-success-muted': ['#c5e5c0', '#84c9803D'],
     '--color-error-muted': ['#facecb', '#ff9e973D'],
     '--color-warning-muted': ['#f8da9d', '#deb4333D'],

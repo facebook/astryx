@@ -267,14 +267,6 @@ describe('resolveThemeTokens — CSS color functions', () => {
 });
 
 describe('resolveThemeTokens — generated themes end to end', () => {
-  it('keeps info-muted aligned with accent-muted unless a theme overrides it', () => {
-    const light = resolveThemeTokens(null, {mode: 'light'});
-    const dark = resolveThemeTokens(null, {mode: 'dark'});
-
-    expect(light['--color-info-muted']).toBe(light['--color-accent-muted']);
-    expect(dark['--color-info-muted']).toBe(dark['--color-accent-muted']);
-  });
-
   it('resolves derived accent tokens from defineTheme({color}) to raw values', () => {
     const theme = defineTheme({name: 'brand', color: {accent: '#0064E0'}});
 
