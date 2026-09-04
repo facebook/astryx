@@ -2,879 +2,1509 @@
 
 'use client';
 
-import React, {useState, useMemo} from 'react';
-import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
-import type {ResizableProps} from '@astryxdesign/core/Resizable';
+/**
+ * Four kinds of financial account on one page, each in a collapsible Card with
+ * a table of its own — because a credit card and a checking account do not
+ * share a column grid.
+ *
+ * This is the grouping shape for heterogeneous records. `useTableGroupedRows`
+ * is the right tool when every group is the same kind of thing and grouping is
+ * just a sort you can collapse: issues by status, orders by month, rows by
+ * owner. One table, one header, section rows in between. It is the wrong tool
+ * the moment the groups stop agreeing on what the columns mean. Utilization is
+ * a credit-card idea, pending payout is a processor idea, and cost basis is an
+ * investment idea; forcing all three into one grid produces a table that is
+ * mostly em-dashes, with a header row that is true of no row beneath it.
+ *
+ * So each group owns a table. The Card supplies the boundary the shared header
+ * row used to supply, and the Collapsible trigger carries the group's name,
+ * count, and running total, so a collapsed group still answers the question
+ * most people came for.
+ *
+ * ## Extending this template
+ *
+ * **The test for splitting is column divergence, not group count.** Two groups
+ * with different columns belong in separate tables; twelve groups with
+ * identical columns belong in one table with the plugin. If you find yourself
+ * adding a column that only applies to some groups and writing a fallback dash
+ * for the rest, that is the signal to split. Conversely, if these four tables
+ * ever converge on the same columns, collapse them back — this layout costs a
+ * Card and a header per group, and that is only worth paying for real
+ * structural difference.
+ *
+ * **Each table is data-driven, and that is the payoff.** Because the groups are
+ * separate tables, every one of them can use `data` + `columns` with
+ * `renderCell`, which is the RSC-friendly path and the one that gets headers,
+ * widths, and plugins for free. The single-table version of this page has to
+ * drop to children mode to emit section rows, and loses all of that.
+ *
+ * **What the four tables do share, they share by position.** Every table runs
+ * name → qualifier → figures → change, on the same column widths, so the eye
+ * can travel straight down the page across four different schemas. That is the
+ * whole reason Utilization sits ahead of Balance rather than after it.
+ *
+ * **The trigger is a button, so it holds no buttons.** Group name, count, and
+ * total are text and icons only. Per-account actions live in the rows, and
+ * anything that acts on a whole group belongs in the page header rather than
+ * inside the trigger — nesting a control inside the trigger makes the click
+ * target ambiguous and is invalid HTML besides.
+ *
+ * **Open state is controlled, not `defaultIsOpen`.** The page owns a Set of
+ * open group ids, which is what lets Expand all / Collapse all work and what
+ * you would persist per user. Uncontrolled Collapsibles are fine for a static
+ * FAQ; they cannot participate in a page-level control.
+ *
+ * **Money is stored in cents.** Every amount is an integer and only the display
+ * step formats, so group totals and the header's net position stay exact. Net
+ * position deliberately subtracts card balances — it is a derived figure, never
+ * a stored one, so adding an account updates it with no other edit.
+ *
+ * **One time range drives the whole page.** The selector under the chart is
+ * page state, not chart state: the Change column, every detail chart, and the
+ * header's delta all read it from context. A page where the chart says "3M"
+ * and the table says something else is a page with two different answers to
+ * the same question.
+ */
+
+import {createContext, useContext, useMemo, useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+
+import {
+  HStack,
   Layout,
   LayoutContent,
-  LayoutFooter,
   LayoutHeader,
-  LayoutPanel,
-  VStack,
-  HStack,
   StackItem,
+  VStack,
 } from '@astryxdesign/core/Layout';
-import {Text, Heading} from '@astryxdesign/core/Text';
-import {TextInput} from '@astryxdesign/core/TextInput';
-import {Button} from '@astryxdesign/core/Button';
+import {
+  colorVars,
+  durationVars,
+  easeVars,
+  radiusVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {Heading, Text} from '@astryxdesign/core/Text';
 import {Badge} from '@astryxdesign/core/Badge';
-import {Avatar} from '@astryxdesign/core/Avatar';
-import {Selector} from '@astryxdesign/core/Selector';
-import {PowerSearch} from '@astryxdesign/core/PowerSearch';
-import type {
-  PowerSearchConfig,
-  PowerSearchFilter,
-} from '@astryxdesign/core/PowerSearch';
-import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
-import {Popover} from '@astryxdesign/core/Popover';
-import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
-import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
-import {Center} from '@astryxdesign/core/Center';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Collapsible} from '@astryxdesign/core/Collapsible';
 import {Icon} from '@astryxdesign/core/Icon';
-import {StatusDot} from '@astryxdesign/core/StatusDot';
-import {Divider} from '@astryxdesign/core/Divider';
 import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@astryxdesign/core/SegmentedControl';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
+import {Token} from '@astryxdesign/core/Token';
 import {
   Table,
-  TableBody,
-  TableRow,
-  TableCell,
-  proportional,
   pixel,
-  resolveColumnWidths,
+  proportional,
+  useTableRowExpansion,
 } from '@astryxdesign/core/Table';
 import type {TableColumn} from '@astryxdesign/core/Table';
 import {
-  ChevronRightIcon,
-  ChevronDownIcon,
-  PencilIcon,
-  DocumentDuplicateIcon,
-  ArrowRightIcon,
-  TagIcon,
-  UserIcon,
-  TrashIcon,
-  EllipsisHorizontalIcon,
+  ArrowPathIcon,
+  ArrowsRightLeftIcon,
+  BuildingLibraryIcon,
+  CreditCardIcon,
+  PlusIcon,
+  PresentationChartLineIcon,
 } from '@heroicons/react/24/outline';
-import {XMarkIcon} from '@heroicons/react/24/outline';
-import {ChartBarIcon} from '@heroicons/react/24/solid';
 
-// Plain inline styles using Astryx design-token CSS variables (declared at
-// :root by `@astryxdesign/core/astryx.css`). No StyleX compiler required.
-// The group-header background + cursor live on the colSpan TableCell (which
-// reliably forwards `style`) so they fill the full row width.
-const groupHeaderCell: React.CSSProperties = {
-  cursor: 'pointer',
-  backgroundColor: 'var(--color-background-muted)',
-  padding: 'var(--spacing-3) var(--spacing-4)',
-};
+// ============= SHARED VOCABULARY =============
 
-// Types
-type TaskStatus = 'in_progress' | 'todo' | 'backlog' | 'done';
-type TaskPriority = 'urgent' | 'high' | 'medium' | 'low' | 'none';
+/** The one attribute every account type genuinely shares. */
+type SyncState = 'connected' | 'syncing' | 'reconnect';
 
-interface TaskRow extends Record<string, unknown> {
+/** Everything the page-level machinery needs from a row, whatever group it is
+ * in: an id to key its history by, and whether its connection is healthy. */
+interface AccountRecord extends Record<string, unknown> {
   id: string;
-  taskId: string;
-  title: string;
-  subtitle: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  project: string;
-  tags: string[];
-  created: string;
-  createdISO: string;
-  updated: string;
-  updatedISO: string;
-  assignee: string;
+  syncState: SyncState;
+  /** Direction and strength of the account's drift, as a daily fraction. Feeds
+   * the generated history, so an account's chart and its Change agree. */
+  trend: number;
 }
 
-const STATUS_DOT_VARIANT: Record<
-  TaskStatus,
-  'success' | 'accent' | 'neutral' | 'warning'
-> = {
-  in_progress: 'accent',
-  todo: 'warning',
-  backlog: 'neutral',
-  done: 'success',
-};
+// Pinned locale keeps the rendered output identical in every environment.
+const currency = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+});
 
-const PRIORITY_COLOR: Record<
-  TaskPriority,
-  'primary' | 'secondary' | 'disabled'
-> = {
-  urgent: 'primary',
-  high: 'primary',
-  medium: 'secondary',
-  low: 'disabled',
-  none: 'disabled',
-};
-
-// Mock data matching a task tracker
-const allTasks: TaskRow[] = [
-  {
-    id: '1',
-    taskId: 'T235040469',
-    title: 'Update user interface',
-    subtitle: 'Update payment gateway integration',
-    status: 'in_progress',
-    priority: 'medium',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Olivia Martin',
-  },
-  {
-    id: '2',
-    taskId: 'T235040470',
-    title: 'Use Projects to organize work for features or releases',
-    subtitle: '',
-    status: 'in_progress',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Jackson Lee',
-  },
-  {
-    id: '3',
-    taskId: 'T235040471',
-    title: 'Use Cycles to focus work over n-weeks',
-    subtitle: '',
-    status: 'in_progress',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Isabella Nguyen',
-  },
-  {
-    id: '4',
-    taskId: 'T235040472',
-    title: 'Testing code',
-    subtitle: 'Update payment gateway integration',
-    status: 'todo',
-    priority: 'medium',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'William Kim',
-  },
-  {
-    id: '5',
-    taskId: 'T235040473',
-    title: 'Update backend code',
-    subtitle: 'Update payment gateway integration',
-    status: 'todo',
-    priority: 'medium',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Sofia Davis',
-  },
-  {
-    id: '6',
-    taskId: 'T235040474',
-    title: 'Update front end code',
-    subtitle: 'Update payment gateway integration',
-    status: 'todo',
-    priority: 'medium',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Mia Wilson',
-  },
-  {
-    id: '7',
-    taskId: 'T235040475',
-    title: 'Update payment gateway integration',
-    subtitle: '',
-    status: 'todo',
-    priority: 'high',
-    project: 'Payment gateway integration 2.0',
-    tags: ['Improvement', '3rd Party'],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Lucas Brown',
-  },
-  {
-    id: '8',
-    taskId: 'T235040476',
-    title: 'Update payment gateway backend code',
-    subtitle: '',
-    status: 'todo',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Ethan Jones',
-  },
-  {
-    id: '9',
-    taskId: 'T235040477',
-    title: 'Invite your teammates',
-    subtitle: '',
-    status: 'todo',
-    priority: 'low',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 1',
-    updatedISO: '2025-07-01',
-    assignee: 'Ava Taylor',
-  },
-  {
-    id: '10',
-    taskId: 'T235040478',
-    title: 'Next steps',
-    subtitle: '',
-    status: 'todo',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Noah Garcia',
-  },
-  {
-    id: '11',
-    taskId: 'T235040479',
-    title: 'Welcome to Linear',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Olivia Martin',
-  },
-  {
-    id: '12',
-    taskId: 'T235040480',
-    title: 'Connect GitHub or GitLab',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Jackson Lee',
-  },
-  {
-    id: '13',
-    taskId: 'T235040481',
-    title: 'Customize settings',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Isabella Nguyen',
-  },
-  {
-    id: '14',
-    taskId: 'T235040482',
-    title: 'Try 3 ways to navigate: Command menu, keyboard or mouse',
-    subtitle: '',
-    status: 'done',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'William Kim',
-  },
-  {
-    id: '15',
-    taskId: 'T235040483',
-    title: 'Connect to Slack',
-    subtitle: '',
-    status: 'done',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Sofia Davis',
-  },
-  {
-    id: '16',
-    taskId: 'T235040484',
-    title: 'Migrate database schema to v2',
-    subtitle: 'Payment gateway integration',
-    status: 'in_progress',
-    priority: 'high',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 4',
-    createdISO: '2025-07-04',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'Lucas Brown',
-  },
-  {
-    id: '17',
-    taskId: 'T235040485',
-    title: 'Write integration tests for checkout flow',
-    subtitle: '',
-    status: 'in_progress',
-    priority: 'medium',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 4',
-    createdISO: '2025-07-04',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'Ethan Jones',
-  },
-  {
-    id: '18',
-    taskId: 'T235040486',
-    title: 'Set up CI/CD pipeline for staging',
-    subtitle: '',
-    status: 'in_progress',
-    priority: 'high',
-    project: '',
-    tags: [],
-    created: 'Jul 2',
-    createdISO: '2025-07-02',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'Ava Taylor',
-  },
-  {
-    id: '19',
-    taskId: 'T235040487',
-    title: 'Add rate limiting to public API endpoints',
-    subtitle: '',
-    status: 'todo',
-    priority: 'urgent',
-    project: '',
-    tags: [],
-    created: 'Jul 5',
-    createdISO: '2025-07-05',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'Noah Garcia',
-  },
-  {
-    id: '20',
-    taskId: 'T235040488',
-    title: 'Refactor auth middleware to support OAuth2',
-    subtitle: '',
-    status: 'todo',
-    priority: 'high',
-    project: '',
-    tags: [],
-    created: 'Jul 4',
-    createdISO: '2025-07-04',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'Olivia Martin',
-  },
-  {
-    id: '21',
-    taskId: 'T235040489',
-    title: 'Design error pages for 404 and 500',
-    subtitle: '',
-    status: 'todo',
-    priority: 'low',
-    project: '',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 4',
-    updatedISO: '2025-07-04',
-    assignee: 'Mia Wilson',
-  },
-  {
-    id: '22',
-    taskId: 'T235040490',
-    title: 'Audit third-party dependencies for vulnerabilities',
-    subtitle: '',
-    status: 'todo',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jul 5',
-    createdISO: '2025-07-05',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'Jackson Lee',
-  },
-  {
-    id: '23',
-    taskId: 'T235040491',
-    title: 'Implement webhook retry logic with exponential backoff',
-    subtitle: 'Payment gateway integration',
-    status: 'todo',
-    priority: 'medium',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 4',
-    createdISO: '2025-07-04',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'William Kim',
-  },
-  {
-    id: '24',
-    taskId: 'T235040492',
-    title: 'Add dark mode support to dashboard',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'low',
-    project: '',
-    tags: [],
-    created: 'Jul 2',
-    createdISO: '2025-07-02',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Sofia Davis',
-  },
-  {
-    id: '25',
-    taskId: 'T235040493',
-    title: 'Create onboarding flow for new team members',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 2',
-    updatedISO: '2025-07-02',
-    assignee: 'Isabella Nguyen',
-  },
-  {
-    id: '26',
-    taskId: 'T235040494',
-    title: 'Set up error tracking with Sentry',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 4',
-    updatedISO: '2025-07-04',
-    assignee: 'Ethan Jones',
-  },
-  {
-    id: '27',
-    taskId: 'T235040495',
-    title: 'Improve search performance with indexing',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'low',
-    project: '',
-    tags: [],
-    created: 'Jul 2',
-    createdISO: '2025-07-02',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Ava Taylor',
-  },
-  {
-    id: '28',
-    taskId: 'T235040496',
-    title: 'Write API documentation for v2 endpoints',
-    subtitle: '',
-    status: 'done',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jun 28',
-    createdISO: '2025-06-28',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Noah Garcia',
-  },
-  {
-    id: '29',
-    taskId: 'T235040497',
-    title: 'Set up staging environment',
-    subtitle: '',
-    status: 'done',
-    priority: 'high',
-    project: '',
-    tags: [],
-    created: 'Jun 25',
-    createdISO: '2025-06-25',
-    updated: 'Jul 1',
-    updatedISO: '2025-07-01',
-    assignee: 'Lucas Brown',
-  },
-  {
-    id: '30',
-    taskId: 'T235040498',
-    title: 'Fix flaky end-to-end tests in CI',
-    subtitle: '',
-    status: 'done',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jun 30',
-    createdISO: '2025-06-30',
-    updated: 'Jul 2',
-    updatedISO: '2025-07-02',
-    assignee: 'Mia Wilson',
-  },
-];
-
-const STATUS_LABEL: Record<TaskStatus, string> = {
-  in_progress: 'In Progress',
-  todo: 'Todo',
-  backlog: 'Backlog',
-  done: 'Done',
-};
-
-const GROUP_ORDER: TaskStatus[] = ['in_progress', 'todo', 'backlog', 'done'];
-
-type GroupByField = 'status' | 'priority' | 'project' | 'assignee' | 'none';
-
-const GROUP_BY_OPTIONS: {value: GroupByField; label: string}[] = [
-  {value: 'none', label: 'None'},
-  {value: 'status', label: 'Status'},
-  {value: 'priority', label: 'Priority'},
-  {value: 'project', label: 'Project'},
-  {value: 'assignee', label: 'Assignee'},
-];
-
-function groupTasks(
-  tasks: TaskRow[],
-  groupBy: GroupByField,
-): Map<string, TaskRow[]> {
-  if (groupBy === 'none') {
-    return new Map([['All', tasks]]);
-  }
-  const map = new Map<string, TaskRow[]>();
-  for (const task of tasks) {
-    const key = String(task[groupBy]) || '—';
-    let group = map.get(key);
-    if (!group) {
-      group = [];
-      map.set(key, group);
-    }
-    group.push(task);
-  }
-  return map;
+function money(cents: number): string {
+  return currency.format(cents / 100);
 }
 
-function getGroupLabel(groupBy: GroupByField, key: string): string {
-  if (groupBy === 'status') {
-    return STATUS_LABEL[key as TaskStatus] ?? key;
+function sum<T>(rows: T[], pick: (row: T) => number): number {
+  return rows.reduce((total, row) => total + pick(row), 0);
+}
+
+/**
+ * Every numeric cell on the page. Alignment is deliberately not its job: the
+ * column's `align: 'end'` puts a `text-align` on the `<th>` as well as the
+ * `<td>`, so the header travels with its figures instead of hugging the far
+ * side of them. Doing it in the cell would right-align the numbers and leave
+ * the header behind. All this adds is tabular digits, so a column of money
+ * lines up digit for digit.
+ *
+ * There is no muted variant. A figure in a table is a value, and values are
+ * primary text — the de-emphasis that used to sit on the comparison columns
+ * made them read as annotations on the column beside them rather than as
+ * numbers in their own right.
+ */
+function Figure({children}: {children: string}) {
+  return <Text hasTabularNumbers>{children}</Text>;
+}
+
+// ============= TIME RANGE =============
+
+const RANGE_IDS = ['1W', '1M', '3M', 'YTD', '1Y'] as const;
+type RangeId = (typeof RANGE_IDS)[number];
+
+/** Pinned so the generated series, the axis labels and the "as of" dates are
+ * the same on every render and in every environment. */
+const TODAY = Date.UTC(2025, 8, 30);
+
+const RANGE_DAYS: Record<RangeId, number> = {
+  '1W': 7,
+  '1M': 30,
+  '3M': 90,
+  // Days elapsed in the pinned year, so YTD means what it says on this date.
+  YTD: 273,
+  '1Y': 365,
+};
+
+/**
+ * The selected window, read by the Change column and by every detail chart.
+ * Context rather than prop-drilling because the readers are cells — four
+ * column definitions deep, in four separate tables, none of which the page
+ * renders directly.
+ */
+const RangeContext = createContext<RangeId>('3M');
+const useRange = () => useContext(RangeContext);
+
+const SERIES_DAYS = RANGE_DAYS['1Y'];
+
+const dayFormat = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+
+function dayLabel(daysAgo: number): string {
+  const date = new Date(TODAY);
+  date.setUTCDate(date.getUTCDate() - daysAgo);
+  return dayFormat.format(date);
+}
+
+/** FNV-1a over the account id, so each account's walk is its own but stable. */
+function seedFrom(id: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < id.length; index++) {
+    hash ^= id.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
   }
-  if (groupBy === 'priority') {
-    const labels: Record<string, string> = {
-      urgent: 'Urgent',
-      high: 'High',
-      medium: 'Medium',
-      low: 'Low',
-      none: 'No priority',
+  return hash >>> 0;
+}
+
+/**
+ * A year of daily values ending at the account's current figure.
+ *
+ * Built backwards from today so the last point is always the real number on
+ * the row — the alternative is a series that drifts to something close to it
+ * and a table that disagrees with its own chart. xorshift rather than
+ * `Math.random` because a template that renders differently on the server and
+ * the client is a hydration error waiting to happen.
+ */
+function historyFor<T extends AccountRecord>(
+  rows: T[],
+  pick: (row: T) => number,
+  volatility: number,
+): Array<[string, number[]]> {
+  return rows.map(row => {
+    let state = seedFrom(row.id) || 1;
+    const random = () => {
+      state ^= state << 13;
+      state ^= state >>> 17;
+      state ^= state << 5;
+      return ((state >>> 0) % 10000) / 10000 - 0.5;
     };
-    return labels[key] ?? key;
-  }
-  return key;
+
+    const series = new Array<number>(SERIES_DAYS);
+    let value = pick(row);
+    series[SERIES_DAYS - 1] = value;
+    for (let day = SERIES_DAYS - 2; day >= 0; day--) {
+      value /= 1 + row.trend + random() * volatility;
+      series[day] = Math.max(1, Math.round(value));
+    }
+    return [row.id, series];
+  });
 }
 
-const columns: TableColumn<TaskRow>[] = [
+function windowOf(id: string, range: RangeId): number[] {
+  return HISTORY[id].slice(-RANGE_DAYS[range]);
+}
+
+/**
+ * The Change column is a percentage, not an amount. Four groups whose headline
+ * figures span two orders of magnitude cannot be compared in dollars — a
+ * $5,000 move is most of a vendor card and a rounding error on the treasury
+ * sweep. A percentage is the one form of "how much did this move" that means
+ * the same thing in every one of these tables, which is what makes it worth a
+ * column in all four.
+ */
+function changePercentOf(id: string, range: RangeId): number {
+  const points = windowOf(id, range);
+  const start = points[0];
+  if (start === 0) {
+    return 0;
+  }
+  return ((points[points.length - 1] - start) / Math.abs(start)) * 100;
+}
+
+const percentFormat = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+// ============= CHART VOCABULARY =============
+
+const ASSET_COLOR = 'var(--color-data-categorical-blue, #0171E3)';
+const DEBT_COLOR = 'var(--color-data-categorical-orange, #EB6E00)';
+const UP_COLOR = 'var(--color-data-categorical-green, #0B991F)';
+const DOWN_COLOR = 'var(--color-data-categorical-red, #F5394F)';
+const GRID_COLOR = 'var(--color-border, rgba(5, 54, 89, 0.1))';
+const AXIS_TICK = {
+  fontSize: 'var(--font-size-sm, 12px)',
+  fill: 'var(--color-text-secondary, #4E606F)',
+};
+
+/** Tooltips and readouts have no room for cents. */
+const wholeCurrency = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
+
+/** Five evenly spaced dates, whether the window is a week or a year. */
+function axisTicks(count: number): number[] {
+  const stops = Math.min(5, count);
+  if (stops < 2) {
+    return [0];
+  }
+  return Array.from({length: stops}, (_, stop) =>
+    Math.round((stop * (count - 1)) / (stops - 1)),
+  );
+}
+
+function ChangeCell({id, isLiability}: {id: string; isLiability?: boolean}) {
+  const range = useRange();
+  const percent = changePercentOf(id, range);
+  const isUp = percent >= 0;
+  const isGood = isLiability ? !isUp : isUp;
+  return (
+    // A Token is a flex box and fills the cell, so `text-align` from the
+    // column's align cannot place it — the row does that here instead.
+    <HStack hAlign="end">
+      <Token
+        size="sm"
+        color={isGood ? 'green' : 'red'}
+        label={`${isUp ? '+' : '−'}${percentFormat.format(Math.abs(percent))}%`}
+      />
+    </HStack>
+  );
+}
+
+// ============= GROUP 1 — BANK ACCOUNTS =============
+
+interface BankAccount extends AccountRecord {
+  name: string;
+  institution: string;
+  mask: string;
+  kind: 'Checking' | 'Savings' | 'Money market';
+  availableCents: number;
+  lastSynced: string;
+  routing: string;
+  openedOn: string;
+  interestApy: string;
+}
+
+const BANK_ACCOUNTS: BankAccount[] = [
   {
-    key: 'status',
-    header: '',
-    width: pixel(44),
+    id: 'bank-1',
+    name: 'Operating',
+    institution: 'First Meridian Bank',
+    mask: '••4417',
+    kind: 'Checking',
+    availableCents: 84_215_600,
+    lastSynced: 'Today, 6:02 AM',
+    syncState: 'connected',
+    trend: 0.00022,
+    routing: '021000021',
+    openedOn: 'Mar 2019',
+    interestApy: '0.01%',
   },
   {
-    key: 'title',
-    header: 'Issue',
-    width: proportional(1),
+    id: 'bank-2',
+    name: 'Payroll',
+    institution: 'First Meridian Bank',
+    mask: '••8830',
+    kind: 'Checking',
+    availableCents: 21_940_800,
+    lastSynced: 'Today, 6:02 AM',
+    syncState: 'connected',
+    trend: 0.00004,
+    routing: '021000021',
+    openedOn: 'Mar 2019',
+    interestApy: '0.01%',
   },
   {
-    key: 'project',
-    header: 'Project',
-    width: pixel(180),
+    id: 'bank-3',
+    name: 'Tax reserve',
+    institution: 'Harborline Credit Union',
+    mask: '••1265',
+    kind: 'Savings',
+    availableCents: 47_500_000,
+    lastSynced: 'Today, 5:48 AM',
+    syncState: 'connected',
+    trend: 0.00009,
+    routing: '271183701',
+    openedOn: 'Jan 2021',
+    interestApy: '3.85%',
   },
   {
-    key: 'created',
-    header: 'Created',
-    width: pixel(72),
-  },
-  {
-    key: 'updated',
-    header: 'Updated',
-    width: pixel(72),
-  },
-  {
-    key: 'assignee',
-    header: 'Assignee',
-    width: pixel(52),
-  },
-  {
-    key: 'actions',
-    header: '',
-    width: pixel(56),
+    id: 'bank-4',
+    name: 'Treasury sweep',
+    institution: 'Northgate Financial',
+    mask: '••7702',
+    kind: 'Money market',
+    availableCents: 132_800_000,
+    lastSynced: 'Sep 26, 9:14 PM',
+    syncState: 'reconnect',
+    trend: 0.00033,
+    routing: '124303065',
+    openedOn: 'Aug 2022',
+    interestApy: '4.42%',
   },
 ];
 
-const powerSearchConfig: PowerSearchConfig = {
-  name: 'IssueSearch',
-  fields: [
-    {
-      key: 'status',
-      label: 'Status',
-      operators: [
-        {
-          key: 'is',
-          label: 'is',
-          value: {
-            type: 'enum',
-            values: [
-              {value: 'in_progress', label: 'In Progress'},
-              {value: 'todo', label: 'Todo'},
-              {value: 'backlog', label: 'Backlog'},
-              {value: 'done', label: 'Done'},
-            ],
-          },
-        },
-      ],
-    },
-    {
-      key: 'priority',
-      label: 'Priority',
-      operators: [
-        {
-          key: 'is',
-          label: 'is',
-          value: {
-            type: 'enum',
-            values: [
-              {value: 'urgent', label: 'Urgent'},
-              {value: 'high', label: 'High'},
-              {value: 'medium', label: 'Medium'},
-              {value: 'low', label: 'Low'},
-              {value: 'none', label: 'None'},
-            ],
-          },
-        },
-      ],
-    },
-    {
-      key: 'title',
-      label: 'Title',
-      operators: [
-        {key: 'contains', label: 'contains', value: {type: 'string'}},
-      ],
-    },
-    {
-      key: 'assignee',
-      label: 'Assignee',
-      operators: [
-        {key: 'contains', label: 'contains', value: {type: 'string'}},
-      ],
-    },
-    {
-      key: 'project',
-      label: 'Project',
-      operators: [
-        {key: 'contains', label: 'contains', value: {type: 'string'}},
-      ],
-    },
-  ],
-};
+const bankColumns: TableColumn<BankAccount>[] = [
+  {
+    key: 'name',
+    header: 'Account',
+    width: proportional(2),
+    renderCell: account => (
+      <VStack gap={0}>
+        <Text>{account.name}</Text>
+        <Text type="supporting">
+          {account.institution} · {account.mask}
+        </Text>
+      </VStack>
+    ),
+  },
+  {
+    key: 'kind',
+    header: 'Type',
+    width: pixel(150),
+    renderCell: account => <Text>{account.kind}</Text>,
+  },
+  {
+    key: 'available',
+    header: 'Available',
+    width: pixel(150),
+    align: 'end',
+    renderCell: account => <Figure>{money(account.availableCents)}</Figure>,
+  },
+  {
+    key: 'change',
+    header: 'Change',
+    width: pixel(110),
+    align: 'end',
+    renderCell: account => <ChangeCell id={account.id} />,
+  },
+];
 
-const PRIORITY_LABEL: Record<TaskPriority, string> = {
-  urgent: 'Urgent',
-  high: 'High',
-  medium: 'Medium',
-  low: 'Low',
-  none: 'None',
-};
+function BankDetail({account}: {account: BankAccount}) {
+  return (
+    <DetailPanel id={account.id} group="bank">
+      <MetadataListItem label="Routing number">
+        <Text>{account.routing}</Text>
+      </MetadataListItem>
+      <MetadataListItem label="Opened">
+        <Text>{account.openedOn}</Text>
+      </MetadataListItem>
+      <MetadataListItem label="Interest APY">
+        <Text>{account.interestApy}</Text>
+      </MetadataListItem>
+      <MetadataListItem label="Last synced">
+        <Text>{account.lastSynced}</Text>
+      </MetadataListItem>
+    </DetailPanel>
+  );
+}
 
-function TaskDetailPanel({
-  task,
-  onClose,
-  resizable,
+// ============= GROUP 2 — CREDIT CARDS =============
+
+interface CreditCardAccount extends AccountRecord {
+  name: string;
+  issuer: string;
+  mask: string;
+  balanceCents: number;
+  limitCents: number;
+  statementDue: string;
+  cardholders: number;
+  rewardsRate: string;
+  lastPayment: string;
+}
+
+const CREDIT_CARDS: CreditCardAccount[] = [
+  {
+    id: 'card-1',
+    name: 'Corporate — Engineering',
+    issuer: 'Meridian Business Card',
+    mask: '••2041',
+    balanceCents: 4_182_300,
+    limitCents: 15_000_000,
+    statementDue: 'Oct 12',
+    syncState: 'connected',
+    trend: 0.00042,
+    cardholders: 24,
+    rewardsRate: '1.5% cash back',
+    lastPayment: 'Sep 12 · $38,400.00',
+  },
+  {
+    id: 'card-2',
+    name: 'Corporate — Travel',
+    issuer: 'Meridian Business Card',
+    mask: '••6688',
+    balanceCents: 9_640_500,
+    limitCents: 12_000_000,
+    statementDue: 'Oct 12',
+    syncState: 'connected',
+    trend: 0.00071,
+    cardholders: 61,
+    rewardsRate: '3× on travel',
+    lastPayment: 'Sep 12 · $84,120.00',
+  },
+  {
+    id: 'card-3',
+    name: 'Vendor payments',
+    issuer: 'Northgate Commercial',
+    mask: '••3319',
+    balanceCents: 1_205_000,
+    limitCents: 25_000_000,
+    statementDue: 'Oct 20',
+    syncState: 'syncing',
+    trend: -0.00018,
+    cardholders: 8,
+    rewardsRate: '2% on suppliers',
+    lastPayment: 'Sep 20 · $19,880.00',
+  },
+];
+
+/**
+ * Bar and reading on one line, because they are one fact. ProgressBar's own
+ * `hasValueLabel` stacks the number above the track, which costs a second row
+ * in every card row and leaves the widest column on the page mostly empty; the
+ * component's guidance is to compose the reading alongside instead.
+ *
+ * Neutral, and neutral for all three. Colour-coding utilization turns a
+ * measurement into a verdict, and the thresholds that verdict needs are a
+ * policy this page does not have — 80% on a card kept deliberately near its
+ * limit is not the same event as 80% on one that is usually idle. Neutral over
+ * accent for the same reason one step further on: the accent is the page's
+ * emphasis colour, and there is nothing here to emphasise. The number is right
+ * beside the bar.
+ */
+function UtilizationCell({card}: {card: CreditCardAccount}) {
+  const percent = Math.round((card.balanceCents / card.limitCents) * 100);
+  return (
+    <HStack gap={2} vAlign="center">
+      <StackItem size="fill">
+        <ProgressBar
+          label={`${card.name} utilization`}
+          isLabelHidden
+          value={percent}
+          variant="neutral"
+        />
+      </StackItem>
+      <Text hasTabularNumbers>{percent}%</Text>
+    </HStack>
+  );
+}
+
+const creditCardColumns: TableColumn<CreditCardAccount>[] = [
+  {
+    key: 'name',
+    header: 'Card',
+    width: proportional(2),
+    renderCell: card => (
+      <VStack gap={0}>
+        <Text>{card.name}</Text>
+        <Text type="supporting">
+          {card.issuer} · {card.mask}
+        </Text>
+      </VStack>
+    ),
+  },
+  // Utilization sits where every other group puts its qualifier — bank's type,
+  // the processor's merchant id — so the money columns start at the same place
+  // in all four tables and the eye can run straight down the page.
+  {
+    key: 'utilization',
+    header: 'Utilization',
+    width: pixel(150),
+    renderCell: card => <UtilizationCell card={card} />,
+  },
+  {
+    key: 'balance',
+    header: 'Balance',
+    width: pixel(150),
+    align: 'end',
+    renderCell: card => <Figure>{money(card.balanceCents)}</Figure>,
+  },
+  {
+    key: 'limit',
+    header: 'Limit',
+    width: pixel(150),
+    align: 'end',
+    renderCell: card => <Figure>{money(card.limitCents)}</Figure>,
+  },
+  {
+    key: 'change',
+    header: 'Change',
+    width: pixel(110),
+    align: 'end',
+    // The only group whose Change column is read inversely: a balance that
+    // grew is a debt that grew.
+    renderCell: card => <ChangeCell id={card.id} isLiability />,
+  },
+];
+
+function CreditCardDetail({card}: {card: CreditCardAccount}) {
+  return (
+    <DetailPanel id={card.id} group="cards" isLiability>
+      <MetadataListItem label="Statement due">
+        <Text>{card.statementDue}</Text>
+      </MetadataListItem>
+      <MetadataListItem label="Last payment">
+        <Text>{card.lastPayment}</Text>
+      </MetadataListItem>
+      <MetadataListItem label="Rewards">
+        <Text>{card.rewardsRate}</Text>
+      </MetadataListItem>
+      <MetadataListItem label="Cardholders">
+        <Text>{`${card.cardholders} active`}</Text>
+      </MetadataListItem>
+    </DetailPanel>
+  );
+}
+
+// ============= GROUP 3 — PAYMENT PROCESSORS =============
+
+interface ProcessorAccount extends AccountRecord {
+  name: string;
+  merchantId: string;
+  pendingPayoutCents: number;
+  feesMtdCents: number;
+  nextPayout: string;
+  payoutSchedule: string;
+  disputeCount: number;
+  settlementAccount: string;
+}
+
+const PROCESSORS: ProcessorAccount[] = [
+  {
+    id: 'proc-1',
+    name: 'Stripe',
+    merchantId: 'acct_1Qf82LmR',
+    pendingPayoutCents: 18_442_900,
+    feesMtdCents: 612_400,
+    nextPayout: 'Oct 2',
+    syncState: 'connected',
+    trend: 0.00058,
+    payoutSchedule: 'Daily, 2-day rolling',
+    disputeCount: 3,
+    settlementAccount: 'Operating ••4417',
+  },
+  {
+    id: 'proc-2',
+    name: 'PayPal Commerce',
+    merchantId: 'MRC-88214-XT',
+    pendingPayoutCents: 3_218_650,
+    feesMtdCents: 148_900,
+    nextPayout: 'Oct 3',
+    syncState: 'connected',
+    trend: -0.00024,
+    payoutSchedule: 'Weekly, Fridays',
+    disputeCount: 1,
+    settlementAccount: 'Operating ••4417',
+  },
+  {
+    id: 'proc-3',
+    name: 'Adyen',
+    merchantId: 'AD-NORTHWIND-01',
+    pendingPayoutCents: 7_905_100,
+    feesMtdCents: 233_050,
+    nextPayout: 'Oct 5',
+    syncState: 'syncing',
+    trend: 0.00031,
+    payoutSchedule: 'Weekly, Mondays',
+    disputeCount: 0,
+    settlementAccount: 'Tax reserve ••1265',
+  },
+];
+
+const processorColumns: TableColumn<ProcessorAccount>[] = [
+  {
+    key: 'name',
+    header: 'Processor',
+    width: proportional(2),
+    renderCell: processor => (
+      <VStack gap={0}>
+        <Text>{processor.name}</Text>
+        <Text type="supporting">{processor.merchantId}</Text>
+      </VStack>
+    ),
+  },
+  {
+    key: 'pendingPayout',
+    header: 'Pending payout',
+    width: pixel(150),
+    align: 'end',
+    renderCell: processor => (
+      <Figure>{money(processor.pendingPayoutCents)}</Figure>
+    ),
+  },
+  {
+    key: 'feesMtd',
+    header: 'Fees (MTD)',
+    width: pixel(150),
+    align: 'end',
+    renderCell: processor => <Figure>{money(processor.feesMtdCents)}</Figure>,
+  },
+  {
+    key: 'change',
+    header: 'Change',
+    width: pixel(110),
+    align: 'end',
+    renderCell: processor => <ChangeCell id={processor.id} />,
+  },
+];
+
+function ProcessorDetail({processor}: {processor: ProcessorAccount}) {
+  return (
+    <DetailPanel id={processor.id} group="processors">
+      <MetadataListItem label="Next payout">
+        <Text>{processor.nextPayout}</Text>
+      </MetadataListItem>
+      <MetadataListItem label="Schedule">
+        <Text>{processor.payoutSchedule}</Text>
+      </MetadataListItem>
+      <MetadataListItem label="Settles to">
+        <Text>{processor.settlementAccount}</Text>
+      </MetadataListItem>
+      <MetadataListItem label="Open disputes">
+        <Text>
+          {processor.disputeCount === 0 ? 'None' : `${processor.disputeCount}`}
+        </Text>
+      </MetadataListItem>
+    </DetailPanel>
+  );
+}
+
+// ============= GROUP 4 — INVESTMENT ACCOUNTS =============
+
+interface InvestmentAccount extends AccountRecord {
+  name: string;
+  custodian: string;
+  marketValueCents: number;
+  costBasisCents: number;
+  strategy: string;
+  maturity: string;
+  yieldRate: string;
+}
+
+const INVESTMENTS: InvestmentAccount[] = [
+  {
+    id: 'inv-1',
+    name: 'Short-duration treasuries',
+    custodian: 'Northgate Asset Management',
+    marketValueCents: 245_180_000,
+    costBasisCents: 240_000_000,
+    syncState: 'connected',
+    trend: 0.00012,
+    strategy: 'Laddered, 3–9 month',
+    maturity: 'Rolling',
+    yieldRate: '4.31%',
+  },
+  {
+    id: 'inv-2',
+    name: 'Corporate bond ladder',
+    custodian: 'Northgate Asset Management',
+    marketValueCents: 98_420_000,
+    costBasisCents: 100_000_000,
+    syncState: 'connected',
+    trend: -0.00006,
+    strategy: 'Investment grade, A–AAA',
+    maturity: 'Dec 2027',
+    yieldRate: '5.02%',
+  },
+  {
+    id: 'inv-3',
+    name: 'Money market fund',
+    custodian: 'Harborline Capital',
+    marketValueCents: 61_050_000,
+    costBasisCents: 61_000_000,
+    syncState: 'connected',
+    trend: 0.00003,
+    strategy: 'Government, prime',
+    maturity: 'Same day',
+    yieldRate: '4.88%',
+  },
+];
+
+const investmentColumns: TableColumn<InvestmentAccount>[] = [
+  {
+    key: 'name',
+    header: 'Account',
+    width: proportional(2),
+    renderCell: account => (
+      <VStack gap={0}>
+        <Text>{account.name}</Text>
+        <Text type="supporting">{account.custodian}</Text>
+      </VStack>
+    ),
+  },
+  {
+    key: 'marketValue',
+    header: 'Market value',
+    width: pixel(150),
+    align: 'end',
+    renderCell: account => <Figure>{money(account.marketValueCents)}</Figure>,
+  },
+  {
+    key: 'costBasis',
+    header: 'Cost basis',
+    width: pixel(150),
+    align: 'end',
+    renderCell: account => <Figure>{money(account.costBasisCents)}</Figure>,
+  },
+  {
+    key: 'change',
+    header: 'Change',
+    width: pixel(110),
+    align: 'end',
+    renderCell: account => <ChangeCell id={account.id} />,
+  },
+];
+
+function InvestmentDetail({account}: {account: InvestmentAccount}) {
+  // Unrealized gain is the difference between two columns already on the row,
+  // so it is computed here rather than stored — same rule as the page total.
+  const unrealizedCents = account.marketValueCents - account.costBasisCents;
+  const isUp = unrealizedCents >= 0;
+  return (
+    <DetailPanel id={account.id} group="investments">
+      <MetadataListItem label="Unrealized gain/loss">
+        <Text>{`${isUp ? '+' : '−'}${money(Math.abs(unrealizedCents))}`}</Text>
+      </MetadataListItem>
+      <MetadataListItem label="Strategy">
+        <Text>{account.strategy}</Text>
+      </MetadataListItem>
+      <MetadataListItem label="Maturity">
+        <Text>{account.maturity}</Text>
+      </MetadataListItem>
+      <MetadataListItem label="Yield">
+        <Text>{account.yieldRate}</Text>
+      </MetadataListItem>
+    </DetailPanel>
+  );
+}
+
+// ============= DERIVED HISTORY =============
+
+/**
+ * A year of daily values per account. Built once at module scope: the numbers
+ * are a pure function of the pinned data, so recomputing them per render would
+ * be work with no possible different answer.
+ *
+ * The volatilities differ by group because the accounts do. A payout balance
+ * that empties on a schedule is genuinely choppier than a bond ladder, and
+ * giving them the same noise makes every chart on the page the same chart.
+ */
+const HISTORY: Record<string, number[]> = Object.fromEntries([
+  ...historyFor(BANK_ACCOUNTS, account => account.availableCents, 0.014),
+  ...historyFor(CREDIT_CARDS, card => card.balanceCents, 0.016),
+  ...historyFor(PROCESSORS, processor => processor.pendingPayoutCents, 0.04),
+  ...historyFor(INVESTMENTS, account => account.marketValueCents, 0.008),
+]);
+
+function totalSeries(ids: string[]): number[] {
+  return Array.from({length: SERIES_DAYS}, (_, day) =>
+    ids.reduce((total, id) => total + HISTORY[id][day], 0),
+  );
+}
+
+const ASSET_HISTORY = totalSeries([
+  ...BANK_ACCOUNTS.map(account => account.id),
+  ...PROCESSORS.map(processor => processor.id),
+  ...INVESTMENTS.map(account => account.id),
+]);
+const DEBT_HISTORY = totalSeries(CREDIT_CARDS.map(card => card.id));
+
+/** Net position is assets less debt, so its change is the change in the gap —
+ * not the change in either band. */
+function netChangeOver(range: RangeId): number {
+  const days = RANGE_DAYS[range];
+  const assets = ASSET_HISTORY.slice(-days);
+  const debt = DEBT_HISTORY.slice(-days);
+  const now = assets[assets.length - 1] - debt[debt.length - 1];
+  const then = assets[0] - debt[0];
+  return now - then;
+}
+
+// ============= DETAIL PANEL =============
+
+/**
+ * The account's shape over the selected window, given the width the metadata
+ * beside it does not need. At sparkline size the line was a gesture; at this
+ * size the dates underneath mean something and a reading of the value is worth
+ * following, so it carries an axis and a tooltip.
+ *
+ * `syncId` is what links it to its siblings: every chart in a group shares
+ * one, so pointing at a date in one open row draws the cursor at that date in
+ * every other open row of the same category. Recharts syncs on index, which is
+ * sound here only because every account in a group is sampled over the same
+ * window — same length, same days, same order.
+ */
+function DetailChart({
+  id,
+  group,
+  isLiability,
 }: {
-  task: TaskRow | null;
-  onClose: () => void;
-  resizable: ResizableProps;
+  id: string;
+  group: GroupId;
+  isLiability?: boolean;
 }) {
-  if (!task) {
+  const range = useRange();
+  const points = windowOf(id, range);
+  const delta = points[points.length - 1] - points[0];
+  const isGood = isLiability ? delta <= 0 : delta >= 0;
+  const color = isGood ? UP_COLOR : DOWN_COLOR;
+  const data = points.map((value, day) => ({
+    day,
+    label: dayLabel(points.length - 1 - day),
+    value: value / 100,
+  }));
+  const ticks = axisTicks(data.length);
+  // One gradient per account, because two charts sharing a fill id take
+  // whichever definition the DOM happens to hold — and open two rows of
+  // opposite sign and that is a green area under a red line.
+  const fillId = `detail-fill-${id}`;
+
+  return (
+    <ResponsiveContainer width="100%" height={132}>
+      <AreaChart data={data} syncId={group} margin={{top: 4, right: 4}}>
+        <defs>
+          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke={GRID_COLOR} vertical={false} />
+        <XAxis
+          dataKey="day"
+          type="number"
+          domain={[0, data.length - 1]}
+          ticks={ticks}
+          tickFormatter={(day: number) => data[day]?.label ?? ''}
+          tick={AXIS_TICK}
+          axisLine={false}
+          tickLine={false}
+        />
+        <YAxis hide domain={['dataMin', 'dataMax']} />
+        <Tooltip content={<DetailTooltip color={color} />} />
+        <Area
+          type="linear"
+          dataKey="value"
+          stroke={color}
+          strokeWidth={1.5}
+          fill={`url(#${fillId})`}
+          dot={false}
+          activeDot={{r: 3, strokeWidth: 0}}
+          isAnimationActive={false}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+function DetailTooltip({
+  active,
+  payload,
+  color,
+}: {
+  active?: boolean;
+  payload?: Array<{payload: {label: string; value: number}}>;
+  color?: string;
+}) {
+  if (!active || !payload?.length) {
     return null;
   }
+  const point = payload[0].payload;
   return (
-    // Panel owns the separator (its full-height left border). The adjacent
-    // ResizeHandle is kept divider-less + isAlwaysVisible={false} so its
-    // always-on pill doesn't float above the panel as a stray stub.
-    <LayoutPanel
-      hasDivider
-      resizable={resizable}
-      padding={4}
-      role="complementary"
-      label="Task details">
-      <VStack gap={4}>
+    <Card padding={3}>
+      <VStack gap={1}>
+        <Text type="supporting" color="secondary">
+          {point.label}
+        </Text>
         <HStack gap={2} vAlign="center">
-          <StackItem size="fill">
-            <Text type="supporting" color="secondary">
-              {task.taskId}
-            </Text>
-          </StackItem>
-          <Button
-            label="Close panel"
-            variant="ghost"
-            size="sm"
-            icon={<Icon icon={XMarkIcon} size="sm" />}
-            isIconOnly
-            onClick={onClose}
+          <span {...stylex.props(styles.swatch(color ?? UP_COLOR))} />
+          <Text weight="semibold" hasTabularNumbers>
+            {wholeCurrency.format(point.value)}
+          </Text>
+        </HStack>
+      </VStack>
+    </Card>
+  );
+}
+
+/**
+ * Every group's detail panel is this shape: the facts that did not earn a
+ * column, and then the chart taking whatever is left. One metadata column, so
+ * each label sits directly over its value and the four read as a list rather
+ * than as a second grid competing with the real one a few pixels above — which
+ * also makes the block narrow, and the width it gives up is the point.
+ */
+function DetailPanel({
+  id,
+  group,
+  isLiability,
+  children,
+}: {
+  id: string;
+  group: GroupId;
+  isLiability?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <HStack gap={7} vAlign="start">
+      <VStack xstyle={styles.detailFacts}>
+        <MetadataList columns={1} orientation="vertical">
+          {children}
+        </MetadataList>
+      </VStack>
+      <StackItem size="fill">
+        <DetailChart id={id} group={group} isLiability={isLiability} />
+      </StackItem>
+    </HStack>
+  );
+}
+
+// ============= GROUP SHELL =============
+
+const GROUP_IDS = ['bank', 'cards', 'processors', 'investments'] as const;
+type GroupId = (typeof GROUP_IDS)[number];
+
+/**
+ * Square side of the category tile in the group header. 24px is not a look, it
+ * is an alignment: the tile plus the 8px gap after it is exactly the inset the
+ * cells below give their own text, so the group name starts on the same x as
+ * the first column's header and rows. It is also the size of the row-expansion
+ * chevron buttons, and it sits at their x — so the group's disclosure and its
+ * rows' disclosures form one column down the left edge of the card.
+ */
+const TILE_SIZE = 24;
+
+const styles = stylex.create({
+  // The page is a wash so the group cards read as surfaces sitting on it
+  // rather than as outlines drawn on the same sheet. Body is the right token
+  // for that: a theme that wants its cards to contrast sets it away from
+  // --color-background-card, and one that wants them flush sets it equal and
+  // separates them by border instead. Either way the page follows the theme.
+  wash: {
+    backgroundColor: colorVars['--color-background-body'],
+  },
+  // The facts take what they need and no more, and the chart takes the rest.
+  // Capped because four key-value pairs do not get more legible past this, and
+  // every pixel past it is one the chart could have used.
+  detailFacts: {
+    flexShrink: 0,
+    minWidth: 200,
+    maxWidth: 280,
+  },
+  swatch: (color: string) => ({
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
+    backgroundColor: color,
+    flexShrink: 0,
+  }),
+  // The tile and the chevron occupy the same grid cell, so they cross-fade in
+  // place instead of one displacing the other. The backdrop goes with them: at
+  // rest the icon is a labelled object and wants a surface behind it, on hover
+  // it is a control and the surface would be a second, competing affordance
+  // next to the row chevrons directly beneath it.
+  categoryTile: {
+    display: 'grid',
+    placeItems: 'center',
+    width: TILE_SIZE,
+    height: TILE_SIZE,
+    flexShrink: 0,
+    borderRadius: radiusVars['--radius-inner'],
+    backgroundColor: {
+      default: colorVars['--color-background-muted'],
+      [stylex.when.ancestor(':hover')]: 'transparent',
+    },
+    transitionProperty: 'background-color',
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  tileGlyph: {
+    gridArea: '1 / 1',
+    display: 'flex',
+    transitionProperty: 'opacity',
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  // Guarded on hover: capability, so a touch device keeps the category icon
+  // rather than a chevron it can never reveal.
+  categoryGlyph: {
+    opacity: {
+      default: 1,
+      '@media (hover: hover)': {
+        default: 1,
+        [stylex.when.ancestor(':hover')]: 0,
+      },
+    },
+  },
+  chevronGlyph: {
+    opacity: {
+      default: 0,
+      '@media (hover: hover)': {
+        default: 0,
+        [stylex.when.ancestor(':hover')]: 1,
+      },
+    },
+    transitionProperty: 'opacity, transform',
+  },
+  chevronOpen: {
+    transform: 'rotate(90deg)',
+  },
+  chevronClosed: {
+    transform: 'rotate(0deg)',
+  },
+});
+
+function AccountGroup({
+  icon,
+  title,
+  count,
+  summaryLabel,
+  summaryValue,
+  isOpen,
+  onOpenChange,
+  children,
+}: {
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  title: string;
+  count: number;
+  summaryLabel: string;
+  summaryValue: string;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    // 8px on the Card and nothing on the Collapsible: one content line for the
+    // header and the table both, and the table's rows then inset themselves by
+    // their own cell padding on top of it.
+    <Card padding={2}>
+      <Collapsible
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        // No trailing chevron. The category tile is the disclosure — it turns
+        // into one on hover — and a second chevron at the far right would be a
+        // duplicate control for the same action, 900px away from the first.
+        chevronPlacement="none"
+        trigger={
+          // defaultMarker scopes the hover swap below to this row, so the
+          // tile answers to the whole trigger rather than to itself: the
+          // pointer is nowhere near a 24px square when it is on the group's
+          // name, which is where anyone aiming at a header actually points.
+          // paddingBlock, because the trigger has none of its own: its height
+          // is exactly the 24px tile, so the only space above the group name
+          // was the Card's 8px. The column header below it is a table cell and
+          // brings its own inset, which is what made the row read as pinned to
+          // the top edge even though the two gaps measured the same.
+          <HStack
+            gap={2}
+            vAlign="center"
+            hAlign="between"
+            paddingBlock={2}
+            paddingInline={2}
+            xstyle={stylex.defaultMarker()}>
+            <HStack gap={2} vAlign="center">
+              {/* The cross-fade rides on wrapper spans rather than on the
+                  Icons' own xstyle: `xstyle` is typed for plain values, and
+                  these opacities are conditional on an ancestor's :hover
+                  inside a `@media (hover: hover)` guard, which is a shape only
+                  a raw element's stylex.props takes. */}
+              <span {...stylex.props(styles.categoryTile)}>
+                <span {...stylex.props(styles.tileGlyph, styles.categoryGlyph)}>
+                  <Icon icon={icon} size="sm" />
+                </span>
+                <span
+                  {...stylex.props(
+                    styles.tileGlyph,
+                    styles.chevronGlyph,
+                    isOpen ? styles.chevronOpen : styles.chevronClosed,
+                  )}>
+                  <Icon icon="chevronRight" size="xsm" />
+                </span>
+              </span>
+              <Text weight="semibold">{title}</Text>
+              <Badge variant="neutral" label={String(count)} />
+            </HStack>
+            <HStack gap={2} vAlign="center">
+              {/* Body rather than supporting: it is the label on the one
+                  figure a collapsed group still shows, so it has to survive
+                  being read at a glance from across the page. */}
+              <Text color="secondary">{summaryLabel}</Text>
+              <Text weight="semibold" hasTabularNumbers>
+                {summaryValue}
+              </Text>
+            </HStack>
+          </HStack>
+        }>
+        {/* The trigger is a row of text and the table opens with a row of
+            text, so without this they read as one block with a hairline in
+            it. 12px is enough to say the header is a header. */}
+        <VStack paddingBlockStart={3}>{children}</VStack>
+      </Collapsible>
+    </Card>
+  );
+}
+
+/**
+ * The four tables differ in their columns and in nothing else, so the plugin
+ * wiring lives here once rather than four times.
+ *
+ * `panelVariant: 'transparent'` because the table is already on a Card — the
+ * plugin's default wash would be a third surface inside a second one. Row
+ * dividers stay, and the plugin moves the divider of an expanded row below its
+ * panel so the row and its detail read as one unit.
+ */
+function GroupTable<T extends AccountRecord>({
+  data,
+  columns,
+  expandedRows,
+  onToggleRow,
+  renderExpanded,
+}: {
+  data: T[];
+  columns: TableColumn<T>[];
+  expandedRows: Set<string>;
+  onToggleRow: (key: string) => void;
+  renderExpanded: (item: T) => React.ReactNode;
+}) {
+  const expansion = useTableRowExpansion<T>({
+    expandedKeys: expandedRows,
+    onToggle: onToggleRow,
+    getRowKey: item => item.id,
+    renderExpanded,
+    hasRowClickExpansion: true,
+    panelVariant: 'transparent',
+  });
+  return (
+    <Table
+      data={data}
+      columns={columns}
+      idKey="id"
+      density="compact"
+      dividers="rows"
+      plugins={{expansion}}
+    />
+  );
+}
+
+// ============= POSITION CHART =============
+
+interface ChartPoint {
+  day: number;
+  label: string;
+  assets: number;
+  debt: number;
+}
+
+function chartData(range: RangeId): ChartPoint[] {
+  const days = RANGE_DAYS[range];
+  const assets = ASSET_HISTORY.slice(-days);
+  const debt = DEBT_HISTORY.slice(-days);
+  return assets.map((value, day) => ({
+    day,
+    label: dayLabel(days - 1 - day),
+    // Cents are the storage unit, dollars are the plotting unit.
+    assets: value / 100,
+    debt: debt[day] / 100,
+  }));
+}
+
+/**
+ * Left to itself each axis fills the plot, and two series that share no scale
+ * end up occupying the same vertical space — the bands weave through each
+ * other and appear to cross at points where nothing crossed. Padding each
+ * domain on one side only parks assets in the upper part of the plot and debt
+ * in the lower part: both keep their full shape, neither borrows the other's
+ * position, and the fact that they never meet is the honest picture.
+ */
+function bandDomain(
+  values: number[],
+  place: 'upper' | 'lower',
+): [number, number] {
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const span = Math.max(high - low, 1);
+  return place === 'upper'
+    ? [low - span * 1.6, high + span * 0.25]
+    : [low - span * 0.25, high + span * 1.6];
+}
+
+/**
+ * A reading and what it is a reading of. The figure leads because it is the
+ * thing being looked up, and the dot is on the label rather than on the figure
+ * so the colour reads as "this series" rather than as a status on the number.
+ *
+ * Tabular digits matter more here than anywhere else on the page: this figure
+ * changes under the pointer, and proportional digits make it jitter sideways
+ * while it does.
+ */
+function PositionStat({
+  color,
+  label,
+  value,
+}: {
+  color: string;
+  label: string;
+  value: number;
+}) {
+  return (
+    <VStack gap={1}>
+      <Text type="display-3" weight="semibold" hasTabularNumbers>
+        {wholeCurrency.format(value)}
+      </Text>
+      <LegendKey color={color} label={label} />
+    </VStack>
+  );
+}
+
+function LegendKey({color, label}: {color: string; label: string}) {
+  return (
+    <HStack gap={2} vAlign="center">
+      <span {...stylex.props(styles.swatch(color))} />
+      <Text type="supporting" color="secondary">
+        {label}
+      </Text>
+    </HStack>
+  );
+}
+
+/**
+ * The page's one chart and its one control. The range selector lives in here
+ * rather than in the page header because the chart is what it most obviously
+ * acts on — but it is lifted state, and everything below re-reads it.
+ *
+ * Two Y axes, which is a thing to do carefully rather than a thing to avoid:
+ * debt is around 3% of assets, so on one axis it would be a flat line along
+ * the floor and the chart would be about assets alone. Separate axes are
+ * honest here because the question is "which way is each of these going", not
+ * "how do they compare in size" — the stats above answer that in two figures.
+ */
+function PositionChart({
+  range,
+  onRangeChange,
+}: {
+  range: RangeId;
+  onRangeChange: (range: RangeId) => void;
+}) {
+  const data = useMemo(() => chartData(range), [range]);
+  const ticks = useMemo(() => axisTicks(data.length), [data.length]);
+  const bands = useMemo(
+    () => ({
+      assets: bandDomain(
+        data.map(point => point.assets),
+        'upper',
+      ),
+      debt: bandDomain(
+        data.map(point => point.debt),
+        'lower',
+      ),
+    }),
+    [data],
+  );
+
+  // Which point the readings are taken at. The axes are gone, so the two Stats
+  // are the only place a number appears — they follow the pointer, and rest on
+  // the latest point, which is the reading the page is actually about.
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const reading = data[activeIndex ?? data.length - 1] ?? data[data.length - 1];
+
+  return (
+    <Card padding={6} variant="muted">
+      <VStack gap={5}>
+        {/* The stats replace both the title and the legend. A figure with a
+            coloured dot under it says what the band is and what it is worth in
+            one object, where a heading and a key say it in two — and with the
+            axes gone this is the only reading on the chart, so it has to be
+            the first thing read rather than a caption on something else. */}
+        <HStack gap={8} vAlign="start" wrap="wrap">
+          <PositionStat
+            color={ASSET_COLOR}
+            label="Assets"
+            value={reading?.assets ?? 0}
+          />
+          <PositionStat
+            color={DEBT_COLOR}
+            label="Debt"
+            value={reading?.debt ?? 0}
           />
         </HStack>
 
-        <VStack gap={1}>
-          <Heading level={3}>{task.title}</Heading>
-          {task.subtitle && (
-            <Text type="body" color="secondary">
-              {task.subtitle}
-            </Text>
-          )}
-        </VStack>
+        <ResponsiveContainer width="100%" height={260}>
+          <AreaChart
+            data={data}
+            margin={{top: 8, right: 0, left: 0, bottom: 0}}
+            // activeTooltipIndex is documented as `number | TooltipIndex`,
+            // and in practice it arrives as a string — hence Number() rather
+            // than a typeof check, which silently never matches.
+            onMouseMove={state => {
+              const next = Number(state?.activeTooltipIndex);
+              setActiveIndex(
+                state?.isTooltipActive && Number.isFinite(next) ? next : null,
+              );
+            }}
+            onMouseLeave={() => setActiveIndex(null)}>
+            <defs>
+              {/* An area's fill runs to its own axis floor, and the assets
+                  axis floor is far below the band — left to a plain two-stop
+                  ramp the blue would wash the whole lower plot and sit behind
+                  the debt band. It is spent by 55%, which is above where debt
+                  ever reaches. */}
+              <linearGradient id="assetsGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={ASSET_COLOR} stopOpacity={0.3} />
+                <stop offset="55%" stopColor={ASSET_COLOR} stopOpacity={0.02} />
+                <stop offset="100%" stopColor={ASSET_COLOR} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="debtGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={DEBT_COLOR} stopOpacity={0.24} />
+                <stop offset="100%" stopColor={DEBT_COLOR} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid horizontal vertical={false} stroke={GRID_COLOR} />
+            <XAxis
+              dataKey="day"
+              type="number"
+              domain={[0, data.length - 1]}
+              ticks={ticks}
+              tickFormatter={(day: number) => data[day]?.label ?? ''}
+              tick={AXIS_TICK}
+              axisLine={false}
+              tickLine={false}
+            />
+            {/* Both axes hidden, but both still declared: they are what keeps
+                assets in the upper part of the plot and debt in the lower one.
+                Drop them and the two series share a scale, debt flattens onto
+                the floor, and the chart becomes a chart about assets. The
+                readings moved to the stats above. */}
+            <YAxis yAxisId="assets" domain={bands.assets} hide />
+            <YAxis yAxisId="debt" domain={bands.debt} hide />
+            {/* The cursor line stays, the tooltip card does not — the stats
+                above are the readout now, and a card next to the pointer
+                saying the same two numbers is the third place to look. */}
+            <Tooltip content={() => null} cursor={{stroke: GRID_COLOR}} />
+            <Area
+              yAxisId="assets"
+              type="linear"
+              dataKey="assets"
+              stroke={ASSET_COLOR}
+              strokeWidth={1.5}
+              fill="url(#assetsGradient)"
+              dot={false}
+              isAnimationActive={false}
+            />
+            <Area
+              yAxisId="debt"
+              type="linear"
+              dataKey="debt"
+              stroke={DEBT_COLOR}
+              strokeWidth={1.5}
+              fill="url(#debtGradient)"
+              dot={false}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
 
-        <MetadataList label={{position: 'start'}}>
-          <MetadataListItem label="Status">
-            <HStack gap={2} vAlign="center">
-              <StatusDot
-                variant={STATUS_DOT_VARIANT[task.status]}
-                label={STATUS_LABEL[task.status]}
-              />
-              <Text type="body">{STATUS_LABEL[task.status]}</Text>
-            </HStack>
-          </MetadataListItem>
-          <MetadataListItem label="Priority">
-            <HStack gap={2} vAlign="center">
-              <Icon
-                icon={ChartBarIcon}
-                size="sm"
-                color={PRIORITY_COLOR[task.priority]}
-              />
-              <Text type="body">{PRIORITY_LABEL[task.priority]}</Text>
-            </HStack>
-          </MetadataListItem>
-          <MetadataListItem label="Assignee">
-            <HStack gap={2} vAlign="center">
-              <Avatar name={task.assignee} size="sm" />
-              <Text type="body">{task.assignee}</Text>
-            </HStack>
-          </MetadataListItem>
-          <MetadataListItem label="Project">
-            {task.project || '\u2014'}
-          </MetadataListItem>
-          <MetadataListItem label="Created">{task.created}</MetadataListItem>
-          <MetadataListItem label="Updated">{task.updated}</MetadataListItem>
-        </MetadataList>
-
-        {task.tags.length > 0 && (
-          <>
-            <Divider />
-            <VStack gap={2}>
-              <Text type="label">Labels</Text>
-              <HStack gap={2}>
-                {task.tags.map(tag => (
-                  <Badge key={tag} variant="neutral" label={tag} />
-                ))}
-              </HStack>
-            </VStack>
-          </>
-        )}
+        {/* Below the plot, because it is a control over what was just read
+            rather than a heading on it — and because the stats now own the
+            top of the card. */}
+        <HStack hAlign="center">
+          <SegmentedControl
+            size="sm"
+            label="Time range"
+            value={range}
+            onChange={value => onRangeChange(value as RangeId)}>
+            {RANGE_IDS.map(id => (
+              <SegmentedControlItem key={id} value={id} label={id} />
+            ))}
+          </SegmentedControl>
+        </HStack>
       </VStack>
-    </LayoutPanel>
+    </Card>
   );
 }
 
-export default function DataTableTemplate() {
-  const [search, _setSearch] = useState('');
-  const [priorityFilter, _setPriorityFilter] = useState('all');
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<TaskRow | null>(null);
-  const [powerSearchFilters, setPowerSearchFilters] = useState<
-    ReadonlyArray<PowerSearchFilter>
-  >([]);
-  const [groupBy, setGroupBy] = useState<GroupByField>('status');
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    () => new Set(GROUP_ORDER as string[]),
+// ============= PAGE =============
+
+export default function ConnectedAccountsTemplate() {
+  const [openGroups, setOpenGroups] = useState<Set<GroupId>>(
+    () => new Set(GROUP_IDS),
   );
 
-  const filtered = useMemo(() => {
-    let data = allTasks;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      data = data.filter(
-        t =>
-          t.title.toLowerCase().includes(q) ||
-          t.taskId.toLowerCase().includes(q) ||
-          t.subtitle.toLowerCase().includes(q),
-      );
-    }
-    if (priorityFilter !== 'all') {
-      data = data.filter(t => t.priority === priorityFilter);
-    }
-    return data;
-  }, [search, priorityFilter]);
+  // Lifted out of the chart because it is not the chart's setting — it is the
+  // page's. Three months is the default because it is the shortest window in
+  // which a monthly cycle shows up more than once.
+  const [range, setRange] = useState<RangeId>('3M');
 
-  const grouped = useMemo(
-    () => groupTasks(filtered, groupBy),
-    [filtered, groupBy],
+  // One Set for all four tables, not one per group. Row ids are unique across
+  // the page, so a single Set is unambiguous, and it is what a "collapse every
+  // open detail" control or a persisted view would need to read.
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(
+    () => new Set(),
   );
 
-  const groupKeys = useMemo(() => Array.from(grouped.keys()), [grouped]);
-
-  React.useEffect(() => {
-    setExpandedGroups(new Set(groupKeys));
-  }, [groupKeys]);
-
-  const toggleGroup = (key: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
+  const toggleRow = (key: string) => {
+    setExpandedRows(previous => {
+      const next = new Set(previous);
       if (next.has(key)) {
         next.delete(key);
       } else {
@@ -884,335 +1514,175 @@ export default function DataTableTemplate() {
     });
   };
 
-  const detailPanel = useResizable({
-    defaultSize: 360,
-    minSizePx: 280,
-    maxSizePx: 500,
-  });
+  const toggleGroup = (id: GroupId) => (open: boolean) => {
+    setOpenGroups(previous => {
+      const next = new Set(previous);
+      if (open) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
 
-  const COL_COUNT = columns.length;
-  const resolvedWidths = resolveColumnWidths(columns);
+  const totals = useMemo(() => {
+    const banks = sum(BANK_ACCOUNTS, account => account.availableCents);
+    const cards = sum(CREDIT_CARDS, card => card.balanceCents);
+    const pending = sum(PROCESSORS, p => p.pendingPayoutCents);
+    const investments = sum(INVESTMENTS, i => i.marketValueCents);
+    return {
+      banks,
+      cards,
+      pending,
+      investments,
+      // Outstanding card balances are a liability, so they come off the top.
+      net: banks + pending + investments - cards,
+    };
+  }, []);
+
+  const needsAttention = [
+    ...BANK_ACCOUNTS,
+    ...CREDIT_CARDS,
+    ...PROCESSORS,
+    ...INVESTMENTS,
+  ].filter(record => record.syncState === 'reconnect').length;
+
+  const netChange = netChangeOver(range);
+  const isNetUp = netChange >= 0;
+
+  const areAllOpen = openGroups.size === GROUP_IDS.length;
 
   return (
-    <>
+    <RangeContext.Provider value={range}>
       <Layout
         height="fill"
+        contentWidth={1200}
+        xstyle={styles.wash}
         header={
           <LayoutHeader hasDivider padding={4}>
-            <VStack gap={4}>
-              <HStack gap={3} vAlign="center">
-                <StackItem size="fill">
-                  <Heading level={1}>All Issues</Heading>
-                </StackItem>
-                <Button
-                  label="Create issue"
-                  variant="primary"
-                  size="lg"
-                  onClick={() => setDialogOpen(true)}
-                />
-              </HStack>
-              <HStack gap={2} vAlign="center">
-                <StackItem size="fill">
-                  <PowerSearch
-                    config={powerSearchConfig}
-                    filters={powerSearchFilters}
-                    onChange={newFilters => setPowerSearchFilters(newFilters)}
-                    placeholder="Filter issues..."
-                    resultCount={`${filtered.length} issue${filtered.length !== 1 ? 's' : ''}`}
-                  />
-                </StackItem>
-                <Popover
-                  placement="below"
-                  alignment="end"
-                  width={320}
-                  label="Grouping options"
-                  content={
-                    <VStack gap={4}>
-                      <RadioList
-                        label="Group by"
-                        value={groupBy}
-                        onChange={v => setGroupBy(v as GroupByField)}>
-                        {GROUP_BY_OPTIONS.map(opt => (
-                          <RadioListItem
-                            key={opt.value}
-                            value={opt.value}
-                            label={opt.label}
-                          />
-                        ))}
-                      </RadioList>
-                    </VStack>
-                  }>
-                  <Button label="View Options" variant="secondary" size="md" />
-                </Popover>
-              </HStack>
-            </VStack>
+            <HStack gap={3} vAlign="center" wrap="wrap">
+              <StackItem size="fill">
+                <VStack gap={0.5}>
+                  <Heading level={1}>Connected accounts</Heading>
+                  <HStack gap={2} vAlign="center" wrap="wrap">
+                    <Text type="supporting">
+                      Net position {money(totals.net)} across 13 accounts
+                    </Text>
+                    <Token
+                      size="sm"
+                      color={isNetUp ? 'green' : 'red'}
+                      label={`${isNetUp ? '+' : '−'}${money(Math.abs(netChange))} over ${range}`}
+                    />
+                    {needsAttention > 0 && (
+                      <StatusDot
+                        variant="warning"
+                        label={`${needsAttention} account needs reconnecting`}
+                      />
+                    )}
+                  </HStack>
+                </VStack>
+              </StackItem>
+              <Button
+                label={areAllOpen ? 'Collapse all' : 'Expand all'}
+                variant="ghost"
+                onClick={() =>
+                  setOpenGroups(areAllOpen ? new Set() : new Set(GROUP_IDS))
+                }
+              />
+              <Button
+                label="Sync now"
+                variant="secondary"
+                icon={<Icon icon={ArrowPathIcon} size="sm" />}
+              />
+              <Button
+                label="Connect account"
+                variant="primary"
+                icon={<Icon icon={PlusIcon} size="sm" />}
+              />
+            </HStack>
           </LayoutHeader>
         }
         content={
-          <LayoutContent role="main" padding={0}>
-            <Table
-              columns={columns}
-              density="balanced"
-              dividers="rows"
-              textOverflow="truncate"
-              hasHover>
-              <colgroup>
-                {columns.map(col => (
-                  <col
-                    key={col.key}
-                    style={resolvedWidths.columns.get(col.key)?.style}
-                  />
-                ))}
-              </colgroup>
-              <TableBody>
-                {groupKeys.map(key => {
-                  const tasks = grouped.get(key);
-                  if (!tasks || tasks.length === 0) {
-                    return null;
-                  }
-                  const isExpanded = expandedGroups.has(key);
+          <LayoutContent padding={4}>
+            <VStack gap={4}>
+              <PositionChart range={range} onRangeChange={setRange} />
 
-                  return (
-                    <React.Fragment key={key}>
-                      {groupBy !== 'none' && (
-                        <TableRow
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => toggleGroup(key)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              toggleGroup(key);
-                            }
-                          }}>
-                          <TableCell
-                            colSpan={COL_COUNT}
-                            style={groupHeaderCell}>
-                            <HStack gap={2} vAlign="center">
-                              <Icon
-                                icon={
-                                  isExpanded
-                                    ? ChevronDownIcon
-                                    : ChevronRightIcon
-                                }
-                                size="sm"
-                                color="secondary"
-                              />
-                              <Text type="body" weight="bold">
-                                {getGroupLabel(groupBy, key)}
-                              </Text>
-                              <Badge
-                                variant="neutral"
-                                label={String(tasks.length)}
-                              />
-                            </HStack>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                      {(groupBy === 'none' || isExpanded) &&
-                        tasks.map(task => (
-                          <TableRow
-                            key={task.id}
-                            onClick={() => setSelectedTask(task)}>
-                            <TableCell>
-                              <Center axis="horizontal">
-                                <StatusDot
-                                  variant={STATUS_DOT_VARIANT[task.status]}
-                                  label={STATUS_LABEL[task.status]}
-                                />
-                              </Center>
-                            </TableCell>
-                            <TableCell>
-                              <HStack gap={3} vAlign="center">
-                                <Icon
-                                  icon={ChartBarIcon}
-                                  size="sm"
-                                  color={PRIORITY_COLOR[task.priority]}
-                                />
-                                <Text type="supporting" color="secondary">
-                                  {task.taskId}
-                                </Text>
-                                <Text type="body" maxLines={1}>
-                                  {task.title}
-                                </Text>
-                                {task.subtitle && (
-                                  <Text
-                                    type="body"
-                                    color="secondary"
-                                    maxLines={1}>
-                                    › {task.subtitle}
-                                  </Text>
-                                )}
-                              </HStack>
-                            </TableCell>
-                            <TableCell>
-                              {task.project ? (
-                                <Text type="body" maxLines={1}>
-                                  {task.project}
-                                </Text>
-                              ) : (
-                                <Text type="supporting" color="secondary">
-                                  —
-                                </Text>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Text type="supporting" color="secondary">
-                                {task.created}
-                              </Text>
-                            </TableCell>
-                            <TableCell>
-                              <Text type="supporting" color="secondary">
-                                {task.updated}
-                              </Text>
-                            </TableCell>
-                            <TableCell>
-                              <Avatar name={task.assignee} size="sm" />
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu
-                                button={{
-                                  label: 'Actions',
-                                  variant: 'ghost',
-                                  size: 'sm',
-                                  icon: (
-                                    <Icon
-                                      icon={EllipsisHorizontalIcon}
-                                      size="sm"
-                                    />
-                                  ),
-                                  isIconOnly: true,
-                                }}
-                                hasChevron={false}
-                                items={[
-                                  {
-                                    label: 'Edit issue',
-                                    icon: PencilIcon,
-                                    onClick: () => {},
-                                  },
-                                  {
-                                    label: 'Assign to...',
-                                    icon: UserIcon,
-                                    onClick: () => {},
-                                  },
-                                  {
-                                    label: 'Add label',
-                                    icon: TagIcon,
-                                    onClick: () => {},
-                                  },
-                                  {
-                                    label: 'Duplicate',
-                                    icon: DocumentDuplicateIcon,
-                                    onClick: () => {},
-                                  },
-                                  {
-                                    label: 'Move to project',
-                                    icon: ArrowRightIcon,
-                                    onClick: () => {},
-                                  },
-                                  {type: 'divider' as const},
-                                  {
-                                    label: 'Delete issue',
-                                    icon: TrashIcon,
-                                    onClick: () => {},
-                                  },
-                                ]}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </React.Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
+              <AccountGroup
+                icon={BuildingLibraryIcon}
+                title="Bank accounts"
+                count={BANK_ACCOUNTS.length}
+                summaryLabel="Available"
+                summaryValue={money(totals.banks)}
+                isOpen={openGroups.has('bank')}
+                onOpenChange={toggleGroup('bank')}>
+                <GroupTable<BankAccount>
+                  data={BANK_ACCOUNTS}
+                  columns={bankColumns}
+                  expandedRows={expandedRows}
+                  onToggleRow={toggleRow}
+                  renderExpanded={account => <BankDetail account={account} />}
+                />
+              </AccountGroup>
+
+              <AccountGroup
+                icon={CreditCardIcon}
+                title="Credit cards"
+                count={CREDIT_CARDS.length}
+                summaryLabel="Outstanding"
+                summaryValue={money(totals.cards)}
+                isOpen={openGroups.has('cards')}
+                onOpenChange={toggleGroup('cards')}>
+                <GroupTable<CreditCardAccount>
+                  data={CREDIT_CARDS}
+                  columns={creditCardColumns}
+                  expandedRows={expandedRows}
+                  onToggleRow={toggleRow}
+                  renderExpanded={card => <CreditCardDetail card={card} />}
+                />
+              </AccountGroup>
+
+              <AccountGroup
+                icon={ArrowsRightLeftIcon}
+                title="Payment processors"
+                count={PROCESSORS.length}
+                summaryLabel="Pending payout"
+                summaryValue={money(totals.pending)}
+                isOpen={openGroups.has('processors')}
+                onOpenChange={toggleGroup('processors')}>
+                <GroupTable<ProcessorAccount>
+                  data={PROCESSORS}
+                  columns={processorColumns}
+                  expandedRows={expandedRows}
+                  onToggleRow={toggleRow}
+                  renderExpanded={processor => (
+                    <ProcessorDetail processor={processor} />
+                  )}
+                />
+              </AccountGroup>
+
+              <AccountGroup
+                icon={PresentationChartLineIcon}
+                title="Investment accounts"
+                count={INVESTMENTS.length}
+                summaryLabel="Market value"
+                summaryValue={money(totals.investments)}
+                isOpen={openGroups.has('investments')}
+                onOpenChange={toggleGroup('investments')}>
+                <GroupTable<InvestmentAccount>
+                  data={INVESTMENTS}
+                  columns={investmentColumns}
+                  expandedRows={expandedRows}
+                  onToggleRow={toggleRow}
+                  renderExpanded={account => (
+                    <InvestmentDetail account={account} />
+                  )}
+                />
+              </AccountGroup>
+            </VStack>
           </LayoutContent>
         }
-        end={
-          selectedTask && (
-            <>
-              <ResizeHandle
-                resizable={detailPanel.props}
-                isReversed
-                isAlwaysVisible={false}
-              />
-              <TaskDetailPanel
-                task={selectedTask}
-                onClose={() => setSelectedTask(null)}
-                resizable={detailPanel.props}
-              />
-            </>
-          )
-        }
       />
-      <Dialog isOpen={dialogOpen} onOpenChange={open => setDialogOpen(open)}>
-        <Layout
-          header={
-            <DialogHeader
-              title="Create Issue"
-              onOpenChange={open => setDialogOpen(open)}
-            />
-          }
-          content={
-            <LayoutContent padding={4}>
-              <VStack gap={4}>
-                <TextInput
-                  label="Title"
-                  placeholder="Issue title"
-                  value=""
-                  onChange={() => {}}
-                />
-                <Selector
-                  label="Status"
-                  value="todo"
-                  options={[
-                    {value: 'in_progress', label: 'In Progress'},
-                    {value: 'todo', label: 'Todo'},
-                    {value: 'backlog', label: 'Backlog'},
-                  ]}
-                  onChange={() => {}}
-                />
-                <Selector
-                  label="Priority"
-                  value="none"
-                  options={[
-                    {value: 'urgent', label: 'Urgent'},
-                    {value: 'high', label: 'High'},
-                    {value: 'medium', label: 'Medium'},
-                    {value: 'low', label: 'Low'},
-                    {value: 'none', label: 'No priority'},
-                  ]}
-                  onChange={() => {}}
-                />
-                <TextInput
-                  label="Project"
-                  placeholder="Project name"
-                  value=""
-                  onChange={() => {}}
-                />
-              </VStack>
-            </LayoutContent>
-          }
-          footer={
-            <LayoutFooter hasDivider>
-              <HStack gap={2} hAlign="end">
-                <Button
-                  label="Cancel"
-                  variant="secondary"
-                  size="md"
-                  onClick={() => setDialogOpen(false)}
-                />
-                <Button
-                  label="Create"
-                  variant="primary"
-                  size="md"
-                  onClick={() => setDialogOpen(false)}
-                />
-              </HStack>
-            </LayoutFooter>
-          }
-        />
-      </Dialog>
-    </>
+    </RangeContext.Provider>
   );
 }

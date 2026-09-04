@@ -5,7 +5,8 @@ export const doc = {
   type: 'page',
   name: 'Grouped Table',
   displayName: 'Grouped Table',
-  description: 'Row collection bundled into collapsible sections with per-group counts, so a long list reads as a handful of blocks that expand and collapse. Query filtering and a resizable inspector for the selected row. Table, list, rows, records, grid, or grouped dataset.',
+  description:
+    'Heterogeneous records split across collapsible cards, each holding its own table and its own column set, with an icon tile and a right-aligned total in the card header. One time range at the top drives every table, and rows expand in place into key-value detail beside a full-width chart. The shape for groups that do not share a schema, where one grouped table would force empty columns. Accounts, integrations, connections, sections, grouped dataset, expand, or collapse.',
   isReady: true,
   category: 'Table - Grouped',
 };
