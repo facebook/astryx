@@ -40,6 +40,7 @@ import {
 } from '../NumberInput/numberInputCommit';
 import {DateInput} from '../DateInput';
 import {DateRangeInput, type DateRange} from '../DateRangeInput';
+import {resolveDateTimeRangePart} from './resolveDateTimeRangePart';
 import {TimeInput} from '../TimeInput';
 import {Selector} from '../Selector';
 import {Tokenizer} from '../Tokenizer';
@@ -85,33 +86,11 @@ function enumItemsToSearchableItems(
   }));
 }
 
-function resolveDateRangePart(
-  part: DateTimeRangePart,
-  nowSeconds: number,
-): number {
-  if (part.type === 'NOW') {
-    return nowSeconds;
-  }
-  if (part.type === 'ABSOLUTE') {
-    return part.unixSeconds;
-  }
-  const secondsByUnit = {
-    second: 1,
-    minute: 60,
-    hour: 3600,
-    day: 86400,
-    week: 604800,
-    month: 2592000,
-    year: 31536000,
-  } as const;
-  return nowSeconds - part.backValue * secondsByUnit[part.unit];
-}
-
 function dateRangePartToISO(
   part: DateTimeRangePart,
   nowSeconds: number,
 ): ISODateString {
-  return new Date(resolveDateRangePart(part, nowSeconds) * 1000)
+  return new Date(resolveDateTimeRangePart(part, nowSeconds) * 1000)
     .toISOString()
     .split('T')[0] as ISODateString;
 }
@@ -513,7 +492,7 @@ function DateRangeEditor({
       return null;
     }
     const {start, end} = filterValue.value;
-    const nowSeconds = Math.floor(Date.now() / 1000);
+    const nowSeconds = Date.now() / 1000;
     return {
       start: dateRangePartToISO(start, nowSeconds),
       end: dateRangePartToISO(end, nowSeconds),
