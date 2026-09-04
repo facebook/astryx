@@ -98,7 +98,6 @@ import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Collapsible} from '@astryxdesign/core/Collapsible';
 import {Icon} from '@astryxdesign/core/Icon';
-import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
 import {ProgressBar} from '@astryxdesign/core/ProgressBar';
 import {
   SegmentedControl,
@@ -335,10 +334,6 @@ interface BankAccount extends AccountRecord {
   mask: string;
   kind: 'Checking' | 'Savings' | 'Money market';
   availableCents: number;
-  lastSynced: string;
-  routing: string;
-  openedOn: string;
-  interestApy: string;
 }
 
 const BANK_ACCOUNTS: BankAccount[] = [
@@ -349,12 +344,8 @@ const BANK_ACCOUNTS: BankAccount[] = [
     mask: '••4417',
     kind: 'Checking',
     availableCents: 84_215_600,
-    lastSynced: 'Today, 6:02 AM',
     syncState: 'connected',
     trend: 0.00022,
-    routing: '021000021',
-    openedOn: 'Mar 2019',
-    interestApy: '0.01%',
   },
   {
     id: 'bank-2',
@@ -363,12 +354,8 @@ const BANK_ACCOUNTS: BankAccount[] = [
     mask: '••8830',
     kind: 'Checking',
     availableCents: 21_940_800,
-    lastSynced: 'Today, 6:02 AM',
     syncState: 'connected',
     trend: 0.00004,
-    routing: '021000021',
-    openedOn: 'Mar 2019',
-    interestApy: '0.01%',
   },
   {
     id: 'bank-3',
@@ -377,12 +364,8 @@ const BANK_ACCOUNTS: BankAccount[] = [
     mask: '••1265',
     kind: 'Savings',
     availableCents: 47_500_000,
-    lastSynced: 'Today, 5:48 AM',
     syncState: 'connected',
     trend: 0.00009,
-    routing: '271183701',
-    openedOn: 'Jan 2021',
-    interestApy: '3.85%',
   },
   {
     id: 'bank-4',
@@ -391,12 +374,8 @@ const BANK_ACCOUNTS: BankAccount[] = [
     mask: '••7702',
     kind: 'Money market',
     availableCents: 132_800_000,
-    lastSynced: 'Sep 26, 9:14 PM',
     syncState: 'reconnect',
     trend: 0.00033,
-    routing: '124303065',
-    openedOn: 'Aug 2022',
-    interestApy: '4.42%',
   },
 ];
 
@@ -436,25 +415,6 @@ const bankColumns: TableColumn<BankAccount>[] = [
   },
 ];
 
-function BankDetail({account}: {account: BankAccount}) {
-  return (
-    <DetailPanel id={account.id} group="bank">
-      <MetadataListItem label="Routing number">
-        <Text>{account.routing}</Text>
-      </MetadataListItem>
-      <MetadataListItem label="Opened">
-        <Text>{account.openedOn}</Text>
-      </MetadataListItem>
-      <MetadataListItem label="Interest APY">
-        <Text>{account.interestApy}</Text>
-      </MetadataListItem>
-      <MetadataListItem label="Last synced">
-        <Text>{account.lastSynced}</Text>
-      </MetadataListItem>
-    </DetailPanel>
-  );
-}
-
 // ============= GROUP 2 — CREDIT CARDS =============
 
 interface CreditCardAccount extends AccountRecord {
@@ -463,10 +423,6 @@ interface CreditCardAccount extends AccountRecord {
   mask: string;
   balanceCents: number;
   limitCents: number;
-  statementDue: string;
-  cardholders: number;
-  rewardsRate: string;
-  lastPayment: string;
 }
 
 const CREDIT_CARDS: CreditCardAccount[] = [
@@ -477,12 +433,8 @@ const CREDIT_CARDS: CreditCardAccount[] = [
     mask: '••2041',
     balanceCents: 4_182_300,
     limitCents: 15_000_000,
-    statementDue: 'Oct 12',
     syncState: 'connected',
     trend: 0.00042,
-    cardholders: 24,
-    rewardsRate: '1.5% cash back',
-    lastPayment: 'Sep 12 · $38,400.00',
   },
   {
     id: 'card-2',
@@ -491,12 +443,8 @@ const CREDIT_CARDS: CreditCardAccount[] = [
     mask: '••6688',
     balanceCents: 9_640_500,
     limitCents: 12_000_000,
-    statementDue: 'Oct 12',
     syncState: 'connected',
     trend: 0.00071,
-    cardholders: 61,
-    rewardsRate: '3× on travel',
-    lastPayment: 'Sep 12 · $84,120.00',
   },
   {
     id: 'card-3',
@@ -505,12 +453,8 @@ const CREDIT_CARDS: CreditCardAccount[] = [
     mask: '••3319',
     balanceCents: 1_205_000,
     limitCents: 25_000_000,
-    statementDue: 'Oct 20',
     syncState: 'syncing',
     trend: -0.00018,
-    cardholders: 8,
-    rewardsRate: '2% on suppliers',
-    lastPayment: 'Sep 20 · $19,880.00',
   },
 ];
 
@@ -593,25 +537,6 @@ const creditCardColumns: TableColumn<CreditCardAccount>[] = [
   },
 ];
 
-function CreditCardDetail({card}: {card: CreditCardAccount}) {
-  return (
-    <DetailPanel id={card.id} group="cards" isLiability>
-      <MetadataListItem label="Statement due">
-        <Text>{card.statementDue}</Text>
-      </MetadataListItem>
-      <MetadataListItem label="Last payment">
-        <Text>{card.lastPayment}</Text>
-      </MetadataListItem>
-      <MetadataListItem label="Rewards">
-        <Text>{card.rewardsRate}</Text>
-      </MetadataListItem>
-      <MetadataListItem label="Cardholders">
-        <Text>{`${card.cardholders} active`}</Text>
-      </MetadataListItem>
-    </DetailPanel>
-  );
-}
-
 // ============= GROUP 3 — PAYMENT PROCESSORS =============
 
 interface ProcessorAccount extends AccountRecord {
@@ -619,10 +544,6 @@ interface ProcessorAccount extends AccountRecord {
   merchantId: string;
   pendingPayoutCents: number;
   feesMtdCents: number;
-  nextPayout: string;
-  payoutSchedule: string;
-  disputeCount: number;
-  settlementAccount: string;
 }
 
 const PROCESSORS: ProcessorAccount[] = [
@@ -632,12 +553,8 @@ const PROCESSORS: ProcessorAccount[] = [
     merchantId: 'acct_1Qf82LmR',
     pendingPayoutCents: 18_442_900,
     feesMtdCents: 612_400,
-    nextPayout: 'Oct 2',
     syncState: 'connected',
     trend: 0.00058,
-    payoutSchedule: 'Daily, 2-day rolling',
-    disputeCount: 3,
-    settlementAccount: 'Operating ••4417',
   },
   {
     id: 'proc-2',
@@ -645,12 +562,8 @@ const PROCESSORS: ProcessorAccount[] = [
     merchantId: 'MRC-88214-XT',
     pendingPayoutCents: 3_218_650,
     feesMtdCents: 148_900,
-    nextPayout: 'Oct 3',
     syncState: 'connected',
     trend: -0.00024,
-    payoutSchedule: 'Weekly, Fridays',
-    disputeCount: 1,
-    settlementAccount: 'Operating ••4417',
   },
   {
     id: 'proc-3',
@@ -658,12 +571,8 @@ const PROCESSORS: ProcessorAccount[] = [
     merchantId: 'AD-NORTHWIND-01',
     pendingPayoutCents: 7_905_100,
     feesMtdCents: 233_050,
-    nextPayout: 'Oct 5',
     syncState: 'syncing',
     trend: 0.00031,
-    payoutSchedule: 'Weekly, Mondays',
-    disputeCount: 0,
-    settlementAccount: 'Tax reserve ••1265',
   },
 ];
 
@@ -704,27 +613,6 @@ const processorColumns: TableColumn<ProcessorAccount>[] = [
   },
 ];
 
-function ProcessorDetail({processor}: {processor: ProcessorAccount}) {
-  return (
-    <DetailPanel id={processor.id} group="processors">
-      <MetadataListItem label="Next payout">
-        <Text>{processor.nextPayout}</Text>
-      </MetadataListItem>
-      <MetadataListItem label="Schedule">
-        <Text>{processor.payoutSchedule}</Text>
-      </MetadataListItem>
-      <MetadataListItem label="Settles to">
-        <Text>{processor.settlementAccount}</Text>
-      </MetadataListItem>
-      <MetadataListItem label="Open disputes">
-        <Text>
-          {processor.disputeCount === 0 ? 'None' : `${processor.disputeCount}`}
-        </Text>
-      </MetadataListItem>
-    </DetailPanel>
-  );
-}
-
 // ============= GROUP 4 — INVESTMENT ACCOUNTS =============
 
 interface InvestmentAccount extends AccountRecord {
@@ -732,9 +620,6 @@ interface InvestmentAccount extends AccountRecord {
   custodian: string;
   marketValueCents: number;
   costBasisCents: number;
-  strategy: string;
-  maturity: string;
-  yieldRate: string;
 }
 
 const INVESTMENTS: InvestmentAccount[] = [
@@ -746,9 +631,6 @@ const INVESTMENTS: InvestmentAccount[] = [
     costBasisCents: 240_000_000,
     syncState: 'connected',
     trend: 0.00012,
-    strategy: 'Laddered, 3–9 month',
-    maturity: 'Rolling',
-    yieldRate: '4.31%',
   },
   {
     id: 'inv-2',
@@ -758,9 +640,6 @@ const INVESTMENTS: InvestmentAccount[] = [
     costBasisCents: 100_000_000,
     syncState: 'connected',
     trend: -0.00006,
-    strategy: 'Investment grade, A–AAA',
-    maturity: 'Dec 2027',
-    yieldRate: '5.02%',
   },
   {
     id: 'inv-3',
@@ -770,9 +649,6 @@ const INVESTMENTS: InvestmentAccount[] = [
     costBasisCents: 61_000_000,
     syncState: 'connected',
     trend: 0.00003,
-    strategy: 'Government, prime',
-    maturity: 'Same day',
-    yieldRate: '4.88%',
   },
 ];
 
@@ -810,29 +686,6 @@ const investmentColumns: TableColumn<InvestmentAccount>[] = [
     renderCell: account => <ChangeCell id={account.id} />,
   },
 ];
-
-function InvestmentDetail({account}: {account: InvestmentAccount}) {
-  // Unrealized gain is the difference between two columns already on the row,
-  // so it is computed here rather than stored — same rule as the page total.
-  const unrealizedCents = account.marketValueCents - account.costBasisCents;
-  const isUp = unrealizedCents >= 0;
-  return (
-    <DetailPanel id={account.id} group="investments">
-      <MetadataListItem label="Unrealized gain/loss">
-        <Text>{`${isUp ? '+' : '−'}${money(Math.abs(unrealizedCents))}`}</Text>
-      </MetadataListItem>
-      <MetadataListItem label="Strategy">
-        <Text>{account.strategy}</Text>
-      </MetadataListItem>
-      <MetadataListItem label="Maturity">
-        <Text>{account.maturity}</Text>
-      </MetadataListItem>
-      <MetadataListItem label="Yield">
-        <Text>{account.yieldRate}</Text>
-      </MetadataListItem>
-    </DetailPanel>
-  );
-}
 
 // ============= DERIVED HISTORY =============
 
@@ -982,38 +835,6 @@ function DetailTooltip({
   );
 }
 
-/**
- * Every group's detail panel is this shape: the facts that did not earn a
- * column, and then the chart taking whatever is left. One metadata column, so
- * each label sits directly over its value and the four read as a list rather
- * than as a second grid competing with the real one a few pixels above — which
- * also makes the block narrow, and the width it gives up is the point.
- */
-function DetailPanel({
-  id,
-  group,
-  isLiability,
-  children,
-}: {
-  id: string;
-  group: GroupId;
-  isLiability?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <HStack gap={7} vAlign="start">
-      <VStack xstyle={styles.detailFacts}>
-        <MetadataList columns={1} orientation="vertical">
-          {children}
-        </MetadataList>
-      </VStack>
-      <StackItem size="fill">
-        <DetailChart id={id} group={group} isLiability={isLiability} />
-      </StackItem>
-    </HStack>
-  );
-}
-
 // ============= GROUP SHELL =============
 
 const GROUP_IDS = ['bank', 'cards', 'processors', 'investments'] as const;
@@ -1037,14 +858,6 @@ const styles = stylex.create({
   // separates them by border instead. Either way the page follows the theme.
   wash: {
     backgroundColor: colorVars['--color-background-body'],
-  },
-  // The facts take what they need and no more, and the chart takes the rest.
-  // Capped because four key-value pairs do not get more legible past this, and
-  // every pixel past it is one the chart could have used.
-  detailFacts: {
-    flexShrink: 0,
-    minWidth: 200,
-    maxWidth: 280,
   },
   swatch: (color: string) => ({
     width: 8,
@@ -1621,7 +1434,9 @@ export default function ConnectedAccountsTemplate() {
                   columns={bankColumns}
                   expandedRows={expandedRows}
                   onToggleRow={toggleRow}
-                  renderExpanded={account => <BankDetail account={account} />}
+                  renderExpanded={account => (
+                    <DetailChart id={account.id} group="bank" />
+                  )}
                 />
               </AccountGroup>
 
@@ -1638,7 +1453,9 @@ export default function ConnectedAccountsTemplate() {
                   columns={creditCardColumns}
                   expandedRows={expandedRows}
                   onToggleRow={toggleRow}
-                  renderExpanded={card => <CreditCardDetail card={card} />}
+                  renderExpanded={card => (
+                    <DetailChart id={card.id} group="cards" isLiability />
+                  )}
                 />
               </AccountGroup>
 
@@ -1656,7 +1473,7 @@ export default function ConnectedAccountsTemplate() {
                   expandedRows={expandedRows}
                   onToggleRow={toggleRow}
                   renderExpanded={processor => (
-                    <ProcessorDetail processor={processor} />
+                    <DetailChart id={processor.id} group="processors" />
                   )}
                 />
               </AccountGroup>
@@ -1675,7 +1492,7 @@ export default function ConnectedAccountsTemplate() {
                   expandedRows={expandedRows}
                   onToggleRow={toggleRow}
                   renderExpanded={account => (
-                    <InvestmentDetail account={account} />
+                    <DetailChart id={account.id} group="investments" />
                   )}
                 />
               </AccountGroup>
