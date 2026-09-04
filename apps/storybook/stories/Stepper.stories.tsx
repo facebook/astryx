@@ -1123,7 +1123,7 @@ export const NarrowCollapse: Story = {
     docs: {
       description: {
         story:
-          'A horizontal stepper measures its own width and collapses once a step has less than ~112px to work with, so the breakpoint follows the step count rather than the viewport. Labels give way to a bare track, and the current step is named directly underneath with no extra vertical gap. The two indicator positions collapse differently on purpose: `separated` drops its indicators with the labels and repeats the active indicator beside the compact label, while `on-track` keeps its indicators as presentational nodes on the rail and does not repeat the active one beside the label. Controls appear only when `onStepClick` is set; a stepper driven solely by a form’s own Back and Continue does not get a second, competing pair.',
+          'A horizontal stepper measures its own width and collapses once a step has less than `minStepWidth` (112px by default), so the breakpoint follows the step count rather than the viewport. Pass a number for pixels or a CSS length string such as `7rem`. Labels give way to a bare track, and the current step is named directly underneath with no extra vertical gap. The two indicator positions collapse differently on purpose: `separated` drops its indicators with the labels and repeats the active indicator beside the compact label, while `on-track` keeps its indicators as presentational nodes on the rail and does not repeat the active one beside the label. Controls appear only when `onStepClick` is set; a stepper driven solely by a form’s own Back and Continue does not get a second, competing pair.',
       },
     },
   },
@@ -1145,6 +1145,18 @@ export const NarrowCollapse: Story = {
         <div style={{maxWidth: 320}}>
           <Text type="label">320px — separated, navigable</Text>
           <Stepper activeStep={a} onStepClick={setA} label="Checkout">
+            {steps.map((s, i) => (
+              <Step key={s} step={i} label={s} />
+            ))}
+          </Stepper>
+        </div>
+        <div style={{maxWidth: 320}}>
+          <Text type="label">320px — custom 4rem threshold stays expanded</Text>
+          <Stepper
+            activeStep={a}
+            onStepClick={setA}
+            minStepWidth="4rem"
+            label="Checkout">
             {steps.map((s, i) => (
               <Step key={s} step={i} label={s} />
             ))}

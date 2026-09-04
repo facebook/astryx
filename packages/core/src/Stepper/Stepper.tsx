@@ -50,15 +50,17 @@ import {
 } from './StepperContext';
 
 /**
- * Width below which a step can no longer hold its own label. Under about this
- * much a one-word label starts breaking mid-word and a two-word one stacks,
- * which costs more vertical space than the row that replaces all of them — and
- * reads worse, because every step pays for text only one of them needs now.
+ * Default width below which a step can no longer hold its own label. Under
+ * about this much a one-word label starts breaking mid-word and a two-word one
+ * stacks, which costs more vertical space than the row that replaces all of
+ * them — and reads worse, because every step pays for text only one of them
+ * needs now. Consumers can replace it through `minStepWidth` when their labels
+ * or layout need a different threshold.
  *
  * Applied per step rather than to the stepper, so where the collapse happens
  * follows the count: four steps hold out to 448px, seven need 784px.
  */
-const MIN_STEP_WIDTH = 112;
+const DEFAULT_MIN_STEP_WIDTH = 112;
 
 export interface StepperProps extends BaseProps<HTMLOListElement> {
   /** Ref forwarded to the root element */
@@ -101,6 +103,13 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    * @default 'separated'
    */
   indicatorPosition?: StepperIndicatorPosition;
+  /**
+   * Minimum width allocated to each step before a horizontal Stepper collapses.
+   * Numbers are interpreted as pixels. Strings accept CSS length values such
+   * as `'7rem'`, `'calc(6rem + 8px)'`, or `'var(--step-width)'`.
+   * @default 112
+   */
+  minStepWidth?: number | string;
   /**
    * Whether a collapsed stepper shows Previous/Next controls beneath the
    * track. They only ever appear when `onStepClick` is set; this turns them
@@ -228,6 +237,7 @@ export function Stepper({
   label: labelFromProps,
   density = 'balanced',
   indicatorPosition = 'separated',
+  minStepWidth = DEFAULT_MIN_STEP_WIDTH,
   hasCollapsedControls = true,
   hasCollapsedLabel = true,
   xstyle,
@@ -328,7 +338,11 @@ export function Stepper({
   // the DOM it always has. Horizontal Stepper sizing follows the public list
   // root because that is where consumer refs and width styles are applied.
   const [rootWidth, setRootWidth] = useState(0);
+  const [resolvedMinStepWidth, setResolvedMinStepWidth] = useState(
+    DEFAULT_MIN_STEP_WIDTH,
+  );
   const stopObservingRootRef = useRef<(() => void) | null>(null);
+  const stopObservingMinStepWidthRef = useRef<(() => void) | null>(null);
   const attachRoot = useCallback(
     (el: HTMLOListElement | null) => {
       stopObservingRootRef.current?.();
@@ -347,10 +361,25 @@ export function Stepper({
     [isHorizontal],
   );
   const rootRef = useMergedRefs(ref, attachRoot);
+  const attachMinStepWidthMeasure = useCallback((el: HTMLDivElement | null) => {
+    stopObservingMinStepWidthRef.current?.();
+    stopObservingMinStepWidthRef.current = null;
+    if (el) {
+      // The browser resolves px, rem, calc(), var(), and the other supported
+      // CSS length forms before clientWidth is read. Observing the probe as
+      // well as the Stepper means a root-font-size or custom-property change
+      // can move the breakpoint without the Stepper itself resizing.
+      stopObservingMinStepWidthRef.current = observeResize(el, entry =>
+        setResolvedMinStepWidth(entry.target.clientWidth),
+      );
+    }
+  }, []);
   useEffect(
     () => () => {
       stopObservingRootRef.current?.();
       stopObservingRootRef.current = null;
+      stopObservingMinStepWidthRef.current?.();
+      stopObservingMinStepWidthRef.current = null;
     },
     [],
   );
@@ -370,7 +399,7 @@ export function Stepper({
     isHorizontal &&
     rootWidth > 0 &&
     stepCount > 0 &&
-    rootWidth / stepCount < MIN_STEP_WIDTH;
+    rootWidth / stepCount < resolvedMinStepWidth;
 
   const [summarySlot, setSummarySlot] = useState<HTMLElement | null>(null);
 
@@ -387,6 +416,8 @@ export function Stepper({
       stepCount,
       isCompact,
       summarySlot,
+      minStepWidth,
+      minStepWidthMeasureRef: attachMinStepWidthMeasure,
     }),
     [
       activeStep,
@@ -399,6 +430,8 @@ export function Stepper({
       stepCount,
       isCompact,
       summarySlot,
+      minStepWidth,
+      attachMinStepWidthMeasure,
     ],
   );
 

@@ -1036,7 +1036,11 @@ describe('Stepper', () => {
      * before the first render because the shared resize observer takes its
      * opening measurement synchronously during commit.
      */
-    function atWidth(width: number, ui: React.ReactElement) {
+    function atWidth(
+      width: number,
+      ui: React.ReactElement,
+      resolvedMinStepWidth = 112,
+    ) {
       const original = Object.getOwnPropertyDescriptor(
         Element.prototype,
         'clientWidth',
@@ -1046,6 +1050,9 @@ describe('Stepper', () => {
         get(this: Element) {
           if (this.classList.contains('astryx-stepper')) {
             return width;
+          }
+          if (this instanceof HTMLElement && this.style.width !== '') {
+            return resolvedMinStepWidth;
           }
           return this.classList.contains('astryx-stepper-frame') ? 1000 : 0;
         },
@@ -1143,6 +1150,98 @@ describe('Stepper', () => {
       );
       expect(screen.getByRole('list')).toBeInTheDocument();
       expect(document.querySelector('.astryx-stepper-summary')).toBeNull();
+    });
+
+    it('treats a numeric minimum step width as pixels', () => {
+      atWidth(360, fourSteps({minStepWidth: 80}), 80);
+
+      expect(document.querySelector(SUMMARY)).toBeNull();
+      const measure = Array.from(
+        document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
+      ).find(element => element.style.width !== '');
+      expect(measure).toHaveStyle({width: '80px'});
+    });
+
+    it('lets the browser resolve a CSS minimum step width', () => {
+      // Four steps get 90px each. The browser-resolved 6rem probe is stubbed
+      // to 96px, so this instance collapses without Stepper parsing the unit.
+      atWidth(
+        360,
+        fourSteps({
+          minStepWidth: 'var(--checkout-step-width)',
+          style: {'--checkout-step-width': '6rem'} as React.CSSProperties,
+        }),
+        96,
+      );
+
+      expect(document.querySelector(SUMMARY)).toBeInTheDocument();
+      const measure = Array.from(
+        document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
+      ).find(element => element.style.width !== '');
+      expect(measure).toHaveStyle({width: 'var(--checkout-step-width)'});
+      expect(measure?.closest('ol')).toBe(screen.getByRole('list'));
+      expect(
+        screen
+          .getByRole('list')
+          .style.getPropertyValue('--checkout-step-width'),
+      ).toBe('6rem');
+    });
+
+    it('responds when a CSS minimum step width resolves to a new size', () => {
+      const originalWidth = Object.getOwnPropertyDescriptor(
+        Element.prototype,
+        'clientWidth',
+      );
+      let resolvedMinStepWidth = 80;
+      let resize: ResizeObserverCallback = () => {};
+      class ResizeObserverStub {
+        constructor(callback: ResizeObserverCallback) {
+          resize = callback;
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+      vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+      Object.defineProperty(Element.prototype, 'clientWidth', {
+        configurable: true,
+        get(this: Element) {
+          if (this.classList.contains('astryx-stepper')) {
+            return 360;
+          }
+          return this instanceof HTMLElement && this.style.width !== ''
+            ? resolvedMinStepWidth
+            : 0;
+        },
+      });
+
+      let view: ReturnType<typeof render> | null = null;
+      try {
+        view = render(fourSteps({minStepWidth: 'var(--step-width, 5rem)'}));
+        expect(document.querySelector(SUMMARY)).toBeNull();
+        const measure = Array.from(
+          document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
+        ).find(element => element.style.width !== '');
+        expect(measure).toBeDefined();
+
+        resolvedMinStepWidth = 96;
+        act(() =>
+          resize([{target: measure!} as unknown as ResizeObserverEntry], null!),
+        );
+        expect(document.querySelector(SUMMARY)).toBeInTheDocument();
+      } finally {
+        view?.unmount();
+        vi.unstubAllGlobals();
+        if (originalWidth) {
+          Object.defineProperty(
+            Element.prototype,
+            'clientWidth',
+            originalWidth,
+          );
+        } else {
+          delete (Element.prototype as {clientWidth?: number}).clientWidth;
+        }
+      }
     });
 
     it('leaves a vertical stepper alone at any width', () => {
@@ -1258,7 +1357,12 @@ describe('Stepper', () => {
         Object.defineProperty(Element.prototype, 'clientWidth', {
           configurable: true,
           get(this: Element) {
-            return this.classList.contains('astryx-stepper') ? width : 0;
+            if (this.classList.contains('astryx-stepper')) {
+              return width;
+            }
+            return this instanceof HTMLElement && this.style.width !== ''
+              ? 112
+              : 0;
           },
         });
 

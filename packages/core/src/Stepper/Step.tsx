@@ -957,6 +957,18 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
     minWidth: 0,
   },
+  // The browser resolves Stepper's public threshold on this box. It lives in
+  // the active <li> so CSS custom properties applied to the public <ol> inherit
+  // into it. Fixed and invisible, it cannot affect layout or scrollable size.
+  minStepWidthMeasure: {
+    position: 'fixed',
+    insetBlockStart: 0,
+    insetInlineStart: 0,
+    height: 0,
+    overflow: 'hidden',
+    pointerEvents: 'none',
+    visibility: 'hidden',
+  },
 });
 
 /**
@@ -1011,6 +1023,8 @@ export function Step({
     registerStep,
     isCompact,
     summarySlot,
+    minStepWidth,
+    minStepWidthMeasureRef,
   } = ctx;
 
   // Register this step index with the parent Stepper, which uses the tally
@@ -1408,6 +1422,16 @@ export function Step({
     </>
   ) : null;
 
+  const minStepWidthMeasureNode = isActive ? (
+    <div
+      ref={minStepWidthMeasureRef}
+      aria-hidden="true"
+      {...mergeProps(stylex.props(styles.minStepWidthMeasure), {
+        style: {width: minStepWidth},
+      })}
+    />
+  ) : null;
+
   // ======= ON-TRACK: indicator is a node on the connector =======
   if (indicatorPosition === 'on-track') {
     // Connector fill is purely progress-based (matches the separated bar):
@@ -1706,6 +1730,7 @@ export function Step({
         {compactNameNode}
         {otContentNode}
         {summaryNode}
+        {minStepWidthMeasureNode}
       </li>
     );
   }
@@ -1837,6 +1862,7 @@ export function Step({
       )}
       {contentNode}
       {summaryNode}
+      {minStepWidthMeasureNode}
     </li>
   );
 }

@@ -29,7 +29,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use the vertical orientation when steps carry longer descriptions. A horizontal stepper handles narrow containers itself: once the frame gives each step less than 112px it drops the labels for a segmented track and names the current step beneath it.',
+          'Use the vertical orientation when steps carry longer descriptions. A horizontal stepper handles narrow containers itself: once the frame gives each step less than minStepWidth (112px by default) it drops the labels for a segmented track and names the current step beneath it.',
       },
       {
         guidance: true,
@@ -195,6 +195,13 @@ export const docs = {
           default: "'separated'",
         },
         {
+          name: 'minStepWidth',
+          type: 'number | string',
+          description:
+            'Minimum width each horizontal step needs before the Stepper collapses. Numbers are pixels; strings accept CSS lengths such as 7rem, calc(6rem + 8px), or var(--step-width). The browser resolves CSS units, and changes to the resolved value update the layout.',
+          default: '112',
+        },
+        {
           name: 'hasCollapsedControls',
           type: 'boolean',
           description:
@@ -250,7 +257,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Keep step labels short. Horizontal collapses itself under 112px/step; vertical is for long descriptions.',
+          'Keep step labels short. Horizontal collapses under minStepWidth per step (112px by default); vertical is for long descriptions.',
       },
       {
         guidance: true,
@@ -282,6 +289,8 @@ export const docsDense = {
         label: 'ordered-list aria-label',
         density: 'padding of all steps',
         indicatorPosition: 'indicators separated from or on the track',
+        minStepWidth:
+          'per-step collapse threshold; number = px, string = CSS length',
         hasCollapsedControls:
           'prev/next under a collapsed track; needs onStepClick; off makes the track progress-only',
         hasCollapsedLabel:
@@ -321,7 +330,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          '当步骤有较长描述时使用垂直方向。水平步骤器会自行处理窄容器：当每个步骤的可用宽度不足 112px 时，它会收起标签，改为显示分段轨道，并在下方显示当前步骤的名称。',
+          '当步骤有较长描述时使用垂直方向。水平步骤器会自行处理窄容器：当每个步骤的可用宽度不足 minStepWidth（默认为 112px）时，它会收起标签，改为显示分段轨道，并在下方显示当前步骤的名称。',
       },
       {
         guidance: true,
@@ -410,6 +419,13 @@ export const docsZh = {
           type: "'separated' | 'on-track'",
           description: '步骤指示器相对于连接轨道的位置。',
           default: "'separated'",
+        },
+        {
+          name: 'minStepWidth',
+          type: 'number | string',
+          description:
+            '每个水平步骤在步骤器收起前所需的最小宽度。数字按像素处理；字符串接受 7rem、calc(6rem + 8px) 或 var(--step-width) 等 CSS 长度。CSS 单位由浏览器解析，解析后的值变化时布局会随之更新。',
+          default: '112',
         },
         {
           name: 'hasCollapsedControls',
