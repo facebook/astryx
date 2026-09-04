@@ -28,7 +28,7 @@ import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {logger} from '../../logger.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
-const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'all'];
+const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'muse', 'all'];
 
 /**
  * Build the "Next steps" lines printed at the end of `astryx init`.
