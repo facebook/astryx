@@ -3,14 +3,10 @@
 'use client';
 
 import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+import {neutralPalettes} from '../../../../../../../packages/themes/neutral/src/neutralPalettes';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 import type {TonalColor} from '@/components/ThemePalettePreview';
 import {NeutralContrastComponents} from './NeutralContrastComponents';
-
-const palettes = neutralTheme.palettes;
-if (!palettes) {
-  throw new Error('The Neutral theme must ship its approved tonal palettes.');
-}
 
 const PALETTE_ORDER = [
   'neutral',
@@ -26,47 +22,39 @@ const PALETTE_ORDER = [
 ] as const;
 
 const TONAL_COLORS: TonalColor[] = PALETTE_ORDER.map(name => {
-  const family = palettes[name];
-  const dark = family.dark ?? family.light;
-  const metadata = family.light.chroma
-    ? `OKLCH H${family.light.hue} · pastel C${family.light.chroma}`
-    : 'C=0';
+  const family = neutralPalettes[name];
   return {
     name: name[0].toUpperCase() + name.slice(1),
     sourceHex: family.light[50],
-    semantic: family.semantic
-      ? family.semantic[0].toUpperCase() + family.semantic.slice(1)
-      : undefined,
-    note: metadata,
     tones: family.light,
-    dark: {sourceHex: dark[50], tones: dark},
+    dark: {sourceHex: family.dark[50], tones: family.dark},
   };
 });
 
-const darkNeutral = palettes.neutral.dark ?? palettes.neutral.light;
+const darkNeutral = neutralPalettes.neutral.dark;
 const CORE = [
   {
-    hex: palettes.neutral.light[100],
+    hex: neutralPalettes.neutral.light[100],
     name: 'Surface · tone 100',
     dark: {hex: darkNeutral[10], name: 'Surface · tone 10'},
   },
   {
-    hex: palettes.neutral.light[95],
+    hex: neutralPalettes.neutral.light[95],
     name: 'Body · tone 95',
     dark: {hex: darkNeutral[5], name: 'Body · tone 5'},
   },
   {
-    hex: palettes.neutral.light[90],
+    hex: neutralPalettes.neutral.light[90],
     name: 'Neutral · tone 90',
     dark: {hex: darkNeutral[30], name: 'Neutral · tone 30'},
   },
   {
-    hex: palettes.neutral.light[50],
+    hex: neutralPalettes.neutral.light[50],
     name: 'Neutral · tone 50',
     dark: {hex: darkNeutral[45], name: 'Neutral · tone 45'},
   },
   {
-    hex: palettes.neutral.light[15],
+    hex: neutralPalettes.neutral.light[15],
     name: 'Accent · tone 15',
     dark: {hex: darkNeutral[90], name: 'Accent · tone 90'},
   },
