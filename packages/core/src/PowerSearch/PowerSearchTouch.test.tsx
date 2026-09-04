@@ -217,6 +217,29 @@ describe('PowerSearchTouchSurface', () => {
     ).toBeTruthy();
   });
 
+  it('preserves capsule wrapping without reserving a row for the trigger', () => {
+    setup({
+      filters: [
+        openFilter,
+        {
+          field: 'author',
+          operator: 'is',
+          value: {type: 'string', value: 'Ada Lovelace'},
+        },
+        {
+          field: 'labels',
+          operator: 'isAnyOf',
+          value: {type: 'enum_list', value: ['bug', 'urgent']},
+        },
+      ],
+    });
+
+    const trigger = screen.getByRole('button', {name: 'Manage filters'});
+    const contentSection = trigger.parentElement!;
+    expect(getComputedStyle(contentSection).flexWrap).toBe('wrap');
+    expect(getComputedStyle(trigger).position).toBe('absolute');
+  });
+
   it('opens directly to Add filter when no filters are selected', () => {
     setup();
     openSheet();
