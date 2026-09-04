@@ -42,6 +42,13 @@ export const docs = {
         'Control which rows are expandable. Non-expandable rows show no chevron, no context-menu action, and never render a panel. Defaults to all rows expandable.',
     },
     {
+      name: 'panelVariant',
+      type: "'muted' | 'transparent'",
+      description:
+        "Background behind the detail panel. 'muted' washes it, marking it as commentary on the row above rather than another row of data — in a bare table with no dividers that wash is the only cue. 'transparent' takes whatever surface is behind the table, for a table already on a Card or Section where a second tint reads as a third surface. The wash is a low-alpha near-black, so it is close to invisible over a dark card: 'muted' is largely a light-theme effect.",
+      default: "'muted'",
+    },
+    {
       name: 'hasRowClickExpansion',
       type: 'boolean',
       description:
@@ -113,6 +120,8 @@ export const docsDense = {
       'Render the full-width detail panel below an expanded row. Receives the row item.',
     getIsItemExpandable:
       'Control which rows are expandable. Defaults to all rows expandable.',
+    panelVariant:
+      "Detail panel background: 'muted' (default) washes it; 'transparent' takes the surface behind the table, for a table already on a Card.",
     hasRowClickExpansion:
       'Toggle a row by clicking anywhere on it, not just the chevron; pointer-only, skips interactive cell content and text selections. Defaults to false.',
   },

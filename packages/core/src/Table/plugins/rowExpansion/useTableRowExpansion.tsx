@@ -63,6 +63,22 @@ export interface UseTableRowExpansionConfig<T extends Record<string, unknown>> {
    */
   getIsItemExpandable?: (item: T) => boolean;
   /**
+   * Background behind the detail panel.
+   *
+   * - `muted` (default): a wash marking the panel as commentary on the row
+   *   above rather than another row of data. In a bare table — no card, no
+   *   dividers — it is the only thing that says so.
+   * - `transparent`: the panel takes whatever surface is behind the table.
+   *   For a table already sitting on a Card or Section, where a second tint
+   *   reads as a third surface rather than as a distinction.
+   *
+   * Worth knowing when choosing: the wash is a low-alpha near-black, so over a
+   * dark card it is close to invisible. `muted` is largely a light-theme
+   * effect, and `transparent` is what dark themes look like already.
+   * @default 'muted'
+   */
+  panelVariant?: 'muted' | 'transparent';
+  /**
    * Toggle a row by clicking anywhere on it, not only on its chevron.
    *
    * This is a pointer-only convenience layered over the chevron: keyboard and
@@ -283,6 +299,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
     renderExpanded,
     getIsItemExpandable,
     hasRowClickExpansion,
+    panelVariant = 'muted',
   } = config;
 
   const t = useTranslator();
@@ -419,7 +436,9 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         const panel = (
           <tr
             key={`${key}-expanded`}
-            {...stylex.props(expansionStyles.expandedRow)}>
+            {...stylex.props(
+              panelVariant === 'muted' && expansionStyles.expandedRow,
+            )}>
             <ExpansionPanelCell colSpan={columnCountRef.current}>
               {renderExpanded(item)}
             </ExpansionPanelCell>
@@ -445,6 +464,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       renderExpanded,
       getIsItemExpandable,
       hasRowClickExpansion,
+      panelVariant,
       onToggle,
       t,
       expansionColumn,

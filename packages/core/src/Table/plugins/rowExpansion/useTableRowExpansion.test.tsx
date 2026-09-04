@@ -61,6 +61,7 @@ function Harness({
   density,
   hasRowClickExpansion,
   columnsOverride,
+  panelVariant,
 }: {
   initialExpanded?: Set<string>;
   isItemExpandable?: (item: Row) => boolean;
@@ -68,6 +69,7 @@ function Harness({
   density?: 'compact' | 'balanced' | 'spacious';
   hasRowClickExpansion?: boolean;
   columnsOverride?: TableColumn<Row>[];
+  panelVariant?: 'muted' | 'transparent';
 }) {
   const [expandedKeys, setExpandedKeys] = useState(initialExpanded);
   const expansion = useTableRowExpansion<Row>({
@@ -86,6 +88,7 @@ function Harness({
     renderExpanded,
     getIsItemExpandable: isItemExpandable,
     hasRowClickExpansion,
+    panelVariant,
   });
   return (
     <Table
@@ -234,6 +237,27 @@ describe('useTableRowExpansion (detail panel)', () => {
     render(<Harness initialExpanded={new Set(['a'])} density="spacious" />);
     expect(screen.getByTestId('panel').closest('td')).toHaveStyle({
       paddingInlineStart: 'calc(40px + var(--spacing-4))',
+    });
+  });
+
+  describe('panel variant', () => {
+    const panelRow = () =>
+      screen.getByTestId('panel').closest('tr') as HTMLTableRowElement;
+
+    it('washes the panel by default', () => {
+      render(<Harness initialExpanded={new Set(['a'])} />);
+      expect(panelRow()).toHaveStyle({
+        backgroundColor: 'var(--color-background-muted)',
+      });
+    });
+
+    it('leaves the panel on the surface behind the table when transparent', () => {
+      render(
+        <Harness initialExpanded={new Set(['a'])} panelVariant="transparent" />,
+      );
+      expect(panelRow()).not.toHaveStyle({
+        backgroundColor: 'var(--color-background-muted)',
+      });
     });
   });
 
