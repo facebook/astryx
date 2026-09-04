@@ -102,7 +102,6 @@ import {
   SegmentedControl,
   SegmentedControlItem,
 } from '@astryxdesign/core/SegmentedControl';
-import {StatusDot} from '@astryxdesign/core/StatusDot';
 import {Token} from '@astryxdesign/core/Token';
 import {
   Table,
@@ -122,14 +121,10 @@ import {
 
 // ============= SHARED VOCABULARY =============
 
-/** The one attribute every account type genuinely shares. */
-type SyncState = 'connected' | 'syncing' | 'reconnect';
-
 /** Everything the page-level machinery needs from a row, whatever group it is
- * in: an id to key its history by, and whether its connection is healthy. */
+ * in: an id to key its history by, and the drift that history follows. */
 interface AccountRecord extends Record<string, unknown> {
   id: string;
-  syncState: SyncState;
   /** Direction and strength of the account's drift, as a daily fraction. Feeds
    * the generated history, so an account's chart and its Change agree. */
   trend: number;
@@ -190,7 +185,7 @@ const RANGE_DAYS: Record<RangeId, number> = {
  * column definitions deep, in four separate tables, none of which the page
  * renders directly.
  */
-const RangeContext = createContext<RangeId>('3M');
+const RangeContext = createContext<RangeId>('YTD');
 const useRange = () => useContext(RangeContext);
 
 const SERIES_DAYS = RANGE_DAYS['1Y'];
@@ -341,7 +336,6 @@ const BANK_ACCOUNTS: BankAccount[] = [
     mask: '••4417',
     kind: 'Checking',
     availableCents: 84_215_600,
-    syncState: 'connected',
     trend: 0.00022,
   },
   {
@@ -351,7 +345,6 @@ const BANK_ACCOUNTS: BankAccount[] = [
     mask: '••8830',
     kind: 'Checking',
     availableCents: 21_940_800,
-    syncState: 'connected',
     trend: 0.00004,
   },
   {
@@ -361,7 +354,6 @@ const BANK_ACCOUNTS: BankAccount[] = [
     mask: '••1265',
     kind: 'Savings',
     availableCents: 47_500_000,
-    syncState: 'connected',
     trend: 0.00009,
   },
   {
@@ -371,7 +363,6 @@ const BANK_ACCOUNTS: BankAccount[] = [
     mask: '••7702',
     kind: 'Money market',
     availableCents: 132_800_000,
-    syncState: 'reconnect',
     trend: 0.00033,
   },
 ];
@@ -442,7 +433,6 @@ const CREDIT_CARDS: CreditCardAccount[] = [
     mask: '••2041',
     balanceCents: 4_182_300,
     limitCents: 15_000_000,
-    syncState: 'connected',
     trend: 0.00042,
   },
   {
@@ -452,7 +442,6 @@ const CREDIT_CARDS: CreditCardAccount[] = [
     mask: '••6688',
     balanceCents: 9_640_500,
     limitCents: 12_000_000,
-    syncState: 'connected',
     trend: 0.00071,
   },
   {
@@ -462,7 +451,6 @@ const CREDIT_CARDS: CreditCardAccount[] = [
     mask: '••3319',
     balanceCents: 1_205_000,
     limitCents: 25_000_000,
-    syncState: 'syncing',
     trend: -0.00018,
   },
 ];
@@ -579,7 +567,6 @@ const PROCESSORS: ProcessorAccount[] = [
     merchantId: 'acct_1Qf82LmR',
     pendingPayoutCents: 18_442_900,
     feesMtdCents: 612_400,
-    syncState: 'connected',
     trend: 0.00058,
   },
   {
@@ -588,7 +575,6 @@ const PROCESSORS: ProcessorAccount[] = [
     merchantId: 'MRC-88214-XT',
     pendingPayoutCents: 3_218_650,
     feesMtdCents: 148_900,
-    syncState: 'connected',
     trend: -0.00024,
   },
   {
@@ -597,7 +583,6 @@ const PROCESSORS: ProcessorAccount[] = [
     merchantId: 'AD-NORTHWIND-01',
     pendingPayoutCents: 7_905_100,
     feesMtdCents: 233_050,
-    syncState: 'syncing',
     trend: 0.00031,
   },
 ];
@@ -667,7 +652,6 @@ const INVESTMENTS: InvestmentAccount[] = [
     custodian: 'Northgate Asset Management',
     marketValueCents: 245_180_000,
     costBasisCents: 240_000_000,
-    syncState: 'connected',
     trend: 0.00012,
   },
   {
@@ -676,7 +660,6 @@ const INVESTMENTS: InvestmentAccount[] = [
     custodian: 'Northgate Asset Management',
     marketValueCents: 98_420_000,
     costBasisCents: 100_000_000,
-    syncState: 'connected',
     trend: -0.00006,
   },
   {
@@ -685,7 +668,6 @@ const INVESTMENTS: InvestmentAccount[] = [
     custodian: 'Harborline Capital',
     marketValueCents: 61_050_000,
     costBasisCents: 61_000_000,
-    syncState: 'connected',
     trend: 0.00003,
   },
 ];
@@ -763,30 +745,6 @@ const HISTORY: Record<string, number[]> = Object.fromEntries([
   ...historyFor(PROCESSORS, processor => processor.pendingPayoutCents, 0.04),
   ...historyFor(INVESTMENTS, account => account.marketValueCents, 0.008),
 ]);
-
-function totalSeries(ids: string[]): number[] {
-  return Array.from({length: SERIES_DAYS}, (_, day) =>
-    ids.reduce((total, id) => total + HISTORY[id][day], 0),
-  );
-}
-
-const ASSET_HISTORY = totalSeries([
-  ...BANK_ACCOUNTS.map(account => account.id),
-  ...PROCESSORS.map(processor => processor.id),
-  ...INVESTMENTS.map(account => account.id),
-]);
-const DEBT_HISTORY = totalSeries(CREDIT_CARDS.map(card => card.id));
-
-/** Net position is assets less debt, so its change is the change in the gap —
- * not the change in either band. */
-function netChangeOver(range: RangeId): number {
-  const days = RANGE_DAYS[range];
-  const assets = ASSET_HISTORY.slice(-days);
-  const debt = DEBT_HISTORY.slice(-days);
-  const now = assets[assets.length - 1] - debt[debt.length - 1];
-  const then = assets[0] - debt[0];
-  return now - then;
-}
 
 // ============= DETAIL PANEL =============
 
@@ -1153,9 +1111,10 @@ export default function ConnectedAccountsTemplate() {
   );
 
   // Lifted out of the chart because it is not the chart's setting — it is the
-  // page's. Three months is the default because it is the shortest window in
-  // which a monthly cycle shows up more than once.
-  const [range, setRange] = useState<RangeId>('3M');
+  // page's. Year to date is the default because it is the window accounts are
+  // actually reasoned about in, and it is long enough that a monthly cycle
+  // shows up several times rather than once or twice.
+  const [range, setRange] = useState<RangeId>('YTD');
 
   // One Set for all four tables, not one per group. Row ids are unique across
   // the page, so a single Set is unambiguous, and it is what a "collapse every
@@ -1203,16 +1162,6 @@ export default function ConnectedAccountsTemplate() {
     };
   }, []);
 
-  const needsAttention = [
-    ...BANK_ACCOUNTS,
-    ...CREDIT_CARDS,
-    ...PROCESSORS,
-    ...INVESTMENTS,
-  ].filter(record => record.syncState === 'reconnect').length;
-
-  const netChange = netChangeOver(range);
-  const isNetUp = netChange >= 0;
-
   // "All open" has to mean the details too. A control labelled Expand all that
   // opens four cards and leaves thirteen collapsed rows inside them has not
   // expanded all, and its next click would read as Collapse all while most of
@@ -1230,7 +1179,7 @@ export default function ConnectedAccountsTemplate() {
   return (
     <RangeContext.Provider value={range}>
       <Layout
-        height="fill"
+        height="auto"
         contentWidth={1200}
         xstyle={styles.wash}
         header={
@@ -1239,22 +1188,9 @@ export default function ConnectedAccountsTemplate() {
               <StackItem size="fill">
                 <VStack gap={0.5}>
                   <Heading level={1}>Connected accounts</Heading>
-                  <HStack gap={2} vAlign="center" wrap="wrap">
-                    <Text type="supporting">
-                      Net position {money(totals.net)} across 13 accounts
-                    </Text>
-                    <Token
-                      size="sm"
-                      color={isNetUp ? 'green' : 'red'}
-                      label={`${isNetUp ? '+' : '−'}${money(Math.abs(netChange))} over ${range}`}
-                    />
-                    {needsAttention > 0 && (
-                      <StatusDot
-                        variant="warning"
-                        label={`${needsAttention} account needs reconnecting`}
-                      />
-                    )}
-                  </HStack>
+                  <Text type="supporting">
+                    Net position {money(totals.net)} across 13 accounts
+                  </Text>
                 </VStack>
               </StackItem>
               <Button
