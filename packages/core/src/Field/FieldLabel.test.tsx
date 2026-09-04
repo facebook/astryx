@@ -90,7 +90,7 @@ describe('FieldLabel', () => {
   });
 
   it('keeps a standalone label as its parent layout item', () => {
-    render(
+    const {container} = render(
       <FieldLabel
         label="Name"
         inputID="name-input"
@@ -101,7 +101,7 @@ describe('FieldLabel', () => {
     const label = screen.getByText('Name').closest('label');
     expect(label).toHaveClass('consumer-label');
     expect(label).toHaveStyle({order: '2'});
-    expect(label?.parentElement?.className).toContain('labelGroupSingle');
+    expect(container.firstElementChild).toBe(label);
   });
 
   it('renders tooltip info icon when labelTooltip prop is provided', () => {

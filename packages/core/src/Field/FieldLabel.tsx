@@ -45,12 +45,6 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
   },
-  // With no description there is no group to keep together. Flattening this
-  // wrapper leaves the public label element as its parent's flex/grid item, so
-  // existing className/style/xstyle layout overrides keep working.
-  labelGroupSingle: {
-    display: 'contents',
-  },
   // A hidden label group must not take a slot in the caller's layout, or an
   // empty box would draw the caller's gap around nothing. Dropping the
   // wrapper box leaves the sr-only children out of flow directly under the
@@ -297,53 +291,60 @@ export function FieldLabel({
     </>
   );
 
+  const labelElement = (
+    <LabelElement
+      ref={ref}
+      id={labelID}
+      // `htmlFor` only applies to a real `<label>` associating with a single
+      // control; a group label (span) has no `htmlFor`.
+      htmlFor={isGroupLabel ? undefined : inputID}
+      {...rest}
+      {...mergeProps(
+        // A control that knows what kind of label this is passes its own
+        // target down (CheckboxInput's `checkbox-label`, Switch's
+        // `switch-label`); it arrives as `className` and composes onto this
+        // one. The label itself does not describe its own placement — it
+        // cannot know it, and any encoding it guessed would be wrong for a
+        // caller that arranges labels differently (Field's
+        // `horizontal-labels`).
+        themeProps('field-label'),
+        stylex.props(
+          styles.label,
+          isDisabled && styles.labelDisabled,
+          isLabelHidden && styles.srOnly,
+          xstyle,
+        ),
+        className,
+        style,
+      )}>
+      {labelContent}
+    </LabelElement>
+  );
+
+  // Without a description, preserve the original public DOM: the label itself
+  // remains the caller's flex/grid item and its layout overrides apply there.
+  if (!description) {
+    return labelElement;
+  }
+
   return (
     <div
       {...stylex.props(
         styles.labelGroup,
-        description == null && styles.labelGroupSingle,
         isLabelHidden && styles.labelGroupHidden,
       )}>
-      <LabelElement
-        ref={ref}
-        id={labelID}
-        // `htmlFor` only applies to a real `<label>` associating with a single
-        // control; a group label (span) has no `htmlFor`.
-        htmlFor={isGroupLabel ? undefined : inputID}
-        {...rest}
-        {...mergeProps(
-          // A control that knows what kind of label this is passes its own
-          // target down (CheckboxInput's `checkbox-label`, Switch's
-          // `switch-label`); it arrives as `className` and composes onto this
-          // one. The label itself does not describe its own placement — it
-          // cannot know it, and any encoding it guessed would be wrong for a
-          // caller that arranges labels differently (Field's
-          // `horizontal-labels`).
-          themeProps('field-label'),
-          stylex.props(
-            styles.label,
-            isDisabled && styles.labelDisabled,
-            isLabelHidden && styles.srOnly,
-            xstyle,
-          ),
-          className,
-          style,
+      {labelElement}
+      <span
+        ref={forwardsDescriptionClick ? descriptionRef : undefined}
+        id={descriptionID}
+        {...(forwardsDescriptionClick ? descriptionClickProps : undefined)}
+        {...stylex.props(
+          styles.description,
+          forwardsDescriptionClick && styles.descriptionClickable,
+          isLabelHidden && styles.srOnly,
         )}>
-        {labelContent}
-      </LabelElement>
-      {description && (
-        <span
-          ref={forwardsDescriptionClick ? descriptionRef : undefined}
-          id={descriptionID}
-          {...(forwardsDescriptionClick ? descriptionClickProps : undefined)}
-          {...stylex.props(
-            styles.description,
-            forwardsDescriptionClick && styles.descriptionClickable,
-            isLabelHidden && styles.srOnly,
-          )}>
-          {description}
-        </span>
-      )}
+        {description}
+      </span>
     </div>
   );
 }
