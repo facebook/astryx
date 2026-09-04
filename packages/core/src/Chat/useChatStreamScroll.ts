@@ -20,10 +20,10 @@
  *
  * Uses scroll direction (lastScrollTop comparison) to detect user
  * intent — works for wheel, touch, scrollbar drag, keyboard, everything.
- * Tracks scrollHeight/offsetHeight changes to ignore Chrome synthetic
- * scroll events caused by content resize; a wheel or touch gesture
- * vouches for the scroll it produces, so the reader's own scroll is
- * still read as intent while content is arriving.
+ * While following, the hook owns the position: it disables scroll
+ * anchoring on the container, so the only move the browser makes on its
+ * own is a resize clamp onto the bottom, and any other upward move is
+ * the reader.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -126,29 +126,6 @@ export interface UseChatStreamScrollReturn {
 
 const SIXTY_FPS_MS = 1000 / 60;
 
-// Whether a scroll-up gesture that started on `target` is consumed before it
-// reaches `el`: a vertically scrollable element in between still has room
-// above. Scroll chaining hands a gesture outward only from a scroller at its
-// edge, so this is what decides whether the scroll it produces is ours.
-function scrollUpConsumedBelow(
-  target: EventTarget | null,
-  el: HTMLElement,
-): boolean {
-  for (
-    let node = target instanceof Element ? target : null;
-    node && node !== el;
-    node = node.parentElement
-  ) {
-    if (node.scrollTop > 0) {
-      const {overflowY} = getComputedStyle(node);
-      if (overflowY === 'auto' || overflowY === 'scroll') {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
 export function useChatStreamScroll({
   scrollRef,
   enabled = true,
@@ -170,15 +147,25 @@ export function useChatStreamScroll({
   const lastTickRef = useRef<number | undefined>(undefined);
   // The spring's pending frame, so a jump can cancel it for real.
   const rafRef = useRef<number>(0);
-  // Set by a reader gesture this scroller consumes, to vouch for the scroll
-  // it produces — see the synthetic-resize guard in onScroll.
-  const gestureRef = useRef(false);
-
   // For scroll direction detection
   const lastScrollTopRef = useRef(0);
-  // For synthetic scroll detection
-  const lastScrollHeightRef = useRef(0);
-  const lastOffsetHeightRef = useRef(0);
+
+  // While following, this hook is the only thing that should move the
+  // container: scroll anchoring is off, so the browser's one remaining move
+  // is the resize clamp onto the bottom, and every other upward move is the
+  // reader. Unlocked, anchoring is restored — a reader up in the history
+  // wants it when content above them changes.
+  const setLocked = useCallback(
+    (locked: boolean) => {
+      lockedRef.current = locked;
+      setIsLocked(locked);
+      const el = scrollRef.current;
+      if (el) {
+        el.style.overflowAnchor = locked ? 'none' : '';
+      }
+    },
+    [scrollRef],
+  );
 
   // --- Spring animation ---
 
@@ -263,8 +250,7 @@ export function useChatStreamScroll({
 
   const scrollToBottom = useCallback(
     (options?: ChatScrollToBottomOptions) => {
-      lockedRef.current = true;
-      setIsLocked(true);
+      setLocked(true);
       setIsScrolledUp(false);
       initialFillPendingRef.current = false;
       if (options?.behavior === 'instant') {
@@ -273,7 +259,7 @@ export function useChatStreamScroll({
       }
       startAnimation();
     },
-    [startAnimation, jumpToBottom],
+    [setLocked, startAnimation, jumpToBottom],
   );
 
   const scrollToMessage = useCallback(
@@ -304,17 +290,15 @@ export function useChatStreamScroll({
   }, [scrollRef, scrollToMessage]);
 
   const lock = useCallback(() => {
-    lockedRef.current = true;
-    setIsLocked(true);
+    setLocked(true);
     setIsScrolledUp(false);
     startAnimation();
-  }, [startAnimation]);
+  }, [setLocked, startAnimation]);
 
   const unlock = useCallback(() => {
-    lockedRef.current = false;
+    setLocked(false);
     animatingRef.current = false;
-    setIsLocked(false);
-  }, []);
+  }, [setLocked]);
 
   const scrollIfLocked = useCallback(() => {
     if (!enabled) {
@@ -348,10 +332,8 @@ export function useChatStreamScroll({
       return;
     }
 
-    // Initialize tracking values
     lastScrollTopRef.current = el.scrollTop;
-    lastScrollHeightRef.current = el.scrollHeight;
-    lastOffsetHeightRef.current = el.offsetHeight;
+    el.style.overflowAnchor = lockedRef.current ? 'none' : '';
 
     const onScroll = () => {
       const {scrollTop, scrollHeight, offsetHeight} = el;
@@ -360,105 +342,30 @@ export function useChatStreamScroll({
       // Button visibility
       setIsScrolledUp(dist > buttonThreshold);
 
-      // Detect synthetic scroll — Chrome fires scroll events when
-      // scrollHeight or offsetHeight changes (content resize, keyboard).
-      const scrollHeightChanged = scrollHeight !== lastScrollHeightRef.current;
-      const offsetHeightChanged = offsetHeight !== lastOffsetHeightRef.current;
-      lastScrollHeightRef.current = scrollHeight;
-      lastOffsetHeightRef.current = offsetHeight;
-
-      // Synthetic scroll from resize — don't change lock state. A gesture
-      // waives this for the scroll it produced, since arriving content
-      // changes the geometry on nearly every event. The waiver never covers
-      // a scroll that lands on the bottom: a resize clamp can only land
-      // there, and a reader scrolling up never does. (clientHeight, not
-      // dist: offsetHeight includes borders and a horizontal scrollbar.)
-      const landedAtBottom = scrollHeight - scrollTop - el.clientHeight < 1;
-      if (
-        (scrollHeightChanged || offsetHeightChanged) &&
-        (!gestureRef.current || landedAtBottom)
-      ) {
-        lastScrollTopRef.current = scrollTop;
-        return;
-      }
-
-      // Scroll direction — unlock on scroll up
       const isScrollingUp = scrollTop < lastScrollTopRef.current;
       lastScrollTopRef.current = scrollTop;
 
-      if (isScrollingUp && lockedRef.current) {
-        lockedRef.current = false;
+      // With anchoring off, the browser only ever moves a following
+      // container up to clamp it onto a new, smaller bottom, and a reader
+      // scrolling up never lands there. (clientHeight, not dist: offsetHeight
+      // includes borders and a horizontal scrollbar.)
+      const landedAtBottom = scrollHeight - scrollTop - el.clientHeight < 1;
+
+      if (isScrollingUp && !landedAtBottom && lockedRef.current) {
+        setLocked(false);
         animatingRef.current = false;
-        setIsLocked(false);
       }
     };
 
     const onScrollEnd = () => {
       const dist = el.scrollHeight - el.scrollTop - el.offsetHeight;
       if (dist <= lockThreshold) {
-        lockedRef.current = true;
-        setIsLocked(true);
+        setLocked(true);
       }
-    };
-
-    // A wheel up this scroller consumes vouches for the scroll it is about
-    // to produce. The gesture itself never unlocks: one it does not consume —
-    // a wheel a nested scroller takes, an overscroll at the bottom — produces
-    // no scroll event here and must leave following alone. A geometry change
-    // that arrives during a gesture that was not ours stays synthetic.
-    const onWheel = (e: WheelEvent) => {
-      if (e.deltaY >= 0 || scrollUpConsumedBelow(e.target, el)) {
-        return;
-      }
-      gestureRef.current = true;
-      // Scroll events run in a frame's scroll steps, before its rAF
-      // callbacks, so a nested frame covers this frame's scroll steps and
-      // the next one's — the room a compositor-thread scroll needs to reach
-      // the main thread.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          gestureRef.current = false;
-        });
-      });
-    };
-
-    // A drag vouches from the first move that pushes this scroller up until
-    // the finger lifts: unlike a wheel notch, the scroll it produces can land
-    // many frames after the move. A resting finger, or one dragging a nested
-    // scroller that still has room above, is not a gesture of ours.
-    let touchTarget: EventTarget | null = null;
-    let lastTouchY: number | undefined;
-
-    const onTouchStart = (e: TouchEvent) => {
-      touchTarget = e.target;
-      lastTouchY = e.touches[0]?.clientY;
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      const y = e.touches[0]?.clientY;
-      if (y === undefined || lastTouchY === undefined) {
-        return;
-      }
-      const fingerMovedDown = y > lastTouchY;
-      lastTouchY = y;
-      if (!fingerMovedDown || scrollUpConsumedBelow(touchTarget, el)) {
-        return;
-      }
-      gestureRef.current = true;
-    };
-
-    const onTouchEnd = () => {
-      gestureRef.current = false;
-      lastTouchY = undefined;
     };
 
     el.addEventListener('scroll', onScroll, {passive: true});
     el.addEventListener('scrollend', onScrollEnd);
-    el.addEventListener('wheel', onWheel, {passive: true});
-    el.addEventListener('touchstart', onTouchStart, {passive: true});
-    el.addEventListener('touchmove', onTouchMove, {passive: true});
-    el.addEventListener('touchend', onTouchEnd, {passive: true});
-    el.addEventListener('touchcancel', onTouchEnd, {passive: true});
 
     // Initial scroll to bottom — content already present at mount.
     requestAnimationFrame(() => {
@@ -472,13 +379,9 @@ export function useChatStreamScroll({
     return () => {
       el.removeEventListener('scroll', onScroll);
       el.removeEventListener('scrollend', onScrollEnd);
-      el.removeEventListener('wheel', onWheel);
-      el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('touchmove', onTouchMove);
-      el.removeEventListener('touchend', onTouchEnd);
-      el.removeEventListener('touchcancel', onTouchEnd);
+      el.style.overflowAnchor = '';
     };
-  }, [scrollRef, enabled, lockThreshold, buttonThreshold]);
+  }, [scrollRef, enabled, lockThreshold, buttonThreshold, setLocked]);
 
   return {
     isScrolledUp,
