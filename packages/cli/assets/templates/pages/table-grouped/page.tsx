@@ -66,7 +66,14 @@
  * the same question.
  */
 
-import {createContext, useContext, useMemo, useState} from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   Area,
@@ -98,6 +105,7 @@ import {Card} from '@astryxdesign/core/Card';
 import {Collapsible} from '@astryxdesign/core/Collapsible';
 import {Icon} from '@astryxdesign/core/Icon';
 import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {Skeleton} from '@astryxdesign/core/Skeleton';
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -760,6 +768,57 @@ const HISTORY: Record<string, number[]> = Object.fromEntries([
  * sound here only because every account in a group is sampled over the same
  * window — same length, same days, same order.
  */
+const CHART_HEIGHT = 132;
+
+/**
+ * How long the row this content sits in takes to open.
+ *
+ * The animating element is an ancestor, so its `transitionend` never reaches
+ * us — bubbling runs child to parent. Walking up to read the duration off
+ * whichever ancestor actually carries the transition costs one pass and keeps
+ * this honest: reduced motion zeroes the token and a theme override changes
+ * it, and both are picked up without knowing a class name.
+ */
+function openDurationMs(from: HTMLElement | null): number {
+  for (let el = from; el; el = el.parentElement) {
+    const style = getComputedStyle(el);
+    if (style.transitionProperty.includes('grid-template-rows')) {
+      return parseFloat(style.transitionDuration) * 1000;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Recharts costs around 400ms of main thread to mount, and spending it while
+ * the row is still growing starves the open: measured 9-12 frames across a
+ * transition with budget for roughly 40. So hold a skeleton of the chart's
+ * exact height until the row has finished opening, then swap. The row animates
+ * over a cheap box, and the chart mounts into a panel that is already still.
+ * The chart arrives at the same moment either way — only the jank moves off
+ * the animation.
+ */
+function useSettledAfterOpen(): [
+  React.RefObject<HTMLDivElement | null>,
+  boolean,
+] {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isSettled, setIsSettled] = useState(false);
+
+  useEffect(() => {
+    const duration = openDurationMs(ref.current);
+    // Nothing to protect when there is no animation.
+    if (duration === 0) {
+      setIsSettled(true);
+      return;
+    }
+    const timer = setTimeout(() => setIsSettled(true), duration);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return [ref, isSettled];
+}
+
 function DetailChart({
   id,
   group,
@@ -769,6 +828,7 @@ function DetailChart({
   group: GroupId;
   isLiability?: boolean;
 }) {
+  const [hostRef, isSettled] = useSettledAfterOpen();
   const range = useRange();
   const points = windowOf(id, range);
   const delta = points[points.length - 1] - points[0];
@@ -786,41 +846,47 @@ function DetailChart({
   const fillId = `detail-fill-${id}`;
 
   return (
-    <ResponsiveContainer width="100%" height={132}>
-      <AreaChart data={data} syncId={group} margin={{top: 4, right: 4}}>
-        <defs>
-          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.2} />
-            <stop offset="100%" stopColor={color} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        {/* No CartesianGrid. A line at every Y tick reads as a table ruled
+    <div ref={hostRef}>
+      {!isSettled ? (
+        <Skeleton width="100%" height={CHART_HEIGHT} radius={2} />
+      ) : (
+        <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+          <AreaChart data={data} syncId={group} margin={{top: 4, right: 4}}>
+            <defs>
+              <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+                <stop offset="100%" stopColor={color} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            {/* No CartesianGrid. A line at every Y tick reads as a table ruled
             behind a table, and the only one doing work is the baseline the
             area sits on — which is the axis line, so draw it there. */}
-        <XAxis
-          dataKey="day"
-          type="number"
-          domain={[0, data.length - 1]}
-          ticks={ticks}
-          tickFormatter={(day: number) => data[day]?.label ?? ''}
-          tick={AXIS_TICK}
-          axisLine={{stroke: GRID_COLOR}}
-          tickLine={false}
-        />
-        <YAxis hide domain={['dataMin', 'dataMax']} />
-        <Tooltip content={<DetailTooltip color={color} />} />
-        <Area
-          type="linear"
-          dataKey="value"
-          stroke={color}
-          strokeWidth={1.5}
-          fill={`url(#${fillId})`}
-          dot={false}
-          activeDot={{r: 3, strokeWidth: 0}}
-          isAnimationActive={false}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+            <XAxis
+              dataKey="day"
+              type="number"
+              domain={[0, data.length - 1]}
+              ticks={ticks}
+              tickFormatter={(day: number) => data[day]?.label ?? ''}
+              tick={AXIS_TICK}
+              axisLine={{stroke: GRID_COLOR}}
+              tickLine={false}
+            />
+            <YAxis hide domain={['dataMin', 'dataMax']} />
+            <Tooltip content={<DetailTooltip color={color} />} />
+            <Area
+              type="linear"
+              dataKey="value"
+              stroke={color}
+              strokeWidth={1.5}
+              fill={`url(#${fillId})`}
+              dot={false}
+              activeDot={{r: 3, strokeWidth: 0}}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      )}
+    </div>
   );
 }
 
