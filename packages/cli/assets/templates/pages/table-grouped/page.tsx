@@ -885,7 +885,7 @@ function DetailTooltip({
           {point.label}
         </Text>
         <HStack gap={2} vAlign="center">
-          <span {...stylex.props(styles.swatch(color ?? UP_COLOR))} />
+          <HStack xstyle={styles.swatch(color ?? UP_COLOR)} />
           <Text weight="semibold" hasTabularNumbers>
             {wholeCurrency.format(point.value)}
           </Text>
@@ -1037,24 +1037,22 @@ function AccountGroup({
             paddingInline={2}
             xstyle={stylex.defaultMarker()}>
             <HStack gap={2} vAlign="center">
-              {/* The cross-fade rides on wrapper spans rather than on the
-                  Icons' own xstyle: `xstyle` is typed for plain values, and
-                  these opacities are conditional on an ancestor's :hover
-                  inside a `@media (hover: hover)` guard, which is a shape only
-                  a raw element's stylex.props takes. */}
-              <span {...stylex.props(styles.categoryTile)}>
-                <span {...stylex.props(styles.tileGlyph, styles.categoryGlyph)}>
+              {/* Wrappers rather than the Icons' own xstyle, because the two
+                  glyphs have to share one grid cell to cross-fade in place.
+                  The tile's own `display: grid` wins over the Stack default. */}
+              <HStack xstyle={styles.categoryTile}>
+                <HStack xstyle={[styles.tileGlyph, styles.categoryGlyph]}>
                   <Icon icon={icon} size="sm" />
-                </span>
-                <span
-                  {...stylex.props(
+                </HStack>
+                <HStack
+                  xstyle={[
                     styles.tileGlyph,
                     styles.chevronGlyph,
                     isOpen ? styles.chevronOpen : styles.chevronClosed,
-                  )}>
+                  ]}>
                   <Icon icon="chevronRight" size="xsm" />
-                </span>
-              </span>
+                </HStack>
+              </HStack>
               <Text weight="semibold">{title}</Text>
               <Badge variant="neutral" label={String(count)} />
             </HStack>
