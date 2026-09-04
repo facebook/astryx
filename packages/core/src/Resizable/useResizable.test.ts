@@ -705,6 +705,51 @@ describe('useResizable percentage configuration (AST-010)', () => {
       // always done.
       expect(result.current.size).toBe(80);
     });
+
+    it('re-clamps a legacy numeric maxSizePx recomputed by the caller, not just a percentage bound', () => {
+      // #5934: a table-inbox reading pane derives `maxSizePx` itself, as
+      // `Math.max(paneFloor, surfaceWidth - listFloor)`, from a plain
+      // ResizeObserver measurement — no `containerRef`/`maxSize` percentage
+      // in play, so this is the caller-recomputed-literal path, not FR1's
+      // basis tracking. #5783 (commit 311deefc) made this path re-resolve
+      // and clamp the selection every render like any other bound, per FR4;
+      // this pins the exact table-inbox pane-widen-then-surface-narrow
+      // sequence from the #5934 review so no fix on either side can drop it.
+      const {result, rerender} = renderHook(
+        ({maxSizePx}: {maxSizePx: number}) =>
+          useResizable({defaultSize: 400, minSizePx: 300, maxSizePx}),
+        {initialProps: {maxSizePx: 1500}},
+      );
+
+      // The user drags the separator out to 1066px, well inside the
+      // 1500px ceiling the wide surface currently allows.
+      act(() => result.current.resize(1066));
+      expect(result.current.size).toBe(1066);
+
+      // The surface then narrows (no drag involved), so the derived ceiling
+      // drops under the size the user chose.
+      rerender({maxSizePx: 834});
+
+      expect(result.current.size).toBe(834);
+      expect(result.current.props._size).toBe(834);
+      expect(result.current.props._maxSizePx).toBe(834);
+    });
+
+    it('leaves an in-range user choice alone when a legacy maxSizePx shrinks', () => {
+      // The other half of #5934's fix: clamping must not become a second
+      // proportional-resize mode. A selection that still fits the new
+      // ceiling is the user's answer and stays exactly where they left it.
+      const {result, rerender} = renderHook(
+        ({maxSizePx}: {maxSizePx: number}) =>
+          useResizable({defaultSize: 400, minSizePx: 300, maxSizePx}),
+        {initialProps: {maxSizePx: 1500}},
+      );
+
+      act(() => result.current.resize(700));
+      rerender({maxSizePx: 834});
+
+      expect(result.current.size).toBe(700);
+    });
   });
 
   describe('structured percent sizes', () => {
