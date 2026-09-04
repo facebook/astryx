@@ -706,7 +706,7 @@ describe('useResizable percentage configuration (AST-010)', () => {
       expect(result.current.size).toBe(80);
     });
 
-    it('re-clamps a legacy numeric maxSizePx recomputed by the caller, not just a percentage bound', () => {
+    it('permanently re-clamps a legacy numeric maxSizePx recomputed by the caller', () => {
       // #5934: a table-inbox reading pane derives `maxSizePx` itself, as
       // `Math.max(paneFloor, surfaceWidth - listFloor)`, from a plain
       // ResizeObserver measurement — no `containerRef`/`maxSize` percentage
@@ -733,6 +733,13 @@ describe('useResizable percentage configuration (AST-010)', () => {
       expect(result.current.size).toBe(834);
       expect(result.current.props._size).toBe(834);
       expect(result.current.props._maxSizePx).toBe(834);
+
+      // Growing the surface again must not revive the pre-clamp selection.
+      rerender({maxSizePx: 1500});
+
+      expect(result.current.size).toBe(834);
+      expect(result.current.props._size).toBe(834);
+      expect(result.current.props._maxSizePx).toBe(1500);
     });
 
     it('leaves an in-range user choice alone when a legacy maxSizePx shrinks', () => {
