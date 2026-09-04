@@ -242,6 +242,23 @@ and stop coordinates.
 Rejected: reducing the entire palette's vibrancy, using translucent colors, or
 changing semantic token mappings in the palette-value change.
 
+### DEC-4 — Map Neutral roles through reviewed palette references
+
+**Reference:** `theme:neutral/DEC-4`
+
+**Decider:** `rubyycheung`, `2026-09-04`
+
+Neutral's semantic, categorical, syntax, and color-bearing effect values use
+named palette-stop references when an approved match exists. Token names and
+meanings remain unchanged. Alpha variants derive from the referenced stop
+rather than duplicating its hex value.
+
+The mapping is role-aware rather than a blind nearest-color conversion. Very
+dark foregrounds preserve their darker role, ordinary backgrounds do not become
+true black automatically, and a reviewed token may use the closer value from
+the companion ramp. Intentional values without an approved palette match remain
+explicit theme-local values.
+
 ## Open questions
 
 - **OQ1 — Is rendered light/dark evidence complete for the proposed tuple and
