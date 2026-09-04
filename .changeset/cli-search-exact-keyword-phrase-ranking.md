@@ -6,4 +6,6 @@
 
 A query that exactly matches a candidate's declared keyword (or name) verbatim is now promoted to a top-tier score, so it always outranks a candidate that only coincidentally contains several of the query's individual words. Single-word queries and queries that don't exactly match a keyword are unaffected.
 
+Follow-up #6001 preserves the required coverage fields on exact-phrase results.
+
 @nynexman4464
