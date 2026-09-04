@@ -71,7 +71,6 @@ import * as stylex from '@stylexjs/stylex';
 import {
   Area,
   AreaChart,
-  CartesianGrid,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -837,7 +836,9 @@ function DetailChart({
             <stop offset="100%" stopColor={color} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid stroke={GRID_COLOR} vertical={false} />
+        {/* No CartesianGrid. A line at every Y tick reads as a table ruled
+            behind a table, and the only one doing work is the baseline the
+            area sits on — which is the axis line, so draw it there. */}
         <XAxis
           dataKey="day"
           type="number"
@@ -845,7 +846,7 @@ function DetailChart({
           ticks={ticks}
           tickFormatter={(day: number) => data[day]?.label ?? ''}
           tick={AXIS_TICK}
-          axisLine={false}
+          axisLine={{stroke: GRID_COLOR}}
           tickLine={false}
         />
         <YAxis hide domain={['dataMin', 'dataMax']} />
@@ -1266,7 +1267,6 @@ export default function ConnectedAccountsTemplate() {
               <SegmentedControl
                 value={range}
                 onChange={value => setRange(value as RangeId)}
-                size="sm"
                 aria-label="Time range">
                 {RANGE_IDS.map(id => (
                   <SegmentedControlItem key={id} value={id} label={id} />
