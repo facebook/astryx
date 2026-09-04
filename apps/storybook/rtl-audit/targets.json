@@ -155,7 +155,7 @@
   },
   {
     "component": "Resizable",
-    "storyId": "lab-resizable--horizontal-split",
+    "storyId": "core-resizable--horizontal-split",
     "dims": [
       "D4"
     ],
@@ -231,6 +231,144 @@
     "selectors": {
       "overlay": "[data-toast-id]",
       "overlayRoot": "body"
+    }
+  },
+  {
+    "component": "InputGroup",
+    "storyId": "core-inputgroup--with-prefix-and-suffix",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-input-group > .astryx-input-group-text:first-child",
+      "next": ".astryx-input-group > .astryx-input-group-text:last-child"
+    }
+  },
+  {
+    "component": "NumberInput",
+    "storyId": "core-numberinput--with-number-steppers",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "input[role=\"spinbutton\"]",
+      "next": "button[aria-label=\"Increment Quantity\"]"
+    }
+  },
+  {
+    "component": "TextArea",
+    "storyId": "core-textarea--max-length-with-value",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": ".astryx-text-area-counter",
+      "overlayRoot": ".astryx-text-area"
+    }
+  },
+  {
+    "component": "Thumbnail",
+    "storyId": "core-thumbnail--with-remove",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": ".astryx-thumbnail .astryx-button",
+      "overlayRoot": ".astryx-thumbnail"
+    }
+  },
+  {
+    "component": "CodeBlock",
+    "storyId": "core-codeblock--default",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-code-block-title",
+      "next": ".astryx-code-block-copy-button"
+    }
+  },
+  {
+    "component": "FileInput",
+    "storyId": "core-fileinput--with-error-status",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-file-input > .astryx-icon:not(.astryx-input-status-icon)",
+      "next": ".astryx-file-input > .astryx-input-status-icon"
+    }
+  },
+  {
+    "component": "Outline",
+    "storyId": "core-outline--controlled",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-outline > div[aria-hidden=\"true\"]",
+      "next": ".astryx-outline > ul"
+    }
+  },
+  {
+    "component": "Popover",
+    "storyId": "core-popover--default",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": "button:has-text(\"Settings\")"
+    },
+    "selectors": {
+      "overlay": ".astryx-popover",
+      "overlayRoot": "button:has-text(\"Settings\")"
+    }
+  },
+  {
+    "component": "SideNav",
+    "storyId": "core-sidenav--default",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "a.astryx-side-nav-item[href=\"/projects\"] > svg.astryx-icon",
+      "next": "a.astryx-side-nav-item[href=\"/projects\"] .astryx-badge"
+    }
+  },
+  {
+    "component": "Chart",
+    "storyId": "lab-chart--line-chart",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "foreignObject > div > div:first-child",
+      "next": "foreignObject > div > div:last-child"
+    }
+  },
+  {
+    "component": "Drawer",
+    "storyId": "lab-drawer--sides",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": "button:has-text(\"Open from end\")"
+    },
+    "selectors": {
+      "overlay": "dialog[data-side=\"end\"]",
+      "overlayRoot": "body"
+    }
+  },
+  {
+    "component": "RichTextEditor",
+    "storyId": "lab-richtexteditor--error-status",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": ".astryx-rich-text-editor > div:first-child > div:last-child",
+      "overlayRoot": ".astryx-rich-text-editor"
     }
   }
 ]

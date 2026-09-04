@@ -14,6 +14,7 @@
  */
 
 import {search} from '../../search/search.mjs';
+import {getResultCoverage} from '../../search/coverage.mjs';
 
 /** A page at/above this score is a confident direct match. */
 const PAGE_DIRECT = 95;
@@ -88,13 +89,15 @@ export async function buildKit(query, options = {}) {
 
   /**
    * Did this result answer enough of the query to stand as a page?
-   * Single-concept queries have nothing to cover, so they always pass.
-   * @param {{matchedTerms?: number, queryTerms?: number}} r
+   * Single-concept queries have nothing to cover, so they always pass. Coverage
+   * stays in a module-private WeakMap and never enters public search/build JSON.
+   * @param {object} r
    */
   const covers = r => {
-    const total = r.queryTerms ?? 1;
+    const coverage = getResultCoverage(r);
+    const total = coverage?.total ?? 1;
     if (total <= 1) return true;
-    return (r.matchedTerms ?? 0) / total >= PAGE_COVERAGE;
+    return (coverage?.matched ?? 0) / total >= PAGE_COVERAGE;
   };
 
   const pages = results
@@ -137,7 +140,8 @@ export async function buildKit(query, options = {}) {
   const hint =
     pages.length + blocks.length + domain.length < THIN_KIT
       ? {
-          reason: 'Few matches. This is keyword search, not semantic — try other wordings.',
+          reason:
+            'Few matches. This is keyword search, not semantic — try other wordings.',
           commands: ['component --list', 'template --list'],
         }
       : undefined;

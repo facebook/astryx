@@ -44,6 +44,15 @@ describe('search leaf — envelope + ranking', () => {
     expect(r.data.results.length).toBeGreaterThan(0);
   }, SLOW);
 
+  it('keeps tokenizer coverage out of the public result shape', async () => {
+    const r = await search('table of contents', {cwd});
+    expect(r.data.results.length).toBeGreaterThan(0);
+    for (const result of r.data.results) {
+      expect(result).not.toHaveProperty('matchedTerms');
+      expect(result).not.toHaveProperty('queryTerms');
+    }
+  }, SLOW);
+
   it('returns an empty result set (not an error) for a no-match query', async () => {
     const r = await search('zzznomatch99', {cwd});
     expect(r.type).toBe('search');
@@ -80,13 +89,23 @@ describe('search leaf — exact keyword phrase outranks incidental token matches
     // pushing it out of the results entirely at the default limit.
     const r = await search('table of contents', {cwd});
     expect(r.data.results[0]?.name).toBe('Outline');
-    expect(r.data.results[0]).toMatchObject({matchedTerms: 2, queryTerms: 2});
   }, SLOW);
 
   it('surfaces Outline for its own declared keyword "heading navigation", ranked first', async () => {
     const r = await search('heading navigation', {cwd});
     expect(r.data.results[0]?.name).toBe('Outline');
   }, SLOW);
+
+  it('preserves query coverage metadata on the promoted exact phrase', () => {
+    const query = 'table of contents';
+    const tokens = tokenizeQuery(query);
+    expect(
+      scoreQuery(query, tokens, {
+        name: 'Outline',
+        keywords: [query],
+      }),
+    ).toMatchObject({matched: tokens.length, total: tokens.length});
+  });
 
   it('still returns no results for a nonsense query (the fix does not loosen matching)', async () => {
     const r = await search('zzzzqqqx', {cwd});

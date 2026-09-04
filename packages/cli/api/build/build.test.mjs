@@ -110,15 +110,6 @@ describe('build API', () => {
 });
 
 describe('build kit — coverage gates the pages group', () => {
-  it('never offers a page that answered less than half the query', async () => {
-    const r = await build('actionable warning banner', {cwd: REPO});
-    expect(r.type).toBe('build.kit');
-    if (r.type !== 'build.kit') return;
-    for (const p of r.data.pages) {
-      expect(p.matchedTerms / p.queryTerms).toBeGreaterThanOrEqual(0.5);
-    }
-  });
-
   it('does not call a one-word coincidence a direct match', async () => {
     // A page's keywords include every component its source renders, so any
     // page that happens to render a Banner keyword-matched "banner" at 90 —
@@ -138,14 +129,18 @@ describe('build kit — coverage gates the pages group', () => {
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     expect(r.data.directMatch).toBe(true);
-    expect(r.data.pages[0].matchedTerms).toBe(r.data.pages[0].queryTerms);
+    expect(r.data.pages.length).toBeGreaterThan(0);
+    for (const page of r.data.pages) {
+      expect(page).not.toHaveProperty('matchedTerms');
+      expect(page).not.toHaveProperty('queryTerms');
+    }
   });
 
   it('leaves single-concept queries alone (nothing to cover)', async () => {
     const r = await build('dashboard', {cwd: REPO});
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
-    for (const p of r.data.pages) expect(p.queryTerms).toBe(1);
+    expect(r.data.pages.length).toBeGreaterThan(0);
   });
 });
 

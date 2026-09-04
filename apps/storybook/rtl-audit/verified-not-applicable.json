@@ -26,5 +26,13 @@
   {
     "component": "lab/CircularProgress",
     "reason": "No direction-sensitive visual, layout, or behavior. The track and fill are concentric SVG circles sharing one center; size, stroke, dash, and clockwise rotation are intentionally identical in LTR and RTL. The optional label is vertically stacked and centered, with no inline positioning or directional glyph."
+  },
+  {
+    "component": "core/BottomSheet",
+    "reason": "BottomSheet owns no inline axis to mirror. The sheet is a centered column inside an insetInline: 0 container; its borders and top corner radii are identical on both inline edges; and its handle spans both inline edges with a centered pill. Motion and scrolling are block-axis only, and header and close chrome come from caller content."
+  },
+  {
+    "component": "unknown/ChartTooltip",
+    "reason": "ChartTooltip uses explicitly physical left/right/top viewport placement and clamping. It has no logical start/end placement, direction-dependent control order, horizontal scrolling action, or coarse form hit target; tooltip rows inherit bidi layout without component-specific directional logic."
   }
 ]

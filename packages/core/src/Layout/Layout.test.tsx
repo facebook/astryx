@@ -259,6 +259,70 @@ describe('Layout', () => {
     });
   });
 
+  describe('LayoutHeader paddingBlockEnd', () => {
+    /** StyleX classes on the header's inner (padding-owning) element, minus
+     * dev-only provenance classes (they contain "__"). */
+    function innerClassSet(container: HTMLElement): Set<string> {
+      const inner = container.firstElementChild!
+        .firstElementChild as HTMLElement;
+      return new Set(
+        inner.className
+          .split(' ')
+          .filter(Boolean)
+          .filter(c => !c.includes('__') && !c.includes('.')),
+      );
+    }
+
+    it('applies a class when paddingBlockEnd is set on its own', () => {
+      const {container, rerender} = render(<LayoutHeader>H</LayoutHeader>);
+      const baseline = innerClassSet(container);
+      rerender(<LayoutHeader paddingBlockEnd={0}>H</LayoutHeader>);
+      expect(innerClassSet(container)).not.toEqual(baseline);
+    });
+
+    it('overrides only the block-end edge of padding', () => {
+      // padding={4} sets all four edges; paddingBlockEnd={0} may only move the
+      // bottom edge, so every other padding class must survive unchanged.
+      const {container, rerender} = render(
+        <LayoutHeader padding={4}>H</LayoutHeader>,
+      );
+      const uniform = innerClassSet(container);
+      rerender(
+        <LayoutHeader padding={4} paddingBlockEnd={0}>
+          H
+        </LayoutHeader>,
+      );
+      const overridden = innerClassSet(container);
+      const removed = [...uniform].filter(c => !overridden.has(c));
+      const added = [...overridden].filter(c => !uniform.has(c));
+      // Something block-end related was dropped and replaced...
+      expect(removed.length).toBeGreaterThan(0);
+      expect(added.length).toBeGreaterThan(0);
+      // ...while the inline and block-start classes are shared by both renders.
+      expect(uniform.size - removed.length).toBeGreaterThan(0);
+    });
+
+    it('spells the override with the shared per-edge family', () => {
+      // The classes the override adds are exactly the ones the standalone
+      // per-edge prop produces, so LayoutHeader and Section stay one family.
+      const {container, rerender} = render(
+        <LayoutHeader padding={4}>H</LayoutHeader>,
+      );
+      const uniform = innerClassSet(container);
+      rerender(
+        <LayoutHeader padding={4} paddingBlockEnd={0}>
+          H
+        </LayoutHeader>,
+      );
+      const added = [...innerClassSet(container)].filter(c => !uniform.has(c));
+      rerender(<LayoutHeader paddingBlockEnd={0}>H</LayoutHeader>);
+      const standalone = innerClassSet(container);
+      for (const cls of added) {
+        expect(standalone.has(cls)).toBe(true);
+      }
+    });
+  });
+
   describe('styling & ref', () => {
     it('forwards ref to the root div', () => {
       const ref = createRef<HTMLDivElement>();

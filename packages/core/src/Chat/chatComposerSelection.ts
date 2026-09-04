@@ -100,12 +100,7 @@ export function isSelectionAtEnd(editable: HTMLElement): boolean {
     return false;
   }
   const range = selection.getRangeAt(0);
-  return isBoundaryAtEdge(
-    editable,
-    range.endContainer,
-    range.endOffset,
-    'end',
-  );
+  return isBoundaryAtEdge(editable, range.endContainer, range.endOffset, 'end');
 }
 
 /**
@@ -126,7 +121,7 @@ function isBoundaryAtEdge(
     return false;
   }
 
-  for (let node: Node | null = container; node && node !== editable; ) {
+  for (let node: Node | null = container; node && node !== editable;) {
     if (hasContentSibling(node, edge)) {
       return false;
     }
