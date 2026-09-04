@@ -1349,6 +1349,117 @@ describe('Stepper', () => {
       expect(screen.getByRole('button', {name: 'Previous step'})).toBeEnabled();
       expect(screen.getByRole('button', {name: 'Next step'})).toBeEnabled();
     });
+
+    it('drops the controls but keeps the name on request', () => {
+      // The shape of a wizard whose footer already has Back and Continue: the
+      // steps stay clickable at full width, and the phone gets one pair of
+      // controls rather than two.
+      atWidth(
+        320,
+        fourSteps({onStepClick: vi.fn(), hasCollapsedControls: false}),
+      );
+      expect(screen.queryByRole('button', {name: 'Next step'})).toBeNull();
+      expect(screen.queryByRole('button', {name: 'Previous step'})).toBeNull();
+
+      const summary = document.querySelector<HTMLElement>(SUMMARY);
+      expect(summary).not.toBeNull();
+      expect(within(summary!).getByText('Shipping')).toBeInTheDocument();
+    });
+
+    it('drops the name but keeps the controls on request', () => {
+      // The inverse: a page that heads each step itself, and navigates by the
+      // stepper alone. Nothing is named twice and the way through survives.
+      atWidth(320, fourSteps({onStepClick: vi.fn(), hasCollapsedLabel: false}));
+      const summary = document.querySelector<HTMLElement>(SUMMARY);
+      expect(summary).not.toBeNull();
+      expect(within(summary!).queryByText('Shipping')).toBeNull();
+      expect(within(summary!).queryByText('Where it goes')).toBeNull();
+      expect(
+        within(summary!).getByRole('button', {name: 'Next step'}),
+      ).toBeInTheDocument();
+    });
+
+    it('leaves the bare track when neither half is wanted', () => {
+      // Both off is a reachable state, not a combination to guard against —
+      // and the row goes with them rather than staying on as an empty box
+      // still spending the frame's gap.
+      atWidth(
+        320,
+        fourSteps({
+          onStepClick: vi.fn(),
+          hasCollapsedControls: false,
+          hasCollapsedLabel: false,
+        }),
+      );
+      expect(document.querySelector(SUMMARY)).toBeNull();
+      expect(screen.getByRole('list')).toBeInTheDocument();
+      expect(screen.getAllByRole('listitem')).toHaveLength(4);
+    });
+
+    it('keeps the sequence whole for a screen reader with both halves off', () => {
+      // The invariant that makes both props safe to reach for: the visible row
+      // was only ever a repeat of the list, so suppressing it cannot shorten
+      // what a screen reader hears. Same expectation as the default collapse.
+      atWidth(
+        320,
+        fourSteps({
+          onStepClick: vi.fn(),
+          hasCollapsedControls: false,
+          hasCollapsedLabel: false,
+        }),
+      );
+      const items = screen.getAllByRole('listitem');
+      expect(items.map(li => li.textContent)).toEqual([
+        'Cartcompleted',
+        'Shipping',
+        'Delivery',
+        'Payment',
+      ]);
+      expect(items[1]).toHaveAttribute('aria-current', 'step');
+    });
+
+    it('leaves a stepper that has room for its labels alone', () => {
+      // Both props are scoped to the collapse and nothing else. Stated as a
+      // test because it is the question consumers ask first — whether turning
+      // the phone row off also strips the desktop labels.
+      atWidth(
+        600,
+        fourSteps({
+          onStepClick: vi.fn(),
+          hasCollapsedControls: false,
+          hasCollapsedLabel: false,
+        }),
+      );
+      for (const name of ['Cart', 'Shipping', 'Delivery', 'Payment']) {
+        expect(screen.getByText(name)).toBeInTheDocument();
+      }
+      expect(
+        screen.getByRole('button', {name: /^Go to step 3: Delivery/}),
+      ).toBeInTheDocument();
+    });
+
+    it('keeps on-track nodes presentational after controls are dropped', () => {
+      // Compact navigation belongs to the summary controls in both layouts.
+      // Turning those controls off leaves the rail as progress information,
+      // rather than reviving a second, denser set of click targets.
+      atWidth(
+        320,
+        fourSteps({
+          indicatorPosition: 'on-track',
+          onStepClick: vi.fn(),
+          hasCollapsedControls: false,
+        }),
+      );
+      expect(screen.queryByRole('button', {name: 'Next step'})).toBeNull();
+      expect(
+        screen.queryByRole('button', {name: /^Go to step 3: Delivery/}),
+      ).toBeNull();
+      const indicators = screen
+        .getAllByRole('listitem')
+        .map(item => item.querySelector('.astryx-step-indicator'));
+      expect(indicators).toHaveLength(4);
+      expect(indicators.every(Boolean)).toBe(true);
+    });
   });
   describe('--step-connector-gap', () => {
     // The on-track layouts draw the connector as one segment either side of
