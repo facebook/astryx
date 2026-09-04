@@ -135,6 +135,7 @@ const styles = stylex.create({
     paddingInline: `calc(${spacingVars['--spacing-1']} - 1px)`,
   },
   contentSection: {
+    position: 'relative',
     minWidth: 0,
     flexGrow: 1,
     display: 'flex',
@@ -172,6 +173,15 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     outline: 'none',
+  },
+  // Capsules keep Tokenizer's normal wrapping behavior. Once one is present,
+  // the empty trigger covers the capsule lane without reserving 40px or
+  // wrapping onto an otherwise blank row.
+  triggerWithTokens: {
+    position: 'absolute',
+    inset: 0,
+    minWidth: 0,
+    padding: 0,
   },
   touchAction: {
     minHeight: spacingVars['--spacing-11'],
@@ -1200,7 +1210,10 @@ export function PowerSearchTouchSurface({
               aria-haspopup="dialog"
               aria-expanded={step != null}
               aria-describedby={triggerDescribedBy}
-              {...stylex.props(styles.trigger)}>
+              {...stylex.props(
+                styles.trigger,
+                filters.length > 0 && styles.triggerWithTokens,
+              )}>
               {filters.length === 0 ? fieldPlaceholder : null}
             </button>
           </div>
