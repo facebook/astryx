@@ -372,9 +372,48 @@ export function generateThemeRules(theme: DefinedTheme): string[] {
   //    themed type's font-size across the astryx-base → astryx-theme layers)
   generateSizeOverrides(theme.components || {}, parts);
 
+  // 6. Heading `weight`-prop overrides. These are emitted after authored type
+  //    rules in the same layer so an explicit prop remains an override even
+  //    when a custom visual type declares its own default weight.
+  generateHeadingWeightOverrides(theme.components || {}, parts);
+
   // (on-media rules are generated separately — see generateOnMediaCSS)
 
   return parts;
+}
+
+/** Named Heading/Text weight props and their theme-owned token values. */
+const HEADING_WEIGHT_TOKEN_MAP: Record<string, string> = {
+  normal: 'var(--font-weight-normal)',
+  medium: 'var(--font-weight-medium)',
+  semibold: 'var(--font-weight-semibold)',
+  bold: 'var(--font-weight-bold)',
+};
+
+/**
+ * Re-emit Heading's explicit weight choices in the theme layer.
+ *
+ * Component and type overrides live above the StyleX base layer, so the
+ * component's ordinary weight class cannot win there by itself. Emitting the
+ * reflected weight classes after authored component rules makes the public
+ * `weight` prop a dependable override of a type or level default.
+ */
+function generateHeadingWeightOverrides(
+  components: Record<string, unknown>,
+  parts: string[],
+): void {
+  if (!('heading' in components)) {
+    return;
+  }
+
+  for (const [weightName, weightValue] of Object.entries(
+    HEADING_WEIGHT_TOKEN_MAP,
+  )) {
+    const suffix = parseStyleKey(`weight:${weightName}`);
+    parts.push(
+      `  ${componentClassSelector('heading', suffix)} { font-weight: ${weightValue}; }`,
+    );
+  }
 }
 
 /**
