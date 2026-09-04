@@ -6,7 +6,7 @@ export const doc = {
   name: 'Grouped Table',
   displayName: 'Grouped Table',
   description:
-    'Heterogeneous records split across collapsible cards, each holding its own table and its own column set, with an icon tile and a right-aligned total in the card header. One time range at the top drives every table, and rows expand in place into a full-width history chart. The shape for groups that do not share a schema, where one grouped table would force empty columns. Accounts, integrations, connections, sections, grouped dataset, expand, or collapse.',
+    'Heterogeneous records split across collapsible cards, each holding its own table and its own column set, with an icon tile and a right-aligned total in the card header. Each table sorts on its own columns, one time range in the page header drives all of them, and rows expand in place into a full-width history chart. The shape for groups that do not share a schema, where one grouped table would force empty columns. Accounts, integrations, connections, sections, grouped dataset, expand, or collapse.',
   isReady: true,
   category: 'Table - Grouped',
 };

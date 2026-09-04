@@ -110,14 +110,14 @@ import {
   pixel,
   proportional,
   useTableRowExpansion,
+  useTableSortable,
+  useTableSortableState,
 } from '@astryxdesign/core/Table';
-import type {TableColumn} from '@astryxdesign/core/Table';
+import type {TableColumn, TableSortComparator} from '@astryxdesign/core/Table';
 import {
-  ArrowPathIcon,
   ArrowsRightLeftIcon,
   BuildingLibraryIcon,
   CreditCardIcon,
-  PlusIcon,
   PresentationChartLineIcon,
 } from '@heroicons/react/24/outline';
 
@@ -280,8 +280,6 @@ const percentFormat = new Intl.NumberFormat('en-US', {
 
 // ============= CHART VOCABULARY =============
 
-const ASSET_COLOR = 'var(--color-data-categorical-blue, #0171E3)';
-const DEBT_COLOR = 'var(--color-data-categorical-orange, #EB6E00)';
 const UP_COLOR = 'var(--color-data-categorical-green, #0B991F)';
 const DOWN_COLOR = 'var(--color-data-categorical-red, #F5394F)';
 const GRID_COLOR = 'var(--color-border, rgba(5, 54, 89, 0.1))';
@@ -382,6 +380,7 @@ const BANK_ACCOUNTS: BankAccount[] = [
 const bankColumns: TableColumn<BankAccount>[] = [
   {
     key: 'name',
+    sortable: true,
     header: 'Account',
     width: proportional(2),
     renderCell: account => (
@@ -395,12 +394,14 @@ const bankColumns: TableColumn<BankAccount>[] = [
   },
   {
     key: 'kind',
+    sortable: true,
     header: 'Type',
     width: pixel(150),
     renderCell: account => <Text>{account.kind}</Text>,
   },
   {
     key: 'available',
+    sortable: true,
     header: 'Available',
     width: pixel(150),
     align: 'end',
@@ -408,12 +409,21 @@ const bankColumns: TableColumn<BankAccount>[] = [
   },
   {
     key: 'change',
+    sortable: true,
     header: 'Change',
     width: pixel(110),
     align: 'end',
     renderCell: account => <ChangeCell id={account.id} />,
   },
 ];
+
+const bankComparators: Partial<
+  Record<string, TableSortComparator<BankAccount>>
+> = {
+  name: (a, b) => a.name.localeCompare(b.name),
+  kind: (a, b) => a.kind.localeCompare(b.kind),
+  available: (a, b) => a.availableCents - b.availableCents,
+};
 
 // ============= GROUP 2 — CREDIT CARDS =============
 
@@ -492,6 +502,7 @@ function UtilizationCell({card}: {card: CreditCardAccount}) {
 const creditCardColumns: TableColumn<CreditCardAccount>[] = [
   {
     key: 'name',
+    sortable: true,
     header: 'Card',
     width: proportional(2),
     renderCell: card => (
@@ -508,12 +519,14 @@ const creditCardColumns: TableColumn<CreditCardAccount>[] = [
   // in all four tables and the eye can run straight down the page.
   {
     key: 'utilization',
+    sortable: true,
     header: 'Utilization',
     width: pixel(150),
     renderCell: card => <UtilizationCell card={card} />,
   },
   {
     key: 'balance',
+    sortable: true,
     header: 'Balance',
     width: pixel(150),
     align: 'end',
@@ -521,6 +534,7 @@ const creditCardColumns: TableColumn<CreditCardAccount>[] = [
   },
   {
     key: 'limit',
+    sortable: true,
     header: 'Limit',
     width: pixel(150),
     align: 'end',
@@ -528,6 +542,7 @@ const creditCardColumns: TableColumn<CreditCardAccount>[] = [
   },
   {
     key: 'change',
+    sortable: true,
     header: 'Change',
     width: pixel(110),
     align: 'end',
@@ -536,6 +551,18 @@ const creditCardColumns: TableColumn<CreditCardAccount>[] = [
     renderCell: card => <ChangeCell id={card.id} isLiability />,
   },
 ];
+
+const creditCardComparators: Partial<
+  Record<string, TableSortComparator<CreditCardAccount>>
+> = {
+  name: (a, b) => a.name.localeCompare(b.name),
+  // Utilization is a ratio, not a balance — sorting it by balance would put a
+  // maxed-out small card below a barely-touched large one.
+  utilization: (a, b) =>
+    a.balanceCents / a.limitCents - b.balanceCents / b.limitCents,
+  balance: (a, b) => a.balanceCents - b.balanceCents,
+  limit: (a, b) => a.limitCents - b.limitCents,
+};
 
 // ============= GROUP 3 — PAYMENT PROCESSORS =============
 
@@ -579,6 +606,7 @@ const PROCESSORS: ProcessorAccount[] = [
 const processorColumns: TableColumn<ProcessorAccount>[] = [
   {
     key: 'name',
+    sortable: true,
     header: 'Processor',
     width: proportional(2),
     renderCell: processor => (
@@ -590,6 +618,7 @@ const processorColumns: TableColumn<ProcessorAccount>[] = [
   },
   {
     key: 'pendingPayout',
+    sortable: true,
     header: 'Pending payout',
     width: pixel(150),
     align: 'end',
@@ -599,6 +628,7 @@ const processorColumns: TableColumn<ProcessorAccount>[] = [
   },
   {
     key: 'feesMtd',
+    sortable: true,
     header: 'Fees (MTD)',
     width: pixel(150),
     align: 'end',
@@ -606,12 +636,21 @@ const processorColumns: TableColumn<ProcessorAccount>[] = [
   },
   {
     key: 'change',
+    sortable: true,
     header: 'Change',
     width: pixel(110),
     align: 'end',
     renderCell: processor => <ChangeCell id={processor.id} />,
   },
 ];
+
+const processorComparators: Partial<
+  Record<string, TableSortComparator<ProcessorAccount>>
+> = {
+  name: (a, b) => a.name.localeCompare(b.name),
+  pendingPayout: (a, b) => a.pendingPayoutCents - b.pendingPayoutCents,
+  feesMtd: (a, b) => a.feesMtdCents - b.feesMtdCents,
+};
 
 // ============= GROUP 4 — INVESTMENT ACCOUNTS =============
 
@@ -655,6 +694,7 @@ const INVESTMENTS: InvestmentAccount[] = [
 const investmentColumns: TableColumn<InvestmentAccount>[] = [
   {
     key: 'name',
+    sortable: true,
     header: 'Account',
     width: proportional(2),
     renderCell: account => (
@@ -666,6 +706,7 @@ const investmentColumns: TableColumn<InvestmentAccount>[] = [
   },
   {
     key: 'marketValue',
+    sortable: true,
     header: 'Market value',
     width: pixel(150),
     align: 'end',
@@ -673,6 +714,7 @@ const investmentColumns: TableColumn<InvestmentAccount>[] = [
   },
   {
     key: 'costBasis',
+    sortable: true,
     header: 'Cost basis',
     width: pixel(150),
     align: 'end',
@@ -680,12 +722,30 @@ const investmentColumns: TableColumn<InvestmentAccount>[] = [
   },
   {
     key: 'change',
+    sortable: true,
     header: 'Change',
     width: pixel(110),
     align: 'end',
     renderCell: account => <ChangeCell id={account.id} />,
   },
 ];
+
+const investmentComparators: Partial<
+  Record<string, TableSortComparator<InvestmentAccount>>
+> = {
+  name: (a, b) => a.name.localeCompare(b.name),
+  marketValue: (a, b) => a.marketValueCents - b.marketValueCents,
+  costBasis: (a, b) => a.costBasisCents - b.costBasisCents,
+};
+
+/** Every row id on the page, so a page-level control can address the details
+ * and not just the cards holding them. */
+const ALL_ROW_IDS = [
+  ...BANK_ACCOUNTS,
+  ...CREDIT_CARDS,
+  ...PROCESSORS,
+  ...INVESTMENTS,
+].map(record => record.id);
 
 // ============= DERIVED HISTORY =============
 
@@ -1030,16 +1090,41 @@ function AccountGroup({
 function GroupTable<T extends AccountRecord>({
   data,
   columns,
+  comparators,
   expandedRows,
   onToggleRow,
   renderExpanded,
 }: {
   data: T[];
   columns: TableColumn<T>[];
+  comparators: Partial<Record<string, TableSortComparator<T>>>;
   expandedRows: Set<string>;
   onToggleRow: (key: string) => void;
   renderExpanded: (item: T) => React.ReactNode;
 }) {
+  const range = useRange();
+
+  // Change is the one column whose value is not in the row — it is derived
+  // from the page's range. The sort memo keys on data identity, so a range
+  // switch has to hand it a different array or the rows would keep the order
+  // computed from the old window while showing figures from the new one.
+  const rows = useMemo(() => data.slice(), [data, range]);
+
+  const sortComparators = useMemo(
+    () => ({
+      ...comparators,
+      change: (a: T, b: T) =>
+        changePercentOf(a.id, range) - changePercentOf(b.id, range),
+    }),
+    [comparators, range],
+  );
+
+  const {sortedData, sortConfig} = useTableSortableState<T>({
+    data: rows,
+    comparators: sortComparators,
+  });
+  const sort = useTableSortable<T>(sortConfig);
+
   const expansion = useTableRowExpansion<T>({
     expandedKeys: expandedRows,
     onToggle: onToggleRow,
@@ -1048,251 +1133,16 @@ function GroupTable<T extends AccountRecord>({
     hasRowClickExpansion: true,
     panelVariant: 'transparent',
   });
+
   return (
     <Table
-      data={data}
+      data={sortedData}
       columns={columns}
       idKey="id"
       density="compact"
       dividers="rows"
-      plugins={{expansion}}
+      plugins={{sort, expansion}}
     />
-  );
-}
-
-// ============= POSITION CHART =============
-
-interface ChartPoint {
-  day: number;
-  label: string;
-  assets: number;
-  debt: number;
-}
-
-function chartData(range: RangeId): ChartPoint[] {
-  const days = RANGE_DAYS[range];
-  const assets = ASSET_HISTORY.slice(-days);
-  const debt = DEBT_HISTORY.slice(-days);
-  return assets.map((value, day) => ({
-    day,
-    label: dayLabel(days - 1 - day),
-    // Cents are the storage unit, dollars are the plotting unit.
-    assets: value / 100,
-    debt: debt[day] / 100,
-  }));
-}
-
-/**
- * Left to itself each axis fills the plot, and two series that share no scale
- * end up occupying the same vertical space — the bands weave through each
- * other and appear to cross at points where nothing crossed. Padding each
- * domain on one side only parks assets in the upper part of the plot and debt
- * in the lower part: both keep their full shape, neither borrows the other's
- * position, and the fact that they never meet is the honest picture.
- */
-function bandDomain(
-  values: number[],
-  place: 'upper' | 'lower',
-): [number, number] {
-  const low = Math.min(...values);
-  const high = Math.max(...values);
-  const span = Math.max(high - low, 1);
-  return place === 'upper'
-    ? [low - span * 1.6, high + span * 0.25]
-    : [low - span * 0.25, high + span * 1.6];
-}
-
-/**
- * A reading and what it is a reading of. The figure leads because it is the
- * thing being looked up, and the dot is on the label rather than on the figure
- * so the colour reads as "this series" rather than as a status on the number.
- *
- * Tabular digits matter more here than anywhere else on the page: this figure
- * changes under the pointer, and proportional digits make it jitter sideways
- * while it does.
- */
-function PositionStat({
-  color,
-  label,
-  value,
-}: {
-  color: string;
-  label: string;
-  value: number;
-}) {
-  return (
-    <VStack gap={1}>
-      <Text type="display-3" weight="semibold" hasTabularNumbers>
-        {wholeCurrency.format(value)}
-      </Text>
-      <LegendKey color={color} label={label} />
-    </VStack>
-  );
-}
-
-function LegendKey({color, label}: {color: string; label: string}) {
-  return (
-    <HStack gap={2} vAlign="center">
-      <span {...stylex.props(styles.swatch(color))} />
-      <Text type="supporting" color="secondary">
-        {label}
-      </Text>
-    </HStack>
-  );
-}
-
-/**
- * The page's one chart and its one control. The range selector lives in here
- * rather than in the page header because the chart is what it most obviously
- * acts on — but it is lifted state, and everything below re-reads it.
- *
- * Two Y axes, which is a thing to do carefully rather than a thing to avoid:
- * debt is around 3% of assets, so on one axis it would be a flat line along
- * the floor and the chart would be about assets alone. Separate axes are
- * honest here because the question is "which way is each of these going", not
- * "how do they compare in size" — the stats above answer that in two figures.
- */
-function PositionChart({
-  range,
-  onRangeChange,
-}: {
-  range: RangeId;
-  onRangeChange: (range: RangeId) => void;
-}) {
-  const data = useMemo(() => chartData(range), [range]);
-  const ticks = useMemo(() => axisTicks(data.length), [data.length]);
-  const bands = useMemo(
-    () => ({
-      assets: bandDomain(
-        data.map(point => point.assets),
-        'upper',
-      ),
-      debt: bandDomain(
-        data.map(point => point.debt),
-        'lower',
-      ),
-    }),
-    [data],
-  );
-
-  // Which point the readings are taken at. The axes are gone, so the two Stats
-  // are the only place a number appears — they follow the pointer, and rest on
-  // the latest point, which is the reading the page is actually about.
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const reading = data[activeIndex ?? data.length - 1] ?? data[data.length - 1];
-
-  return (
-    <Card padding={6} variant="muted">
-      <VStack gap={5}>
-        {/* The stats replace both the title and the legend. A figure with a
-            coloured dot under it says what the band is and what it is worth in
-            one object, where a heading and a key say it in two — and with the
-            axes gone this is the only reading on the chart, so it has to be
-            the first thing read rather than a caption on something else. */}
-        <HStack gap={8} vAlign="start" wrap="wrap">
-          <PositionStat
-            color={ASSET_COLOR}
-            label="Assets"
-            value={reading?.assets ?? 0}
-          />
-          <PositionStat
-            color={DEBT_COLOR}
-            label="Debt"
-            value={reading?.debt ?? 0}
-          />
-        </HStack>
-
-        <ResponsiveContainer width="100%" height={260}>
-          <AreaChart
-            data={data}
-            margin={{top: 8, right: 0, left: 0, bottom: 0}}
-            // activeTooltipIndex is documented as `number | TooltipIndex`,
-            // and in practice it arrives as a string — hence Number() rather
-            // than a typeof check, which silently never matches.
-            onMouseMove={state => {
-              const next = Number(state?.activeTooltipIndex);
-              setActiveIndex(
-                state?.isTooltipActive && Number.isFinite(next) ? next : null,
-              );
-            }}
-            onMouseLeave={() => setActiveIndex(null)}>
-            <defs>
-              {/* An area's fill runs to its own axis floor, and the assets
-                  axis floor is far below the band — left to a plain two-stop
-                  ramp the blue would wash the whole lower plot and sit behind
-                  the debt band. It is spent by 55%, which is above where debt
-                  ever reaches. */}
-              <linearGradient id="assetsGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={ASSET_COLOR} stopOpacity={0.3} />
-                <stop offset="55%" stopColor={ASSET_COLOR} stopOpacity={0.02} />
-                <stop offset="100%" stopColor={ASSET_COLOR} stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="debtGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={DEBT_COLOR} stopOpacity={0.24} />
-                <stop offset="100%" stopColor={DEBT_COLOR} stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid horizontal vertical={false} stroke={GRID_COLOR} />
-            <XAxis
-              dataKey="day"
-              type="number"
-              domain={[0, data.length - 1]}
-              ticks={ticks}
-              tickFormatter={(day: number) => data[day]?.label ?? ''}
-              tick={AXIS_TICK}
-              axisLine={false}
-              tickLine={false}
-            />
-            {/* Both axes hidden, but both still declared: they are what keeps
-                assets in the upper part of the plot and debt in the lower one.
-                Drop them and the two series share a scale, debt flattens onto
-                the floor, and the chart becomes a chart about assets. The
-                readings moved to the stats above. */}
-            <YAxis yAxisId="assets" domain={bands.assets} hide />
-            <YAxis yAxisId="debt" domain={bands.debt} hide />
-            {/* The cursor line stays, the tooltip card does not — the stats
-                above are the readout now, and a card next to the pointer
-                saying the same two numbers is the third place to look. */}
-            <Tooltip content={() => null} cursor={{stroke: GRID_COLOR}} />
-            <Area
-              yAxisId="assets"
-              type="linear"
-              dataKey="assets"
-              stroke={ASSET_COLOR}
-              strokeWidth={1.5}
-              fill="url(#assetsGradient)"
-              dot={false}
-              isAnimationActive={false}
-            />
-            <Area
-              yAxisId="debt"
-              type="linear"
-              dataKey="debt"
-              stroke={DEBT_COLOR}
-              strokeWidth={1.5}
-              fill="url(#debtGradient)"
-              dot={false}
-              isAnimationActive={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-
-        {/* Below the plot, because it is a control over what was just read
-            rather than a heading on it — and because the stats now own the
-            top of the card. */}
-        <HStack hAlign="center">
-          <SegmentedControl
-            size="sm"
-            label="Time range"
-            value={range}
-            onChange={value => onRangeChange(value as RangeId)}>
-            {RANGE_IDS.map(id => (
-              <SegmentedControlItem key={id} value={id} label={id} />
-            ))}
-          </SegmentedControl>
-        </HStack>
-      </VStack>
-    </Card>
   );
 }
 
@@ -1364,7 +1214,19 @@ export default function ConnectedAccountsTemplate() {
   const netChange = netChangeOver(range);
   const isNetUp = netChange >= 0;
 
-  const areAllOpen = openGroups.size === GROUP_IDS.length;
+  // "All open" has to mean the details too. A control labelled Expand all that
+  // opens four cards and leaves thirteen collapsed rows inside them has not
+  // expanded all, and its next click would read as Collapse all while most of
+  // the page is still shut.
+  const isEverythingOpen =
+    openGroups.size === GROUP_IDS.length &&
+    expandedRows.size === ALL_ROW_IDS.length;
+
+  const toggleEverything = () => {
+    const open = !isEverythingOpen;
+    setOpenGroups(open ? new Set(GROUP_IDS) : new Set());
+    setExpandedRows(open ? new Set(ALL_ROW_IDS) : new Set());
+  };
 
   return (
     <RangeContext.Provider value={range}>
@@ -1373,7 +1235,7 @@ export default function ConnectedAccountsTemplate() {
         contentWidth={1200}
         xstyle={styles.wash}
         header={
-          <LayoutHeader hasDivider padding={4}>
+          <LayoutHeader padding={4}>
             <HStack gap={3} vAlign="center" wrap="wrap">
               <StackItem size="fill">
                 <VStack gap={0.5}>
@@ -1397,30 +1259,27 @@ export default function ConnectedAccountsTemplate() {
                 </VStack>
               </StackItem>
               <Button
-                label={areAllOpen ? 'Collapse all' : 'Expand all'}
+                label={isEverythingOpen ? 'Collapse all' : 'Expand all'}
                 variant="ghost"
-                onClick={() =>
-                  setOpenGroups(areAllOpen ? new Set() : new Set(GROUP_IDS))
-                }
+                onClick={toggleEverything}
               />
-              <Button
-                label="Sync now"
-                variant="secondary"
-                icon={<Icon icon={ArrowPathIcon} size="sm" />}
-              />
-              <Button
-                label="Connect account"
-                variant="primary"
-                icon={<Icon icon={PlusIcon} size="sm" />}
-              />
+              {/* The range belongs to the page, not to any one table, so it
+                  sits with the page title rather than inside a card. */}
+              <SegmentedControl
+                value={range}
+                onChange={value => setRange(value as RangeId)}
+                size="sm"
+                aria-label="Time range">
+                {RANGE_IDS.map(id => (
+                  <SegmentedControlItem key={id} value={id} label={id} />
+                ))}
+              </SegmentedControl>
             </HStack>
           </LayoutHeader>
         }
         content={
           <LayoutContent padding={4}>
             <VStack gap={4}>
-              <PositionChart range={range} onRangeChange={setRange} />
-
               <AccountGroup
                 icon={BuildingLibraryIcon}
                 title="Bank accounts"
@@ -1432,6 +1291,7 @@ export default function ConnectedAccountsTemplate() {
                 <GroupTable<BankAccount>
                   data={BANK_ACCOUNTS}
                   columns={bankColumns}
+                  comparators={bankComparators}
                   expandedRows={expandedRows}
                   onToggleRow={toggleRow}
                   renderExpanded={account => (
@@ -1451,6 +1311,7 @@ export default function ConnectedAccountsTemplate() {
                 <GroupTable<CreditCardAccount>
                   data={CREDIT_CARDS}
                   columns={creditCardColumns}
+                  comparators={creditCardComparators}
                   expandedRows={expandedRows}
                   onToggleRow={toggleRow}
                   renderExpanded={card => (
@@ -1470,6 +1331,7 @@ export default function ConnectedAccountsTemplate() {
                 <GroupTable<ProcessorAccount>
                   data={PROCESSORS}
                   columns={processorColumns}
+                  comparators={processorComparators}
                   expandedRows={expandedRows}
                   onToggleRow={toggleRow}
                   renderExpanded={processor => (
@@ -1489,6 +1351,7 @@ export default function ConnectedAccountsTemplate() {
                 <GroupTable<InvestmentAccount>
                   data={INVESTMENTS}
                   columns={investmentColumns}
+                  comparators={investmentComparators}
                   expandedRows={expandedRows}
                   onToggleRow={toggleRow}
                   renderExpanded={account => (
