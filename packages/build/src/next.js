@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-"use strict";
+'use strict';
 
 /**
  * @astryxdesign/build/next
@@ -37,6 +37,66 @@ function findPackageDir(name, from) {
     }
     dir = parent;
   }
+}
+
+/**
+ * Drop the generated aliases a caller has already spoken for. A caller entry
+ * is authoritative for the request it names: `'@astryxdesign/core'` is a prefix
+ * alias covering the package and every subpath under it, while
+ * `'@astryxdesign/core$'` covers only the bare specifier. Without this the
+ * generated entries sit earlier in the alias list and win, so a composed config
+ * silently loads astryx source instead of the caller's implementation.
+ */
+function withoutCallerOverrides(generated, callerAlias) {
+  const exact = new Set();
+  const prefixes = [];
+  for (const key of Object.keys(callerAlias)) {
+    if (key.endsWith('$')) {
+      exact.add(key.slice(0, -1));
+    } else {
+      prefixes.push(key);
+    }
+  }
+  const kept = {};
+  for (const [key, target] of Object.entries(generated)) {
+    const request = key.slice(0, -1);
+    const overridden =
+      exact.has(request) ||
+      prefixes.some(
+        prefix => request === prefix || request.startsWith(`${prefix}/`),
+      );
+    if (!overridden) {
+      kept[key] = target;
+    }
+  }
+  return kept;
+}
+
+/**
+ * Merge the generated aliases under whatever the caller already configured.
+ * `resolve.alias` accepts an object or an array of entries; both are ordered,
+ * first match wins, so the caller's entries stay ahead of ours either way.
+ */
+function mergeAliases(generated, existing) {
+  if (Array.isArray(existing)) {
+    const named = {};
+    for (const entry of existing) {
+      if (entry && typeof entry.name === 'string') {
+        named[entry.onlyModule ? `${entry.name}$` : entry.name] = entry.alias;
+      }
+    }
+    const kept = withoutCallerOverrides(generated, named);
+    return [
+      ...existing,
+      ...Object.entries(kept).map(([key, alias]) => ({
+        name: key.slice(0, -1),
+        onlyModule: true,
+        alias,
+      })),
+    ];
+  }
+  const callerAlias = existing || {};
+  return {...withoutCallerOverrides(generated, callerAlias), ...callerAlias};
 }
 
 /**
@@ -127,10 +187,10 @@ function withAstryx(nextConfig = {}) {
       // global conditions stay as Next's defaults for React and for
       // third-party `source` shippers such as `lexical`.
       config.resolve = config.resolve || {};
-      config.resolve.alias = {
-        ...sourceEntryAliases(astryxPackages, context),
-        ...(config.resolve.alias || {}),
-      };
+      config.resolve.alias = mergeAliases(
+        sourceEntryAliases(astryxPackages, context),
+        config.resolve.alias,
+      );
 
       // Preserve the symlinked node_modules path so Next.js's
       // transpilePackages matcher recognizes @astryxdesign/* packages under
