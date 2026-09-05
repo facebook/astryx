@@ -597,6 +597,13 @@ const themeScopeStart = (/** @type {string} */ name) =>
   `[data-astryx-theme="${name}"]`;
 const THEME_SCOPE_TO = `[data-astryx-theme]`;
 
+// #3658: attribute-specific rules so <Theme mode> can override color-scheme.
+// Emitted once per document: by a standalone theme whose own values use
+// light-dark(), or once per family (the base, or a child whose delta
+// introduces light-dark() the base did not have).
+const COLOR_SCHEME_DECL =
+  '  :root { color-scheme: light dark; }\n  html[data-theme="light"] { color-scheme: light; }\n  html[data-theme="dark"] { color-scheme: dark; }\n\n';
+
 /**
  * Module extensions the theme loader resolves, source before artifact.
  *
@@ -1039,7 +1046,7 @@ function validatePrivateVars(themeDef) {
  * `logger` (silent by default).
  *
  * @param {string} file - Theme file path, resolved against `cwd`.
- * @param {{out?: string, check?: boolean, iconsSpecifier?: string}} [options] -
+ * @param {{out?: string, check?: boolean, iconsSpecifier?: string, family?: {role: 'base', memberNames: string[], files: string[]} | {role: 'child', files: string[]}}} [options] -
  *   `out` overrides the output CSS path; `check` compares against on-disk outputs
  *   instead of writing. `iconsSpecifier` overrides the icon registry import
  *   specifier in the generated module (e.g. `./icons.mjs`); when omitted, the
@@ -1168,8 +1175,112 @@ export async function themeBuild(
     const scopeSelector = themeScopeStart(themeDef.name);
     const scopeTo = THEME_SCOPE_TO;
 
-    const {component, prose} = _generateThemeRulesSplit(resolvedTheme);
+    const family = options.family;
     const cssParts = [];
+    if (family?.role === 'child') {
+      // ---- family child: emit only what this theme changes. The base's
+      // stylesheet (built in the same --family invocation) restates its own
+      // declarations once, scoped to every member, so anything the child
+      // repeats verbatim is dead weight in every document that loads both.
+      const base = resolvedTheme.__extends;
+      if (!base) {
+        throw new AstryxError(
+          `theme "${themeDef.name}" does not extend anything — a --family build needs every member except the base to \`extends\` the base.`,
+          undefined,
+          ERROR_CODES.ERR_THEME_INVALID,
+        );
+      }
+      const baseTokens = base.tokens ?? {};
+      const childTokens = resolvedTheme.tokens ?? {};
+      const missing = Object.keys(baseTokens).filter(k => !(k in childTokens));
+      if (missing.length > 0) {
+        throw new AstryxError(
+          `theme "${themeDef.name}" drops ${missing.length} token(s) its base declares (e.g. ${missing[0]}). ` +
+            'A family build cannot express an unset token — declare it, or build without --family.',
+          undefined,
+          ERROR_CODES.ERR_THEME_INVALID,
+        );
+      }
+      /** @type {Record<string, string>} */
+      const deltaTokens = {};
+      for (const [key, value] of Object.entries(childTokens)) {
+        if (baseTokens[key] !== value) deltaTokens[key] = value;
+      }
+      /** @type {Record<string, any>} */
+      const deltaComponents = {};
+      for (const [name, rules] of Object.entries(resolvedTheme.components ?? {})) {
+        if (JSON.stringify(base.components?.[name]) !== JSON.stringify(rules)) {
+          deltaComponents[name] = rules;
+        }
+      }
+      const deltaTheme = {
+        name: resolvedTheme.name,
+        tokens: deltaTokens,
+        ...(Object.keys(deltaComponents).length > 0
+          ? {components: deltaComponents}
+          : {}),
+      };
+      const {component: deltaComponent} = _generateThemeRulesSplit(deltaTheme);
+      const {component: baseComponent, prose: baseProse} =
+        _generateThemeRulesSplit(base);
+      // Prose is compared whole (it inlines token values, so a type-scale
+      // change surfaces here) and emitted only when it differs from what the
+      // base's family block already carries.
+      const {prose: childProse} = _generateThemeRulesSplit(resolvedTheme);
+      if (childProse.join('\n') !== baseProse.join('\n')) {
+        cssParts.push(
+          `@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${childProse.join('\n\n')}\n}\n}`,
+        );
+      }
+      // Generated prop-override rules (size/color) regenerate byte-identical
+      // for identical component sets — the base's family block carries those.
+      // The theme-independent data-token defaults (@layer astryx-base) ride
+      // the base's stylesheet for the same reason: a child stylesheet is only
+      // ever loaded beside the base's.
+      const baseRules = new Set(baseComponent);
+      const deltaRules = deltaComponent.filter(
+        (/** @type {string} */ rule) => !baseRules.has(rule),
+      );
+      if (deltaRules.length > 0) {
+        const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${deltaRules.join('\n\n')}\n}`;
+        // #3658 color-scheme preamble: the base emits it for the family when
+        // ITS OWN values use light-dark(); a child re-emits only when its
+        // delta introduces light-dark() that the base did not have.
+        const baseEmitsColorScheme = JSON.stringify([
+          base.tokens ?? {},
+          base.components ?? {},
+        ]).includes('light-dark(');
+        const childIntroducesColorScheme = JSON.stringify([
+          deltaTokens,
+          deltaComponents,
+        ]).includes('light-dark(');
+        const colorSchemeDecl =
+          !baseEmitsColorScheme && childIntroducesColorScheme
+            ? COLOR_SCHEME_DECL
+            : '';
+        cssParts.push(
+          `@layer astryx-theme {\n${colorSchemeDecl}${componentScope}\n}`,
+        );
+      }
+      // On-media surface overrides: identical resolved surfaces are covered
+      // by the base's family block; only a child that changes them re-emits.
+      if (_generateOnMediaCSS) {
+        const childOnMedia = _generateOnMediaCSS(resolvedTheme);
+        const baseOnMedia = _generateOnMediaCSS(base);
+        const normalized = childOnMedia
+          ? childOnMedia.split(scopeSelector).join(themeScopeStart(base.name))
+          : '';
+        if (childOnMedia && normalized !== baseOnMedia) {
+          cssParts.push(`@layer astryx-theme {\n${childOnMedia}\n}`);
+        }
+      }
+      if (cssParts.length === 0) {
+        logger.log('No overrides found — nothing to build.');
+        return null;
+      }
+      css = cssParts.join('\n\n') + '\n';
+    } else {
+    const {component, prose} = _generateThemeRulesSplit(resolvedTheme);
     // Prose element defaults always ship — the `<Theme>` runtime
     // (generateThemeCSS) always emits them, so the build must too, or the
     // CLI output would diverge from runtime. They go in @layer reset
@@ -1193,7 +1304,7 @@ export async function themeBuild(
         resolvedTheme.components ?? {},
       ]);
       const colorSchemeDecl = themeOwnValues.includes('light-dark(')
-        ? '  :root { color-scheme: light dark; }\n  html[data-theme="light"] { color-scheme: light; }\n  html[data-theme="dark"] { color-scheme: dark; }\n\n'
+        ? COLOR_SCHEME_DECL
         : '';
       cssParts.push(
         `@layer astryx-theme {\n${colorSchemeDecl}${componentScope}\n}`,
@@ -1230,12 +1341,54 @@ export async function themeBuild(
         `@layer astryx-base {\n${baseCss}\n}`,
       );
     }
+    if (family?.role === 'base' && family.memberNames.length > 0) {
+      // ---- family base: restate this theme's declarations once, scoped to
+      // every member, so a member's stylesheet only carries its own deltas.
+      // The token block is wrapped in :where(:scope) — zero specificity — so
+      // a member's own `:scope` block wins no matter which stylesheet the
+      // document loaded first.
+      const familyScope = family.memberNames
+        .map(name => themeScopeStart(name))
+        .join(', ');
+      if (prose.length > 0) {
+        cssParts.push(
+          `@layer reset {\n@scope (${familyScope}) to (${scopeTo}) {\n${prose.join('\n\n')}\n}\n}`,
+        );
+      }
+      if (component.length > 0) {
+        const familyInner = component
+          .map((/** @type {string} */ rule) =>
+            rule.startsWith('  :scope {')
+              ? rule.replace('  :scope {', '  :where(:scope) {')
+              : rule,
+          )
+          .join('\n\n');
+        cssParts.push(
+          `@layer astryx-theme {\n@scope (${familyScope}) to (${scopeTo}) {\n${familyInner}\n}\n}`,
+        );
+      }
+      if (_generateOnMediaCSS) {
+        const onMediaCss = _generateOnMediaCSS(resolvedTheme);
+        if (onMediaCss) {
+          cssParts.push(
+            `@layer astryx-theme {\n${onMediaCss.split(scopeSelector).join(familyScope)}\n}`,
+          );
+        }
+      }
+    }
     css = cssParts.join('\n\n') + '\n';
+    }
   }
 
   // Source path relative to cwd — used in @generated headers
   const sourceRelative = path.relative(cwd, filePath);
-  const buildCommand = `astryx theme build ${sourceRelative}${options.out ? ' --out ' + path.relative(cwd, path.resolve(cwd, options.out)) : ''}`;
+  // A family artifact's bytes depend on every member, so its header records
+  // the WHOLE invocation (base first, members sorted) — identical in every
+  // member's header, reproducible as typed, and byte-stable across rebuilds.
+  // A per-file spelling would not even run: --family refuses <2 files.
+  const buildCommand = options.family
+    ? `astryx theme build --family ${options.family.files.join(' ')}`
+    : `astryx theme build ${sourceRelative}${options.out ? ' --out ' + path.relative(cwd, path.resolve(cwd, options.out)) : ''}`;
   // Stable provenance recorded in @generated headers — versions, not a
   // timestamp, so identical inputs produce byte-identical output.
   const versions = resolveToolVersions(cwd);
@@ -1466,3 +1619,84 @@ Or with a <link> tag:
     },
   };
 }
+
+/**
+ * Classify a `--family` build's inputs: exactly one base plus the themes that
+ * `extends` it. Loads each file the same way `themeBuild` does and reads the
+ * `__extends` provenance defineTheme records, so the relationship comes from
+ * the sources themselves, never from argument order.
+ *
+ * Returns a map of absolute file path -> the `options.family` value
+ * `themeBuild` takes for that file. Every option carries `files`: the
+ * canonical invocation list (base first, members sorted by their given path),
+ * which the `@generated` header records identically in every member. BOTH the
+ * recorded command and the base's family-scope selector list derive from that
+ * canonical order, so the same file set builds byte-identical output whatever
+ * the argument order.
+ *
+ * @param {string[]} files - Theme file paths, resolved against `cwd`.
+ * @param {{cwd?: string}} [ctx]
+ * @returns {Promise<Map<string, {role: 'base', memberNames: string[], files: string[]} | {role: 'child', files: string[]}>>}
+ */
+export async function resolveThemeFamily(files, {cwd = process.cwd()} = {}) {
+  /** @type {Array<{filePath: string, theme: any}>} */
+  const loaded = [];
+  for (const file of files) {
+    const filePath = path.resolve(cwd, file);
+    let theme;
+    try {
+      theme = await extractThemeDefinition(filePath);
+    } catch (e) {
+      const err = /** @type {Error} */ (e);
+      throw new AstryxError(err.message, undefined, ERROR_CODES.ERR_THEME_LOAD);
+    }
+    loaded.push({filePath, theme});
+  }
+  const names = new Set(loaded.map(entry => entry.theme?.name));
+  const bases = loaded.filter(
+    entry => !names.has(entry.theme?.__extends?.name),
+  );
+  if (bases.length !== 1) {
+    const description =
+      bases.length === 0
+        ? 'every file extends another file in the set (a cycle)'
+        : `${bases.map(entry => `"${entry.theme?.name}"`).join(', ')} do not extend any theme in the set`;
+    throw new AstryxError(
+      `--family needs exactly one base theme plus the themes that \`extends\` it: ${description}.`,
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+  const base = bases[0];
+  const children = loaded.filter(entry => entry !== base);
+  for (const child of children) {
+    if (child.theme?.__extends?.name !== base.theme?.name) {
+      throw new AstryxError(
+        `--family: theme "${child.theme?.name}" extends "${child.theme?.__extends?.name ?? 'nothing'}", not the family base "${base.theme?.name}".`,
+        undefined,
+        ERROR_CODES.ERR_THEME_INVALID,
+      );
+    }
+  }
+  /** @type {Map<string, {role: 'base', memberNames: string[], files: string[]} | {role: 'child', files: string[]}>} */
+  const roles = new Map();
+  const byPath = new Map(loaded.map((entry, i) => [entry.filePath, files[i]]));
+  // Canonical member order: sorted by the invocation path (see the doc block).
+  const sortedChildren = [...children].sort((a, b) =>
+    String(byPath.get(a.filePath)).localeCompare(String(byPath.get(b.filePath))),
+  );
+  const invocation = [
+    byPath.get(base.filePath),
+    ...sortedChildren.map(child => byPath.get(child.filePath)),
+  ].map(String);
+  roles.set(base.filePath, {
+    role: 'base',
+    memberNames: sortedChildren.map(entry => String(entry.theme.name)),
+    files: invocation,
+  });
+  for (const child of children) {
+    roles.set(child.filePath, {role: 'child', files: invocation});
+  }
+  return roles;
+}
+

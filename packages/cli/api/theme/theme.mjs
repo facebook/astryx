@@ -9,7 +9,7 @@
  * leaf it wants.
  */
 
-export {themeBuild, importSpecifier} from './build/build.mjs';
+export {themeBuild, importSpecifier, resolveThemeFamily} from './build/build.mjs';
 export {themeAdd} from './add/add.mjs';
 export {themeTemplate} from './template/template.mjs';
 export {themeTargets} from './targets/targets.mjs';

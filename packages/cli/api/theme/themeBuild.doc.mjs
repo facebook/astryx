@@ -63,6 +63,12 @@ export const doc = {
         'Override the icon-registry import specifier in the generated JS module, for example ./icons.mjs. When omitted, the source specifier is preserved.',
     },
     {
+      name: 'options.family',
+      type: 'object',
+      description:
+        "This file's role in a --family build, from resolveThemeFamily(): {role: 'base', memberNames, files} restates the base's declarations once, scoped to every member; {role: 'child', files} emits only the deltas against the base recorded on the theme's __extends. Omitted for a standalone build.",
+    },
+    {
       name: 'ctx.cwd',
       type: 'string',
       description:

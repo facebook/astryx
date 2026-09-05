@@ -39,7 +39,7 @@ import {themeAdd} from '../../../api/theme/add/add.mjs';
 import {themeTemplate} from '../../../api/theme/template/template.mjs';
 import {themeList} from '../../../api/theme/list/list.mjs';
 import {themeTargets} from '../../../api/theme/targets/targets.mjs';
-import {themeBuild, importSpecifier} from '../../../api/theme/build/build.mjs';
+import {themeBuild, importSpecifier, resolveThemeFamily} from '../../../api/theme/build/build.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as themeGroup} from './theme.doc.mjs';
 import {doc as themeBuildCommand} from './theme-build.doc.mjs';
@@ -324,6 +324,37 @@ export function registerTheme(program) {
         return;
       }
 
+      // --family builds the set as one unit (a base plus its extends
+      // children), so the modes that build files independently refuse it.
+      if (options.family && options.watch) {
+        cliError('--family cannot be combined with --watch', {
+          code: ERROR_CODES.ERR_THEME_INVALID,
+        });
+        return;
+      }
+      if (options.family && entries.length < 2) {
+        cliError(
+          '--family needs at least two theme files: the base and the themes that extends it.',
+          {code: ERROR_CODES.ERR_THEME_INVALID},
+        );
+        return;
+      }
+      /** @type {Map<string, {role: 'base', memberNames: string[]} | {role: 'child'}> | null} */
+      let familyRoles = null;
+      if (options.family) {
+        try {
+          familyRoles = await resolveThemeFamily(
+            entries.map(entry => entry.file),
+            {cwd: process.cwd()},
+          );
+        } catch (e) {
+          const err =
+            /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+          cliError(err.message, {suggestions: err.suggestions, code: err.code});
+          return;
+        }
+      }
+
       // Watch mode: run an initial build, then rebuild on every change to the
       // theme file. Watch is a human-interactive, long-running mode — it is not
       // supported in --json (machine) mode, which expects a single envelope.
@@ -355,6 +386,7 @@ export function registerTheme(program) {
               out: options.out,
               check: options.check,
               iconsSpecifier: options.iconsSpecifier,
+              family: familyRoles?.get(entry.filePath),
             },
             {cwd: process.cwd()},
           );
