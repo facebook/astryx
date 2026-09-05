@@ -266,7 +266,7 @@ export function Heading({
       <Component
         ref={mergedRef}
         {...mergeProps(
-          themeProps('heading', {level, color, ...(type && {type})}),
+          themeProps('heading', {level, color, type}),
           stylex.props(
             colorStyles[resolveStyleColor(color)],
             builtinType

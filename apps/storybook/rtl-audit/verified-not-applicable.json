@@ -12,6 +12,10 @@
     "reason": "FieldStatus uses block-flow message layout and logical padding and corner radii. Its status glyphs are non-directional, and it has no side-specific placement, order, scrolling, dragging, overlays, or directional keyboard behavior."
   },
   {
+    "component": "core/Heading",
+    "reason": "Heading is typography-only. Its level, type, color, wrapping, truncation, and decoration styles do not position or reorder content on the inline axis; justify uses logical start/end values, and the optional truncation tooltip uses logical placement vocabulary. It renders no directional glyph, separator, control, physical inset, transform, drag, scroll, overlay, or directional keyboard behavior."
+  },
+  {
     "component": "core/Spinner",
     "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG — two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
   },
