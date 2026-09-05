@@ -44,7 +44,7 @@ const MONO = "'JetBrains Mono', 'SF Mono', Menlo, monospace";
 type AlgorithmView = 'oklch' | 'hct' | 'compare';
 type LabView = 'generator' | 'themes';
 type VibrancyPreset = 'muted' | 'balanced' | 'vibrant';
-type StopPreset = 'default-21' | 'compact-11' | 'custom';
+type StopPreset = 'full-21' | 'compact-11' | 'custom';
 type EditableAnchor = {
   mode: PaletteMode;
   stop: number;
@@ -95,7 +95,7 @@ const INITIAL_FAMILIES: EditableFamily[] = [
         mode: 'light',
         stop: 80,
         color: '#f8c723',
-        policy: 'flexible',
+        policy: 'preferred',
         maxDeltaE: 3,
       },
     ],
@@ -106,7 +106,7 @@ const INITIAL_FAMILIES: EditableFamily[] = [
         mode: 'light',
         stop: 50,
         color: '#358a3a',
-        policy: 'flexible',
+        policy: 'preferred',
         maxDeltaE: 3,
       },
     ],
@@ -119,7 +119,7 @@ const INITIAL_FAMILIES: EditableFamily[] = [
         mode: 'light',
         stop: 50,
         color: '#980fb2',
-        policy: 'flexible',
+        policy: 'preferred',
         maxDeltaE: 3,
       },
     ],
@@ -734,9 +734,8 @@ function ThemeComparisonView({
           </Text>
         </HStack>
         <Text type="supporting" color="secondary">
-          {theme.description} Existing black and white endpoints are omitted
-          from the difference summary because they are identical in every
-          generated family.
+          {theme.description} Shared black and white endpoints are omitted from
+          the display but remain in exported data.
         </Text>
         {hasSharedReferences && (
           <Text
@@ -902,9 +901,9 @@ export default function PaletteGeneratorPage() {
     useState<NeutralProfile>('neutral-v1');
   const [modeStrategy, setModeStrategy] =
     useState<ModeStrategy>('light-and-dark');
-  const [stopPreset, setStopPreset] = useState<StopPreset>('default-21');
+  const [stopPreset, setStopPreset] = useState<StopPreset>('full-21');
   const [customStops, setCustomStops] = useState(
-    '10, 20, 30, 40, 50, 60, 70, 80, 90',
+    '0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100',
   );
   const [families, setFamilies] = useState<EditableFamily[]>(INITIAL_FAMILIES);
   const [selectedThemeId, setSelectedThemeId] = useState(
@@ -915,7 +914,7 @@ export default function PaletteGeneratorPage() {
   const stopResolution = useMemo(() => {
     try {
       const stops =
-        stopPreset === 'default-21'
+        stopPreset === 'full-21'
           ? [...FULL_21_STOPS]
           : stopPreset === 'compact-11'
             ? [...COMPACT_11_STOPS]
@@ -1161,10 +1160,9 @@ export default function PaletteGeneratorPage() {
                     }))}
                   />
                   <Text type="supporting" color="secondary">
-                    Theme comparisons focus on the shared 5–95 colors and each
-                    theme&apos;s supported mode; the preview still includes the
-                    default black and white endpoints. Matcha and Chocolate do
-                    not yet publish complete tonal ramps.
+                    Theme comparisons use the full 21-stop reference and each
+                    theme&apos;s supported mode. Matcha and Chocolate do not yet
+                    publish complete tonal ramps.
                   </Text>
                   <HStack
                     gap={2}
@@ -1245,7 +1243,7 @@ export default function PaletteGeneratorPage() {
                       value={stopPreset}
                       onChange={value => setStopPreset(value as StopPreset)}
                       size="sm">
-                      <SegmentedControlItem value="default-21" label="21" />
+                      <SegmentedControlItem value="full-21" label="21" />
                       <SegmentedControlItem value="compact-11" label="11" />
                       <SegmentedControlItem value="custom" label="Custom" />
                     </SegmentedControl>
@@ -1390,7 +1388,7 @@ export default function PaletteGeneratorPage() {
                                       'light',
                                     ),
                                     color: family.seed,
-                                    policy: 'flexible',
+                                    policy: 'preferred',
                                     maxDeltaE: 2,
                                   },
                                 ],
@@ -1422,7 +1420,7 @@ export default function PaletteGeneratorPage() {
                                 options={[
                                   {value: 'exact', label: 'Exact'},
                                   {value: 'bounded', label: 'Bounded'},
-                                  {value: 'flexible', label: 'Flexible'},
+                                  {value: 'preferred', label: 'Preferred'},
                                 ]}
                               />
                               <IconButton
@@ -1545,7 +1543,7 @@ export default function PaletteGeneratorPage() {
                     Vibrancy is hue-, tone-, and mode-aware—not one chroma
                     multiplier applied equally to every family. Exact anchors
                     must be preserved; bounded anchors may move only within the
-                    stated ΔE; flexible anchors may move and report the
+                    stated ΔE; preferred anchors may move and report the
                     difference. Anchor corrections taper through neighboring
                     stops instead of changing one isolated swatch.
                   </Text>

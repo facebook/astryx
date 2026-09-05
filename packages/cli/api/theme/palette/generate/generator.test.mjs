@@ -3,10 +3,6 @@
 import {createHash} from 'node:crypto';
 import {describe, expect, it} from 'vitest';
 import {
-  generatePaletteSet as generatePrototypePaletteSet,
-  FULL_21_STOPS as PROTOTYPE_DEFAULT_21_STOPS,
-} from '../../../../../../apps/sandbox/src/app/(sandbox)/pages/palette-generator/generator.ts';
-import {
   COMPACT_11_STOPS,
   DEFAULT_21_STOPS,
   PALETTE_RECIPE,
@@ -31,24 +27,6 @@ function candidateDigest(request) {
 }
 
 describe('astryx-oklch-v1 palette generator', () => {
-  it('matches the pinned Sandbox OKLCH result for the default recipe', () => {
-    const production = generatePaletteSet({families});
-    const prototype = generatePrototypePaletteSet({
-      algorithm: 'oklch-v1-experimental',
-      vibrancy: 50,
-      neutralProfile: 'neutral-v1',
-      modeStrategy: 'light-and-dark',
-      stops: [...PROTOTYPE_DEFAULT_21_STOPS],
-      families,
-    });
-
-    expect(production.recipe).toBe(PALETTE_RECIPE);
-    expect(production.status).toBe('candidate');
-    expect(production.families).toEqual(prototype.families);
-    expect(production.coordination).toEqual(prototype.coordination);
-    expect(production.errors).toEqual([]);
-  });
-
   it('returns directly usable candidate data without filesystem work', () => {
     const candidate = generateTonalPalette({
       families: [families[1]],
@@ -66,7 +44,7 @@ describe('astryx-oklch-v1 palette generator', () => {
     expect(candidate.white).toBe('#ffffff');
   });
 
-  it('locks the normative recipe fixtures independently from the Sandbox', () => {
+  it('locks the normative recipe fixtures', () => {
     expect(candidateDigest({families})).toBe(
       '44ba910320e57a8a56dd87d6a6540d4d21af97d465c6356c366328bee9949ef2',
     );

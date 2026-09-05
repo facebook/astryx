@@ -130,11 +130,9 @@ outside Core theme normalization and runtime behavior.
   control. Edited accepted data MUST NOT claim exact regeneration, and ordinary
   theme builds MUST NOT rerun the generator.
 - **FR8 — The selected recipe preserves complete-family evidence.** The first
-  production recipe MUST preserve the intended results of
-  `apps/sandbox/src/app/(sandbox)/pages/palette-generator/generator.ts` at
-  repository commit `d77fd8b43bc3f40dd80e605248fd87c20ccdc03c` rather than
-  reopening the OKLCH-versus-HCT visual decision.
-  Before release, its version-pinned evidence MUST cover complete family sets,
+  production recipe MUST be pinned by its normative algorithm and canonical
+  fixtures rather than another implementation. Before release, its
+  version-pinned evidence MUST cover complete family sets,
   rendered light/dark contexts, hue continuity, luminance and adjacent-stop
   distinction, gamut, family balance, CVD simulations, reproducibility, and
   performance. Fixtures cover blue-to-purple, yellow-to-brown, disproportionate
@@ -184,10 +182,8 @@ outside Core theme normalization and runtime behavior.
 
 ## Implementation contract
 
-1. The implementation PR pins the current Sandbox OKLCH behavior as
-   `astryx-oklch-v1`, copies its constants and transformations into one owned
-   engine, and adds exact regression vectors. The Sandbox remains a prototype,
-   not the production import path.
+1. The implementation PR defines `astryx-oklch-v1` in one owned production
+   engine and pins its constants, transformations, and exact regression vectors.
 2. The pure authoring API and CLI adapter use one deterministic engine and agree
    on recipe semantics. The CLI follows `architecture:cli-surface` for its
    command, response, error, documentation, support, and write contract.
@@ -203,7 +199,7 @@ outside Core theme normalization and runtime behavior.
 
 ### `astryx-oklch-v1` normative recipe
 
-The first production recipe is defined here rather than by mutable Sandbox code:
+The first production recipe is defined here and pinned by canonical fixtures:
 
 - Normalize supported seed and anchor colors to lowercase six-digit sRGB hex.
 - Convert sRGB through the standard D65 OKLab matrices, then express hue and

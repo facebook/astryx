@@ -58,15 +58,16 @@ describe('experimental palette generator', () => {
     }
   });
 
-  it('supports the default and compact stop presets', () => {
+  it('supports the full and compact stop presets', () => {
     expect(validateStops([...FULL_21_STOPS])).toHaveLength(21);
     expect(validateStops([...COMPACT_11_STOPS])).toHaveLength(11);
     expect(parseStopList('0, 25, 50, 75, 100')).toEqual([0, 25, 50, 75, 100]);
   });
 
-  it('accepts specialized layouts and rejects empty, duplicate, and unordered layouts', () => {
-    expect(validateStops([10, 50, 100])).toEqual([10, 50, 100]);
-    expect(() => validateStops([])).toThrow('at least one stop');
+  it('rejects incomplete, duplicate, and unordered stop layouts', () => {
+    expect(() => validateStops([10, 50, 100])).toThrow(
+      'include stops 0 and 100',
+    );
     expect(() => validateStops([0, 50, 50, 100])).toThrow(
       'unique and strictly increasing',
     );
@@ -230,31 +231,6 @@ describe('experimental palette generator', () => {
     expect(result.errors[0].message).toContain('not present');
   });
 
-  it('does not let anchors turn the absolute endpoints into tinted colors', () => {
-    const result = generatePaletteSet(
-      request({
-        families: [
-          {
-            id: 'blue',
-            name: 'Blue',
-            seed: '#0064e0',
-            anchors: [
-              {
-                mode: 'light',
-                stop: 0,
-                color: '#001122',
-                policy: 'exact',
-              },
-            ],
-          },
-        ],
-      }),
-    );
-
-    expect(result.families).toEqual([]);
-    expect(result.errors[0].message).toContain('reserved for exact black');
-  });
-
   it('produces distinct, monotonic light and dark ramps', () => {
     const result = generatePaletteSet(request());
     const family = result.families[0];
@@ -326,7 +302,7 @@ describe('experimental palette generator', () => {
     );
 
     expect(tone30.H).toBeGreaterThan(35);
-    expect(tone30.H).toBeLessThan(50);
+    expect(tone30.H).toBeLessThan(48);
     expect(tone30.C).toBeGreaterThan(0.1);
     expect(result.families[0].light?.diagnostics.hueIdentityRisk).toBeNull();
   });
@@ -352,8 +328,6 @@ describe('experimental palette generator', () => {
       /^#([0-9a-f]{2})\1\1$/,
     );
     expect(neutral.families[0].dark?.colors[90]).not.toBe('#ffffff');
-    expect(neutral.families[0].dark?.colors[95]).not.toBe('#ffffff');
-    expect(neutral.families[0].dark?.colors[0]).toBe('#000000');
     expect(neutral.families[0].dark?.colors[100]).toBe('#ffffff');
   });
 

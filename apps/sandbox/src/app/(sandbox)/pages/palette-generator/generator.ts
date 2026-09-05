@@ -31,7 +31,7 @@ export type PaletteAlgorithm = 'oklch-v1-experimental' | 'hct-v1-experimental';
 export type NeutralProfile = 'neutral-v1' | 'warm-v1' | 'cool-v1' | 'custom';
 export type PaletteMode = 'light' | 'dark';
 export type ModeStrategy = 'light-only' | 'dark-only' | 'light-and-dark';
-export type AnchorPolicy = 'exact' | 'bounded' | 'flexible';
+export type AnchorPolicy = 'exact' | 'bounded' | 'preferred';
 
 export interface PaletteAnchor {
   mode: PaletteMode;
@@ -112,6 +112,9 @@ interface PolarColor {
 }
 
 const DARK_CHROMA_FACTOR = 0.85;
+const DARK_TONE_LIFT = 5;
+const DARK_LIFT_TAPER_START = 80;
+const DARK_LIFT_TAPER_END = 95;
 
 function normalizeHue(hue: number): number {
   return ((hue % 360) + 360) % 360;
@@ -144,8 +147,8 @@ function normalizedHex(input: string): string {
 }
 
 export function validateStops(stops: number[]): number[] {
-  if (stops.length < 1) {
-    throw new Error('A palette requires at least one stop.');
+  if (stops.length < 2) {
+    throw new Error('A palette requires at least two stops.');
   }
 
   const normalized = [...stops];
@@ -161,6 +164,10 @@ export function validateStops(stops: number[]): number[] {
     if (normalized[index] <= normalized[index - 1]) {
       throw new Error('Stops must be unique and strictly increasing.');
     }
+  }
+
+  if (normalized[0] !== 0 || normalized[normalized.length - 1] !== 100) {
+    throw new Error('Complete ramps must include stops 0 and 100.');
   }
 
   return normalized;
@@ -207,21 +214,6 @@ function hueBalanceFactor(hue: number): number {
   return 1;
 }
 
-function highToneChromaFactor(hue: number, tone: number): number {
-  if (tone <= 60) {
-    return 1;
-  }
-  const taper = smoothstep((tone - 60) / 35);
-  const normalized = normalizeHue(hue);
-  if (normalized >= 115 && normalized < 175) {
-    return 1 - 0.28 * taper;
-  }
-  if (normalized >= 175 && normalized < 200) {
-    return 1 - 0.4 * taper;
-  }
-  return 1;
-}
-
 /**
  * Constant-hue orange becomes brown quickly in the lower sRGB gamut. A gentle
  * redward rotation below tone 50 preserves orange identity and unlocks more
@@ -244,7 +236,7 @@ function toneAdjustedHue(
   }
 
   const darkening = clamp((50 - tone) / 40, 0, 1);
-  return normalizeHue(normalized - 8 * Math.sqrt(darkening));
+  return normalizeHue(normalized - 18 * Math.sqrt(darkening));
 }
 
 function toneChromaEnvelope(tone: number): number {
@@ -281,6 +273,19 @@ function coordinatedChroma(
 ): number {
   const target = algorithm === 'oklch-v1-experimental' ? 0.18 : 65;
   return sourceChroma * 0.35 + target * 0.65;
+}
+
+function darkTone(tone: number): number {
+  if (tone >= DARK_LIFT_TAPER_END) {
+    return tone;
+  }
+  if (tone <= DARK_LIFT_TAPER_START) {
+    return Math.min(100, tone + DARK_TONE_LIFT);
+  }
+  const ratio =
+    (DARK_LIFT_TAPER_END - tone) /
+    (DARK_LIFT_TAPER_END - DARK_LIFT_TAPER_START);
+  return Math.min(100, tone + DARK_TONE_LIFT * ratio);
 }
 
 function neutralPolar(
@@ -355,7 +360,7 @@ function generateCandidate(
   vibrancy: number,
   coordinateWithOtherFamilies: boolean,
 ): {hex: string; gamutMapped: boolean} {
-  const adjustedTone = tone;
+  const adjustedTone = mode === 'dark' ? darkTone(tone) : tone;
   const adjustedHue = toneAdjustedHue(algorithm, source.hue, adjustedTone);
   const modeChroma = mode === 'dark' ? DARK_CHROMA_FACTOR : 1;
   const baseChroma = coordinateWithOtherFamilies
@@ -365,7 +370,6 @@ function generateCandidate(
     baseChroma *
     vibrancyMultiplier(vibrancy) *
     hueBalanceFactor(adjustedHue) *
-    highToneChromaFactor(adjustedHue, adjustedTone) *
     toneChromaEnvelope(adjustedTone) *
     modeChroma;
 
@@ -580,18 +584,10 @@ function applyAnchorCorrections(
 function assertAnchorSet(anchors: PaletteAnchor[], stops: number[]): void {
   const seen = new Set<string>();
   for (const anchor of anchors) {
-    const color = normalizedHex(anchor.color);
+    normalizedHex(anchor.color);
     if (!stops.includes(anchor.stop)) {
       throw new Error(
         `Anchor stop ${anchor.stop} is not present in the requested stop layout.`,
-      );
-    }
-    if (
-      (anchor.stop === 0 && color !== '#000000') ||
-      (anchor.stop === 100 && color !== '#ffffff')
-    ) {
-      throw new Error(
-        `Anchor stop ${anchor.stop} is reserved for exact ${anchor.stop === 0 ? 'black' : 'white'}; use an interior stop for a tinted endpoint.`,
       );
     }
     const key = `${anchor.mode}:${anchor.stop}`;
