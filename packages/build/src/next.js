@@ -207,10 +207,6 @@ function withAstryx(nextConfig = {}) {
       // global conditions stay as Next's defaults for React and for
       // third-party `source` shippers such as `lexical`.
       config.resolve = config.resolve || {};
-      config.resolve.alias = mergeAliases(
-        sourceEntryAliases(astryxPackages, context),
-        config.resolve.alias,
-      );
 
       // Preserve the symlinked node_modules path so Next.js's
       // transpilePackages matcher recognizes @astryxdesign/* packages under
@@ -221,10 +217,21 @@ function withAstryx(nextConfig = {}) {
       config.resolve.symlinks = false;
 
       // Call user's webpack config if provided
-      if (existingWebpack) {
-        return existingWebpack(config, context);
-      }
-      return config;
+      const merged = existingWebpack
+        ? existingWebpack(config, context) || config
+        : config;
+
+      // Merge after the caller's hook, not before: aliases the hook adds are
+      // as authoritative as the ones already on the config, and merging first
+      // would leave the generated entries ahead of them in the alias list —
+      // where the resolver, taking the first match, loads astryx source
+      // instead. Only a byte-identical `$` key would have replaced ours.
+      merged.resolve = merged.resolve || {};
+      merged.resolve.alias = mergeAliases(
+        sourceEntryAliases(astryxPackages, context),
+        merged.resolve.alias,
+      );
+      return merged;
     },
   };
 }

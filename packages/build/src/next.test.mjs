@@ -97,6 +97,27 @@ function resolveFromApp(request, callerResolve = {}) {
   return resolver.resolveSync({}, path.join(appDir, 'src'), request);
 }
 
+/**
+ * The same, for an alias the caller contributes from its own `webpack` hook —
+ * the composition path a Next config takes when it wraps `withAstryx()`.
+ */
+function resolveFromAppWithHook(request, hookAlias) {
+  const {resolve} = withAstryx({
+    webpack: cfg => {
+      Object.assign(cfg.resolve.alias, hookAlias);
+      return cfg;
+    },
+  }).webpack({resolve: {alias: {}}}, {dir: appDir});
+  const resolver = ResolverFactory.createResolver({
+    fileSystem: new CachedInputFileSystem(fs, 4000),
+    extensions: ['.ts', '.tsx', '.js'],
+    conditionNames: ['import', 'default'],
+    alias: resolve.alias,
+    useSyncFileSystemCalls: true,
+  });
+  return resolver.resolveSync({}, path.join(appDir, 'src'), request);
+}
+
 /** The installed fixture's absolute path for one of its files. */
 function corePath(...segments) {
   return path.join(appDir, 'node_modules/@astryxdesign/core', ...segments);
@@ -269,6 +290,69 @@ describe('withAstryx', () => {
         mod.rules[0].test,
       ),
     ).not.toBeNull();
+  });
+
+  it('lets a prefix alias from the caller webpack hook win', () => {
+    const custom = path.join(appDir, 'custom');
+    fs.mkdirSync(path.join(custom, 'AlertDialog'), {recursive: true});
+    fs.writeFileSync(path.join(custom, 'index.js'), '');
+    fs.writeFileSync(path.join(custom, 'AlertDialog/index.js'), '');
+
+    expect(
+      resolveFromAppWithHook('@astryxdesign/core', {
+        '@astryxdesign/core': custom,
+      }),
+    ).toBe(path.join(custom, 'index.js'));
+    expect(
+      resolveFromAppWithHook('@astryxdesign/core/AlertDialog', {
+        '@astryxdesign/core': custom,
+      }),
+    ).toBe(path.join(custom, 'AlertDialog/index.js'));
+  });
+
+  it('lets a wildcard alias from the caller webpack hook win', () => {
+    const custom = path.join(appDir, 'custom');
+    fs.mkdirSync(path.join(custom, 'core/AlertDialog'), {recursive: true});
+    fs.writeFileSync(path.join(custom, 'core/index.js'), '');
+    fs.writeFileSync(path.join(custom, 'core/AlertDialog/index.js'), '');
+
+    expect(
+      resolveFromAppWithHook('@astryxdesign/core', {
+        '@astryxdesign/*': path.join(custom, '*'),
+      }),
+    ).toBe(path.join(custom, 'core/index.js'));
+    expect(
+      resolveFromAppWithHook('@astryxdesign/core/AlertDialog', {
+        '@astryxdesign/*': path.join(custom, '*'),
+      }),
+    ).toBe(path.join(custom, 'core/AlertDialog/index.js'));
+  });
+
+  it('lets an exact alias from the caller webpack hook win', () => {
+    const pinned = corePath('dist/index.js');
+
+    expect(
+      resolveFromAppWithHook('@astryxdesign/core', {
+        '@astryxdesign/core$': pinned,
+      }),
+    ).toBe(pinned);
+  });
+
+  it('still applies the generated entries the hook did not claim', () => {
+    expect(
+      resolveFromAppWithHook('@astryxdesign/core', {'other-pkg': '/elsewhere'}),
+    ).toBe(corePath('src/index.ts'));
+  });
+
+  it('tolerates a caller webpack hook that returns nothing', () => {
+    const config = withAstryx({webpack: () => {}}).webpack(
+      {resolve: {alias: {}}},
+      {dir: appDir},
+    );
+
+    expect(config.resolve.alias['@astryxdesign/core$']).toBe(
+      corePath('src/index.ts'),
+    );
   });
 
   it('runs the caller webpack hook last', () => {
