@@ -11,9 +11,9 @@
  * Besides the props it is given, this component tracks the `activeStep` it
  * last rendered with and publishes it on the context. Steps need the distance
  * and direction of a change to choreograph their connector fill; see the
- * CONNECTOR FILL block in Step.tsx. When a horizontal Stepper becomes compact,
- * this component measures its public list root and owns previous/next controls
- * that move between enabled steps below the presentational track.
+ * CONNECTOR FILL block in Step.tsx. A horizontal Stepper applies public layout
+ * styling to the frame that contains both the list and compact summary, while
+ * the semantic `<ol>` remains the measured ref and DOM pass-through target.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
@@ -166,8 +166,9 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: 0,
   },
-  // The element the collapse threshold is measured against, and the one that
-  // stacks the track directly above the row naming the step it is on.
+  // The horizontal component's public layout box: consumer styling sizes and
+  // places the track and compact summary together. The list fills this frame,
+  // so observing its width still measures the complete component constraint.
   frame: {
     display: 'flex',
     flexDirection: 'column',
@@ -325,8 +326,10 @@ export function Stepper({
 
   // A vertical stepper gives every label a row of its own and can never run
   // out of width for them, so it opts out of all of this and renders exactly
-  // the DOM it always has. Horizontal Stepper sizing follows the public list
-  // root because that is where consumer refs and width styles are applied.
+  // the DOM it always has. A horizontal Stepper's public layout styles live on
+  // its frame so they size the list and summary together; the semantic list
+  // still owns the ref and DOM pass-throughs and fills that frame, so its width
+  // is the effective component width to observe.
   const [rootWidth, setRootWidth] = useState(0);
   const stopObservingRootRef = useRef<(() => void) | null>(null);
   const attachRoot = useCallback(
@@ -412,6 +415,13 @@ export function Stepper({
         ? styles.verticalOnTrack
         : styles.vertical;
 
+  // Horizontal Stepper has two roots with separate contracts: the frame owns
+  // public layout styling because it contains the complete visual component,
+  // while the ordered list keeps its theme target, ref, and native DOM props.
+  // Vertical Stepper has no frame, so its list remains both roots as before.
+  const listXstyle = isHorizontal ? undefined : xstyle;
+  const listClassName = isHorizontal ? undefined : className;
+  const listStyle = isHorizontal ? undefined : style;
   const list = (
     <ol
       ref={rootRef}
@@ -419,9 +429,9 @@ export function Stepper({
       {...rest}
       {...mergeProps(
         themeProps('stepper', {orientation, indicatorPosition}),
-        stylex.props(styles.root, orientationStyle, xstyle),
-        className,
-        style,
+        stylex.props(styles.root, orientationStyle, listXstyle),
+        listClassName,
+        listStyle,
       )}>
       {/* Each step renders its own progress bar segment; no child
           introspection needed — steps derive state from context. */}
@@ -504,7 +514,9 @@ export function Stepper({
       <div
         {...mergeProps(
           themeProps('stepper-frame'),
-          stylex.props(styles.frame),
+          stylex.props(styles.frame, xstyle),
+          className,
+          style,
         )}>
         {list}
         {showsSummary && (

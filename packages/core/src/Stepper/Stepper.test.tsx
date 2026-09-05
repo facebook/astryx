@@ -1029,12 +1029,12 @@ describe('Stepper', () => {
     const SUMMARY = '.astryx-stepper-summary';
 
     /**
-     * jsdom has no layout, so the width the public Stepper root measures is
+     * jsdom has no layout, so the width the public Stepper list measures is
      * described by hand. The frame deliberately reports a wide parent: this
-     * keeps the test honest about measuring the consumer-styled/ref'd `<ol>`
-     * rather than the unstyled wrapper around it. The value has to be in place
-     * before the first render because the shared resize observer takes its
-     * opening measurement synchronously during commit.
+     * catches any accidental switch to measuring an unconstrained wrapper, while
+     * the regression below separately pins consumer layout styling to that frame.
+     * The value has to be in place before the first render because the shared
+     * resize observer takes its opening measurement synchronously during commit.
      */
     function atWidth(width: number, ui: React.ReactElement) {
       const original = Object.getOwnPropertyDescriptor(
@@ -1081,7 +1081,30 @@ describe('Stepper', () => {
       expect(document.querySelector(FRAME)).toBeInTheDocument();
     });
 
-    it('measures the public styled and ref-forwarding root', () => {
+    it('keeps a consumer-constrained summary inside the styled component box', () => {
+      atWidth(
+        320,
+        <div style={{width: 1000}}>
+          <Stepper activeStep={1} style={{width: 320}}>
+            <Step step={0} label="Cart" />
+            <Step step={1} label="Shipping" />
+            <Step step={2} label="Delivery" />
+            <Step step={3} label="Payment" />
+          </Stepper>
+        </div>,
+      );
+
+      const list = screen.getByRole<HTMLOListElement>('list');
+      const frame = list.parentElement as HTMLElement;
+      const summary = document.querySelector<HTMLElement>(SUMMARY);
+      expect(summary).not.toBeNull();
+      expect(frame).toHaveClass('astryx-stepper-frame');
+      expect(frame).toHaveStyle({width: '320px'});
+      expect(summary!.parentElement).toBe(frame);
+      expect(list.style.width).toBe('');
+    });
+
+    it('puts horizontal className on the frame without moving list DOM props or ref', () => {
       const ref = createRef<HTMLOListElement>();
       atWidth(
         320,
@@ -1089,7 +1112,8 @@ describe('Stepper', () => {
           ref={ref}
           activeStep={1}
           className="consumer-stepper"
-          style={{width: 320}}>
+          data-testid="public-stepper-list"
+          aria-describedby="stepper-help">
           <Step step={0} label="Cart" />
           <Step step={1} label="Shipping" />
           <Step step={2} label="Delivery" />
@@ -1097,11 +1121,14 @@ describe('Stepper', () => {
         </Stepper>,
       );
 
-      const list = screen.getByRole('list');
+      const list = screen.getByTestId('public-stepper-list');
+      const frame = list.parentElement as HTMLElement;
       expect(ref.current).toBe(list);
-      expect(list).toHaveClass('consumer-stepper');
-      expect(list).toHaveStyle({width: '320px'});
-      expect(document.querySelector(SUMMARY)).toBeInTheDocument();
+      expect(list).toHaveAttribute('aria-describedby', 'stepper-help');
+      expect(list).not.toHaveClass('consumer-stepper');
+      expect(frame).toHaveClass('consumer-stepper');
+      expect(frame).not.toHaveAttribute('data-testid');
+      expect(frame).not.toHaveAttribute('aria-describedby');
     });
 
     it('drops the labels and names the current step once they no longer fit', () => {
