@@ -1051,7 +1051,12 @@ const BUILTIN_HEADING_TYPES = new Set(['display-1', 'display-2', 'display-3']);
  * @returns {{name: 'base'|'onDark'|'onLight', components: Record<string, Record<string, unknown>>}[]}
  */
 function getThemeComponentLayers(themeDef) {
+  /** @type {{name: 'base'|'onDark'|'onLight', components: Record<string, Record<string, unknown>>}[]} */
   const layers = [];
+  /**
+   * @param {'base'|'onDark'|'onLight'} name
+   * @param {{components?: Record<string, Record<string, unknown>>}|undefined} surface
+   */
   const addLayer = (name, surface) => {
     if (
       surface?.components &&
