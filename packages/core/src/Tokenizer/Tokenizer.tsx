@@ -244,6 +244,9 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
 // because the input's reserve is derived from the same value.
 const END_LANE_INSET = spacingVars['--spacing-2'];
 const TOKEN_ROW_INSET = `calc(${spacingVars['--spacing-1']} - 1px)`;
+// InputClearButton grows 2px past its visible box under `(pointer: coarse)`.
+// Keep this maximum reserve in sync with Field/InputClearButton.tsx.
+const INPUT_CLEAR_COARSE_POINTER_OUTSET = '2px';
 // Kept in sync with useEndLaneReserve: inputCompact reads the custom property
 // directly so its empty-query pseudo-class can suppress the inner reserve.
 const END_LANE_RESERVE_VAR = '--_tokenizer-end-lane-reserve';
@@ -323,13 +326,14 @@ const styles = stylex.create({
     },
     width: {
       default: 0,
-      ':placeholder-shown': `calc(100% - ${TOKEN_ROW_INSET} - var(${END_LANE_RESERVE_VAR}, ${TOKEN_ROW_INSET}) - 1px)`,
+      ':placeholder-shown': `calc(100% - ${TOKEN_ROW_INSET} - var(${END_LANE_RESERVE_VAR}, ${TOKEN_ROW_INSET}) - ${INPUT_CLEAR_COARSE_POINTER_OUTSET} - 1px)`,
     },
     // The empty input is a first-row background hit surface. Taking it out of
     // flex layout means it can neither become a blank final row nor compete
     // with the pills for width. Logical insets stop it before the measured end
-    // lane; tokens and controls sit above it, leaving only genuine whitespace
-    // clickable as search. Typing restores the ordinary in-flow input.
+    // lane plus InputClearButton's maximum invisible pointer outset; tokens and
+    // controls sit above it, leaving only genuine whitespace clickable as
+    // search. Typing restores the ordinary in-flow input.
     paddingInlineStart: {
       default: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
       ':placeholder-shown': 0,
@@ -341,16 +345,6 @@ const styles = stylex.create({
     textAlign: {
       default: 'start',
       ':placeholder-shown': 'end',
-    },
-  },
-  inputCompactWithClear: {
-    // InputClearButton's coarse-pointer ::after target extends 2px beyond its
-    // visible box. Reserve that maximum outset in every pointer mode so the
-    // background input and clear action never share a hit-test coordinate.
-    // The real-browser story reads the pseudo-element geometry, so this fails
-    // if InputClearButton's outset changes without this reserve changing too.
-    width: {
-      ':placeholder-shown': `calc(100% - ${TOKEN_ROW_INSET} - var(${END_LANE_RESERVE_VAR}, ${TOKEN_ROW_INSET}) - 3px)`,
     },
   },
   truncatedWrapper: {
@@ -981,11 +975,7 @@ export function Tokenizer<T extends SearchableItem>({
             isAtMax || isTruncated
               ? styles.inputAtMax
               : value.length > 0
-                ? [
-                    styles.inputCompact,
-                    hasClearButton && styles.inputCompactWithClear,
-                    compactInputSizeStyles[size],
-                  ]
+                ? [styles.inputCompact, compactInputSizeStyles[size]]
                 : undefined,
             // The compact-token style owns the same reserve with an empty-query
             // exception. This standalone rule is only for an empty Tokenizer;
