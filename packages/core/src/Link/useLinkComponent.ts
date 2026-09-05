@@ -22,6 +22,7 @@
 
 import {use, useMemo, createElement} from 'react';
 import {LinkContext} from './LinkContext';
+import {isSafeUrl} from '../utils/safeUrl';
 import type {LinkComponentType} from './types';
 
 /**
@@ -32,11 +33,10 @@ import type {LinkComponentType} from './types';
  * The wrapper is transparent: it forwards refs and all other props unchanged.
  * Native `<a>` elements ignore the unknown `to` prop harmlessly.
  */
-function createLinkWithTo(
-  Component: LinkComponentType,
-): LinkComponentType {
+function createLinkWithTo(Component: LinkComponentType): LinkComponentType {
   function LinkWithTo({
     href,
+    to,
     ref,
     ...rest
   }: {
@@ -44,7 +44,20 @@ function createLinkWithTo(
     to?: string;
     ref?: React.Ref<unknown>;
   }) {
-    return createElement(Component, {ref, href, to: href, ...rest});
+    // A native <a> gets its href vetted by React DOM; a custom link component
+    // receives raw props and may navigate imperatively, so the same scheme
+    // rule applies before the URL leaves the design system — to `href` and
+    // `to` alike. `to` is destructured (NOT left in ...rest) so a caller's
+    // explicit `to` passes through the same check instead of riding around
+    // it; it keeps its precedence over the href-derived value.
+    const safeHref = href != null && isSafeUrl(href) ? href : undefined;
+    const safeTo = to != null ? (isSafeUrl(to) ? to : undefined) : safeHref;
+    return createElement(Component, {
+      ref,
+      ...rest,
+      href: safeHref,
+      to: safeTo,
+    });
   }
   LinkWithTo.displayName = `LinkWithTo(${
     typeof Component === 'string'
@@ -75,9 +88,7 @@ function createLinkWithTo(
  * }
  * ```
  */
-export function useLinkComponent(
-  as?: LinkComponentType,
-): LinkComponentType {
+export function useLinkComponent(as?: LinkComponentType): LinkComponentType {
   const ctx = use(LinkContext);
   const resolved = as ?? ctx?.component ?? 'a';
 
