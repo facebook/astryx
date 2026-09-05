@@ -580,6 +580,9 @@ export const NearFullTokenRow: Story = {
     if (!wrapper || !input || !finalToken || !clearButton) {
       throw new Error('Near-full token-row fixture did not render as expected');
     }
+    if (!matchMedia('(pointer: coarse)').matches) {
+      throw new Error('Near-full token-row guard requires a coarse pointer');
+    }
 
     await document.fonts.ready;
     const reserveDeadline = performance.now() + 2000;
@@ -600,6 +603,20 @@ export const NearFullTokenRow: Story = {
     const inputRect = input.getBoundingClientRect();
     const tokenRect = finalToken.getBoundingClientRect();
     const clearRect = clearButton.getBoundingClientRect();
+    const clearHitStyle = getComputedStyle(clearButton, '::after');
+    const clearHitLeft = Number.parseFloat(clearHitStyle.left);
+    const clearHitRight = Number.parseFloat(clearHitStyle.right);
+    if (
+      clearHitStyle.content === 'none' ||
+      !Number.isFinite(clearHitLeft) ||
+      !Number.isFinite(clearHitRight)
+    ) {
+      throw new Error('Clear all did not expose its coarse-pointer hit area');
+    }
+    const clearHitRect = {
+      left: clearRect.left + clearHitLeft,
+      right: clearRect.right - clearHitRight,
+    };
     if (inputRect.top >= tokenRect.bottom) {
       throw new Error(
         `Empty combobox wrapped onto a blank row: input top ${inputRect.top.toFixed(2)}, final token bottom ${tokenRect.bottom.toFixed(2)}`,
@@ -609,11 +626,11 @@ export const NearFullTokenRow: Story = {
       throw new Error('Empty combobox has no pointer hit target');
     }
     const overlap =
-      Math.min(inputRect.right, clearRect.right) -
-      Math.max(inputRect.left, clearRect.left);
+      Math.min(inputRect.right, clearHitRect.right) -
+      Math.max(inputRect.left, clearHitRect.left);
     if (overlap > 0) {
       throw new Error(
-        `Empty combobox overlaps Clear all by ${overlap.toFixed(2)}px`,
+        `Empty combobox overlaps the coarse-pointer Clear all hit area by ${overlap.toFixed(2)}px`,
       );
     }
     const clearHitTarget = document.elementFromPoint(

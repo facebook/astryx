@@ -41,13 +41,16 @@ const TARGETS = [
   {
     component: 'PowerSearch',
     story: 'core-powersearch--near-full-token-row',
+    hasTouch: true,
     guards:
-      'an empty trailing combobox stays on the nearly full token row without overlapping Clear all',
+      'on a coarse pointer, an empty trailing combobox stays on the nearly full token row without overlapping the full Clear all hit area',
   },
   {
     component: 'PowerSearch',
     story: 'core-powersearch--near-full-token-row-rtl',
-    guards: 'the compact combobox and Clear all remain separate in RTL as well',
+    hasTouch: true,
+    guards:
+      'on a coarse pointer, the compact combobox and full Clear all hit area remain separate in RTL as well',
   },
   {
     component: 'TabList',
@@ -165,11 +168,11 @@ async function run() {
   let failures = 0;
 
   try {
-    const context = await browser.newContext({
-      viewport: { width: 1280, height: 900 },
-    });
-
     for (const target of TARGETS) {
+      const context = await browser.newContext({
+        viewport: { width: 1280, height: 900 },
+        hasTouch: target.hasTouch === true,
+      });
       const page = await context.newPage();
       try {
         const outcome = await probe(page, target);
@@ -190,6 +193,7 @@ async function run() {
         );
       } finally {
         await page.close();
+        await context.close();
       }
     }
   } finally {
