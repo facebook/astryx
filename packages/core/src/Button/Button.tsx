@@ -572,14 +572,19 @@ export function Button({
   // the consumer is deliberately showing it.
   const delaySpinner = isPending || isInterruptible;
   const groupDisabled = buttonGroup?.isDisabled ?? false;
-  // When interruptible, the loading state drives the spinner and aria-busy but
-  // not disabled, so clicks keep landing and can interrupt the in-flight action.
-  const buttonDisabled =
-    isDisabled || groupDisabled || (isLoadingState && !isInterruptible);
-  // A loading button remains non-interactive, but its spinner communicates an
-  // active state and must retain contrast. Only explicitly disabled controls
-  // receive the visually dimmed treatment.
-  const visuallyDisabled = isDisabled || groupDisabled;
+  const isTrueDisabled = isDisabled || groupDisabled;
+  // Busy-only: the button can't fire again purely because an action is in
+  // flight, not because it's genuinely isDisabled/group-disabled. Per the API
+  // Conventions "Disabled vs Busy" rule, busy is visual-only (aria-busy +
+  // spinner) and must never take focusability away — the click-handler ref
+  // guard (actionInFlightRef) is what actually makes a fire-once action fire
+  // once, so the native disabled attribute adds nothing but a focus loss
+  // here. When interruptible, the loading state drives the spinner and
+  // aria-busy but not disabled at all, so clicks keep landing and can
+  // interrupt the in-flight action.
+  const isBusyOnlyDisabled =
+    !isTrueDisabled && isLoadingState && !isInterruptible;
+  const buttonDisabled = isTrueDisabled || isBusyOnlyDisabled;
   // isIconOnly prop is the source of truth for icon-only rendering.
   // When false (default), label is always rendered as visible text.
 
@@ -589,9 +594,11 @@ export function Button({
   // Disabled links are an accessibility anti-pattern — fall back to <button>.
   const renderAsLink = href != null && !buttonDisabled;
 
-  // Use aria-disabled when tooltip is present so the button remains focusable
-  // for keyboard users to reach the tooltip. Otherwise use native disabled.
-  const useAriaDisabled = tooltip != null && buttonDisabled;
+  // Use aria-disabled (button stays focusable) when busy-only, or when a
+  // tooltip is present so keyboard users can still reach it. A genuinely
+  // isDisabled/group-disabled button (not busy) keeps native disabled.
+  const useAriaDisabled =
+    buttonDisabled && (isBusyOnlyDisabled || tooltip != null);
 
   // Attach tooltip behavior via the hook rather than wrapping the button in a
   // <Tooltip> element. The hook adds hover/focus triggers to the button itself,
@@ -647,7 +654,7 @@ export function Button({
     isIconOnly && styles.iconOnly,
     interactionOverlayStyles.backgroundImage,
     buttonDisabled && styles.inactive,
-    visuallyDisabled && styles.disabled,
+    isTrueDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     renderAsLink && styles.link,
     !buttonGroup && styles.pressable,
