@@ -97,8 +97,8 @@ export interface UseLayerDismissalReturn {
  * The layer does NOT attach a key listener — the stack owns one listener and
  * routes each Escape press to the top-most REGISTERED layer, so one press
  * dismisses exactly one of them. Dialog (and what is built on it), Popover and
- * the menus built on it, Tooltip, HoverCard, Lightbox, MobileNav, and lab's
- * `Drawer` register today. `BottomSheetSwitcher` registers through its focus trap when
+ * the menus built on it, Tooltip, HoverCard, Lightbox, MobileNav, and Drawer
+ * register today. `BottomSheetSwitcher` registers through its focus trap when
  * modal and still handles its own press when not.
  *
  * `BottomSheet`, `CommandPalette`, `ContextMenu`, `DropdownMenuSubMenu`, and

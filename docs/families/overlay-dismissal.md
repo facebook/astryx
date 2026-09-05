@@ -15,7 +15,7 @@ verified_by:
     packages/core/src/Layer/useLayerDismissal.test.tsx,
     packages/core/src/Layer/layerDismissalInvariants.test.tsx,
     packages/core/src/Layer/layerDismissalFamilies.test.tsx,
-    packages/lab/src/Drawer/Drawer.test.tsx,
+    packages/core/src/Drawer/Drawer.test.tsx,
     packages/core/src/hooks/useFocusTrap.test.tsx,
   ]
 members:
@@ -90,7 +90,7 @@ this record's current membership snapshot must be updated with it.
 - **Current members:** Dialog, AlertDialog, Popover, DropdownMenu,
   DropdownMenuSubMenu, MoreMenu, Tooltip, HoverCard, Lightbox, MobileNav,
   BottomSheet, BottomSheetSwitcher, CommandPalette, ContextMenu,
-  PowerSearchEditPopover, Lab Drawer, and the component-owned popup surfaces
+  PowerSearchEditPopover, Drawer, and the component-owned popup surfaces
   listed below.
 - **Component-owned input popups:** ChatComposerInput, ComplexSelector,
   DateInput, DateRangeInput, DateTimeInput, Selector, MultiSelector,
@@ -189,7 +189,7 @@ this record's current membership snapshot must be updated with it.
 
 | Components or surface                                                                                                                                                                                                                                                                              | Adoption                                                      | Current deviation or limitation                                                                                                                                                                                                        |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dialog, AlertDialog, Popover, DropdownMenu root, MoreMenu, Lightbox, MobileNav, Lab Drawer                                                                                                                                                                                                         | shared owner                                                  | none                                                                                                                                                                                                                                   |
+| Dialog, AlertDialog, Popover, DropdownMenu root, MoreMenu, Lightbox, MobileNav, Drawer                                                                                                                                                                                                             | shared owner                                                  | none                                                                                                                                                                                                                                   |
 | Tooltip, HoverCard                                                                                                                                                                                                                                                                                 | shared owner with DOM presence reporting                      | Neither provides nesting depth to descendant layers                                                                                                                                                                                    |
 | Focus traps with `onEscape`                                                                                                                                                                                                                                                                        | shared owner through `useFocusTrap`                           | They provide DOM containment, not descendant depth                                                                                                                                                                                     |
 | BreadcrumbItem, ChatComposerInput, ComplexSelector, DateInput, DateRangeInput, DateTimeInput, Selector, MultiSelector, PowerSearch, BaseTypeahead, Typeahead, Tokenizer, SideNavHeading, SideNavItem, TabMenu, TopNavHeading, TopNavMenu, TopNavMegaMenu, Table, Lab TourStep, Lab ChatEmojiPicker | shared owner through `usePopover` or a composed Popover owner | Adaptive BottomSheet paths inherit BottomSheet's adoption gap; Table filtering owns controlled Popover state and discards its draft on close; TourStep routes Popover close to the Tour; ChatEmojiPicker owns controlled Popover state |

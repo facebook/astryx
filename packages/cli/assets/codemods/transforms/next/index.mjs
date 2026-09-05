@@ -16,6 +16,9 @@ import removeFocusIsrtlOption, {
 import renameResizablePixelBounds, {
   meta as renameResizablePixelBoundsMeta,
 } from './rename-resizable-pixel-bounds.mjs';
+import migrateLabDrawerImports, {
+  meta as migrateLabDrawerImportsMeta,
+} from './migrate-lab-drawer-imports.mjs';
 
 export default [
   {
@@ -32,5 +35,10 @@ export default [
     name: 'rename-resizable-pixel-bounds',
     transform: renameResizablePixelBounds,
     meta: renameResizablePixelBoundsMeta,
+  },
+  {
+    name: 'migrate-lab-drawer-imports',
+    transform: migrateLabDrawerImports,
+    meta: migrateLabDrawerImportsMeta,
   },
 ];
