@@ -1541,9 +1541,9 @@ describe('Stepper', () => {
       expect(within(summary!).getByText('Shipping')).toBeInTheDocument();
     });
 
-    it('drops the name but keeps the controls on request', () => {
-      // The inverse: a page that heads each step itself, and navigates by the
-      // stepper alone. Nothing is named twice and the way through survives.
+    it('leaves a bare track when the label is hidden, even with a handler', () => {
+      // The surrounding flow owns both its heading and navigation. Keeping an
+      // onStepClick handler for the expanded layout must not add a compact row.
       atWidth(
         320,
         fourSteps({
@@ -1554,16 +1554,14 @@ describe('Stepper', () => {
           },
         }),
       );
-      const summary = document.querySelector<HTMLElement>(SUMMARY);
-      expect(summary).not.toBeNull();
-      expect(within(summary!).queryByText('Shipping')).toBeNull();
-      expect(within(summary!).queryByText('Where it goes')).toBeNull();
-      expect(
-        within(summary!).getByRole('button', {name: 'Next step'}),
-      ).toBeInTheDocument();
+      expect(document.querySelector(SUMMARY)).toBeNull();
+      expect(screen.queryByRole('button', {name: 'Previous step'})).toBeNull();
+      expect(screen.queryByRole('button', {name: 'Next step'})).toBeNull();
+      expect(screen.getByRole('list')).toBeInTheDocument();
+      expect(screen.getAllByRole('listitem')).toHaveLength(4);
     });
 
-    it('leaves the bare track when the label is hidden and there is no handler', () => {
+    it('also leaves the bare track when there is no handler', () => {
       atWidth(
         320,
         fourSteps({

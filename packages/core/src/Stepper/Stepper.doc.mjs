@@ -34,7 +34,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "Set horizontalOptions.collapsedVariant to 'withLabel' when the page already supplies Back/Continue, or to 'hiddenLabel' when the page already supplies its own step heading.",
+          "Set horizontalOptions.collapsedVariant to 'withLabel' when the page already supplies Back/Continue, or to 'hiddenLabel' when surrounding UI owns both the current-step heading and navigation and only a bare progress track is needed.",
       },
       {
         guidance: true,
@@ -68,13 +68,13 @@ export const docs = {
         name: 'Frame',
         required: true,
         description:
-          'The layout frame that groups the ordered steps with the compact summary shown at narrow widths.',
+          'The layout frame that groups the ordered steps with the optional compact summary shown at narrow widths.',
       },
       {
         name: 'Compact summary',
         required: false,
         description:
-          'The row a horizontal Stepper adds directly beneath the track once it is too narrow to label every step. horizontalOptions.collapsedVariant chooses a label with Previous/Next controls, the label alone, or controls with the label hidden. The on-track layout keeps its indicators on the rail instead of repeating the active indicator beside the label. Every step keeps its name in the accessible sequence at any width.',
+          'The optional row a horizontal Stepper adds directly beneath the track once it is too narrow to label every step. horizontalOptions.collapsedVariant chooses a label with Previous/Next controls, the label alone, or no row for a bare progress track. The on-track layout keeps its indicators on the rail instead of repeating the active indicator beside the label. Every step keeps its name in the accessible sequence at any width.',
       },
       {
         name: 'Step',
@@ -198,7 +198,7 @@ export const docs = {
           name: 'horizontalOptions',
           type: "{ minimumStepWidth: number | string; collapsedVariant: 'withLabelAndControls' | 'withLabel' | 'hiddenLabel' }",
           description:
-            'Options for horizontal collapse. minimumStepWidth is the per-step threshold: numbers are pixels and strings accept CSS lengths such as 7rem, calc(6rem + 8px), or var(--step-width). collapsedVariant selects a label with controls, the label alone, or controls with the visible label hidden. Controls appear only when onStepClick is set, and every step keeps its accessible name.',
+            'Options for horizontal collapse. minimumStepWidth is the per-step threshold: numbers are pixels and strings accept CSS lengths such as 7rem, calc(6rem + 8px), or var(--step-width). collapsedVariant selects a label with controls, the label alone, or a bare progress track with no compact row. Controls appear only for withLabelAndControls when onStepClick is set, and every step keeps its accessible name.',
           default:
             "{ minimumStepWidth: 112, collapsedVariant: 'withLabelAndControls' }",
         },
@@ -249,7 +249,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Choose horizontalOptions.collapsedVariant when the page has its own Back/Continue or step heading.',
+          'Choose horizontalOptions.collapsedVariant when the page owns its own Back/Continue, or both its step heading and navigation.',
       },
       {
         guidance: true,
@@ -318,7 +318,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          "当页面已有返回/继续控件时，将 horizontalOptions.collapsedVariant 设为 'withLabel'；当页面已有步骤标题时，将其设为 'hiddenLabel'。",
+          "当页面已有返回/继续控件时，将 horizontalOptions.collapsedVariant 设为 'withLabel'；当周围界面同时提供当前步骤标题和导航、只需要裸进度轨道时，将其设为 'hiddenLabel'。",
       },
       {guidance: true, description: '为非线性工作流程提供 onStepClick。'},
       {guidance: false, description: '少于3个步骤时使用步骤器。'},
@@ -407,7 +407,7 @@ export const docsZh = {
           name: 'horizontalOptions',
           type: "{ minimumStepWidth: number | string; collapsedVariant: 'withLabelAndControls' | 'withLabel' | 'hiddenLabel' }",
           description:
-            '水平布局的收起选项。minimumStepWidth 是每个步骤的阈值：数字按像素处理，字符串接受 7rem、calc(6rem + 8px) 或 var(--step-width) 等 CSS 长度。collapsedVariant 可选择显示标签和控件、仅显示标签，或隐藏可见标签并保留控件。仅在设置 onStepClick 时显示控件，每个步骤始终保留无障碍名称。',
+            '水平布局的收起选项。minimumStepWidth 是每个步骤的阈值：数字按像素处理，字符串接受 7rem、calc(6rem + 8px) 或 var(--step-width) 等 CSS 长度。collapsedVariant 可选择显示标签和控件、仅显示标签，或只显示裸进度轨道而不显示紧凑行。仅当 collapsedVariant 为 withLabelAndControls 且设置 onStepClick 时显示控件，每个步骤始终保留无障碍名称。',
           default:
             "{ minimumStepWidth: 112, collapsedVariant: 'withLabelAndControls' }",
         },

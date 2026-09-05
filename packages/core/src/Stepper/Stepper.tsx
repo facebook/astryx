@@ -76,11 +76,11 @@ export interface StepperHorizontalOptions {
    */
   minimumStepWidth: number | string;
   /**
-   * Content shown beneath the compact track. Controls are rendered only when
-   * `onStepClick` is set.
+   * Presentation used when the horizontal Stepper collapses.
    * - `withLabelAndControls`: current-step label and navigation controls.
    * - `withLabel`: current-step label without controls.
-   * - `hiddenLabel`: navigation controls without the visible label.
+   * - `hiddenLabel`: bare progress track with no compact row.
+   * `withLabelAndControls` renders its controls only when `onStepClick` is set.
    * @default 'withLabelAndControls'
    */
   collapsedVariant: StepperCollapsedVariant;
@@ -105,7 +105,8 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
   /**
    * Called when a step is clicked, or when a compact summary control is used.
    * Enables non-linear navigation. At compact horizontal widths, individual
-   * track nodes are presentational and summary controls skip disabled steps.
+   * track nodes are presentational; when the collapsed variant includes
+   * summary controls, those controls skip disabled steps.
    */
   onStepClick?: (index: number) => void;
   /**
@@ -129,8 +130,8 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
   indicatorPosition?: StepperIndicatorPosition;
   /**
    * Options specific to the horizontal layout. `minimumStepWidth` controls the
-   * per-step collapse threshold; `collapsedVariant` controls whether the
-   * compact presentation shows its label, navigation controls, or both.
+   * per-step collapse threshold; `collapsedVariant` selects a label with
+   * controls, a label alone, or a bare progress track.
    * @default {minimumStepWidth: 112, collapsedVariant: 'withLabelAndControls'}
    */
   horizontalOptions?: StepperHorizontalOptions;
@@ -251,8 +252,6 @@ export function Stepper({
     horizontalOptions?.minimumStepWidth ?? DEFAULT_MIN_STEP_WIDTH;
   const collapsedVariant =
     horizontalOptions?.collapsedVariant ?? DEFAULT_COLLAPSED_VARIANT;
-  const showsCollapsedLabel = collapsedVariant !== 'hiddenLabel';
-  const showsCollapsedControls = collapsedVariant !== 'withLabel';
 
   // Dev-mode duplicate step index detection. Steps register on mount and
   // deregister on unmount; a Map tracks count per index so we can warn when
@@ -471,12 +470,12 @@ export function Stepper({
     return <StepperContext value={ctxValue}>{list}</StepperContext>;
   }
 
-  // Controls, and only where there is something for them to do. `onStepClick`
-  // answers whether the steps are navigable at all; `collapsedVariant` answers
-  // the separate question of whether this stepper should be the thing that
-  // navigates them once collapsed. They come apart in the common wizard —
-  // clickable steps at full width, the form's own Back and Continue on a phone
-  // — which is why the handler alone cannot decide it.
+  // Controls appear only in the variant that asks for them and where there is
+  // something for them to do. `onStepClick` answers whether the steps are
+  // navigable at all; `collapsedVariant` answers whether this stepper should be
+  // the thing that navigates them once collapsed. They come apart in the common
+  // wizard — clickable steps at full width, the form's own Back and Continue on
+  // a phone — which is why the handler alone cannot decide it.
   //
   // Unlike TabList's scroll arrows — decorative, aria-hidden, skipped by the
   // keyboard because every tab can still be reached by arrowing the strip —
@@ -484,11 +483,12 @@ export function Stepper({
   // they are real controls with real names, and they take focus. Disabled
   // steps are omitted exactly as they are from the full-width set of clickable
   // steps.
-  const showsControls = showsCollapsedControls && onStepClick != null;
+  const showsControls =
+    collapsedVariant === 'withLabelAndControls' && onStepClick != null;
 
-  // With neither half asked for there is nothing to put in the row, and an
-  // empty one would still spend the frame's gap under the track.
-  const showsSummary = isCompact && (showsControls || showsCollapsedLabel);
+  // hiddenLabel deliberately renders only the progress track. Omitting the
+  // whole row also avoids spending the frame's gap on empty layout.
+  const showsSummary = isCompact && collapsedVariant !== 'hiddenLabel';
 
   const adjacentEnabledStep = (delta: -1 | 1): number | null => {
     let target: number | null = null;
@@ -553,22 +553,14 @@ export function Stepper({
             )}>
             {control(-1)}
             {/* The list above still carries every step's name and status, so
-                this row repeats one of them for the eye only. Hiding it keeps
-                a screen reader from hearing the current step named twice,
-                while leaving the controls either side of it reachable — and it
-                is what makes `collapsedVariant="hiddenLabel"` a purely visual
-                switch.
-
-                Withholding the slot is the whole implementation of that
-                switch: the active step portals into it and renders nothing
-                when it is absent, so no Step has to be told about the prop. */}
-            {showsCollapsedLabel && (
-              <div
-                ref={setSummarySlot}
-                aria-hidden="true"
-                {...stylex.props(styles.summaryBody)}
-              />
-            )}
+                this visual row is hidden from assistive technology to avoid
+                announcing the current step twice. hiddenLabel withholds the
+                entire row above, leaving the accessible list as a bare track. */}
+            <div
+              ref={setSummarySlot}
+              aria-hidden="true"
+              {...stylex.props(styles.summaryBody)}
+            />
             {control(1)}
           </div>
         )}
