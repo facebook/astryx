@@ -498,7 +498,8 @@ function componentHasAugmentableInterface(pascalName, interfaceName) {
  * @returns {Promise<string|null>} TypeScript declaration content, or null if no augmentations needed
  */
 async function generateVariantDeclarationsAsync(themeDef) {
-  if (!themeDef.components || Object.keys(themeDef.components).length === 0) {
+  const componentLayers = getThemeComponentLayers(themeDef);
+  if (componentLayers.length === 0) {
     return null;
   }
 
@@ -506,27 +507,29 @@ async function generateVariantDeclarationsAsync(themeDef) {
   /** @type {Record<string, Record<string, Set<string>>>} */
   const customValues = {};
 
-  for (const [component, rules] of Object.entries(themeDef.components)) {
-    const knownForComponent = await getKnownValues(component);
+  for (const {components} of componentLayers) {
+    for (const [component, rules] of Object.entries(components)) {
+      const knownForComponent = await getKnownValues(component);
 
-    for (const key of Object.keys(rules)) {
-      if (key === 'base') continue;
+      for (const key of Object.keys(rules)) {
+        if (key === 'base') continue;
 
-      const pairs = key.split('+');
-      for (const pair of pairs) {
-        const colonIdx = pair.indexOf(':');
-        if (colonIdx === -1) continue;
-        const prop = pair.slice(0, colonIdx);
-        const value = pair.slice(colonIdx + 1);
+        const pairs = key.split('+');
+        for (const pair of pairs) {
+          const colonIdx = pair.indexOf(':');
+          if (colonIdx === -1) continue;
+          const prop = pair.slice(0, colonIdx);
+          const value = pair.slice(colonIdx + 1);
 
-        // Skip known built-in values
-        const knownForProp = knownForComponent[prop];
-        if (knownForProp && knownForProp.includes(value)) continue;
+          // Skip known built-in values
+          const knownForProp = knownForComponent[prop];
+          if (knownForProp && knownForProp.includes(value)) continue;
 
-        if (!customValues[component]) customValues[component] = {};
-        if (!customValues[component][prop])
-          customValues[component][prop] = new Set();
-        customValues[component][prop].add(value);
+          if (!customValues[component]) customValues[component] = {};
+          if (!customValues[component][prop])
+            customValues[component][prop] = new Set();
+          customValues[component][prop].add(value);
+        }
       }
     }
   }
@@ -1040,6 +1043,32 @@ function validatePrivateVars(themeDef) {
 const BUILTIN_HEADING_TYPES = new Set(['display-1', 'display-2', 'display-3']);
 
 /**
+ * Return every component-rule layer that can emit CSS for a theme. Raw theme
+ * input stores media-surface overrides in `onDark`/`onLight`; a theme already
+ * resolved by defineTheme stores them in `__onDark`/`__onLight` instead.
+ *
+ * @param {{components?: Record<string, Record<string, unknown>>, onDark?: {components?: Record<string, Record<string, unknown>>}, onLight?: {components?: Record<string, Record<string, unknown>>}, __onDark?: {components?: Record<string, Record<string, unknown>>}, __onLight?: {components?: Record<string, Record<string, unknown>>}}} themeDef
+ * @returns {{name: 'base'|'onDark'|'onLight', components: Record<string, Record<string, unknown>>}[]}
+ */
+function getThemeComponentLayers(themeDef) {
+  const layers = [];
+  const addLayer = (name, surface) => {
+    if (
+      surface?.components &&
+      typeof surface.components === 'object' &&
+      Object.keys(surface.components).length > 0
+    ) {
+      layers.push({name, components: surface.components});
+    }
+  };
+
+  addLayer('base', themeDef);
+  addLayer('onDark', themeDef.__onDark ?? themeDef.onDark);
+  addLayer('onLight', themeDef.__onLight ?? themeDef.onLight);
+  return layers;
+}
+
+/**
  * A generated type augmentation makes a custom Heading type callable with the
  * type prop, so that name needs a standalone visual rule of its own. A value
  * that appears only in a combined selector (or has an empty rule) would
@@ -1049,31 +1078,41 @@ const BUILTIN_HEADING_TYPES = new Set(['display-1', 'display-2', 'display-3']);
  * @returns {string[]}
  */
 function validateCustomHeadingTypes(themeDef) {
-  const headingRules = themeDef.components?.heading;
-  if (!headingRules || typeof headingRules !== 'object') return [];
-
+  const layers = getThemeComponentLayers(themeDef);
   const customTypes = new Set();
-  for (const key of Object.keys(headingRules)) {
-    for (const pair of key.split('+')) {
-      const colon = pair.indexOf(':');
-      if (colon === -1 || pair.slice(0, colon) !== 'type') continue;
-      const value = pair.slice(colon + 1);
-      if (value && !BUILTIN_HEADING_TYPES.has(value)) customTypes.add(value);
+  for (const {components} of layers) {
+    const headingRules = components.heading;
+    if (!headingRules || typeof headingRules !== 'object') continue;
+
+    for (const key of Object.keys(headingRules)) {
+      for (const pair of key.split('+')) {
+        const colon = pair.indexOf(':');
+        if (colon === -1 || pair.slice(0, colon) !== 'type') continue;
+        const value = pair.slice(colon + 1);
+        if (value && !BUILTIN_HEADING_TYPES.has(value)) customTypes.add(value);
+      }
     }
   }
 
   const errors = [];
   for (const type of customTypes) {
-    const standalone = headingRules[`type:${type}`];
-    if (
-      standalone == null ||
-      typeof standalone !== 'object' ||
-      Array.isArray(standalone) ||
-      !hasUsableStyleDeclaration(standalone)
-    ) {
+    const hasStandalone = layers.some(({components}) => {
+      const headingRules = components.heading;
+      if (!headingRules || typeof headingRules !== 'object') return false;
+      const standalone = headingRules[`type:${type}`];
+      return (
+        standalone != null &&
+        typeof standalone === 'object' &&
+        !Array.isArray(standalone) &&
+        hasUsableStyleDeclaration(standalone)
+      );
+    });
+    if (!hasStandalone) {
       errors.push(
         `Custom Heading type "${type}" needs a non-empty standalone ` +
-          `components.heading["type:${type}"] rule.`,
+          `components.heading["type:${type}"], ` +
+          `onDark.components.heading["type:${type}"], or ` +
+          `onLight.components.heading["type:${type}"] rule.`,
       );
     }
   }
@@ -1114,19 +1153,25 @@ function hasUsableStyleDeclaration(styles) {
  * @returns {string[]}
  */
 function validateHeadingTypeAugmentationSupport(themeDef) {
-  const headingRules = themeDef.components?.heading;
-  if (!headingRules || typeof headingRules !== 'object') return [];
-
-  const hasCustomType = Object.keys(headingRules).some(key =>
-    key.split('+').some(pair => {
-      const colon = pair.indexOf(':');
+  const hasCustomType = getThemeComponentLayers(themeDef).some(
+    ({components}) => {
+      const headingRules = components.heading;
       return (
-        colon !== -1 &&
-        pair.slice(0, colon) === 'type' &&
-        pair.slice(colon + 1) &&
-        !BUILTIN_HEADING_TYPES.has(pair.slice(colon + 1))
+        headingRules &&
+        typeof headingRules === 'object' &&
+        Object.keys(headingRules).some(key =>
+          key.split('+').some(pair => {
+            const colon = pair.indexOf(':');
+            return (
+              colon !== -1 &&
+              pair.slice(0, colon) === 'type' &&
+              pair.slice(colon + 1) &&
+              !BUILTIN_HEADING_TYPES.has(pair.slice(colon + 1))
+            );
+          }),
+        )
       );
-    }),
+    },
   );
   if (!hasCustomType) return [];
 
@@ -1230,9 +1275,7 @@ export async function themeBuild(
   }
 
   const customHeadingErrors = validateCustomHeadingTypes(themeDef);
-  customHeadingErrors.push(
-    ...validateHeadingTypeAugmentationSupport(themeDef),
-  );
+  customHeadingErrors.push(...validateHeadingTypeAugmentationSupport(themeDef));
   if (customHeadingErrors.length > 0) {
     throw new AstryxError(
       customHeadingErrors.join('\n'),

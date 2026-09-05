@@ -129,6 +129,101 @@ describe('theme build custom-variant augmentations', () => {
     expect(dts).not.toMatch(/ButtonSizeMap/);
   });
 
+  it('unions custom Heading types from onDark and onLight into the public type contract', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          heading: { 'type:shared': { fontWeight: 600 } },
+        },
+        onDark: {
+          components: {
+            heading: {
+              'type:hero': { fontSize: '80px' },
+              'type:shared+level:1': { lineHeight: 1 },
+            },
+          },
+        },
+        onLight: {
+          components: {
+            heading: { 'type:editorial': { letterSpacing: '-0.02em' } },
+          },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(0);
+
+    const variantsPath = path.join(tmpDir, 'variants-theme.variants.d.ts');
+    expect(fs.existsSync(variantsPath)).toBe(true);
+    const variantsDts = fs.readFileSync(variantsPath, 'utf-8');
+    expect(variantsDts).toMatch(/interface HeadingTypeMap\b/);
+    expect(variantsDts).toContain("'hero': true;");
+    expect(variantsDts).toContain("'editorial': true;");
+    expect(variantsDts).toContain("'shared': true;");
+
+    const projectDir = path.join(
+      CLI_ROOT,
+      `.tmp-surface-heading-consumer-${process.pid}`,
+    );
+    fs.rmSync(projectDir, {recursive: true, force: true});
+    fs.mkdirSync(projectDir);
+    fs.copyFileSync(
+      path.join(tmpDir, 'variants-theme.d.ts'),
+      path.join(projectDir, 'variants-theme.d.ts'),
+    );
+    fs.copyFileSync(
+      variantsPath,
+      path.join(projectDir, 'variants-theme.variants.d.ts'),
+    );
+    fs.writeFileSync(
+      path.join(projectDir, 'probe.tsx'),
+      `import './variants-theme';\n` +
+        `import {Heading} from '@astryxdesign/core/Heading';\n\n` +
+        `export const Probe = () => (\n` +
+        `  <>\n` +
+        `    <Heading level={1} type="hero">Hero</Heading>\n` +
+        `    <Heading level={2} type="editorial">Editorial</Heading>\n` +
+        `    <Heading level={3} type="shared">Shared</Heading>\n` +
+        `  </>\n` +
+        `);\n`,
+    );
+    fs.writeFileSync(
+      path.join(projectDir, 'tsconfig.json'),
+      JSON.stringify(
+        {
+          compilerOptions: {
+            module: 'esnext',
+            target: 'es2022',
+            jsx: 'react-jsx',
+            moduleResolution: 'bundler',
+            strict: true,
+            skipLibCheck: true,
+          },
+          include: ['*.tsx', '*.d.ts'],
+        },
+        null,
+        2,
+      ),
+    );
+
+    try {
+      execFileSync(
+        'pnpm',
+        ['exec', 'tsc', '--project', 'tsconfig.json', '--noEmit'],
+        {cwd: projectDir, stdio: 'pipe'},
+      );
+    } finally {
+      fs.rmSync(projectDir, {recursive: true, force: true});
+    }
+  });
+
   it('does not emit a .variants.d.ts when every custom value is non-augmentable', async () => {
     const themeFile = writeTheme(
       tmpDir,
@@ -157,10 +252,16 @@ describe('theme build custom-variant augmentations', () => {
       `export default {
         name: 'variants-theme',
         tokens: { '--color-bg': '#fff' },
-        components: {
-          heading: {
-            'type:hero': { ':hover': {} },
-            'type:eyebrow+color:accent': { letterSpacing: '0.08em' },
+        onDark: {
+          components: {
+            heading: { 'type:hero': { ':hover': {} } },
+          },
+        },
+        onLight: {
+          components: {
+            heading: {
+              'type:eyebrow+color:accent': { letterSpacing: '0.08em' },
+            },
           },
         },
       };\n`,
@@ -177,6 +278,10 @@ describe('theme build custom-variant augmentations', () => {
     );
     expect(result.stderr).toContain(
       'Custom Heading type "eyebrow" needs a non-empty standalone',
+    );
+    expect(result.stderr).toContain('onDark.components.heading["type:hero"]');
+    expect(result.stderr).toContain(
+      'onLight.components.heading["type:eyebrow"]',
     );
   });
 
