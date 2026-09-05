@@ -9,6 +9,13 @@ export const docs = {
   category: 'Layout',
   isHiddenFromOverview: true,
   keywords: ["center","centered","centering","align","alignment","justify","flexbox","middle"],
+  playground: {
+    defaults: {
+      width: 240,
+      height: 120,
+      children: {__element: 'Text', props: {type: 'body'}, children: 'Centered content'},
+    },
+  },
   props: [
     {
       name: 'axis',

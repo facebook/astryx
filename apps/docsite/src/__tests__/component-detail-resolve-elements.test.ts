@@ -2,10 +2,16 @@
 
 import {isValidElement, type ReactElement} from 'react';
 import {describe, expect, it, vi} from 'vitest';
-import {resolveValue} from '../components/component-detail/resolveElements';
+import {
+  getComponent,
+  resolveValue,
+} from '../components/component-detail/resolveElements';
 
 vi.mock('@astryxdesign/core', () => ({
   Badge: () => null,
+  Card: () => null,
+  Grid: () => null,
+  HStack: () => null,
   Icon: () => null,
   SideNavItem: () => null,
   Text: () => null,
@@ -58,4 +64,16 @@ describe('component detail element resolution', () => {
     expect(isValidElement(resolved.status.message)).toBe(true);
     expect(resolved.status.message.props.children).toBe('Bad date');
   });
+
+  it.each([
+    ['GridSpan', 'Grid', {columns: 3, gap: 2}],
+    ['StackItem', 'HStack', {gap: 2, width: 300}],
+  ])(
+    "resolves %s's playground.wrapper (%s) to a real component and its props (#5893, #5899)",
+    (_subComponent, wrapperName, wrapperProps) => {
+      const WrapperComponent = getComponent(wrapperName);
+      expect(WrapperComponent).not.toBeNull();
+      expect(resolveValue(wrapperProps)).toEqual(wrapperProps);
+    },
+  );
 });

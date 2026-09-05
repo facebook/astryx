@@ -23,9 +23,16 @@ import {isCliOneOff, detectPackageManager} from '../env/package-manager.mjs';
 /**
  * Version of the recorded event shape. Bump on any breaking field change,
  * widening {@link DebugSchemaVersion} in the published type at the same time.
+ *
+ * v2 retired the raw `env.agentSessionId`: it is always null now, and
+ * `agentSessionIdHash` is the join key. A consumer that grouped runs by the
+ * raw value would otherwise have started grouping every run under `null`
+ * without a single compile error, which is exactly what the version exists to
+ * prevent.
+ *
  * @type {import('../../authoring/debug/type').DebugSchemaVersion}
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /**
  * The recorded shape is PUBLISHED — a project sets `debug` in `astryx.config`
@@ -72,10 +79,9 @@ const CI_PROVIDERS = [
 ];
 
 /**
- * Coding agents and editors worth distinguishing. This CLI is explicitly built
- * to be driven by agents, so "which agent invoked this" is the single most
- * useful dimension in the log — it separates human ergonomics problems from
- * agent-prompt problems.
+ * Coding-agent signals. The first six are positive evidence of an AI agent.
+ * The final two are retained only by the legacy `agent` field because they can
+ * also describe a human development environment.
  */
 const AGENT_SIGNALS = [
   ['CURSOR_TRACE_ID', 'cursor'],
@@ -87,6 +93,7 @@ const AGENT_SIGNALS = [
   ['REPLIT_USER', 'replit'],
   ['CODESPACES', 'codespaces'],
 ];
+const POSITIVE_AGENT_SIGNAL_COUNT = 6;
 
 /** @returns {{ci: boolean, ciName: string | null}} */
 function detectCi() {
@@ -101,8 +108,81 @@ function detectCi() {
   return {ci: generic, ciName: generic ? 'unknown' : null};
 }
 
-/** @returns {string | null} */
-function detectAgent() {
+/** @param {unknown} value @returns {string | null} */
+function nonEmptyString(value) {
+  if (value == null) return null;
+  const text = String(value).trim();
+  return text || null;
+}
+
+/**
+ * ASTRYX_AGENT_METADATA accepts both JSON and comma-separated key=value
+ * forms. Unknown or malformed entries are ignored so a producer cannot break
+ * command recording.
+ *
+ * @param {unknown} value
+ * @returns {Record<string, string>}
+ */
+function parseCodingAgentMetadata(value) {
+  const raw = nonEmptyString(value);
+  if (!raw) return {};
+
+  try {
+    const decoded = JSON.parse(raw);
+    if (decoded && typeof decoded === 'object' && !Array.isArray(decoded)) {
+      /** @type {Record<string, string>} */
+      const metadata = Object.create(null);
+      for (const [key, entry] of Object.entries(decoded)) {
+        if (
+          typeof entry !== 'string' &&
+          typeof entry !== 'number' &&
+          typeof entry !== 'boolean'
+        ) {
+          continue;
+        }
+        const item = nonEmptyString(entry);
+        if (item) metadata[key] = item;
+      }
+      return metadata;
+    }
+  } catch {
+    // The compact form is comma-separated key=value, not JSON.
+  }
+
+  /** @type {Record<string, string>} */
+  const metadata = Object.create(null);
+  for (const entry of raw.split(',')) {
+    const separator = entry.indexOf('=');
+    if (separator <= 0) continue;
+    const key = entry.slice(0, separator).trim();
+    const item = nonEmptyString(entry.slice(separator + 1));
+    if (key && item) metadata[key] = item;
+  }
+  return metadata;
+}
+
+/** @param {Record<string, string>} metadata @returns {string | null} */
+function detectAgentIdentity(metadata) {
+  const astryxAgent = nonEmptyString(process.env.ASTRYX_AGENT_ID);
+  if (astryxAgent) return astryxAgent.toLowerCase();
+
+  const genericAgent = nonEmptyString(process.env.AGENT);
+  if (genericAgent) return genericAgent.toLowerCase();
+
+  for (const [key, name] of AGENT_SIGNALS.slice(
+    0,
+    POSITIVE_AGENT_SIGNAL_COUNT,
+  )) {
+    if (process.env[key]) return name;
+  }
+
+  const metadataId = nonEmptyString(metadata.id);
+  return metadataId ? metadataId.toLowerCase() : null;
+}
+
+/** @param {string | null} identity @returns {string | null} */
+function detectAgent(identity) {
+  if (identity) return identity;
   for (const [key, name] of AGENT_SIGNALS) {
     if (process.env[key]) return name;
   }
@@ -112,15 +192,66 @@ function detectAgent() {
 }
 
 /**
- * Snapshot the machine and runtime. Everything here is either a coarse
- * bucket or a value the user could read off their own `astryx doctor`
- * output — no hostname, no username, no network identity.
+ * @param {Record<string, string>} metadata
+ * @returns {{id: string | null, source: string | null}}
+ */
+function detectAgentSession(metadata) {
+  /** @type {Array<[unknown, string]>} */
+  const candidates = [
+    [process.env.ASTRYX_AGENT_SESSION_ID, 'ASTRYX_AGENT_SESSION_ID'],
+    [process.env.AGENT_SESSION_ID, 'AGENT_SESSION_ID'],
+    [
+      metadata.session_id ?? metadata.sessionId,
+      'ASTRYX_AGENT_METADATA.session_id',
+    ],
+    [
+      metadata.invocation_id ?? metadata.invocationId,
+      'ASTRYX_AGENT_METADATA.invocation_id',
+    ],
+  ];
+
+  for (const [value, source] of candidates) {
+    const id = nonEmptyString(value);
+    if (id) return {id, source};
+  }
+  return {id: null, source: null};
+}
+
+/** @param {string | null} id @returns {string | null} */
+function hashAgentSessionId(id) {
+  return id == null
+    ? null
+    : crypto.createHash('sha256').update(id, 'utf8').digest('hex');
+}
+
+/**
+ * @param {{agentIdentity: string | null, agentSessionId: string | null, ci: boolean}} facts
+ * @returns {import('../../authoring/debug/type').DebugInvocationSource}
+ */
+function detectInvocationSource({agentIdentity, agentSessionId, ci}) {
+  if (agentIdentity || agentSessionId) return 'ai';
+  if (ci) return 'automation';
+  if (process.stdout.isTTY) return 'human';
+  return 'unknown';
+}
+
+/**
+ * Snapshot the machine, runtime, and invocation attribution. There is no
+ * hostname, username, or network identity, and no raw agent session id — the
+ * privacy contract is on `DebugEventEnv` in `authoring/debug/type.ts`. Agent
+ * session values come only from explicit environment signals supplied by the
+ * invoking tool.
  *
  * @param {{cliVersion?: string}} [options]
  * @returns {import('../../authoring/debug/type').DebugEventEnv}
  */
 export function captureEnv({cliVersion} = {}) {
   const {ci, ciName} = detectCi();
+  const agentMetadata = parseCodingAgentMetadata(
+    process.env.ASTRYX_AGENT_METADATA,
+  );
+  const agentIdentity = detectAgentIdentity(agentMetadata);
+  const agentSession = detectAgentSession(agentMetadata);
   return {
     cliVersion: cliVersion ?? null,
     nodeVersion: process.versions.node,
@@ -128,14 +259,26 @@ export function captureEnv({cliVersion} = {}) {
     arch: process.arch,
     ci,
     ciName,
-    agent: detectAgent(),
+    agent: detectAgent(agentIdentity),
+    agentIdentity,
+    // Never the raw value. A session id is a stable identifier that follows a
+    // person across every run they make, and nothing here needs it: the hash
+    // joins those runs just as well, and a handler that forwards the record
+    // somewhere less private cannot un-forward an identifier we handed it.
+    // Kept as an always-null field rather than dropped, so a consumer reading
+    // schema-v1 records alongside these sees one stable shape.
+    agentSessionId: null,
+    agentSessionIdHash: hashAgentSessionId(agentSession.id),
+    agentSessionIdSource: agentSession.source,
+    invocationSource: detectInvocationSource({
+      agentIdentity,
+      agentSessionId: agentSession.id,
+      ci,
+    }),
     oneOff: safe(() => isCliOneOff(), false),
     packageManager: safe(() => detectPackageManager(), null),
     tty: Boolean(process.stdout.isTTY),
-    locale: safe(
-      () => Intl.DateTimeFormat().resolvedOptions().locale,
-      null,
-    ),
+    locale: safe(() => Intl.DateTimeFormat().resolvedOptions().locale, null),
     timezone: safe(
       () => Intl.DateTimeFormat().resolvedOptions().timeZone,
       null,
@@ -196,6 +339,10 @@ export function createEvent({command = '', argv = []} = {}) {
       envelopeTypes: [],
       handled: false,
       helpDisplayed: false,
+      resultCount: null,
+      emptyResult: null,
+      resultKind: null,
+      directMatch: null,
       stdout: '',
       stderr: '',
       stdoutBytes: 0,
@@ -204,7 +351,10 @@ export function createEvent({command = '', argv = []} = {}) {
     },
     env: null,
     project: captureProject(),
-    redacted: true,
+    // FALSE, and true only on the sealed copy `finish()` delivers. Nothing has
+    // been through the scrubbing pass yet, and a record that claims otherwise
+    // while still holding verbatim values is worse than one that admits it.
+    redacted: false,
   };
 }
 

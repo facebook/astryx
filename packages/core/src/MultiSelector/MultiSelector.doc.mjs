@@ -129,6 +129,17 @@ export const docs = {
     'filter',
     'select',
   ],
+  playground: {
+    defaults: {
+      label: 'Fruit',
+      options: [
+        {value: 'apple', label: 'Apple'},
+        {value: 'orange', label: 'Orange'},
+        {value: 'banana', label: 'Banana'},
+      ],
+      value: [],
+    },
+  },
   theming: {
     targets: [
       {

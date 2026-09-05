@@ -25,10 +25,44 @@ afterEach(() => {
   }
 });
 
+// tsx is a .cmd (batch) shim on Windows; spawnSync can only run a batch file
+// through a shell, so shell out through cmd.exe /c directly rather than
+// spawnSync's shell:true (which triggers Node's shell-argument-escaping
+// deprecation warning DEP0190 even though every argument here is either a
+// hardcoded literal or a test-controlled path). See
+// internal/vibe-tests/src/fixture-suite.mjs for the same pattern applied to
+// pnpm.
+//
+// cmd.exe /c doesn't receive Node's argv array as discrete arguments the way
+// a normal executable does; it reconstructs one command-line string from
+// them and reparses it with its own rules, so an unquoted path containing a
+// space (this suite deliberately uses one, see the "setup report <pid>"
+// tmpdir below) gets split apart before tsx ever sees it. Quoting each
+// argument and joining into a single string fixes that half of it, but
+// spawnSync would then re-quote/escape that already-quoted string as if it
+// were one plain argument (since cmd.exe is, to Node, just another regular
+// executable), corrupting the quotes before cmd.exe ever sees them.
+// windowsVerbatimArguments skips Node's own quoting so our string reaches
+// cmd.exe as-is; the outer quote pair around the whole command line is what
+// makes cmd's /S switch strip it and treat the quoted TSX path inside as the
+// command rather than splitting on its internal spaces (both empirically
+// required together, verified by probing the plainer combinations first).
+function quoteForCmd(arg) {
+  return /[\s"]/.test(arg) ? `"${arg.replace(/"/g, '""')}"` : arg;
+}
+
 function run(script, args) {
-  return spawnSync(TSX, [script, ...args], {
+  if (process.platform !== 'win32') {
+    return spawnSync(TSX, [script, ...args], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+    });
+  }
+  const commandLine = [TSX, script, ...args].map(quoteForCmd).join(' ');
+  return spawnSync('cmd.exe', ['/d', '/s', '/c', `"${commandLine}"`], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
+    windowsVerbatimArguments: true,
   });
 }
 

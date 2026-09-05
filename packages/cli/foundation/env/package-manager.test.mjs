@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {
   detectPackageManager,
+  explainPackageManager,
   getDlxPrefix,
   isCliOneOff,
   getCliInvocation,
@@ -55,6 +56,110 @@ describe('detectPackageManager', () => {
     expect(detectPackageManager(dir)).toBe('bun');
   });
 
+  it('refuses to let the runner break a multi-lockfile tie', () => {
+    // One `yarn install` inside a pnpm project leaves a yarn.lock next to the
+    // committed pnpm-lock.yaml. Nothing the project owns picks between them, so
+    // there is no honest answer to give — only the neutral one.
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    process.env.npm_config_user_agent = 'pnpm/11.10.0 npm/? node/v22.0.0';
+    expect(detectPackageManager(dir)).toBe('npx');
+    expect(explainPackageManager(dir)).toMatchObject({
+      ambiguous: true,
+      candidates: ['yarn', 'pnpm'],
+    });
+  });
+
+  it('does not reproduce a wrong `yarn astryx` line it was invoked through', () => {
+    // The regression: an agent handed the wrong `yarn astryx` line runs the CLI
+    // THROUGH yarn, so npm_config_user_agent says yarn. A runner tiebreak then
+    // agrees with the mistake, and regenerating agent docs writes it again —
+    // the wrong line reproduces itself forever. Project evidence only.
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    process.env.npm_config_user_agent = 'yarn/1.22.21 npm/? node/v22.0.0';
+    expect(detectPackageManager(dir)).not.toBe('yarn');
+    expect(getCliInvocation(dir)).toBe('npx astryx');
+  });
+
+  it('does not reproduce it for a directly invoked installed binary either', () => {
+    const dir = makeTmpDir();
+    const entry = process.argv[1];
+    try {
+      fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+      fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+      process.env.npm_config_user_agent = 'yarn/1.22.21 npm/? node/v22.0.0';
+      process.argv[1] = path.join(dir, 'node_modules/.bin/astryx');
+      expect(getCliInvocation(dir)).toBe('npx astryx');
+    } finally {
+      process.argv[1] = entry;
+    }
+  });
+
+  it('breaks the tie from a committed pnpm-workspace.yaml', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(path.join(dir, 'pnpm-workspace.yaml'), 'packages: []\n');
+    process.env.npm_config_user_agent = 'yarn/1.22.21 npm/? node/v22.0.0';
+    expect(detectPackageManager(dir)).toBe('pnpm');
+  });
+
+  it('breaks the tie from a committed .yarnrc.yml', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(path.join(dir, '.yarnrc.yml'), 'nodeLinker: node-modules\n');
+    expect(detectPackageManager(dir)).toBe('yarn');
+  });
+
+  it('stays ambiguous when the project owns evidence for both', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(path.join(dir, 'pnpm-workspace.yaml'), 'packages: []\n');
+    fs.writeFileSync(path.join(dir, '.yarnrc.yml'), '');
+    expect(explainPackageManager(dir).ambiguous).toBe(true);
+  });
+
+  it('lets the packageManager field break a multi-lockfile tie', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'pnpm@11.10.0'}),
+    );
+    expect(detectPackageManager(dir)).toBe('pnpm');
+  });
+
+  it('follows the declared packageManager even when no lockfile matches it', () => {
+    // The declaration is the project speaking. Two lockfiles that disagree
+    // with it are two traces that are both wrong, not a tie to resolve.
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(path.join(dir, 'package-lock.json'), '{}');
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'pnpm@11.10.0'}),
+    );
+    expect(explainPackageManager(dir)).toMatchObject({
+      pm: 'pnpm',
+      ambiguous: false,
+      declared: 'pnpm',
+      source: 'declared',
+    });
+  });
+
+  it('ignores a runner that has no lockfile in the directory', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    process.env.npm_config_user_agent = 'yarn/1.22.21 npm/? node/v22.0.0';
+    expect(detectPackageManager(dir)).toBe('pnpm');
+  });
+
   it('detects from packageManager field in package.json (no lockfile)', () => {
     const dir = makeTmpDir();
     fs.writeFileSync(
@@ -82,14 +187,87 @@ describe('detectPackageManager', () => {
     expect(detectPackageManager(dir)).toBe('npx');
   });
 
-  it('lockfile takes priority over packageManager field', () => {
+  it('declared packageManager outranks a single stray lockfile', () => {
+    // The regression: one `yarn install` inside a pnpm project leaves a
+    // yarn.lock forever, and a single lockfile used to outrank the field. The
+    // CLI then printed `yarn astryx` for a pnpm project — and wrote that line
+    // into the agent docs, where agents copy it.
     const dir = makeTmpDir();
     fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
     fs.writeFileSync(
       path.join(dir, 'package.json'),
       JSON.stringify({packageManager: 'pnpm@8.0.0'}),
     );
+    expect(detectPackageManager(dir)).toBe('pnpm');
+    expect(getCliInvocation(dir)).toBe('pnpm exec astryx');
+  });
+
+  it('reports the stray lockfile it ignored, so doctor can name it', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'pnpm@8.0.0'}),
+    );
+    expect(explainPackageManager(dir)).toMatchObject({
+      pm: 'pnpm',
+      declared: 'pnpm',
+      source: 'declared',
+      strayLockfiles: [{pm: 'yarn', file: 'yarn.lock'}],
+    });
+  });
+
+  it('reports no stray when the lockfile agrees with the declaration', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'pnpm@8.0.0'}),
+    );
+    expect(explainPackageManager(dir)).toMatchObject({
+      pm: 'pnpm',
+      declared: 'pnpm',
+      strayLockfiles: [],
+    });
+  });
+
+  it('keeps the lockfile fallback when nothing is declared', () => {
+    // The documented fallback: with no declaration, one lockfile still decides.
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({}));
+    expect(explainPackageManager(dir)).toMatchObject({
+      pm: 'yarn',
+      declared: null,
+      source: 'lockfile',
+    });
+  });
+
+  it('ignores an unknown packageManager value and falls back to the lockfile', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'unknown@1.0.0'}),
+    );
     expect(detectPackageManager(dir)).toBe('yarn');
+  });
+
+  it('lets a nearer directory answer before an outer declaration', () => {
+    // Unchanged walk-up behaviour: the first directory that answers wins, so a
+    // workspace root's declaration does not reach past a package that has its
+    // own lockfile.
+    const dir = makeTmpDir();
+    const inner = path.join(dir, 'packages', 'app');
+    fs.mkdirSync(inner, {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'pnpm@8.0.0'}),
+    );
+    fs.writeFileSync(path.join(inner, 'package-lock.json'), '{}');
+    expect(detectPackageManager(inner)).toBe('npm');
+    expect(detectPackageManager(dir)).toBe('pnpm');
   });
 
   it('detects from npm_config_user_agent env var', () => {

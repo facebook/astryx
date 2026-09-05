@@ -22,7 +22,9 @@ import {canonicalizePng} from './lib/canonical-png.mjs';
 import {
   acceptedVisualThemes,
   baselineVisualStories,
+  canonicalBaselineStories,
   componentVisualStories,
+  emptyVisualPlanMessage,
   exceedsPrVisualShotLimit,
   readStoryIndex,
   readThemeCatalog,
@@ -30,7 +32,6 @@ import {
   shotKey,
   stableBaseline,
   storiesInPackages,
-  storiesInStorybookGroups,
   VISUAL_BASELINE_TAG,
   withThemeMetadata,
 } from './lib/plan.mjs';
@@ -738,10 +739,10 @@ function trustedPlan() {
     allIndexed,
     config.stableStoryPackages,
   );
-  const indexed = storiesInStorybookGroups(
-    packageStories,
-    config.stableStoryGroups,
-  );
+  const indexed = canonicalBaselineStories(packageStories, {
+    groups: config.stableStoryGroups,
+    packages: config.stableStoryPackages,
+  });
   const {baseline} = readTrustedBaseline(allIndexed);
   const baselineKeys = new Set(Object.keys(baseline.shots));
 
@@ -819,9 +820,7 @@ function trustedPlan() {
     fail('trusted stable plan includes a private or canary theme');
   }
   if (unique.length === 0) {
-    fail(
-      'trusted component scope has no existing baseline frames; seed coverage through the manual baseline workflow',
-    );
+    fail(emptyVisualPlanMessage('The trusted component scope'));
   }
   if (unique.length > config.visualPlanSafetyLimit) {
     fail(

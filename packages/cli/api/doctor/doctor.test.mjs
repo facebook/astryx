@@ -11,7 +11,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {doctor, checkVersionAlignment} from './doctor.mjs';
+import {doctor, checkVersionAlignment, checkPackageManager} from './doctor.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const cwd = REPO;
@@ -147,5 +147,64 @@ describe('doctor — checkVersionAlignment', () => {
     expect(['pass', 'warn']).toContain(c.status);
     expect(c.message).not.toMatch(/NaN|undefined/);
     if (c.fix) expect(c.fix).not.toMatch(/NaN|undefined/);
+  });
+});
+
+describe('checkPackageManager', () => {
+  it('is informational when one lockfile answers', () => {
+    const dir = mkProject({'pnpm-lock.yaml': ''});
+    const c = checkPackageManager({cwd: dir});
+    expect(c).toMatchObject({id: 'package-manager', status: 'info'});
+    expect(c.message).toContain('pnpm');
+  });
+
+  it('fails when several lockfiles tie and nothing project-owned breaks it', () => {
+    // Without this the CLI answers from array order, and every command it
+    // prints — including the agent-docs invocation line — names a package
+    // manager the project may not use at all. Silence is the bug; say it.
+    const dir = mkProject({'pnpm-lock.yaml': '', 'yarn.lock': ''});
+    const c = checkPackageManager({cwd: dir});
+    expect(c.status).toBe('fail');
+    expect(c.message).toContain('yarn');
+    expect(c.message).toContain('pnpm');
+    expect(c.fix).toContain('packageManager');
+  });
+
+  it('is informational when the declaration and the lockfile agree', () => {
+    const dir = mkProject({
+      'pnpm-lock.yaml': '',
+      'package.json': JSON.stringify({packageManager: 'pnpm@11.10.0'}),
+    });
+    const c = checkPackageManager({cwd: dir});
+    expect(c.status).toBe('info');
+    expect(c.message).toContain('pnpm');
+    expect(c.fix).toBeUndefined();
+  });
+
+  it('warns when a lockfile contradicts the declared packageManager', () => {
+    // The regression: a stray yarn.lock used to OUTRANK the declaration, and
+    // doctor then reported the project as healthy while every command the CLI
+    // printed named the wrong package manager. The declaration now decides, and
+    // the contradiction is reported instead of hidden.
+    const dir = mkProject({
+      'yarn.lock': '',
+      'package.json': JSON.stringify({packageManager: 'pnpm@11.10.0'}),
+    });
+    const c = checkPackageManager({cwd: dir});
+    expect(c.status).toBe('warn');
+    expect(c.message).toContain('yarn.lock');
+    expect(c.message).toContain('pnpm');
+    expect(c.fix).toContain('yarn.lock');
+  });
+
+  it('still warns when the declaration resolved a multi-lockfile tie', () => {
+    const dir = mkProject({
+      'pnpm-lock.yaml': '',
+      'yarn.lock': '',
+      'package.json': JSON.stringify({packageManager: 'pnpm@11.10.0'}),
+    });
+    const c = checkPackageManager({cwd: dir});
+    expect(c.status).toBe('warn');
+    expect(c.message).toContain('yarn.lock');
   });
 });

@@ -29,7 +29,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use the vertical orientation for narrow containers or when steps have longer descriptions.',
+          'Use the vertical orientation when steps carry longer descriptions. A horizontal stepper handles narrow containers itself: once the frame gives each step less than horizontalOptions.minimumStepWidth (112px by default) it drops the labels for a segmented track and uses the configured collapsedVariant beneath it.',
+      },
+      {
+        guidance: true,
+        description:
+          "Set horizontalOptions.collapsedVariant to 'withLabel' when the page already supplies Back/Continue, or to 'hiddenLabel' when surrounding UI owns both the current-step heading and navigation and only a bare progress track is needed.",
       },
       {
         guidance: true,
@@ -68,6 +73,18 @@ export const docs = {
         required: true,
         description:
           'The ordered list holding the steps. Owns the orientation and the indicator placement the whole flow is laid out on.',
+      },
+      {
+        name: 'Frame',
+        required: true,
+        description:
+          'The layout frame that groups the ordered steps with the optional compact summary shown at narrow widths.',
+      },
+      {
+        name: 'Compact summary',
+        required: false,
+        description:
+          'The optional row a horizontal Stepper adds directly beneath the track once it is too narrow to label every step. horizontalOptions.collapsedVariant chooses a label with Previous/Next controls, the label alone, or no row for a bare progress track. The on-track layout keeps its indicators on the rail instead of repeating the active indicator beside the label. Every step keeps its name in the accessible sequence at any width.',
       },
       {
         name: 'Step',
@@ -111,6 +128,8 @@ export const docs = {
         className: 'astryx-stepper',
         visualProps: ['orientation', 'indicatorPosition'],
       },
+      {className: 'astryx-stepper-frame'},
+      {className: 'astryx-stepper-summary'},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
       {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
       {
@@ -163,7 +182,7 @@ export const docs = {
           name: 'onStepClick',
           type: '(index: number) => void',
           description:
-            'Called when a step is clicked. Enables non-linear navigation. All non-disabled steps become clickable, including not-started steps.',
+            'Called when a step is clicked or a compact summary control is used. Enables non-linear navigation. All non-disabled steps become clickable until a horizontal Stepper collapses, when navigation moves to summary controls that skip disabled steps.',
         },
         {
           name: 'label',
@@ -184,6 +203,14 @@ export const docs = {
           description:
             'Position of step indicators relative to the connector track.',
           default: "'separated'",
+        },
+        {
+          name: 'horizontalOptions',
+          type: "{ minimumStepWidth: number | string; collapsedVariant: 'withLabelAndControls' | 'withLabel' | 'hiddenLabel' }",
+          description:
+            'Options for horizontal collapse. minimumStepWidth is the per-step threshold: numbers are pixels and strings accept CSS lengths such as 7rem, calc(6rem + 8px), or var(--step-width). collapsedVariant selects a label with controls, the label alone, or a bare progress track with no compact row. Controls appear only for withLabelAndControls when onStepClick is set, and every step keeps its accessible name.',
+          default:
+            "{ minimumStepWidth: 112, collapsedVariant: 'withLabelAndControls' }",
         },
         {
           name: 'xstyle',
@@ -227,7 +254,12 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Keep step labels short. Use vertical in narrow containers.',
+          'Keep step labels short. Horizontal collapses under horizontalOptions.minimumStepWidth per step (112px by default); vertical is for long descriptions.',
+      },
+      {
+        guidance: true,
+        description:
+          'Choose horizontalOptions.collapsedVariant when the page owns its own Back/Continue, or both its step heading and navigation.',
       },
       {
         guidance: true,
@@ -255,9 +287,13 @@ export const docsDense = {
         activeStep: 'zero-based active step index',
         children: 'Step elements',
         orientation: 'horizontal or vertical layout',
-        onStepClick: 'enables non-linear navigation',
+        onStepClick:
+          'enables non-linear navigation; summary controls own compact navigation and skip disabled steps',
         label: 'ordered-list aria-label',
         density: 'padding of all steps',
+        indicatorPosition: 'indicators separated from or on the track',
+        horizontalOptions:
+          'horizontal collapse threshold and label/control presentation',
         xstyle: 'StyleX layout customization',
       },
     },
@@ -292,7 +328,13 @@ export const docsZh = {
       {guidance: true, description: '保持步骤标签简短和描述性。'},
       {
         guidance: true,
-        description: '在窄容器中使用垂直方向，或当步骤有较长描述时。',
+        description:
+          '当步骤有较长描述时使用垂直方向。水平步骤器会自行处理窄容器：当每个步骤的可用宽度不足 horizontalOptions.minimumStepWidth（默认为 112px）时，它会收起标签，并按 collapsedVariant 显示紧凑内容。',
+      },
+      {
+        guidance: true,
+        description:
+          "当页面已有返回/继续控件时，将 horizontalOptions.collapsedVariant 设为 'withLabel'；当周围界面同时提供当前步骤标题和导航、只需要裸进度轨道时，将其设为 'hiddenLabel'。",
       },
       {guidance: true, description: '为非线性工作流程提供 onStepClick。'},
       {
@@ -315,6 +357,8 @@ export const docsZh = {
         className: 'astryx-stepper',
         visualProps: ['orientation', 'indicatorPosition'],
       },
+      {className: 'astryx-stepper-frame'},
+      {className: 'astryx-stepper-summary'},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
       {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
       {
@@ -364,7 +408,8 @@ export const docsZh = {
         {
           name: 'onStepClick',
           type: '(index: number) => void',
-          description: '点击步骤时调用。启用非线性导航。',
+          description:
+            '点击步骤或紧凑摘要控件时调用。启用非线性导航；水平步骤器折叠后，导航转移到会跳过已禁用步骤的摘要控件。',
         },
         {
           name: 'label',
@@ -377,6 +422,20 @@ export const docsZh = {
           type: "'compact' | 'balanced' | 'spacious'",
           description: '控制所有步骤的内边距。',
           default: "'balanced'",
+        },
+        {
+          name: 'indicatorPosition',
+          type: "'separated' | 'on-track'",
+          description: '步骤指示器相对于连接轨道的位置。',
+          default: "'separated'",
+        },
+        {
+          name: 'horizontalOptions',
+          type: "{ minimumStepWidth: number | string; collapsedVariant: 'withLabelAndControls' | 'withLabel' | 'hiddenLabel' }",
+          description:
+            '水平布局的收起选项。minimumStepWidth 是每个步骤的阈值：数字按像素处理，字符串接受 7rem、calc(6rem + 8px) 或 var(--step-width) 等 CSS 长度。collapsedVariant 可选择显示标签和控件、仅显示标签，或只显示裸进度轨道而不显示紧凑行。仅当 collapsedVariant 为 withLabelAndControls 且设置 onStepClick 时显示控件，每个步骤始终保留无障碍名称。',
+          default:
+            "{ minimumStepWidth: 112, collapsedVariant: 'withLabelAndControls' }",
         },
         {
           name: 'xstyle',

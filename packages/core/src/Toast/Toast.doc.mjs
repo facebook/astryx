@@ -18,6 +18,10 @@ export const docs = {
     'status',
   ],
 
+  playground: {
+    defaults: {body: 'Changes saved'},
+  },
+
   props: [
     {
       name: 'body',

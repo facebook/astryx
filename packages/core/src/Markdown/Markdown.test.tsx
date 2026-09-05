@@ -1,10 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
 import {Markdown} from './Markdown';
 import type {MarkdownInlinePlugin} from './Markdown';
+import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
 
 describe('Markdown', () => {
@@ -479,6 +480,90 @@ describe('Markdown', () => {
     const {container} = render(<Markdown>{'Hello'}</Markdown>);
     const cursor = container.querySelector('span[aria-hidden]');
     expect(cursor).not.toBeInTheDocument();
+  });
+
+  // A reader watching a reply arrive sees the DOM, not the parsed nodes.
+  // A `\|` is literal text, so the line must stay legible as it streams;
+  // the parser once classified it as an unfinished table header and held
+  // the whole line back, blanking the message.
+  describe('streamed text containing an escaped pipe', () => {
+    // Reduced motion makes the reveal synchronous, so each render shows
+    // exactly the prefix under test rather than a rAF-driven fraction.
+    beforeEach(() => {
+      stubMatchMedia({reduceMotion: true});
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    /** The text of each rendered block, in document order. */
+    function blockTexts(container: HTMLElement): string[] {
+      const doc = container.querySelector('[role="document"]')!;
+      return Array.from(doc.children).map(block =>
+        (block.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      );
+    }
+
+    it('shows every prefix of the line, escaped pipe rendered literally', () => {
+      const text = 'Costs 5 \\| 10 per unit';
+      const {container, rerender} = render(
+        <Markdown isStreaming>{text.slice(0, 1)}</Markdown>,
+      );
+
+      for (let length = 1; length <= text.length; length++) {
+        const prefix = text.slice(0, length);
+        rerender(<Markdown isStreaming>{prefix}</Markdown>);
+
+        // Every `\|` reads as one literal pipe, and no backslash survives.
+        expect(blockTexts(container)).toEqual([
+          prefix.replace(/\\\|/g, '|').trim(),
+        ]);
+      }
+    });
+
+    it('shows every prefix below settled content, both kept on screen', () => {
+      const settled = 'Intro\n\n';
+      const text = `${settled}Costs 5 \\| 10 per unit`;
+      const {container, rerender} = render(
+        <Markdown isStreaming>{settled}</Markdown>,
+      );
+
+      for (let length = settled.length + 1; length <= text.length; length++) {
+        const prefix = text.slice(0, length);
+        rerender(<Markdown isStreaming>{prefix}</Markdown>);
+
+        const tail = text.slice(settled.length, length).replace(/\\\|/g, '|');
+        // The settled paragraph stays on screen and the tail is legible.
+        expect(blockTexts(container)).toEqual(['Intro', tail.trim()]);
+      }
+    });
+
+    it('renders the finished line as one paragraph with the literal pipe', () => {
+      const {container} = render(
+        <Markdown isStreaming>{'Costs 5 \\| 10 per unit'}</Markdown>,
+      );
+
+      const paragraphs = container.querySelectorAll('[role="paragraph"]');
+      expect(paragraphs).toHaveLength(1);
+      expect(paragraphs[0].textContent).toBe('Costs 5 | 10 per unit');
+      // Prose, not a table: no cell was ever split out of it.
+      expect(container.querySelector('table')).toBeNull();
+    });
+
+    it('still renders a real streamed table containing an escaped pipe', () => {
+      const {container} = render(
+        <Markdown isStreaming>
+          {'| Col1 | Col2 |\n| --- | --- |\n| a \\| b | c |'}
+        </Markdown>,
+      );
+
+      const cells = container.querySelectorAll('tbody td');
+      expect(Array.from(cells).map(cell => cell.textContent)).toEqual([
+        'a | b',
+        'c',
+      ]);
+    });
   });
 
   it('applies compact density', () => {

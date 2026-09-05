@@ -26,7 +26,7 @@ import {createRequire} from 'node:module';
 
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
 import {CLI_ROOT, findCoreDir} from '../../foundation/fs/paths.mjs';
-import {detectPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {findConfigPath, Project} from '../../foundation/config/project.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 
@@ -495,20 +495,59 @@ export function checkPeerDeps(ctx) {
 }
 
 /**
- * Check 8 — report the detected package manager (informational).
+ * Check 8 — report the detected package manager, and say so when the project's
+ * own declaration disagrees with what is on disk.
+ *
+ * Two states are worth surfacing rather than guessing past, because in both the
+ * commands the CLI prints can be silently wrong for the project:
+ *
+ * - FAIL: several lockfiles tie with nothing project-owned to break them.
+ * - WARN: a `packageManager` field is declared and a lockfile it contradicts
+ *   sits beside it. Astryx follows the declaration, so its own output is right;
+ *   the warning is that a tool which follows the lockfile will install with
+ *   something else, and that used to be reported as a healthy setup.
+ *
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
 export function checkPackageManager(ctx) {
-  const pm = detectPackageManager(ctx.cwd);
-  const detected = pm !== 'npx';
+  const {pm, ambiguous, dir, candidates, declared, strayLockfiles} =
+    explainPackageManager(ctx.cwd);
+
+  if (ambiguous) {
+    return {
+      id: 'package-manager',
+      label: 'Package manager',
+      status: 'fail',
+      message: `Cannot tell which package manager this project uses: ${candidates.join(' and ')} lockfiles both sit in ${dir}, and nothing the project owns picks between them. Commands are printed with the neutral \`npx\` form until this is resolved.`,
+      fix: `Add a \`packageManager\` field to ${dir}/package.json, or delete the lockfile that does not belong.`,
+    };
+  }
+
+  if (declared && strayLockfiles.length > 0) {
+    const files = strayLockfiles.map(lock => lock.file).join(' and ');
+    const owners = [...new Set(strayLockfiles.map(lock => lock.pm))].join(
+      ' and ',
+    );
+    return {
+      id: 'package-manager',
+      label: 'Package manager',
+      status: 'warn',
+      message: `This project declares \`packageManager: ${declared}\` in ${dir}/package.json, but ${files} also sits there. Astryx follows the declaration and prints ${pm} commands; anything that follows the lockfile instead will use ${owners}.`,
+      fix: `Delete ${files} from ${dir} and reinstall with ${declared}, or change the \`packageManager\` field if ${owners} is what this project actually uses.`,
+    };
+  }
+
   return {
     id: 'package-manager',
     label: 'Package manager',
     status: 'info',
-    message: detected
-      ? `Detected package manager: ${pm}.`
-      : 'No lockfile detected — defaulting to npm/npx.',
+    message:
+      pm !== 'npx'
+        ? declared
+          ? `Detected package manager: ${pm} (declared in ${dir}/package.json).`
+          : `Detected package manager: ${pm}.`
+        : 'No lockfile detected — defaulting to npm/npx.',
   };
 }
 

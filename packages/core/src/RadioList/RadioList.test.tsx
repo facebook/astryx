@@ -15,6 +15,29 @@ import userEvent from '@testing-library/user-event';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
+interface InjectedRule {
+  selector: string;
+  text: string;
+  media: string | null;
+}
+
+function injectedRules(): InjectedRule[] {
+  const walk = (rules: CSSRuleList, condition: string | null): InjectedRule[] =>
+    [...rules].flatMap((rule): InjectedRule[] => {
+      const {selectorText} = rule as CSSStyleRule;
+      if (typeof selectorText === 'string') {
+        return [{selector: selectorText, text: rule.cssText, media: condition}];
+      }
+      const nested = (rule as CSSGroupingRule).cssRules;
+      if (nested == null) {
+        return [];
+      }
+      const own = (rule as CSSMediaRule).media?.mediaText;
+      return walk(nested, own != null && own !== '' ? own : condition);
+    });
+
+  return [...document.styleSheets].flatMap(sheet => walk(sheet.cssRules, null));
+}
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -948,6 +971,32 @@ describe('RadioList', () => {
         /background-color:\s*var\(--color-accent-muted\)/,
       );
     });
+  });
+
+  describe('coarse pointer and RTL hit-target positioning', () => {
+    it.each([
+      ['sm', 'ltr'],
+      ['sm', 'rtl'],
+      ['md', 'ltr'],
+      ['md', 'rtl'],
+    ] as const)(
+      'applies centerInline styling to native input (size: %s, dir: %s)',
+      (size, dir) => {
+        const {container} = render(
+          <div dir={dir}>
+            <RadioList size={size} label="Choice" value="" onChange={() => {}}>
+              <RadioListItem label="Option A" value="a" />
+            </RadioList>
+          </div>,
+        );
+
+        const input = container.querySelector(
+          'input[type="radio"]',
+        ) as HTMLInputElement;
+        expect(input).toBeInTheDocument();
+        expect(input.className).toContain('centerInline');
+      },
+    );
   });
 });
 

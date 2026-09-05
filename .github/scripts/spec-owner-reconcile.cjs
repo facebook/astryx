@@ -11,8 +11,10 @@ const {
   GATE_STATUS_CONTEXT,
   READY_STATUS_PREFIX,
   canonicalRunUrl,
+  describeOwnerCommandProblem,
   newestGateRun,
   parseOwnerCommand,
+  parseOwnerCommandIntent,
   parseOwnerFile,
   parseReadyAttestations,
   requiredApprovalGroups,
@@ -22,9 +24,7 @@ const {
 
 function isCommandComment(eventName, payload) {
   if (eventName !== 'issue_comment') return true;
-  return /^\/(approve|revoke)-spec [0-9a-f]{40}$/i.test(
-    payload.comment?.body?.trim() ?? '',
-  );
+  return parseOwnerCommandIntent(payload.comment?.body) !== null;
 }
 
 function isAuthorizedEvent(eventName, payload, owners) {
@@ -43,6 +43,27 @@ function isAuthorizedEvent(eventName, payload, owners) {
 
 function labelNames(pr) {
   return new Set(pr.labels.map(label => label.name));
+}
+
+function ownerCommandHelpMarker(headSha) {
+  return `<!-- spec-owner-command-help:${headSha} -->`;
+}
+
+function ownerCommandHelpBody({verb, headSha, problem}) {
+  return [
+    ownerCommandHelpMarker(headSha),
+    `That \`/${verb}-spec\` comment did not change \`${GATE_STATUS_CONTEXT}\`: ${problem}.`,
+    '',
+    'The gate only accepts the exact current head, so post this instead:',
+    '',
+    `    /${verb}-spec ${headSha}`,
+    '',
+    'A new commit invalidates the command, so repeat it after any push.',
+  ].join('\n');
+}
+
+function isSettled(pr) {
+  return Boolean(pr.merged_at) || pr.state === 'closed';
 }
 
 async function reconcileSpecOwnerGate({
@@ -93,6 +114,11 @@ async function reconcileSpecOwnerGate({
   }
 
   const runId = BigInt(String(context.runId));
+  // A boolean workflow_dispatch input arrives as a real boolean; a string
+  // input arrives as text. Only an explicit true opts in.
+  const backfillOnly =
+    context.eventName === 'workflow_dispatch' &&
+    String(context.payload.inputs?.backfill ?? 'false') === 'true';
   const runUrl = canonicalRunUrl(
     repository,
     String(context.runId),
@@ -139,16 +165,57 @@ async function reconcileSpecOwnerGate({
     return newestGateRun(await listStatuses(headSha), repository);
   }
 
+  /**
+   * The freshest possible answer to "may this head still be written at all".
+   * A settled or moved head is never writable, whichever run is current: an
+   * approval that lands after the merge it claims to gate is not evidence.
+   * Any read that throws propagates and nothing is published.
+   */
+  async function isLiveHeadWritable(headSha) {
+    const live = await getPullRequest();
+    if (isSettled(live)) {
+      core.info(
+        'The pull request settled while this run reconciled; leaving the head status as it merged.',
+      );
+      return false;
+    }
+    if (live.head.sha !== headSha) {
+      core.info(
+        'The head moved while this run reconciled; leaving the status to the run for the new head.',
+      );
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * The last read before a terminal write. GitHub has no conditional status
+   * write, so the window cannot be closed — it can only be made as small as
+   * one API call and made to fail closed. Read the run currency first and the
+   * live pull request last, so the head/settlement facts are the freshest
+   * thing known at the moment of the write.
+   */
+  async function isPublishable(headSha) {
+    if (!(await isCurrentRun(headSha))) return false;
+    return isLiveHeadWritable(headSha);
+  }
+
   async function restoreNewerStatus(headSha) {
     const newest = await newestRun(headSha);
     if (newest === null || newest.runId <= runId) return false;
-    await createStatus({
-      sha: headSha,
-      context: GATE_STATUS_CONTEXT,
-      state: newest.status.state,
-      description: newest.status.description,
-      targetUrl: newest.status.target_url,
-    });
+    // Yielding is still a write. A newer run's status is no more publishable
+    // on a merged or moved head than this run's own would be, so the restore
+    // takes the same live guard — and still reports the yield, because this
+    // run's claim on the head is over either way.
+    if (await isLiveHeadWritable(headSha)) {
+      await createStatus({
+        sha: headSha,
+        context: GATE_STATUS_CONTEXT,
+        state: newest.status.state,
+        description: newest.status.description,
+        targetUrl: newest.status.target_url,
+      });
+    }
     core.info(
       `Run ${context.runId} yielded to newer run ${newest.runId.toString()}.`,
     );
@@ -163,18 +230,28 @@ async function reconcileSpecOwnerGate({
   async function currentPullForRun(headSha) {
     const current = await getPullRequest();
     if (current.head.sha !== headSha) return null;
+    if (isSettled(current)) return null;
     if (!(await isCurrentRun(headSha))) return null;
     return current;
   }
 
   async function setFinalStatus(headSha, state, description) {
-    if (!(await isCurrentRun(headSha))) return false;
+    if (!(await isPublishable(headSha))) return false;
     await createStatus({
       sha: headSha,
       context: GATE_STATUS_CONTEXT,
       state,
       description,
     });
+    // The write cannot be undone, so verify what it landed on. A success that
+    // raced a merge is reported loudly and stops this run before auto-merge.
+    const after = await getPullRequest();
+    if (isSettled(after) || after.head.sha !== headSha) {
+      core.warning(
+        `Published ${state} for ${headSha.slice(0, 7)} as the pull request settled or moved; treat that status as unverified.`,
+      );
+      return false;
+    }
     return !(await restoreNewerStatus(headSha));
   }
 
@@ -340,6 +417,15 @@ async function reconcileSpecOwnerGate({
   }
 
   const initialPr = await getPullRequest();
+  // Nothing about a merged or closed head is still being decided. Reconciling
+  // one can only publish a decision that arrives after the merge it claims to
+  // gate, so stop before writing any status.
+  if (isSettled(initialPr)) {
+    core.info(
+      'The pull request is already merged or closed; the gate does not rewrite a settled head.',
+    );
+    return;
+  }
   const initialHead = initialPr.head.sha;
   await createStatus({
     sha: initialHead,
@@ -352,12 +438,15 @@ async function reconcileSpecOwnerGate({
   const actor = context.actor?.toLowerCase();
   const eventHead = context.payload.pull_request?.head?.sha;
   const eventTime = context.payload.pull_request?.updated_at;
+  // Only a DESIGNOWNER author may self-attest a head, and only for the design
+  // approval group (.github/DESIGNOWNERS). A spec or engineering owner marking
+  // their own pull request ready is not an approval by anyone else.
   if (
     context.eventName === 'pull_request_target' &&
     context.payload.action === 'ready_for_review' &&
     actor &&
     actor === initialPr.user.login.toLowerCase() &&
-    allOwners.has(actor) &&
+    designOwners.includes(actor) &&
     eventHead === initialHead &&
     eventTime &&
     !Number.isNaN(Date.parse(eventTime))
@@ -401,6 +490,31 @@ async function reconcileSpecOwnerGate({
   }
 
   const {pr, scope, records, reviews, comments, timeline, statuses} = snapshot;
+
+  // A near-miss owner command used to do nothing at all, so an owner could
+  // believe they had approved a head the gate never read. Answer it once per
+  // head with the exact command instead of leaving it silent.
+  if (context.eventName === 'issue_comment' && commentAuthor) {
+    const intent = parseOwnerCommandIntent(context.payload.comment?.body);
+    const problem = describeOwnerCommandProblem(intent, initialHead);
+    const marker = ownerCommandHelpMarker(initialHead);
+    if (problem && !comments.some(entry => entry.body?.includes(marker))) {
+      await github.rest.issues.createComment({
+        owner,
+        repo,
+        issue_number: pullNumber,
+        body: ownerCommandHelpBody({
+          verb: intent.verb,
+          headSha: initialHead,
+          problem,
+        }),
+      });
+      core.info(
+        `Answered an inexact ${intent.verb} command on ${initialHead}.`,
+      );
+    }
+  }
+
   if (!scope.touchesKnowledgeRecords) {
     await disableAutoMerge(pr);
     await removeLabel(env.REVIEW_LABEL);
@@ -442,19 +556,26 @@ async function reconcileSpecOwnerGate({
   const readyAttestations = parseReadyAttestations(statuses, {
     repository,
     headSha: initialHead,
+    owners: designOwners,
   });
   const decisionInput = {
     reviews,
     comments,
-    readyAttestations,
     dismissalEvents: timeline,
     headSha: initialHead,
   };
+  // A ready-for-review attestation is the design group's own self-attestation
+  // path. It is not evidence for the spec or theme groups, which stay on real
+  // exact-head reviews and commands.
   const specDecision = requiredGroups.spec
     ? resolveOwnerDecision({...decisionInput, owners: specOwners})
     : {approved: true, owner: null};
   const designDecision = requiredGroups.design
-    ? resolveOwnerDecision({...decisionInput, owners: designApprovers})
+    ? resolveOwnerDecision({
+        ...decisionInput,
+        readyAttestations,
+        owners: designApprovers,
+      })
     : {approved: true, owner: null};
   const themeDecision = requiredGroups.theme
     ? resolveOwnerDecision({...decisionInput, owners: themeApprovers})
@@ -530,6 +651,14 @@ async function reconcileSpecOwnerGate({
     return;
   }
   await removeLabel(env.REVIEW_LABEL);
+
+  // A backfill exists to give an old head its missing status before the
+  // context becomes required. Landing the pull request is a separate decision
+  // its author has not asked this run to make.
+  if (backfillOnly) {
+    core.info('Backfill run: published the gate status without auto-merge.');
+    return;
+  }
 
   let enabledAutoMergeByThisRun = false;
   if (!pr.auto_merge) {
