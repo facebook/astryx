@@ -146,3 +146,38 @@ RULE: always run $ASTRYX component <Name> --dense before modifying a component
 RULE: after @astryxdesign/core bump, always run $ASTRYX upgrade --apply
 
 <!-- ASTRYX-CLI:END -->
+
+<!-- ASTRYX:START -->
+
+Astryx v0.5.2 · 163 components
+CLI: run every command as `pnpm exec astryx <cmd>` (shown below as `astryx ...`).
+
+SETUP (once, in your app entry e.g. main.tsx) — without these, components render unstyled:
+import "@astryxdesign/core/reset.css";
+import "@astryxdesign/core/astryx.css";
+
+WORKFLOW — discover, don't guess. Before writing UI:
+
+1. `astryx build "<idea>"` — START HERE: returns a kit (closest [page] + [block]s + [component]s). No args = full playbook.
+2. `astryx template <name> [--skeleton]` — scaffold the [page]/[block]s it named, or study their layout. Templates are reference code.
+3. `astryx component <Name>` — props + examples for every component you use.
+
+RULES:
+
+- No <div> — components do all layout/spacing, page frame included.
+- Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.
+- Theme first: read `astryx docs theme` before changing brand color, radius, or type scale, or before restyling the same component twice — defineTheme, component overrides, custom variants, and when `astryx theme build` is needed (importing the theme SOURCE injects at runtime and applies on reload; only the BUILT import needs a rebuild, and a stale build fails silently).
+- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.
+- Custom styling: component props first; else style/className with tokens — var(--color-_|--spacing-_|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)
+- Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme (`astryx theme list` / `theme add <slug>`, or `astryx theme template` for a custom one) — never override --color-* in :root.
+- SELF-CHECK before you finish: re-read the file and replace any raw <div>/<span> layout, imported .css/@apply, or hardcoded value (#hex, 16px) with the component or a token (var(--color-_|--spacing-_|…)). If unsure a component/prop exists, run `astryx component <Name>` / `astryx search "<thing>"`; don't hand-roll CSS.
+
+MORE CLI:
+search "<query>" find any component / hook / doc / template / block
+component --list 163 components by category
+template --list page + block recipes
+docs <topic> browser-support, cli-integrations, color, elevation, getting-started, icons, illustrations, internationalization, layout, migration, motion, principles, shape, spacing, styling-libraries, styling, theme, tokens, typography, working-with-ai
+theme add|build scaffold a theme, then compile it — a BUILT import needs a rebuild after every edit; a source import applies on reload
+swizzle <Name> eject component source for deep customization
+upgrade --apply run after any @astryxdesign/core bump
+<!-- ASTRYX:END -->

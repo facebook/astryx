@@ -23,6 +23,10 @@ import * as path from 'node:path';
 import {findCoreDir, CLI_ROOT} from '../fs/paths.mjs';
 import {assertWithin} from '../fs/path-safety.mjs';
 import {getCliInvocation} from '../env/package-manager.mjs';
+import {
+  declaredStyleXCompilers,
+  isStyleXConfigured,
+} from '../discovery/stylex-compiler.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
 import {humanLog} from '../response/json.mjs';
 import {
@@ -208,6 +212,7 @@ export function resolveAgentPaths(targetDir, agent) {
   return {inject: [], create: [searchPaths[searchPaths.length - 1]]};
 }
 
+
 /**
  * Detect which styling system the consumer project has wired up, so the agent
  * docs recommend a path that actually compiles in THIS project.
@@ -218,6 +223,11 @@ export function resolveAgentPaths(targetDir, agent) {
  * Plain CSS variables (via `style`/`className`) always work, so they're the
  * safe default. Precedence: stylex (compiler wired) → tailwind → css.
  *
+ * "Wired" means a build config actually references the plugin, not merely that
+ * it appears in `devDependencies`. An installed plugin no bundler invokes
+ * compiles nothing, and telling an agent to write `xstyle` in that project
+ * produces exactly the blank output this function exists to avoid.
+ *
  * @param {string} targetDir
  * @returns {'stylex' | 'tailwind' | 'css'}
  */
@@ -227,16 +237,12 @@ export function detectStylingSystem(targetDir) {
     if (!fs.existsSync(pkgPath)) return 'css';
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
     const deps = {...pkg.dependencies, ...pkg.devDependencies};
-    // Key off a StyleX *compiler* plugin — the runtime alone won't render.
-    const stylexCompilers = [
-      '@stylexjs/babel-plugin',
-      'vite-plugin-stylex',
-      'unplugin-stylex',
-      '@stylexswc/unplugin',
-      '@stylexswc/nextjs-plugin',
-      'stylex-webpack',
-    ];
-    if (stylexCompilers.some(d => d in deps)) return 'stylex';
+    // Key off a StyleX *compiler* plugin — the runtime alone won't render —
+    // AND on that plugin being referenced by a build config. Both facts come
+    // from the shared detector, so doctor's diagnosis and this guidance cannot
+    // name different plugin sets.
+    const {declared} = declaredStyleXCompilers(targetDir);
+    if (declared.length > 0 && isStyleXConfigured(targetDir, declared)) return 'stylex';
     if ('tailwindcss' in deps) return 'tailwind';
     return 'css';
   } catch {
@@ -314,6 +320,7 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   lines.push('RULES:');
   lines.push('- No <div> — components do all layout/spacing, page frame included.');
   lines.push('- Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.');
+  lines.push('- Theme first: read `astryx docs theme` before changing brand color, radius, or type scale, or before restyling the same component twice — defineTheme, component overrides, custom variants, and when `astryx theme build` is needed (importing the theme SOURCE injects at runtime and applies on reload; only the BUILT import needs a rebuild, and a stale build fails silently).');
   lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
@@ -361,7 +368,7 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   if (resolvedTopics.length > 0) {
     lines.push(`  docs <topic>       ${resolvedTopics.join(', ')}`);
   }
-  lines.push('  swizzle <Name>     eject component source for deep customization');
+  lines.push('  theme add|build    scaffold a theme, then compile it — a BUILT import needs a rebuild after every edit; a source import applies on reload');  lines.push('  swizzle <Name>     eject component source for deep customization');
   lines.push('  upgrade --apply    run after any @astryxdesign/core bump');
   lines.push(MARKER_END);
 

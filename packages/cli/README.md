@@ -474,16 +474,41 @@ No failures — but review the ⚠ warnings above when you can.
 
 ### Checks
 
-| Check                        | Status it can return | What it verifies                                                     |
-| ---------------------------- | -------------------- | -------------------------------------------------------------------- |
-| Node.js version              | pass / fail          | Running Node meets the CLI's minimum                                 |
-| @astryxdesign/core installed | pass / fail          | `@astryxdesign/core` is resolvable from the project                  |
-| Version alignment            | pass / warn / info   | Installed `@astryxdesign/core` is in step with `@astryxdesign/cli`   |
-| Theme packages               | pass / warn          | An `@astryxdesign/theme-*` package is installed and a theme is wired |
-| astryx.config.mjs            | pass / fail / info   | Config (if present) loads cleanly with a valid shape                 |
-| AI agent docs                | pass / warn / info   | Agent docs exist and contain the Astryx section markers              |
-| Peer dependencies            | pass / warn / info   | `@astryxdesign/core`'s peer deps (react, …) are installed            |
-| Package manager              | info                 | Reports the detected package manager                                 |
+| Check                        | Status it can return      | What it verifies                                                     |
+| ---------------------------- | ------------------------- | -------------------------------------------------------------------- |
+| Node.js version              | pass / fail               | Running Node meets the CLI's minimum                                 |
+| @astryxdesign/core installed | pass / fail               | `@astryxdesign/core` is resolvable from the project                  |
+| Version alignment            | pass / warn / info        | Installed `@astryxdesign/core` is in step with `@astryxdesign/cli`   |
+| Theme packages               | pass / warn               | An `@astryxdesign/theme-*` package is installed and a theme is wired |
+| Built theme freshness        | pass / fail / warn / info | Built theme output is in step with its `defineTheme()` source        |
+| CSS theming escapes          | pass / fail / warn / info | Your own CSS does not step outside the theme                         |
+| Swizzled components          | pass / fail / info        | Ejected components, and whether their StyleX source can compile      |
+| astryx.config.mjs            | pass / fail / info        | Config (if present) loads cleanly with a valid shape                 |
+| AI agent docs                | pass / warn / info        | Agent docs exist and contain the Astryx section markers              |
+| Peer dependencies            | pass / warn / info        | `@astryxdesign/core`'s peer deps (react, …) are installed            |
+| Package manager              | info                      | Reports the detected package manager                                 |
+
+**Built theme freshness** is the one check that catches a silent failure. A
+stale built theme still carries `__built`, so the runtime skips style injection
+and the app renders the _previous_ theme with no error and no warning. Absent
+artifacts are not a failure — that just means the app imports the theme source
+directly (runtime injection), which is supported. Only drift counts, and it is
+reported as `info` rather than `fail` when a `predev`/`prebuild` script already
+rebuilds the theme, since in that case nothing ever consumes the stale output.
+
+**CSS theming escapes** looks for the three cases where CSS provably leaves the
+theme behind: a write to a private `--_*` var (a hard error in `theme build`,
+so a `fail` here too), a system token redefined in `:root`/`html`/`:host` (which
+sits outside the theme's `@scope` and so overrides every theme at once), and the
+deprecated bare prop classes (`.astryx-button.primary`) in place of the
+reflected data attributes. Generated theme CSS is skipped — the pipeline emits
+private vars and bare classes itself.
+
+**Swizzled components** is `fail` only in one situation: the ejected source
+imports StyleX and no StyleX compiler is configured. That combination is not a
+build error — the component renders completely unstyled, with no warning.
+Otherwise it is informational, noting that swizzled copies stop receiving
+upstream fixes and no longer respond to theme component overrides.
 
 ### CI gate
 
