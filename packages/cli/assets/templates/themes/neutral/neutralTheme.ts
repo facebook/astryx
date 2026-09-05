@@ -68,6 +68,44 @@ const neutralLocalTokens: Record<string, TokenValue> = {
   '--astryx-theme-neutral-color-status-fill-success': ['#198100', '#64af4c'],
   '--astryx-theme-neutral-color-status-fill-warning': '#ffce2f',
   '--astryx-theme-neutral-color-status-fill-error': ['#c9303a', '#ff705d'],
+  '--astryx-theme-neutral-color-error-overlay-hover': [
+    '#ff7e780D',
+    '#f99c940D',
+  ],
+  '--astryx-theme-neutral-color-error-overlay-pressed': [
+    '#ff7e7840',
+    '#f99c941A',
+  ],
+  '--astryx-theme-neutral-badge-context-neutral-surface':
+    'var(--color-background-gray)',
+  '--astryx-theme-neutral-badge-context-red-surface':
+    'var(--color-background-red)',
+  '--astryx-theme-neutral-badge-context-orange-surface':
+    'var(--color-background-orange)',
+  '--astryx-theme-neutral-badge-context-yellow-surface':
+    'var(--color-background-yellow)',
+  '--astryx-theme-neutral-badge-context-green-surface':
+    'var(--color-background-green)',
+  '--astryx-theme-neutral-badge-context-teal-surface':
+    'var(--color-background-teal)',
+  '--astryx-theme-neutral-badge-context-cyan-surface':
+    'var(--color-background-cyan)',
+  '--astryx-theme-neutral-badge-context-blue-surface':
+    'var(--color-background-blue)',
+  '--astryx-theme-neutral-badge-context-purple-surface':
+    'var(--color-background-purple)',
+  '--astryx-theme-neutral-badge-context-pink-surface':
+    'var(--color-background-pink)',
+  '--astryx-theme-neutral-badge-context-neutral-tint': '#00000000',
+  '--astryx-theme-neutral-badge-context-red-tint': '#00000000',
+  '--astryx-theme-neutral-badge-context-orange-tint': '#00000000',
+  '--astryx-theme-neutral-badge-context-yellow-tint': '#00000000',
+  '--astryx-theme-neutral-badge-context-green-tint': '#00000000',
+  '--astryx-theme-neutral-badge-context-teal-tint': '#00000000',
+  '--astryx-theme-neutral-badge-context-cyan-tint': '#00000000',
+  '--astryx-theme-neutral-badge-context-blue-tint': '#00000000',
+  '--astryx-theme-neutral-badge-context-purple-tint': '#00000000',
+  '--astryx-theme-neutral-badge-context-pink-tint': '#00000000',
   '--astryx-theme-neutral-color-on-tint-neutral': ['#fafafa4D', '#0a0a0a4D'],
   '--astryx-theme-neutral-color-on-tint-overlay-hover': [
     '#fafafa1A',
@@ -404,9 +442,69 @@ export const neutralTheme = defineTheme({
 
   components: {
     button: {
+      base: {
+        '--astryx-theme-neutral-badge-context-neutral-surface':
+          'light-dark(var(--color-background-gray), #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-red-surface':
+          'light-dark(var(--color-background-red), #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-orange-surface':
+          'light-dark(var(--color-background-orange), #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-yellow-surface':
+          'light-dark(var(--color-background-yellow), #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-green-surface':
+          'light-dark(var(--color-background-green), #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-teal-surface':
+          'light-dark(var(--color-background-teal), #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-cyan-surface':
+          'light-dark(var(--color-background-cyan), #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-blue-surface':
+          'light-dark(var(--color-background-blue), #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-purple-surface':
+          'light-dark(var(--color-background-purple), #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-pink-surface':
+          'light-dark(var(--color-background-pink), #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-neutral-tint':
+          'light-dark(#00000000, #ffffff1A)',
+        '--astryx-theme-neutral-badge-context-red-tint':
+          'light-dark(#00000000, #ff9e973D)',
+        '--astryx-theme-neutral-badge-context-orange-tint':
+          'light-dark(#00000000, #ffa2583D)',
+        '--astryx-theme-neutral-badge-context-yellow-tint':
+          'light-dark(#00000000, #deb4333D)',
+        '--astryx-theme-neutral-badge-context-green-tint':
+          'light-dark(#00000000, #84c9803D)',
+        '--astryx-theme-neutral-badge-context-teal-tint':
+          'light-dark(#00000000, #7ec6b83D)',
+        '--astryx-theme-neutral-badge-context-cyan-tint':
+          'light-dark(#00000000, #83c2d43D)',
+        '--astryx-theme-neutral-badge-context-blue-tint':
+          'light-dark(#00000000, #9eb7ff3D)',
+        '--astryx-theme-neutral-badge-context-purple-tint':
+          'light-dark(#00000000, #f297ff3D)',
+        '--astryx-theme-neutral-badge-context-pink-tint':
+          'light-dark(#00000000, #ff99c33D)',
+      },
+      'variant:secondary': {
+        '--astryx-theme-neutral-badge-context-neutral-surface':
+          'light-dark(#fafafa, #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-neutral-tint':
+          'light-dark(#7373733D, #ffffff1A)',
+      },
       'variant:destructive': {
         backgroundColor: 'var(--color-error-muted)',
         color: 'var(--color-error)',
+        '--color-overlay-hover':
+          'var(--astryx-theme-neutral-color-error-overlay-hover)',
+        '--color-overlay-pressed':
+          'var(--astryx-theme-neutral-color-error-overlay-pressed)',
+        '--astryx-theme-neutral-badge-context-red-surface':
+          'light-dark(#fafafa, #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-red-tint':
+          'light-dark(#eb183a3D, #ff9e973D)',
+        '--astryx-theme-neutral-badge-context-orange-surface':
+          'light-dark(#fafafa, #1b1b1b)',
+        '--astryx-theme-neutral-badge-context-orange-tint':
+          'light-dark(#f191003D, #ffa2583D)',
       },
     },
 
@@ -416,7 +514,10 @@ export const neutralTheme = defineTheme({
         color: 'var(--color-on-accent)',
       },
       'variant:neutral': {
-        backgroundColor: 'var(--color-background-gray)',
+        backgroundColor:
+          'var(--astryx-theme-neutral-badge-context-neutral-surface)',
+        backgroundImage:
+          'linear-gradient(var(--astryx-theme-neutral-badge-context-neutral-tint, #00000000), var(--astryx-theme-neutral-badge-context-neutral-tint, #00000000))',
         color: 'var(--color-text-gray)',
       },
       'variant:success': {
@@ -433,43 +534,73 @@ export const neutralTheme = defineTheme({
       },
 
       'variant:red': {
-        backgroundColor: 'var(--color-background-red)',
+        backgroundColor:
+          'var(--astryx-theme-neutral-badge-context-red-surface)',
+        backgroundImage:
+          'linear-gradient(var(--astryx-theme-neutral-badge-context-red-tint, #00000000), var(--astryx-theme-neutral-badge-context-red-tint, #00000000))',
         color: 'var(--color-text-red)',
       },
       'variant:orange': {
-        backgroundColor: 'var(--color-background-orange)',
+        backgroundColor:
+          'var(--astryx-theme-neutral-badge-context-orange-surface)',
+        backgroundImage:
+          'linear-gradient(var(--astryx-theme-neutral-badge-context-orange-tint, #00000000), var(--astryx-theme-neutral-badge-context-orange-tint, #00000000))',
         color: 'var(--color-text-orange)',
       },
       'variant:yellow': {
-        backgroundColor: 'var(--color-background-yellow)',
+        backgroundColor:
+          'var(--astryx-theme-neutral-badge-context-yellow-surface)',
+        backgroundImage:
+          'linear-gradient(var(--astryx-theme-neutral-badge-context-yellow-tint, #00000000), var(--astryx-theme-neutral-badge-context-yellow-tint, #00000000))',
         color: 'var(--color-text-yellow)',
       },
       'variant:green': {
-        backgroundColor: 'var(--color-background-green)',
+        backgroundColor:
+          'var(--astryx-theme-neutral-badge-context-green-surface)',
+        backgroundImage:
+          'linear-gradient(var(--astryx-theme-neutral-badge-context-green-tint, #00000000), var(--astryx-theme-neutral-badge-context-green-tint, #00000000))',
         color: 'var(--color-text-green)',
       },
       'variant:teal': {
-        backgroundColor: 'var(--color-background-teal)',
+        backgroundColor:
+          'var(--astryx-theme-neutral-badge-context-teal-surface)',
+        backgroundImage:
+          'linear-gradient(var(--astryx-theme-neutral-badge-context-teal-tint, #00000000), var(--astryx-theme-neutral-badge-context-teal-tint, #00000000))',
         color: 'var(--color-text-teal)',
       },
       'variant:cyan': {
-        backgroundColor: 'var(--color-background-cyan)',
+        backgroundColor:
+          'var(--astryx-theme-neutral-badge-context-cyan-surface)',
+        backgroundImage:
+          'linear-gradient(var(--astryx-theme-neutral-badge-context-cyan-tint, #00000000), var(--astryx-theme-neutral-badge-context-cyan-tint, #00000000))',
         color: 'var(--color-text-cyan)',
       },
       'variant:blue': {
-        backgroundColor: 'var(--color-background-blue)',
+        backgroundColor:
+          'var(--astryx-theme-neutral-badge-context-blue-surface)',
+        backgroundImage:
+          'linear-gradient(var(--astryx-theme-neutral-badge-context-blue-tint, #00000000), var(--astryx-theme-neutral-badge-context-blue-tint, #00000000))',
         color: 'var(--color-text-blue)',
       },
       'variant:purple': {
-        backgroundColor: 'var(--color-background-purple)',
+        backgroundColor:
+          'var(--astryx-theme-neutral-badge-context-purple-surface)',
+        backgroundImage:
+          'linear-gradient(var(--astryx-theme-neutral-badge-context-purple-tint, #00000000), var(--astryx-theme-neutral-badge-context-purple-tint, #00000000))',
         color: 'var(--color-text-purple)',
       },
       'variant:pink': {
-        backgroundColor: 'var(--color-background-pink)',
+        backgroundColor:
+          'var(--astryx-theme-neutral-badge-context-pink-surface)',
+        backgroundImage:
+          'linear-gradient(var(--astryx-theme-neutral-badge-context-pink-tint, #00000000), var(--astryx-theme-neutral-badge-context-pink-tint, #00000000))',
         color: 'var(--color-text-pink)',
       },
       'variant:gray': {
-        backgroundColor: 'var(--color-background-gray)',
+        backgroundColor:
+          'var(--astryx-theme-neutral-badge-context-neutral-surface)',
+        backgroundImage:
+          'linear-gradient(var(--astryx-theme-neutral-badge-context-neutral-tint, #00000000), var(--astryx-theme-neutral-badge-context-neutral-tint, #00000000))',
         color: 'var(--color-text-gray)',
       },
     },

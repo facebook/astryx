@@ -139,12 +139,64 @@ describe('component detail wiring', () => {
       category: 'Color contrast',
       requirement: '4.5:1',
     });
+    const neutralCoverage = button?.usage?.accessibilityThemeCoverage?.[0];
+    expect(neutralCoverage?.theme).toBe('Neutral');
+    expect(neutralCoverage?.tables).toHaveLength(1);
+    expect(neutralCoverage?.tables[0]?.modes.map(mode => mode.mode)).toEqual([
+      'Light',
+      'Dark',
+    ]);
+    expect(neutralCoverage?.tables[0]?.modes[0]?.results[0]).toMatchObject({
+      name: 'Primary',
+      status: 'Pass',
+    });
+    expect(neutralCoverage?.tables[0]?.modes[1]?.results[0]).toMatchObject({
+      name: 'Primary',
+      status: 'Fail',
+    });
+    expect(
+      neutralCoverage?.tables[0]?.modes[1]?.results[0]?.measurements,
+    ).toContainEqual(
+      expect.objectContaining({
+        label: 'Badges',
+        status: 'Fail',
+      }),
+    );
+    const badgeBreakdown =
+      neutralCoverage?.tables[0]?.modes[1]?.results[0]?.measurements.find(
+        measurement => measurement.label === 'Badges',
+      )?.breakdown;
+    expect(badgeBreakdown).toHaveLength(14);
+    expect(badgeBreakdown?.[0]).toMatchObject({
+      label: 'Neutral',
+      value: '1.08:1',
+      detail: 'Rest state · Page background',
+      status: 'Fail',
+      colorPair: {
+        foreground: '#e5e5e5',
+        background: '#ededed',
+      },
+    });
     expect(button?.usage?.accessibility).toContainEqual(
       expect.objectContaining({
         name: 'Badge text',
         requirement: '4.5:1',
       }),
     );
+    expect(
+      neutralCoverage?.tables[0]?.modes[1]?.results[0]?.measurements,
+    ).toContainEqual(
+      expect.objectContaining({
+        label: 'Badges',
+        value: '4 of 14 badge colors pass',
+      }),
+    );
+    const badgeSummary =
+      neutralCoverage?.tables[0]?.modes[1]?.results[0]?.measurements.find(
+        measurement => measurement.label === 'Badges',
+      );
+    expect(badgeSummary?.detail).toBeUndefined();
+    expect(badgeSummary?.colorPair).toBeUndefined();
   });
 
   it('renders accessibility metadata in a dedicated tab', () => {
@@ -187,8 +239,67 @@ describe('component detail wiring', () => {
     }
   });
 
-  it('uses clear button-family contrast terminology', () => {
+  it('carries theme audit intent and supports measurement applicability', () => {
     const entries = Object.values(components).flat();
+    const findMeasurement = (componentName: string, label: string) =>
+      entries
+        .find(entry => entry.name === componentName)
+        ?.usage?.accessibilityThemeCoverage?.[0]?.tables[0]?.modes.flatMap(
+          mode => mode.results.flatMap(result => result.measurements),
+        )
+        .find(measurement => measurement.label === label);
+
+    expect(findMeasurement('ButtonGroup', 'Divider')).toBeUndefined();
+    expect(
+      entries.find(entry => entry.name === 'ButtonGroup')?.usage
+        ?.accessibilityThemeCoverage?.[0]?.notMeasured,
+    ).toContain('Divider — Decorative in Neutral.');
+    expect(findMeasurement('ToggleButton', 'Selected surface')).toBeUndefined();
+    expect(
+      entries.find(entry => entry.name === 'ToggleButton')?.usage
+        ?.accessibilityThemeCoverage?.[0]?.notMeasured,
+    ).toContain(
+      'Selected background — Supplemental because label weight and optional icon changes also show selection.',
+    );
+    expect(
+      findMeasurement('SegmentedControl', 'Selected surface'),
+    ).toBeUndefined();
+    expect(
+      entries.find(entry => entry.name === 'SegmentedControl')?.usage
+        ?.accessibilityThemeCoverage?.[0]?.notMeasured,
+    ).toContain(
+      'Selected background — Supplemental because label color and weight also show selection.',
+    );
+
+    const source = fs.readFileSync(
+      path.join(DETAIL_DIR, 'Accessibility.tsx'),
+      'utf8',
+    );
+    expect(source).toContain('measurement.applicability');
+    expect(source).toContain("join(' · ')");
+    expect(source).toContain('under Not measured do not affect Pass or Fail.');
+    expect(source).toContain('<Heading level={4}>Not measured</Heading>');
+    expect(source).toContain('badge results');
+  });
+
+  it('uses clear pressable-control contrast terminology', () => {
+    const entries = Object.values(components).flat();
+    for (const name of ['Button', 'IconButton', 'ButtonGroup']) {
+      const component = entries.find(entry => entry.name === name);
+      const labels =
+        component?.usage?.accessibilityThemeCoverage?.flatMap(coverage =>
+          coverage.tables.flatMap(table =>
+            table.modes.flatMap(mode =>
+              mode.results.flatMap(result =>
+                result.measurements.map(measurement => measurement.label),
+              ),
+            ),
+          ),
+        ) ?? [];
+      expect(labels).toContain('Pointer down');
+      expect(labels).not.toContain('Pressed');
+    }
+
     for (const name of [
       'Button',
       'IconButton',
@@ -200,5 +311,52 @@ describe('component detail wiring', () => {
         expect.objectContaining({name: 'Essential icon or spinner arc'}),
       );
     }
+
+    const button = entries.find(entry => entry.name === 'Button');
+    const breakdown =
+      button?.usage?.accessibilityThemeCoverage?.[0]?.tables[0]?.modes[1]?.results[1]?.measurements.find(
+        measurement => measurement.label === 'Badges',
+      )?.breakdown;
+    expect(breakdown).toContainEqual(
+      expect.objectContaining({
+        detail: 'Pointer down state · Surface background',
+      }),
+    );
+    expect(
+      button?.usage?.accessibilityThemeCoverage?.[0]?.tables[0]?.modes[1]?.results[0]?.measurements.find(
+        measurement => measurement.label === 'Badges',
+      )?.breakdown?.[0]?.detail,
+    ).toBe('Rest state · Page background');
+  });
+
+  it('documents spinner arc coverage without measuring the decorative track', () => {
+    const entries = Object.values(components).flat();
+    const note = 'Spinner track — Decorative. The moving arc must meet 3:1.';
+
+    for (const name of [
+      'Button',
+      'IconButton',
+      'ToggleButton',
+      'ButtonGroup',
+    ]) {
+      const coverage = entries.find(entry => entry.name === name)?.usage
+        ?.accessibilityThemeCoverage?.[0];
+      expect(coverage?.notMeasured).toContain(note);
+      const labels =
+        coverage?.tables.flatMap(table =>
+          table.modes.flatMap(mode =>
+            mode.results.flatMap(result =>
+              result.measurements.map(measurement => measurement.label),
+            ),
+          ),
+        ) ?? [];
+      expect(labels).toContain('Spinner arc');
+      expect(labels).not.toContain('Spinner');
+    }
+
+    expect(
+      entries.find(entry => entry.name === 'SegmentedControl')?.usage
+        ?.accessibilityThemeCoverage?.[0]?.notMeasured,
+    ).not.toContain(note);
   });
 });

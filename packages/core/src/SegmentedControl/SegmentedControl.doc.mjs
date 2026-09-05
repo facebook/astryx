@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {segmentedControlAccessibilityThemeCoverage} from '../accessibility/generatedThemeCoverage.mjs';
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
 const anatomy = [
   {
@@ -179,6 +181,7 @@ export const docs = {
           'Disabled controls do not need to meet these contrast ratios.',
       },
     ],
+    accessibilityThemeCoverage: segmentedControlAccessibilityThemeCoverage,
     bestPractices: [
       {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
       {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},

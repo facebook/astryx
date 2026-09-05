@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {toggleButtonAccessibilityThemeCoverage} from '../accessibility/generatedThemeCoverage.mjs';
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -178,6 +180,7 @@ export const docs = {
           'Disabled controls do not need to meet these contrast ratios.',
       },
     ],
+    accessibilityThemeCoverage: toggleButtonAccessibilityThemeCoverage,
     bestPractices: [
       {guidance: true, description: 'Use a filled or colored icon for the pressed state so users can see the current state at a glance: an outline star vs a solid star, for example.'},
       {guidance: true, description: 'Keep the label identical between pressed and unpressed states. Let the visual treatment (icon, weight, background) communicate the change.'},

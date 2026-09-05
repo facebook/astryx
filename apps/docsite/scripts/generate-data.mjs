@@ -21,6 +21,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolveContentRoot} from './resolve-content-root.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
@@ -50,6 +51,21 @@ console.log(
     path.relative(REPO_ROOT, CONTENT_ROOT) || '.'
   })`,
 );
+
+if (DOCSITE_TARGET === 'canary') {
+  execFileSync(
+    process.execPath,
+    [
+      '--import',
+      'tsx',
+      path.join(
+        REPO_ROOT,
+        'scripts/generate-component-accessibility-coverage.mjs',
+      ),
+    ],
+    {cwd: REPO_ROOT, stdio: 'inherit'},
+  );
+}
 
 fs.mkdirSync(OUT_DIR, {recursive: true});
 

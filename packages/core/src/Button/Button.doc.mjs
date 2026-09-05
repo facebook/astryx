@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {buttonAccessibilityThemeCoverage} from '../accessibility/generatedThemeCoverage.mjs';
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -79,6 +81,7 @@ export const docs = {
           'Disabled controls do not need to meet these contrast ratios.',
       },
     ],
+    accessibilityThemeCoverage: buttonAccessibilityThemeCoverage,
     anatomy: [
       {name: 'Icon', required: false, description: 'A leading icon that reinforces the label, like a trash icon on a Delete button.'},
       {name: 'Label', required: true, description: 'The visible text describing the action. Also used as the accessible name.'},
