@@ -207,7 +207,7 @@ export const docs = {
       name: 'increment',
       type: 'number',
       description:
-        'Number of minutes to add or subtract when the user presses the up or down arrow key.',
+        'Number of minutes to add or subtract when the user presses the up or down arrow key. Stepping consumes the keydown, so a pass-through onKeyDown does not fire for those arrows on the typed surface.',
       default: '1',
     },
     {

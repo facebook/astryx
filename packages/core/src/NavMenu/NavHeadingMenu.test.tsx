@@ -351,3 +351,56 @@ describe('NavHeadingMenu pass-through props', () => {
     expect(items[1]).toHaveFocus();
   });
 });
+
+describe('NavHeadingMenuItem pass-through props', () => {
+  it('forwards pass-through props to the item element', () => {
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem
+          label="Dashboard"
+          aria-label="Open dashboard"
+          id="nav-dashboard"
+          data-tracking="nav-item"
+          data-testid="item"
+        />
+      </NavHeadingMenu>,
+    );
+    const item = screen.getByTestId('item');
+    expect(item).toHaveAttribute('aria-label', 'Open dashboard');
+    expect(item).toHaveAttribute('id', 'nav-dashboard');
+    expect(item).toHaveAttribute('data-tracking', 'nav-item');
+  });
+
+  it('forwards event handlers to the item element', () => {
+    const handleMouseEnter = vi.fn();
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem
+          label="Dashboard"
+          onMouseEnter={handleMouseEnter}
+          data-testid="item"
+        />
+      </NavHeadingMenu>,
+    );
+    fireEvent.mouseEnter(screen.getByTestId('item'));
+    expect(handleMouseEnter).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the menuitem contract over colliding pass-throughs', () => {
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem
+          label="Dashboard"
+          data-testid="item"
+          role="button"
+          aria-disabled="false"
+          isDisabled
+        />
+      </NavHeadingMenu>,
+    );
+    // Owned role and aria-disabled win over the colliding pass-throughs.
+    const item = screen.getByTestId('item');
+    expect(item).toHaveAttribute('role', 'menuitem');
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+  });
+});
