@@ -223,7 +223,7 @@ another implementation helper.
 | Selector        | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | DEC-1 permits standalone content-sized width                                       |
 | MultiSelector   | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | trigger-display modes remain component-owned                                       |
 | ComplexSelector | Field, FormLayout, size, width, `isLoading`, `changeAction`, and status                                                    | no InputGroup or disabled-reason API                                               |
-| Typeahead       | Field, FormLayout, InputGroup, size, width, clear, status, disabled reason, and BaseTypeahead source loading               | no family `isLoading` or `changeAction`; search lifecycle is component-owned       |
+| Typeahead       | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, disabled reason, and source busy   | search lifecycle is component-owned                                                |
 | Tokenizer       | Field, FormLayout, size, width, clear, status, disabled reason, BaseTypeahead source loading, and multi-token block growth | not InputGroup-compatible on current main; no family `isLoading` or `changeAction` |
 
 ### Implementation gaps
