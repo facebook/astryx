@@ -1,9 +1,27 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it} from 'vitest';
-import {contrastRatio} from '../../../core/src/theme/contrast';
 import {neutralPalettes} from './neutralPalettes';
 import {neutralTheme} from './neutralTheme';
+
+function contrastRatio(foreground: string, background: string): number {
+  const luminance = (hex: string): number => {
+    const channels = [0, 2, 4].map(offset =>
+      Number.parseInt(hex.slice(offset + 1, offset + 3), 16),
+    );
+    return channels.reduce((sum, channel, index) => {
+      const srgb = channel / 255;
+      const linear =
+        srgb <= 0.04045 ? srgb / 12.92 : Math.pow((srgb + 0.055) / 1.055, 2.4);
+      return sum + linear * [0.2126, 0.7152, 0.0722][index];
+    }, 0);
+  };
+  const foregroundLuminance = luminance(foreground);
+  const backgroundLuminance = luminance(background);
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+}
 
 const statusFill = {
   accent: 'var(--astryx-theme-neutral-color-status-fill-accent)',
