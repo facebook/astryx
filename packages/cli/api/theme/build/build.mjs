@@ -315,31 +315,42 @@ function resolveCoreRoot() {
 const _componentDeclCache = new Map();
 /**
  * @param {string} pascalName
+ * @param {{includeTypes?: boolean}} [options]
  * @returns {string}
  */
-function readComponentDeclarations(pascalName) {
-  if (_componentDeclCache.has(pascalName)) {
-    return _componentDeclCache.get(pascalName) ?? '';
+function readComponentDeclarations(pascalName, options = {}) {
+  const includeTypes = options.includeTypes === true;
+  const cacheKey = `${pascalName}:${includeTypes ? 'with-types' : 'index-only'}`;
+  if (_componentDeclCache.has(cacheKey)) {
+    return _componentDeclCache.get(cacheKey) ?? '';
   }
   let contents = '';
   const coreRoot = resolveCoreRoot();
   if (coreRoot) {
-    const candidates = [
-      path.join(coreRoot, 'dist', pascalName, 'index.d.ts'),
-      path.join(coreRoot, 'src', pascalName, 'index.ts'),
+    const candidateSets = [
+      [path.join(coreRoot, 'dist', pascalName, 'index.d.ts')],
+      [path.join(coreRoot, 'src', pascalName, 'index.ts')],
     ];
-    for (const file of candidates) {
-      try {
-        if (fs.existsSync(file)) {
-          contents = fs.readFileSync(file, 'utf-8');
-          break;
+    if (includeTypes) {
+      candidateSets[0].push(path.join(coreRoot, 'dist', pascalName, 'types.d.ts'));
+      candidateSets[1].push(path.join(coreRoot, 'src', pascalName, 'types.ts'));
+    }
+    for (const files of candidateSets) {
+      if (fs.existsSync(files[0])) {
+        for (const file of files) {
+          try {
+            if (fs.existsSync(file)) {
+              contents += fs.readFileSync(file, 'utf-8') + '\n';
+            }
+          } catch {
+            // ignore
+          }
         }
-      } catch {
-        // ignore and try the next candidate
+        if (contents) break;
       }
     }
   }
-  _componentDeclCache.set(pascalName, contents);
+  _componentDeclCache.set(cacheKey, contents);
   return contents;
 }
 
@@ -460,10 +471,11 @@ async function resolveAugmentationTargetCandidates(componentName) {
  * re-exported) as a type/interface.
  * @param {string} pascalName
  * @param {string} interfaceName
+ * @param {{includeTypes?: boolean}} [options]
  * @returns {boolean}
  */
-function componentHasAugmentableInterface(pascalName, interfaceName) {
-  const decl = readComponentDeclarations(pascalName);
+function componentHasAugmentableInterface(pascalName, interfaceName, options) {
+  const decl = readComponentDeclarations(pascalName, options);
   if (!decl) return false;
   // Require an actual interface declaration in this public subpath, not just a
   // type re-export. Module augmentation only widens consumers that import the
@@ -473,6 +485,20 @@ function componentHasAugmentableInterface(pascalName, interfaceName) {
   const re = new RegExp(String.raw`\binterface\s+${interfaceName}\b`);
   return re.test(decl);
 }
+
+/**
+ * Override table for component properties whose extensible type map interface
+ * does not follow the standard `<Component><Prop>Map` naming convention or sits
+ * in a different module from the component itself.
+ *
+ * @type {Record<string, {module: string, interface: string}>}
+ */
+const AUGMENTATION_OVERRIDES = {
+  'text.type': {
+    module: 'theme',
+    interface: 'CustomTextTypes',
+  },
+};
 
 /**
  * Generate TypeScript declaration content with module augmentation for custom
@@ -539,13 +565,33 @@ async function generateVariantDeclarationsAsync(themeDef) {
       if (values.size === 0) continue;
 
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const target = (await resolveAugmentationTargetCandidates(component)).find(
-        candidate =>
+      let target;
+      let interfaceName;
+
+      const override = AUGMENTATION_OVERRIDES[`${component}.${prop}`];
+      if (override) {
+        if (
           componentHasAugmentableInterface(
-            candidate.moduleName,
-            `${candidate.interfacePrefix}${propPascal}Map`,
-          ),
-      );
+            override.module,
+            override.interface,
+            {includeTypes: true},
+          )
+        ) {
+          target = { moduleName: override.module };
+          interfaceName = override.interface;
+        }
+      } else {
+        target = (await resolveAugmentationTargetCandidates(component)).find(
+          candidate =>
+            componentHasAugmentableInterface(
+              candidate.moduleName,
+              `${candidate.interfacePrefix}${propPascal}Map`,
+            ),
+        );
+        if (target) {
+          interfaceName = `${target.interfacePrefix}${propPascal}Map`;
+        }
+      }
 
       // Only augment interfaces that actually exist as an extension point in
       // core. Props backed by closed literal-union types (e.g. Button `size`,
@@ -555,7 +601,6 @@ async function generateVariantDeclarationsAsync(themeDef) {
       if (!target) continue;
 
       const modulePath = `@astryxdesign/core/${target.moduleName}`;
-      const interfaceName = `${target.interfacePrefix}${propPascal}Map`;
 
       sections.push(`declare module '${modulePath}' {`);
       sections.push(`  interface ${interfaceName} {`);
