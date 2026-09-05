@@ -1123,7 +1123,7 @@ export const NarrowCollapse: Story = {
     docs: {
       description: {
         story:
-          'A horizontal stepper measures its own width and collapses once a step has less than ~112px to work with, so the breakpoint follows the step count rather than the viewport. Labels give way to a bare track, and the current step is named directly underneath with no extra vertical gap. The two indicator positions collapse differently on purpose: `separated` drops its indicators with the labels and repeats the active indicator beside the compact label, while `on-track` keeps its indicators as presentational nodes on the rail and does not repeat the active one beside the label. Controls appear only when `onStepClick` is set; a stepper driven solely by a form’s own Back and Continue does not get a second, competing pair.',
+          "A horizontal stepper measures its own width and collapses once a step has less than `horizontalOptions.minimumStepWidth` (112px by default), so the breakpoint follows the step count rather than the viewport. Pass a number for pixels or a CSS length string such as `7rem`. `horizontalOptions.collapsedVariant` selects `'withLabelAndControls'`, `'withLabel'`, or `'hiddenLabel'`; the last renders only the bare progress track with no compact row. The two indicator positions collapse differently on purpose: `separated` drops its indicators with the labels and repeats the active indicator beside the compact label, while `on-track` keeps its indicators as presentational nodes on the rail and does not repeat the active one beside the label. Controls appear only for `withLabelAndControls` when `onStepClick` is set.",
       },
     },
   },
@@ -1145,6 +1145,21 @@ export const NarrowCollapse: Story = {
         <div style={{maxWidth: 320}}>
           <Text type="label">320px — separated, navigable</Text>
           <Stepper activeStep={a} onStepClick={setA} label="Checkout">
+            {steps.map((s, i) => (
+              <Step key={s} step={i} label={s} />
+            ))}
+          </Stepper>
+        </div>
+        <div style={{maxWidth: 320}}>
+          <Text type="label">320px — custom 4rem threshold stays expanded</Text>
+          <Stepper
+            activeStep={a}
+            onStepClick={setA}
+            horizontalOptions={{
+              minimumStepWidth: '4rem',
+              collapsedVariant: 'withLabelAndControls',
+            }}
+            label="Checkout">
             {steps.map((s, i) => (
               <Step key={s} step={i} label={s} />
             ))}
@@ -1192,6 +1207,58 @@ export const NarrowCollapse: Story = {
             <Step step={3} label="Payment" description="How you pay" />
           </Stepper>
         </div>
+      </div>
+    );
+  },
+};
+
+export const NarrowCollapsedVariants: Story = {
+  name: 'Narrow — Collapsed Variants',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The same 320px horizontal Stepper with each collapsedVariant. hiddenLabel omits the entire compact row—even though onStepClick is present—so it is shorter and leaves only the progress track.',
+      },
+    },
+  },
+  render: () => {
+    const [active, setActive] = useState(1);
+    const steps = ['Cart', 'Shipping', 'Delivery', 'Payment'];
+    const variants = [
+      {
+        value: 'withLabelAndControls',
+        label: 'withLabelAndControls — label and controls',
+      },
+      {value: 'withLabel', label: 'withLabel — label only'},
+      {value: 'hiddenLabel', label: 'hiddenLabel — bare track'},
+    ] as const;
+
+    return (
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 320px))',
+          alignItems: 'start',
+          gap: 40,
+        }}>
+        {variants.map(variant => (
+          <div key={variant.value} style={{width: '100%', maxWidth: 320}}>
+            <Text type="label">{variant.label}</Text>
+            <Stepper
+              activeStep={active}
+              onStepClick={setActive}
+              label="Checkout"
+              horizontalOptions={{
+                minimumStepWidth: 112,
+                collapsedVariant: variant.value,
+              }}>
+              {steps.map((step, index) => (
+                <Step key={step} step={index} label={step} />
+              ))}
+            </Stepper>
+          </div>
+        ))}
       </div>
     );
   },

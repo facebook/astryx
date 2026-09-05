@@ -1036,7 +1036,11 @@ describe('Stepper', () => {
      * The value has to be in place before the first render because the shared
      * resize observer takes its opening measurement synchronously during commit.
      */
-    function atWidth(width: number, ui: React.ReactElement) {
+    function atWidth(
+      width: number,
+      ui: React.ReactElement,
+      resolvedMinStepWidth = 112,
+    ) {
       const original = Object.getOwnPropertyDescriptor(
         Element.prototype,
         'clientWidth',
@@ -1046,6 +1050,9 @@ describe('Stepper', () => {
         get(this: Element) {
           if (this.classList.contains('astryx-stepper')) {
             return width;
+          }
+          if (this instanceof HTMLElement && this.style.width !== '') {
+            return resolvedMinStepWidth;
           }
           return this.classList.contains('astryx-stepper-frame') ? 1000 : 0;
         },
@@ -1172,6 +1179,148 @@ describe('Stepper', () => {
       expect(document.querySelector('.astryx-stepper-summary')).toBeNull();
     });
 
+    it('treats a numeric minimum step width as pixels', () => {
+      atWidth(
+        360,
+        fourSteps({
+          horizontalOptions: {
+            minimumStepWidth: 80,
+            collapsedVariant: 'withLabelAndControls',
+          },
+        }),
+        80,
+      );
+
+      expect(document.querySelector(SUMMARY)).toBeNull();
+      const measure = Array.from(
+        document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
+      ).find(element => element.style.width !== '');
+      expect(measure).toHaveStyle({width: '80px'});
+    });
+
+    it('measures a custom threshold when every step is complete', () => {
+      // activeStep === stepCount is the supported all-complete state, so no
+      // step is active. Four steps still get 90px each, which is enough for
+      // this custom 80px threshold and must not fall back to the 112px default.
+      atWidth(
+        360,
+        <Stepper
+          activeStep={4}
+          horizontalOptions={{
+            minimumStepWidth: 'var(--completed-step-width)',
+            collapsedVariant: 'withLabelAndControls',
+          }}
+          style={{'--completed-step-width': '5rem'} as React.CSSProperties}>
+          <Step step={0} label="Cart" />
+          <Step step={1} label="Shipping" />
+          <Step step={2} label="Delivery" />
+          <Step step={3} label="Payment" />
+        </Stepper>,
+        80,
+      );
+
+      expect(document.querySelector(SUMMARY)).toBeNull();
+      const measure = Array.from(
+        document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
+      ).find(element => element.style.width !== '');
+      expect(measure).toHaveStyle({
+        width: 'var(--completed-step-width)',
+      });
+      expect(measure?.closest('li')).toBe(screen.getAllByRole('listitem')[0]);
+    });
+
+    it('lets the browser resolve a CSS minimum step width', () => {
+      // Four steps get 90px each. The browser-resolved 6rem probe is stubbed
+      // to 96px, so this instance collapses without Stepper parsing the unit.
+      atWidth(
+        360,
+        fourSteps({
+          horizontalOptions: {
+            minimumStepWidth: 'var(--checkout-step-width)',
+            collapsedVariant: 'withLabelAndControls',
+          },
+          style: {'--checkout-step-width': '6rem'} as React.CSSProperties,
+        }),
+        96,
+      );
+
+      expect(document.querySelector(SUMMARY)).toBeInTheDocument();
+      const measure = Array.from(
+        document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
+      ).find(element => element.style.width !== '');
+      expect(measure).toHaveStyle({width: 'var(--checkout-step-width)'});
+      expect(measure?.closest('ol')).toBe(screen.getByRole('list'));
+      expect(
+        screen
+          .getByRole('list')
+          .style.getPropertyValue('--checkout-step-width'),
+      ).toBe('6rem');
+    });
+
+    it('responds when a CSS minimum step width resolves to a new size', () => {
+      const originalWidth = Object.getOwnPropertyDescriptor(
+        Element.prototype,
+        'clientWidth',
+      );
+      let resolvedMinStepWidth = 80;
+      let resize: ResizeObserverCallback = () => {};
+      class ResizeObserverStub {
+        constructor(callback: ResizeObserverCallback) {
+          resize = callback;
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+      vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+      Object.defineProperty(Element.prototype, 'clientWidth', {
+        configurable: true,
+        get(this: Element) {
+          if (this.classList.contains('astryx-stepper')) {
+            return 360;
+          }
+          return this instanceof HTMLElement && this.style.width !== ''
+            ? resolvedMinStepWidth
+            : 0;
+        },
+      });
+
+      let view: ReturnType<typeof render> | null = null;
+      try {
+        view = render(
+          fourSteps({
+            horizontalOptions: {
+              minimumStepWidth: 'var(--step-width, 5rem)',
+              collapsedVariant: 'withLabelAndControls',
+            },
+          }),
+        );
+        expect(document.querySelector(SUMMARY)).toBeNull();
+        const measure = Array.from(
+          document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
+        ).find(element => element.style.width !== '');
+        expect(measure).toBeDefined();
+
+        resolvedMinStepWidth = 96;
+        act(() =>
+          resize([{target: measure!} as unknown as ResizeObserverEntry], null!),
+        );
+        expect(document.querySelector(SUMMARY)).toBeInTheDocument();
+      } finally {
+        view?.unmount();
+        vi.unstubAllGlobals();
+        if (originalWidth) {
+          Object.defineProperty(
+            Element.prototype,
+            'clientWidth',
+            originalWidth,
+          );
+        } else {
+          delete (Element.prototype as {clientWidth?: number}).clientWidth;
+        }
+      }
+    });
+
     it('leaves a vertical stepper alone at any width', () => {
       // A column gives every label a row of its own, so there is nothing to
       // run out of and no frame to measure.
@@ -1285,7 +1434,12 @@ describe('Stepper', () => {
         Object.defineProperty(Element.prototype, 'clientWidth', {
           configurable: true,
           get(this: Element) {
-            return this.classList.contains('astryx-stepper') ? width : 0;
+            if (this.classList.contains('astryx-stepper')) {
+              return width;
+            }
+            return this instanceof HTMLElement && this.style.width !== ''
+              ? 112
+              : 0;
           },
         });
 
@@ -1398,7 +1552,13 @@ describe('Stepper', () => {
       // controls rather than two.
       atWidth(
         320,
-        fourSteps({onStepClick: vi.fn(), hasCollapsedControls: false}),
+        fourSteps({
+          onStepClick: vi.fn(),
+          horizontalOptions: {
+            minimumStepWidth: 112,
+            collapsedVariant: 'withLabel',
+          },
+        }),
       );
       expect(screen.queryByRole('button', {name: 'Next step'})).toBeNull();
       expect(screen.queryByRole('button', {name: 'Previous step'})).toBeNull();
@@ -1408,29 +1568,34 @@ describe('Stepper', () => {
       expect(within(summary!).getByText('Shipping')).toBeInTheDocument();
     });
 
-    it('drops the name but keeps the controls on request', () => {
-      // The inverse: a page that heads each step itself, and navigates by the
-      // stepper alone. Nothing is named twice and the way through survives.
-      atWidth(320, fourSteps({onStepClick: vi.fn(), hasCollapsedLabel: false}));
-      const summary = document.querySelector<HTMLElement>(SUMMARY);
-      expect(summary).not.toBeNull();
-      expect(within(summary!).queryByText('Shipping')).toBeNull();
-      expect(within(summary!).queryByText('Where it goes')).toBeNull();
-      expect(
-        within(summary!).getByRole('button', {name: 'Next step'}),
-      ).toBeInTheDocument();
-    });
-
-    it('leaves the bare track when neither half is wanted', () => {
-      // Both off is a reachable state, not a combination to guard against —
-      // and the row goes with them rather than staying on as an empty box
-      // still spending the frame's gap.
+    it('leaves a bare track when the label is hidden, even with a handler', () => {
+      // The surrounding flow owns both its heading and navigation. Keeping an
+      // onStepClick handler for the expanded layout must not add a compact row.
       atWidth(
         320,
         fourSteps({
           onStepClick: vi.fn(),
-          hasCollapsedControls: false,
-          hasCollapsedLabel: false,
+          horizontalOptions: {
+            minimumStepWidth: 112,
+            collapsedVariant: 'hiddenLabel',
+          },
+        }),
+      );
+      expect(document.querySelector(SUMMARY)).toBeNull();
+      expect(screen.queryByRole('button', {name: 'Previous step'})).toBeNull();
+      expect(screen.queryByRole('button', {name: 'Next step'})).toBeNull();
+      expect(screen.getByRole('list')).toBeInTheDocument();
+      expect(screen.getAllByRole('listitem')).toHaveLength(4);
+    });
+
+    it('also leaves the bare track when there is no handler', () => {
+      atWidth(
+        320,
+        fourSteps({
+          horizontalOptions: {
+            minimumStepWidth: 112,
+            collapsedVariant: 'hiddenLabel',
+          },
         }),
       );
       expect(document.querySelector(SUMMARY)).toBeNull();
@@ -1438,16 +1603,16 @@ describe('Stepper', () => {
       expect(screen.getAllByRole('listitem')).toHaveLength(4);
     });
 
-    it('keeps the sequence whole for a screen reader with both halves off', () => {
-      // The invariant that makes both props safe to reach for: the visible row
-      // was only ever a repeat of the list, so suppressing it cannot shorten
+    it('keeps the sequence whole for a screen reader when the label is hidden', () => {
+      // The visible row only repeats the list, so suppressing it cannot shorten
       // what a screen reader hears. Same expectation as the default collapse.
       atWidth(
         320,
         fourSteps({
-          onStepClick: vi.fn(),
-          hasCollapsedControls: false,
-          hasCollapsedLabel: false,
+          horizontalOptions: {
+            minimumStepWidth: 112,
+            collapsedVariant: 'hiddenLabel',
+          },
         }),
       );
       const items = screen.getAllByRole('listitem');
@@ -1461,15 +1626,15 @@ describe('Stepper', () => {
     });
 
     it('leaves a stepper that has room for its labels alone', () => {
-      // Both props are scoped to the collapse and nothing else. Stated as a
-      // test because it is the question consumers ask first — whether turning
-      // the phone row off also strips the desktop labels.
+      // The variant is scoped to the collapse and does not strip desktop labels.
       atWidth(
         600,
         fourSteps({
           onStepClick: vi.fn(),
-          hasCollapsedControls: false,
-          hasCollapsedLabel: false,
+          horizontalOptions: {
+            minimumStepWidth: 112,
+            collapsedVariant: 'hiddenLabel',
+          },
         }),
       );
       for (const name of ['Cart', 'Shipping', 'Delivery', 'Payment']) {
@@ -1489,7 +1654,10 @@ describe('Stepper', () => {
         fourSteps({
           indicatorPosition: 'on-track',
           onStepClick: vi.fn(),
-          hasCollapsedControls: false,
+          horizontalOptions: {
+            minimumStepWidth: 112,
+            collapsedVariant: 'withLabel',
+          },
         }),
       );
       expect(screen.queryByRole('button', {name: 'Next step'})).toBeNull();

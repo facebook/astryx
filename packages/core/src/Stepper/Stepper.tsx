@@ -50,15 +50,41 @@ import {
 } from './StepperContext';
 
 /**
- * Width below which a step can no longer hold its own label. Under about this
- * much a one-word label starts breaking mid-word and a two-word one stacks,
- * which costs more vertical space than the row that replaces all of them — and
- * reads worse, because every step pays for text only one of them needs now.
+ * Default width below which a step can no longer hold its own label. Under
+ * about this much a one-word label starts breaking mid-word and a two-word one
+ * stacks, which costs more vertical space than the row that replaces all of
+ * them — and reads worse, because every step pays for text only one of them
+ * needs now. Consumers can replace it through
+ * `horizontalOptions.minimumStepWidth` when their labels or layout need a
+ * different threshold.
  *
  * Applied per step rather than to the stepper, so where the collapse happens
  * follows the count: four steps hold out to 448px, seven need 784px.
  */
-const MIN_STEP_WIDTH = 112;
+const DEFAULT_MIN_STEP_WIDTH = 112;
+const DEFAULT_COLLAPSED_VARIANT = 'withLabelAndControls';
+
+export type StepperCollapsedVariant =
+  'withLabelAndControls' | 'withLabel' | 'hiddenLabel';
+
+export interface StepperHorizontalOptions {
+  /**
+   * Minimum width allocated to each step before a horizontal Stepper collapses.
+   * Numbers are interpreted as pixels. Strings accept CSS length values such
+   * as `'7rem'`, `'calc(6rem + 8px)'`, or `'var(--step-width)'`.
+   * @default 112
+   */
+  minimumStepWidth: number | string;
+  /**
+   * Presentation used when the horizontal Stepper collapses.
+   * - `withLabelAndControls`: current-step label and navigation controls.
+   * - `withLabel`: current-step label without controls.
+   * - `hiddenLabel`: bare progress track with no compact row.
+   * `withLabelAndControls` renders its controls only when `onStepClick` is set.
+   * @default 'withLabelAndControls'
+   */
+  collapsedVariant: StepperCollapsedVariant;
+}
 
 export interface StepperProps extends BaseProps<HTMLOListElement> {
   /** Ref forwarded to the root element */
@@ -79,7 +105,8 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
   /**
    * Called when a step is clicked, or when a compact summary control is used.
    * Enables non-linear navigation. At compact horizontal widths, individual
-   * track nodes are presentational and summary controls skip disabled steps.
+   * track nodes are presentational; when the collapsed variant includes
+   * summary controls, those controls skip disabled steps.
    */
   onStepClick?: (index: number) => void;
   /**
@@ -102,28 +129,12 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    */
   indicatorPosition?: StepperIndicatorPosition;
   /**
-   * Whether a collapsed stepper shows Previous/Next controls beneath the
-   * track. They only ever appear when `onStepClick` is set; this turns them
-   * off for a flow that already has its own Back/Continue, so the two pairs
-   * do not compete.
-   *
-   * Turning them off leaves the compact track presentational in either layout,
-   * so `onStepClick` becomes unreachable until the stepper is wide again. That
-   * is intentional when the surrounding flow owns navigation: the collapsed
-   * stepper becomes purely a progress indicator instead of exposing a second,
-   * denser set of controls.
-   * @default true
+   * Options specific to the horizontal layout. `minimumStepWidth` controls the
+   * per-step collapse threshold; `collapsedVariant` selects a label with
+   * controls, a label alone, or a bare progress track.
+   * @default {minimumStepWidth: 112, collapsedVariant: 'withLabelAndControls'}
    */
-  hasCollapsedControls?: boolean;
-  /**
-   * Whether a collapsed stepper names the current step beneath the track. Turn
-   * it off when the page already heads the step itself.
-   *
-   * Only the visible copy goes. Every step keeps its name in the accessible
-   * sequence at any width, so this cannot shorten what a screen reader hears.
-   * @default true
-   */
-  hasCollapsedLabel?: boolean;
+  horizontalOptions?: StepperHorizontalOptions;
 }
 
 const styles = stylex.create({
@@ -229,8 +240,7 @@ export function Stepper({
   label: labelFromProps,
   density = 'balanced',
   indicatorPosition = 'separated',
-  hasCollapsedControls = true,
-  hasCollapsedLabel = true,
+  horizontalOptions,
   xstyle,
   className,
   style,
@@ -239,6 +249,10 @@ export function Stepper({
 }: StepperProps) {
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.stepper.label');
+  const minimumStepWidth =
+    horizontalOptions?.minimumStepWidth ?? DEFAULT_MIN_STEP_WIDTH;
+  const collapsedVariant =
+    horizontalOptions?.collapsedVariant ?? DEFAULT_COLLAPSED_VARIANT;
 
   // Dev-mode duplicate step index detection. Steps register on mount and
   // deregister on unmount; a Map tracks count per index so we can warn when
@@ -331,7 +345,11 @@ export function Stepper({
   // still owns the ref and DOM pass-throughs and fills that frame, so its width
   // is the effective component width to observe.
   const [rootWidth, setRootWidth] = useState(0);
+  const [resolvedMinStepWidth, setResolvedMinStepWidth] = useState(
+    DEFAULT_MIN_STEP_WIDTH,
+  );
   const stopObservingRootRef = useRef<(() => void) | null>(null);
+  const stopObservingMinStepWidthRef = useRef<(() => void) | null>(null);
   const attachRoot = useCallback(
     (el: HTMLOListElement | null) => {
       stopObservingRootRef.current?.();
@@ -350,10 +368,25 @@ export function Stepper({
     [isHorizontal],
   );
   const rootRef = useMergedRefs(ref, attachRoot);
+  const attachMinStepWidthMeasure = useCallback((el: HTMLDivElement | null) => {
+    stopObservingMinStepWidthRef.current?.();
+    stopObservingMinStepWidthRef.current = null;
+    if (el) {
+      // The browser resolves px, rem, calc(), var(), and the other supported
+      // CSS length forms before clientWidth is read. Observing the probe as
+      // well as the Stepper means a root-font-size or custom-property change
+      // can move the breakpoint without the Stepper itself resizing.
+      stopObservingMinStepWidthRef.current = observeResize(el, entry =>
+        setResolvedMinStepWidth(entry.target.clientWidth),
+      );
+    }
+  }, []);
   useEffect(
     () => () => {
       stopObservingRootRef.current?.();
       stopObservingRootRef.current = null;
+      stopObservingMinStepWidthRef.current?.();
+      stopObservingMinStepWidthRef.current = null;
     },
     [],
   );
@@ -373,7 +406,7 @@ export function Stepper({
     isHorizontal &&
     rootWidth > 0 &&
     stepCount > 0 &&
-    rootWidth / stepCount < MIN_STEP_WIDTH;
+    rootWidth / stepCount < resolvedMinStepWidth;
 
   const [summarySlot, setSummarySlot] = useState<HTMLElement | null>(null);
 
@@ -390,6 +423,8 @@ export function Stepper({
       stepCount,
       isCompact,
       summarySlot,
+      minimumStepWidth,
+      minStepWidthMeasureRef: attachMinStepWidthMeasure,
     }),
     [
       activeStep,
@@ -402,6 +437,8 @@ export function Stepper({
       stepCount,
       isCompact,
       summarySlot,
+      minimumStepWidth,
+      attachMinStepWidthMeasure,
     ],
   );
 
@@ -443,12 +480,12 @@ export function Stepper({
     return <StepperContext value={ctxValue}>{list}</StepperContext>;
   }
 
-  // Controls, and only where there is something for them to do. `onStepClick`
-  // answers whether the steps are navigable at all; `hasCollapsedControls`
-  // answers the separate question of whether this stepper should be the thing
-  // that navigates them once collapsed. They come apart in the common wizard —
-  // clickable steps at full width, the form's own Back and Continue on a phone
-  // — which is why the handler alone cannot decide it.
+  // Controls appear only in the variant that asks for them and where there is
+  // something for them to do. `onStepClick` answers whether the steps are
+  // navigable at all; `collapsedVariant` answers whether this stepper should be
+  // the thing that navigates them once collapsed. They come apart in the common
+  // wizard — clickable steps at full width, the form's own Back and Continue on
+  // a phone — which is why the handler alone cannot decide it.
   //
   // Unlike TabList's scroll arrows — decorative, aria-hidden, skipped by the
   // keyboard because every tab can still be reached by arrowing the strip —
@@ -456,11 +493,12 @@ export function Stepper({
   // they are real controls with real names, and they take focus. Disabled
   // steps are omitted exactly as they are from the full-width set of clickable
   // steps.
-  const showsControls = hasCollapsedControls && onStepClick != null;
+  const showsControls =
+    collapsedVariant === 'withLabelAndControls' && onStepClick != null;
 
-  // With neither half asked for there is nothing to put in the row, and an
-  // empty one would still spend the frame's gap under the track.
-  const showsSummary = isCompact && (showsControls || hasCollapsedLabel);
+  // hiddenLabel deliberately renders only the progress track. Omitting the
+  // whole row also avoids spending the frame's gap on empty layout.
+  const showsSummary = isCompact && collapsedVariant !== 'hiddenLabel';
 
   const adjacentEnabledStep = (delta: -1 | 1): number | null => {
     let target: number | null = null;
@@ -527,21 +565,14 @@ export function Stepper({
             )}>
             {control(-1)}
             {/* The list above still carries every step's name and status, so
-                this row repeats one of them for the eye only. Hiding it keeps
-                a screen reader from hearing the current step named twice,
-                while leaving the controls either side of it reachable — and it
-                is what makes `hasCollapsedLabel` a purely visual switch.
-
-                Withholding the slot is the whole implementation of that
-                switch: the active step portals into it and renders nothing
-                when it is absent, so no Step has to be told about the prop. */}
-            {hasCollapsedLabel && (
-              <div
-                ref={setSummarySlot}
-                aria-hidden="true"
-                {...stylex.props(styles.summaryBody)}
-              />
-            )}
+                this visual row is hidden from assistive technology to avoid
+                announcing the current step twice. hiddenLabel withholds the
+                entire row above, leaving the accessible list as a bare track. */}
+            <div
+              ref={setSummarySlot}
+              aria-hidden="true"
+              {...stylex.props(styles.summaryBody)}
+            />
             {control(1)}
           </div>
         )}

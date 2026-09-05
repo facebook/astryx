@@ -13,7 +13,7 @@
  * - /packages/core/src/Stepper/index.ts
  */
 
-import {createContext, use} from 'react';
+import {createContext, use, type RefCallback} from 'react';
 
 export type StepperOrientation = 'horizontal' | 'vertical';
 export type StepperDensity = 'compact' | 'balanced' | 'spacious';
@@ -96,6 +96,10 @@ export interface StepperContextValue {
    * Internal: not part of the public API.
    */
   summarySlot: HTMLElement | null;
+  /** CSS length whose resolved value sets the compact per-step threshold. */
+  minimumStepWidth: number | string;
+  /** Ref for the first Step's invisible CSS-length measurement element. */
+  minStepWidthMeasureRef: RefCallback<HTMLDivElement>;
 }
 
 export const StepperContext = createContext<StepperContextValue | null>(null);
