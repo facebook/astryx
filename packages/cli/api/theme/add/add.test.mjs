@@ -37,9 +37,33 @@ describe('themeAdd (api/theme/add)', () => {
     }
   });
 
+  it('copies every relative import required by the scaffolded theme', async () => {
+    const result = await themeAdd('neutral', {cwd: tmpDir});
+    const outputDir = path.join(tmpDir, result.data.outputDir);
+    const relativeImports = /from\s+['"](\.\.?\/[^'"]+)['"]/g;
+
+    for (const file of result.data.files) {
+      if (!/\.(?:ts|tsx|mjs)$/.test(file)) continue;
+      const source = fs.readFileSync(path.join(outputDir, file), 'utf-8');
+      for (const [, specifier] of source.matchAll(relativeImports)) {
+        const imported = path.resolve(outputDir, path.dirname(file), specifier);
+        expect(
+          fs.existsSync(imported) ||
+            fs.existsSync(`${imported}.ts`) ||
+            fs.existsSync(`${imported}.tsx`) ||
+            fs.existsSync(`${imported}.mjs`),
+        ).toBe(true);
+      }
+    }
+  });
+
   it('strips the Meta copyright header from copied files', async () => {
     const result = await themeAdd('neutral', {cwd: tmpDir});
-    const first = path.join(tmpDir, result.data.outputDir, result.data.files[0]);
+    const first = path.join(
+      tmpDir,
+      result.data.outputDir,
+      result.data.files[0],
+    );
     expect(fs.readFileSync(first, 'utf-8')).not.toMatch(
       /Copyright \(c\) Meta Platforms/,
     );
@@ -62,9 +86,9 @@ describe('themeAdd (api/theme/add)', () => {
   });
 
   it('throws ERR_UNKNOWN_THEME for an unknown slug (with suggestions)', async () => {
-    await expect(themeAdd('does-not-exist', {cwd: tmpDir})).rejects.toMatchObject(
-      {code: 'ERR_UNKNOWN_THEME'},
-    );
+    await expect(
+      themeAdd('does-not-exist', {cwd: tmpDir}),
+    ).rejects.toMatchObject({code: 'ERR_UNKNOWN_THEME'});
   });
 
   it('refuses to overwrite existing files without overwrite', async () => {
