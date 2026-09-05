@@ -7,3 +7,8 @@ export type {
   UseTableSelectionStateConfig,
   UseTableSelectionStateResult,
 } from './useTableSelectionState';
+export {TableBulkActionsToolbar} from './TableBulkActionsToolbar';
+export type {
+  TableBulkAction,
+  TableBulkActionsConfig,
+} from './TableBulkActionsToolbar';
