@@ -23,6 +23,7 @@
     "check:executable-bits": "node scripts/check-executable-bits.mjs",
     "check:demo-media": "node scripts/check-demo-media.mjs",
     "check:i18n-catalog": "node scripts/check-i18n-catalog.mjs",
+    "check:contract": "node scripts/check-contract.mjs",
     "check:sync": "node scripts/check-sync.js",
     "check:use-client": "node scripts/check-use-client.mjs",
     "lint": "pnpm check:repo && eslint . --cache",
