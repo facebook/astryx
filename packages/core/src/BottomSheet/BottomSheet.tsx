@@ -4,21 +4,23 @@
 
 /**
  * @file BottomSheet.tsx
- * @input Uses React, StyleX, core hooks/utils, BottomSheetPanel, BottomSheetSwitcherContext
+ * @input Uses React, StyleX, core hooks/utils, BottomSheetPanel, switcher/stack contexts
  * @output Exports BottomSheet component and BottomSheetProps
- * @position Public BottomSheet router plus private standalone/switcher hosts
+ * @position Public BottomSheet router plus private standalone/controller hosts
  *
- * BottomSheet selects one of two focused hosts. A standalone host owns its
- * native dialog lifecycle; a switcher item participates in the parent's shared
- * dialog and transition state machine. Both render the same BottomSheetPanel,
- * which owns sheet presentation, gestures, mobile-keyboard accommodation, and
- * motion completion.
+ * BottomSheet selects one of three focused hosts. A standalone host owns its
+ * native dialog lifecycle; switcher and stack items participate in their
+ * parent's shared dialog and transition state machine. Every host renders the
+ * same BottomSheetPanel, which owns sheet presentation, gestures,
+ * mobile-keyboard accommodation, and motion completion.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
  * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  * - /packages/core/src/BottomSheet/BottomSheet.doc.mjs
  * - /packages/core/src/BottomSheet/BottomSheet.test.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetStack.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetStack.test.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx
  * - /apps/storybook/stories/BottomSheet.stories.tsx
@@ -38,7 +40,12 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
-import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  durationVars,
+  easeVars,
+  spacingVars,
+} from '../theme/tokens.stylex';
 import {isImeKeyEvent, useDevWarning, useScrollLock} from '../hooks';
 import {
   BottomSheetPanel,
@@ -47,6 +54,11 @@ import {
 } from './BottomSheetPanel';
 import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
 import {
+  BottomSheetStackContext,
+  type BottomSheetStackContextValue,
+  type BottomSheetStackPhase,
+} from './BottomSheetStackContext';
+import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
   type BottomSheetSwitcherPhase,
@@ -54,6 +66,18 @@ import {
 
 export type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
 import type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
+
+const STACK_VISUAL_DEPTH_LIMIT = 2;
+const STACK_SCALE_STEP = 0.04;
+
+function transformForStackDepth(depth: number): string {
+  const visualDepth = Math.min(STACK_VISUAL_DEPTH_LIMIT, Math.max(0, depth));
+  if (visualDepth === 0) {
+    return 'translateY(0) scale(1)';
+  }
+  const scale = (1 - visualDepth * STACK_SCALE_STEP).toFixed(2);
+  return `translateY(calc(${spacingVars['--spacing-2']} * -${visualDepth})) scale(${scale})`;
+}
 
 const styles = stylex.create({
   dialog: {
@@ -124,6 +148,22 @@ const styles = stylex.create({
   positionerTop: {
     zIndex: 1,
   },
+  positionerStackMotion: {
+    transformOrigin: '50% 0',
+    transitionProperty: 'transform',
+    transitionDuration: durationVars['--duration-medium'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    willChange: 'transform',
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+    },
+  },
+  positionerStackTransform: (transform: string) => ({
+    transform,
+  }),
+  positionerStackLayer: (zIndex: number) => ({
+    zIndex,
+  }),
 });
 
 interface BottomSheetSharedProps extends BaseProps<HTMLDivElement> {
@@ -191,6 +231,23 @@ function panelStateForSwitcherPhase(
     case 'aligning':
     case 'fading':
       return {kind: 'retained', motion: phase, alignmentOffset};
+    case 'exiting':
+      return {kind: 'exiting'};
+    case 'hidden':
+      return {kind: 'hidden'};
+  }
+}
+
+function panelStateForStackPhase(
+  phase: BottomSheetStackPhase,
+): BottomSheetPanelState {
+  switch (phase) {
+    case 'active':
+      return {kind: 'open', entering: false};
+    case 'entering':
+      return {kind: 'open', entering: true};
+    case 'covered':
+      return {kind: 'retained', motion: 'covered', alignmentOffset: 0};
     case 'exiting':
       return {kind: 'exiting'};
     case 'hidden':
@@ -556,30 +613,207 @@ function SwitcherBottomSheetItem({
   );
 }
 
+interface StackBottomSheetItemProps extends SwitcherBottomSheetProps {
+  stack: BottomSheetStackContextValue;
+}
+
+function StackBottomSheetItem({
+  stack,
+  ref,
+  sheetId,
+  label,
+  children,
+  height = 'capped',
+  snapPoints,
+  purpose = 'info',
+  xstyle,
+  ...props
+}: StackBottomSheetItemProps) {
+  const {
+    openSheetIds,
+    topSheet,
+    hasScrim,
+    requestTopDismiss,
+    getSheetPhase,
+    getSheetDepth,
+    getSheetLayer,
+    registerSheetElement,
+    registerSheetLabel,
+    registerSheetPurpose,
+    onSheetTransitionComplete,
+    onSheetScrimOpacityChange,
+  } = stack;
+  const hasValidSheetId = typeof sheetId === 'string' && sheetId.length > 0;
+  const phase = hasValidSheetId ? getSheetPhase(sheetId) : 'hidden';
+  const depth = hasValidSheetId ? getSheetDepth(sheetId) : 0;
+  const layer = hasValidSheetId ? getSheetLayer(sheetId) : 0;
+  const panelState = panelStateForStackPhase(phase);
+  const isInteractive = phase === 'active' || phase === 'entering';
+  const isInactive = phase === 'covered' || phase === 'exiting';
+  const isPresented = phase !== 'hidden';
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const previousPhaseRef = useRef(phase);
+  const previousPhase = previousPhaseRef.current;
+
+  useLayoutEffect(() => {
+    const wasInteractive =
+      previousPhase === 'active' || previousPhase === 'entering';
+    if (wasInteractive && phase === 'covered') {
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (activeElement != null && panelRef.current?.contains(activeElement)) {
+        returnFocusRef.current = activeElement;
+      }
+    } else if (phase === 'hidden') {
+      returnFocusRef.current = null;
+    }
+    previousPhaseRef.current = phase;
+  }, [phase, previousPhase]);
+
+  const dismissOnSwipe = useCallback(() => {
+    if (purpose === 'info' && hasValidSheetId && topSheet === sheetId) {
+      requestTopDismiss();
+    }
+  }, [hasValidSheetId, purpose, requestTopDismiss, sheetId, topSheet]);
+  const handlePanelElementChange = useCallback(
+    (element: HTMLDivElement | null) => {
+      panelRef.current = element;
+      if (hasValidSheetId) {
+        registerSheetElement(sheetId, element);
+      }
+    },
+    [hasValidSheetId, registerSheetElement, sheetId],
+  );
+  const handleMotionComplete = useCallback(
+    (motion: BottomSheetPanelMotion) => {
+      if (hasValidSheetId && (motion === 'entering' || motion === 'exiting')) {
+        onSheetTransitionComplete({sheetId, phase: motion});
+      }
+    },
+    [hasValidSheetId, onSheetTransitionComplete, sheetId],
+  );
+  const handleScrimOpacity = useCallback(
+    (opacity: number) => {
+      if (hasValidSheetId) {
+        onSheetScrimOpacityChange(sheetId, opacity);
+      }
+    },
+    [hasValidSheetId, onSheetScrimOpacityChange, sheetId],
+  );
+
+  useLayoutEffect(() => {
+    if (!hasValidSheetId) {
+      return;
+    }
+    registerSheetLabel(sheetId, label);
+    return () => registerSheetLabel(sheetId, null);
+  }, [hasValidSheetId, label, registerSheetLabel, sheetId]);
+
+  useLayoutEffect(() => {
+    if (!hasValidSheetId) {
+      return;
+    }
+    registerSheetPurpose(sheetId, purpose);
+    return () => registerSheetPurpose(sheetId, null);
+  }, [hasValidSheetId, purpose, registerSheetPurpose, sheetId]);
+
+  useEffect(() => {
+    const wasInteractive =
+      previousPhase === 'active' || previousPhase === 'entering';
+    if (!isInteractive || wasInteractive) {
+      return;
+    }
+    const returnTarget = returnFocusRef.current;
+    if (
+      returnTarget != null &&
+      returnTarget.isConnected &&
+      panelRef.current?.contains(returnTarget)
+    ) {
+      returnTarget.focus({preventScroll: true});
+    } else {
+      focusPanel(
+        panelRef.current,
+        hasScrim || previousPhase === 'covered' || openSheetIds.length > 1,
+      );
+    }
+  }, [hasScrim, isInteractive, openSheetIds.length, previousPhase]);
+
+  useDevWarning(
+    'BottomSheet',
+    'requires a non-empty `label` for an accessible name; the open sheet ' +
+      'has no built-in heading to derive one from.',
+    isInteractive && !label,
+  );
+
+  return (
+    <div
+      {...stylex.props(
+        styles.positioner,
+        styles.positionerStackMotion,
+        styles.positionerStackTransform(transformForStackDepth(depth)),
+        styles.positionerStackLayer(layer),
+        !isPresented && styles.positionerHidden,
+      )}
+      hidden={!isPresented}
+      aria-hidden={isInactive ? 'true' : undefined}
+      inert={isInactive ? true : undefined}>
+      <BottomSheetPanel
+        {...props}
+        ref={ref}
+        state={panelState}
+        height={height}
+        snapPoints={snapPoints}
+        isSwipeDismissAllowed={purpose === 'info' && isInteractive}
+        isPageScrollLocked={hasScrim}
+        xstyle={xstyle}
+        onDismiss={dismissOnSwipe}
+        onScrimOpacity={handleScrimOpacity}
+        onElementChange={handlePanelElementChange}
+        onMotionComplete={handleMotionComplete}>
+        {/* A stack item consumes its parent controller. Nested BottomSheets are
+            standalone unless their content establishes a new controller. */}
+        <BottomSheetStackContext value={null}>
+          {children}
+        </BottomSheetStackContext>
+      </BottomSheetPanel>
+    </div>
+  );
+}
+
 /**
  * A mobile touch sheet that either owns a native dialog or participates in a
- * BottomSheetSwitcher shared dialog when given a sheetId inside that context.
+ * BottomSheetSwitcher / BottomSheetStack shared dialog when given a sheetId.
  */
 export function BottomSheet(props: BottomSheetProps) {
+  const stack = use(BottomSheetStackContext);
   const switcher = use(BottomSheetSwitcherContext);
+  const controller = stack ?? switcher;
   const runtimeSheetId = (props as {sheetId?: string}).sheetId;
   const hasValidSheetId =
     typeof runtimeSheetId === 'string' && runtimeSheetId.length > 0;
 
   useDevWarning(
     'BottomSheet',
-    'requires a non-empty `sheetId` when nested in ' +
+    'requires a non-empty `sheetId` when nested in BottomSheetStack or ' +
       'BottomSheetSwitcher; standalone `isOpen` / `onOpenChange` props are ' +
       'ignored there.',
-    switcher != null && !hasValidSheetId,
+    controller != null && !hasValidSheetId,
   );
   useDevWarning(
     'BottomSheet',
-    '`sheetId` only works inside BottomSheetSwitcher. Use `isOpen` and ' +
-      '`onOpenChange` for a standalone sheet.',
-    switcher == null && runtimeSheetId != null,
+    '`sheetId` only works inside BottomSheetStack or BottomSheetSwitcher. Use ' +
+      '`isOpen` and `onOpenChange` for a standalone sheet.',
+    controller == null && runtimeSheetId != null,
   );
 
+  if (stack != null) {
+    return (
+      <StackBottomSheetItem
+        {...(props as SwitcherBottomSheetProps)}
+        stack={stack}
+      />
+    );
+  }
   if (switcher != null) {
     return (
       <SwitcherBottomSheetItem

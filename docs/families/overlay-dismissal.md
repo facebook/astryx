@@ -16,6 +16,7 @@ verified_by:
     packages/core/src/Layer/layerDismissalInvariants.test.tsx,
     packages/core/src/Layer/layerDismissalFamilies.test.tsx,
     packages/core/src/hooks/useFocusTrap.test.tsx,
+    packages/core/src/BottomSheet/BottomSheetStack.test.tsx,
   ]
 members:
   [
@@ -31,6 +32,7 @@ members:
     component:MobileNav,
     component:BottomSheet,
     component:BottomSheetSwitcher,
+    component:BottomSheetStack,
     component:CommandPalette,
     component:ContextMenu,
     component:PowerSearchEditPopover,
@@ -88,7 +90,7 @@ this record's current membership snapshot must be updated with it.
 
 - **Current members:** Dialog, AlertDialog, Popover, DropdownMenu,
   DropdownMenuSubMenu, MoreMenu, Tooltip, HoverCard, Lightbox, MobileNav,
-  BottomSheet, BottomSheetSwitcher, CommandPalette, ContextMenu,
+  BottomSheet, BottomSheetSwitcher, BottomSheetStack, CommandPalette, ContextMenu,
   PowerSearchEditPopover, Lab Drawer, and the component-owned popup surfaces
   listed below.
 - **Component-owned input popups:** ChatComposerInput, ComplexSelector,
@@ -192,6 +194,7 @@ this record's current membership snapshot must be updated with it.
 | Tooltip, HoverCard                                                                                                                                                                                                                                                                                 | shared owner with DOM presence reporting                      | Neither provides nesting depth to descendant layers                                                                                                                                                                                    |
 | Focus traps with `onEscape`                                                                                                                                                                                                                                                                        | shared owner through `useFocusTrap`                           | They provide DOM containment, not descendant depth                                                                                                                                                                                     |
 | BreadcrumbItem, ChatComposerInput, ComplexSelector, DateInput, DateRangeInput, DateTimeInput, Selector, MultiSelector, PowerSearch, BaseTypeahead, Typeahead, Tokenizer, SideNavHeading, SideNavItem, TabMenu, TopNavHeading, TopNavMenu, TopNavMegaMenu, Table, Lab TourStep, Lab ChatEmojiPicker | shared owner through `usePopover` or a composed Popover owner | Adaptive BottomSheet paths inherit BottomSheet's adoption gap; Table filtering owns controlled Popover state and discards its draft on close; TourStep routes Popover close to the Tour; ChatEmojiPicker owns controlled Popover state |
+| BottomSheetStack                                                                                                                                                                                                                                                                                   | shared owner                                                  | none                                                                                                                                                                                                                                   |
 | BottomSheetSwitcher                                                                                                                                                                                                                                                                                | partial                                                       | Modal mode registers through `useFocusTrap`; non-modal mode retains local Escape handling                                                                                                                                              |
 | BottomSheet, CommandPalette, ContextMenu, DropdownMenuSubMenu, PowerSearchEditPopover, Lab Drawer                                                                                                                                                                                                  | local only                                                    | Must migrate from component-specific listeners or registries to the shared owner                                                                                                                                                       |
 
