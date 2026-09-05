@@ -244,8 +244,7 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
 // because the input's reserve is derived from the same value.
 const END_LANE_INSET = spacingVars['--spacing-2'];
 // Kept in sync with useEndLaneReserve: inputCompact reads the custom property
-// directly so its empty-query pseudo-class can move the reserve outside the
-// input's hit target.
+// directly so its empty-query pseudo-class can suppress the inner reserve.
 const END_LANE_RESERVE_VAR = '--_tokenizer-end-lane-reserve';
 
 const styles = stylex.create({
@@ -304,23 +303,20 @@ const styles = stylex.create({
     },
     flex: {
       default: '1 1 40px',
-      ':placeholder-shown': '1 1 0',
+      ':placeholder-shown': '0 1 1px',
     },
     width: 0,
     // An empty flex item must not become an otherwise blank final row when
     // tokens leave less than the normal 40px editing width. The negative
     // margin cancels the flex gap in the item's outer size, while equal inner
-    // padding preserves the visual gap before the caret. The end-lane reserve
-    // becomes an outer margin: unlike padding, it does not enlarge the empty
-    // input itself, and it stops that input's hit target before Clear all. As
-    // soon as a query exists, the normal editing width and inner reserve return.
+    // padding preserves a small, positive caret and pointer target. It does not
+    // grow while empty: the wrapper is already the larger click-to-focus target,
+    // and growth would put the input underneath the absolutely positioned end
+    // lane. As soon as a query exists, the normal editing width and inner
+    // reserve return.
     marginInlineStart: {
       default: 0,
       ':placeholder-shown': `calc(-1 * ${spacingVars['--spacing-1']})`,
-    },
-    marginInlineEnd: {
-      default: 0,
-      ':placeholder-shown': `var(${END_LANE_RESERVE_VAR}, 0px)`,
     },
     paddingInlineStart: {
       default: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,

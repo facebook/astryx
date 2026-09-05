@@ -569,11 +569,6 @@ export const NearFullTokenRow: Story = {
   },
   name: 'Near-full Token Row',
   play: async ({canvasElement}) => {
-    await document.fonts.ready;
-    await new Promise<void>(resolve =>
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-    );
-
     const wrapper =
       canvasElement.querySelector<HTMLElement>('.astryx-tokenizer');
     const input = wrapper?.querySelector<HTMLInputElement>('[role="combobox"]');
@@ -585,6 +580,22 @@ export const NearFullTokenRow: Story = {
     if (!wrapper || !input || !finalToken || !clearButton) {
       throw new Error('Near-full token-row fixture did not render as expected');
     }
+
+    await document.fonts.ready;
+    const reserveDeadline = performance.now() + 2000;
+    while (
+      wrapper.style.getPropertyValue('--_tokenizer-end-lane-reserve') === ''
+    ) {
+      if (performance.now() >= reserveDeadline) {
+        throw new Error('Clear-all lane reserve was not measured');
+      }
+      await new Promise<void>(resolve =>
+        requestAnimationFrame(() => resolve()),
+      );
+    }
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
 
     const inputRect = input.getBoundingClientRect();
     const tokenRect = finalToken.getBoundingClientRect();
@@ -604,6 +615,19 @@ export const NearFullTokenRow: Story = {
       throw new Error(
         `Empty combobox overlaps Clear all by ${overlap.toFixed(2)}px`,
       );
+    }
+    const inputHitTarget = document.elementFromPoint(
+      inputRect.left + inputRect.width / 2,
+      inputRect.top + inputRect.height / 2,
+    );
+    if (inputHitTarget !== input) {
+      throw new Error(
+        `Empty combobox center is hit-tested as ${inputHitTarget?.tagName ?? 'nothing'}`,
+      );
+    }
+    inputHitTarget.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    if (document.activeElement !== input) {
+      throw new Error('Clicking the empty combobox did not focus it');
     }
   },
 };
