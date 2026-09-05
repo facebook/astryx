@@ -40,21 +40,40 @@ function findPackageDir(name, from) {
 }
 
 /**
+ * Match a wildcard alias key such as `@astryxdesign/*` against a request. The
+ * resolver treats `*` as the variable part of the specifier, so a caller can
+ * claim a whole scope with one entry.
+ */
+function wildcardPattern(name) {
+  const source = name
+    .split('*')
+    .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('.*');
+  return new RegExp(`^${source}$`);
+}
+
+/**
  * Drop the generated aliases a caller has already spoken for. A caller entry
  * is authoritative for the request it names: `'@astryxdesign/core'` is a prefix
- * alias covering the package and every subpath under it, while
- * `'@astryxdesign/core$'` covers only the bare specifier. Without this the
+ * alias covering the package and every subpath under it,
+ * `'@astryxdesign/core$'` covers only the bare specifier, and
+ * `'@astryxdesign/*'` claims everything the pattern matches. Without this the
  * generated entries sit earlier in the alias list and win, so a composed config
  * silently loads astryx source instead of the caller's implementation.
  */
 function withoutCallerOverrides(generated, callerAlias) {
   const exact = new Set();
   const prefixes = [];
+  const patterns = [];
   for (const key of Object.keys(callerAlias)) {
-    if (key.endsWith('$')) {
-      exact.add(key.slice(0, -1));
+    const onlyModule = key.endsWith('$');
+    const name = onlyModule ? key.slice(0, -1) : key;
+    if (name.includes('*')) {
+      patterns.push(wildcardPattern(name));
+    } else if (onlyModule) {
+      exact.add(name);
     } else {
-      prefixes.push(key);
+      prefixes.push(name);
     }
   }
   const kept = {};
@@ -64,7 +83,8 @@ function withoutCallerOverrides(generated, callerAlias) {
       exact.has(request) ||
       prefixes.some(
         prefix => request === prefix || request.startsWith(`${prefix}/`),
-      );
+      ) ||
+      patterns.some(pattern => pattern.test(request));
     if (!overridden) {
       kept[key] = target;
     }

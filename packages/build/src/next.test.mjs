@@ -39,7 +39,11 @@ const CORE_FILES = [
  * so the helper resolves real manifests rather than the workspace it lives in.
  */
 beforeAll(() => {
-  appDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-next-'));
+  // Canonical, not the `mkdtemp` path: on macOS `os.tmpdir()` is under `/var`,
+  // a symlink to `/private/var`, and the resolver reports the real path.
+  appDir = fs.realpathSync(
+    fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-next-')),
+  );
   const coreDir = path.join(appDir, 'node_modules/@astryxdesign/core');
   for (const file of CORE_FILES) {
     const target = path.join(coreDir, file);
@@ -131,6 +135,58 @@ describe('withAstryx', () => {
         alias: {'@astryxdesign/core': custom},
       }),
     ).toBe(path.join(custom, 'AlertDialog/index.js'));
+  });
+
+  it('lets a caller wildcard alias win over the generated entries', () => {
+    const custom = path.join(appDir, 'custom');
+    fs.mkdirSync(custom, {recursive: true});
+    fs.writeFileSync(path.join(custom, 'index.js'), '');
+
+    expect(
+      resolveFromApp('@astryxdesign/core', {
+        alias: {'@astryxdesign/*': custom},
+      }),
+    ).toBe(path.join(custom, 'index.js'));
+  });
+
+  it('lets a caller wildcard alias win for subpaths too', () => {
+    const custom = path.join(appDir, 'custom');
+    fs.mkdirSync(path.join(custom, 'core/AlertDialog'), {recursive: true});
+    fs.writeFileSync(path.join(custom, 'core/AlertDialog/index.js'), '');
+
+    // A wildcard target substitutes the matched part, so the subpath survives;
+    // a plain target collapses every request onto the one directory.
+    expect(
+      resolveFromApp('@astryxdesign/core/AlertDialog', {
+        alias: {'@astryxdesign/*': path.join(custom, '*')},
+      }),
+    ).toBe(path.join(custom, 'core/AlertDialog/index.js'));
+  });
+
+  it('resolves through a symlinked app root', () => {
+    const link = path.join(
+      path.dirname(appDir),
+      `${path.basename(appDir)}-link`,
+    );
+    try {
+      fs.symlinkSync(appDir, link, 'dir');
+    } catch {
+      return;
+    }
+    const {resolve} = withAstryx({}).webpack({resolve: {}}, {dir: link});
+    const resolver = ResolverFactory.createResolver({
+      fileSystem: new CachedInputFileSystem(fs, 4000),
+      extensions: ['.ts', '.tsx', '.js'],
+      conditionNames: ['import', 'default'],
+      alias: resolve.alias,
+      useSyncFileSystemCalls: true,
+    });
+
+    expect(
+      resolver.resolveSync({}, path.join(link, 'src'), '@astryxdesign/core'),
+    ).toBe(corePath('src/index.ts'));
+
+    fs.unlinkSync(link);
   });
 
   it('lets a caller exact alias win for the bare specifier', () => {
