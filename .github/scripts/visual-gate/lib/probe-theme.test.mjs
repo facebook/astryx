@@ -70,6 +70,21 @@ describe('buildProbeComponents', () => {
     ]);
   });
 
+  it('uses a target-specific component doc before the owning aggregate doc', () => {
+    const {components} = buildProbeComponents(
+      [{key: 'heading', component: 'Text', props: ['type'], states: []}],
+      {
+        Text: [{name: 'type', type: "'body' | 'large'"}],
+        Heading: [{name: 'type', type: "'display-1' | 'display-2'"}],
+      },
+    );
+    expect(Object.keys(components.heading).sort()).toEqual([
+      'base',
+      'type:display-1',
+      'type:display-2',
+    ]);
+  });
+
   it('covers every declared state', () => {
     const {components} = buildProbeComponents(targets, props);
     expect(Object.keys(components.switch).sort()).toEqual([
