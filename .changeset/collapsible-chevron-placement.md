@@ -3,7 +3,6 @@
 ---
 
 [feat] `Collapsible` and `CollapsibleGroup` accept `chevronPlacement`, moving the disclosure chevron to the start of the trigger or dropping it. The default stays `'end'`, the trailing indicator, and nothing about it changes. `'start'` puts the arrow ahead of the label, which is the tree and file-browser convention and what you want when the labels form a scannable column the arrows sit in front of — previously the only components with a leading arrow were `TreeList` and the Table row-expansion column, so a card or accordion header had no way to match them. (#5993)
-
 @ernestt
 
 The side changes the glyph, not just the order. A trailing chevron points down and flips up; a leading one points into the row and turns down, so `'start'` swaps `chevronDown` for `chevronRight` and rotates a quarter turn instead of a half. That matches `TreeList`, including its RTL mirroring, so a closed arrow points towards the content in both directions.
