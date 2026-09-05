@@ -37,7 +37,7 @@ import dynamic from 'next/dynamic';
 import * as stylex from '@stylexjs/stylex';
 import {AppShell} from '@astryxdesign/core/AppShell';
 import {compressCode, decompressCode} from '../../lib/compress';
-import {isTrustedPreviewMessage, trustedPreviewOrigin} from './previewChannel';
+import {createPreviewConnector} from './previewChannel';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
@@ -261,6 +261,12 @@ export function PlaygroundClient() {
   const {mode: siteMode} = useThemeMode();
   const editorTheme = siteMode === 'dark' ? 'github-dark' : 'github-light';
   const [code, setCode] = useState(getInitialCode);
+  // Mirror of `code` for event handlers with stable identities (the frame
+  // load handler resends the current code after a preview reload).
+  const codeRef = useRef(code);
+  useEffect(() => {
+    codeRef.current = code;
+  }, [code]);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
   // A ?theme=<value> query param (e.g. from the themes gallery's "Open in
   // Playground") seeds the Theme view and preview. useSearchParams reads it
@@ -309,6 +315,13 @@ export function PlaygroundClient() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const readyRef = useRef(false);
   const pendingRef = useRef<string | null>(null);
+  // The channel's offer lifecycle (see previewChannel.ts) and the current
+  // message handler for it — refs so the connector's ports always dispatch
+  // into the latest closure.
+  const connectorRef = useRef<ReturnType<typeof createPreviewConnector> | null>(
+    null,
+  );
+  const portHandlerRef = useRef<((e: MessageEvent) => void) | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorRef = useRef<MonacoTypes.editor.IStandaloneCodeEditor | null>(
     null,
@@ -371,12 +384,9 @@ export function PlaygroundClient() {
     }
   }, [themeParam]);
 
-  // Single channel to the preview iframe; no-ops until the iframe exists.
+  // Single channel to the preview iframe; no-ops until the handshake lands.
   const postToPreview = useCallback((message: unknown) => {
-    iframeRef.current?.contentWindow?.postMessage(
-      message,
-      trustedPreviewOrigin(),
-    );
+    connectorRef.current?.post(message);
   }, []);
 
   const send = useCallback(
@@ -423,17 +433,10 @@ export function PlaygroundClient() {
     [postToPreview],
   );
 
+  // Messages from the preview arrive only on the adopted port (wired up by
+  // the handshake loop below) — the window itself hears nothing.
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (
-        !isTrustedPreviewMessage(
-          e,
-          trustedPreviewOrigin(),
-          iframeRef.current?.contentWindow,
-        )
-      ) {
-        return;
-      }
       if (e.data?.type === 'preview-ready') {
         readyRef.current = true;
         setPreviewReady(true);
@@ -465,20 +468,40 @@ export function PlaygroundClient() {
         setIsTargeting(false);
       }
     };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
+    portHandlerRef.current = handler;
+    return () => {
+      portHandlerRef.current = null;
+    };
   }, [postCode, postToPreview]);
 
+  // Handshake: the connector offers the preview a fresh port until it answers
+  // preview-ready over one (the offer doubles as the old readiness ping — the
+  // preview adopts whichever port arrives and replies once its compiler has
+  // loaded), then goes quiet until a frame reload re-arms it below.
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (readyRef.current) {
-        clearInterval(interval);
-        return;
-      }
-      postToPreview({type: 'preview-ping'});
-    }, 300);
-    return () => clearInterval(interval);
-  }, [postToPreview]);
+    const connector = createPreviewConnector({
+      getFrame: () => iframeRef.current?.contentWindow,
+      onMessage: e => portHandlerRef.current?.(e),
+    });
+    connectorRef.current = connector;
+    connector.start();
+    return () => {
+      connector.stop();
+      connectorRef.current = null;
+    };
+  }, []);
+
+  // A frame `load` means the previous preview document — and its end of the
+  // channel — is gone (previewed code reloading its own frame, or a crash).
+  // Re-arm the offers and queue the current code so the fresh document picks
+  // up exactly where the old one was; the preview-ready handler flushes it
+  // and the theme effect re-sends on the previewReady flip.
+  const handleFrameLoad = useCallback(() => {
+    readyRef.current = false;
+    setPreviewReady(false);
+    pendingRef.current = codeRef.current;
+    connectorRef.current?.reset();
+  }, []);
 
   // Debounced push of code → preview + URL hash
   useEffect(() => {
@@ -1158,6 +1181,7 @@ export function PlaygroundClient() {
             isFullscreen={isFullscreen}
             onExitFullscreen={() => setIsFullscreen(false)}
             iframeRef={iframeRef}
+            onFrameLoad={handleFrameLoad}
             isInteractionDisabled={isResizing}
             isFullBleed={isMobile}
           />
