@@ -53,6 +53,11 @@ const tokens = {
 };
 ```
 
+Neutral opts into a muted dark edge for chromatic families. Stops 5 through 25
+use 50% of their realized chroma, then recover smoothly to the standard dark
+recipe at stop 60. Yellow uses a gentler 65% edge multiplier. Light ramps,
+neutral ramps, and stops 60 through 100 remain unchanged.
+
 Neutral is the reference implementation for palette-aware theme templates.
 Templates may follow its ownership, review, and alignment workflow without
 copying its colors or stop layout.

@@ -107,6 +107,12 @@ validation contract. Regeneration is an explicit reviewed palette change and
 never occurs during a normal theme build. Mapping runtime tokens to these stops
 is reviewed in a separate stacked change.
 
+The approved dark-mode adjustment reduces realized chroma to 50% through stop
+25 for chromatic families, with a 65% family override for yellow, and recovers
+smoothly to the standard recipe at stop 60. It leaves the light ramps, neutral
+ramps, and stops 60 through 100 unchanged. It does not use opacity or change
+tone coordinates.
+
 ## Component and state mappings
 
 The candidate maps the shared status-fill roles across Badge, StatusDot,
@@ -220,6 +226,21 @@ Rejected: regenerating the palette during a normal build, silently changing
 runtime token mappings as part of palette generation, or requiring complete
 component-level contrast conformance before the palette can serve as the
 baseline for measuring and improving those mappings.
+
+### DEC-3 — Mute the dark chromatic edge without changing its tone scale
+
+**Reference:** `theme:neutral/DEC-3`
+
+**Decider:** `rubyycheung`, `2026-09-04`
+
+Neutral's dark chromatic ramps use a 50% realized-chroma multiplier through
+stop 25 and recover smoothly to the standard recipe at stop 60. Yellow uses a
+65% multiplier to preserve its identity. The adjustment emits solid colors: it
+adds no alpha, changes no light or neutral ramp, and preserves exact endpoint
+and stop coordinates.
+
+Rejected: reducing the entire palette's vibrancy, using translucent colors, or
+changing semantic token mappings in the palette-value change.
 
 ## Open questions
 

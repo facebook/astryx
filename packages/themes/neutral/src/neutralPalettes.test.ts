@@ -50,4 +50,34 @@ describe('neutral palette artifact', () => {
       expect(family.dark[100]).toBe('#ffffff');
     }
   });
+
+  it('keeps the approved muted dark edge values', () => {
+    expect(
+      Object.fromEntries(
+        (
+          [
+            'red',
+            'orange',
+            'yellow',
+            'green',
+            'teal',
+            'cyan',
+            'blue',
+            'purple',
+            'pink',
+          ] as const
+        ).map(family => [family, neutralPalettes[family].dark[25]]),
+      ),
+    ).toEqual({
+      red: '#5b2b28',
+      orange: '#503424',
+      yellow: '#453a1c',
+      green: '#2b422b',
+      teal: '#28413c',
+      cyan: '#274046',
+      blue: '#253c5a',
+      purple: '#4a2f51',
+      pink: '#572b3d',
+    });
+  });
 });

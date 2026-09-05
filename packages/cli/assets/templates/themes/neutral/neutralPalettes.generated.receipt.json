@@ -1,12 +1,20 @@
 {
   "schemaVersion": 1,
   "recipe": "astryx-oklch-v1",
-  "candidateSha256": "5a367f9fd617417c65154b207d88ca21396e3a09b1c7fbd600b399de1cc896e1",
+  "candidateSha256": "a9b186bd7aaffafe34bfabd5b76116115cf667e91066e59ff8f11bcdaaee69bf",
   "request": {
     "recipe": "astryx-oklch-v1",
     "vibrancy": 50,
     "neutralProfile": "neutral-v1",
     "modeStrategy": "light-and-dark",
+    "darkChromaTaper": {
+      "edgeMultiplier": 0.5,
+      "throughStop": 25,
+      "recoverAtStop": 60,
+      "familyMultipliers": {
+        "yellow": 0.65
+      }
+    },
     "stops": [
       0,
       5,
@@ -180,9 +188,9 @@
         },
         "dark": {
           "monotonic": true,
-          "minimumAdjacentDeltaE": 4.159661357539602,
-          "maximumAdjacentDeltaE": 19.896679473359143,
-          "maximumHueDrift": 3.8052933843198957,
+          "minimumAdjacentDeltaE": 4.249357834813328,
+          "maximumAdjacentDeltaE": 18.248436671660606,
+          "maximumHueDrift": 2.994926201900796,
           "hueIdentityRisk": null,
           "gamutMappedStops": [
             10,
@@ -229,9 +237,9 @@
         },
         "dark": {
           "monotonic": true,
-          "minimumAdjacentDeltaE": 4.205755964742814,
-          "maximumAdjacentDeltaE": 18.695314931199228,
-          "maximumHueDrift": 17.283353703181774,
+          "minimumAdjacentDeltaE": 4.142466384811667,
+          "maximumAdjacentDeltaE": 17.902211102316446,
+          "maximumHueDrift": 8.915953570675583,
           "hueIdentityRisk": null,
           "gamutMappedStops": [
             5,
@@ -291,8 +299,8 @@
         "dark": {
           "monotonic": true,
           "minimumAdjacentDeltaE": 4.163296946152699,
-          "maximumAdjacentDeltaE": 18.108804228656158,
-          "maximumHueDrift": 8.277463562561081,
+          "maximumAdjacentDeltaE": 17.88830391670653,
+          "maximumHueDrift": 0.9740062981470601,
           "hueIdentityRisk": null,
           "gamutMappedStops": [
             5,
@@ -339,9 +347,9 @@
         },
         "dark": {
           "monotonic": true,
-          "minimumAdjacentDeltaE": 4.166930656117178,
-          "maximumAdjacentDeltaE": 18.639066757439643,
-          "maximumHueDrift": 0.6445863585763618,
+          "minimumAdjacentDeltaE": 4.204905668353441,
+          "maximumAdjacentDeltaE": 17.873994179831133,
+          "maximumHueDrift": 0.6021437162152665,
           "hueIdentityRisk": null,
           "gamutMappedStops": [
             100
@@ -375,8 +383,8 @@
         "dark": {
           "monotonic": true,
           "minimumAdjacentDeltaE": 4.144200511227181,
-          "maximumAdjacentDeltaE": 18.230966590437585,
-          "maximumHueDrift": 2.376056599037838,
+          "maximumAdjacentDeltaE": 17.887680234294926,
+          "maximumHueDrift": 1.9901619693500834,
           "hueIdentityRisk": null,
           "gamutMappedStops": [
             5,
@@ -421,9 +429,9 @@
         },
         "dark": {
           "monotonic": true,
-          "minimumAdjacentDeltaE": 4.169974786485362,
-          "maximumAdjacentDeltaE": 18.341697754919643,
-          "maximumHueDrift": 1.329774925710467,
+          "minimumAdjacentDeltaE": 4.252953701388722,
+          "maximumAdjacentDeltaE": 17.77833629876001,
+          "maximumHueDrift": 1.9205764619874799,
           "hueIdentityRisk": null,
           "gamutMappedStops": [
             5,
@@ -481,9 +489,9 @@
         },
         "dark": {
           "monotonic": true,
-          "minimumAdjacentDeltaE": 4.216746457814964,
-          "maximumAdjacentDeltaE": 19.354634049078946,
-          "maximumHueDrift": 4.232869197536161,
+          "minimumAdjacentDeltaE": 4.278580275842381,
+          "maximumAdjacentDeltaE": 18.004118247776322,
+          "maximumHueDrift": 1.3805191338753957,
           "hueIdentityRisk": null,
           "gamutMappedStops": [
             5,
@@ -531,9 +539,9 @@
         },
         "dark": {
           "monotonic": true,
-          "minimumAdjacentDeltaE": 4.242456796309444,
-          "maximumAdjacentDeltaE": 19.160174226043452,
-          "maximumHueDrift": 0.7664515813212347,
+          "minimumAdjacentDeltaE": 4.245969302975013,
+          "maximumAdjacentDeltaE": 18.07185708983776,
+          "maximumHueDrift": 0.6976391833911748,
           "hueIdentityRisk": null,
           "gamutMappedStops": [
             85,
@@ -569,9 +577,9 @@
         },
         "dark": {
           "monotonic": true,
-          "minimumAdjacentDeltaE": 4.168821172375738,
-          "maximumAdjacentDeltaE": 19.521328561616023,
-          "maximumHueDrift": 1.278567258732096,
+          "minimumAdjacentDeltaE": 4.173683518497281,
+          "maximumAdjacentDeltaE": 18.204098619795822,
+          "maximumHueDrift": 0.6531216549080909,
           "hueIdentityRisk": null,
           "gamutMappedStops": [
             10,
@@ -606,10 +614,10 @@
           "Teal",
           "Cyan"
         ],
-        "minimumFamilyDeltaE": 6.19928035179563,
+        "minimumFamilyDeltaE": 5.722384045842401,
         "strongestFamily": "Red",
         "weakestFamily": "Cyan",
-        "chromaRatio": 1.5905982159145873
+        "chromaRatio": 1.5946720267233903
       }
     ]
   }
