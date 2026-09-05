@@ -414,9 +414,7 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
     const boldRules = rules.filter(rule =>
       rule.includes('.astryx-heading.bold'),
     );
-    const lastBoldIndex = rules.findLastIndex(rule =>
-      rule.includes('.astryx-heading.bold'),
-    );
+    const lastBoldIndex = rules.lastIndexOf(boldRules.at(-1) ?? '');
 
     expect(boldRules.at(-1)).toContain('font-weight: 900');
     expect(boldRules.at(-1)).not.toContain('var(--font-weight-bold)');
