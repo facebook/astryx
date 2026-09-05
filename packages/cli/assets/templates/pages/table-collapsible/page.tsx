@@ -98,12 +98,7 @@ import {
   StackItem,
   VStack,
 } from '@astryxdesign/core/Layout';
-import {
-  colorVars,
-  durationVars,
-  easeVars,
-  radiusVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
+import {colorVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Button} from '@astryxdesign/core/Button';
@@ -1127,11 +1122,6 @@ const styles = stylex.create({
     backgroundColor: color,
     flexShrink: 0,
   }),
-  // The tile and the chevron occupy the same grid cell, so they cross-fade in
-  // place instead of one displacing the other. The backdrop goes with them: at
-  // rest the icon is a labelled object and wants a surface behind it, on hover
-  // it is a control and the surface would be a second, competing affordance
-  // next to the row chevrons directly beneath it.
   categoryTile: {
     display: 'grid',
     placeItems: 'center',
@@ -1139,53 +1129,7 @@ const styles = stylex.create({
     height: TILE_SIZE,
     flexShrink: 0,
     borderRadius: radiusVars['--radius-inner'],
-    backgroundColor: {
-      default: colorVars['--color-background-muted'],
-      [stylex.when.ancestor(':hover')]: 'transparent',
-    },
-    transitionProperty: 'background-color',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  tileGlyph: {
-    gridArea: '1 / 1',
-    display: 'flex',
-    transitionProperty: 'opacity',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  // Guarded on hover: capability, so a touch device keeps the category icon
-  // rather than a chevron it can never reveal.
-  categoryGlyph: {
-    opacity: {
-      default: 1,
-      '@media (hover: hover)': {
-        default: 1,
-        [stylex.when.ancestor(':hover')]: 0,
-      },
-    },
-  },
-  chevronGlyph: {
-    opacity: {
-      default: 0,
-      '@media (hover: hover)': {
-        default: 0,
-        [stylex.when.ancestor(':hover')]: 1,
-      },
-    },
-    transitionProperty: 'opacity, transform',
-  },
-  chevronOpen: {
-    transform: 'rotate(90deg)',
-  },
-  chevronClosed: {
-    transform: 'rotate(0deg)',
+    backgroundColor: colorVars['--color-background-muted'],
   },
 });
 
@@ -1216,15 +1160,7 @@ function AccountGroup({
       <Collapsible
         isOpen={isOpen}
         onOpenChange={onOpenChange}
-        // No trailing chevron. The category tile is the disclosure — it turns
-        // into one on hover — and a second chevron at the far right would be a
-        // duplicate control for the same action, 900px away from the first.
-        chevronPlacement="none"
         trigger={
-          // defaultMarker scopes the hover swap below to this row, so the
-          // tile answers to the whole trigger rather than to itself: the
-          // pointer is nowhere near a 24px square when it is on the group's
-          // name, which is where anyone aiming at a header actually points.
           // paddingBlock, because the trigger has none of its own: its height
           // is exactly the 24px tile, so the only space above the group name
           // was the Card's 8px. The column header below it is a table cell and
@@ -1235,24 +1171,10 @@ function AccountGroup({
             vAlign="center"
             hAlign="between"
             paddingBlock={2}
-            paddingInline={2}
-            xstyle={stylex.defaultMarker()}>
+            paddingInline={2}>
             <HStack gap={2} vAlign="center">
-              {/* Wrappers rather than the Icons' own xstyle, because the two
-                  glyphs have to share one grid cell to cross-fade in place.
-                  The tile's own `display: grid` wins over the Stack default. */}
               <HStack xstyle={styles.categoryTile}>
-                <HStack xstyle={[styles.tileGlyph, styles.categoryGlyph]}>
-                  <Icon icon={icon} size="sm" />
-                </HStack>
-                <HStack
-                  xstyle={[
-                    styles.tileGlyph,
-                    styles.chevronGlyph,
-                    isOpen ? styles.chevronOpen : styles.chevronClosed,
-                  ]}>
-                  <Icon icon="chevronRight" size="xsm" />
-                </HStack>
+                <Icon icon={icon} size="sm" />
               </HStack>
               <Text weight="semibold">{title}</Text>
               <Badge variant="neutral" label={String(count)} />
@@ -1281,10 +1203,9 @@ function AccountGroup({
  * The four tables differ in their columns and in nothing else, so the plugin
  * wiring lives here once rather than four times.
  *
- * `panelVariant: 'transparent'` because the table is already on a Card — the
- * plugin's default wash would be a third surface inside a second one. Row
- * dividers stay, and the plugin moves the divider of an expanded row below its
- * panel so the row and its detail read as one unit.
+ * The built-in expansion plugin owns the disclosure chevron and its muted
+ * detail surface, so every table exposes the same interaction and panel
+ * treatment without custom row event handling.
  */
 function GroupTable<T extends AccountRecord>({
   data,
@@ -1329,8 +1250,6 @@ function GroupTable<T extends AccountRecord>({
     onToggle: onToggleRow,
     getRowKey: item => item.id,
     renderExpanded,
-    hasRowClickExpansion: true,
-    panelVariant: 'transparent',
   });
 
   return (
