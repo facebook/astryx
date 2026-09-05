@@ -156,48 +156,6 @@ async function probe(page, target) {
   return page.evaluate(() => window.__storyOutcome);
 }
 
-async function capturePowerSearchEvidence(browser) {
-  const context = await browser.newContext({
-    viewport: {width: 629, height: 100},
-    deviceScaleFactor: 2,
-  });
-  try {
-    for (const [label, query] of [
-      ['BEFORE', '&visualBaseline=before'],
-      ['AFTER', ''],
-    ]) {
-      const page = await context.newPage();
-      await page.addInitScript(recordStoryOutcome);
-      await page.goto(
-        `http://localhost:${port}/iframe.html?id=core-powersearch--near-full-token-row&viewMode=story${query}`,
-        {waitUntil: 'networkidle', timeout: 30000},
-      );
-      await page.locator('.astryx-tokenizer').waitFor();
-      await page.waitForFunction(
-        () => window.__storyOutcome && window.__storyOutcome.done === true,
-        null,
-        { timeout: 30000 }
-      );
-      await page.evaluate(async () => {
-        await document.fonts.ready;
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur();
-        }
-        await new Promise(resolve =>
-          requestAnimationFrame(() => requestAnimationFrame(resolve)),
-        );
-      });
-      const png = await page.screenshot({
-        clip: {x: 0, y: 0, width: 629, height: 100},
-      });
-      console.log(`POWERSEARCH_${label}_PNG_BASE64=${png.toString('base64')}`);
-      await page.close();
-    }
-  } finally {
-    await context.close();
-  }
-}
-
 async function run() {
   const dir = path.resolve(process.cwd(), storybookDir);
   if (!fs.existsSync(dir)) {
@@ -238,7 +196,6 @@ async function run() {
         await context.close();
       }
     }
-    await capturePowerSearchEvidence(browser);
   } finally {
     await browser.close();
     server.close();

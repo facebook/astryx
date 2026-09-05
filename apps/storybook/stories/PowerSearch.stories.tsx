@@ -542,9 +542,6 @@ export const WithPresetFilters: Story = {
  */
 export const NearFullTokenRow: Story = {
   render: args => {
-    const showsBaselineLayout =
-      new URLSearchParams(window.location.search).get('visualBaseline') ===
-      'before';
     const [filters, setFilters] = useState<PowerSearchFilter[]>([
       {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
       {
@@ -559,31 +556,12 @@ export const NearFullTokenRow: Story = {
       },
     ]);
     return (
-      <div data-visual-baseline={showsBaselineLayout ? 'before' : undefined}>
-        {showsBaselineLayout && (
-          <style>{`
-            [data-visual-baseline="before"] .astryx-tokenizer [role="combobox"] {
-              position: relative !important;
-              inset-inline-start: auto !important;
-              inset-block-start: auto !important;
-              transform: none !important;
-              box-sizing: content-box !important;
-              min-width: 40px !important;
-              flex: 1 1 40px !important;
-              width: 0 !important;
-              padding-inline-start: 5px !important;
-              padding-inline-end: var(--_tokenizer-end-lane-reserve, 0px) !important;
-              text-align: start !important;
-            }
-          `}</style>
-        )}
-        <PowerSearch
-          {...args}
-          config={basicConfig}
-          filters={filters}
-          onChange={newFilters => setFilters([...newFilters])}
-        />
-      </div>
+      <PowerSearch
+        {...args}
+        config={basicConfig}
+        filters={filters}
+        onChange={newFilters => setFilters([...newFilters])}
+      />
     );
   },
   args: {
@@ -591,12 +569,6 @@ export const NearFullTokenRow: Story = {
   },
   name: 'Near-full Token Row',
   play: async ({canvasElement}) => {
-    if (
-      new URLSearchParams(window.location.search).get('visualBaseline') ===
-      'before'
-    ) {
-      return;
-    }
     const wrapper =
       canvasElement.querySelector<HTMLElement>('.astryx-tokenizer');
     const input = wrapper?.querySelector<HTMLInputElement>('[role="combobox"]');
