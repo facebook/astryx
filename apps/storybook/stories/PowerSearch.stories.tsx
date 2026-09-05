@@ -579,18 +579,45 @@ export const NearFullTokenRow: Story = {
     const input = wrapper?.querySelector<HTMLInputElement>('[role="combobox"]');
     const tokens = wrapper?.querySelectorAll<HTMLElement>(':scope > span');
     const finalToken = tokens?.item((tokens?.length ?? 0) - 1);
-    if (!wrapper || !input || !finalToken) {
+    const clearButton = wrapper?.querySelector<HTMLButtonElement>(
+      'button[aria-label="Clear all"]',
+    );
+    if (!wrapper || !input || !finalToken || !clearButton) {
       throw new Error('Near-full token-row fixture did not render as expected');
     }
 
     const inputRect = input.getBoundingClientRect();
     const tokenRect = finalToken.getBoundingClientRect();
+    const clearRect = clearButton.getBoundingClientRect();
     if (inputRect.top >= tokenRect.bottom) {
       throw new Error(
         `Empty combobox wrapped onto a blank row: input top ${inputRect.top.toFixed(2)}, final token bottom ${tokenRect.bottom.toFixed(2)}`,
       );
     }
+    if (inputRect.width <= 0) {
+      throw new Error('Empty combobox has no pointer hit target');
+    }
+    const overlap =
+      Math.min(inputRect.right, clearRect.right) -
+      Math.max(inputRect.left, clearRect.left);
+    if (overlap > 0) {
+      throw new Error(
+        `Empty combobox overlaps Clear all by ${overlap.toFixed(2)}px`,
+      );
+    }
   },
+};
+
+export const NearFullTokenRowRTL: Story = {
+  ...NearFullTokenRow,
+  decorators: [
+    Story => (
+      <div dir="rtl">
+        <Story />
+      </div>
+    ),
+  ],
+  name: 'Near-full Token Row (RTL)',
 };
 
 export const FullFeatured: Story = {

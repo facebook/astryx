@@ -82,9 +82,11 @@ const reserveStyles = stylex.create({
  * Takes the lane's inset from the field's inline-end border, as the CSS
  * expression that positions it. Returns a ref callback for the lane, and the
  * ordinary input reserve style. Tokenizer's compact input reads the same custom
- * property directly so it can suppress an unnecessary reserve while its query
- * is empty. With no lane mounted the variable is absent and either rule resolves
- * the padding to zero, so neither path needs to know whether a search is running.
+ * property directly so it can turn the empty query's reserve into an outer
+ * margin, keeping the input's hit target out from under the lane without making
+ * its flex base wide enough to wrap. With no lane mounted the variable is absent
+ * and either rule resolves to zero, so neither path needs to know whether a
+ * search is running.
  */
 export function useEndLaneReserve(
   laneInset: string,

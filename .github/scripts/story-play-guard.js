@@ -41,7 +41,13 @@ const TARGETS = [
   {
     component: 'PowerSearch',
     story: 'core-powersearch--near-full-token-row',
-    guards: 'an empty trailing combobox stays on the nearly full token row',
+    guards:
+      'an empty trailing combobox stays on the nearly full token row without overlapping Clear all',
+  },
+  {
+    component: 'PowerSearch',
+    story: 'core-powersearch--near-full-token-row-rtl',
+    guards: 'the compact combobox and Clear all remain separate in RTL as well',
   },
   {
     component: 'TabList',
