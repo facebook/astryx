@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5989,
+  "headSha": "af8852608f3e4b2f57832eec0eb037d58fe60287",
+  "testedSha": "af8852608f3e4b2f57832eec0eb037d58fe60287",
+  "baseSha": "ea0483449dcbdd69aed43aa0d4ba9d6f57f54447",
+  "run": {
+    "id": 33892332142,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-04T16:32:16.425Z",
+    "context": {
+      "sha": "af8852608f3e4b2f57832eec0eb037d58fe60287",
+      "runId": "33892332142",
+      "runAttempt": "1",
+      "headSha": "af8852608f3e4b2f57832eec0eb037d58fe60287",
+      "baseSha": "ea0483449dcbdd69aed43aa0d4ba9d6f57f54447",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Layout"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Layout/Layout.tsx",
+          "packages/core/src/Layout/LayoutContent.tsx",
+          "packages/core/src/Layout/LayoutFooter.tsx",
+          "packages/core/src/Layout/LayoutHeader.tsx",
+          "packages/core/src/Layout/LayoutPanel.tsx",
+          "packages/core/src/Layout/LayoutSlotsContext.ts",
+          "packages/core/src/Layout/useLayoutRegionOwnership.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-03T16:04:27.248Z",
+      "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

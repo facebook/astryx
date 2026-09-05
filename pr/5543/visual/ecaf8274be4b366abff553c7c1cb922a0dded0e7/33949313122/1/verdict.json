@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "status": "skipped",
+  "generatedAt": "2026-09-05T06:38:35.938Z",
+  "reason": "Broad stable scope is deferred to the daily release gate. It covers 380 trusted baseline shots instead of recapturing them for this PR.",
+  "context": {
+    "sha": "ecaf8274be4b366abff553c7c1cb922a0dded0e7",
+    "headSha": "ecaf8274be4b366abff553c7c1cb922a0dded0e7",
+    "baseSha": "18eec1821479f873ff26acc25793186285f85aa0",
+    "runId": "33949313122",
+    "runAttempt": "1",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": true,
+      "stableComponents": [
+        "AppShell"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/AppShell/AppShell.tsx",
+        "packages/core/src/theme/defineTheme.ts",
+        "packages/core/src/theme/generateThemeRules.ts",
+        "packages/core/src/theme/index.ts",
+        "packages/core/src/theme/localTokens.ts",
+        "packages/core/src/theme/resolveThemeValues.ts",
+        "packages/core/src/theme/themeAdaptations.ts",
+        "packages/core/src/theme/useTheme.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "counts": {
+    "total": 380,
+    "unchanged": 0,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "components": [
+    "AppShell"
+  ],
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": []
+}

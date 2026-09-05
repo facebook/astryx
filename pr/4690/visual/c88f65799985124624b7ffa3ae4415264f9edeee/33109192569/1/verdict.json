@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "status": "skipped",
+  "generatedAt": "2026-08-27T19:54:19.686Z",
+  "reason": "Broad stable scope is deferred to the daily release gate. It covers 974 trusted baseline shots instead of recapturing them for this PR.",
+  "context": {
+    "sha": "c88f65799985124624b7ffa3ae4415264f9edeee",
+    "headSha": "c88f65799985124624b7ffa3ae4415264f9edeee",
+    "baseSha": "e6507a95fb13cae83f94e2d4b58009eaf584f1c6",
+    "runId": "33109192569",
+    "runAttempt": "1",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": true,
+      "stableComponents": [
+        "Table"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Table/BaseTable.tsx",
+        "packages/core/src/Table/plugins/tree/useTableTreeData.tsx",
+        "packages/core/src/Table/plugins/tree/useTableTreeState.tsx",
+        "packages/core/src/Table/types.ts",
+        "packages/core/src/hooks/useTreeFocus.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "counts": {
+    "total": 974,
+    "unchanged": 0,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "components": [
+    "Table"
+  ],
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": []
+}

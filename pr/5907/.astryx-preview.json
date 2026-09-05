@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5907,
+    "headSha": "e7614a3000f6054d5b344a4f6b5c2e0396178fba",
+    "headRef": "fix/vibe-tests-cp-al-hardlink-windows",
+    "headRepository": "HelloOjasMutreja/astryx",
+    "headRepositoryId": "1309798825"
+  },
+  "sourceRun": {
+    "id": 33602287411,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/5907/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5907/sandbox/",
+      "indexSha256": "9e8c735ce6ebaea574f8468c0eece0afc4e263ba83df1a61383c04b81862ecae"
+    }
+  }
+}

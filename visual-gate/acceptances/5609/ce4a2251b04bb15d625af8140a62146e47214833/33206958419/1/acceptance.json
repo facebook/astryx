@@ -1,0 +1,764 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5609,
+  "headSha": "ce4a2251b04bb15d625af8140a62146e47214833",
+  "testedSha": "ce4a2251b04bb15d625af8140a62146e47214833",
+  "baseSha": "c84106ba267929a9e7c4ad11e1fcda7895b9808e",
+  "run": {
+    "id": 33206958419,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "e29929832355ef2080dd4779a26d7dc14cd50150",
+    "manifestDigest": "2e13c4fb8b0ba430e5c35215b3d3cad727abf8356b84cc7b81ef624162252ef8"
+  },
+  "keys": [
+    {
+      "key": "core-datetimeinput--all-variations__y2k-light",
+      "kind": "changed",
+      "beforeSha256": "160c948cb4ea66987c4695e1978ff97ef5990ba0acbef0da1cf247aaf1a6c4fa",
+      "afterSha256": "ee38c3900bc50a4a1e7070b962d0d2058a0a9701ba9370fd9b4c4799b847cffc",
+      "shot": {
+        "sha256": "ee38c3900bc50a4a1e7070b962d0d2058a0a9701ba9370fd9b4c4799b847cffc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--all-variations",
+        "title": "Core/DateTimeInput",
+        "name": "All Variations",
+        "component": "DateTimeInput",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--all-variations__y2k-dark",
+      "kind": "changed",
+      "beforeSha256": "c1bbffba596e0d7e1e13291caa644c76c1775eda48456791bfc406b36acfbc59",
+      "afterSha256": "e470f6a81c4e215f69248d250f63bebfee02851bd2d94ce955dec35265eff3ae",
+      "shot": {
+        "sha256": "e470f6a81c4e215f69248d250f63bebfee02851bd2d94ce955dec35265eff3ae",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--all-variations",
+        "title": "Core/DateTimeInput",
+        "name": "All Variations",
+        "component": "DateTimeInput",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--all-variations__matcha-light",
+      "kind": "changed",
+      "beforeSha256": "baec149c6224f472f6eda7416afd578d84601a57bf2f417d4f2a7f5530f143ef",
+      "afterSha256": "6f0a219aa96d09b0695a57d8bd6c6d6d0283e2899245469613f160a451a9d9e6",
+      "shot": {
+        "sha256": "6f0a219aa96d09b0695a57d8bd6c6d6d0283e2899245469613f160a451a9d9e6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--all-variations",
+        "title": "Core/DateTimeInput",
+        "name": "All Variations",
+        "component": "DateTimeInput",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--all-variations__matcha-dark",
+      "kind": "changed",
+      "beforeSha256": "040d1a399fd32213147f9c6486b45e5c4a088bbde4c750774dd76acd595c6e42",
+      "afterSha256": "d7c0993b5d8ba40d3530a7e6470ada9424d5699fb1818c85c0b81c312095b948",
+      "shot": {
+        "sha256": "d7c0993b5d8ba40d3530a7e6470ada9424d5699fb1818c85c0b81c312095b948",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--all-variations",
+        "title": "Core/DateTimeInput",
+        "name": "All Variations",
+        "component": "DateTimeInput",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--all-variations__gothic-light",
+      "kind": "changed",
+      "beforeSha256": "64ab3569bfcd29cda51e7494950301e87c0e19320146f716428a13111bab3c55",
+      "afterSha256": "2b795e55d25440eba38153b301d7bb090c648c75fcc0f394932e1de46579ff09",
+      "shot": {
+        "sha256": "2b795e55d25440eba38153b301d7bb090c648c75fcc0f394932e1de46579ff09",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--all-variations",
+        "title": "Core/DateTimeInput",
+        "name": "All Variations",
+        "component": "DateTimeInput",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--all-variations__gothic-dark",
+      "kind": "changed",
+      "beforeSha256": "7b39e57d08ed2e1626ac7fa720238607f81a34317e0413ed84cea3d67442f6ee",
+      "afterSha256": "41be8ae02107fd5cda4d1761d6349913422c59404d8c4b1cf320722d9d2797bf",
+      "shot": {
+        "sha256": "41be8ae02107fd5cda4d1761d6349913422c59404d8c4b1cf320722d9d2797bf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--all-variations",
+        "title": "Core/DateTimeInput",
+        "name": "All Variations",
+        "component": "DateTimeInput",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--size-variants__y2k-dark",
+      "kind": "changed",
+      "beforeSha256": "faa44280ad61d64d0b466b4bdad5057f99d209e2d11373b2b78a8072970490a9",
+      "afterSha256": "655434c3e5936236f8e28874ca42826dd3baa8acf243e90ec60b080a4b90887d",
+      "shot": {
+        "sha256": "655434c3e5936236f8e28874ca42826dd3baa8acf243e90ec60b080a4b90887d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--size-variants",
+        "title": "Core/DateTimeInput",
+        "name": "Size Variants",
+        "component": "DateTimeInput",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--size-variants__y2k-light",
+      "kind": "changed",
+      "beforeSha256": "f9e8c718caf32ce285443b0b9904d508e791fca533855dbcca6ce5c154e8a70b",
+      "afterSha256": "bf5b4ed7c241edecb9c32bad5e3ac3babc7ae7c78b4c56b63b309623dab19b0d",
+      "shot": {
+        "sha256": "bf5b4ed7c241edecb9c32bad5e3ac3babc7ae7c78b4c56b63b309623dab19b0d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--size-variants",
+        "title": "Core/DateTimeInput",
+        "name": "Size Variants",
+        "component": "DateTimeInput",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--size-variants__matcha-light",
+      "kind": "changed",
+      "beforeSha256": "a983e937b00f8b42ce4458605753cdeb3f6023fd0d0697ae89e083a0c16fd072",
+      "afterSha256": "c2ac8450add30b6c9fad870ab8ecaae4988203ca9cc2186471710f981bacf66e",
+      "shot": {
+        "sha256": "c2ac8450add30b6c9fad870ab8ecaae4988203ca9cc2186471710f981bacf66e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--size-variants",
+        "title": "Core/DateTimeInput",
+        "name": "Size Variants",
+        "component": "DateTimeInput",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--size-variants__matcha-dark",
+      "kind": "changed",
+      "beforeSha256": "fca3d308d3497e29a76fcf0ceb1d600bbe7890ca6b04ebca51d240f0ecca73ca",
+      "afterSha256": "998a0cc60d0a9dbf00ee12781e9eaf11594a523da26388c22fa1c85ab8110a01",
+      "shot": {
+        "sha256": "998a0cc60d0a9dbf00ee12781e9eaf11594a523da26388c22fa1c85ab8110a01",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--size-variants",
+        "title": "Core/DateTimeInput",
+        "name": "Size Variants",
+        "component": "DateTimeInput",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--size-variants__gothic-light",
+      "kind": "changed",
+      "beforeSha256": "2e7c303ade1ef3115c55f99769edc73e5e17226f3285a7691245ea689dd6ad8c",
+      "afterSha256": "754916db7daffd73e4a082abe5eeb258e49cd4d0477fe499597bc0f0792df058",
+      "shot": {
+        "sha256": "754916db7daffd73e4a082abe5eeb258e49cd4d0477fe499597bc0f0792df058",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--size-variants",
+        "title": "Core/DateTimeInput",
+        "name": "Size Variants",
+        "component": "DateTimeInput",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--size-variants__gothic-dark",
+      "kind": "changed",
+      "beforeSha256": "8a503de02a8ed5eb1b5237d5adc861d8d0f9e13e93cd7b9d42068c5a74389349",
+      "afterSha256": "2ed29f95a7aa9b207282f9ca45a664482b4272a815ed58a0cc5c33a077b42a5c",
+      "shot": {
+        "sha256": "2ed29f95a7aa9b207282f9ca45a664482b4272a815ed58a0cc5c33a077b42a5c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--size-variants",
+        "title": "Core/DateTimeInput",
+        "name": "Size Variants",
+        "component": "DateTimeInput",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "94d8dc96205de5dabd1365395afdcf7901aae336a18e3bb98bcf6af6b89324fe",
+      "shot": {
+        "sha256": "94d8dc96205de5dabd1365395afdcf7901aae336a18e3bb98bcf6af6b89324fe",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "12c9ab5cb326f80ef5cffe0b94916893c4666229067f29fe7b4ca345cd7788a7",
+      "shot": {
+        "sha256": "12c9ab5cb326f80ef5cffe0b94916893c4666229067f29fe7b4ca345cd7788a7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9f577fc66629cab36aabd8acf4d7272c9d1a614d9bd7da6eba0468d328aab24e",
+      "shot": {
+        "sha256": "9f577fc66629cab36aabd8acf4d7272c9d1a614d9bd7da6eba0468d328aab24e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a0747b8f60799ab84441e2198f63ce5241f1e6f065a6030707ccc9507a335d39",
+      "shot": {
+        "sha256": "a0747b8f60799ab84441e2198f63ce5241f1e6f065a6030707ccc9507a335d39",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f547b2f7622936c20a314e6744196e1bf9a608243af0555d0aa0fb28c1954232",
+      "shot": {
+        "sha256": "f547b2f7622936c20a314e6744196e1bf9a608243af0555d0aa0fb28c1954232",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d42bd82cf5c0faf045a5d5b616ac7d7b66c00d60afabeaedc391b329a9c49d23",
+      "shot": {
+        "sha256": "d42bd82cf5c0faf045a5d5b616ac7d7b66c00d60afabeaedc391b329a9c49d23",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c50adfce5e3dc92b87dd1123d3f3fedad38387f692a216ce4e0a7692ca621f17",
+      "shot": {
+        "sha256": "c50adfce5e3dc92b87dd1123d3f3fedad38387f692a216ce4e0a7692ca621f17",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9589c98ac885401b21901dfa3ecdb35620fc33492d14111a3b365a21524125b7",
+      "shot": {
+        "sha256": "9589c98ac885401b21901dfa3ecdb35620fc33492d14111a3b365a21524125b7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fa43f9b9419ea154107affa641e53f1ea7e4dc682ab38ad435d69c921abbaa02",
+      "shot": {
+        "sha256": "fa43f9b9419ea154107affa641e53f1ea7e4dc682ab38ad435d69c921abbaa02",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dd479bf27b8f9361730a37d1d4f57e5f991f82689350eb416416b74ff48170af",
+      "shot": {
+        "sha256": "dd479bf27b8f9361730a37d1d4f57e5f991f82689350eb416416b74ff48170af",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6017f00f2b71c2c72cf31f3e2a76a86cd27ca9295e9d48cf9b007514f4631d81",
+      "shot": {
+        "sha256": "6017f00f2b71c2c72cf31f3e2a76a86cd27ca9295e9d48cf9b007514f4631d81",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ea7eeb62369a4f5606a693fec61188d885b9fe641992e726d9739276bf9337ee",
+      "shot": {
+        "sha256": "ea7eeb62369a4f5606a693fec61188d885b9fe641992e726d9739276bf9337ee",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2f40487689f3a1fd156a5c0abe91d51c74ba4b6ec5ca9505887ea9a619f93689",
+      "shot": {
+        "sha256": "2f40487689f3a1fd156a5c0abe91d51c74ba4b6ec5ca9505887ea9a619f93689",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-datetimeinput--narrow-container__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a6da79d4871676a052cb0a7656ee8a0455e66c89e5f0ed3445b6f2af7759787e",
+      "shot": {
+        "sha256": "a6da79d4871676a052cb0a7656ee8a0455e66c89e5f0ed3445b6f2af7759787e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-datetimeinput--narrow-container",
+        "title": "Core/DateTimeInput",
+        "name": "Narrow Container",
+        "component": "DateTimeInput",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "decision": {
+    "approver": "imdreamrunner",
+    "approverId": 2252473,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "explain why the pixels are correct",
+    "commentId": 5457793332,
+    "at": "2026-08-28T21:13:53.212Z"
+  }
+}

@@ -1,0 +1,3151 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5657,
+  "headSha": "5ea4b4f680203621f347df3bf58e1ef98678e70c",
+  "testedSha": "5ea4b4f680203621f347df3bf58e1ef98678e70c",
+  "baseSha": "f0043d8f8cf7bf6c8f9fa5b7517738ed6a80d39c",
+  "run": {
+    "id": 33191992132,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-kbd--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8cffff479240236fc482804713e8bf7ff8120ee05b5ffcd5b8792bb8808fd5da",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--default",
+        "title": "Core/Kbd",
+        "name": "Default",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9828378b61c290d11493d2babcfdb62053038b1069793bd1270fa4adb5805290",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--default",
+        "title": "Core/Kbd",
+        "name": "Default",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1a47ae2b38069ab664f976db351beeed236720c387c8dba12fd9bd3a838b59cd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--default",
+        "title": "Core/Kbd",
+        "name": "Default",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "abb63d17c50139ab19b77b74d873255afbe457a9156c4a551fad7ce1b8b56c55",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--default",
+        "title": "Core/Kbd",
+        "name": "Default",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "851fa522b311730d1f702d63de71be60fc0cbd2b2cfdf6db71eb3cb47727bb43",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--default",
+        "title": "Core/Kbd",
+        "name": "Default",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8986aa1ee2ff47cffc969509a79faffefb2aa3a1bffd5092c8b97b62b2e57b3c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--default",
+        "title": "Core/Kbd",
+        "name": "Default",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "07f288682d9d99fa54adfacf5312574079e417377d50869172dc76b29f68975c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--default",
+        "title": "Core/Kbd",
+        "name": "Default",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "27052a9a52ba9b669795943d6b1df0a1fa88b75fcea461b0c8cf579a3e25c50c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--default",
+        "title": "Core/Kbd",
+        "name": "Default",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4561a73c1e68104b3072c74551726746745d0d0d8cfcead6f8b37e34b1cb711d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--default",
+        "title": "Core/Kbd",
+        "name": "Default",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c10a026579643418d6ea8e2ae83d446170b149b076f16200fbb5aa7b4edaeb16",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--default",
+        "title": "Core/Kbd",
+        "name": "Default",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3a4ff93840249cdf258468d6224387bba102fb59341377c1170d0515e6905983",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--default",
+        "title": "Core/Kbd",
+        "name": "Default",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "87f1d2c21d451e6c96f56fe39f4f072fe7cf2f8b6232c9dd5f18e27434f3a056",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--default",
+        "title": "Core/Kbd",
+        "name": "Default",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "14fecbd462417d2d54321beaecba04c09d745686fd21d13db705a39082c3950f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1604ef424f193efdab767de699c113d58006f219e2fd3b70a6e8604079d4f76f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "47df2af81a587656e95129a9d69567ea675db99c32aafef4f8cfb934c75843c2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4f8b8eb815696d2f6bc40e1357621c3b8bda2b405aa7ab895b1f4008c7a8135b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "88b7b9760c979f36031f557ca02000a0c05660d53a52c7b10a6b25fa745ba972",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e49f9c94388f57ab81aa4c57cb13ae0f0f72f709af605da54abecc5c19ce64d0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e1271f39f7fec7aeb5bc4ce69903d4d56dc52567c0e1b0fe4602479ae9d4d09b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "fee6fdc1ce48a1424143734404f321f2b474b63a41c9ba99830ddb73a54d8f08",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c0b67d88435fa6aebec7bd5efb3c4cf000290335fc338cfb6b0bc9d96accd1f0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ece2d2dc05b841579ea55d3ada3afe20b28f6433497b2af5b6a7e1c984e1d902",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7a388ea55cc7d08578224f0480f08542639abd926c507046a61a7b4172685406",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "257c3edfdb61dbbd4b2ebc32aa268ac3b6726bc6133c6d048607d12508577cba",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5d756805f8071b7ea4450dc2315f3d6065d09f77cd16be4a56ba7742a16f6804",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--modifier-combinations__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1b22ff0a8218ca77f88cec9478eb0ac2cc99a6e69f7da07643c480954c24e8f5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--modifier-combinations",
+        "title": "Core/Kbd",
+        "name": "Modifier Combinations",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "cf637f0685eb2132c6405235f18a94f066ea4f872f526bf1aa910cca30816b0c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8bab62852644ea4f88046cd54ae3fb878977d7abb91bdbb4104d62060c6c6a1a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9f78772c583fb25c9f94a4469a1c4f5d535fed5155eebf0c7c6d588bb2ed3c18",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "aec1463944f38b587ac59e771d49fac592ccaeffbcb27fac21ffee3325ab5dbe",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1f8850f7621201a30bce0252a40e2650374535b5a6c1b67883d0c1470cffb1a7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "30144f9094ad436c0deeac6594467a75f693c5e270873c669c15bd0f10ecc788",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "efe02c4c8cd65068de575e4268c81f04160f08dcc85addd40405b5caf28ab57c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "929f319dab528b08dd5f6c2e8c0090d5fd7cd2cf9469a01304a67aae4b0dbc49",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0bcb7ba6f60cf701ec2d69084c760c1205d34f549e7aa2240b53b01b5aaf721f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "dedfefaa697cbcd793ca202e0779f02172ad1e51a368c59a253797f33f2743a1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3964b84f5da267a56fdfb785c5da5aec411d4fb88d8dc2698f42cbe654af9595",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "75dda5e7bc23c3dd729103e2a6d7e21dee3b96c4084c7e30193506c93c435d28",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "93932e9b243090c04e265fcebfc1273f81b95f7a4de44bf429d8eedffd560309",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--multiple-modifiers__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ca4dd609f24a2c849bc9900a8e970f141d479b75848ae15c7273491d4afe939d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--multiple-modifiers",
+        "title": "Core/Kbd",
+        "name": "Multiple Modifiers",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ffcda683bd5ccf0e2d407633f597aab4acb6c63cde5f1c22e15075b8a17aa49e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9612f74ab738c9d35f9bd3343fb681c050e933cfa068d5dc7ecc66e09e6b5982",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "db61398f442f9ea1c55b129549b3b789822e165e12eb899826263123acb169db",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "df989cfcf449e931e8754f8a6b66e7777e3465b3235f6507b35a8bc5754e5405",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7a23366df2e2aa93ebfce28f0c6cfa49848a6a8db29c80f3615d06a9e498697a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "26b798aa028719fc0bbebdc8d4c9a2f03a02f51e335aa7b3b6e7ebffa984ba9e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "00c3704e26d39f9a95db41ac53493029e45e35a1309df40cf14b1df2d94a009a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "dce0efc077b427077bb54b22f39f668bd46603c27a728a60ff5f4659d62d0571",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "22f5efa9f025af103fa4ad0f9cca231f4f0c06779ab142189dc7354041306097",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8ca7ed6062ecc5b06a154411888d8a76dbc8ac19643db047e7bc4aa3aebdf3ef",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3e24072cc127dd1870f47da02b543019af92b35405c447bb7cff046bc9c93bd2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "abb1e0581154a09d072f45c20054057d6a07f4ab34da9765bd9620872ac841ae",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c865166bc05bc34640c63b2d42d4617aaab18fbe1b9765c55f424123317f3da5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--special-keys__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "12f50623559551f0150343927b53a5570bfb35a7a6ee1fc2c2a2f1f51a35d01b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--special-keys",
+        "title": "Core/Kbd",
+        "name": "Special Keys",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4e1ea6946cdc520feabfce34fa1538d82be3049d9b6b4a1f55f4caadf5da2a57",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "349d2bf85d1174f795336ba878117cee3538d2ed30b8147ee3ea1da3a12439dd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "085d55c76504e6d5d2b4d41a1a6bf0f3691279dde49fa294492cebc45d06d7b9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3188c29df3447b576a70df3a5bc9f64d3b7bffe0570d2b8e33069c90936baf8d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "cced39414b4f77834aecdcd2112337b03bf6f2f56968b3c3725d842c48d6a54c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f2cd2b147a630f0f132013a2610a1b08b15444583c70f501aa21d983b9d7faf7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4c56309021701bc8d5a0aa0e420fd2939da803d0b639640b258af21ca80cf373",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "95430c1db259fae0941b3cffb0571ce5f625d9ec9beb32a4398e2e81f75140c5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f21eeeffa2c46a4e84ef16d5494f4d0040e705d09cc68490b1e0863897f6689d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4683b5b39cfa50a18b407ba9dad992cff8f2a9afbb34f2f245c3f8720c313343",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "05fb7048b02188829d3240895d10b10f0fa3fa346291848ee00b6f010255bf0b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b3c6a4ef06e0b86c938c5bbd03a7788eeb11384cbc3b7355d596ba3a04ba00d6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "df29706c17ca0231d18b60adc03cc47521f78943067e34a9d30d33d3f522d995",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--single-letter-keys__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d9c059de43036c4bf1e7e140e8c6db2186c238e7df5fbf9c0bbb1a3abc574b69",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--single-letter-keys",
+        "title": "Core/Kbd",
+        "name": "Single Letter Keys",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a6ec206630b3aa075889c6405fadd88902a649b7e34ea9a01791533ed999dfc9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c65102d5b7d1dc932114363527a8ee63f9dfa7e98de2571f97e457c181d09de4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f53f155049bd9d5e280c072d9377e658559739f736e75119baddb0d0941c5121",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "19ac6a393278d4f8c9a0c0f8000facaba234edcfc8871b8aa4bad8173ee0356a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "856b10f4f2c9a8404b8d20c4b0c54a1b0679a399eea22ea83fc71f2af2b03a70",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4b427f58851fa6eb944355fb73d61ccbb9c70cdaa22d48e44c3df54d78b19705",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "29b006ec3e73f12b474670cecf6ecb743040ecc35fb5fb9f76ab50685c422bb8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2311cc1cc98d1adf271a0a78e036f71a548c4a02e38de8b5d05bf1e22e4e7ce0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bc5f96093702515c9bbc14c159e077f3371fbaf6ea49419914a815093f06c047",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "361c768b5e6555aee91c4dc12ef7c9a9dd4d185c68b1470dfc9743c0a89618e8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6cf69d35e100f05a48e5c31782ad16e4a82f5662e1bcbaab5c2a257e6ff4f209",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d3cc696f9059ed35c5c7c95f2fd74590b22abc1fdfc0ddd94b738d454724bf11",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f6208e4242d54ac7dc1b01a34a146ade328f82694480a8a003e02671e479d609",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--all-modifier-symbols__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a7a2cb8b5baa5864efa3a3c4ccc4e18d08d8d5fe2e9328aacc6cdc70b363b6f5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--all-modifier-symbols",
+        "title": "Core/Kbd",
+        "name": "All Modifier Symbols",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8a75a0a6f1b1117abf1eb99a4d1b198d913a1d9279e89c75c5bae67d46fad1b1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0e081d67d682a7fc2acb415c60c794ac881a341190c7b2bee4ef0fa98d61a3e5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "627974ee7463d3b0a5a2e83909113f2bdc7f095cbd0d7ff66522900cc1aa5f4d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c025058dd15ba0f486d8508a7934fd844a2756b6584e19276ce7a3a82b0c70ee",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7cbcc8dbe0d6943602a789e52dacb33fcad669faa6ba46739877ebed15aad105",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "796d182cb82aa23296b8aa24da6dad8e1510b06a55caf221390de73c1d202aaa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e92c33b29423128f64dbad546b8954d1cba330b60f1baba647ff7a570a8d6e63",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "90e5eeac4e5382aa025c52c6f071e0620930a36776e71a2bdef574863df3eb40",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f61d2c33a64784f00a362a65934b10a27cfd9c17e0b094a8108122cc4827b9dc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "df8100a0818339f51eeccb45f3fcaf0fd16bc7027e108473af58e8aed523435a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "151ae0aae80589d520d3db423a30c01ed173bbf511a7445e96f348f4fbc9c07b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "99b78e15c4d11bd4a973a3d01f6a1f359c9e07e10393860bbd6746955623b7e5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0db3436ba72ea4fdbbc4209558368d8f2cf8bf0d94ae1c1748965e6c495df04c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--inline-with-text__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "840ddd3f8f04308c05a8aa286c9aebeca55e9d554dcf51d9b411f34c65de33e0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--inline-with-text",
+        "title": "Core/Kbd",
+        "name": "Inline With Text",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ad7dd5181ee9766f7e4fdcef94a686c601b6eaa6d9a17ffbe89a8c4872c2b569",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "41d6f5a0cf2e95b615a3e762b13c3f3866e2c1c303c865b349770e99d4a37fdb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3485d4dee3ba7d6ae715b074731b15ba7ed4fe3b5661773c0e8c5d3472b43655",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "397846ba77296423a965a674b31202489e0fdf62708193721166f0f10475fd53",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f1b2cad05f1b2b1880fde6ae5b599b85b28363d6b1497ad0bd936a50525d3187",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1626dc710c4ae96303ffb6b4a8960095752550fff31e9d2ea73b289c8eb49b1c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2972b9030754a1355cf4776dcc2b78b136a4eb7fb43bce40f328bad1fbd16f7f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1813b08e8f9d497796afba7179fb444235002dcf6565601ff17052145ca9f607",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5d16cf39dd58b69b262c8f9b1d7014a920935e566240a858a5a21c96b262d334",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9c80d1bb396e099e18abf6b0b9d3b56ccde5b69db6107b138de8ef9945b7f33f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a691e98704c432d6b6326ea13f5de9d34ebd8d86e0c29affc6b91b988a4acd6b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "54053a1e60a0adfaf0a3c86a90be1508183b8e84dd67d9e719ae60c6a19844e6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "87d45a4bbe74420b91edb799a0f00a47166b7cacd348f41a98b6f7ae8fa1782f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-kbd--menu-shortcuts__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ff54b416a7ac846bc36c36d71051b668c61abadbdb25b9876d2744e29a467aa4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-kbd--menu-shortcuts",
+        "title": "Core/Kbd",
+        "name": "Menu Shortcuts",
+        "component": "Kbd",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-08-28T17:10:35.701Z",
+    "context": {
+      "sha": "5ea4b4f680203621f347df3bf58e1ef98678e70c",
+      "runId": "33191992132",
+      "runAttempt": "1",
+      "headSha": "5ea4b4f680203621f347df3bf58e1ef98678e70c",
+      "baseSha": "f0043d8f8cf7bf6c8f9fa5b7517738ed6a80d39c",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Kbd"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Kbd/Kbd.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-08-28T15:25:48.929Z",
+      "sha": "a83c559a51fb86260f8309f695b68acd612b2eef",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 112,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 110,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [
+      "core-kbd--default__butter-light",
+      "core-kbd--default__butter-dark",
+      "core-kbd--default__gothic-light",
+      "core-kbd--default__gothic-dark",
+      "core-kbd--default__stone-light",
+      "core-kbd--default__stone-dark",
+      "core-kbd--default__y2k-light",
+      "core-kbd--default__y2k-dark",
+      "core-kbd--default__matcha-light",
+      "core-kbd--default__matcha-dark",
+      "core-kbd--default__chocolate-light",
+      "core-kbd--default__chocolate-dark",
+      "core-kbd--modifier-combinations__neutral-light",
+      "core-kbd--modifier-combinations__neutral-dark",
+      "core-kbd--modifier-combinations__butter-light",
+      "core-kbd--modifier-combinations__butter-dark",
+      "core-kbd--modifier-combinations__gothic-light",
+      "core-kbd--modifier-combinations__gothic-dark",
+      "core-kbd--modifier-combinations__stone-light",
+      "core-kbd--modifier-combinations__stone-dark",
+      "core-kbd--modifier-combinations__y2k-light",
+      "core-kbd--modifier-combinations__y2k-dark",
+      "core-kbd--modifier-combinations__matcha-light",
+      "core-kbd--modifier-combinations__matcha-dark",
+      "core-kbd--modifier-combinations__chocolate-light",
+      "core-kbd--modifier-combinations__chocolate-dark",
+      "core-kbd--multiple-modifiers__neutral-light",
+      "core-kbd--multiple-modifiers__neutral-dark",
+      "core-kbd--multiple-modifiers__butter-light",
+      "core-kbd--multiple-modifiers__butter-dark",
+      "core-kbd--multiple-modifiers__gothic-light",
+      "core-kbd--multiple-modifiers__gothic-dark",
+      "core-kbd--multiple-modifiers__stone-light",
+      "core-kbd--multiple-modifiers__stone-dark",
+      "core-kbd--multiple-modifiers__y2k-light",
+      "core-kbd--multiple-modifiers__y2k-dark",
+      "core-kbd--multiple-modifiers__matcha-light",
+      "core-kbd--multiple-modifiers__matcha-dark",
+      "core-kbd--multiple-modifiers__chocolate-light",
+      "core-kbd--multiple-modifiers__chocolate-dark",
+      "core-kbd--special-keys__neutral-light",
+      "core-kbd--special-keys__neutral-dark",
+      "core-kbd--special-keys__butter-light",
+      "core-kbd--special-keys__butter-dark",
+      "core-kbd--special-keys__gothic-light",
+      "core-kbd--special-keys__gothic-dark",
+      "core-kbd--special-keys__stone-light",
+      "core-kbd--special-keys__stone-dark",
+      "core-kbd--special-keys__y2k-light",
+      "core-kbd--special-keys__y2k-dark",
+      "core-kbd--special-keys__matcha-light",
+      "core-kbd--special-keys__matcha-dark",
+      "core-kbd--special-keys__chocolate-light",
+      "core-kbd--special-keys__chocolate-dark",
+      "core-kbd--single-letter-keys__neutral-light",
+      "core-kbd--single-letter-keys__neutral-dark",
+      "core-kbd--single-letter-keys__butter-light",
+      "core-kbd--single-letter-keys__butter-dark",
+      "core-kbd--single-letter-keys__gothic-light",
+      "core-kbd--single-letter-keys__gothic-dark",
+      "core-kbd--single-letter-keys__stone-light",
+      "core-kbd--single-letter-keys__stone-dark",
+      "core-kbd--single-letter-keys__y2k-light",
+      "core-kbd--single-letter-keys__y2k-dark",
+      "core-kbd--single-letter-keys__matcha-light",
+      "core-kbd--single-letter-keys__matcha-dark",
+      "core-kbd--single-letter-keys__chocolate-light",
+      "core-kbd--single-letter-keys__chocolate-dark",
+      "core-kbd--all-modifier-symbols__neutral-light",
+      "core-kbd--all-modifier-symbols__neutral-dark",
+      "core-kbd--all-modifier-symbols__butter-light",
+      "core-kbd--all-modifier-symbols__butter-dark",
+      "core-kbd--all-modifier-symbols__gothic-light",
+      "core-kbd--all-modifier-symbols__gothic-dark",
+      "core-kbd--all-modifier-symbols__stone-light",
+      "core-kbd--all-modifier-symbols__stone-dark",
+      "core-kbd--all-modifier-symbols__y2k-light",
+      "core-kbd--all-modifier-symbols__y2k-dark",
+      "core-kbd--all-modifier-symbols__matcha-light",
+      "core-kbd--all-modifier-symbols__matcha-dark",
+      "core-kbd--all-modifier-symbols__chocolate-light",
+      "core-kbd--all-modifier-symbols__chocolate-dark",
+      "core-kbd--inline-with-text__neutral-light",
+      "core-kbd--inline-with-text__neutral-dark",
+      "core-kbd--inline-with-text__butter-light",
+      "core-kbd--inline-with-text__butter-dark",
+      "core-kbd--inline-with-text__gothic-light",
+      "core-kbd--inline-with-text__gothic-dark",
+      "core-kbd--inline-with-text__stone-light",
+      "core-kbd--inline-with-text__stone-dark",
+      "core-kbd--inline-with-text__y2k-light",
+      "core-kbd--inline-with-text__y2k-dark",
+      "core-kbd--inline-with-text__matcha-light",
+      "core-kbd--inline-with-text__matcha-dark",
+      "core-kbd--inline-with-text__chocolate-light",
+      "core-kbd--inline-with-text__chocolate-dark",
+      "core-kbd--menu-shortcuts__neutral-light",
+      "core-kbd--menu-shortcuts__neutral-dark",
+      "core-kbd--menu-shortcuts__butter-light",
+      "core-kbd--menu-shortcuts__butter-dark",
+      "core-kbd--menu-shortcuts__gothic-light",
+      "core-kbd--menu-shortcuts__gothic-dark",
+      "core-kbd--menu-shortcuts__stone-light",
+      "core-kbd--menu-shortcuts__stone-dark",
+      "core-kbd--menu-shortcuts__y2k-light",
+      "core-kbd--menu-shortcuts__y2k-dark",
+      "core-kbd--menu-shortcuts__matcha-light",
+      "core-kbd--menu-shortcuts__matcha-dark",
+      "core-kbd--menu-shortcuts__chocolate-light",
+      "core-kbd--menu-shortcuts__chocolate-dark"
+    ],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

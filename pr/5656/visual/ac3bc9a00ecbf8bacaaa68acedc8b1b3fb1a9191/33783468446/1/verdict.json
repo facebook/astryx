@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-03T17:58:17.491Z",
+  "context": {
+    "sha": "ac3bc9a00ecbf8bacaaa68acedc8b1b3fb1a9191",
+    "runId": "33783468446",
+    "runAttempt": "1",
+    "headSha": "ac3bc9a00ecbf8bacaaa68acedc8b1b3fb1a9191",
+    "baseSha": "b7667d1144acffa3c907d8bb24314cddb6ecffd6",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "DateTimeInput",
+        "Layout",
+        "MetadataList",
+        "NavMenu",
+        "RadioList",
+        "TimeInput",
+        "TopNav"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/DateTimeInput/NativeTimeSegment.tsx",
+        "packages/core/src/Layout/Layout.tsx",
+        "packages/core/src/MetadataList/MetadataList.tsx",
+        "packages/core/src/NavMenu/NavHeadingMenuItem.tsx",
+        "packages/core/src/RadioList/RadioList.tsx",
+        "packages/core/src/TimeInput/TimeInput.tsx",
+        "packages/core/src/TopNav/TopNavMegaMenuItem.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-03T16:04:27.248Z",
+    "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 18,
+    "unchanged": 18,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

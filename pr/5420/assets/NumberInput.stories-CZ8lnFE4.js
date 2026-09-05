@@ -1,0 +1,434 @@
+import{i as e,s as t}from"./preload-helper-CT_b8DTk.js";import{t as n}from"./react-B7Te67-h.js";import{t as r}from"./jsx-runtime-DqZldVDK.js";import{t as i,u as a}from"./i18n-CbA7usjw.js";import{n as o,t as s}from"./NumberInput-_nH2QT0J.js";import{It as c,ct as l,t as u}from"./esm-CL1f8dHF.js";var d,f,p,m,h,g,_,v,y,b,x,S,C,w,T,E,D,O,k,A,j,M,N,P,F,I,L,R,z,B,V,H,U,W;e((()=>{d=t(n()),s(),i(),u(),f=r(),p={title:`Core/NumberInput`,component:o,tags:[`autodocs`],argTypes:{label:{control:`text`,description:`Label text (required)`},isLabelHidden:{control:`boolean`,description:`Visually hide the label (still accessible to screen readers)`},placeholder:{control:`text`,description:`Placeholder text`},description:{control:`text`,description:`Description text displayed between the label and input`},value:{control:`number`,description:`Current input value (number, null, or undefined)`},size:{control:`select`,options:[`sm`,`md`,`lg`],description:`Size variant`},isOptional:{control:`boolean`,description:`Whether the field is optional (mutually exclusive with isRequired)`},isRequired:{control:`boolean`,description:`Whether the field is required (mutually exclusive with isOptional)`},isDisabled:{control:`boolean`,description:`Whether the input is disabled`},isReadOnly:{control:`boolean`,description:`Whether the input is read-only. The value still submits with the form but cannot be edited. Unlike isDisabled it is not dimmed and stays in the tab order.`},disabledMessage:{control:`text`,description:`Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled NumberInput in Tooltip.`},status:{control:`object`,description:`Status indicator with type (warning/error/success) and optional message`},labelTooltip:{control:`text`,description:`Tooltip text to display in an info icon at the end of the label`},min:{control:`number`,description:`Minimum value allowed`},max:{control:`number`,description:`Maximum value allowed`},step:{control:`number`,description:`Step increment for the input`},formatValue:{control:!1,description:`Formats the committed value while the input is not focused`},isWheelEnabled:{control:`boolean`,description:`Whether a wheel gesture over the focused input steps the value`},hasNumberSteppers:{control:`boolean`,description:`Shows increment and decrement buttons`},units:{control:`text`,description:`Units text to display at the end of the input (e.g., "%" or "GB")`},isIntegerOnly:{control:`boolean`,description:`Only allow integer values (no floating point)`},autoComplete:{control:`text`,description:`HTML autocomplete attribute`}}},m={render:e=>{let[t,n]=(0,d.useState)(e.value??null);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Quantity`,placeholder:`Enter quantity`}},h={render:()=>{let[e,t]=(0,d.useState)(null),[n,r]=(0,d.useState)(null);return(0,f.jsxs)(`div`,{style:{display:`flex`,flexDirection:`column`,gap:24},children:[(0,f.jsxs)(`div`,{children:[(0,f.jsx)(o,{label:`Impressions (en-US)`,description:`Paste 1,234,234,234 or $1,234.56, then blur`,placeholder:`Paste a formatted number`,value:e,onChange:t,hasClear:!0}),(0,f.jsxs)(`p`,{"data-testid":`en-committed`,children:[`Committed: `,String(e)]})]}),(0,f.jsx)(a,{locale:`de-DE`,children:(0,f.jsxs)(`div`,{children:[(0,f.jsx)(o,{label:`Impressionen (de-DE)`,description:`Paste 1.234.234.234 or 1,5`,placeholder:`Paste a formatted number`,value:n,onChange:r,formatValue:e=>new Intl.NumberFormat(`de-DE`).format(e),hasClear:!0}),(0,f.jsxs)(`p`,{"data-testid":`de-committed`,children:[`Committed: `,String(n)]})]})})]})}},g={render:e=>{let[t,n]=(0,d.useState)(e.value??null);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Age`,description:`Enter your age in years`,placeholder:`Enter your age`}},_={render:e=>{let[t,n]=(0,d.useState)(e.value??null);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Rating`,placeholder:`1-5`,min:1,max:5,description:`Rate from 1 to 5`}},v={render:e=>{let[t,n]=(0,d.useState)(e.value??null);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Price`,placeholder:`0.00`,min:0,step:.01,startIcon:c}},y={render:e=>{let[t,n]=(0,d.useState)(e.value??1234.56);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Monthly revenue`,value:1234.56,min:0,step:.01,description:`Focus the input to edit the raw numeric value`,formatValue:e=>new Intl.NumberFormat(`en-US`,{style:`currency`,currency:`USD`}).format(e)}},b={render:e=>{let[t,n]=(0,d.useState)(e.value??2);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Quantity`,value:2,min:0,max:10,hasNumberSteppers:!0}},x={render:()=>{let[e,t]=(0,d.useState)(2),[n,r]=(0,d.useState)(2);return(0,f.jsxs)(`div`,{style:{width:360,height:260,overflowY:`auto`,padding:16,border:`1px solid #ccd3db`},children:[(0,f.jsx)(`div`,{style:{height:140},children:`Scroll down to the focused examples.`}),(0,f.jsxs)(`div`,{style:{display:`flex`,flexDirection:`column`,gap:16},children:[(0,f.jsx)(o,{label:`Wheel stepping enabled (default)`,description:`Focus, then use the wheel to change the value`,value:e,onChange:t}),(0,f.jsx)(o,{label:`Wheel stepping disabled`,description:`Focused wheel gestures continue scrolling`,value:n,onChange:r,isWheelEnabled:!1})]}),(0,f.jsx)(`div`,{style:{height:180}})]})}},S={render:e=>{let[t,n]=(0,d.useState)(e.value??50);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Discount`,placeholder:`Enter discount`,min:0,max:100,units:`%`}},C={render:e=>{let[t,n]=(0,d.useState)(e.value??128);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Storage`,placeholder:`Enter storage`,min:0,units:`GB`}},w={render:e=>{let[t,n]=(0,d.useState)(e.value??null);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Count`,placeholder:`Enter count`,isIntegerOnly:!0,description:`Only accepts whole numbers`}},T={render:e=>{let[t,n]=(0,d.useState)(e.value??42);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Quantity`,value:42}},E={render:()=>{let[e,t]=(0,d.useState)(null),[n,r]=(0,d.useState)(null),[i,a]=(0,d.useState)(100),[s,c]=(0,d.useState)(null),[l,u]=(0,d.useState)(null),[p,m]=(0,d.useState)(null),[h,g]=(0,d.useState)(null),[_,v]=(0,d.useState)(50),[y,b]=(0,d.useState)(75);return(0,f.jsxs)(`div`,{style:{display:`flex`,flexDirection:`column`,gap:`16px`,maxWidth:`300px`},children:[(0,f.jsx)(o,{label:`Visible label`,value:e,onChange:t,placeholder:`Enter number...`}),(0,f.jsx)(o,{label:`With description`,description:`Helpful description text`,value:s,onChange:c,placeholder:`Enter number...`}),(0,f.jsx)(o,{label:`Hidden label`,isLabelHidden:!0,value:n,onChange:r,placeholder:`Hidden label input`}),(0,f.jsx)(o,{label:`With value`,value:i,onChange:a}),(0,f.jsx)(o,{label:`Optional field`,isOptional:!0,value:l,onChange:u,placeholder:`Optional...`}),(0,f.jsx)(o,{label:`Required field`,isRequired:!0,value:p,onChange:m,placeholder:`Required...`}),(0,f.jsx)(o,{label:`With min/max`,description:`Enter a value between 1 and 10`,min:1,max:10,value:h,onChange:g,placeholder:`1-10`}),(0,f.jsx)(o,{label:`Disabled field`,isDisabled:!0,value:_,onChange:v}),(0,f.jsx)(o,{label:`With units`,value:y,onChange:b,units:`%`})]})}},D={render:e=>{let[t,n]=(0,d.useState)(e.value??null);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Phone Extension`,isOptional:!0,placeholder:`Enter extension`}},O={render:e=>{let[t,n]=(0,d.useState)(e.value??null);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Quantity`,isRequired:!0,placeholder:`Enter quantity`}},k={render:e=>{let[t,n]=(0,d.useState)(e.value??1024);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Allocated storage (GB)`,isReadOnly:!0,value:1024}},A={render:e=>{let[t,n]=(0,d.useState)(e.value??100);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Locked Amount`,isDisabled:!0,value:100}},j={render:e=>{let[t,n]=(0,d.useState)(e.value??100);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Quantity`,isDisabled:!0,disabledMessage:`Editing is locked while the order is processing`,value:100}},M={render:e=>{let[t,n]=(0,d.useState)(e.value??null);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Count`,placeholder:`Enter count...`,startIcon:l}},N={render:()=>{let[e,t]=(0,d.useState)(null),[n,r]=(0,d.useState)(null),[i,a]=(0,d.useState)(null);return(0,f.jsxs)(`div`,{style:{display:`flex`,flexDirection:`column`,gap:`16px`,maxWidth:`300px`},children:[(0,f.jsx)(o,{label:`Small (28px)`,value:e,onChange:t,placeholder:`Small size`,size:`sm`}),(0,f.jsx)(o,{label:`Medium (32px)`,value:n,onChange:r,placeholder:`Medium size (default)`,size:`md`}),(0,f.jsx)(o,{label:`Large (36px)`,value:i,onChange:a,placeholder:`Large size`,size:`lg`})]})}},P={render:e=>{let[t,n]=(0,d.useState)(e.value??-5);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Age`,placeholder:`Enter your age`,min:0,status:{type:`error`,message:`Age must be a positive number`}}},F={render:e=>{let[t,n]=(0,d.useState)(e.value??150);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Age`,placeholder:`Enter your age`,status:{type:`warning`,message:`This value seems unusually high`}}},I={render:e=>{let[t,n]=(0,d.useState)(e.value??25);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Age`,placeholder:`Enter your age`,status:{type:`success`,message:`Valid age`}}},L={render:()=>{let[e,t]=(0,d.useState)(-5),[n,r]=(0,d.useState)(150),[i,a]=(0,d.useState)(25),[s,c]=(0,d.useState)(0);return(0,f.jsxs)(`div`,{style:{display:`flex`,flexDirection:`column`,gap:`16px`,maxWidth:`300px`},children:[(0,f.jsx)(o,{label:`Error with message`,value:e,onChange:t,status:{type:`error`,message:`Must be positive`}}),(0,f.jsx)(o,{label:`Warning with message`,value:n,onChange:r,status:{type:`warning`,message:`Value seems high`}}),(0,f.jsx)(o,{label:`Success with message`,value:i,onChange:a,status:{type:`success`,message:`Looks good`}}),(0,f.jsx)(o,{label:`Error without message`,value:s,onChange:c,status:{type:`error`}})]})}},R={render:e=>{let[t,n]=(0,d.useState)(e.value??null);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`API Rate Limit`,placeholder:`Enter rate limit`,labelTooltip:`Maximum number of API requests per minute`}},z={render:e=>{let[t,n]=(0,d.useState)(e.value??null);return(0,f.jsx)(o,{...e,value:t,onChange:n})},args:{label:`Price`,placeholder:`0.00`,min:0,step:.01,startIcon:c,description:`Enter amount in dollars`}},B={render:e=>{let[t,n]=(0,d.useState)(e.value??null),[r,i]=(0,d.useState)([]),a=e=>{i(t=>[...t.slice(-4),e])};return(0,f.jsxs)(`div`,{style:{maxWidth:`300px`},children:[(0,f.jsx)(o,{label:e.label,placeholder:e.placeholder,description:e.description,value:t,onChange:e=>{n(e),a(`onChange: ${e}`)},onFocus:()=>a(`onFocus`),onBlur:()=>a(`onBlur`),onEnter:()=>a(`onEnter`)}),(0,f.jsxs)(`div`,{style:{marginTop:`16px`,fontSize:`12px`,color:`var(--color-text-secondary)`},children:[(0,f.jsx)(`strong`,{children:`Events:`}),(0,f.jsx)(`ul`,{style:{margin:`4px 0`,paddingLeft:`20px`},children:r.map((e,t)=>(0,f.jsx)(`li`,{children:e},t))})]})]})},args:{label:`Interactive`,placeholder:`Type and press Enter`,description:`Events are logged below`}},V={render:e=>{let[t,n]=(0,d.useState)(e.value??42);return(0,f.jsx)(o,{...e,value:t,onChange:n,hasClear:!0})},args:{label:`Quantity`,placeholder:`Enter a number`}},H={render:e=>{let[t,n]=(0,d.useState)(e.value??75);return(0,f.jsx)(o,{...e,value:t,onChange:n,hasClear:!0})},args:{label:`Progress`,units:`%`,min:0,max:100}},U={render:()=>{let[e,t]=(0,d.useState)(-5),[n,r]=(0,d.useState)(-5);return(0,f.jsxs)(`div`,{style:{display:`flex`,flexDirection:`column`,gap:24,width:280},children:[(0,f.jsx)(o,{label:`Attached (default)`,value:e,onChange:t,status:{type:`error`,message:`Must be a positive number`}}),(0,f.jsx)(o,{label:`Detached`,value:n,onChange:r,status:{type:`error`,message:`Must be a positive number`},statusVariant:`detached`})]})}},m.parameters={...m.parameters,docs:{...m.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? null);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Quantity',
+    placeholder: 'Enter quantity'
+  }
+}`,...m.parameters?.docs?.source}}},h.parameters={...h.parameters,docs:{...h.parameters?.docs,source:{originalSource:`{
+  render: () => {
+    const [enUS, setEnUS] = useState<number | null>(null);
+    const [deDE, setDeDE] = useState<number | null>(null);
+    return <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 24
+    }}>
+        <div>
+          <NumberInput label="Impressions (en-US)" description="Paste 1,234,234,234 or $1,234.56, then blur" placeholder="Paste a formatted number" value={enUS} onChange={setEnUS} hasClear />
+          <p data-testid="en-committed">Committed: {String(enUS)}</p>
+        </div>
+        <InternationalizationProvider locale="de-DE">
+          <div>
+            <NumberInput label="Impressionen (de-DE)" description="Paste 1.234.234.234 or 1,5" placeholder="Paste a formatted number" value={deDE} onChange={setDeDE} formatValue={value => new Intl.NumberFormat('de-DE').format(value)} hasClear />
+            <p data-testid="de-committed">Committed: {String(deDE)}</p>
+          </div>
+        </InternationalizationProvider>
+      </div>;
+  }
+}`,...h.parameters?.docs?.source}}},g.parameters={...g.parameters,docs:{...g.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? null);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Age',
+    description: 'Enter your age in years',
+    placeholder: 'Enter your age'
+  }
+}`,...g.parameters?.docs?.source}}},_.parameters={..._.parameters,docs:{..._.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? null);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Rating',
+    placeholder: '1-5',
+    min: 1,
+    max: 5,
+    description: 'Rate from 1 to 5'
+  }
+}`,..._.parameters?.docs?.source}}},v.parameters={...v.parameters,docs:{...v.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? null);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Price',
+    placeholder: '0.00',
+    min: 0,
+    step: 0.01,
+    startIcon: CurrencyDollarIcon
+  }
+}`,...v.parameters?.docs?.source}}},y.parameters={...y.parameters,docs:{...y.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 1234.56);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Monthly revenue',
+    value: 1234.56,
+    min: 0,
+    step: 0.01,
+    description: 'Focus the input to edit the raw numeric value',
+    formatValue: value => new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(value)
+  }
+}`,...y.parameters?.docs?.source}}},b.parameters={...b.parameters,docs:{...b.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 2);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Quantity',
+    value: 2,
+    min: 0,
+    max: 10,
+    hasNumberSteppers: true
+  }
+}`,...b.parameters?.docs?.source}}},x.parameters={...x.parameters,docs:{...x.parameters?.docs,source:{originalSource:`{
+  render: () => {
+    const [enabledValue, setEnabledValue] = useState<number | null>(2);
+    const [disabledValue, setDisabledValue] = useState<number | null>(2);
+    return <div style={{
+      width: 360,
+      height: 260,
+      overflowY: 'auto',
+      padding: 16,
+      border: '1px solid #ccd3db'
+    }}>
+        <div style={{
+        height: 140
+      }}>Scroll down to the focused examples.</div>
+        <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16
+      }}>
+          <NumberInput label="Wheel stepping enabled (default)" description="Focus, then use the wheel to change the value" value={enabledValue} onChange={setEnabledValue} />
+          <NumberInput label="Wheel stepping disabled" description="Focused wheel gestures continue scrolling" value={disabledValue} onChange={setDisabledValue} isWheelEnabled={false} />
+        </div>
+        <div style={{
+        height: 180
+      }} />
+      </div>;
+  }
+}`,...x.parameters?.docs?.source}}},S.parameters={...S.parameters,docs:{...S.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 50);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Discount',
+    placeholder: 'Enter discount',
+    min: 0,
+    max: 100,
+    units: '%'
+  }
+}`,...S.parameters?.docs?.source}}},C.parameters={...C.parameters,docs:{...C.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 128);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Storage',
+    placeholder: 'Enter storage',
+    min: 0,
+    units: 'GB'
+  }
+}`,...C.parameters?.docs?.source}}},w.parameters={...w.parameters,docs:{...w.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? null);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Count',
+    placeholder: 'Enter count',
+    isIntegerOnly: true,
+    description: 'Only accepts whole numbers'
+  }
+}`,...w.parameters?.docs?.source}}},T.parameters={...T.parameters,docs:{...T.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 42);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Quantity',
+    value: 42
+  }
+}`,...T.parameters?.docs?.source}}},E.parameters={...E.parameters,docs:{...E.parameters?.docs,source:{originalSource:`{
+  render: () => {
+    const [value1, setValue1] = useState<number | null>(null);
+    const [value2, setValue2] = useState<number | null>(null);
+    const [value3, setValue3] = useState<number | null>(100);
+    const [value4, setValue4] = useState<number | null>(null);
+    const [value5, setValue5] = useState<number | null>(null);
+    const [value6, setValue6] = useState<number | null>(null);
+    const [value7, setValue7] = useState<number | null>(null);
+    const [value8, setValue8] = useState<number | null>(50);
+    const [value9, setValue9] = useState<number | null>(75);
+    return <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '16px',
+      maxWidth: '300px'
+    }}>
+        <NumberInput label="Visible label" value={value1} onChange={setValue1} placeholder="Enter number..." />
+        <NumberInput label="With description" description="Helpful description text" value={value4} onChange={setValue4} placeholder="Enter number..." />
+        <NumberInput label="Hidden label" isLabelHidden value={value2} onChange={setValue2} placeholder="Hidden label input" />
+        <NumberInput label="With value" value={value3} onChange={setValue3} />
+        <NumberInput label="Optional field" isOptional value={value5} onChange={setValue5} placeholder="Optional..." />
+        <NumberInput label="Required field" isRequired value={value6} onChange={setValue6} placeholder="Required..." />
+        <NumberInput label="With min/max" description="Enter a value between 1 and 10" min={1} max={10} value={value7} onChange={setValue7} placeholder="1-10" />
+        <NumberInput label="Disabled field" isDisabled value={value8} onChange={setValue8} />
+        <NumberInput label="With units" value={value9} onChange={setValue9} units="%" />
+      </div>;
+  }
+}`,...E.parameters?.docs?.source}}},D.parameters={...D.parameters,docs:{...D.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? null);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Phone Extension',
+    isOptional: true,
+    placeholder: 'Enter extension'
+  }
+}`,...D.parameters?.docs?.source}}},O.parameters={...O.parameters,docs:{...O.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? null);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Quantity',
+    isRequired: true,
+    placeholder: 'Enter quantity'
+  }
+}`,...O.parameters?.docs?.source}}},k.parameters={...k.parameters,docs:{...k.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 1024);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Allocated storage (GB)',
+    isReadOnly: true,
+    value: 1024
+  }
+}`,...k.parameters?.docs?.source}}},A.parameters={...A.parameters,docs:{...A.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 100);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Locked Amount',
+    isDisabled: true,
+    value: 100
+  }
+}`,...A.parameters?.docs?.source}}},j.parameters={...j.parameters,docs:{...j.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 100);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Quantity',
+    isDisabled: true,
+    disabledMessage: 'Editing is locked while the order is processing',
+    value: 100
+  }
+}`,...j.parameters?.docs?.source}}},M.parameters={...M.parameters,docs:{...M.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? null);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Count',
+    placeholder: 'Enter count...',
+    startIcon: HashtagIcon
+  }
+}`,...M.parameters?.docs?.source}}},N.parameters={...N.parameters,docs:{...N.parameters?.docs,source:{originalSource:`{
+  render: () => {
+    const [sm, setSm] = useState<number | null>(null);
+    const [md, setMd] = useState<number | null>(null);
+    const [lg, setLg] = useState<number | null>(null);
+    return <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '16px',
+      maxWidth: '300px'
+    }}>
+        <NumberInput label="Small (28px)" value={sm} onChange={setSm} placeholder="Small size" size="sm" />
+        <NumberInput label="Medium (32px)" value={md} onChange={setMd} placeholder="Medium size (default)" size="md" />
+        <NumberInput label="Large (36px)" value={lg} onChange={setLg} placeholder="Large size" size="lg" />
+      </div>;
+  }
+}`,...N.parameters?.docs?.source}}},P.parameters={...P.parameters,docs:{...P.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? -5);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Age',
+    placeholder: 'Enter your age',
+    min: 0,
+    status: {
+      type: 'error',
+      message: 'Age must be a positive number'
+    }
+  }
+}`,...P.parameters?.docs?.source}}},F.parameters={...F.parameters,docs:{...F.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 150);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Age',
+    placeholder: 'Enter your age',
+    status: {
+      type: 'warning',
+      message: 'This value seems unusually high'
+    }
+  }
+}`,...F.parameters?.docs?.source}}},I.parameters={...I.parameters,docs:{...I.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 25);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Age',
+    placeholder: 'Enter your age',
+    status: {
+      type: 'success',
+      message: 'Valid age'
+    }
+  }
+}`,...I.parameters?.docs?.source}}},L.parameters={...L.parameters,docs:{...L.parameters?.docs,source:{originalSource:`{
+  render: () => {
+    const [error, setError] = useState<number | null>(-5);
+    const [warning, setWarning] = useState<number | null>(150);
+    const [success, setSuccess] = useState<number | null>(25);
+    const [errorNoMsg, setErrorNoMsg] = useState<number | null>(0);
+    return <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '16px',
+      maxWidth: '300px'
+    }}>
+        <NumberInput label="Error with message" value={error} onChange={setError} status={{
+        type: 'error',
+        message: 'Must be positive'
+      }} />
+        <NumberInput label="Warning with message" value={warning} onChange={setWarning} status={{
+        type: 'warning',
+        message: 'Value seems high'
+      }} />
+        <NumberInput label="Success with message" value={success} onChange={setSuccess} status={{
+        type: 'success',
+        message: 'Looks good'
+      }} />
+        <NumberInput label="Error without message" value={errorNoMsg} onChange={setErrorNoMsg} status={{
+        type: 'error'
+      }} />
+      </div>;
+  }
+}`,...L.parameters?.docs?.source}}},R.parameters={...R.parameters,docs:{...R.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? null);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'API Rate Limit',
+    placeholder: 'Enter rate limit',
+    labelTooltip: 'Maximum number of API requests per minute'
+  }
+}`,...R.parameters?.docs?.source}}},z.parameters={...z.parameters,docs:{...z.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? null);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Price',
+    placeholder: '0.00',
+    min: 0,
+    step: 0.01,
+    startIcon: CurrencyDollarIcon,
+    description: 'Enter amount in dollars'
+  }
+}`,...z.parameters?.docs?.source}}},B.parameters={...B.parameters,docs:{...B.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? null);
+    const [events, setEvents] = useState<string[]>([]);
+    const addEvent = (event: string) => {
+      setEvents(prev => [...prev.slice(-4), event]);
+    };
+    return <div style={{
+      maxWidth: '300px'
+    }}>
+        <NumberInput label={args.label} placeholder={args.placeholder} description={args.description} value={value} onChange={v => {
+        setValue(v);
+        addEvent(\`onChange: \${v}\`);
+      }} onFocus={() => addEvent('onFocus')} onBlur={() => addEvent('onBlur')} onEnter={() => addEvent('onEnter')} />
+        <div style={{
+        marginTop: '16px',
+        fontSize: '12px',
+        color: 'var(--color-text-secondary)'
+      }}>
+          <strong>Events:</strong>
+          <ul style={{
+          margin: '4px 0',
+          paddingLeft: '20px'
+        }}>
+            {events.map((event, i) => <li key={i}>{event}</li>)}
+          </ul>
+        </div>
+      </div>;
+  },
+  args: {
+    label: 'Interactive',
+    placeholder: 'Type and press Enter',
+    description: 'Events are logged below'
+  }
+}`,...B.parameters?.docs?.source}}},V.parameters={...V.parameters,docs:{...V.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 42);
+    return <NumberInput {...args} value={value} onChange={setValue} hasClear />;
+  },
+  args: {
+    label: 'Quantity',
+    placeholder: 'Enter a number'
+  }
+}`,...V.parameters?.docs?.source}}},H.parameters={...H.parameters,docs:{...H.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 75);
+    return <NumberInput {...args} value={value} onChange={setValue} hasClear />;
+  },
+  args: {
+    label: 'Progress',
+    units: '%',
+    min: 0,
+    max: 100
+  }
+}`,...H.parameters?.docs?.source}}},U.parameters={...U.parameters,docs:{...U.parameters?.docs,source:{originalSource:`{
+  render: () => {
+    const [a, setA] = useState<number | null>(-5);
+    const [b, setB] = useState<number | null>(-5);
+    return <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 24,
+      width: 280
+    }}>
+        <NumberInput label="Attached (default)" value={a} onChange={setA} status={{
+        type: 'error',
+        message: 'Must be a positive number'
+      }} />
+        <NumberInput label="Detached" value={b} onChange={setB} status={{
+        type: 'error',
+        message: 'Must be a positive number'
+      }} statusVariant="detached" />
+      </div>;
+  }
+}`,...U.parameters?.docs?.source}}},W=`Default.PasteFormattedNumber.WithDescription.WithMinMax.WithStep.FormattedDisplay.WithNumberSteppers.WheelBehavior.WithUnits.WithUnitsGB.IntegerOnly.WithValue.AllVariations.OptionalField.RequiredField.ReadOnly.Disabled.DisabledWithMessage.WithStartIcon.SizeVariants.ErrorStatus.WarningStatus.SuccessStatus.StatusVariations.WithTooltip.DecimalInput.WithEventHandlers.Clearable.ClearableWithUnits.StatusVariantComparison`.split(`.`)}))();export{E as AllVariations,V as Clearable,H as ClearableWithUnits,z as DecimalInput,m as Default,A as Disabled,j as DisabledWithMessage,P as ErrorStatus,y as FormattedDisplay,w as IntegerOnly,D as OptionalField,h as PasteFormattedNumber,k as ReadOnly,O as RequiredField,N as SizeVariants,U as StatusVariantComparison,L as StatusVariations,I as SuccessStatus,F as WarningStatus,x as WheelBehavior,g as WithDescription,B as WithEventHandlers,_ as WithMinMax,b as WithNumberSteppers,M as WithStartIcon,v as WithStep,R as WithTooltip,S as WithUnits,C as WithUnitsGB,T as WithValue,W as __namedExportsOrder,p as default};

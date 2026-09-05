@@ -1,0 +1,372 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5933,
+  "headSha": "eb3b9a7a0c99759460a9bdfca445df63c1fea41e",
+  "testedSha": "eb3b9a7a0c99759460a9bdfca445df63c1fea41e",
+  "baseSha": "4a48880b5c3de9609e6421850bb88718ea562797",
+  "run": {
+    "id": 33680104028,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "f798ac288cbbfc5824874871e426c741999a05ef",
+    "manifestDigest": "0f9b6b29abce041addf90647d89379c603d314d11e9d0f65dcea87a866b351ad"
+  },
+  "keys": [
+    {
+      "key": "core-collapsible--single-mode__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c42c825e8b95d5e9b38b045dd1675ca8f148a3453747cd04c09fccfd8e8849b5",
+      "shot": {
+        "sha256": "c42c825e8b95d5e9b38b045dd1675ca8f148a3453747cd04c09fccfd8e8849b5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d63aa92bb21782f00b2ee4f4be0c23d4e1afb23b98ba05df53f849f99a65da8d",
+      "shot": {
+        "sha256": "d63aa92bb21782f00b2ee4f4be0c23d4e1afb23b98ba05df53f849f99a65da8d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3c383364596042099ce72f8062c091f7e8d9a624414cc76db427244b7db0870d",
+      "shot": {
+        "sha256": "3c383364596042099ce72f8062c091f7e8d9a624414cc76db427244b7db0870d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fbbe0cba45209871123bcb171f2291d6c48d29b1c87b2a25c2c53a246f8a55cd",
+      "shot": {
+        "sha256": "fbbe0cba45209871123bcb171f2291d6c48d29b1c87b2a25c2c53a246f8a55cd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f57761628d2d7f8348a2b316d290226048faed4d21edf7736b37ec4ced101b9f",
+      "shot": {
+        "sha256": "f57761628d2d7f8348a2b316d290226048faed4d21edf7736b37ec4ced101b9f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8920a939b91b8a22bc742b44ca6b7234e842f49a44d3fe27fe57bcf23a1d3d05",
+      "shot": {
+        "sha256": "8920a939b91b8a22bc742b44ca6b7234e842f49a44d3fe27fe57bcf23a1d3d05",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "57d4baf097b93b78c09b712b9c5e387a77bb1a70c7b37e3ede4f49ec9e17bfee",
+      "shot": {
+        "sha256": "57d4baf097b93b78c09b712b9c5e387a77bb1a70c7b37e3ede4f49ec9e17bfee",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cb6e639914d334b61e70f82828459eed3c1ae441acd929b0be1aa66a92992dd6",
+      "shot": {
+        "sha256": "cb6e639914d334b61e70f82828459eed3c1ae441acd929b0be1aa66a92992dd6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9c75981a37c6a2c8e23686bc40c66cc860d52cbfb3cda46dc8bae2e08f2e9978",
+      "shot": {
+        "sha256": "9c75981a37c6a2c8e23686bc40c66cc860d52cbfb3cda46dc8bae2e08f2e9978",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bb2a16ec046a8d20b791dc2dd9304e1bc57dab4669778be1e1367c3ae31c49f3",
+      "shot": {
+        "sha256": "bb2a16ec046a8d20b791dc2dd9304e1bc57dab4669778be1e1367c3ae31c49f3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9488ceb2521af165d6b33a2e5fa347fc9759ed0f4ca0377d4e3604c4a763a557",
+      "shot": {
+        "sha256": "9488ceb2521af165d6b33a2e5fa347fc9759ed0f4ca0377d4e3604c4a763a557",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2a47de8f05903281c63d3e2934d516bb4e6ae715a4228154d64a219795485b9b",
+      "shot": {
+        "sha256": "2a47de8f05903281c63d3e2934d516bb4e6ae715a4228154d64a219795485b9b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "decision": {
+    "approver": "ernestt",
+    "approverId": 5867373,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "No frame changed against the baseline: the report lists all twelve shots under Added, not Changed. core-collapsible--single-mode had no baseline before this run, so these record new coverage rather than waving through a diff. Every Collapsible story that does have a baseline came back identical, which is what a label growing into space the text does not fill should do.",
+    "commentId": 5516726264,
+    "at": "2026-09-02T21:48:32.202Z"
+  }
+}

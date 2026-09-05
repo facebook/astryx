@@ -1,0 +1,276 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5276,
+  "headSha": "973a28e9112e9781818e9ca65b47d6a0acaeb8d3",
+  "testedSha": "973a28e9112e9781818e9ca65b47d6a0acaeb8d3",
+  "baseSha": "d80c7889649b30cb8cecf59f3f65e929491b7c07",
+  "run": {
+    "id": 33093814142,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "7b07b3e5e48691a80f706af7626ec7bd18ac7214",
+    "manifestDigest": "f5375c7a6754c494926e456cc4c1973e35c1c01c28ad880927284c71a39f32fc"
+  },
+  "keys": [
+    {
+      "key": "lab-resizable--horizontal-split__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fee0a696195eaa2a7aa0e1aa06047590a419d57697c4db8d6dbf6c0070f9c58e",
+      "shot": {
+        "sha256": "fee0a696195eaa2a7aa0e1aa06047590a419d57697c4db8d6dbf6c0070f9c58e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--horizontal-split",
+        "title": "Lab/Resizable",
+        "name": "Horizontal Split",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "lab-resizable--horizontal-split__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "13681ec6adf3a55b7ecfd413875b42513fcb04335513e13528d371d903f3bddd",
+      "shot": {
+        "sha256": "13681ec6adf3a55b7ecfd413875b42513fcb04335513e13528d371d903f3bddd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--horizontal-split",
+        "title": "Lab/Resizable",
+        "name": "Horizontal Split",
+        "component": "Resizable",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "lab-resizable--horizontal-split__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c9c156a3d0caa407497e8bbc512b0a12bc37318d39967575247dbb807c7d79cb",
+      "shot": {
+        "sha256": "c9c156a3d0caa407497e8bbc512b0a12bc37318d39967575247dbb807c7d79cb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--horizontal-split",
+        "title": "Lab/Resizable",
+        "name": "Horizontal Split",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "lab-resizable--horizontal-split__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5453bc5393b2438444cc6a45daa2dd2f9c4443ccc397545aa751f7a29247486f",
+      "shot": {
+        "sha256": "5453bc5393b2438444cc6a45daa2dd2f9c4443ccc397545aa751f7a29247486f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--horizontal-split",
+        "title": "Lab/Resizable",
+        "name": "Horizontal Split",
+        "component": "Resizable",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "lab-resizable--horizontal-split__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ad2949975b9c44f4adc8b711ba8300ad0ab5cba293a19a4dc8a1bca91cad6f38",
+      "shot": {
+        "sha256": "ad2949975b9c44f4adc8b711ba8300ad0ab5cba293a19a4dc8a1bca91cad6f38",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--horizontal-split",
+        "title": "Lab/Resizable",
+        "name": "Horizontal Split",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "lab-resizable--horizontal-split__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9aa7739d8a29dbe2094cba8677c0880f7d36ba1218dc5bd9e9de4686822e5d6f",
+      "shot": {
+        "sha256": "9aa7739d8a29dbe2094cba8677c0880f7d36ba1218dc5bd9e9de4686822e5d6f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--horizontal-split",
+        "title": "Lab/Resizable",
+        "name": "Horizontal Split",
+        "component": "Resizable",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "lab-resizable--horizontal-split__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "84ef0d72a15237280c6233b42566ce7d2213d61612b0f1a98c7e4b3c427957f7",
+      "shot": {
+        "sha256": "84ef0d72a15237280c6233b42566ce7d2213d61612b0f1a98c7e4b3c427957f7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--horizontal-split",
+        "title": "Lab/Resizable",
+        "name": "Horizontal Split",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "lab-resizable--horizontal-split__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "047fbd3cbd275f6d0d5a97664619d948bc246cb898cc1993dd5f42f53722df28",
+      "shot": {
+        "sha256": "047fbd3cbd275f6d0d5a97664619d948bc246cb898cc1993dd5f42f53722df28",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--horizontal-split",
+        "title": "Lab/Resizable",
+        "name": "Horizontal Split",
+        "component": "Resizable",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "lab-resizable--horizontal-split__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cd9046a98d85fd5dc63863ca3879cf6f070c3a3d01c1db9db2286bd2f33ff610",
+      "shot": {
+        "sha256": "cd9046a98d85fd5dc63863ca3879cf6f070c3a3d01c1db9db2286bd2f33ff610",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--horizontal-split",
+        "title": "Lab/Resizable",
+        "name": "Horizontal Split",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "lab-resizable--horizontal-split__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c5d9b9a38f78aa6aae4b9df4feed0b2a1634d61f3aa45a9c77b838a401954fd6",
+      "shot": {
+        "sha256": "c5d9b9a38f78aa6aae4b9df4feed0b2a1634d61f3aa45a9c77b838a401954fd6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--horizontal-split",
+        "title": "Lab/Resizable",
+        "name": "Horizontal Split",
+        "component": "Resizable",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "lab-resizable--horizontal-split__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f2a6934a13122e1d0b2c3caf485ed92bb7ab93ab551649ba08cf5667e6bef6c0",
+      "shot": {
+        "sha256": "f2a6934a13122e1d0b2c3caf485ed92bb7ab93ab551649ba08cf5667e6bef6c0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--horizontal-split",
+        "title": "Lab/Resizable",
+        "name": "Horizontal Split",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "lab-resizable--horizontal-split__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d8c3373931835e755123415d7d636508055fab18dd2a838dd54c3ec65c927318",
+      "shot": {
+        "sha256": "d8c3373931835e755123415d7d636508055fab18dd2a838dd54c3ec65c927318",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-resizable--horizontal-split",
+        "title": "Lab/Resizable",
+        "name": "Horizontal Split",
+        "component": "Resizable",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    }
+  ],
+  "decision": {
+    "approver": "nynexman4464",
+    "approverId": 1675576,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "The change only stabilizes omitted-snaps callback identity; these added Resizable frames establish the missing baseline without an intended visual change.",
+    "commentId": 5442444673,
+    "at": "2026-08-27T17:19:56.114Z"
+  }
+}

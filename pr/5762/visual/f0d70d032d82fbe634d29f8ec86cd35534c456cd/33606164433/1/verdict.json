@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-02T08:25:20.954Z",
+  "context": {
+    "sha": "f0d70d032d82fbe634d29f8ec86cd35534c456cd",
+    "runId": "33606164433",
+    "runAttempt": "1",
+    "headSha": "f0d70d032d82fbe634d29f8ec86cd35534c456cd",
+    "baseSha": "5e8fab8cdb71fe2419a7f9afee68b1d2a469cadf",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Button",
+        "Icon"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Button/Button.tsx",
+        "packages/core/src/Icon/Icon.tsx",
+        "packages/core/src/Icon/IconDefaultSizeContext.ts",
+        "packages/core/src/Icon/IconSize.stylex.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-02T06:00:40.805Z",
+    "sha": "42129ab27c8c93c9f364197b68998037b9f93255",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 28,
+    "unchanged": 16,
+    "changed": 0,
+    "added": 12,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [
+    "core-icon--default__butter-light",
+    "core-icon--default__butter-dark",
+    "core-icon--default__gothic-light",
+    "core-icon--default__gothic-dark",
+    "core-icon--default__stone-light",
+    "core-icon--default__stone-dark",
+    "core-icon--default__y2k-light",
+    "core-icon--default__y2k-dark",
+    "core-icon--default__matcha-light",
+    "core-icon--default__matcha-dark",
+    "core-icon--default__chocolate-light",
+    "core-icon--default__chocolate-dark"
+  ],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

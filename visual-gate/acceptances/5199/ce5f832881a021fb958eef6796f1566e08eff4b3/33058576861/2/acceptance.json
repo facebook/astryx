@@ -1,0 +1,3476 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5199,
+  "headSha": "ce5f832881a021fb958eef6796f1566e08eff4b3",
+  "testedSha": "ce5f832881a021fb958eef6796f1566e08eff4b3",
+  "baseSha": "1d94f85fd07420c6b55fd001234081f7444255f8",
+  "run": {
+    "id": 33058576861,
+    "attempt": 2
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "39dc0b4822aabb57430dd0c2dc29207965415f59",
+    "manifestDigest": "d4511d43fc975e64f636564f3f9f41d7804e8736ddcf5a17795a80b4badf1f68"
+  },
+  "keys": [
+    {
+      "key": "lab-svgiconregistry--default-registry-icons__neutral-light",
+      "kind": "changed",
+      "beforeSha256": "bdf358aae53d90ca1a1f0ba198eb28b0efd84bafab69f45d4171ac13b4d46527",
+      "afterSha256": "9a48ebe0558f11ecd8fccaf47dfc5d06df6ef446a3212c9138d419381b89cbb5",
+      "shot": {
+        "sha256": "9a48ebe0558f11ecd8fccaf47dfc5d06df6ef446a3212c9138d419381b89cbb5",
+        "width": 1024,
+        "height": 1062,
+        "storyId": "lab-svgiconregistry--default-registry-icons",
+        "title": "Lab/SVGIconRegistry",
+        "name": "Default Registry Icons",
+        "component": "SVGIconRegistry",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:broad"
+        ]
+      }
+    },
+    {
+      "key": "lab-svgiconregistry--default-registry-icons__neutral-dark",
+      "kind": "changed",
+      "beforeSha256": "d73caec78c23235590c4dd539162625172db7a9929517648d083d43563c8c69c",
+      "afterSha256": "334a6d8ee7dc1eb478f3e8a765ef43568135d30f89628c935e9daca34a392f62",
+      "shot": {
+        "sha256": "334a6d8ee7dc1eb478f3e8a765ef43568135d30f89628c935e9daca34a392f62",
+        "width": 1024,
+        "height": 1062,
+        "storyId": "lab-svgiconregistry--default-registry-icons",
+        "title": "Lab/SVGIconRegistry",
+        "name": "Default Registry Icons",
+        "component": "SVGIconRegistry",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:broad"
+        ]
+      }
+    },
+    {
+      "key": "lab-transferlist--default__neutral-dark",
+      "kind": "changed",
+      "beforeSha256": "0a692ed035b164dd70f292d1115d0e1d8ca9843138a69e9eba2132674d4472ef",
+      "afterSha256": "17ec86ed14b9a585e3eca6ac749b03c6cb9d031997cc45f296585381157b4e83",
+      "shot": {
+        "sha256": "17ec86ed14b9a585e3eca6ac749b03c6cb9d031997cc45f296585381157b4e83",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-transferlist--default",
+        "title": "Lab/TransferList",
+        "name": "Default",
+        "component": "TransferList",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:broad"
+        ]
+      }
+    },
+    {
+      "key": "lab-transferlist--default__neutral-light",
+      "kind": "changed",
+      "beforeSha256": "a07333ba4b22608896b6b2536d804609810cdd4691e36366f74f3f8a3538b612",
+      "afterSha256": "e6c139226080b8d87c456a786319d613a9a753a24ea4f4063714c365c6eb6eb7",
+      "shot": {
+        "sha256": "e6c139226080b8d87c456a786319d613a9a753a24ea4f4063714c365c6eb6eb7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-transferlist--default",
+        "title": "Lab/TransferList",
+        "name": "Default",
+        "component": "TransferList",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:broad"
+        ]
+      }
+    },
+    {
+      "key": "lab-hooks-usechartrange--known-range__neutral-light",
+      "kind": "changed",
+      "beforeSha256": "9a8d4d2f055d201e16b070225952cf36febb0ce6306f6509572d6eb92528d5cf",
+      "afterSha256": "5db7a302975d3e2f1d0f4203f57f3697cc836743b109b27a952da1541391611c",
+      "shot": {
+        "sha256": "5db7a302975d3e2f1d0f4203f57f3697cc836743b109b27a952da1541391611c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-hooks-usechartrange--known-range",
+        "title": "Lab/Hooks/useChartRange",
+        "name": "Known Range",
+        "component": "useChartRange",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:broad"
+        ]
+      }
+    },
+    {
+      "key": "lab-hooks-usechartrange--known-range__neutral-dark",
+      "kind": "changed",
+      "beforeSha256": "afeec0c7db3382155183716b3fa79c24cf6f1a2b18e277ab382ae8ef41910c2b",
+      "afterSha256": "1806c834c7f37eb319ca0d1924df618b9a4b3dc0d19e1e746b330eb7a8465cfb",
+      "shot": {
+        "sha256": "1806c834c7f37eb319ca0d1924df618b9a4b3dc0d19e1e746b330eb7a8465cfb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "lab-hooks-usechartrange--known-range",
+        "title": "Lab/Hooks/useChartRange",
+        "name": "Known Range",
+        "component": "useChartRange",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:broad"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cc7341ea944c987fa48adb57595b57ce8e02ed826cbba4f186b1550f658c0b2c",
+      "shot": {
+        "sha256": "cc7341ea944c987fa48adb57595b57ce8e02ed826cbba4f186b1550f658c0b2c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--default",
+        "title": "Core/OverflowList",
+        "name": "Default",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "85e02234e21f5230e3e7e26a364420becb14290f566226d09b793fa8f6bb812d",
+      "shot": {
+        "sha256": "85e02234e21f5230e3e7e26a364420becb14290f566226d09b793fa8f6bb812d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--default",
+        "title": "Core/OverflowList",
+        "name": "Default",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "003f6b4ca0229397298c5bf2786f98755af1c582b766f09314a4f626b37ef1a4",
+      "shot": {
+        "sha256": "003f6b4ca0229397298c5bf2786f98755af1c582b766f09314a4f626b37ef1a4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--default",
+        "title": "Core/OverflowList",
+        "name": "Default",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c1f4ae18282547b45e965d71b2bc14bf6d8796709c79d2de907d1c7815cde126",
+      "shot": {
+        "sha256": "c1f4ae18282547b45e965d71b2bc14bf6d8796709c79d2de907d1c7815cde126",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--default",
+        "title": "Core/OverflowList",
+        "name": "Default",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4e3540a8e041099090faa3c14e6298e80f9222662cf12c9680f1f4c1c3a817be",
+      "shot": {
+        "sha256": "4e3540a8e041099090faa3c14e6298e80f9222662cf12c9680f1f4c1c3a817be",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--default",
+        "title": "Core/OverflowList",
+        "name": "Default",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7a6f67ebccfeec8f6df2fa6566c83ab4724ff44473d0e4b0d36603b54b568b23",
+      "shot": {
+        "sha256": "7a6f67ebccfeec8f6df2fa6566c83ab4724ff44473d0e4b0d36603b54b568b23",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--default",
+        "title": "Core/OverflowList",
+        "name": "Default",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "649044243368d919717d6cafb70732db03b53a61a27ced974ca94c6589b4acc1",
+      "shot": {
+        "sha256": "649044243368d919717d6cafb70732db03b53a61a27ced974ca94c6589b4acc1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--default",
+        "title": "Core/OverflowList",
+        "name": "Default",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0026977e7b2d23c334055a2234949fe0c78bb5e6ed759c8e5bf003e1bd39cdeb",
+      "shot": {
+        "sha256": "0026977e7b2d23c334055a2234949fe0c78bb5e6ed759c8e5bf003e1bd39cdeb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--default",
+        "title": "Core/OverflowList",
+        "name": "Default",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "004fbe1a7ee2fd2bd58e0cf7f48748692138e4ffaa8233c481ae8eea7cf8bacf",
+      "shot": {
+        "sha256": "004fbe1a7ee2fd2bd58e0cf7f48748692138e4ffaa8233c481ae8eea7cf8bacf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--default",
+        "title": "Core/OverflowList",
+        "name": "Default",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d37fc736ae0e0cea765f6d8f8d34a058fc0e84e93267c6e17d166b2d3265cb86",
+      "shot": {
+        "sha256": "d37fc736ae0e0cea765f6d8f8d34a058fc0e84e93267c6e17d166b2d3265cb86",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--default",
+        "title": "Core/OverflowList",
+        "name": "Default",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f758d734aaaeffcae2137737d09929bd5d24b5bfe84d7eb6ae5b122d618793de",
+      "shot": {
+        "sha256": "f758d734aaaeffcae2137737d09929bd5d24b5bfe84d7eb6ae5b122d618793de",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--default",
+        "title": "Core/OverflowList",
+        "name": "Default",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d47dbcf52eb6cd4a20fe34f0d339fdfe312ddcb56eae1191cc263b88f2efe448",
+      "shot": {
+        "sha256": "d47dbcf52eb6cd4a20fe34f0d339fdfe312ddcb56eae1191cc263b88f2efe448",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--default",
+        "title": "Core/OverflowList",
+        "name": "Default",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d639f9caf0a720f3110e541719d96c351e39bc490c9ae5ef09fef99d0c89c3c1",
+      "shot": {
+        "sha256": "d639f9caf0a720f3110e541719d96c351e39bc490c9ae5ef09fef99d0c89c3c1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3999711ec667e9a4925d6988c668ded760f801ec7c1091419d1012611bf0b9cc",
+      "shot": {
+        "sha256": "3999711ec667e9a4925d6988c668ded760f801ec7c1091419d1012611bf0b9cc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1c6193978a6f8a3b28e1c8d57a7bee32ba5d7fe15b0a440cdab815d87a6aebe6",
+      "shot": {
+        "sha256": "1c6193978a6f8a3b28e1c8d57a7bee32ba5d7fe15b0a440cdab815d87a6aebe6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5f75aacb768f788c703467a015a956cee87e44b4016f35b8366fba6e694e526b",
+      "shot": {
+        "sha256": "5f75aacb768f788c703467a015a956cee87e44b4016f35b8366fba6e694e526b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "70ed9443cae4e4f8f097d8f3522177774e6fb3332f5a33e503a1ef6935a63a3e",
+      "shot": {
+        "sha256": "70ed9443cae4e4f8f097d8f3522177774e6fb3332f5a33e503a1ef6935a63a3e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "61ee8fb24a5419726eb9afecea2e69ce7f0112930bde28b0deab6bd97749f89b",
+      "shot": {
+        "sha256": "61ee8fb24a5419726eb9afecea2e69ce7f0112930bde28b0deab6bd97749f89b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0a1d534a09b67e02a5338751a2b0938b8f31a9fc3255604424e217056c943a23",
+      "shot": {
+        "sha256": "0a1d534a09b67e02a5338751a2b0938b8f31a9fc3255604424e217056c943a23",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2a6661dca85191975a4a9d9fda8aa985f011268015437b181c8629a000c1cc65",
+      "shot": {
+        "sha256": "2a6661dca85191975a4a9d9fda8aa985f011268015437b181c8629a000c1cc65",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9bef3c80abbd943b98bd48d6a72fbbfde3c33bb46039dd991c1207e176846799",
+      "shot": {
+        "sha256": "9bef3c80abbd943b98bd48d6a72fbbfde3c33bb46039dd991c1207e176846799",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a89a2693603df62ca51a6f763750c2e5afaf4a46e62c8109c081732bc0e920ad",
+      "shot": {
+        "sha256": "a89a2693603df62ca51a6f763750c2e5afaf4a46e62c8109c081732bc0e920ad",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e80e82c8235dab33b94ed4c5db43cec93d1436ad7a9ab6711529d6441028b3ec",
+      "shot": {
+        "sha256": "e80e82c8235dab33b94ed4c5db43cec93d1436ad7a9ab6711529d6441028b3ec",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1b2844128cec9f0e513bca68cbb7421078ad9681b90fe7443560f52b179d99ee",
+      "shot": {
+        "sha256": "1b2844128cec9f0e513bca68cbb7421078ad9681b90fe7443560f52b179d99ee",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "21231113cc559e127376881b95e0956d8e7cda284d75a4a721f10ed5d722f836",
+      "shot": {
+        "sha256": "21231113cc559e127376881b95e0956d8e7cda284d75a4a721f10ed5d722f836",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--resizable__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "668caf0f30aa9f2f3935d7b97c2f6da6c23b01f832e6384abc2bac4061f42026",
+      "shot": {
+        "sha256": "668caf0f30aa9f2f3935d7b97c2f6da6c23b01f832e6384abc2bac4061f42026",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--resizable",
+        "title": "Core/OverflowList",
+        "name": "Resizable",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6a02d2877c705ee093b6ffd4a6f496e3726583e07610b4c9ec9c5020415287eb",
+      "shot": {
+        "sha256": "6a02d2877c705ee093b6ffd4a6f496e3726583e07610b4c9ec9c5020415287eb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cf64f2f9b69cd28951511eb579d1cde8273d2cc1d52c21c37a711889a274e9be",
+      "shot": {
+        "sha256": "cf64f2f9b69cd28951511eb579d1cde8273d2cc1d52c21c37a711889a274e9be",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8cc75a320a7f5f508d07d02655ae8146dbac849dbf3d5c15e6b0156f3f152345",
+      "shot": {
+        "sha256": "8cc75a320a7f5f508d07d02655ae8146dbac849dbf3d5c15e6b0156f3f152345",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "53102243a2a06399fba2c5eeb19cb7f9d6f41e33e2655f13d3088c78735d4d60",
+      "shot": {
+        "sha256": "53102243a2a06399fba2c5eeb19cb7f9d6f41e33e2655f13d3088c78735d4d60",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "392270cfa84992ad42198c238af79f6452509bde5ba72c9c239345368a208aab",
+      "shot": {
+        "sha256": "392270cfa84992ad42198c238af79f6452509bde5ba72c9c239345368a208aab",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b59fd3eb5a19197e6903acb299ad678ad14e93246efcccb96e3c223e9959cd3d",
+      "shot": {
+        "sha256": "b59fd3eb5a19197e6903acb299ad678ad14e93246efcccb96e3c223e9959cd3d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fd4488977665fccdaafa8d15fd401320022385b37d52fdd27b6021d772ffd04e",
+      "shot": {
+        "sha256": "fd4488977665fccdaafa8d15fd401320022385b37d52fdd27b6021d772ffd04e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8930cd4d4a9428d6a1a49b0ee1586ee50457fddaf86cb7511a55d110982e7f5a",
+      "shot": {
+        "sha256": "8930cd4d4a9428d6a1a49b0ee1586ee50457fddaf86cb7511a55d110982e7f5a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "18d2239f35b3b1ffa8be55159404562bd15876567f719eaa1a90c660007f59f3",
+      "shot": {
+        "sha256": "18d2239f35b3b1ffa8be55159404562bd15876567f719eaa1a90c660007f59f3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "854f38dd20b32e9a888bb701084b9078a2751348219140b9cbd3cd49af3ad7dd",
+      "shot": {
+        "sha256": "854f38dd20b32e9a888bb701084b9078a2751348219140b9cbd3cd49af3ad7dd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c49261038792b35305623035151a2ae5088cbbcf345e2416d7bd0d4da4cb866d",
+      "shot": {
+        "sha256": "c49261038792b35305623035151a2ae5088cbbcf345e2416d7bd0d4da4cb866d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f759f913c273961c0bedd87bbe62e6492aa2ee39223b20aaba1751cfd5d2d741",
+      "shot": {
+        "sha256": "f759f913c273961c0bedd87bbe62e6492aa2ee39223b20aaba1751cfd5d2d741",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cd618065ed0eabb4a38a0fb8cbb19058f046b85e479baaebb09119b80ed15b2f",
+      "shot": {
+        "sha256": "cd618065ed0eabb4a38a0fb8cbb19058f046b85e479baaebb09119b80ed15b2f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--no-overflow__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "39a29a57949691f22bf834389649f6ec2f58b13060582b0c293a262e55780a9f",
+      "shot": {
+        "sha256": "39a29a57949691f22bf834389649f6ec2f58b13060582b0c293a262e55780a9f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--no-overflow",
+        "title": "Core/OverflowList",
+        "name": "No Overflow",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0363e2623891cdba31d9b325ec6bf0d94a7ccfc0102192594e64fd0b51b4fe23",
+      "shot": {
+        "sha256": "0363e2623891cdba31d9b325ec6bf0d94a7ccfc0102192594e64fd0b51b4fe23",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "14cd09e11eced3085d6fed8d063ae0c4973b6a1f95f567e894ceab320d4462fe",
+      "shot": {
+        "sha256": "14cd09e11eced3085d6fed8d063ae0c4973b6a1f95f567e894ceab320d4462fe",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c7a80a0db2942b06785ed8ad737b9e42a2b3e22ed47b673d32a7db6342d344d7",
+      "shot": {
+        "sha256": "c7a80a0db2942b06785ed8ad737b9e42a2b3e22ed47b673d32a7db6342d344d7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8662dd760374185e962f060fb076202b8f02546878530234dc073ea72d2e384b",
+      "shot": {
+        "sha256": "8662dd760374185e962f060fb076202b8f02546878530234dc073ea72d2e384b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "be415cf6f72302b647208ff29073506221deb80e52021886f48c0c3fd24f058a",
+      "shot": {
+        "sha256": "be415cf6f72302b647208ff29073506221deb80e52021886f48c0c3fd24f058a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5eb47f7ad9b2b1f2005ea16bad28063a269d85e9af3de84a1373cc82fb78891a",
+      "shot": {
+        "sha256": "5eb47f7ad9b2b1f2005ea16bad28063a269d85e9af3de84a1373cc82fb78891a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "39b6c667c60a98b441bafbde7726dd022ef7fbe95c4e767b037417351071f3cb",
+      "shot": {
+        "sha256": "39b6c667c60a98b441bafbde7726dd022ef7fbe95c4e767b037417351071f3cb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "eea06a788fa7f122f172001497b1c3a0db35b792030b5d978bf7ad76163d4295",
+      "shot": {
+        "sha256": "eea06a788fa7f122f172001497b1c3a0db35b792030b5d978bf7ad76163d4295",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3dadf45f3c6591841a8de2d6cfe0e4360ce6a011f4f03a3472fdf2b601433134",
+      "shot": {
+        "sha256": "3dadf45f3c6591841a8de2d6cfe0e4360ce6a011f4f03a3472fdf2b601433134",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8a07777bf6df8cd28042e6d8618f027ebc911f1832d000e84e93ee06984e75ce",
+      "shot": {
+        "sha256": "8a07777bf6df8cd28042e6d8618f027ebc911f1832d000e84e93ee06984e75ce",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0da9c1b9fc68ffa85893bfc31ee17fded4130d25fa5717f1d3f63fd83aa6673d",
+      "shot": {
+        "sha256": "0da9c1b9fc68ffa85893bfc31ee17fded4130d25fa5717f1d3f63fd83aa6673d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "008c7093539c3e81ea05678b2177ebbf959f059906bacb1e60656c3e507686e3",
+      "shot": {
+        "sha256": "008c7093539c3e81ea05678b2177ebbf959f059906bacb1e60656c3e507686e3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0d22d6fb853889997801677a366a4efa339f1de51a8c6015db092fa9888116c0",
+      "shot": {
+        "sha256": "0d22d6fb853889997801677a366a4efa339f1de51a8c6015db092fa9888116c0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-badges__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ef40823d09a9d9242244972fe207f2ddb50dec3821f7dc191de9210bd3533409",
+      "shot": {
+        "sha256": "ef40823d09a9d9242244972fe207f2ddb50dec3821f7dc191de9210bd3533409",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-badges",
+        "title": "Core/OverflowList",
+        "name": "With Badges",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cf4345fb7034e8875515f838e6ee397a5fcfa6ccaa72910ee5576bca5a60f4c9",
+      "shot": {
+        "sha256": "cf4345fb7034e8875515f838e6ee397a5fcfa6ccaa72910ee5576bca5a60f4c9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f126cca49e4ef4ca58eec99a9334470b2cd28f8592df9488b271491e1588b09a",
+      "shot": {
+        "sha256": "f126cca49e4ef4ca58eec99a9334470b2cd28f8592df9488b271491e1588b09a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "794f53d42456d1fe73c5ddffd2838cd1ade2af8dda3ce6fa43518965cb5a64bd",
+      "shot": {
+        "sha256": "794f53d42456d1fe73c5ddffd2838cd1ade2af8dda3ce6fa43518965cb5a64bd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a0394d7fad16f95cb268736cd289573e968109019fbfd97eac036e50c381528b",
+      "shot": {
+        "sha256": "a0394d7fad16f95cb268736cd289573e968109019fbfd97eac036e50c381528b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "44dbb08c5fa37e5799df70e1e3e991e62536a55f7533598a97db50dc5a742b67",
+      "shot": {
+        "sha256": "44dbb08c5fa37e5799df70e1e3e991e62536a55f7533598a97db50dc5a742b67",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "204be88e2a223cc8aa3e1e185e0592a7f668922cf241ee0c45fc17930d07cc9b",
+      "shot": {
+        "sha256": "204be88e2a223cc8aa3e1e185e0592a7f668922cf241ee0c45fc17930d07cc9b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "724e9816d1cb0c7c7cec5f50f69d5523d74ef2f479a99df2414cd3f49605f71d",
+      "shot": {
+        "sha256": "724e9816d1cb0c7c7cec5f50f69d5523d74ef2f479a99df2414cd3f49605f71d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "231ccc1fb686b5b35b29da7f2f3a6892e51ae5e9f245e06f6173f0e1258b84dd",
+      "shot": {
+        "sha256": "231ccc1fb686b5b35b29da7f2f3a6892e51ae5e9f245e06f6173f0e1258b84dd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e19ffdedbca70e79373e5393b6a2077ad710b6002118cd3830fe08804d910064",
+      "shot": {
+        "sha256": "e19ffdedbca70e79373e5393b6a2077ad710b6002118cd3830fe08804d910064",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ef6cf03e5d49b6c735f448e0db4c2808334a62b0d1c4c6efa15d9815ce3c596e",
+      "shot": {
+        "sha256": "ef6cf03e5d49b6c735f448e0db4c2808334a62b0d1c4c6efa15d9815ce3c596e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e2835196b3abac27c3306398b0bf41b02c4dacffae9f845d148750f256d7fd3b",
+      "shot": {
+        "sha256": "e2835196b3abac27c3306398b0bf41b02c4dacffae9f845d148750f256d7fd3b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d644f916ac49bf5f18c30b9f6e160de8c3a67304826f5b720c15a96420f67b47",
+      "shot": {
+        "sha256": "d644f916ac49bf5f18c30b9f6e160de8c3a67304826f5b720c15a96420f67b47",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e2f4497abb274f47498b93719b2777afba5ad36763fc294d184f983b254121e4",
+      "shot": {
+        "sha256": "e2f4497abb274f47498b93719b2777afba5ad36763fc294d184f983b254121e4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--collapse-from-start__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5d4442aaca8d947dd650cf60f0b7a06a156155dcc0823556cc33866ecf847853",
+      "shot": {
+        "sha256": "5d4442aaca8d947dd650cf60f0b7a06a156155dcc0823556cc33866ecf847853",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--collapse-from-start",
+        "title": "Core/OverflowList",
+        "name": "Collapse From Start",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c0a4a90a48b309dd3bfc6e45d07748149ff83442647d77ef89b1a9d5230aebe9",
+      "shot": {
+        "sha256": "c0a4a90a48b309dd3bfc6e45d07748149ff83442647d77ef89b1a9d5230aebe9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "84c58aedee51e5a1c29041b1fcfd9db3ca7eb7c844b823b51eafd5bd690a08d8",
+      "shot": {
+        "sha256": "84c58aedee51e5a1c29041b1fcfd9db3ca7eb7c844b823b51eafd5bd690a08d8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "00f6feaa076d8249027c8495b19536ef244db371ee0dc6f570b67343494a4ead",
+      "shot": {
+        "sha256": "00f6feaa076d8249027c8495b19536ef244db371ee0dc6f570b67343494a4ead",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b5e2eabee45a6059e991fabe27112ce1285bdd7611364f3f93fff823205209a4",
+      "shot": {
+        "sha256": "b5e2eabee45a6059e991fabe27112ce1285bdd7611364f3f93fff823205209a4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "74a64da67904dbdd1e1cb5029e6e10cb864e73ccc72565a166f32a7bf14fe7cb",
+      "shot": {
+        "sha256": "74a64da67904dbdd1e1cb5029e6e10cb864e73ccc72565a166f32a7bf14fe7cb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "48cc48b6777956be51cec49c26e16d666cede7412d52dccefa9f0b0ed2361a7e",
+      "shot": {
+        "sha256": "48cc48b6777956be51cec49c26e16d666cede7412d52dccefa9f0b0ed2361a7e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e1add4c16eac910803ca0c8316e4fcc2dfb5854a14ce317a92c3ff32bbafa3a1",
+      "shot": {
+        "sha256": "e1add4c16eac910803ca0c8316e4fcc2dfb5854a14ce317a92c3ff32bbafa3a1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6dca08632b00bbf500dc1741c625f83babf36ce477e6494cf675647074022421",
+      "shot": {
+        "sha256": "6dca08632b00bbf500dc1741c625f83babf36ce477e6494cf675647074022421",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e873b1688b69c3c1ed2fff638af50e5e8f5dca91910b0fe3faa0fec3e063688a",
+      "shot": {
+        "sha256": "e873b1688b69c3c1ed2fff638af50e5e8f5dca91910b0fe3faa0fec3e063688a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "00b21c9c6ff7f60bb00bffc343c72c42be0fd20805dff527f833404bf2ca84ef",
+      "shot": {
+        "sha256": "00b21c9c6ff7f60bb00bffc343c72c42be0fd20805dff527f833404bf2ca84ef",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9fc35569550805b409a44dce474cd56307653bbb7419dff2be7bb07b4941dde2",
+      "shot": {
+        "sha256": "9fc35569550805b409a44dce474cd56307653bbb7419dff2be7bb07b4941dde2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "39aca96eb002d7a7420216b442e31767126070126addf9829f0e0fc7f038b91b",
+      "shot": {
+        "sha256": "39aca96eb002d7a7420216b442e31767126070126addf9829f0e0fc7f038b91b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "249a541c07ca64b73d10847ae5d73aeecd9927589c38389392b20839c468a306",
+      "shot": {
+        "sha256": "249a541c07ca64b73d10847ae5d73aeecd9927589c38389392b20839c468a306",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-dropdown-overflow__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "07c97dbdd9710070403cc6da53992751d50d98e1b38edf56f46eb07cd376cb4f",
+      "shot": {
+        "sha256": "07c97dbdd9710070403cc6da53992751d50d98e1b38edf56f46eb07cd376cb4f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-dropdown-overflow",
+        "title": "Core/OverflowList",
+        "name": "With Dropdown Overflow",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3314c1041d4bdc9deb603ff3783cfcc95b1166d729469eb26af4005d708a2793",
+      "shot": {
+        "sha256": "3314c1041d4bdc9deb603ff3783cfcc95b1166d729469eb26af4005d708a2793",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "37d8589aa6c373dff34214358d93a07054fd7cf389d532c6fbb4fbb024b94769",
+      "shot": {
+        "sha256": "37d8589aa6c373dff34214358d93a07054fd7cf389d532c6fbb4fbb024b94769",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "25edfdd90557132c99c57dbe6d096529da4225e0576f922f157fa06b3b9a6878",
+      "shot": {
+        "sha256": "25edfdd90557132c99c57dbe6d096529da4225e0576f922f157fa06b3b9a6878",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6c1b5cf60ab7cf6a086231863c7e88a35866786d581aa067cc09a7bb882f07c4",
+      "shot": {
+        "sha256": "6c1b5cf60ab7cf6a086231863c7e88a35866786d581aa067cc09a7bb882f07c4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "39b6a45920bae930bfaa9867d4a2bfb3521262cd49ec2c521f3a80a82248ac3d",
+      "shot": {
+        "sha256": "39b6a45920bae930bfaa9867d4a2bfb3521262cd49ec2c521f3a80a82248ac3d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c68e937ab8e7190890e54d868579c331303d9a4238aeae1de01a27b785918476",
+      "shot": {
+        "sha256": "c68e937ab8e7190890e54d868579c331303d9a4238aeae1de01a27b785918476",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "362d01f9ed34e01a761aa4b57f195268e918bf833cdcc8f43e0116433840b229",
+      "shot": {
+        "sha256": "362d01f9ed34e01a761aa4b57f195268e918bf833cdcc8f43e0116433840b229",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4148a2738589e5114734ae4079dbd3463efbcab064cfbdbbaf0554a1248dc554",
+      "shot": {
+        "sha256": "4148a2738589e5114734ae4079dbd3463efbcab064cfbdbbaf0554a1248dc554",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a1ff2aba41d865a8e451a2aefe54f6777e904fba96f2a6899f7e5b556a2461d4",
+      "shot": {
+        "sha256": "a1ff2aba41d865a8e451a2aefe54f6777e904fba96f2a6899f7e5b556a2461d4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "33d6d1af63f3752528afe7e7e36c0d2ad979abb4d7a894d26df873a26118a29e",
+      "shot": {
+        "sha256": "33d6d1af63f3752528afe7e7e36c0d2ad979abb4d7a894d26df873a26118a29e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7385443993444390fee24398087740be7d1b2bcdb8d0c96ea8837fc9de13f9ec",
+      "shot": {
+        "sha256": "7385443993444390fee24398087740be7d1b2bcdb8d0c96ea8837fc9de13f9ec",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1dbc27c15460195695b6df6cb2ca9cb0a062ae30859e1465787ed57f15122346",
+      "shot": {
+        "sha256": "1dbc27c15460195695b6df6cb2ca9cb0a062ae30859e1465787ed57f15122346",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cbc4f427cdc4ab681f1597a9ff71f8f7212c863c9a3c4172e9c88b19e0966338",
+      "shot": {
+        "sha256": "cbc4f427cdc4ab681f1597a9ff71f8f7212c863c9a3c4172e9c88b19e0966338",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--with-sibling-element__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "baf6e25a884faa6b736a3848730cf318b173cedb28e9d63f200ef919284adae9",
+      "shot": {
+        "sha256": "baf6e25a884faa6b736a3848730cf318b173cedb28e9d63f200ef919284adae9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--with-sibling-element",
+        "title": "Core/OverflowList",
+        "name": "With Sibling Element",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "02164b9553ddeaa775c5ffde2a1739bcc1dcacb782f7d0ba01ed6dbdc86d6793",
+      "shot": {
+        "sha256": "02164b9553ddeaa775c5ffde2a1739bcc1dcacb782f7d0ba01ed6dbdc86d6793",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "69ef34ed5de04348536476128271d0c4b3e725a93078dbffa7b16333d94d7394",
+      "shot": {
+        "sha256": "69ef34ed5de04348536476128271d0c4b3e725a93078dbffa7b16333d94d7394",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e286d6e5eecf01cb96cd21763c12b6f46308c83385490f8f68b8a032fbb9b847",
+      "shot": {
+        "sha256": "e286d6e5eecf01cb96cd21763c12b6f46308c83385490f8f68b8a032fbb9b847",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d31fa79341dba24bbb0f4a220b38cbd4bbeb6d1fa4343f24864b9f8e552ff322",
+      "shot": {
+        "sha256": "d31fa79341dba24bbb0f4a220b38cbd4bbeb6d1fa4343f24864b9f8e552ff322",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "60bab82600a5a28e504807244e9f9bf4d77ec9a58cad8c7037c89910ad73bf1a",
+      "shot": {
+        "sha256": "60bab82600a5a28e504807244e9f9bf4d77ec9a58cad8c7037c89910ad73bf1a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e4e9b32fc5a2ac107d5c29ee7eb049565973d227d639bd1998a8e83faf573f65",
+      "shot": {
+        "sha256": "e4e9b32fc5a2ac107d5c29ee7eb049565973d227d639bd1998a8e83faf573f65",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "eb3386d0ad758166977ac0ad8bce3f59fa89606672465d8beb9aa5b761c5eb60",
+      "shot": {
+        "sha256": "eb3386d0ad758166977ac0ad8bce3f59fa89606672465d8beb9aa5b761c5eb60",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bbe3a644a20aa60c9c9a78da291a4df3c71716bf35a2e8ad510d823a2a614bbb",
+      "shot": {
+        "sha256": "bbe3a644a20aa60c9c9a78da291a4df3c71716bf35a2e8ad510d823a2a614bbb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bdb552ae4e3137a2973eb4b2331f1d4e9a9d3e761225f57ba831a385e1ce4cd0",
+      "shot": {
+        "sha256": "bdb552ae4e3137a2973eb4b2331f1d4e9a9d3e761225f57ba831a385e1ce4cd0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "143dba9ee81f4161b8360d1322bc399933ac210245f6478cfb9c101310e7ebfe",
+      "shot": {
+        "sha256": "143dba9ee81f4161b8360d1322bc399933ac210245f6478cfb9c101310e7ebfe",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6d4b1840c41a31dfbd31102675f33883cc7af6f93015467287963dbfcab3a8fa",
+      "shot": {
+        "sha256": "6d4b1840c41a31dfbd31102675f33883cc7af6f93015467287963dbfcab3a8fa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f9edcec8ba8d0c9464b4a4aabbe21ebc585b73807631835014f573c8ed2c3633",
+      "shot": {
+        "sha256": "f9edcec8ba8d0c9464b4a4aabbe21ebc585b73807631835014f573c8ed2c3633",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8cf4ba937bc1970510a8a99b6e950067ba515b8e41f1eaf0e1544529ebcf835b",
+      "shot": {
+        "sha256": "8cf4ba937bc1970510a8a99b6e950067ba515b8e41f1eaf0e1544529ebcf835b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--dynamic-items__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0113147ff9439df7f1ee33591084cf95470ff55d7ef3895b568f6b4d91f9b060",
+      "shot": {
+        "sha256": "0113147ff9439df7f1ee33591084cf95470ff55d7ef3895b568f6b4d91f9b060",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--dynamic-items",
+        "title": "Core/OverflowList",
+        "name": "Dynamic Items",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5ea8833998e282018e874b61b0e2aca0df43a36d76d45c063a5fa7236c8f97d7",
+      "shot": {
+        "sha256": "5ea8833998e282018e874b61b0e2aca0df43a36d76d45c063a5fa7236c8f97d7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2ae1945ee4d9735b2f0c74abe8015d18beeea1998a8496d004597d709e08157a",
+      "shot": {
+        "sha256": "2ae1945ee4d9735b2f0c74abe8015d18beeea1998a8496d004597d709e08157a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "81782ccdaa705aac369a9b7aa2fbd74fd516a3a4d285ec8358dccc8a8e371689",
+      "shot": {
+        "sha256": "81782ccdaa705aac369a9b7aa2fbd74fd516a3a4d285ec8358dccc8a8e371689",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "25a92450c8057f462d676c8e9ce8472b03fcea34faf56d8b078b0dcb5b877c0b",
+      "shot": {
+        "sha256": "25a92450c8057f462d676c8e9ce8472b03fcea34faf56d8b078b0dcb5b877c0b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "285503d9d1fceb36b223d4b9d52b602075d1377ef610b949b8c9f5eb3e234237",
+      "shot": {
+        "sha256": "285503d9d1fceb36b223d4b9d52b602075d1377ef610b949b8c9f5eb3e234237",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "00582033426673746f32214d261afc7b8d15146a751bc9edaeeea4db04919c71",
+      "shot": {
+        "sha256": "00582033426673746f32214d261afc7b8d15146a751bc9edaeeea4db04919c71",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c980f48b2875cd18df2975b36511d0ed5a843b21ceea386419bff4eecc9c6f98",
+      "shot": {
+        "sha256": "c980f48b2875cd18df2975b36511d0ed5a843b21ceea386419bff4eecc9c6f98",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2f9f8cb24d551980691b53fa1a1a65751df6ba0a318d701986d76583582b6e3c",
+      "shot": {
+        "sha256": "2f9f8cb24d551980691b53fa1a1a65751df6ba0a318d701986d76583582b6e3c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3a19fd2be06098f81687a22265e570d5347eaf36292c621369eaed2d23c4ada6",
+      "shot": {
+        "sha256": "3a19fd2be06098f81687a22265e570d5347eaf36292c621369eaed2d23c4ada6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "34ce5240b89023d9c866e7bbba35a36512b94c94e30a93a6843a5e1aebc5a02e",
+      "shot": {
+        "sha256": "34ce5240b89023d9c866e7bbba35a36512b94c94e30a93a6843a5e1aebc5a02e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "52ff013fcbdc539324e9ebeb60588b8da8d0c34b820d2fbfd580232f05699412",
+      "shot": {
+        "sha256": "52ff013fcbdc539324e9ebeb60588b8da8d0c34b820d2fbfd580232f05699412",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "58ce8228b2db6214db833b00ae8858bdca97bcba69f4f9263ec9e152ef7e46f4",
+      "shot": {
+        "sha256": "58ce8228b2db6214db833b00ae8858bdca97bcba69f4f9263ec9e152ef7e46f4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d4effc90ebc67dfb0fc0dfb5e8a581926546d18dfd2047bf66e708bd26312f04",
+      "shot": {
+        "sha256": "d4effc90ebc67dfb0fc0dfb5e8a581926546d18dfd2047bf66e708bd26312f04",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-items__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "07dec22a881db3db700309b80ec67fc9cbe64d3ba12a180431fdf1c26f331104",
+      "shot": {
+        "sha256": "07dec22a881db3db700309b80ec67fc9cbe64d3ba12a180431fdf1c26f331104",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-items",
+        "title": "Core/OverflowList",
+        "name": "Capped Items",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fabdda45f10eec3207bbca481ef15705010efbf83ba626e6a4a7059dadc92b5c",
+      "shot": {
+        "sha256": "fabdda45f10eec3207bbca481ef15705010efbf83ba626e6a4a7059dadc92b5c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3aba63cb3e1a8114b0d54620701b36b8b8c56a0e77da36477ebcfba80733147c",
+      "shot": {
+        "sha256": "3aba63cb3e1a8114b0d54620701b36b8b8c56a0e77da36477ebcfba80733147c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6941b73f44f0f1b24eebbdf945d4600e61142953c3588f15d1dd220de5b54bcd",
+      "shot": {
+        "sha256": "6941b73f44f0f1b24eebbdf945d4600e61142953c3588f15d1dd220de5b54bcd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2a4a58f76afec6f5514d2545da4917094baa9ccdaaa97d2450a702aede8a7f86",
+      "shot": {
+        "sha256": "2a4a58f76afec6f5514d2545da4917094baa9ccdaaa97d2450a702aede8a7f86",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a622ffd2dc236e8bbed7daf8cb2e07be396de229ecc262261de61a6690c0cc24",
+      "shot": {
+        "sha256": "a622ffd2dc236e8bbed7daf8cb2e07be396de229ecc262261de61a6690c0cc24",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fb414bf61488e8aafcb945c80adb71794e484f585bb66b60ca66fb3c640fd001",
+      "shot": {
+        "sha256": "fb414bf61488e8aafcb945c80adb71794e484f585bb66b60ca66fb3c640fd001",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "24878fe60b08277bd85a1d9659b23f23c3964003a39668cd64c48fb800116ef9",
+      "shot": {
+        "sha256": "24878fe60b08277bd85a1d9659b23f23c3964003a39668cd64c48fb800116ef9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d907c40a02369738dfb7a68de7a08c143a6d4dfd59e45bfce931665cbcafb89e",
+      "shot": {
+        "sha256": "d907c40a02369738dfb7a68de7a08c143a6d4dfd59e45bfce931665cbcafb89e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9b5a3d9dc2c972f6eca3e267656ca1da129a41c4049f6e88fe343f27425cc1e8",
+      "shot": {
+        "sha256": "9b5a3d9dc2c972f6eca3e267656ca1da129a41c4049f6e88fe343f27425cc1e8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f6d207a2d8e0d71db11039b0b60f72f47d98065dd77bc9c8d83570b72bb9d238",
+      "shot": {
+        "sha256": "f6d207a2d8e0d71db11039b0b60f72f47d98065dd77bc9c8d83570b72bb9d238",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d3f44a5067a8f8f0191a18d1c3f3e928c920f2cf59c1220e5da6df6c8a3458cc",
+      "shot": {
+        "sha256": "d3f44a5067a8f8f0191a18d1c3f3e928c920f2cf59c1220e5da6df6c8a3458cc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b6d6172b268f8d8a6863d1c9b07f4dffa82d15099a5304f934ed421a9dedd480",
+      "shot": {
+        "sha256": "b6d6172b268f8d8a6863d1c9b07f4dffa82d15099a5304f934ed421a9dedd480",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0b99f34522979cb097ebd61b678f240d935ca81c66eb434dbe27de726ca12025",
+      "shot": {
+        "sha256": "0b99f34522979cb097ebd61b678f240d935ca81c66eb434dbe27de726ca12025",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--multi-row__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bf057c496482cc5786e059538d8012d37e4be22a62e09f9cb1e42b95b92c8ec6",
+      "shot": {
+        "sha256": "bf057c496482cc5786e059538d8012d37e4be22a62e09f9cb1e42b95b92c8ec6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--multi-row",
+        "title": "Core/OverflowList",
+        "name": "Multi Row",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "696eef4fa48148a362fa87acca21b83f71b29198bc8f18e7f1d639bac9380cfe",
+      "shot": {
+        "sha256": "696eef4fa48148a362fa87acca21b83f71b29198bc8f18e7f1d639bac9380cfe",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9d3e47f91aa5cad811d14cff39694e5d9679357a5d900ea0c68e22a0c47c306a",
+      "shot": {
+        "sha256": "9d3e47f91aa5cad811d14cff39694e5d9679357a5d900ea0c68e22a0c47c306a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "739d8715c2c1b6976974ac62f251421dd5166f44fbbcc8d555bfa97e141d2844",
+      "shot": {
+        "sha256": "739d8715c2c1b6976974ac62f251421dd5166f44fbbcc8d555bfa97e141d2844",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6f2012c1cfc87ac1320281be9b01c34d1d1618ffc4d4d77ff769a92b7791aaa0",
+      "shot": {
+        "sha256": "6f2012c1cfc87ac1320281be9b01c34d1d1618ffc4d4d77ff769a92b7791aaa0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "43f80a09905c6c56da2f8caf2fe7f867fff3a4ca1681b2da8104801c50059cc5",
+      "shot": {
+        "sha256": "43f80a09905c6c56da2f8caf2fe7f867fff3a4ca1681b2da8104801c50059cc5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2c46ee639f687b0acf30d2fcb951b57ae73bd73b735581304de3dca832038fe4",
+      "shot": {
+        "sha256": "2c46ee639f687b0acf30d2fcb951b57ae73bd73b735581304de3dca832038fe4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e19c089f9f15e0b2fe8dd21b3bae1ec661d854d6cbfe0eed58123c8e3eda3f26",
+      "shot": {
+        "sha256": "e19c089f9f15e0b2fe8dd21b3bae1ec661d854d6cbfe0eed58123c8e3eda3f26",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f03fadb45db71f6b0b55dc2a9ab2382f626e25cf50c55ad177e1046159bc251b",
+      "shot": {
+        "sha256": "f03fadb45db71f6b0b55dc2a9ab2382f626e25cf50c55ad177e1046159bc251b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5e49782f3be6dcabc590776b79ed9d84c541060ccbd944c5f268481a1957e916",
+      "shot": {
+        "sha256": "5e49782f3be6dcabc590776b79ed9d84c541060ccbd944c5f268481a1957e916",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e596503c2fa4e052aa70ba6894dd81faa0e7b73da7e1f655433f75574ac98f13",
+      "shot": {
+        "sha256": "e596503c2fa4e052aa70ba6894dd81faa0e7b73da7e1f655433f75574ac98f13",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "903ace7f6a76be978b26e27ff5257ccec3cfba81ce14428ce6400a71d6998e41",
+      "shot": {
+        "sha256": "903ace7f6a76be978b26e27ff5257ccec3cfba81ce14428ce6400a71d6998e41",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bb911fcdc1ff1ceba860993a8e929d615beb65f50ef81ba0c9350785bfbbc3fc",
+      "shot": {
+        "sha256": "bb911fcdc1ff1ceba860993a8e929d615beb65f50ef81ba0c9350785bfbbc3fc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9580820fcfa82e771f10c4638a164c4c2287b20ce603e83739bbc777fed3ad79",
+      "shot": {
+        "sha256": "9580820fcfa82e771f10c4638a164c4c2287b20ce603e83739bbc777fed3ad79",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--capped-multi-row__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fa76ef3d33d937d433f60c3e7a6c00befdad0069ccead46e561241e6960e17a4",
+      "shot": {
+        "sha256": "fa76ef3d33d937d433f60c3e7a6c00befdad0069ccead46e561241e6960e17a4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--capped-multi-row",
+        "title": "Core/OverflowList",
+        "name": "Capped Multi Row",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4f0b024c130b6712ee25144a7fb2a6d5c85a1805e2220708f0a5d6f5465de0eb",
+      "shot": {
+        "sha256": "4f0b024c130b6712ee25144a7fb2a6d5c85a1805e2220708f0a5d6f5465de0eb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f2ed0f454c4bd69a20a53215d5126cd0efc773e3a465c451b1fccb08c1d7bda8",
+      "shot": {
+        "sha256": "f2ed0f454c4bd69a20a53215d5126cd0efc773e3a465c451b1fccb08c1d7bda8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "121c258b9237c07cb2c2c6589364fd132802b503b3bca03a41132210e04d0b44",
+      "shot": {
+        "sha256": "121c258b9237c07cb2c2c6589364fd132802b503b3bca03a41132210e04d0b44",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ff92b897bba7b13c78626e9c8f9b5345d74bc024ffb111859bc4da8aaa035527",
+      "shot": {
+        "sha256": "ff92b897bba7b13c78626e9c8f9b5345d74bc024ffb111859bc4da8aaa035527",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e0b5a3370773fe420edc66297171d4a00e4db3f2939c9291533edd9974964f6d",
+      "shot": {
+        "sha256": "e0b5a3370773fe420edc66297171d4a00e4db3f2939c9291533edd9974964f6d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "64780c90203102d63052e212ee65d7656a2e29f66744d2616de69dc8872118b6",
+      "shot": {
+        "sha256": "64780c90203102d63052e212ee65d7656a2e29f66744d2616de69dc8872118b6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "664ddfe6785e00bfc9730a66b0eff6b32a951e732355372cc41d203db2a2e51f",
+      "shot": {
+        "sha256": "664ddfe6785e00bfc9730a66b0eff6b32a951e732355372cc41d203db2a2e51f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3db95ec50f58c935b8e16a540971751ac0cc1dec9a5b2b7ccc5468d0403a99f0",
+      "shot": {
+        "sha256": "3db95ec50f58c935b8e16a540971751ac0cc1dec9a5b2b7ccc5468d0403a99f0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fb21b663cabed5ce6b2bacff04a3d7031144446124ec98f90c3bffd290d5e247",
+      "shot": {
+        "sha256": "fb21b663cabed5ce6b2bacff04a3d7031144446124ec98f90c3bffd290d5e247",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b88f102c16af42e178bf3a2d8a135b226433c5b226d7a72e0d3d3ad7f8042fcc",
+      "shot": {
+        "sha256": "b88f102c16af42e178bf3a2d8a135b226433c5b226d7a72e0d3d3ad7f8042fcc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "10b8e8760628c919a0490c9733249dfad9b34e6f7e8dd3d6874f0ac12a949dd8",
+      "shot": {
+        "sha256": "10b8e8760628c919a0490c9733249dfad9b34e6f7e8dd3d6874f0ac12a949dd8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fb5f829d72d65b2f19513ed4692a5cc77e1ecf6670849876e1936a74e9cb382d",
+      "shot": {
+        "sha256": "fb5f829d72d65b2f19513ed4692a5cc77e1ecf6670849876e1936a74e9cb382d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8e5a6b99b93b394537157d4f66840e3dfc2b177b542ef54430d456d01deba269",
+      "shot": {
+        "sha256": "8e5a6b99b93b394537157d4f66840e3dfc2b177b542ef54430d456d01deba269",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-overflowlist--standing-anchor__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f774a6aadf42229afac60512248ff2fe15c53af8852523845f517ec116a993b7",
+      "shot": {
+        "sha256": "f774a6aadf42229afac60512248ff2fe15c53af8852523845f517ec116a993b7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-overflowlist--standing-anchor",
+        "title": "Core/OverflowList",
+        "name": "Standing Anchor",
+        "component": "OverflowList",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    }
+  ],
+  "decision": {
+    "approver": "cixzhang",
+    "approverId": 2781099,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "Exact-head rerun has 0 changed, removed, or failed frames; all 22 additions are OverflowList light/dark baselines, including the reviewed standing-anchor story.",
+    "commentId": 5437756597,
+    "at": "2026-08-27T10:42:01.511Z"
+  }
+}

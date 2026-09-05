@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[25804],{25804:(e,n,t)=>{t.r(n),t.d(n,{default:()=>a});var c=t(76032),r=t(95155);function a(e){var n=e.content,t=e.children;return(0,r.jsx)(c.Tooltip,{content:n,placement:"above",focusTrigger:"always",children:t})}}}]);

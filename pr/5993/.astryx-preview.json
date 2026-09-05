@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5993,
+    "headSha": "9b302e4bec72cab0d84d81da341309de774ba243",
+    "headRef": "core-collapsible-chevron-placement",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 33936869213,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/5993/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5993/sandbox/",
+      "indexSha256": "0b983356eeeed105d2c463be46f4e81e370792703b3e2c560b99d7632bff0480"
+    }
+  }
+}

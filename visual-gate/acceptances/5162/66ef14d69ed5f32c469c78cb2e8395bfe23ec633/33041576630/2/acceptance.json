@@ -1,0 +1,2514 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5162,
+  "headSha": "66ef14d69ed5f32c469c78cb2e8395bfe23ec633",
+  "testedSha": "c0c7f8b991c4f6be5c26d2aaf9604bb835379fa2",
+  "baseSha": "08a3758d7a2a85a208c1fa3398b4f2eb0f57fc5b",
+  "run": {
+    "id": 33041576630,
+    "attempt": 2
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "09d0599ccd08f4739306699ffada9f965026f922",
+    "manifestDigest": "d4511d43fc975e64f636564f3f9f41d7804e8736ddcf5a17795a80b4badf1f68"
+  },
+  "keys": [
+    {
+      "key": "core-popover--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0c5768f6fca5e1ddff30aac2455b88754fe43171d806ff04d1fc3249757dbfbf",
+      "shot": {
+        "sha256": "0c5768f6fca5e1ddff30aac2455b88754fe43171d806ff04d1fc3249757dbfbf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--default",
+        "title": "Core/Popover",
+        "name": "Default",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "80753a8e59313e490cf8be98f1c72966fce1ed077d3a3feb371c9a43e91f1ab6",
+      "shot": {
+        "sha256": "80753a8e59313e490cf8be98f1c72966fce1ed077d3a3feb371c9a43e91f1ab6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--default",
+        "title": "Core/Popover",
+        "name": "Default",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "409797b4a2144f86053dd7ae64b0d4f6cc7fac1d04d4e40bbf12210399363ec7",
+      "shot": {
+        "sha256": "409797b4a2144f86053dd7ae64b0d4f6cc7fac1d04d4e40bbf12210399363ec7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--default",
+        "title": "Core/Popover",
+        "name": "Default",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c61ddb9a0e9f6c8ebf204e2351d2cdc4b2a1d06dfa609caaa9b0457abcc8fd24",
+      "shot": {
+        "sha256": "c61ddb9a0e9f6c8ebf204e2351d2cdc4b2a1d06dfa609caaa9b0457abcc8fd24",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--default",
+        "title": "Core/Popover",
+        "name": "Default",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "feac0ba78dad65a3b8a830ad7a6c9a29f3bb9e257804c4ba401a84fd45af24de",
+      "shot": {
+        "sha256": "feac0ba78dad65a3b8a830ad7a6c9a29f3bb9e257804c4ba401a84fd45af24de",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--default",
+        "title": "Core/Popover",
+        "name": "Default",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3a71f370590d4883f82a6d0c67bfc9533becd4ae48813ee4edb42f64baaa0db3",
+      "shot": {
+        "sha256": "3a71f370590d4883f82a6d0c67bfc9533becd4ae48813ee4edb42f64baaa0db3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--default",
+        "title": "Core/Popover",
+        "name": "Default",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c7b695124f37d25972469371d0e36f98a52184dfc3f4646ea874ce0c6835d410",
+      "shot": {
+        "sha256": "c7b695124f37d25972469371d0e36f98a52184dfc3f4646ea874ce0c6835d410",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--default",
+        "title": "Core/Popover",
+        "name": "Default",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7c95fc72fd4f6d0be45b592204dfc4d2d53e4896d741fc721350271e79e518ee",
+      "shot": {
+        "sha256": "7c95fc72fd4f6d0be45b592204dfc4d2d53e4896d741fc721350271e79e518ee",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--default",
+        "title": "Core/Popover",
+        "name": "Default",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dc478771de3ebeecffa932717ad44a8e34dc604f7280f810f9630c1910c886c4",
+      "shot": {
+        "sha256": "dc478771de3ebeecffa932717ad44a8e34dc604f7280f810f9630c1910c886c4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--default",
+        "title": "Core/Popover",
+        "name": "Default",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3ec03e68870a78dfe41c052b9bd175c1f64b82af339abe9555c6f74907575779",
+      "shot": {
+        "sha256": "3ec03e68870a78dfe41c052b9bd175c1f64b82af339abe9555c6f74907575779",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--default",
+        "title": "Core/Popover",
+        "name": "Default",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1311b8beccbfdad6a64811d8f26e3c9d96110319c1f5d4fd0ebcf716066c0860",
+      "shot": {
+        "sha256": "1311b8beccbfdad6a64811d8f26e3c9d96110319c1f5d4fd0ebcf716066c0860",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--default",
+        "title": "Core/Popover",
+        "name": "Default",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "88c8328bd89e29c56b4450a69e62dd7d1c885b142dab87c055d16fd1bc03edcf",
+      "shot": {
+        "sha256": "88c8328bd89e29c56b4450a69e62dd7d1c885b142dab87c055d16fd1bc03edcf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--default",
+        "title": "Core/Popover",
+        "name": "Default",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9ec18956a695998b5181b3f6442ffb25ccefdc2fb70e1c71595187537b32ae53",
+      "shot": {
+        "sha256": "9ec18956a695998b5181b3f6442ffb25ccefdc2fb70e1c71595187537b32ae53",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6562c41dd3485990db9037ac23b68d0eeb001c28d88c677a26725efd0c80493e",
+      "shot": {
+        "sha256": "6562c41dd3485990db9037ac23b68d0eeb001c28d88c677a26725efd0c80493e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "87e5d45816d0c95029da1c2ecffdd8335f4c8fbeed3682bec331d540fcb967b0",
+      "shot": {
+        "sha256": "87e5d45816d0c95029da1c2ecffdd8335f4c8fbeed3682bec331d540fcb967b0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5e37020578c250c578a33dd0dea2ca82f252e7cbce4c96c37ce1ad88e316862b",
+      "shot": {
+        "sha256": "5e37020578c250c578a33dd0dea2ca82f252e7cbce4c96c37ce1ad88e316862b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fe45c37c0a912cc7bd6b650252a00edcbb16eaf696b68c3746412d09d0b314d8",
+      "shot": {
+        "sha256": "fe45c37c0a912cc7bd6b650252a00edcbb16eaf696b68c3746412d09d0b314d8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8c06378c78ac3541b3b2b6b70fe3e1d8b5ed6eb04dcdd29e884954b8dadee819",
+      "shot": {
+        "sha256": "8c06378c78ac3541b3b2b6b70fe3e1d8b5ed6eb04dcdd29e884954b8dadee819",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "972a7e9786a5ccc57150d4b43fb7493e24ddbc871cad524d366ce8447180e613",
+      "shot": {
+        "sha256": "972a7e9786a5ccc57150d4b43fb7493e24ddbc871cad524d366ce8447180e613",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "27bbd7bc9c25bc88a147edd99914a58df2030cbd54c961d6d15926676b196158",
+      "shot": {
+        "sha256": "27bbd7bc9c25bc88a147edd99914a58df2030cbd54c961d6d15926676b196158",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9333e6227544ec1e8ec5dec556b30b477009e68bb9e1da5bb1695ae98b37fd04",
+      "shot": {
+        "sha256": "9333e6227544ec1e8ec5dec556b30b477009e68bb9e1da5bb1695ae98b37fd04",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "32d15fe8c2cc28e4174bf501ccb95a7fcf25e15795098d57d2e0c3f644e50e19",
+      "shot": {
+        "sha256": "32d15fe8c2cc28e4174bf501ccb95a7fcf25e15795098d57d2e0c3f644e50e19",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bf8a0d3738318cb6e7233c37965ab96ca42b65f49cc247f108f1b3865399a6d4",
+      "shot": {
+        "sha256": "bf8a0d3738318cb6e7233c37965ab96ca42b65f49cc247f108f1b3865399a6d4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cd23c649af6b3669d520e533bea9e488cccc519a69dd8242cafcdff16798a389",
+      "shot": {
+        "sha256": "cd23c649af6b3669d520e533bea9e488cccc519a69dd8242cafcdff16798a389",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1545d2a932b035926d2aaf51867566c2be41821deada7a42e7df67afe6422407",
+      "shot": {
+        "sha256": "1545d2a932b035926d2aaf51867566c2be41821deada7a42e7df67afe6422407",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--filter-panel__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1ab7b520132d2ed6090e433172268ce0d90a48a4fc928563291f4b70efae8a88",
+      "shot": {
+        "sha256": "1ab7b520132d2ed6090e433172268ce0d90a48a4fc928563291f4b70efae8a88",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--filter-panel",
+        "title": "Core/Popover",
+        "name": "Filter Panel",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "eecd3ec39babdc7cb028c6bf2da32ca9452a4ec97d638d142ad00d00d641c089",
+      "shot": {
+        "sha256": "eecd3ec39babdc7cb028c6bf2da32ca9452a4ec97d638d142ad00d00d641c089",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "499afe177966bdc7686111e611abfb813ccef23544fade11cf047a1e33691ff6",
+      "shot": {
+        "sha256": "499afe177966bdc7686111e611abfb813ccef23544fade11cf047a1e33691ff6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "970acc8bf11ae26fc629d9a1136cb4d6f37f74d34377271c515eb4aeb1d72c9a",
+      "shot": {
+        "sha256": "970acc8bf11ae26fc629d9a1136cb4d6f37f74d34377271c515eb4aeb1d72c9a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7b0865964f4b4dc0f6df81876956bd7639278b245cf6129f8211e68a901d6858",
+      "shot": {
+        "sha256": "7b0865964f4b4dc0f6df81876956bd7639278b245cf6129f8211e68a901d6858",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d7bfde8d27a674607e7ea5abaaf397cee62aa2bb936ec9b4241328953bff2dc5",
+      "shot": {
+        "sha256": "d7bfde8d27a674607e7ea5abaaf397cee62aa2bb936ec9b4241328953bff2dc5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5edddfbebbd5960a39161cd97fb74b47f3839ebed7a0d919e29a68594c3a0749",
+      "shot": {
+        "sha256": "5edddfbebbd5960a39161cd97fb74b47f3839ebed7a0d919e29a68594c3a0749",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8f54b823295e7b74fd760e238c821dc5ba5cb96383a2640df37f1233ff7e109a",
+      "shot": {
+        "sha256": "8f54b823295e7b74fd760e238c821dc5ba5cb96383a2640df37f1233ff7e109a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7db7216b03f5ecf5987eb95f0211b5434992ed4f79038123c9825f0f714915ca",
+      "shot": {
+        "sha256": "7db7216b03f5ecf5987eb95f0211b5434992ed4f79038123c9825f0f714915ca",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dd019c2285159965db3365c4829e434739eb9533886bed26ead3fea11ecd8f39",
+      "shot": {
+        "sha256": "dd019c2285159965db3365c4829e434739eb9533886bed26ead3fea11ecd8f39",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "129f8b6ca8c362632b03c6230beaa40af9ae61a425d0fdf9bb2a27cb4fb89b8b",
+      "shot": {
+        "sha256": "129f8b6ca8c362632b03c6230beaa40af9ae61a425d0fdf9bb2a27cb4fb89b8b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1997dc4496012595112e5f8d19077c246a385cdbd6b8fc132224a493d999fa2a",
+      "shot": {
+        "sha256": "1997dc4496012595112e5f8d19077c246a385cdbd6b8fc132224a493d999fa2a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "58768896c1c772e90f738593ea09703146b6374286844f94388c65fd8b287c65",
+      "shot": {
+        "sha256": "58768896c1c772e90f738593ea09703146b6374286844f94388c65fd8b287c65",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5b7580644f5c474fc7e7466be4e60c582f1cdb28e0fbfeb015627ea716f05b70",
+      "shot": {
+        "sha256": "5b7580644f5c474fc7e7466be4e60c582f1cdb28e0fbfeb015627ea716f05b70",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--confirmation__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5e3da32ae4670ee6fd340ef75b4b67cef3b34201e0f4eb6a5aaf51c3da1d46d3",
+      "shot": {
+        "sha256": "5e3da32ae4670ee6fd340ef75b4b67cef3b34201e0f4eb6a5aaf51c3da1d46d3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--confirmation",
+        "title": "Core/Popover",
+        "name": "Confirmation",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d599b7e68a7706f48fcb25e16365ed5b9e5b75dbea87d91ca6c9ceb612bed487",
+      "shot": {
+        "sha256": "d599b7e68a7706f48fcb25e16365ed5b9e5b75dbea87d91ca6c9ceb612bed487",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "83e920457fbd4ca82d3664af9d8ab80c25c14dd51fe5b28f9a1be1066f393b7b",
+      "shot": {
+        "sha256": "83e920457fbd4ca82d3664af9d8ab80c25c14dd51fe5b28f9a1be1066f393b7b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "40d1d6761909a4ab09559bc6932a56fc695a1fa218baf5967c66e0744337ad12",
+      "shot": {
+        "sha256": "40d1d6761909a4ab09559bc6932a56fc695a1fa218baf5967c66e0744337ad12",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "acd186cf1effdd6659a35529f0ee53d30f98cca4becc2399a9d16f8dd9cfca71",
+      "shot": {
+        "sha256": "acd186cf1effdd6659a35529f0ee53d30f98cca4becc2399a9d16f8dd9cfca71",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "deabd333c021a99bed33625a510919f1108cfb01d0cb73fbcaa0db9a04e9aa9f",
+      "shot": {
+        "sha256": "deabd333c021a99bed33625a510919f1108cfb01d0cb73fbcaa0db9a04e9aa9f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "853971d9d3c98eee400ed5906a9450f986bc84bd9cab684b986722fc0f388bf6",
+      "shot": {
+        "sha256": "853971d9d3c98eee400ed5906a9450f986bc84bd9cab684b986722fc0f388bf6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b6535808f59013f1713c15c552ae061b00dce77018bd3485a2d76d2f8880277a",
+      "shot": {
+        "sha256": "b6535808f59013f1713c15c552ae061b00dce77018bd3485a2d76d2f8880277a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c5e24ad3cdf1b0671f4d413f74b024a262b2968f45372228acec56f93b1d0846",
+      "shot": {
+        "sha256": "c5e24ad3cdf1b0671f4d413f74b024a262b2968f45372228acec56f93b1d0846",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "aa2b699e90e094bd12a8049961ddd0026b6e7138a4d7b94d7234e5dcbf5f9939",
+      "shot": {
+        "sha256": "aa2b699e90e094bd12a8049961ddd0026b6e7138a4d7b94d7234e5dcbf5f9939",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "255bd9c2dab396d8fb131b6f4ec472aecbb47091590ba35e9932ded46b2ff9dd",
+      "shot": {
+        "sha256": "255bd9c2dab396d8fb131b6f4ec472aecbb47091590ba35e9932ded46b2ff9dd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1329445685ecb72460e67dbe0c3b2e662fbaebb06ea9c74460edc1a1d947c941",
+      "shot": {
+        "sha256": "1329445685ecb72460e67dbe0c3b2e662fbaebb06ea9c74460edc1a1d947c941",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0744d145c75e2a8f3ec34e23a933647f30beab7b9cc83934641c1243c34bfd21",
+      "shot": {
+        "sha256": "0744d145c75e2a8f3ec34e23a933647f30beab7b9cc83934641c1243c34bfd21",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a9892b6a8035e0b8ad99c72984aecb01748404ad172482b05e69d47c06ede23f",
+      "shot": {
+        "sha256": "a9892b6a8035e0b8ad99c72984aecb01748404ad172482b05e69d47c06ede23f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--anchor-ref__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c76bddf78196375988ae34a0d7b56a81e4fa0006ea1626c6626f5c715276505a",
+      "shot": {
+        "sha256": "c76bddf78196375988ae34a0d7b56a81e4fa0006ea1626c6626f5c715276505a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--anchor-ref",
+        "title": "Core/Popover",
+        "name": "Anchor Ref",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e48b7d62884d975f9d6dc60da171d6c4e8df793d72fd22b312c0aaa05a332b00",
+      "shot": {
+        "sha256": "e48b7d62884d975f9d6dc60da171d6c4e8df793d72fd22b312c0aaa05a332b00",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "27fe3149eb06102098a8b4f5d7881cb05e8e3086cfa3dc1fa3c82f4e7595ffb2",
+      "shot": {
+        "sha256": "27fe3149eb06102098a8b4f5d7881cb05e8e3086cfa3dc1fa3c82f4e7595ffb2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "19d8851ebe37446ccb1aa2d6004b5882b059b636637f5a7443abeb2a26e7d4ce",
+      "shot": {
+        "sha256": "19d8851ebe37446ccb1aa2d6004b5882b059b636637f5a7443abeb2a26e7d4ce",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4a1063a956ef32bd2c1c5d92af11418238369c5464e626214de4926e16bffe44",
+      "shot": {
+        "sha256": "4a1063a956ef32bd2c1c5d92af11418238369c5464e626214de4926e16bffe44",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8edc6d125331e156ca43d4d2c3b4e03f9622de208c07e6c040f5282a5f409efd",
+      "shot": {
+        "sha256": "8edc6d125331e156ca43d4d2c3b4e03f9622de208c07e6c040f5282a5f409efd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1d2ff950e17de9049f174ef5c35756b0f830825e9ea0d2ba0be22a5e0e331ac9",
+      "shot": {
+        "sha256": "1d2ff950e17de9049f174ef5c35756b0f830825e9ea0d2ba0be22a5e0e331ac9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "30b892354253db8f2caadf35437e20d6fc158111f74ecaf653f0deef89b855a0",
+      "shot": {
+        "sha256": "30b892354253db8f2caadf35437e20d6fc158111f74ecaf653f0deef89b855a0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "aa02c7371a4233abe50ab974a2663fb70f09b6129fc7fe65ecd9f7d0f1cb0c60",
+      "shot": {
+        "sha256": "aa02c7371a4233abe50ab974a2663fb70f09b6129fc7fe65ecd9f7d0f1cb0c60",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6f1e12b872baf190af87f44604c626f4b28a8a5edeb8898d88a52939dcaba239",
+      "shot": {
+        "sha256": "6f1e12b872baf190af87f44604c626f4b28a8a5edeb8898d88a52939dcaba239",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6dd5fca87f51c2eb0c9c95f3c5838571470d8348766fa5439dc75ee5ea9b9355",
+      "shot": {
+        "sha256": "6dd5fca87f51c2eb0c9c95f3c5838571470d8348766fa5439dc75ee5ea9b9355",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8a758b197722173dea2fe28c6b75393364e750f0370a6ddf211eeea207266056",
+      "shot": {
+        "sha256": "8a758b197722173dea2fe28c6b75393364e750f0370a6ddf211eeea207266056",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "47004b7753ce9e1e3691cfcae3a7a8d21cb773348435b249bd217dd11d6d4db7",
+      "shot": {
+        "sha256": "47004b7753ce9e1e3691cfcae3a7a8d21cb773348435b249bd217dd11d6d4db7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0fbae063df49b289291427c1806cc439fdc6eed2c7bafa158b1654a323664bfc",
+      "shot": {
+        "sha256": "0fbae063df49b289291427c1806cc439fdc6eed2c7bafa158b1654a323664bfc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--above__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "93142c67825243d51d2cf78e49c47d6f183a8f5bb92f7e662a020ecd2205be24",
+      "shot": {
+        "sha256": "93142c67825243d51d2cf78e49c47d6f183a8f5bb92f7e662a020ecd2205be24",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--above",
+        "title": "Core/Popover",
+        "name": "Above",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "da3b434198c3dcff4acf09ab4d73b61d33e74168f9541cb094c3dacc9bb8cf43",
+      "shot": {
+        "sha256": "da3b434198c3dcff4acf09ab4d73b61d33e74168f9541cb094c3dacc9bb8cf43",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3f13ccc14b3354604bef45831657af403ddaa3d04113a4d8db42bb195519d26d",
+      "shot": {
+        "sha256": "3f13ccc14b3354604bef45831657af403ddaa3d04113a4d8db42bb195519d26d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c7497e9058029a46b15a3ed0e4c2cd3567300255cd7d5df1e875d87125481611",
+      "shot": {
+        "sha256": "c7497e9058029a46b15a3ed0e4c2cd3567300255cd7d5df1e875d87125481611",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7542dae5eb6db42e3d309873207bf27b1404a5f16ea41f51f74e4930cd247bc6",
+      "shot": {
+        "sha256": "7542dae5eb6db42e3d309873207bf27b1404a5f16ea41f51f74e4930cd247bc6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c40a9313d8c2ce2c4ab70aa26a0373e0cb5b0bee4fc8dd7ec6cec85a7c3d7bc8",
+      "shot": {
+        "sha256": "c40a9313d8c2ce2c4ab70aa26a0373e0cb5b0bee4fc8dd7ec6cec85a7c3d7bc8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "021ef607868236c46c186613fe0a1fb924665a4b942036dfcbe9df574802bcb2",
+      "shot": {
+        "sha256": "021ef607868236c46c186613fe0a1fb924665a4b942036dfcbe9df574802bcb2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4e5eb6f4cca0e8062d024ac38a1fea87b9008dc974f1b7eb3d145cb48803c03f",
+      "shot": {
+        "sha256": "4e5eb6f4cca0e8062d024ac38a1fea87b9008dc974f1b7eb3d145cb48803c03f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "133b85a5fd24fc3707d9d570f8480a363e7d6cc84d6663e4a2ae75eed67b7946",
+      "shot": {
+        "sha256": "133b85a5fd24fc3707d9d570f8480a363e7d6cc84d6663e4a2ae75eed67b7946",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cda2a94fc9acbd8f02b9d6e63fa0563b861b07e7d26a424a1c20eaa411ca9586",
+      "shot": {
+        "sha256": "cda2a94fc9acbd8f02b9d6e63fa0563b861b07e7d26a424a1c20eaa411ca9586",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0b81cc75f95a444c428c392131921a90b72bb2380a57f638e2abe63b71dec2f9",
+      "shot": {
+        "sha256": "0b81cc75f95a444c428c392131921a90b72bb2380a57f638e2abe63b71dec2f9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dcd3c990cdd586d96e3d259afe19a4a3343710f98ed0762287f041f0c53efa06",
+      "shot": {
+        "sha256": "dcd3c990cdd586d96e3d259afe19a4a3343710f98ed0762287f041f0c53efa06",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cf694cb72a32a30473facc7e5ae07c679cddc9308002dbd0b175e14950c5913d",
+      "shot": {
+        "sha256": "cf694cb72a32a30473facc7e5ae07c679cddc9308002dbd0b175e14950c5913d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cf58dfc4efba6c8af740cb6a0328fd5df4659a148a0281f0f0e764fb161fea2b",
+      "shot": {
+        "sha256": "cf58dfc4efba6c8af740cb6a0328fd5df4659a148a0281f0f0e764fb161fea2b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--disabled__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "31edc01d061d2eeee3f1066e32aa47099a1c58e2708f856d7ab3afac81870ee5",
+      "shot": {
+        "sha256": "31edc01d061d2eeee3f1066e32aa47099a1c58e2708f856d7ab3afac81870ee5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--disabled",
+        "title": "Core/Popover",
+        "name": "Disabled",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b896b73c737576cfe0c3599b000a1d5892627f1674757c99fd7bb706285b97c7",
+      "shot": {
+        "sha256": "b896b73c737576cfe0c3599b000a1d5892627f1674757c99fd7bb706285b97c7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9eba04838e7b0974b81dd27fde08d1c9029559173011d9d800ab8ca1445f81a4",
+      "shot": {
+        "sha256": "9eba04838e7b0974b81dd27fde08d1c9029559173011d9d800ab8ca1445f81a4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "02d470d515c035eb25d3fa6e6822d2b404f2f125d243487711fd528fea645601",
+      "shot": {
+        "sha256": "02d470d515c035eb25d3fa6e6822d2b404f2f125d243487711fd528fea645601",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "73b2870afd5fe880c1e4a7ce63c57fe9f0d229ba9a2718332cf4c3a4451b19be",
+      "shot": {
+        "sha256": "73b2870afd5fe880c1e4a7ce63c57fe9f0d229ba9a2718332cf4c3a4451b19be",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1cc7c01e6f300aea7afefcf6dcdb55147d971159e0a19f050c02fbcdb3e074f5",
+      "shot": {
+        "sha256": "1cc7c01e6f300aea7afefcf6dcdb55147d971159e0a19f050c02fbcdb3e074f5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "721dee3f29903500f6de06330ca08061e268179ec1369d59346e1c03121e3736",
+      "shot": {
+        "sha256": "721dee3f29903500f6de06330ca08061e268179ec1369d59346e1c03121e3736",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cfc59bdadc3c9d2fee6ee21fa3c902792f7b194f4c345cd30cfda39bff4bc232",
+      "shot": {
+        "sha256": "cfc59bdadc3c9d2fee6ee21fa3c902792f7b194f4c345cd30cfda39bff4bc232",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "123f1117c5fff4ba613c6ac9efc7fb12d4f67c3ad122230e78f697fec60e6928",
+      "shot": {
+        "sha256": "123f1117c5fff4ba613c6ac9efc7fb12d4f67c3ad122230e78f697fec60e6928",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ea2d2eb56eb34405aa5d98ec806e5c91a828aa8a2879ea1e6d0a00299ee4b36d",
+      "shot": {
+        "sha256": "ea2d2eb56eb34405aa5d98ec806e5c91a828aa8a2879ea1e6d0a00299ee4b36d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cff66fe5df81c750acd19cb78d70018f82d66dfb56690c7da4a50d327b3e4ef4",
+      "shot": {
+        "sha256": "cff66fe5df81c750acd19cb78d70018f82d66dfb56690c7da4a50d327b3e4ef4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "54299a263b7de6323fcd55dd96f36f48f0688841f4bc8445e9baf95bb9ce4882",
+      "shot": {
+        "sha256": "54299a263b7de6323fcd55dd96f36f48f0688841f4bc8445e9baf95bb9ce4882",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "76f9283ada46fa63b4327976b0955c913ddc02569252395bb40ceba2a46a0d62",
+      "shot": {
+        "sha256": "76f9283ada46fa63b4327976b0955c913ddc02569252395bb40ceba2a46a0d62",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fc030cd9fe4f990ead8b4cbefb3296186f3e1d3bdd5454ca41085cf7a1136cb6",
+      "shot": {
+        "sha256": "fc030cd9fe4f990ead8b4cbefb3296186f3e1d3bdd5454ca41085cf7a1136cb6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--token-trigger__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5e444926e108de5316462616d81c3344703e04df5d9d1b3cf41ae0cc44fdb928",
+      "shot": {
+        "sha256": "5e444926e108de5316462616d81c3344703e04df5d9d1b3cf41ae0cc44fdb928",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--token-trigger",
+        "title": "Core/Popover",
+        "name": "Token Trigger",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dcbea50625648eb22f81da00545ed3213f00415c9a4706542a22ece951a6ac30",
+      "shot": {
+        "sha256": "dcbea50625648eb22f81da00545ed3213f00415c9a4706542a22ece951a6ac30",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "aa0b46f02491dc6cf95c2f44bc08898752755e4e26606c6feb7b6aeb261213e4",
+      "shot": {
+        "sha256": "aa0b46f02491dc6cf95c2f44bc08898752755e4e26606c6feb7b6aeb261213e4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f509c29bc077376c0e4c305d8698856f72c7909c9653ad58c49ff97afcd25bf9",
+      "shot": {
+        "sha256": "f509c29bc077376c0e4c305d8698856f72c7909c9653ad58c49ff97afcd25bf9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e2e42663cb0ce005e80d03147115d3caa79162d33d9e94d21e5bc39c17cd0c3e",
+      "shot": {
+        "sha256": "e2e42663cb0ce005e80d03147115d3caa79162d33d9e94d21e5bc39c17cd0c3e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d95493dfa1c4950d3797cc08373ea3ad31718e7f538e102ba79d1919077ea9d6",
+      "shot": {
+        "sha256": "d95493dfa1c4950d3797cc08373ea3ad31718e7f538e102ba79d1919077ea9d6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0889497663899903be50ad4ef8447b9b3e1bb632b50d1cbca54629ff0c4af1fc",
+      "shot": {
+        "sha256": "0889497663899903be50ad4ef8447b9b3e1bb632b50d1cbca54629ff0c4af1fc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "503ea3887498b549331113aa8ae0497f75eec21d5a44c00079fe58acb54506ab",
+      "shot": {
+        "sha256": "503ea3887498b549331113aa8ae0497f75eec21d5a44c00079fe58acb54506ab",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cff4e3276c1df0479d33ec8aa6385b1a505ed68b88658b11b9c16c42e48e41f0",
+      "shot": {
+        "sha256": "cff4e3276c1df0479d33ec8aa6385b1a505ed68b88658b11b9c16c42e48e41f0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6bae4354d072a28577eb59fb6173332305eca4662a367ad53173ebb2f63e878e",
+      "shot": {
+        "sha256": "6bae4354d072a28577eb59fb6173332305eca4662a367ad53173ebb2f63e878e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1ab63e77e78f46ea48d8027d98c7971d993386a53bf6d35fbc5866fa5d190762",
+      "shot": {
+        "sha256": "1ab63e77e78f46ea48d8027d98c7971d993386a53bf6d35fbc5866fa5d190762",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4aa22328dd124aa49c6b81443e2f7251fe9dce2116d170ae3104dac95592c78d",
+      "shot": {
+        "sha256": "4aa22328dd124aa49c6b81443e2f7251fe9dce2116d170ae3104dac95592c78d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8721867f6f7de53d781b8f00cd2f9b812333f894e807cd743e56a1e85516253b",
+      "shot": {
+        "sha256": "8721867f6f7de53d781b8f00cd2f9b812333f894e807cd743e56a1e85516253b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8e5e2692031fc63a7209906dcc3bd4b40424ae21476c192caf12bcb66774079d",
+      "shot": {
+        "sha256": "8e5e2692031fc63a7209906dcc3bd4b40424ae21476c192caf12bcb66774079d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--link-trigger__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b23bdf8dbab3a13d6ba2100d17b6489c9f15ad7eeab382df39d03ade6ac05d14",
+      "shot": {
+        "sha256": "b23bdf8dbab3a13d6ba2100d17b6489c9f15ad7eeab382df39d03ade6ac05d14",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--link-trigger",
+        "title": "Core/Popover",
+        "name": "Link Trigger",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9f7eda0b8004e7a25e84b32c31b7e25d7ba3e38661ad8bcfbd28d1143b760a64",
+      "shot": {
+        "sha256": "9f7eda0b8004e7a25e84b32c31b7e25d7ba3e38661ad8bcfbd28d1143b760a64",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4b3290869c61d7904de1f6ef4444caeac3ecce1f720f5ad9e8600f7b715d7dc2",
+      "shot": {
+        "sha256": "4b3290869c61d7904de1f6ef4444caeac3ecce1f720f5ad9e8600f7b715d7dc2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "edf7140e08f937d18858f843e89733f27e7dbd39030ca3390c5b01d62612e6fa",
+      "shot": {
+        "sha256": "edf7140e08f937d18858f843e89733f27e7dbd39030ca3390c5b01d62612e6fa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9df044aa5497835347c8a11d4c27a051e2eaa941238272fffde040f2b11fc302",
+      "shot": {
+        "sha256": "9df044aa5497835347c8a11d4c27a051e2eaa941238272fffde040f2b11fc302",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f973de745a35eb12190159bbf2ccadb8740486698833e7c82d8de6b9be6f7206",
+      "shot": {
+        "sha256": "f973de745a35eb12190159bbf2ccadb8740486698833e7c82d8de6b9be6f7206",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7d7c65a1bb856fa7e7ade42c8519ca198221073906af15e329a515b6f2a73d67",
+      "shot": {
+        "sha256": "7d7c65a1bb856fa7e7ade42c8519ca198221073906af15e329a515b6f2a73d67",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e863ad164f5ce8f63f0724485d937947d0d43fb1c5e80de033b97336ebc3bbef",
+      "shot": {
+        "sha256": "e863ad164f5ce8f63f0724485d937947d0d43fb1c5e80de033b97336ebc3bbef",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5499aba32a8b5df986c8be23be14a9d08b5e8465e4057d03fd51549f4d134ab5",
+      "shot": {
+        "sha256": "5499aba32a8b5df986c8be23be14a9d08b5e8465e4057d03fd51549f4d134ab5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5f4b158f3a2d207f9ab3ab39439b9be59967284e17d656e67a57c1d03e0e0a9f",
+      "shot": {
+        "sha256": "5f4b158f3a2d207f9ab3ab39439b9be59967284e17d656e67a57c1d03e0e0a9f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9c8b1b1688ced4fdb4fdccebe48ef9633b8f9b87ca65b4d5cd0a81c9204cde85",
+      "shot": {
+        "sha256": "9c8b1b1688ced4fdb4fdccebe48ef9633b8f9b87ca65b4d5cd0a81c9204cde85",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "36aba8b06f7e14dfd9c34889324438204b53a0d740ef2227b3e1dde5dc039f70",
+      "shot": {
+        "sha256": "36aba8b06f7e14dfd9c34889324438204b53a0d740ef2227b3e1dde5dc039f70",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4c686f54c1a987edc38d56cb3f8d8a3f4546d3d7ca60338616fe2e9854badabb",
+      "shot": {
+        "sha256": "4c686f54c1a987edc38d56cb3f8d8a3f4546d3d7ca60338616fe2e9854badabb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "aec589c1fcb8bdfbf96d894ae3c0983fb9b60cbad7166c2a608ba77eafc5a9c8",
+      "shot": {
+        "sha256": "aec589c1fcb8bdfbf96d894ae3c0983fb9b60cbad7166c2a608ba77eafc5a9c8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-popover--render-prop__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "feffd10c2003c45eca75ccf555fedf56268b3b509cdbe8a6c7c9d55ad3b8428e",
+      "shot": {
+        "sha256": "feffd10c2003c45eca75ccf555fedf56268b3b509cdbe8a6c7c9d55ad3b8428e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-popover--render-prop",
+        "title": "Core/Popover",
+        "name": "Render Prop",
+        "component": "Popover",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    }
+  ],
+  "decision": {
+    "approver": "cixzhang",
+    "approverId": 2781099,
+    "permission": "maintain",
+    "reason": "All 124 added frames are Popover-only coverage across existing stories and themes; the reviewed intended change makes popover.borderRadius paint 32px, while default and zero-padding controls remain pixel-identical.",
+    "commentId": 5435899521,
+    "at": "2026-08-27T07:42:12.106Z"
+  }
+}

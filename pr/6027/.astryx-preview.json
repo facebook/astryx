@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6027,
+    "headSha": "4bf12d0a0596ef67dace6fdac88b92a37e86c970",
+    "headRef": "codex/heading-weight-implementation",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 33953015744,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6027/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6027/sandbox/",
+      "indexSha256": "cc839996fea24e4b97721a99adb21a80d1f3ccb7effe80488a4a2ea57507082d"
+    }
+  }
+}

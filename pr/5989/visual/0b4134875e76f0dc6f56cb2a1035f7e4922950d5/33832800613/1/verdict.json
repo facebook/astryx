@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-04T03:57:31.423Z",
+  "context": {
+    "sha": "0b4134875e76f0dc6f56cb2a1035f7e4922950d5",
+    "runId": "33832800613",
+    "runAttempt": "1",
+    "headSha": "0b4134875e76f0dc6f56cb2a1035f7e4922950d5",
+    "baseSha": "b3c6619892c660d30e4c42d47c8ec0fd991b6976",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Layout"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Layout/Layout.tsx",
+        "packages/core/src/Layout/LayoutContent.tsx",
+        "packages/core/src/Layout/LayoutSlotsContext.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-03T16:04:27.248Z",
+    "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

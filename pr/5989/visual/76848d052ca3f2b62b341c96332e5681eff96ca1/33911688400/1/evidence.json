@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5989,
+  "headSha": "76848d052ca3f2b62b341c96332e5681eff96ca1",
+  "testedSha": "76848d052ca3f2b62b341c96332e5681eff96ca1",
+  "baseSha": "72fc8cd969cec543718e97bf3b5b9b7ec0a35cd7",
+  "run": {
+    "id": 33911688400,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-04T20:10:40.735Z",
+    "context": {
+      "sha": "76848d052ca3f2b62b341c96332e5681eff96ca1",
+      "runId": "33911688400",
+      "runAttempt": "1",
+      "headSha": "76848d052ca3f2b62b341c96332e5681eff96ca1",
+      "baseSha": "72fc8cd969cec543718e97bf3b5b9b7ec0a35cd7",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Layout"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Layout/Layout.tsx",
+          "packages/core/src/Layout/LayoutContent.tsx",
+          "packages/core/src/Layout/LayoutFooter.tsx",
+          "packages/core/src/Layout/LayoutHeader.tsx",
+          "packages/core/src/Layout/LayoutPanel.tsx",
+          "packages/core/src/Layout/LayoutSlotsContext.ts",
+          "packages/core/src/Layout/index.ts",
+          "packages/core/src/Layout/useLayoutRegionGeometry.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-03T16:04:27.248Z",
+      "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

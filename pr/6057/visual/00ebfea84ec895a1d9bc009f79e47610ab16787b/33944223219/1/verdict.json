@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-05T04:44:41.331Z",
+  "context": {
+    "sha": "00ebfea84ec895a1d9bc009f79e47610ab16787b",
+    "runId": "33944223219",
+    "runAttempt": "1",
+    "headSha": "00ebfea84ec895a1d9bc009f79e47610ab16787b",
+    "baseSha": "093c13171e14e4e3f0c896f3b294c329205b0df4",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Tokenizer"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Tokenizer/Tokenizer.tsx",
+        "packages/core/src/Tokenizer/useEndLaneReserve.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-03T16:04:27.248Z",
+    "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

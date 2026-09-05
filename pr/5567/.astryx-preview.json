@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5567,
+    "headSha": "b5835ea453e0b6bdcc74849564fadb1039ff9c91",
+    "headRef": "feat/collapsible-motion",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 33876568208,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/5567/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5567/sandbox/",
+      "indexSha256": "6d02b21e46540fa9095dccf9853ca9ad872642f6a835762f9564b5142da7acd0"
+    }
+  }
+}

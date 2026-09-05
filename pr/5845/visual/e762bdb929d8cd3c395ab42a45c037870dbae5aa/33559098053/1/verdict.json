@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-01T21:44:49.775Z",
+  "context": {
+    "sha": "e762bdb929d8cd3c395ab42a45c037870dbae5aa",
+    "runId": "33559098053",
+    "runAttempt": "1",
+    "headSha": "e762bdb929d8cd3c395ab42a45c037870dbae5aa",
+    "baseSha": "237d82a6b0126ad4530145fbf169dbcc68dde633",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Spinner"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Spinner/Spinner.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-01T16:01:43.549Z",
+    "sha": "c5197506492beb246dc00dd976a05171a355f539",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 14,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 12,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [
+    "core-spinner--default__butter-light",
+    "core-spinner--default__butter-dark",
+    "core-spinner--default__gothic-light",
+    "core-spinner--default__gothic-dark",
+    "core-spinner--default__stone-light",
+    "core-spinner--default__stone-dark",
+    "core-spinner--default__y2k-light",
+    "core-spinner--default__y2k-dark",
+    "core-spinner--default__matcha-light",
+    "core-spinner--default__matcha-dark",
+    "core-spinner--default__chocolate-light",
+    "core-spinner--default__chocolate-dark"
+  ],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

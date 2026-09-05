@@ -1,0 +1,1044 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5724,
+  "headSha": "bf56201a6afb4b8a7a15e8cab632b56feb63fe4f",
+  "testedSha": "bf56201a6afb4b8a7a15e8cab632b56feb63fe4f",
+  "baseSha": "42129ab27c8c93c9f364197b68998037b9f93255",
+  "run": {
+    "id": 33597008816,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "460e742a0350db750922c32d71fefbca1c4aebca",
+    "manifestDigest": "0f9b6b29abce041addf90647d89379c603d314d11e9d0f65dcea87a866b351ad"
+  },
+  "keys": [
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "42d2e57eddc5cab8865efcc1be1a47073db4fe1aca838300217df772175befff",
+      "shot": {
+        "sha256": "42d2e57eddc5cab8865efcc1be1a47073db4fe1aca838300217df772175befff",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f7fcc30f5d47864445b690d076cb409fcede81d86d57c6c78117b796a1495089",
+      "shot": {
+        "sha256": "f7fcc30f5d47864445b690d076cb409fcede81d86d57c6c78117b796a1495089",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b8f82badd9cb8ba608d28cc4f5c7c5c8337197c6750302233ef12fb04ec7a558",
+      "shot": {
+        "sha256": "b8f82badd9cb8ba608d28cc4f5c7c5c8337197c6750302233ef12fb04ec7a558",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5c9b3642337ca1c970860959561c62a86dbd80baae585c9506e3a7e06f6e6e54",
+      "shot": {
+        "sha256": "5c9b3642337ca1c970860959561c62a86dbd80baae585c9506e3a7e06f6e6e54",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cf9535f9d11895bea03d29f7742a333d54a32d467f367624c695cc4df1be70cd",
+      "shot": {
+        "sha256": "cf9535f9d11895bea03d29f7742a333d54a32d467f367624c695cc4df1be70cd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "58698690394cceaa0d6b64aefbcf05ed2ee646f82a155d3d67c794a968bfe906",
+      "shot": {
+        "sha256": "58698690394cceaa0d6b64aefbcf05ed2ee646f82a155d3d67c794a968bfe906",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "91a09d04f48df37ce94207a768ac62abba146eb8102edacc9f5e8a0cf9f0d2c9",
+      "shot": {
+        "sha256": "91a09d04f48df37ce94207a768ac62abba146eb8102edacc9f5e8a0cf9f0d2c9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "80155ba12be5af9c636c0a3af30fd932cecf9f8ee1640f2f83a61b54eda62166",
+      "shot": {
+        "sha256": "80155ba12be5af9c636c0a3af30fd932cecf9f8ee1640f2f83a61b54eda62166",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fb42ecb10b4fa2b307d112d2cf9e162abd8a2bea58cdb3b34ddf8136c6344e1d",
+      "shot": {
+        "sha256": "fb42ecb10b4fa2b307d112d2cf9e162abd8a2bea58cdb3b34ddf8136c6344e1d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a68408906207443728752642e34d72c763ad5c9049f6637c16e6e2d4a2cdc6cd",
+      "shot": {
+        "sha256": "a68408906207443728752642e34d72c763ad5c9049f6637c16e6e2d4a2cdc6cd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "32dbf039f393767b8454c06b8b471895e670b4a903d9bf7c75a83a2423192638",
+      "shot": {
+        "sha256": "32dbf039f393767b8454c06b8b471895e670b4a903d9bf7c75a83a2423192638",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e668f4e6aaa0348f9b547cbf9cbc9ef407adf41dd83d997b76b8306980ee9bad",
+      "shot": {
+        "sha256": "e668f4e6aaa0348f9b547cbf9cbc9ef407adf41dd83d997b76b8306980ee9bad",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-contextmenu--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4250df0ab0dea7d28cf2d570fbe3648a3d4a7a8aed629dd312afd9d23a45727e",
+      "shot": {
+        "sha256": "4250df0ab0dea7d28cf2d570fbe3648a3d4a7a8aed629dd312afd9d23a45727e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-contextmenu--default",
+        "title": "Core/ContextMenu",
+        "name": "Default",
+        "component": "ContextMenu",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-contextmenu--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dadff09ec2b229e41ed09b6bb67a5d3f2f6894cb056d3c7cffeaa8fb5a575503",
+      "shot": {
+        "sha256": "dadff09ec2b229e41ed09b6bb67a5d3f2f6894cb056d3c7cffeaa8fb5a575503",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-contextmenu--default",
+        "title": "Core/ContextMenu",
+        "name": "Default",
+        "component": "ContextMenu",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-contextmenu--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a5ef48d39df18713a2fcc1d4e884e23dc80f22e2051e24bd781d5dcc6119cfe3",
+      "shot": {
+        "sha256": "a5ef48d39df18713a2fcc1d4e884e23dc80f22e2051e24bd781d5dcc6119cfe3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-contextmenu--default",
+        "title": "Core/ContextMenu",
+        "name": "Default",
+        "component": "ContextMenu",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-contextmenu--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "12e6a8db4ebc46624a7c1808cd36eecb553141b9fc834a6f5c1752e1d8e24821",
+      "shot": {
+        "sha256": "12e6a8db4ebc46624a7c1808cd36eecb553141b9fc834a6f5c1752e1d8e24821",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-contextmenu--default",
+        "title": "Core/ContextMenu",
+        "name": "Default",
+        "component": "ContextMenu",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-contextmenu--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4250df0ab0dea7d28cf2d570fbe3648a3d4a7a8aed629dd312afd9d23a45727e",
+      "shot": {
+        "sha256": "4250df0ab0dea7d28cf2d570fbe3648a3d4a7a8aed629dd312afd9d23a45727e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-contextmenu--default",
+        "title": "Core/ContextMenu",
+        "name": "Default",
+        "component": "ContextMenu",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-contextmenu--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2d50e3b75033be9daa28c76c4187c0f7f01defbf8a302b4dcc36a92934c4a43a",
+      "shot": {
+        "sha256": "2d50e3b75033be9daa28c76c4187c0f7f01defbf8a302b4dcc36a92934c4a43a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-contextmenu--default",
+        "title": "Core/ContextMenu",
+        "name": "Default",
+        "component": "ContextMenu",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-contextmenu--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4250df0ab0dea7d28cf2d570fbe3648a3d4a7a8aed629dd312afd9d23a45727e",
+      "shot": {
+        "sha256": "4250df0ab0dea7d28cf2d570fbe3648a3d4a7a8aed629dd312afd9d23a45727e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-contextmenu--default",
+        "title": "Core/ContextMenu",
+        "name": "Default",
+        "component": "ContextMenu",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-contextmenu--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2bac432e2d533229a437dbc13bd2279d7be768e1b649ee1ff928c3f3b97ab3c2",
+      "shot": {
+        "sha256": "2bac432e2d533229a437dbc13bd2279d7be768e1b649ee1ff928c3f3b97ab3c2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-contextmenu--default",
+        "title": "Core/ContextMenu",
+        "name": "Default",
+        "component": "ContextMenu",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-contextmenu--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4250df0ab0dea7d28cf2d570fbe3648a3d4a7a8aed629dd312afd9d23a45727e",
+      "shot": {
+        "sha256": "4250df0ab0dea7d28cf2d570fbe3648a3d4a7a8aed629dd312afd9d23a45727e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-contextmenu--default",
+        "title": "Core/ContextMenu",
+        "name": "Default",
+        "component": "ContextMenu",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-contextmenu--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "703074ed5c83949145f76a3de91d9d428c54e5df2f7faa6763d56c33d9a57132",
+      "shot": {
+        "sha256": "703074ed5c83949145f76a3de91d9d428c54e5df2f7faa6763d56c33d9a57132",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-contextmenu--default",
+        "title": "Core/ContextMenu",
+        "name": "Default",
+        "component": "ContextMenu",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-contextmenu--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "375b6fc1c888a37e5fd82b826c7835a596f4158c57dd3bfcfc52923597b9de76",
+      "shot": {
+        "sha256": "375b6fc1c888a37e5fd82b826c7835a596f4158c57dd3bfcfc52923597b9de76",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-contextmenu--default",
+        "title": "Core/ContextMenu",
+        "name": "Default",
+        "component": "ContextMenu",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-contextmenu--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e79bec150db970b705c9a7457d9d49c03d4606de4670bf9cb14274aa22147255",
+      "shot": {
+        "sha256": "e79bec150db970b705c9a7457d9d49c03d4606de4670bf9cb14274aa22147255",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-contextmenu--default",
+        "title": "Core/ContextMenu",
+        "name": "Default",
+        "component": "ContextMenu",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-dropdownmenu--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "560db02438e03dca548aa50006afe16e8658dbd278d77e97045fcf477bd82dc8",
+      "shot": {
+        "sha256": "560db02438e03dca548aa50006afe16e8658dbd278d77e97045fcf477bd82dc8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dropdownmenu--default",
+        "title": "Core/DropdownMenu",
+        "name": "Default",
+        "component": "DropdownMenu",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-dropdownmenu--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "eb3cb47d07912c0908550c5c97a4b510c09b56efc1e1cddbf9f2d9b4f974605c",
+      "shot": {
+        "sha256": "eb3cb47d07912c0908550c5c97a4b510c09b56efc1e1cddbf9f2d9b4f974605c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dropdownmenu--default",
+        "title": "Core/DropdownMenu",
+        "name": "Default",
+        "component": "DropdownMenu",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-dropdownmenu--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8c54bb54325101b0afbf8763a4cca7b08081653f646a697afc258d03f3ad1804",
+      "shot": {
+        "sha256": "8c54bb54325101b0afbf8763a4cca7b08081653f646a697afc258d03f3ad1804",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dropdownmenu--default",
+        "title": "Core/DropdownMenu",
+        "name": "Default",
+        "component": "DropdownMenu",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-dropdownmenu--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "907590392a8941708ec82a86fe32a3327abd72e815bcc057506c0f992a03da0f",
+      "shot": {
+        "sha256": "907590392a8941708ec82a86fe32a3327abd72e815bcc057506c0f992a03da0f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dropdownmenu--default",
+        "title": "Core/DropdownMenu",
+        "name": "Default",
+        "component": "DropdownMenu",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-dropdownmenu--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "de1f19a62d2c0852cdbb767f10f8974cbb4e6338bcd4bc8af6c289aaf100f35d",
+      "shot": {
+        "sha256": "de1f19a62d2c0852cdbb767f10f8974cbb4e6338bcd4bc8af6c289aaf100f35d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dropdownmenu--default",
+        "title": "Core/DropdownMenu",
+        "name": "Default",
+        "component": "DropdownMenu",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-dropdownmenu--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9d0e252e798784bd9e95468329810f5a53bca22a4045a4fa783579bd14e8c8c3",
+      "shot": {
+        "sha256": "9d0e252e798784bd9e95468329810f5a53bca22a4045a4fa783579bd14e8c8c3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dropdownmenu--default",
+        "title": "Core/DropdownMenu",
+        "name": "Default",
+        "component": "DropdownMenu",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-dropdownmenu--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "69f4613a2a1a6bcb0a8f7259ff774f8eee9fc5f0dcb31f8686960230e87b5b72",
+      "shot": {
+        "sha256": "69f4613a2a1a6bcb0a8f7259ff774f8eee9fc5f0dcb31f8686960230e87b5b72",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dropdownmenu--default",
+        "title": "Core/DropdownMenu",
+        "name": "Default",
+        "component": "DropdownMenu",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-dropdownmenu--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c7bb3b6e8c84e6841a041e455860d59e1c441daee64667704ab802b6ba438b22",
+      "shot": {
+        "sha256": "c7bb3b6e8c84e6841a041e455860d59e1c441daee64667704ab802b6ba438b22",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dropdownmenu--default",
+        "title": "Core/DropdownMenu",
+        "name": "Default",
+        "component": "DropdownMenu",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-dropdownmenu--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "168ce2127be0f0fabd980b4c340db2003a9f0c543ee2d3b0e08e8d19d27c5a56",
+      "shot": {
+        "sha256": "168ce2127be0f0fabd980b4c340db2003a9f0c543ee2d3b0e08e8d19d27c5a56",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dropdownmenu--default",
+        "title": "Core/DropdownMenu",
+        "name": "Default",
+        "component": "DropdownMenu",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-dropdownmenu--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cd65f23d76c6829da02bc40c462f0432a8441f42b8d8a2af125815355d4d1d1f",
+      "shot": {
+        "sha256": "cd65f23d76c6829da02bc40c462f0432a8441f42b8d8a2af125815355d4d1d1f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dropdownmenu--default",
+        "title": "Core/DropdownMenu",
+        "name": "Default",
+        "component": "DropdownMenu",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-dropdownmenu--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "387f398f02dcee5ed009e39a5dbd5630fdb2d1d5861deaacb4ced73a645f37d8",
+      "shot": {
+        "sha256": "387f398f02dcee5ed009e39a5dbd5630fdb2d1d5861deaacb4ced73a645f37d8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dropdownmenu--default",
+        "title": "Core/DropdownMenu",
+        "name": "Default",
+        "component": "DropdownMenu",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-dropdownmenu--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cd55ab9f533fe8bfd3f094025e0b6890d951f8ab0dc0a04ae10f36ed7f201849",
+      "shot": {
+        "sha256": "cd55ab9f533fe8bfd3f094025e0b6890d951f8ab0dc0a04ae10f36ed7f201849",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-dropdownmenu--default",
+        "title": "Core/DropdownMenu",
+        "name": "Default",
+        "component": "DropdownMenu",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "decision": {
+    "approver": "cixzhang",
+    "approverId": 2781099,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "The affected default frames preserve their existing appearance across themes. The intended change is limited to open long surfaces; real Chromium checks at 320px and 900px confirmed viewport containment, roomier-side selection, natural short-menu height, internal scrolling, and a fixed search row.",
+    "commentId": 5505603814,
+    "at": "2026-09-02T06:48:04.272Z"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-05T09:41:05.090Z",
+  "context": {
+    "sha": "ba574eeaba319df41bae16a1c6443b80bf3926c5",
+    "runId": "33957608121",
+    "runAttempt": "1",
+    "headSha": "ba574eeaba319df41bae16a1c6443b80bf3926c5",
+    "baseSha": "0ccad5b5e6283e23743ce24ff3349aab201712aa",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Stepper"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Stepper/Step.tsx",
+        "packages/core/src/Stepper/Stepper.tsx",
+        "packages/core/src/Stepper/StepperContext.ts",
+        "packages/core/src/Stepper/index.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-05T07:37:37.596Z",
+    "sha": "18eec1821479f873ff26acc25793186285f85aa0",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

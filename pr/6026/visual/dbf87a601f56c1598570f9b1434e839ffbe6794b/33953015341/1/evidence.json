@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6026,
+  "headSha": "dbf87a601f56c1598570f9b1434e839ffbe6794b",
+  "testedSha": "dbf87a601f56c1598570f9b1434e839ffbe6794b",
+  "baseSha": "0ccad5b5e6283e23743ce24ff3349aab201712aa",
+  "run": {
+    "id": 33953015341,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-05T08:05:39.911Z",
+    "context": {
+      "sha": "dbf87a601f56c1598570f9b1434e839ffbe6794b",
+      "runId": "33953015341",
+      "runAttempt": "1",
+      "headSha": "dbf87a601f56c1598570f9b1434e839ffbe6794b",
+      "baseSha": "0ccad5b5e6283e23743ce24ff3349aab201712aa",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Heading",
+          "Text"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Heading/Heading.tsx",
+          "packages/core/src/Heading/index.ts",
+          "packages/core/src/Text/index.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-03T16:04:27.248Z",
+      "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

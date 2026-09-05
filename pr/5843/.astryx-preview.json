@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5843,
+    "headSha": "95d00171589a042ccfa0224533bd0d17feb54c8c",
+    "headRef": "fix/vibe-tests-spawnsync-pnpm-windows-part2",
+    "headRepository": "HelloOjasMutreja/astryx",
+    "headRepositoryId": "1309798825"
+  },
+  "sourceRun": {
+    "id": 33778004680,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/5843/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5843/sandbox/",
+      "indexSha256": "a12af2815b8081d6fa19e351960fb5d5476548fec26a3ee0b4dbbe98d3074335"
+    }
+  }
+}

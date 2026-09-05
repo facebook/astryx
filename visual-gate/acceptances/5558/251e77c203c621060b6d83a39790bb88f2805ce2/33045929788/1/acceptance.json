@@ -1,0 +1,1436 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5558,
+  "headSha": "251e77c203c621060b6d83a39790bb88f2805ce2",
+  "testedSha": "c0c7f8b991c4f6be5c26d2aaf9604bb835379fa2",
+  "baseSha": "c0c7f8b991c4f6be5c26d2aaf9604bb835379fa2",
+  "run": {
+    "id": 33045929788,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "30df89a48a6d78d91f40b5b822c9aa27d6e9f59a",
+    "manifestDigest": "d4511d43fc975e64f636564f3f9f41d7804e8736ddcf5a17795a80b4badf1f68"
+  },
+  "keys": [
+    {
+      "key": "core-badge--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c4d6e329bcfff62e9ea628a21bd5e319622f03e4ff7ebb88d5a882111d17ffec",
+      "shot": {
+        "sha256": "c4d6e329bcfff62e9ea628a21bd5e319622f03e4ff7ebb88d5a882111d17ffec",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--default",
+        "title": "Core/Badge",
+        "name": "Default",
+        "component": "Badge",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e935083eb4a2c6c6f22f17bb2fac9ee0b525a7210bbb3b1d3d15fd498f736fa3",
+      "shot": {
+        "sha256": "e935083eb4a2c6c6f22f17bb2fac9ee0b525a7210bbb3b1d3d15fd498f736fa3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--default",
+        "title": "Core/Badge",
+        "name": "Default",
+        "component": "Badge",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ab112e45c1634d496149031bd8763b684933a93fa8bd06346c17cbee7497568f",
+      "shot": {
+        "sha256": "ab112e45c1634d496149031bd8763b684933a93fa8bd06346c17cbee7497568f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--default",
+        "title": "Core/Badge",
+        "name": "Default",
+        "component": "Badge",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a2bb4736a1fc3e31522efbf74cfe1a48a55096bdbbfc76f2106ed6c52516d7b3",
+      "shot": {
+        "sha256": "a2bb4736a1fc3e31522efbf74cfe1a48a55096bdbbfc76f2106ed6c52516d7b3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--default",
+        "title": "Core/Badge",
+        "name": "Default",
+        "component": "Badge",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "da416b86656c77697363565ae6e21fb49f946854eb5c827685e908548f1eaa73",
+      "shot": {
+        "sha256": "da416b86656c77697363565ae6e21fb49f946854eb5c827685e908548f1eaa73",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--default",
+        "title": "Core/Badge",
+        "name": "Default",
+        "component": "Badge",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "30f176ed6ca94bae8c8d7a1223026940588f7cb516d19f5e96e9aaad3106a48a",
+      "shot": {
+        "sha256": "30f176ed6ca94bae8c8d7a1223026940588f7cb516d19f5e96e9aaad3106a48a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--default",
+        "title": "Core/Badge",
+        "name": "Default",
+        "component": "Badge",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4401a96d9c8565bc4b2a8f54e55d60c65b5c36f08365ac814b15df49f680d8e6",
+      "shot": {
+        "sha256": "4401a96d9c8565bc4b2a8f54e55d60c65b5c36f08365ac814b15df49f680d8e6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--default",
+        "title": "Core/Badge",
+        "name": "Default",
+        "component": "Badge",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "43529cc40d4a1ff040c299d67f3182f36ce98299edeb9345d49087675ff58fe1",
+      "shot": {
+        "sha256": "43529cc40d4a1ff040c299d67f3182f36ce98299edeb9345d49087675ff58fe1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--default",
+        "title": "Core/Badge",
+        "name": "Default",
+        "component": "Badge",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "62b9bf457176963f838aefa78e03171b02065acd4fbffe96d6421d7d752b9623",
+      "shot": {
+        "sha256": "62b9bf457176963f838aefa78e03171b02065acd4fbffe96d6421d7d752b9623",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--default",
+        "title": "Core/Badge",
+        "name": "Default",
+        "component": "Badge",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3a35dd6fedf746643108b6b10e9640dc01d2784eda6898fd59a86961f525385f",
+      "shot": {
+        "sha256": "3a35dd6fedf746643108b6b10e9640dc01d2784eda6898fd59a86961f525385f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--default",
+        "title": "Core/Badge",
+        "name": "Default",
+        "component": "Badge",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bdc1607fb85719ac8dc78b1b0fd186973fff2f0513523d0491c412bfd1918055",
+      "shot": {
+        "sha256": "bdc1607fb85719ac8dc78b1b0fd186973fff2f0513523d0491c412bfd1918055",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--default",
+        "title": "Core/Badge",
+        "name": "Default",
+        "component": "Badge",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9944183325ca211164e25b02afaa0036815f4d6fa563a92f22b14575098ab7a3",
+      "shot": {
+        "sha256": "9944183325ca211164e25b02afaa0036815f4d6fa563a92f22b14575098ab7a3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--default",
+        "title": "Core/Badge",
+        "name": "Default",
+        "component": "Badge",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--non-semantic-colors__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2e3dea3d94f99f13a3b91210ed40495f52dd33006451452b8f81b794760ff4ed",
+      "shot": {
+        "sha256": "2e3dea3d94f99f13a3b91210ed40495f52dd33006451452b8f81b794760ff4ed",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--non-semantic-colors",
+        "title": "Core/Badge",
+        "name": "Non Semantic Colors",
+        "component": "Badge",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--non-semantic-colors__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6c71e93acbf7221d34d6a267801a30b2b74d3e520939291ad12070f8f121555c",
+      "shot": {
+        "sha256": "6c71e93acbf7221d34d6a267801a30b2b74d3e520939291ad12070f8f121555c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--non-semantic-colors",
+        "title": "Core/Badge",
+        "name": "Non Semantic Colors",
+        "component": "Badge",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--non-semantic-colors__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "53109994337b86bdb400b65c04d6d67c7aa7a2282ac03d7e5bd10731bc0b55e2",
+      "shot": {
+        "sha256": "53109994337b86bdb400b65c04d6d67c7aa7a2282ac03d7e5bd10731bc0b55e2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--non-semantic-colors",
+        "title": "Core/Badge",
+        "name": "Non Semantic Colors",
+        "component": "Badge",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--non-semantic-colors__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "600109d6be6ca7eca0605fb68aa8dbcc2ff20111d16705da483c5d22652f3703",
+      "shot": {
+        "sha256": "600109d6be6ca7eca0605fb68aa8dbcc2ff20111d16705da483c5d22652f3703",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--non-semantic-colors",
+        "title": "Core/Badge",
+        "name": "Non Semantic Colors",
+        "component": "Badge",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--non-semantic-colors__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b44df45cd41a9c3c3ac1f1d4913f822b205024430a46e4ee6281b433a584d772",
+      "shot": {
+        "sha256": "b44df45cd41a9c3c3ac1f1d4913f822b205024430a46e4ee6281b433a584d772",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--non-semantic-colors",
+        "title": "Core/Badge",
+        "name": "Non Semantic Colors",
+        "component": "Badge",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--non-semantic-colors__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "296e68b426d867749c912b29851b0303e90cf08700a0cf0718d027711847efc8",
+      "shot": {
+        "sha256": "296e68b426d867749c912b29851b0303e90cf08700a0cf0718d027711847efc8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--non-semantic-colors",
+        "title": "Core/Badge",
+        "name": "Non Semantic Colors",
+        "component": "Badge",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--non-semantic-colors__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bd8f3306f53641c781c784036ff9b7b224fd00b7ba9db0517f4b77e0411a24b7",
+      "shot": {
+        "sha256": "bd8f3306f53641c781c784036ff9b7b224fd00b7ba9db0517f4b77e0411a24b7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--non-semantic-colors",
+        "title": "Core/Badge",
+        "name": "Non Semantic Colors",
+        "component": "Badge",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--non-semantic-colors__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "da17b5d38714d02611a53155ab037215498b70f9a75e9532453629c5c2c7731d",
+      "shot": {
+        "sha256": "da17b5d38714d02611a53155ab037215498b70f9a75e9532453629c5c2c7731d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--non-semantic-colors",
+        "title": "Core/Badge",
+        "name": "Non Semantic Colors",
+        "component": "Badge",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--non-semantic-colors__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6bfc5cea35d8c6bd052b3e97d3eb464d94b3ff3348921867ca3ecebd2b47837d",
+      "shot": {
+        "sha256": "6bfc5cea35d8c6bd052b3e97d3eb464d94b3ff3348921867ca3ecebd2b47837d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--non-semantic-colors",
+        "title": "Core/Badge",
+        "name": "Non Semantic Colors",
+        "component": "Badge",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--non-semantic-colors__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6b0877d4c5ccd066b03e0659f9d8726efaca5d53adce96bd6355c148d1b3c6ad",
+      "shot": {
+        "sha256": "6b0877d4c5ccd066b03e0659f9d8726efaca5d53adce96bd6355c148d1b3c6ad",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--non-semantic-colors",
+        "title": "Core/Badge",
+        "name": "Non Semantic Colors",
+        "component": "Badge",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--non-semantic-colors__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ec912d600a78450669676a63b548bed031114c474a824f58a1f396b355992efb",
+      "shot": {
+        "sha256": "ec912d600a78450669676a63b548bed031114c474a824f58a1f396b355992efb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--non-semantic-colors",
+        "title": "Core/Badge",
+        "name": "Non Semantic Colors",
+        "component": "Badge",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--non-semantic-colors__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c32a41a3debcc07160fe0eb0b26baf49792a1c04faa39cfdf804a8772b7c48db",
+      "shot": {
+        "sha256": "c32a41a3debcc07160fe0eb0b26baf49792a1c04faa39cfdf804a8772b7c48db",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--non-semantic-colors",
+        "title": "Core/Badge",
+        "name": "Non Semantic Colors",
+        "component": "Badge",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--variants__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ddb562538664a3a4f3b7c1662104e066859ee09df315217ad1782d30e1c630dc",
+      "shot": {
+        "sha256": "ddb562538664a3a4f3b7c1662104e066859ee09df315217ad1782d30e1c630dc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--variants",
+        "title": "Core/Badge",
+        "name": "Variants",
+        "component": "Badge",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--variants__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8475d8a25268f0e5d0e111ba8c9e14cbdc4147fe645e0616198a4447c81f934f",
+      "shot": {
+        "sha256": "8475d8a25268f0e5d0e111ba8c9e14cbdc4147fe645e0616198a4447c81f934f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--variants",
+        "title": "Core/Badge",
+        "name": "Variants",
+        "component": "Badge",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--variants__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7107b972bf7f3a602ecd664369f170970da90c60aefd4a60470a96e81d90ffac",
+      "shot": {
+        "sha256": "7107b972bf7f3a602ecd664369f170970da90c60aefd4a60470a96e81d90ffac",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--variants",
+        "title": "Core/Badge",
+        "name": "Variants",
+        "component": "Badge",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--variants__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c7e0acc97f31ddf94fa79cf3a016f3dab2012d24feb2bae825a6324a2db356ac",
+      "shot": {
+        "sha256": "c7e0acc97f31ddf94fa79cf3a016f3dab2012d24feb2bae825a6324a2db356ac",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--variants",
+        "title": "Core/Badge",
+        "name": "Variants",
+        "component": "Badge",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d5622c3ac5ff81dc26493177f257d92b7ea434ca6c80c8bc916a6d0f2008238d",
+      "shot": {
+        "sha256": "d5622c3ac5ff81dc26493177f257d92b7ea434ca6c80c8bc916a6d0f2008238d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8ef57baacd92a9324b537773cfe1119826450e81508f75ad7095ff1ee3780a51",
+      "shot": {
+        "sha256": "8ef57baacd92a9324b537773cfe1119826450e81508f75ad7095ff1ee3780a51",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f9105cf4ae9aca93d73fc9a03ad44189bd81a6bc84f3eb636aa9e381887eaa6b",
+      "shot": {
+        "sha256": "f9105cf4ae9aca93d73fc9a03ad44189bd81a6bc84f3eb636aa9e381887eaa6b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6bb157e60dbee3c32f50ec9ab388a7959a080306b65cc38a1098d77e5e755ab7",
+      "shot": {
+        "sha256": "6bb157e60dbee3c32f50ec9ab388a7959a080306b65cc38a1098d77e5e755ab7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c3d9e8458e891573f1ab45451d746033084d1fb8f8a99c971bfc223295c13dbd",
+      "shot": {
+        "sha256": "c3d9e8458e891573f1ab45451d746033084d1fb8f8a99c971bfc223295c13dbd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b70592bf06dcea0237aa226f6cba831b201e1ed749d682eec6f8cfc5ce4715c6",
+      "shot": {
+        "sha256": "b70592bf06dcea0237aa226f6cba831b201e1ed749d682eec6f8cfc5ce4715c6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c90a0a7761372f2497214638c3db986e79fbc24273f8b4a4d37876a69b11bbf6",
+      "shot": {
+        "sha256": "c90a0a7761372f2497214638c3db986e79fbc24273f8b4a4d37876a69b11bbf6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0b1d9b1d20ec338a1c3c1045477c977e67984dd403c7108d8f24714e507746e9",
+      "shot": {
+        "sha256": "0b1d9b1d20ec338a1c3c1045477c977e67984dd403c7108d8f24714e507746e9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "639bee2ce4e4b8eecb4495b392eb3f4d733d8a1f11164cc0292d03be1affda19",
+      "shot": {
+        "sha256": "639bee2ce4e4b8eecb4495b392eb3f4d733d8a1f11164cc0292d03be1affda19",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d9863ebeab08b6eade584590f445fa047ed03c62fc16118e98f6285170ec6046",
+      "shot": {
+        "sha256": "d9863ebeab08b6eade584590f445fa047ed03c62fc16118e98f6285170ec6046",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f87634a75d860dd6837541445217331506febf3890d5690dc0095022a8593684",
+      "shot": {
+        "sha256": "f87634a75d860dd6837541445217331506febf3890d5690dc0095022a8593684",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "38114292ef2face9ad8e7be65bee09ca2957ea7776d4b317ccb81444bb9b6574",
+      "shot": {
+        "sha256": "38114292ef2face9ad8e7be65bee09ca2957ea7776d4b317ccb81444bb9b6574",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c6cb8eef2cd4fe5b8cd2ce5da5890002d149e66bc029791f1f31d066b44e916d",
+      "shot": {
+        "sha256": "c6cb8eef2cd4fe5b8cd2ce5da5890002d149e66bc029791f1f31d066b44e916d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--counts__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "26cea4d5cbb895220cd73306db414fe0aef41858eb1f3b79418e05aa83bc2a59",
+      "shot": {
+        "sha256": "26cea4d5cbb895220cd73306db414fe0aef41858eb1f3b79418e05aa83bc2a59",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--counts",
+        "title": "Core/Badge",
+        "name": "Counts",
+        "component": "Badge",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1777ad1884ae620990431597749c2eeac00a3597fa9e9f4da0c85d36fa5082e1",
+      "shot": {
+        "sha256": "1777ad1884ae620990431597749c2eeac00a3597fa9e9f4da0c85d36fa5082e1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "68ee3307199a96a4f174cab4e10bdb754223c09794e323e2f1ea96299fadb89e",
+      "shot": {
+        "sha256": "68ee3307199a96a4f174cab4e10bdb754223c09794e323e2f1ea96299fadb89e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c4778730bf35bc48d4c0e2a1545afdc75804d3b1f42d64f5693aff0c65a0768a",
+      "shot": {
+        "sha256": "c4778730bf35bc48d4c0e2a1545afdc75804d3b1f42d64f5693aff0c65a0768a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8469b0e6afb9147b595f51ec60877dfd623789d408e1db7c0899ec105d778b39",
+      "shot": {
+        "sha256": "8469b0e6afb9147b595f51ec60877dfd623789d408e1db7c0899ec105d778b39",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fd934bef6b7767ea5727d067f9377d7274ec7249bde782c8cb24f844093948a2",
+      "shot": {
+        "sha256": "fd934bef6b7767ea5727d067f9377d7274ec7249bde782c8cb24f844093948a2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6e1d14dc268e57bcbb90c7a675f4ffe1b1610e2916c9577cbb6e255aa5876181",
+      "shot": {
+        "sha256": "6e1d14dc268e57bcbb90c7a675f4ffe1b1610e2916c9577cbb6e255aa5876181",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e6056b546ed294ffc9bfe476043eb10c8712b6e1115174213946a1bb33a14aad",
+      "shot": {
+        "sha256": "e6056b546ed294ffc9bfe476043eb10c8712b6e1115174213946a1bb33a14aad",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "db617578826ca5909a894892561c2994c9416e5f24a5176111cc4f5143613ead",
+      "shot": {
+        "sha256": "db617578826ca5909a894892561c2994c9416e5f24a5176111cc4f5143613ead",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "46b9d2ab7259e907bdef9b1535d73675bd0de74f378875c6e0ff74693fd60a85",
+      "shot": {
+        "sha256": "46b9d2ab7259e907bdef9b1535d73675bd0de74f378875c6e0ff74693fd60a85",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f9acef38400db8c2d660a9d846f44640e361a336c8dfd8e43f828f682cea1be0",
+      "shot": {
+        "sha256": "f9acef38400db8c2d660a9d846f44640e361a336c8dfd8e43f828f682cea1be0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6c2be1244cde9bab128b83dc103af5370a511dab9b412afabae2099a880901ee",
+      "shot": {
+        "sha256": "6c2be1244cde9bab128b83dc103af5370a511dab9b412afabae2099a880901ee",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ac915d3989c9d5fe98f88115d6430c90b99346aa9531966f8e744acbcc45e46c",
+      "shot": {
+        "sha256": "ac915d3989c9d5fe98f88115d6430c90b99346aa9531966f8e744acbcc45e46c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b2852fdcb27e2eb10ff8ab9dc9ce69ebf94d98d10de3505adaaf67bb226c16d5",
+      "shot": {
+        "sha256": "b2852fdcb27e2eb10ff8ab9dc9ce69ebf94d98d10de3505adaaf67bb226c16d5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--status-labels__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a7fd0ba130bfaf520f67c9726e65f4a9b5757b5deb837d5e20881fe9c19c2e38",
+      "shot": {
+        "sha256": "a7fd0ba130bfaf520f67c9726e65f4a9b5757b5deb837d5e20881fe9c19c2e38",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--status-labels",
+        "title": "Core/Badge",
+        "name": "Status Labels",
+        "component": "Badge",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "adce0ab44062a15a32cdebf375b1cf557f3cbcae7c2266146d2dea353cce7b24",
+      "shot": {
+        "sha256": "adce0ab44062a15a32cdebf375b1cf557f3cbcae7c2266146d2dea353cce7b24",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c69f7baf5998353dfb4d5bdf81121d756acc99f1f43f0eacddefebf88b961567",
+      "shot": {
+        "sha256": "c69f7baf5998353dfb4d5bdf81121d756acc99f1f43f0eacddefebf88b961567",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a6bd49a3be0626cc6491ff3b1f39df21823b9132fd21ebdb9bb40b3444500d7e",
+      "shot": {
+        "sha256": "a6bd49a3be0626cc6491ff3b1f39df21823b9132fd21ebdb9bb40b3444500d7e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bdc04caeadea3860d9dfc3fdab1c47fd9837f1b3da49d5e6635aedc6bf6d38e6",
+      "shot": {
+        "sha256": "bdc04caeadea3860d9dfc3fdab1c47fd9837f1b3da49d5e6635aedc6bf6d38e6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "52945a07c74fe5e4ee9e540fa261f0a28ff14b8758d34c1542bbb9c8dc8ad98d",
+      "shot": {
+        "sha256": "52945a07c74fe5e4ee9e540fa261f0a28ff14b8758d34c1542bbb9c8dc8ad98d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c5e3c0bfbabb4a8ff8a33dd6347291d4af5ab9229797345f22c8491038b448ac",
+      "shot": {
+        "sha256": "c5e3c0bfbabb4a8ff8a33dd6347291d4af5ab9229797345f22c8491038b448ac",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "127689b96f5dd9c59e6ff9a1b12829904ffb7ebf96a9292e2ff22bed67643a4a",
+      "shot": {
+        "sha256": "127689b96f5dd9c59e6ff9a1b12829904ffb7ebf96a9292e2ff22bed67643a4a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "528ba447f874226e82559865366baa7d041f32e2f84763a1b78fc470c0a08643",
+      "shot": {
+        "sha256": "528ba447f874226e82559865366baa7d041f32e2f84763a1b78fc470c0a08643",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "02c6b711e8022911ab3cbee29c7f8afe83125d3b9da24fc65bd4fefcd848353a",
+      "shot": {
+        "sha256": "02c6b711e8022911ab3cbee29c7f8afe83125d3b9da24fc65bd4fefcd848353a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "828e81cc3364f6e7fab09e51048b6942dd5a88d90928725a0fc22240eb47cdd6",
+      "shot": {
+        "sha256": "828e81cc3364f6e7fab09e51048b6942dd5a88d90928725a0fc22240eb47cdd6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d457508bc8ced06c43612cde38e64ff9cb03b4f30bcfeb39332690ede4d9e928",
+      "shot": {
+        "sha256": "d457508bc8ced06c43612cde38e64ff9cb03b4f30bcfeb39332690ede4d9e928",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2aad8a05bf43242bcf74d949387d6461ff2a4140a796ce4c3d858ff84004f9ad",
+      "shot": {
+        "sha256": "2aad8a05bf43242bcf74d949387d6461ff2a4140a796ce4c3d858ff84004f9ad",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2597f3c809103e93d2b0ebc96dd8dfe842a303ce7f166366e9c7db4249c804ca",
+      "shot": {
+        "sha256": "2597f3c809103e93d2b0ebc96dd8dfe842a303ce7f166366e9c7db4249c804ca",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-badge--long-labels__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ff7d56601571be4852e32b902c8c7df978df46d74d0ae07e10537fd9d6e90da6",
+      "shot": {
+        "sha256": "ff7d56601571be4852e32b902c8c7df978df46d74d0ae07e10537fd9d6e90da6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-badge--long-labels",
+        "title": "Core/Badge",
+        "name": "Long labels in tight space",
+        "component": "Badge",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    }
+  ],
+  "decision": {
+    "approver": "cixzhang",
+    "approverId": 2781099,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "These 70 frames add Badge coverage; no existing pixels changed, and sensor-backed review verified layout containment plus the intended full-label fallback.",
+    "commentId": 5436104064,
+    "at": "2026-08-27T08:02:56.448Z"
+  }
+}

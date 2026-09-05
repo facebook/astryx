@@ -1,0 +1,492 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5567,
+  "headSha": "07b55e93236216042663f7d1a7d3ee0a3622ecff",
+  "testedSha": "07b55e93236216042663f7d1a7d3ee0a3622ecff",
+  "baseSha": "aa565777492bcc208e3fc1a3534888f7ec40c046",
+  "run": {
+    "id": 33739430497,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-collapsible--single-mode__neutral-dark",
+      "kind": "changed",
+      "beforeSha256": "9fee231ab835a6a3241476cfd4187acd8ed04fb7e6426b3f153218a25d30752c",
+      "shot": {
+        "sha256": "47168f4785270783c4c76ee3deb91a1f743cc62f9484c3f753ad5ce786e429ff",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__neutral-light",
+      "kind": "changed",
+      "beforeSha256": "ceb6d736f6edd011fee42ea70ebc0cb48357947dfc0aaea8da4ea01320b93324",
+      "shot": {
+        "sha256": "c3c2801ce4a5b1273dc76e6987bce8d4ebd49552e416480cdd373f1128c4740c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "889bd5a948c04631efcfba0d4e2f3f0f0689e20f4c510409df3cd052d9af34a6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6ac0787e660b31ed666a4214b1437694dcf06859ed32c234fcc45932310b86be",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "31ab78dd4ad2634d8fd26d00e5f7db6d2a9914c5094bc95819bdae06af3cf139",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0d6a0e5b7aaa094bf05940cf672bbc5b4796e592ca99c454297876c22d784e55",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "097fb56cafb0d59e77efbcb7f9fd39dc0a5021d992865588e6482c24a525db2e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b9a1f6e2e1ebd99463b235fc07b032e7a94940b4b84d7279d97c011bc6c20119",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "43c92303d582970f359334c12ea3d91f49e2c839d9f0828f2c34da210ccdd69f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "61c55a9a6c3734e115b6a37e3f074b7f1d616c2ddb4653b1c61c2afc3e48def2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bea5a8c3a35c1b8b574ef2db8d6fc9e7284d6ca35cda1b06ccaa7643d7da82da",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "21421f0ed4b23be59cc65992858291d2478f66967ff456bdb2378baa08cd4b6b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c587c53269c7a3633a47507934f2fc75fd2dd56ae26584adf83650cbb107d2d3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "abd60e3ba93d1b1830b5771b41162e53afae7829ca4505f870855344e5205fe8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-09-03T10:00:58.085Z",
+    "context": {
+      "sha": "07b55e93236216042663f7d1a7d3ee0a3622ecff",
+      "runId": "33739430497",
+      "runAttempt": "1",
+      "headSha": "07b55e93236216042663f7d1a7d3ee0a3622ecff",
+      "baseSha": "aa565777492bcc208e3fc1a3534888f7ec40c046",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Collapsible"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Collapsible/Collapsible.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-02T06:00:40.805Z",
+      "sha": "42129ab27c8c93c9f364197b68998037b9f93255",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 14,
+      "unchanged": 0,
+      "changed": 2,
+      "added": 12,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [
+      {
+        "key": "core-collapsible--single-mode__neutral-dark",
+        "diffPixels": 8182,
+        "diffRatio": 0.010404,
+        "sizeChanged": false,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      },
+      {
+        "key": "core-collapsible--single-mode__neutral-light",
+        "diffPixels": 7689,
+        "diffRatio": 0.009777,
+        "sizeChanged": false,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode (default)",
+        "component": "Collapsible",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    ],
+    "added": [
+      "core-collapsible--single-mode__butter-light",
+      "core-collapsible--single-mode__butter-dark",
+      "core-collapsible--single-mode__chocolate-light",
+      "core-collapsible--single-mode__chocolate-dark",
+      "core-collapsible--single-mode__gothic-light",
+      "core-collapsible--single-mode__gothic-dark",
+      "core-collapsible--single-mode__matcha-light",
+      "core-collapsible--single-mode__matcha-dark",
+      "core-collapsible--single-mode__stone-light",
+      "core-collapsible--single-mode__stone-dark",
+      "core-collapsible--single-mode__y2k-light",
+      "core-collapsible--single-mode__y2k-dark"
+    ],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

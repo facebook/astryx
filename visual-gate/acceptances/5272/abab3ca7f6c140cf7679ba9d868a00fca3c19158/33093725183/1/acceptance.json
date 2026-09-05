@@ -1,0 +1,1676 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5272,
+  "headSha": "abab3ca7f6c140cf7679ba9d868a00fca3c19158",
+  "testedSha": "abab3ca7f6c140cf7679ba9d868a00fca3c19158",
+  "baseSha": "d80c7889649b30cb8cecf59f3f65e929491b7c07",
+  "run": {
+    "id": 33093725183,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "9ed2806fadcd0b22763847d7e46db73dcc93ac4b",
+    "manifestDigest": "fccb032237994fb6de8b83e75ec34ff11686a1acf3951005c6a6de61045fd422"
+  },
+  "keys": [
+    {
+      "key": "core-layer--context-mode__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "99bc8eea196119a4b7550b9c6e63243e1e08583c3440467252cae4e78409b321",
+      "shot": {
+        "sha256": "99bc8eea196119a4b7550b9c6e63243e1e08583c3440467252cae4e78409b321",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--context-mode",
+        "title": "Core/Layer",
+        "name": "Context Mode",
+        "component": "Layer",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--context-mode__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d5c3b531a2a49ddc1c4f792d7389ff17d231b04e8cfd0878233c319d24fd86ec",
+      "shot": {
+        "sha256": "d5c3b531a2a49ddc1c4f792d7389ff17d231b04e8cfd0878233c319d24fd86ec",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--context-mode",
+        "title": "Core/Layer",
+        "name": "Context Mode",
+        "component": "Layer",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--context-mode__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "19c3cbb65c4c8e7e879e620600b07bcb088b28711590fb4159ba18722059747d",
+      "shot": {
+        "sha256": "19c3cbb65c4c8e7e879e620600b07bcb088b28711590fb4159ba18722059747d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--context-mode",
+        "title": "Core/Layer",
+        "name": "Context Mode",
+        "component": "Layer",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--context-mode__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "48b0ba616f6a533e8aa9c33ba1c0509e862258b82b7e0f357bd83908919ffd13",
+      "shot": {
+        "sha256": "48b0ba616f6a533e8aa9c33ba1c0509e862258b82b7e0f357bd83908919ffd13",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--context-mode",
+        "title": "Core/Layer",
+        "name": "Context Mode",
+        "component": "Layer",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--context-mode__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c0d056e911732c764b3c7b71f1b298a620f8e38c02b5760224cae59f884da673",
+      "shot": {
+        "sha256": "c0d056e911732c764b3c7b71f1b298a620f8e38c02b5760224cae59f884da673",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--context-mode",
+        "title": "Core/Layer",
+        "name": "Context Mode",
+        "component": "Layer",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--context-mode__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a5d5567bcc67a612c6ed4ca4626d3e835c50b28ccf753c9cad7e717731858713",
+      "shot": {
+        "sha256": "a5d5567bcc67a612c6ed4ca4626d3e835c50b28ccf753c9cad7e717731858713",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--context-mode",
+        "title": "Core/Layer",
+        "name": "Context Mode",
+        "component": "Layer",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--context-mode__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "234897c13e3302fbe513402c60febfdaddef2f837d22ab912c578270a0b666f2",
+      "shot": {
+        "sha256": "234897c13e3302fbe513402c60febfdaddef2f837d22ab912c578270a0b666f2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--context-mode",
+        "title": "Core/Layer",
+        "name": "Context Mode",
+        "component": "Layer",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--context-mode__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "81bc750ad9bf16966144749b7fcb4c0f10143df4f1c9b6769bb21671b81b3bdf",
+      "shot": {
+        "sha256": "81bc750ad9bf16966144749b7fcb4c0f10143df4f1c9b6769bb21671b81b3bdf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--context-mode",
+        "title": "Core/Layer",
+        "name": "Context Mode",
+        "component": "Layer",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--context-mode__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2fa001e58854ab5936aa49eeeec44449f3ac8ea1d77960a144a758e301076c88",
+      "shot": {
+        "sha256": "2fa001e58854ab5936aa49eeeec44449f3ac8ea1d77960a144a758e301076c88",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--context-mode",
+        "title": "Core/Layer",
+        "name": "Context Mode",
+        "component": "Layer",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--context-mode__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "62c82d579c98e17fa972058818a4ca24489e443bc56601affc8adb29415c2476",
+      "shot": {
+        "sha256": "62c82d579c98e17fa972058818a4ca24489e443bc56601affc8adb29415c2476",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--context-mode",
+        "title": "Core/Layer",
+        "name": "Context Mode",
+        "component": "Layer",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--context-mode__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "78b78e0a14114508e614d6100ff9a03db4515dd646b23920290763c4d5fc641c",
+      "shot": {
+        "sha256": "78b78e0a14114508e614d6100ff9a03db4515dd646b23920290763c4d5fc641c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--context-mode",
+        "title": "Core/Layer",
+        "name": "Context Mode",
+        "component": "Layer",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--context-mode__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "df652c02d13434b96b6658057051086d107584680a69c3646e5f700b149c3834",
+      "shot": {
+        "sha256": "df652c02d13434b96b6658057051086d107584680a69c3646e5f700b149c3834",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--context-mode",
+        "title": "Core/Layer",
+        "name": "Context Mode",
+        "component": "Layer",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6a1224ba4365d24a47789b58bd799e53f995491a3df5fc66c3ff8e7a9b7a157b",
+      "shot": {
+        "sha256": "6a1224ba4365d24a47789b58bd799e53f995491a3df5fc66c3ff8e7a9b7a157b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d5444435b693e893cba9fbf7c508da6254bd2a2a8922b649aeb5997cabe491af",
+      "shot": {
+        "sha256": "d5444435b693e893cba9fbf7c508da6254bd2a2a8922b649aeb5997cabe491af",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3ea632f85f81d88c7025ef0905bbe7633b4f62b9e7306a88b82812d4bbfea3fb",
+      "shot": {
+        "sha256": "3ea632f85f81d88c7025ef0905bbe7633b4f62b9e7306a88b82812d4bbfea3fb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "51aab5552261bd9f4439ee62322fc79da76de354d5e582cac296a7f136052b57",
+      "shot": {
+        "sha256": "51aab5552261bd9f4439ee62322fc79da76de354d5e582cac296a7f136052b57",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9c3661b3bd51b573ec7dd283c3bf26a1f1ae7d979299604acbbdd031086de14c",
+      "shot": {
+        "sha256": "9c3661b3bd51b573ec7dd283c3bf26a1f1ae7d979299604acbbdd031086de14c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e7ca9ce9c413bffcae7390de56662b631eb11b7a3039814f9b64cf9edb11fccd",
+      "shot": {
+        "sha256": "e7ca9ce9c413bffcae7390de56662b631eb11b7a3039814f9b64cf9edb11fccd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "91c4012c863582bf9e1ec8664222409869f6984d1a84b7477e35309bfb942522",
+      "shot": {
+        "sha256": "91c4012c863582bf9e1ec8664222409869f6984d1a84b7477e35309bfb942522",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6b18adeabef3794700c41a81432779d39a60cfbbf42745e69a91a112db67eff1",
+      "shot": {
+        "sha256": "6b18adeabef3794700c41a81432779d39a60cfbbf42745e69a91a112db67eff1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3d2fd7f0f7ace386fedeba92978b0bcb1cede10cb0f7ef222c5573020bf46a34",
+      "shot": {
+        "sha256": "3d2fd7f0f7ace386fedeba92978b0bcb1cede10cb0f7ef222c5573020bf46a34",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "77c8e5e9287e11312ecd1c90fcbc11f04633f0c8bcaa5853e8bc981e2d9ac64f",
+      "shot": {
+        "sha256": "77c8e5e9287e11312ecd1c90fcbc11f04633f0c8bcaa5853e8bc981e2d9ac64f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8ca55a463aa96f054afcedc8336dd690661982d3a49034763ebcdcd87d15b7a4",
+      "shot": {
+        "sha256": "8ca55a463aa96f054afcedc8336dd690661982d3a49034763ebcdcd87d15b7a4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e0578c99ef0842bafc5c28d8201793b598a5bc1cb85c6ed6bc453166b37ba421",
+      "shot": {
+        "sha256": "e0578c99ef0842bafc5c28d8201793b598a5bc1cb85c6ed6bc453166b37ba421",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f41f86301ba696cd8d91d26cab413f7577585cc44afb0a26b603490fe5ddf1d9",
+      "shot": {
+        "sha256": "f41f86301ba696cd8d91d26cab413f7577585cc44afb0a26b603490fe5ddf1d9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--offset__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8c4737f3c500dccee6a308524147822685589130005b23b9093a09e94bdcd928",
+      "shot": {
+        "sha256": "8c4737f3c500dccee6a308524147822685589130005b23b9093a09e94bdcd928",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--offset",
+        "title": "Core/Layer",
+        "name": "Offset",
+        "component": "Layer",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4198ae6cf0de9acc7eabee450dfcd57a86d7fa07cff7e3623d343704cf336632",
+      "shot": {
+        "sha256": "4198ae6cf0de9acc7eabee450dfcd57a86d7fa07cff7e3623d343704cf336632",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7228c1036122017a847108709d50b7099de62647d9d8edc67e745ea0fa3e1154",
+      "shot": {
+        "sha256": "7228c1036122017a847108709d50b7099de62647d9d8edc67e745ea0fa3e1154",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "56ab2c73d408a6af757ddc70344a3bf993d9c0221490adf13ae8cb195f8e556d",
+      "shot": {
+        "sha256": "56ab2c73d408a6af757ddc70344a3bf993d9c0221490adf13ae8cb195f8e556d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3789ff09b39e324e59a9b3b03f02d4c0399a24be2d61ffa50cbde4eaa9aae29b",
+      "shot": {
+        "sha256": "3789ff09b39e324e59a9b3b03f02d4c0399a24be2d61ffa50cbde4eaa9aae29b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c8f12546c6f75c8dc5e5bd8833c8423cc3f69686e64355312d824df225388397",
+      "shot": {
+        "sha256": "c8f12546c6f75c8dc5e5bd8833c8423cc3f69686e64355312d824df225388397",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "eb95c72fd35964cb6b36e518b93c5e0d543d53ca2da9a1d64de8f11baab9fbc1",
+      "shot": {
+        "sha256": "eb95c72fd35964cb6b36e518b93c5e0d543d53ca2da9a1d64de8f11baab9fbc1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a846de754f780e06b13985c4647ccf69a0179636302ec5768947824226108a02",
+      "shot": {
+        "sha256": "a846de754f780e06b13985c4647ccf69a0179636302ec5768947824226108a02",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a03dac8cd81282d09245f62de9d29777e556fbafc1ea64973c0bd160c3282b1d",
+      "shot": {
+        "sha256": "a03dac8cd81282d09245f62de9d29777e556fbafc1ea64973c0bd160c3282b1d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d581a3d12c0f5ae935e96c64bf71e0847fea828531c31e46ef68a5fa7791895e",
+      "shot": {
+        "sha256": "d581a3d12c0f5ae935e96c64bf71e0847fea828531c31e46ef68a5fa7791895e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3fbc2b3f5430aa25d9b6f6150b2b3f84c88dffb7ff96546eb656e1c07313970a",
+      "shot": {
+        "sha256": "3fbc2b3f5430aa25d9b6f6150b2b3f84c88dffb7ff96546eb656e1c07313970a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "be84f568e7824d4cac23f5435aebb3584d1bb08b65fa50ca52b5fb2981412569",
+      "shot": {
+        "sha256": "be84f568e7824d4cac23f5435aebb3584d1bb08b65fa50ca52b5fb2981412569",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f9eb75856aea9521a05e1bd2c3b1b56ba110e0bfca152481bac090905594b18c",
+      "shot": {
+        "sha256": "f9eb75856aea9521a05e1bd2c3b1b56ba110e0bfca152481bac090905594b18c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ea6c84c12c755938818f511d88e8b52668cf9e688aa09cf26afc0517733c437b",
+      "shot": {
+        "sha256": "ea6c84c12c755938818f511d88e8b52668cf9e688aa09cf26afc0517733c437b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--placements__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "666079611dd68c8ee1a38d172d534ba8e45176cbb2de45bb3b497aaef623bf19",
+      "shot": {
+        "sha256": "666079611dd68c8ee1a38d172d534ba8e45176cbb2de45bb3b497aaef623bf19",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--placements",
+        "title": "Core/Layer",
+        "name": "Placements",
+        "component": "Layer",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8cf523ade6234f048a82d69cbb3f73ee1dfe4c015732be82b2a6aa4147193d10",
+      "shot": {
+        "sha256": "8cf523ade6234f048a82d69cbb3f73ee1dfe4c015732be82b2a6aa4147193d10",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e9913968ad0cc71b31da51f992591166ad358445ef5909f8afedc6b7264f2098",
+      "shot": {
+        "sha256": "e9913968ad0cc71b31da51f992591166ad358445ef5909f8afedc6b7264f2098",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "769a5a4eee14d362ef99977d75b5d07ddc4fab0de346f6127d25c0a4c04a54dc",
+      "shot": {
+        "sha256": "769a5a4eee14d362ef99977d75b5d07ddc4fab0de346f6127d25c0a4c04a54dc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9589be49bc9a4e6447188de676f0269cbb1ca498ce17376743731f6d4132f9d5",
+      "shot": {
+        "sha256": "9589be49bc9a4e6447188de676f0269cbb1ca498ce17376743731f6d4132f9d5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "88ad62dd663a8aae998f1a4c2baa88dbe2a33f8b406d16d850d5fea2532c9a24",
+      "shot": {
+        "sha256": "88ad62dd663a8aae998f1a4c2baa88dbe2a33f8b406d16d850d5fea2532c9a24",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "81fdaedd3e26ba6970742f72190780983e681366e62f9ee9518fc38955fd9c88",
+      "shot": {
+        "sha256": "81fdaedd3e26ba6970742f72190780983e681366e62f9ee9518fc38955fd9c88",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0bc00b595ad47e54f0fd5ab69c27f64678f935f36858206ecaa4e4df80762d31",
+      "shot": {
+        "sha256": "0bc00b595ad47e54f0fd5ab69c27f64678f935f36858206ecaa4e4df80762d31",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a01e4b40a0be1295dcc2dc19c11ff0e92d742ce1daba4451aff28fc058fcad55",
+      "shot": {
+        "sha256": "a01e4b40a0be1295dcc2dc19c11ff0e92d742ce1daba4451aff28fc058fcad55",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fefa6001ab89e9162086e5a065d9ccb72b94eedb7beef84ca77773cf6c31709c",
+      "shot": {
+        "sha256": "fefa6001ab89e9162086e5a065d9ccb72b94eedb7beef84ca77773cf6c31709c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9abc9e8437fda8ae1cfb7383d7f3fa179f23aa1d621cd678f3a29e8d1d14ada8",
+      "shot": {
+        "sha256": "9abc9e8437fda8ae1cfb7383d7f3fa179f23aa1d621cd678f3a29e8d1d14ada8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f0383b39558917d56bda03f942ab0b433870d3eb2a4c535a7b4f79c631e1e313",
+      "shot": {
+        "sha256": "f0383b39558917d56bda03f942ab0b433870d3eb2a4c535a7b4f79c631e1e313",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "88e29c8bbbc84555a56aa59b74924cf4d53f672d1d2984fb0efa11121a8d089e",
+      "shot": {
+        "sha256": "88e29c8bbbc84555a56aa59b74924cf4d53f672d1d2984fb0efa11121a8d089e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "af76e225f52598c4d1bc55678eb2e0e0a0d8e796ffaf6c10c44cfabf74521c82",
+      "shot": {
+        "sha256": "af76e225f52598c4d1bc55678eb2e0e0a0d8e796ffaf6c10c44cfabf74521c82",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--fixed-mode__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dca9a99306127f8a9f6256cff9ce05e394649ee7f728b5b460df6adbd488c718",
+      "shot": {
+        "sha256": "dca9a99306127f8a9f6256cff9ce05e394649ee7f728b5b460df6adbd488c718",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--fixed-mode",
+        "title": "Core/Layer",
+        "name": "Fixed Mode",
+        "component": "Layer",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fde47e3572749c0c509013d0d375e90ab175c5cc7e82f28f0783502ffa4a8450",
+      "shot": {
+        "sha256": "fde47e3572749c0c509013d0d375e90ab175c5cc7e82f28f0783502ffa4a8450",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1aabc86affdeeb8daec023b4cf8fc998a54442a400bb5072721f1c3dcb8db621",
+      "shot": {
+        "sha256": "1aabc86affdeeb8daec023b4cf8fc998a54442a400bb5072721f1c3dcb8db621",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "eae04cb375c170fc77d7e80bfe4f88e35c3d564935b45f7e75abd780210d19f1",
+      "shot": {
+        "sha256": "eae04cb375c170fc77d7e80bfe4f88e35c3d564935b45f7e75abd780210d19f1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d741d0391ccafcc7e600415431589c2ba785bc3c8e456f9eb7d5e6dcfecce731",
+      "shot": {
+        "sha256": "d741d0391ccafcc7e600415431589c2ba785bc3c8e456f9eb7d5e6dcfecce731",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "35fe8fcd935ee7133076991ab978d0777330f19f80e68f7e142363b1c7025b88",
+      "shot": {
+        "sha256": "35fe8fcd935ee7133076991ab978d0777330f19f80e68f7e142363b1c7025b88",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6d08536cc1e75ba63e231082966d61213941e042dd3ed6fb8f2af4fd40010e73",
+      "shot": {
+        "sha256": "6d08536cc1e75ba63e231082966d61213941e042dd3ed6fb8f2af4fd40010e73",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "23a364f0f68101e9d0f7663220bd397d52ae7b9d81ad164d0709c2fc999c12c3",
+      "shot": {
+        "sha256": "23a364f0f68101e9d0f7663220bd397d52ae7b9d81ad164d0709c2fc999c12c3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a74089445a4d2b84c1447509d3407b7ef9fef0450a8afe62f1c2b884f430b90e",
+      "shot": {
+        "sha256": "a74089445a4d2b84c1447509d3407b7ef9fef0450a8afe62f1c2b884f430b90e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dafbe84a43eb7d1afaf143340883ed949a2ddf037c523e252f8f45242faf4088",
+      "shot": {
+        "sha256": "dafbe84a43eb7d1afaf143340883ed949a2ddf037c523e252f8f45242faf4088",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a67260e7acba5ff721f526f5299469a9669d322296e20674826cb967ab6cf17c",
+      "shot": {
+        "sha256": "a67260e7acba5ff721f526f5299469a9669d322296e20674826cb967ab6cf17c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ee5d07ab71aa7ae24a5ef4cd7a4b833096e56c9b65c1e77a3d5c53dda24c4d07",
+      "shot": {
+        "sha256": "ee5d07ab71aa7ae24a5ef4cd7a4b833096e56c9b65c1e77a3d5c53dda24c4d07",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "090942fdd0c8bff0efeec225cd5ae8ddc679d8f4b35eee7546a96415c361c1ab",
+      "shot": {
+        "sha256": "090942fdd0c8bff0efeec225cd5ae8ddc679d8f4b35eee7546a96415c361c1ab",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a7208be90e84e0589689fa8afab86466385b02c59db304da69aae431ba82cba1",
+      "shot": {
+        "sha256": "a7208be90e84e0589689fa8afab86466385b02c59db304da69aae431ba82cba1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--provider__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2c79855acfbde27a44d6763032a1a56a5f32a62fc591a900ef37cc1567cecf3b",
+      "shot": {
+        "sha256": "2c79855acfbde27a44d6763032a1a56a5f32a62fc591a900ef37cc1567cecf3b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--provider",
+        "title": "Core/Layer",
+        "name": "Provider",
+        "component": "Layer",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7183e70e55e4b1bcfaaeb95320c0b5154d8ea0f32fac441fcf0689c860b2c6f7",
+      "shot": {
+        "sha256": "7183e70e55e4b1bcfaaeb95320c0b5154d8ea0f32fac441fcf0689c860b2c6f7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cfa021ada385ab97c36da1dfb9856c7cb96f6305c2a83476b7a8f9f46bd0a5cb",
+      "shot": {
+        "sha256": "cfa021ada385ab97c36da1dfb9856c7cb96f6305c2a83476b7a8f9f46bd0a5cb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5f7afa501c8de0caa13fc4479dd69f8f7a59d89c7a185a939900e2e167df93a6",
+      "shot": {
+        "sha256": "5f7afa501c8de0caa13fc4479dd69f8f7a59d89c7a185a939900e2e167df93a6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "459824759fdfea2b2e9e9db6e4f445da009063d631d90a1183b850d3a859dcac",
+      "shot": {
+        "sha256": "459824759fdfea2b2e9e9db6e4f445da009063d631d90a1183b850d3a859dcac",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "48b519a0aa949882626eefa1d91223ce5bccb3d56f8dea9674d0e0f756a8dfe6",
+      "shot": {
+        "sha256": "48b519a0aa949882626eefa1d91223ce5bccb3d56f8dea9674d0e0f756a8dfe6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "534ec4ded4d9b0264e6a39b70702ab601be2958238040fd8c4815988a4e20955",
+      "shot": {
+        "sha256": "534ec4ded4d9b0264e6a39b70702ab601be2958238040fd8c4815988a4e20955",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3882f0405cd3cb8de125209174e7a35ff28fbc4434e884148f34df9bdbb2e079",
+      "shot": {
+        "sha256": "3882f0405cd3cb8de125209174e7a35ff28fbc4434e884148f34df9bdbb2e079",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d42bd01d27d5463a4766ecf500bce680775d91f214e103a98289c3d19b7941eb",
+      "shot": {
+        "sha256": "d42bd01d27d5463a4766ecf500bce680775d91f214e103a98289c3d19b7941eb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8b004fa6c403006d5829a5dcaa8a1bc5e2035d204136ada2417cc108ba3383e7",
+      "shot": {
+        "sha256": "8b004fa6c403006d5829a5dcaa8a1bc5e2035d204136ada2417cc108ba3383e7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "61e5a7d36a4efe9da7d163ebd286ac714a3aaf84629962c0adff81378267b0b2",
+      "shot": {
+        "sha256": "61e5a7d36a4efe9da7d163ebd286ac714a3aaf84629962c0adff81378267b0b2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c7fd8b7debbd9b42e5b592ddc17d57330555ab1caef81747f353d13dd83127e0",
+      "shot": {
+        "sha256": "c7fd8b7debbd9b42e5b592ddc17d57330555ab1caef81747f353d13dd83127e0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7414ed6d72c19064a6d47350d9de5ba17483bd27bfec923d99e50e33143110c9",
+      "shot": {
+        "sha256": "7414ed6d72c19064a6d47350d9de5ba17483bd27bfec923d99e50e33143110c9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e440da7cc1c3f152588ed2a153da20fbba159eeb892b847a5735e3785e40c886",
+      "shot": {
+        "sha256": "e440da7cc1c3f152588ed2a153da20fbba159eeb892b847a5735e3785e40c886",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-layer--inline-trigger-hosting__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "da869f34ba80897853b71106fa75aac0d2568fba1f332f78e604c5ca46d1d787",
+      "shot": {
+        "sha256": "da869f34ba80897853b71106fa75aac0d2568fba1f332f78e604c5ca46d1d787",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-layer--inline-trigger-hosting",
+        "title": "Core/Layer",
+        "name": "Inline Trigger Hosting",
+        "component": "Layer",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    }
+  ],
+  "decision": {
+    "approver": "nynexman4464",
+    "approverId": 1675576,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "The change only stabilizes ref and return-object identity; these added Layer frames establish the missing baseline without an intended visual change.",
+    "commentId": 5442444506,
+    "at": "2026-08-27T17:00:25.071Z"
+  }
+}

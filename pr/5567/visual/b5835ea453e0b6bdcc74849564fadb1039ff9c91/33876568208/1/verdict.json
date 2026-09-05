@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-04T13:46:22.689Z",
+  "context": {
+    "sha": "b5835ea453e0b6bdcc74849564fadb1039ff9c91",
+    "runId": "33876568208",
+    "runAttempt": "1",
+    "headSha": "b5835ea453e0b6bdcc74849564fadb1039ff9c91",
+    "baseSha": "1252020cd83a7406d8fac5d0ad650101aa3d569e",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Collapsible"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Collapsible/Collapsible.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-03T16:04:27.248Z",
+    "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 0,
+    "changed": 2,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [
+    {
+      "key": "core-collapsible--single-mode__neutral-dark",
+      "diffPixels": 8182,
+      "diffRatio": 0.010404,
+      "sizeChanged": false,
+      "storyId": "core-collapsible--single-mode",
+      "title": "Core/Collapsible",
+      "name": "Single Mode (default)",
+      "component": "Collapsible",
+      "theme": "neutral",
+      "mode": "dark",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    },
+    {
+      "key": "core-collapsible--single-mode__neutral-light",
+      "diffPixels": 7689,
+      "diffRatio": 0.009777,
+      "sizeChanged": false,
+      "storyId": "core-collapsible--single-mode",
+      "title": "Core/Collapsible",
+      "name": "Single Mode (default)",
+      "component": "Collapsible",
+      "theme": "neutral",
+      "mode": "light",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    }
+  ],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

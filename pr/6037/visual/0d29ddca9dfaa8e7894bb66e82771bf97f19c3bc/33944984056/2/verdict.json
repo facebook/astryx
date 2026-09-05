@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-05T05:36:30.775Z",
+  "context": {
+    "sha": "0d29ddca9dfaa8e7894bb66e82771bf97f19c3bc",
+    "runId": "33944984056",
+    "runAttempt": "2",
+    "headSha": "0d29ddca9dfaa8e7894bb66e82771bf97f19c3bc",
+    "baseSha": "899369592a76f5c352394d9194dd7ec7c8edf3b5",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "ToggleButton"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/ToggleButton/ToggleButton.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-03T16:04:27.248Z",
+    "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

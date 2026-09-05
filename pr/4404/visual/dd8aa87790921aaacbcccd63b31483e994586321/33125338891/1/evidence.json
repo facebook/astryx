@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 4404,
+  "headSha": "dd8aa87790921aaacbcccd63b31483e994586321",
+  "testedSha": "dd8aa87790921aaacbcccd63b31483e994586321",
+  "baseSha": "c6041cfd58ea832a79b50f98d7e0f64cd513852e",
+  "run": {
+    "id": 33125338891,
+    "attempt": 1
+  },
+  "capture": null,
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "skipped",
+    "generatedAt": "2026-08-27T23:32:37.235Z",
+    "reason": "Broad stable scope is deferred to the daily release gate. It covers 974 trusted baseline shots instead of recapturing them for this PR.",
+    "context": {
+      "sha": "dd8aa87790921aaacbcccd63b31483e994586321",
+      "headSha": "dd8aa87790921aaacbcccd63b31483e994586321",
+      "baseSha": "c6041cfd58ea832a79b50f98d7e0f64cd513852e",
+      "runId": "33125338891",
+      "runAttempt": "1",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": true,
+        "stableComponents": [],
+        "stableCoreFiles": [
+          "packages/core/src/i18n/InternationalizationContext.ts",
+          "packages/core/src/i18n/InternationalizationProvider.tsx",
+          "packages/core/src/i18n/index.ts",
+          "packages/core/src/i18n/resolve.ts",
+          "packages/core/src/i18n/translator.ts",
+          "packages/core/src/i18n/useTranslator.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "counts": {
+      "total": 974,
+      "unchanged": 0,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "components": [],
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": []
+  }
+}

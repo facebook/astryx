@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visual gate — pass</title>
+<style>
+  :root { color-scheme: light dark; --line: color-mix(in oklab, currentColor 15%, transparent); }
+  body { font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 24px; max-width: 1200px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 32px 0 4px; }
+  h3 { font-size: 14px; margin: 0; }
+  .muted { opacity: .6; }
+  .ok { color: #1a7f37; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .status { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 600; }
+  .status.pass { background: #1a7f3722; color: #1a7f37; }
+  .status.changed { background: #9a670022; color: #9a6700; }
+  .status.failed { background: #cf222e22; color: #cf222e; }
+  .summary { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0 8px; }
+  .summary div { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 84px; }
+  .summary b { display: block; font-size: 18px; }
+  .howto { border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+  .change { border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin: 16px 0; }
+  .change header { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: baseline; }
+  .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .chip, .tag { border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; font-size: 12px; }
+  .tag { opacity: .7; }
+  .chip.warn { border-color: #9a6700; color: #9a6700; }
+  .tabs { display: flex; gap: 4px; margin: 12px 0 8px; }
+  .tabs button { font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--line); background: transparent; cursor: pointer; }
+  .tabs button.active { background: color-mix(in oklab, currentColor 12%, transparent); font-weight: 600; }
+  .stage img { max-width: 100%; display: block; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  .stage > div { display: none; }
+  .stage[data-view="wipe"] .wipe, .stage[data-view="before"] .single.before,
+  .stage[data-view="after"] .single.after, .stage[data-view="diff"] .single.diff,
+  .stage[data-view="side"] .side { display: block; }
+  .side { display: none; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stage[data-view="side"] .side { display: grid; }
+  .side figure { margin: 0; }
+  .side figcaption { font-size: 12px; opacity: .6; margin-bottom: 4px; }
+  .wipe { position: relative; }
+  .wipe .before-clip { position: absolute; inset: 0; overflow: hidden; width: 50%; }
+  .wipe .before-clip img { max-width: none; }
+  .wipe input { position: absolute; left: 0; right: 0; bottom: -6px; width: 100%; }
+  .list ul { margin: 4px 0; padding-left: 20px; }
+  footer code { opacity: .5; }
+</style>
+<h1>Visual gate <span class="status pass">pass</span></h1>
+<p class="muted">
+  0443933b693cb0d3987a5e6ad592826e673e1750 on linux-arm64
+  · baseline 0443933b693cb0d3987a5e6ad592826e673e1750
+  · 2026-08-30T20:54:54.332Z
+</p>
+<div class="summary">
+  <div><b>3044</b>shots</div>
+  <div><b>0</b>changed</div>
+  <div><b>0</b>added</div>
+  <div><b>0</b>removed</div>
+  <div><b>0</b>failed</div>
+</div>
+<div class="howto">
+  <b>Changed is not the same as broken.</b> For each change below, decide whether the <em>after</em> is the picture you want.
+  If it is, promote it — that is a valid, recorded outcome:
+  <p><code>node .github/scripts/visual-gate/gate.mjs accept --keys &lt;key,key&gt; --reason &quot;&lt;why the after is correct&gt;&quot;</code></p>
+  If it is not, the change is a regression: fix it before the release goes out.
+</div>
+
+<p class="ok">No shot changed against the baseline.</p>
+
+
+
+
+<section class="list">
+  <h2>Theme overrides that bound to nothing <span class="muted">(49)</span></h2>
+  <p class="muted">A theme styles this target, but no shot in this run rendered it. Either the plan cannot reach it, or the component stopped rendering the target the theme aims at.</p>
+  <ul><li><code>butter → heading (type:display-1)</code></li><li><code>butter → heading (type:display-2)</code></li><li><code>butter → heading (type:display-3)</code></li><li><code>butter → text (type:display-1)</code></li><li><code>butter → text (type:display-2)</code></li><li><code>butter → text (type:display-3)</code></li><li><code>butter → top-nav-item (selected)</code></li><li><code>butter → card (variant:info)</code></li><li><code>butter → card (variant:success)</code></li><li><code>butter → card (variant:warning)</code></li><li><code>butter → card (variant:error)</code></li><li><code>chocolate → heading (type:display-1)</code></li><li><code>chocolate → heading (type:display-2)</code></li><li><code>chocolate → heading (type:display-3)</code></li><li><code>chocolate → text (type:display-1)</code></li><li><code>chocolate → text (type:display-2)</code></li><li><code>chocolate → text (type:display-3)</code></li><li><code>gothic → heading (type:display-1)</code></li><li><code>gothic → heading (type:display-2)</code></li><li><code>gothic → heading (type:display-3)</code></li><li><code>gothic → text (type:display-1)</code></li><li><code>gothic → text (type:display-2)</code></li><li><code>gothic → text (type:display-3)</code></li><li><code>matcha → heading (type:display-1)</code></li><li><code>matcha → heading (type:display-2)</code></li><li><code>matcha → heading (type:display-3)</code></li><li><code>matcha → text (type:display-1)</code></li><li><code>matcha → text (type:display-2)</code></li><li><code>matcha → text (type:display-3)</code></li><li><code>neutral → heading (type:display-1)</code></li><li><code>neutral → heading (type:display-2)</code></li><li><code>neutral → heading (type:display-3)</code></li><li><code>neutral → text (type:display-1)</code></li><li><code>neutral → text (type:display-2)</code></li><li><code>neutral → text (type:display-3)</code></li><li><code>neutral → badge (variant:gray)</code></li><li><code>stone → heading (type:display-1)</code></li><li><code>stone → heading (type:display-2)</code></li><li><code>stone → heading (type:display-3)</code></li><li><code>stone → text (type:display-1)</code></li><li><code>stone → text (type:display-2)</code></li><li><code>stone → text (type:display-3)</code></li><li><code>y2k → heading (type:display-1)</code></li><li><code>y2k → heading (type:display-2)</code></li><li><code>y2k → heading (type:display-3)</code></li><li><code>y2k → text (type:display-1)</code></li><li><code>y2k → text (type:display-2)</code></li><li><code>y2k → text (type:display-3)</code></li><li><code>y2k → top-nav-item (selected)</code></li></ul>
+</section>
+<section class="list">
+  <h2>Declared targets never seen <span class="muted">(49)</span></h2>
+  <p class="muted">Documented as themeable, absent from every shot. A coverage gap, not necessarily a bug.</p>
+  <ul><li><code>avatar-group-overflow</code></li><li><code>avatar-status-dot</code></li><li><code>avatar-status-dot-glyph</code></li><li><code>banner-content</code></li><li><code>breadcrumb-item-menu-trigger</code></li><li><code>breadcrumb-menu</code></li><li><code>collapsible-group</code></li><li><code>command-palette-group</code></li><li><code>command-palette-group-heading</code></li><li><code>command-palette-item</code></li><li><code>date-range-input-clear-icon</code></li><li><code>date-time-input-time-listbox</code></li><li><code>date-time-input-time-option</code></li><li><code>dropdown-menu-divider</code></li><li><code>dropdown-menu-indicator-icon</code></li><li><code>dropdown-menu-radio</code></li><li><code>dropdown-menu-section-heading</code></li><li><code>hover-card</code></li><li><code>hovercard</code></li><li><code>markdown-image</code></li><li><code>multi-selector-clear-icon</code></li><li><code>multi-selector-empty-state</code></li><li><code>multi-selector-search</code></li><li><code>multi-selector-section-heading</code></li><li><code>pagination-dot</code></li><li><code>pagination-input-label</code></li><li><code>pagination-input-total</code></li><li><code>progress-bar-mark</code></li><li><code>progressbar-mark</code></li><li><code>selector-clear-icon</code></li><li><code>selector-empty-state</code></li><li><code>selector-search</code></li><li><code>selector-section-heading</code></li><li><code>stack-item</code></li><li><code>step-connector</code></li><li><code>tab-menu</code></li><li><code>tab-menu-dropdown</code></li><li><code>tab-menu-item</code></li><li><code>tab-scroll-button</code></li><li><code>table-footer</code></li><li><code>text-area-counter</code></li><li><code>timestamp-copy-button</code></li><li><code>toggle-button-group</code></li><li><code>top-nav-mega-menu</code></li><li><code>top-nav-mega-menu-featured-card</code></li><li><code>top-nav-mega-menu-item</code></li><li><code>top-nav-menu</code></li><li><code>typeahead-empty-state</code></li><li><code>typeahead-item</code></li></ul>
+</section>
+<section class="list">
+  <h2>Rendered but undeclared <span class="muted">(1)</span></h2>
+  <p class="muted">An astryx-* class in the DOM that no component doc declares as a theming target.</p>
+  <ul><li><code>default-marker</code></li></ul>
+</section>
+<script>
+  for (const views of document.querySelectorAll('.views')) {
+    const stage = views.querySelector('.stage');
+    views.querySelectorAll('.tabs button').forEach((button) => {
+      button.addEventListener('click', () => {
+        views.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('active', b === button));
+        stage.dataset.view = button.dataset.view;
+      });
+    });
+    const range = views.querySelector('.wipe input');
+    const clip = views.querySelector('.before-clip');
+    range?.addEventListener('input', () => { clip.style.width = range.value + '%'; });
+  }
+</script>
+</html>

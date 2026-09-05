@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "skipped",
+  "generatedAt": "2026-09-05T05:28:57.197Z",
+  "reason": "Broad stable scope is deferred to the daily release gate. It covers 380 trusted baseline shots instead of recapturing them for this PR.",
+  "context": {
+    "sha": "e14779e7957742da557c44adb3140bbea4a7b6cd",
+    "headSha": "e14779e7957742da557c44adb3140bbea4a7b6cd",
+    "baseSha": "63a0bcd741bdfc7225a64d4305f52179fca9cac5",
+    "runId": "33946028853",
+    "runAttempt": "1",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": true,
+      "stableComponents": [
+        "Drawer",
+        "Layer"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Drawer/Drawer.tsx",
+        "packages/core/src/Drawer/index.ts",
+        "packages/core/src/Drawer/useDrawerDialogPresence.ts",
+        "packages/core/src/Layer/useLayerDismissal.ts",
+        "packages/core/src/index.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": [
+        "@astryxdesign/lab"
+      ]
+    }
+  },
+  "counts": {
+    "total": 380,
+    "unchanged": 0,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "components": [
+    "Drawer",
+    "Layer"
+  ],
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": []
+}

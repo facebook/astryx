@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "status": "skipped",
+  "generatedAt": "2026-08-29T04:57:32.173Z",
+  "reason": "Broad stable scope is deferred to the daily release gate. It covers 1964 trusted baseline shots instead of recapturing them for this PR.",
+  "context": {
+    "sha": "b791b15fb20d48da71b09faf0571ea45cb8dfa56",
+    "headSha": "b791b15fb20d48da71b09faf0571ea45cb8dfa56",
+    "baseSha": "c2ae093f4e82c23ae419602cdd2186c464e1e159",
+    "runId": "33234312171",
+    "runAttempt": "1",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": true,
+      "stableComponents": [
+        "Toast"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Toast/Toast.tsx",
+        "packages/core/src/Toast/useToast.tsx",
+        "packages/core/src/theme/Theme.tsx",
+        "packages/core/src/theme/useTheme.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "counts": {
+    "total": 1964,
+    "unchanged": 0,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "components": [
+    "Toast"
+  ],
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": []
+}

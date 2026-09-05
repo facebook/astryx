@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-04T21:27:03.813Z",
+  "context": {
+    "sha": "f444f550086e29ef1ab772ac814d9077cb6cc353",
+    "runId": "33918648012",
+    "runAttempt": "1",
+    "headSha": "f444f550086e29ef1ab772ac814d9077cb6cc353",
+    "baseSha": "6e561f9b0ab7493b1d95f098073d2f3b1aa3c038",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Layout"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Layout/Layout.tsx",
+        "packages/core/src/Layout/LayoutContent.tsx",
+        "packages/core/src/Layout/LayoutFooter.tsx",
+        "packages/core/src/Layout/LayoutHeader.tsx",
+        "packages/core/src/Layout/LayoutPanel.tsx",
+        "packages/core/src/Layout/LayoutSlotsContext.ts",
+        "packages/core/src/Layout/index.ts",
+        "packages/core/src/Layout/useLayoutRegionGeometry.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-03T16:04:27.248Z",
+    "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

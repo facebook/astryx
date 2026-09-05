@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5992,
+    "headSha": "8e7a7a311c501b329e0fa53a2cd3227bfc333952",
+    "headRef": "codex/palette-generator-cli",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 33972676735,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/5992/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5992/sandbox/",
+      "indexSha256": "742a4afd0c877fee6828f87cd54876f2abd1b96d0de03eebb22f2e0603d40e7d"
+    }
+  }
+}

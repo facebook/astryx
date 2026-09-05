@@ -1,0 +1,1 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";import{o as t,s as n}from"./useTheme-Bmk5bGFp.js";function r(e){let t=n(i);return e===`adaptive`?t?`bottom-sheet`:`popover`:e}var i,a=e((()=>{t(),i=`(max-width: 768px) and (pointer: coarse)`}));export{r as n,a as t};

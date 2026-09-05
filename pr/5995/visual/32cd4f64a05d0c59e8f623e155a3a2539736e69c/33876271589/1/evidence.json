@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5995,
+  "headSha": "32cd4f64a05d0c59e8f623e155a3a2539736e69c",
+  "testedSha": "32cd4f64a05d0c59e8f623e155a3a2539736e69c",
+  "baseSha": "1252020cd83a7406d8fac5d0ad650101aa3d569e",
+  "run": {
+    "id": 33876271589,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-04T13:37:59.531Z",
+    "context": {
+      "sha": "32cd4f64a05d0c59e8f623e155a3a2539736e69c",
+      "runId": "33876271589",
+      "runAttempt": "1",
+      "headSha": "32cd4f64a05d0c59e8f623e155a3a2539736e69c",
+      "baseSha": "1252020cd83a7406d8fac5d0ad650101aa3d569e",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Table"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Table/plugins/rowExpansion/useTableRowExpansion.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-03T16:04:27.248Z",
+      "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

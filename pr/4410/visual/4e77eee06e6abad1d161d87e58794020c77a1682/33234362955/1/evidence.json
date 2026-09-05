@@ -1,0 +1,2367 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 4410,
+  "headSha": "4e77eee06e6abad1d161d87e58794020c77a1682",
+  "testedSha": "4e77eee06e6abad1d161d87e58794020c77a1682",
+  "baseSha": "c2ae093f4e82c23ae419602cdd2186c464e1e159",
+  "run": {
+    "id": 33234362955,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-mobilenav--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a27bafe4b2b1a620c7432386c51d5fd84f88c2084968441fc80e6855e5dd758c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--default",
+        "title": "Core/MobileNav",
+        "name": "Default",
+        "component": "MobileNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "038484373080f27652b4f6b8d54c4fbdd4f94775b53395c8b8a28b802674adf5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--default",
+        "title": "Core/MobileNav",
+        "name": "Default",
+        "component": "MobileNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "64757cdd7401096accfa0dc0a77fa65fcce45cede028bc3db277f825da3bebb5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--default",
+        "title": "Core/MobileNav",
+        "name": "Default",
+        "component": "MobileNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0f03b5517ad89271a4ccf205190240a7d7e578515117615a7f150a0a290b5cfa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--default",
+        "title": "Core/MobileNav",
+        "name": "Default",
+        "component": "MobileNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "28a70ef7284c39c9487630c50dafdbf2d3d604eeea096535efbb2684e2e514cb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--default",
+        "title": "Core/MobileNav",
+        "name": "Default",
+        "component": "MobileNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8b77c365333cd853d020d41a28c384c33a8fb703cc617a646c21bd3f45463478",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--default",
+        "title": "Core/MobileNav",
+        "name": "Default",
+        "component": "MobileNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "420ff37dd9bc6beafafa3a52129b7b579e0e9e6652b4a52b34846bf52d7b5a51",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--default",
+        "title": "Core/MobileNav",
+        "name": "Default",
+        "component": "MobileNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "caf5293f772b052e81b1ca4b5087c9af770339189a68749b6407f1a8b02c2696",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--default",
+        "title": "Core/MobileNav",
+        "name": "Default",
+        "component": "MobileNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "49b07e75f0f07d4cc28722b78e176768e4cd900fa0c233597cb4bad5ba46d65e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--default",
+        "title": "Core/MobileNav",
+        "name": "Default",
+        "component": "MobileNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "34c4e3ffbddad34ebe1263451db0222a79d097b39ae6eae05d0b62541bc17bcf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--default",
+        "title": "Core/MobileNav",
+        "name": "Default",
+        "component": "MobileNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a0808a17970af371a86f1e3d74150fc9618447a654b71f9329e5d6024dfb4be7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--default",
+        "title": "Core/MobileNav",
+        "name": "Default",
+        "component": "MobileNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "df385dd95cc64be93ee947e925d870a207d5468d9a351b3cde4f8f58006eeaf3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--default",
+        "title": "Core/MobileNav",
+        "name": "Default",
+        "component": "MobileNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "15776df1d779608ba5aa6c6539fd8759796824777ee6ca88f6e90c00348d797c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4aebd9cdf3d6de74eec4a9edba198bd5ee99026e593a32c35e85accb1d460543",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5935ba6788d5c2de67c8caa306511677fcf3d0d0fce70cdd70c31e352ddaeb8f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e1030d4fde363bf4ffcad9ec201908951250ff4cc92445cf9f3ae9fc5fe7aa7d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "99e2b2a3527644784ab7a6cc366f3a8791953c53b5eb404b598b29e8573a01cb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c287859549673028b8848ffbdbff46a8114c9eec75cd8d7231d0ed54c5547999",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4c094f69dcdb369989ed3edf497b5273ef7a2f13698290ac8b0d3540c36d5ee6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e4612d1d35179c22b2741ea9422a7bef1e2dfb9d14994c3555cb1f12cabb1cac",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "59b26dfcfd1cd9bb607b93edd14aaa85aa483860497e7c2e8bbb156e7d41e0af",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b31ed362d0edb3bdd9ba380cc1dfe5d6a5b693baeb3a65dfb57428a92e9dbade",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6882e85797abfbdc4e1c9c6bd983ec7c4fa22c3843304d869c0f622fa359ab18",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ec672b93cb5c089fd87d83d5aa9337a47a3797c914f2b6ed120b6cf0ac44958b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c73c2e1f21005bc6dc24997b92f69e8ecb2a44ca691414a944bcadb37142e82a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--with-side-nav-children__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "799215b5062da6ca41e25566f82a7e96d0aa788b828508a1767be7f6067d8214",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--with-side-nav-children",
+        "title": "Core/MobileNav",
+        "name": "With SideNav Children",
+        "component": "MobileNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "fdf5dd931088a45deec86a63cca8668865fc7cd315058acbfbaab79dbc526ba8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "fc021cf8d8762b08b4b924183b0e0a4028790a19fb54fb8416c60daaadf864bb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e169d1d6906dc991b59c7012aaef88601b660f0907ecde9db2e9db6d679a8293",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bb427c42e375ba8cb9549c71eedb8b3227392d4f92207b4a4249c01030f197a8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "78366be6a1df6fa1e43833b9f2aa15a5f039e8e63a7737960017f38a795fdf27",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b8e37a6eff0ab3a7918ddd290414591836187aaafec5c4ebdc300fcf41ca4a7a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f1cb423fcf63cef8d331bc1e7b8cb19d6adf25640285cb09fe48569da5aa3ea1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "179ca1cfc8d70ba09dfb779bfabf782f312adcd124e7bda9647166c9611ada74",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8ab903e57392972a51641c812b8efab508391a26effe0a952763c802cb038d60",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "205de52abac56e0b60cc2c23fe25ece0fe4dca885dfa26ca83381e5d14ad0510",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "be88e03c1b620b68ea2c391cf5ca1b31541fe1045c1805c653a5544853c0d009",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6ee60b309a592c76fb7a01cf4fab1bf6567902366958f8bf60fa12e9623a60d1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "64e9bf8f0d85ad6c484c06eec41003b5e55afdae7075fd1fab85368e09256115",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--responsive-pattern__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a885ebcbb2a2ae2fa4232635312e4950af5e611c4da934ffe6e59998bc2c7302",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--responsive-pattern",
+        "title": "Core/MobileNav",
+        "name": "Responsive Pattern",
+        "component": "MobileNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "606fd3bf589519af7043b1a567d15958e50571bda638d7d84ec71aaa44cf46a9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "80c9777d8df890fa45c9f02fc3893b4e2fd272182f3563d3745765f948769bae",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e6c856371cb232788e9aef6a1c7e1dff236bbb11d3bcd9d6226bb28b71f6f220",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bbf2b631277f864526ed99786bd7159c8f2bfb5beac4d4622ae08dbc42c018a2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "488967215e6f2174aed482bbf5e7fc24416111ed0403260896397b1d5f5259dd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "144a601257788276863764f094f311e9354b342b038631da7635b72468df7553",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "089d34bd815cb9fb03e2d1fcdd75274e33e3aecbe41e524999b7ea29fb5ef62d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b615219ae250c7a8460474449fa48060e23a66b4bbea919fdb4590c841de3393",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "361beae5edfd6e9d245c090c5e6a860253248731670ef196980e4002d4f8ef53",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "73c211187f15f90c4b6d2b9ed30ff9713a068aa1762e272c9e2100fafdd2dfce",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e73d9339db89bab39493699c9213c9f58991f42886f3e6d09c69f496c94f12fe",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2d842721d93c0799859fb755473e2984bca2fde58aec856c9e1e5587a9fc7808",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c5b6d8f1dc071c8ed75b73990d3cefe279f701f36c2572eddb4ec30e3b3dac8d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--end-side__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f3d6cd86e81941b80f85a1e32a274eec2db85641bcfe5022b7ea88deaa808ca4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--end-side",
+        "title": "Core/MobileNav",
+        "name": "End Side",
+        "component": "MobileNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "25b2e67d24cfa298d1e6a8914556c4de6a91cacb42ac3e4dd311f597695447db",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0d6f673cb9dc5a81a27edbaa99cd86317c504a0143c55561d898ce7239899408",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a7e39ff518736f78587ab782a1d6fc30bc7b58e37bb89d381af600e0bbf5dd01",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "035925daf13a452db69a08b15bf15c5c681f96cf3444f8b0570261ff7e605ac5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "043eb858c736872827af3a1eeb3f618056e01b3147dba9e99c8dfb46af3f40c2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "110a4401a0c767a7fb9bdc3253ea898e67f9e7d5d5968d03ea0545c669811f50",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1fb2792cf929b5519975c7ff2afc4d1e4bfbbbf9aec74104814d9879a5a7c79c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "eda28e8f908ac36d780f27107d6e3fbbf8997e5b8d5a1fd84006ca4a361a69fb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d499b9ae38b64d9349d9af281e743577df9ab5ffee567376a447386e91d68fa5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1852fbbafbc1b09919195389036d9ff4aa79ffa368618f8318d836f954667d65",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0d256968525abdf0f5e948a9c22d49fb2794dc80157c588a68a6eca651cc73dd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5503c0cd7fac53ce34085b7704cd37bc4ac4d7f0d55c82ebe839162e91d90c13",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6138ba67a6000d29f395164bd271e9868c2e7cde8ccbbfd7ca46bcd9398b4c30",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--custom-width__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "77638155a50732994d229c30c72ddb4f15e8922c537830bc715e225c3c9d9e5d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--custom-width",
+        "title": "Core/MobileNav",
+        "name": "Custom Width",
+        "component": "MobileNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7b94adab4fd33406d823b4fad8a8f727ef68f7b0f0a0401773adb88c56748bc4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4c4b31d1245561dac6a55d8e39921c89579e72d657776f3ea23809471ec260aa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a27bafe4b2b1a620c7432386c51d5fd84f88c2084968441fc80e6855e5dd758c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "038484373080f27652b4f6b8d54c4fbdd4f94775b53395c8b8a28b802674adf5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "64757cdd7401096accfa0dc0a77fa65fcce45cede028bc3db277f825da3bebb5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0f03b5517ad89271a4ccf205190240a7d7e578515117615a7f150a0a290b5cfa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "28a70ef7284c39c9487630c50dafdbf2d3d604eeea096535efbb2684e2e514cb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8b77c365333cd853d020d41a28c384c33a8fb703cc617a646c21bd3f45463478",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "420ff37dd9bc6beafafa3a52129b7b579e0e9e6652b4a52b34846bf52d7b5a51",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "caf5293f772b052e81b1ca4b5087c9af770339189a68749b6407f1a8b02c2696",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "49b07e75f0f07d4cc28722b78e176768e4cd900fa0c233597cb4bad5ba46d65e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "34c4e3ffbddad34ebe1263451db0222a79d097b39ae6eae05d0b62541bc17bcf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a0808a17970af371a86f1e3d74150fc9618447a654b71f9329e5d6024dfb4be7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-mobilenav--without-title__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "df385dd95cc64be93ee947e925d870a207d5468d9a351b3cde4f8f58006eeaf3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-mobilenav--without-title",
+        "title": "Core/MobileNav",
+        "name": "Without Title",
+        "component": "MobileNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-08-29T05:00:29.679Z",
+    "context": {
+      "sha": "4e77eee06e6abad1d161d87e58794020c77a1682",
+      "runId": "33234362955",
+      "runAttempt": "1",
+      "headSha": "4e77eee06e6abad1d161d87e58794020c77a1682",
+      "baseSha": "c2ae093f4e82c23ae419602cdd2186c464e1e159",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "MobileNav"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/MobileNav/MobileNav.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-08-28T23:48:22.758Z",
+      "sha": "c6a8b21aeedf3b915dd4a4ef72e127013de2c731",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 84,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 82,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [
+      "core-mobilenav--default__butter-light",
+      "core-mobilenav--default__butter-dark",
+      "core-mobilenav--default__gothic-light",
+      "core-mobilenav--default__gothic-dark",
+      "core-mobilenav--default__stone-light",
+      "core-mobilenav--default__stone-dark",
+      "core-mobilenav--default__y2k-light",
+      "core-mobilenav--default__y2k-dark",
+      "core-mobilenav--default__matcha-light",
+      "core-mobilenav--default__matcha-dark",
+      "core-mobilenav--default__chocolate-light",
+      "core-mobilenav--default__chocolate-dark",
+      "core-mobilenav--with-side-nav-children__neutral-light",
+      "core-mobilenav--with-side-nav-children__neutral-dark",
+      "core-mobilenav--with-side-nav-children__butter-light",
+      "core-mobilenav--with-side-nav-children__butter-dark",
+      "core-mobilenav--with-side-nav-children__gothic-light",
+      "core-mobilenav--with-side-nav-children__gothic-dark",
+      "core-mobilenav--with-side-nav-children__stone-light",
+      "core-mobilenav--with-side-nav-children__stone-dark",
+      "core-mobilenav--with-side-nav-children__y2k-light",
+      "core-mobilenav--with-side-nav-children__y2k-dark",
+      "core-mobilenav--with-side-nav-children__matcha-light",
+      "core-mobilenav--with-side-nav-children__matcha-dark",
+      "core-mobilenav--with-side-nav-children__chocolate-light",
+      "core-mobilenav--with-side-nav-children__chocolate-dark",
+      "core-mobilenav--responsive-pattern__neutral-light",
+      "core-mobilenav--responsive-pattern__neutral-dark",
+      "core-mobilenav--responsive-pattern__butter-light",
+      "core-mobilenav--responsive-pattern__butter-dark",
+      "core-mobilenav--responsive-pattern__gothic-light",
+      "core-mobilenav--responsive-pattern__gothic-dark",
+      "core-mobilenav--responsive-pattern__stone-light",
+      "core-mobilenav--responsive-pattern__stone-dark",
+      "core-mobilenav--responsive-pattern__y2k-light",
+      "core-mobilenav--responsive-pattern__y2k-dark",
+      "core-mobilenav--responsive-pattern__matcha-light",
+      "core-mobilenav--responsive-pattern__matcha-dark",
+      "core-mobilenav--responsive-pattern__chocolate-light",
+      "core-mobilenav--responsive-pattern__chocolate-dark",
+      "core-mobilenav--end-side__neutral-light",
+      "core-mobilenav--end-side__neutral-dark",
+      "core-mobilenav--end-side__butter-light",
+      "core-mobilenav--end-side__butter-dark",
+      "core-mobilenav--end-side__gothic-light",
+      "core-mobilenav--end-side__gothic-dark",
+      "core-mobilenav--end-side__stone-light",
+      "core-mobilenav--end-side__stone-dark",
+      "core-mobilenav--end-side__y2k-light",
+      "core-mobilenav--end-side__y2k-dark",
+      "core-mobilenav--end-side__matcha-light",
+      "core-mobilenav--end-side__matcha-dark",
+      "core-mobilenav--end-side__chocolate-light",
+      "core-mobilenav--end-side__chocolate-dark",
+      "core-mobilenav--custom-width__neutral-light",
+      "core-mobilenav--custom-width__neutral-dark",
+      "core-mobilenav--custom-width__butter-light",
+      "core-mobilenav--custom-width__butter-dark",
+      "core-mobilenav--custom-width__gothic-light",
+      "core-mobilenav--custom-width__gothic-dark",
+      "core-mobilenav--custom-width__stone-light",
+      "core-mobilenav--custom-width__stone-dark",
+      "core-mobilenav--custom-width__y2k-light",
+      "core-mobilenav--custom-width__y2k-dark",
+      "core-mobilenav--custom-width__matcha-light",
+      "core-mobilenav--custom-width__matcha-dark",
+      "core-mobilenav--custom-width__chocolate-light",
+      "core-mobilenav--custom-width__chocolate-dark",
+      "core-mobilenav--without-title__neutral-light",
+      "core-mobilenav--without-title__neutral-dark",
+      "core-mobilenav--without-title__butter-light",
+      "core-mobilenav--without-title__butter-dark",
+      "core-mobilenav--without-title__gothic-light",
+      "core-mobilenav--without-title__gothic-dark",
+      "core-mobilenav--without-title__stone-light",
+      "core-mobilenav--without-title__stone-dark",
+      "core-mobilenav--without-title__y2k-light",
+      "core-mobilenav--without-title__y2k-dark",
+      "core-mobilenav--without-title__matcha-light",
+      "core-mobilenav--without-title__matcha-dark",
+      "core-mobilenav--without-title__chocolate-light",
+      "core-mobilenav--without-title__chocolate-dark"
+    ],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

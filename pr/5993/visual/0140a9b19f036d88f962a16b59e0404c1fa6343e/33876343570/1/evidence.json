@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5993,
+  "headSha": "0140a9b19f036d88f962a16b59e0404c1fa6343e",
+  "testedSha": "0140a9b19f036d88f962a16b59e0404c1fa6343e",
+  "baseSha": "1252020cd83a7406d8fac5d0ad650101aa3d569e",
+  "run": {
+    "id": 33876343570,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-04T13:37:13.302Z",
+    "context": {
+      "sha": "0140a9b19f036d88f962a16b59e0404c1fa6343e",
+      "runId": "33876343570",
+      "runAttempt": "1",
+      "headSha": "0140a9b19f036d88f962a16b59e0404c1fa6343e",
+      "baseSha": "1252020cd83a7406d8fac5d0ad650101aa3d569e",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Collapsible"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Collapsible/Collapsible.tsx",
+          "packages/core/src/Collapsible/CollapsibleGroup.tsx",
+          "packages/core/src/Collapsible/CollapsibleGroupContext.tsx",
+          "packages/core/src/Collapsible/index.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-03T16:04:27.248Z",
+      "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

@@ -1,0 +1,4793 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 3890,
+  "headSha": "829da488ae4f62a0cc2aff62c4cd9dd9fbcd55f1",
+  "testedSha": "829da488ae4f62a0cc2aff62c4cd9dd9fbcd55f1",
+  "baseSha": "e6507a95fb13cae83f94e2d4b58009eaf584f1c6",
+  "run": {
+    "id": 33104782199,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-sidenav--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d2af9dbed972efd2b68c65b8a39ecadc832e29fb58f623c22dd9bc6a173220b0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--default",
+        "title": "Core/SideNav",
+        "name": "Default",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "752d4b63f095db1d064e8a158d04ef9d681046635f0f9f06f1bd8c073b35c1bd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--default",
+        "title": "Core/SideNav",
+        "name": "Default",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0447044df11f317dde139a367d08805d8f34274e5807e30dd1fcc565320a37db",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--default",
+        "title": "Core/SideNav",
+        "name": "Default",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1b0bca205ea83d39a69f06ee0bc9c70f3ecb9b161f36267072dfca999811f53d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--default",
+        "title": "Core/SideNav",
+        "name": "Default",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ea09a34d1498863c686d56f2a96bd60c626f65522e5875f3c566e16ec1c41d09",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--default",
+        "title": "Core/SideNav",
+        "name": "Default",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "522ea3485cafbc96fdf446e95d80713b8e0bd176c09d96404e182b8fabb6c80f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--default",
+        "title": "Core/SideNav",
+        "name": "Default",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6ab25e7603a9619c62e774748a421ea37ca65103f338ab381ed09abf97b2b19a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--default",
+        "title": "Core/SideNav",
+        "name": "Default",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b35af439604eaca9fcf80862f9b5b0dc80b4924cf156e5d760f6f4c0da632331",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--default",
+        "title": "Core/SideNav",
+        "name": "Default",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5fa16aa0cb53b4705ce53ee292f3a314efb849b75d2b800ae345416b3faa1afa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--default",
+        "title": "Core/SideNav",
+        "name": "Default",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9fe0d6544b8ffb663ca7f24eda54b872171dd78308423c526a5be2da8a4f2e29",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--default",
+        "title": "Core/SideNav",
+        "name": "Default",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7df1ffac20ec323cce5c89abdcd86877bef71688e0810b7e6d0d66b65dce3a85",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--default",
+        "title": "Core/SideNav",
+        "name": "Default",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ffa1428f9cdab3d12ddc7bf953551fd984314e9983c598feb8487dae6513ae49",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--default",
+        "title": "Core/SideNav",
+        "name": "Default",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "03a7f629ba4cbf5d94c5a12961290903817cf86a677a5a8d7315ea313c5ad4a8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e86d1c49b3a7265f55de984913dd45e64223541d4d798e1edc2831bf2ebe8005",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6400a055e092ee12c8583f99b8ce7ae5e4fda2d561cb603a855bf3f89abacc77",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "773049e84acc6bd81dc39fc2729eed54a8f977b90b75ab337e20ce050f9df2f5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "dc7f6d2b4231d4b2ac0e8c49bed8e8f99f7e615eaa54f7770342fb36d8ae618e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8df8bf9780bdcb58a75420a53ca171623b032a56fcc7d7bece4b3262dc4af1e5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0b9a66e2cfd5c2f57c625cbe6346b9f273bddea99a02ebcd7309c7d8a309968b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "805e1931db8898b440a74984f641812c769e0a28867faea838e22fa6e1ad0a85",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3be46e48e6245bf6dbb066a2d286e68f3c9967590f28021a7997f3f845909bbb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "eef17ed2d9c3aaaa46414bf0715e6f622f562b18e7c26531256f4930c0a56ab2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e217735a9969b3be64a2c2de8aa817ac07e4ca3bcab66df4883cbd7609517aae",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c498d629b01c17f05f215e90b9981f354fedec869445feb0970706e48401a25f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d20db64a24bccea38d561a09996e85d6d0d0618358d854a3353c9d109a48dfba",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--title-without-icon__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bc8488d0fa0f3438e8f1d5687765db7725f6823ce165812cc0c36107f90c7b01",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--title-without-icon",
+        "title": "Core/SideNav",
+        "name": "Title Without Icon",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "90136670af968f54d15a7661b7cc61ef2444d6a408e3f28c283fed595f6fe05c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "25e2ba8f4fe879bf5a8fb569b65e0eee3656420545517ea34b58735406008039",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4f891f50528fe8a94b583f492696d6a9ea457febc0f7f1262fc469cb078edfc1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f51ae7fdd4ea0c5c26335fb2b33dc51b1e6f8ee172296cb65828ea4262559ba7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c57722c1a570a1635fa8099a8b2f357561eaed522ac81ea3820c5a5b9666b82d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "242f169a2b3f9867a964c9f3abd0135d959102e989d27d88dc252af415269353",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "98140f873721b4b222c502e78e17bf121c9d2af3d70c992e773216c66e977833",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a3240c60c4027c86bd3af1bccd8cc92d1b0c7cd4048b6dd095375e6a0cd3ca47",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "78a570e9537c4923e13015c0162d082ec79459af29d4bc0ac2c72aa3362f64df",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c1d1334f02f628035b8d9d837e51dc2f27a9080cff2082302cf4f2318be4687d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7f994edb0b6f0e36f7de9be70015f05a4370478223ccb377a4e1b687a1791ede",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "115777ee231e8c92713d756c054899a0d80b594a80fdf476c7f02fa63e7334c2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f9c7ad873456988c3d2e689be50c0dfd7a502140b431c97a6166c9ef0ec6a5c4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-header-menu__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "612305a3b359334825081c0787244fae96c19c884d2fd518e6e34f469cc6c4fc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-header-menu",
+        "title": "Core/SideNav",
+        "name": "Header with Menu",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "38e7be20e26428efe749f6157287228f79d1d35d28d01e244c51ad26394f98b7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "042bb5fa5a6e627a1f359970c0ae416536021384e8715e950646c5cc256bbc2e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5c6c8c9a206422f2b686cab1ef80fa7bb2e2880d73165f01f6290201c54e614d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2db061eda029d0330e187a55e7317abba064a9219a092d22b8d2dc0d624501b4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8a19b5df6c9d90857d62825c3d20e12f22d58eff2ccda88119cfb49421406488",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "54e576208cce6b26a5d1ac4f656604f4d0a39829c71961cefdb0a4239f6b93c3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0a263fbdbd58fa4807192e633dce79cbcf536e7eeba3b23318d58a2fedae5f0f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7d61eb9e181866cd178f00e38d279f1169444805de333cf37263d83a2de74222",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f69f80f9afb242bdb418b5fcb0f59bddf401251416df1496457cbe6703309756",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e8163dba76b26695bc36c70607584489c4a60856c3b3a38f6a2548e599b55431",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8903cf8951344b2d7cf4472350c34faa896982fc36a861c9fbdb4aca3709ac86",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "25f1b2477cec1beba93fe10549436c04b77978381285f220bbcf308b83382bbd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "55a2af4d6c122946a25958f49270f923327900d2509edc7002bd344124fd674d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--suite-header__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "32cc55315c9ccbc238c61ffbe27730a02246171bd7a250c91fa107946feb19b1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--suite-header",
+        "title": "Core/SideNav",
+        "name": "Suite with Independent Links",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0cf582882ff778440953c8634bb4bb825f017622d538d19d07dbb25ce837f6e0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9ee13e2196709809f978e908eda1a28824140f17c8d85c330bd7a954270f1bdd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "02ba72ce5b723f0b182931b3f2888760b82764c2a163706ba8c5e99b242e9b86",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9236d1a708a64d26fe4664d9cac552649861748f7e1ea98fc4d71a433da954e2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7134e88776f25ae81880558a703cd90a3137b6d2654da5e755f71f3a1748568f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "24dc7a7d00227668ec8024e0be1ad38addf45a6b7d386f18d6549825dbe814c6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c1549ff55ace6df9dd1f0bd828ddc24e6157bbc1905ab4c2a253cd3df78064b9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d6d6fc0f418479cb59efd2596fbb4d2debd41b86707aec2e8eb1e6f7d4e7d626",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "92ac8ed86aff17a2c4fa21bd5941fb19d6c2b71bbd51cce8c319263ba3b563f5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b5ed36e21558f76fdd5f3ac2d0d8f7a78e2c12a2bf8d98f9880b25b07168b2e1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4e53e839e1243332a4e36ca2f7548cc2da4e1a1a604b05828bc57a1e79e06a95",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3cf874f7c69910bd0d8f0958f0910f15cf145b82d1171966556bc52d21910af6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "309d3a66dfc36b8ddd33c4e3c60f04415abacf372bc15d8fa69840c26033e4c4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--nested-items__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bf7d0b37074b7057d845ef5e0d671c478e8ae7e0ce037b90fa7f2359d0c6d187",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--nested-items",
+        "title": "Core/SideNav",
+        "name": "Nested Items",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e9781cabab0f35c53d35fe04c51f97bf0a8867d97120f789a5de8b2f96ed0f07",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1c6e2fd3d2f6804ad4b9c56de77d9c273a55275a8c5a77331a755c85dd888db7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "76e193473fd5b7808fcb58f01334acb42a0f994033ed843f506a6228f271f3d4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "823bea3e0dba02d3206b90838503ead364b2d8d3b5bb814d30ed8b6ee45bbd1b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e05830d8b604da860ad8d454c695c6277c535990e1eba68113d6df9c112e60f6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a31e44e2d193c968760eb6084e9eef67bc5329ad6c8e988494db9e48b725504b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "550a97129fbe84e4513793d67005efdeb0dc528a9772c5496ecccea2f9b0ff25",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a066e336048e558b4d33f127243a47148e426bf7085ebc7197dcf83eff76a776",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d5fb4485cfb959a437d62d39d248e8b3edd6bc83407aed964240fb9faac3b465",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "463259087893acc16070116583a795b5465fb8ad937d780c25096846cb5f3924",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d22b89197ca5c71a7fd70c6285fee2fa6fd85259ee8e264fb4530db99d60f965",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "05047287c5b501d3af8aa5affb10393f33cfedd2b06d5c4f483750e29f893b98",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "11b22f1997900f36b0cd20bc626db0b7115ec9ab51b7748dd3dcc1663753c52c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--with-footer__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "290197ac0e990ebfeae2972c8301aa7385aea1da329533cfbd6d860ea0ef4188",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--with-footer",
+        "title": "Core/SideNav",
+        "name": "With Footer Icons",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bd9930a67ddd77eff091e8301865a04c4e53b2097b848974c4ca3e8f47e111f3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e269e2ede825637e4f73c75b5fea5cd754ee34c32cebc26a91cce2d8b73a8225",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "aefbb62431f306ec3904e6f58524793c8902802ee4778f7e27e9f9dfbfb70e80",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d195105ce9fa9dc54d031eb40d876573f2a1bc48bba6487e0d621a16a2e0bca9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7fd0fd908f720639919482566800308b4ddb662d73bd2e82fdea2db229bc6f25",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c4e16ed625d09573778365a8da3d832808d7c52ddff3444040817dc36f4e3c85",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7df0a858e80308de12341709d349f28e8c48be294763ba6f2021c6fc02a270b8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "12307ed878b5eb65f3a8de0f8e3428a184f4ac90c53f8f28ead5892f23f0b9ab",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ed4c7db0d55b89eba6d8d49224f5b27da8c75be316998cc9ef9712901f96b398",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6b8c9c54fab8f87d1d6158f38439ff3774365302d0dd563b59fdb4dc03094a99",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "72187318639f9e6da20a072b394739a4eaaae58af402135f5d89da5f37b5f311",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "04633ce32023cdea160e18dd87bb12ea140a1f948d15633881e9bb7e434cc547",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d0e38bc1acdb9d8ea6266a2482374118592e1ba635e9a81b3a7032dd83d978d6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--disabled-item__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6434876eb86773ff4157c50c7ee6554c95ab8d57404098b2d1680507f4e7e68d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--disabled-item",
+        "title": "Core/SideNav",
+        "name": "Disabled Items",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "df44ed6c5cb2b32de4b8732620e6353c69b8646c013003cc963f66f378aa3e95",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1cace028dea39023c45ba7908bc2c7a6c88964ac4cd9366db3736ce6adcd16b8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "aadde2ceced6c525f421c1516190b2c6f778ace3a13a1201579a51fc6d52fa16",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "fcd796e896e1cfd1c9d9cd4474873e747dfb8f371e8f8ea6f012aeedc5caa153",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8d5baa69e3a20994380e2b2e622ffa2ee6178e587e683814a4897f17ada33205",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bea7e93c4a0c2e98cb0486671fa203baee70b50edc7394c30615b4e7c25fb937",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "465ad8631969c886ab407109c6455647ba243ab2cdd12e3be3cafab8d19bc071",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9dfcc88569dcdc85f070e82a7ced9e728ce5c0e485e2ba05ddeeff28413fa181",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "52ed42096b797643cf1ad9d425ca3822b9288161f6c702e41e418b4ff725e44b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9bf2de81e11b2df9d8f713c7d2ace76d92db19964326a0cee4b295d4bb19ff7c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8bbcd925b9009486c6e941098a3b54decebbc969cd887893b37d14b69134b4c9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4011bef48438d70d61301455033b2f89e3681ad640c719fb1b41d41c0c71f4fd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3f5aedb35fc45af846ad13b5f92d5fc788c453f6e366bebbd198f44529d95755",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-section-header__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3ec525893a9b92a731bb88020e17e1414be124676714877f0e88f6ca4b7c4906",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-section-header",
+        "title": "Core/SideNav",
+        "name": "Hidden Section Header",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3fb2fe95a4fc1f73d145173e00b2cba86d6502230cdfa810f42dd52524e1b396",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a62b95a4c662043784e88d373d1ace0684ca1aa9c825fcf12907890da984a627",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "576e1bac226221b5de9dac905d4aacc8d0b781b5f1b19441a8026993b7f7276d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e449a62c1a769c1202182f7c8956e26ce3c131e3acfcef2d788c4f32b4ab8358",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1a7ccb21562fa307bb7c44f41aef6c067be887d7339b84ef6b8cba2936fb94d5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "66c84ea3b861a117343bcdec73a4937611e21eea0cc1d45dc5eb2419d4ac9d0e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "645324a761f4b43016de74c7f3ed55af383274cc27a128adba39940a0fe4d4dc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0fc56d74a548812f9d445d28874e7ae9dd109bddad891acd410c9dbc6ebdaf89",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ddad49dcae90c55923ec7294be7a642c7ca895cd973364e8d702db40ab907d5c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5d204f4a0c90a6a95eddca9ea17e5e44203dc8149730113d9474d4a7e880ba67",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "22c7574df446759cb32f8e5d68ccb137a24d693fde40e947f24cfd0526a8f077",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6a4310824de5a2f449e9c3d873d9c3b1a4a93199a727e1b780f7c2994cb1f762",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e98ac0826fb8cbaaca4b602c4fcf1f6f19f12a4ca7c2707293cd279b4c33c0fb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--end-content__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "cfcd429cb1b52ed5caee28bb4036eafbf4cd1d96f33d3eeaeb1023d9ee54eb4d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--end-content",
+        "title": "Core/SideNav",
+        "name": "End Content (Badges)",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b816ccf349261a108b233196e1f557a77e29f9510412898ad06b02af7f41956c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6d65b64fd5f0a8464e32aba79faba54df17e02a8aeef912d87f40b6de09b4693",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d63f1cd716e83219e1f493827c14f03806462309968086d66b7b7e2c0c952551",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6c309c5f2cb211f502582194cce21f5d68da19ac345c0ef135e2a2dc2606358f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c76e207e102f65e096403256f7714198ac8fcf3121f73b6bfe2e8cfafb2b54b2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f8138382242f80ba45960e108d6b026279374e311ffe742c79a0954a1b52b683",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3af9f9efa48ab40098ea6a72c459f99d0705b2baab3bb6925ca8d01230299b72",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1bf63bc7661aa69caf094a96c36b48fddfc6b285f68c768989ef25147664322c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e47666e098664c091e5c701ca5e383eddde40a977836d1550dcc8ac0d952bc5f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "fec698c98ecd42cf4e4b6de66cfcf1ba87bc012f8401e4c53b7dc6c8a7a4ce01",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2b7a5e8d733ccc08539922d5085e9d3f3cd89f2eea343e65cfb6f6d0e080ef99",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6c801afa31eb53b6871a9c1da6e3098deabc1c7bad8f8df4637db0a696121576",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "775d4b5a8a3b2472f8b10f6523fa712b29cbdfb8d2ad1f24ff73a8d87b229eba",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--row-actions__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0e2ddd10a47f5bb81b11ac59f44b09345852f66986a3ca7809a97458aa808a77",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--row-actions",
+        "title": "Core/SideNav",
+        "name": "Row Actions (Sibling Controls)",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c7ec39703af06de459ac10ca81258c96f8d72041c4505e7de894dfc2c6ae8a4c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "15df8d5dc2cb9689d3a7b75008588d111dd9cba2f712156a26ff6b94fee95e6a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4482105731fde0e22141599ce87aad963cb61ec7a3c5539e4580a5c25dc8fee9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "fb8de31c7f7feefd9e21e20e487e8f2eb5476afc9d54b21c8ecfb957a2f69378",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ad0c21f50a2fa533860b626e4af1cba2a0a744b598ef3eefa7e87d75fea21577",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5b8f97c98072631a3b55f1ff41f410d9b4304a6da397081962c9a39fd674872c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b37d5a5d07740ca6a7890b64dd81b52cc02b86c95d423fa51a298a07146717a4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "dc494c85e044a84ebb9707a02e76784c43f438d2f69edba5befab95f89c96558",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2a306e94cf90c8092ac7d9b4cefeffa0c42f10fba5293e1b2b50439622a91116",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8589e3cc32917ba4e54feccc352b80afaa5b8e8d63d9c780c822e8afb4a466bd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5000306027dee938e073553db43c7d3a9a60009cab9da481b64b6edbdd4f413e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "75b75a8163d6d0296c0f630cdfb1268b33b22315016ea0c8ce26576af522dd70",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "60f3e56fec86b094c07a3893401a0dbedd1e740f7907c60d010258a97b6adc1e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bdf366ea217db952b701d5d85fe2bbc1f1145914f08826ce68787861eda117ea",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content",
+        "title": "Core/SideNav",
+        "name": "Header End Content",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "675991dc072adf60ead8fe3b3b86ef4aaa03e75694bfddaf9341d9943f19c30a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "2bc37c1a91e73c0ee7cf245a479f3a8708981677dba8d4e9abd8c67e9ff72c52",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "051de60a06bb4e3b9511637ab3262959dcd912783bb7456dc40b6ec07b0ad092",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d26ed99e9a25160ba5986bc5fdc93094c4845d396ee995c100abbcf956171b27",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6f6a0f7eaa8c27f2b528cd5f9629445c8f41d9166b5718c114b21a2af16abfea",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "03f8e039fd49d2815285bae77beb1e5f32f6f956e942235f96ce3b7b1d417d99",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "45a28a9bfc2609b9120e0adc8170a512ad4bd1eee92a22c73a82985ff1b889a3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8a22d453d361532f8d4edec3c82dc75885667fef95e25e17c2721c45533cf45d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1c8c246978a3fb35d4503ae75455031f677a8f8fc39444624fcda29f284c1d3c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9c1cf2cfb2b7116a250a24cc883f168f5daa315054706ffb9bf666d65860e536",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "91d6ff6642e485e8e9a0b4cf2be1e37856c87b85ce867fcc65e57b0c6fbafbd6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8df4f1dcbe83a1700f772106247f5b0562b20ca39d77af38cb7d5aa049cbd41d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ad6884a3232fb0d6e299daa760ec371984b5b1437f882acdb8617adbce923b1c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--header-end-content-with-menu__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1b446fbe04bed6e6e15a9b30c828c0f440d53ac72b655d7209d9e53ad63ce6ae",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--header-end-content-with-menu",
+        "title": "Core/SideNav",
+        "name": "Header End Content + Menu",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5258ecf4c34e1d6725c0c91a29ef146c58425312ccb0d1972168757a93e09e87",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a7f60817fadd1feddb789b123163493870b65a2dcbe8d1387e4c2f0c52c2ef8d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "446f99a899c1f4843b611e48cff6a97257670cf79b64b4f9a15cfdf9cf676362",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "857954ea8cba235626d66dd89f1ceca16e9ad55bfb19bba92f463ec8caa26e35",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b9c04df3ba8baa9a7d519ee424a9c25e37f49c7e383b1d46b9b9a25b75d26212",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ba1b10d2fecf56bbdc852b7bbcb9d15a3dd68be20405d241ee970b902f31f7fe",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "624b94666140edcc3713cb41427a87abaf51878fa8a48dc84f9548fcd0492c28",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8c7501995fd1b097ac3e89b2e26aeb47f2fdc6bcf51c5254782d579297652409",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e1e037c41d60a018241bcecc7144a003f7ebae5e2715841294e106d9bfbe96a9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f387968964dc02c7c2978c1da616a361023c6b72b0e86d77f2d159cac81efa52",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "73f8cb0a8d73dfe621e19879fc9f424bc7b016513124523a429800ce94597d90",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d3f0b79337c7e1f12dea98180ea0d10629a2ba1e30416aee5e883c7f314aa3a0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bdc361d603731c1b7bfc3d1ad05e7df01636530973619d8857b0a9ec0928584c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-items__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "28e3c7d6e81be86455358adc8628dd0b2e42d7abeab667659a084273d2fc149e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-items",
+        "title": "Core/SideNav",
+        "name": "Collapsible Items",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b5504db3c8a49cecee6c311af9f0352555d65993ac6fb4a7cc088f95a69b3fd9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bd57700855b9e584e2a6371c7f563e33f2d59d7a147416e03a4826655a5497fb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "58bae55c57872bb5d5ea1ca4daee18c9c669ce643c3ab3c0879ddb7588e84e66",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "39722aff0d2e1d3f5af65cbad9fdad097a959b561edfc7dbee8363d67d60a71a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7cc1622d59b6b6a95da99c2a90f0341d64765f035a0a9b41c5e48516342d01af",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "f5e0b999d2b2b11d062c89ba25eb5acb548584030ed985860fb17a2d7f25d5b4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d633f3d1b7c2b3634caf58efcb9c8ba8d6b4823cb122e4654a0e76fc9c3b327c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "67db6fc4e2bf56f79f146242eddcac3ab8d533240a0de9fb567566fdf449a4d2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "527a9f155dcfe5bc0f309280a613ad8fba42d3cedafc7f93268eca3c28060389",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "64c6809d4e510fc5e4e2e6ef8e296e8648fc192d6273294b194491d39d84e77b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "837edb24e0e878d4a0bc5c93a0bbcd05bc5677547c33d655826167e7c5bb9db8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a71378841b0b4292e3bb121dff6b95ef045fce0184b2462db911a369e47057c0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e727118f140be026ce3e7114642aacbf1fbb600ecb257caeeada681fb23ab0ae",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--collapsible-sidebar__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "05a3c6cff2c21a1848dc4710362b16c652e69e716e8806f85a78f750df5d7363",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--collapsible-sidebar",
+        "title": "Core/SideNav",
+        "name": "Collapsible Sidebar",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e2ca8e7a9de9612df9017c2e30f5839927ba1a4474217680a582b2646602ac15",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "357fcc81c5137118f10700cc6fb2bd18a582341a01320108f75a46e2d60235a8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "e29cd3ef38d902b7307b4df4c09c1db1a61336f1eae71e8197258320112878d0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ec3559392dd932bbee603079ccff2dfc324720b6e176b67b56bfad42a6b51179",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "df684e21a1cef9c52ebf704e057bb5276727685f3ffd980ea8dd1f2e62b52e91",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a00f6b785e663360bce89089735b0c1a911cc1cb479d8e77c8bf5166c20232d1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b9a70d1019b66446774c35e6211f2549024c36134830d76a389c8546b9e7da30",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "41434db1143d12f43e58347b09af58a6a7d562a3d011667ef37bb996a848fc3f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "d0aa69c729c46e19f2ee78caa4309c6c0c71312f753a8bd473f96db627945aad",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "356a36fc572b524cdd296861c57ee4295dbb6528146e4f65c9f263f1c018390f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5d9af114fce18e91a2d92694e69bdae9e0b3c0b29e8b4d6f3a2f9ece093b0cde",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "15875e8e6e0e1b2af3710649d84a5c9d6ced29d6d10f371caa60293bfc8a854f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3ef30a177863b94629a7c5f6c81b6459826dfd4b39239639a2407ebec9b6ae28",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--iconless-nested-items__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3c70839608eda67c7f8ec9f5f384c71db374bf21ec10230704e612e3a0b081eb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--iconless-nested-items",
+        "title": "Core/SideNav",
+        "name": "Iconless Nested Items",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4c6b9a4bde2fa0045fbbbdb8a93ebc5297f385494fc5bc46538ff2dbdcf5026a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7d69b248aa850f5c1f4a4178a4e417abbc40652b1ea6a601a7ef00722c5bb69c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "8a73351fb78e262d89b7366541cb44e038d538e5ce9a45620847504f22e7e608",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "14300c656c9fb3d4b3cce7e500cc7eb8c07907fd751ea2b5c2a00978b9fbcf53",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "00d6c98d647949e735264d97c52cc4b3c8d2fc911b038c919bb8971cf56acf7a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "c48cbd3ee626e355e7a7e9678b914fad8ee71543db5df397405fd994b7dc9902",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "88054b4e6c6a51316f0bd2edea86b431d7e8f5ebf44ad9d109a090197ae34620",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6bb1297e1c8ce2f32835c0724e440dc7223d974b66bc6a720f3f3a0c700f6cc2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "80f82db2bb2e50f617a61163a64b080c7b233bcacd4d0196ef22c1f8bd5fd7cf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4b10f4cb8b03b67c4dd89db64a6aff32599cd4367e220f1b788e429a614bd15c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "44c08d56f8b99bc6379eac4ad800b6795d3316a5828044c3d8de610d410da2b5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "43761995c749a557ed88bb38ca8692d8bc98bb681bf67b1075ab72fe6d4411a9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1813b83eeeca1292981cdfcfeba8ae4fcb4fb934b7d187e716a573566d473053",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav--hidden-collapse__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "fa94786575c22c16064148f453e77a0ca28155452097289c6ed5b2ce21bfc176",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav--hidden-collapse",
+        "title": "Core/SideNav",
+        "name": "Hidden Collapse (collapsedWidth: 0)",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "5b185cc9c54eb2a22cda334d02ab89cef6c3fe853da2db613312447ed6625f2c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ab1194d930a24475de5f53929b03a44522f95e3919000c2096ba5652dfaca9e4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0aa2ba0144b2993079a6ba566b8d6e650e2ff12ac5efbf06b4a09ec6edc5f1b9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "64523213d7ece298db1d9234c8d114ba67ddf3bc6fbcba3e7033c33846fa3ebd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "04265d74edc9253181c83d2b8988cfe63b848b85615b790838a3878a02687b36",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "1c55fa8d485507c7583e4742234762b9c15dd57f2c804e6a5172d28196c099c1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "b0f177b64e991040c5299a8a088a5f295b6caf8fd2c1232244dcb62fa660bc2a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "888825ab4b3def0ada718bc6a1b5321608b29d9497983f1d11886c346c038811",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4890a61b10093c4bc46b5f3727b7cebfc47c9c15b20889cc536323fdd60aa0aa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "41a51cf809f89958a9c58afa275c09b5327c38d1f70cfb2d2b29a1889a52a068",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "212bf1a9f4a08e08f4a6be8eaeef11ef13414a4fbb91564714a3bca8535e351d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "9b204d9df19d01799edd2754a5e7826ad6be5c8a4dc3f12764320eddc436ae42",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "0955890c47cc53bee32af217c8d2a58aa0ffee9d3bde750663d698416d6c7560",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-sidenav-collapse-ownership--acceptance__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6e98269f30d3fa40e30e473ef1ca919412cdf078d798a181153b250883dc9975",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-sidenav-collapse-ownership--acceptance",
+        "title": "Core/SideNav/Collapse Ownership",
+        "name": "Acceptance",
+        "component": "SideNav",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-08-27T19:03:11.594Z",
+    "context": {
+      "sha": "829da488ae4f62a0cc2aff62c4cd9dd9fbcd55f1",
+      "runId": "33104782199",
+      "runAttempt": "1",
+      "headSha": "829da488ae4f62a0cc2aff62c4cd9dd9fbcd55f1",
+      "baseSha": "e6507a95fb13cae83f94e2d4b58009eaf584f1c6",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "SideNav"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/SideNav/SideNav.tsx",
+          "packages/core/src/SideNav/SideNavCollapseButton.tsx",
+          "packages/core/src/SideNav/SideNavCollapseContext.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-08-27T17:27:05.366Z",
+      "sha": "f24d0e9c99f9464d711a349db70a89398bb4d8dd",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 238,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 236,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [
+      "core-sidenav--default__butter-light",
+      "core-sidenav--default__butter-dark",
+      "core-sidenav--default__gothic-light",
+      "core-sidenav--default__gothic-dark",
+      "core-sidenav--default__stone-light",
+      "core-sidenav--default__stone-dark",
+      "core-sidenav--default__y2k-light",
+      "core-sidenav--default__y2k-dark",
+      "core-sidenav--default__matcha-light",
+      "core-sidenav--default__matcha-dark",
+      "core-sidenav--default__chocolate-light",
+      "core-sidenav--default__chocolate-dark",
+      "core-sidenav--title-without-icon__neutral-light",
+      "core-sidenav--title-without-icon__neutral-dark",
+      "core-sidenav--title-without-icon__butter-light",
+      "core-sidenav--title-without-icon__butter-dark",
+      "core-sidenav--title-without-icon__gothic-light",
+      "core-sidenav--title-without-icon__gothic-dark",
+      "core-sidenav--title-without-icon__stone-light",
+      "core-sidenav--title-without-icon__stone-dark",
+      "core-sidenav--title-without-icon__y2k-light",
+      "core-sidenav--title-without-icon__y2k-dark",
+      "core-sidenav--title-without-icon__matcha-light",
+      "core-sidenav--title-without-icon__matcha-dark",
+      "core-sidenav--title-without-icon__chocolate-light",
+      "core-sidenav--title-without-icon__chocolate-dark",
+      "core-sidenav--with-header-menu__neutral-light",
+      "core-sidenav--with-header-menu__neutral-dark",
+      "core-sidenav--with-header-menu__butter-light",
+      "core-sidenav--with-header-menu__butter-dark",
+      "core-sidenav--with-header-menu__gothic-light",
+      "core-sidenav--with-header-menu__gothic-dark",
+      "core-sidenav--with-header-menu__stone-light",
+      "core-sidenav--with-header-menu__stone-dark",
+      "core-sidenav--with-header-menu__y2k-light",
+      "core-sidenav--with-header-menu__y2k-dark",
+      "core-sidenav--with-header-menu__matcha-light",
+      "core-sidenav--with-header-menu__matcha-dark",
+      "core-sidenav--with-header-menu__chocolate-light",
+      "core-sidenav--with-header-menu__chocolate-dark",
+      "core-sidenav--suite-header__neutral-light",
+      "core-sidenav--suite-header__neutral-dark",
+      "core-sidenav--suite-header__butter-light",
+      "core-sidenav--suite-header__butter-dark",
+      "core-sidenav--suite-header__gothic-light",
+      "core-sidenav--suite-header__gothic-dark",
+      "core-sidenav--suite-header__stone-light",
+      "core-sidenav--suite-header__stone-dark",
+      "core-sidenav--suite-header__y2k-light",
+      "core-sidenav--suite-header__y2k-dark",
+      "core-sidenav--suite-header__matcha-light",
+      "core-sidenav--suite-header__matcha-dark",
+      "core-sidenav--suite-header__chocolate-light",
+      "core-sidenav--suite-header__chocolate-dark",
+      "core-sidenav--nested-items__neutral-light",
+      "core-sidenav--nested-items__neutral-dark",
+      "core-sidenav--nested-items__butter-light",
+      "core-sidenav--nested-items__butter-dark",
+      "core-sidenav--nested-items__gothic-light",
+      "core-sidenav--nested-items__gothic-dark",
+      "core-sidenav--nested-items__stone-light",
+      "core-sidenav--nested-items__stone-dark",
+      "core-sidenav--nested-items__y2k-light",
+      "core-sidenav--nested-items__y2k-dark",
+      "core-sidenav--nested-items__matcha-light",
+      "core-sidenav--nested-items__matcha-dark",
+      "core-sidenav--nested-items__chocolate-light",
+      "core-sidenav--nested-items__chocolate-dark",
+      "core-sidenav--with-footer__neutral-light",
+      "core-sidenav--with-footer__neutral-dark",
+      "core-sidenav--with-footer__butter-light",
+      "core-sidenav--with-footer__butter-dark",
+      "core-sidenav--with-footer__gothic-light",
+      "core-sidenav--with-footer__gothic-dark",
+      "core-sidenav--with-footer__stone-light",
+      "core-sidenav--with-footer__stone-dark",
+      "core-sidenav--with-footer__y2k-light",
+      "core-sidenav--with-footer__y2k-dark",
+      "core-sidenav--with-footer__matcha-light",
+      "core-sidenav--with-footer__matcha-dark",
+      "core-sidenav--with-footer__chocolate-light",
+      "core-sidenav--with-footer__chocolate-dark",
+      "core-sidenav--disabled-item__neutral-light",
+      "core-sidenav--disabled-item__neutral-dark",
+      "core-sidenav--disabled-item__butter-light",
+      "core-sidenav--disabled-item__butter-dark",
+      "core-sidenav--disabled-item__gothic-light",
+      "core-sidenav--disabled-item__gothic-dark",
+      "core-sidenav--disabled-item__stone-light",
+      "core-sidenav--disabled-item__stone-dark",
+      "core-sidenav--disabled-item__y2k-light",
+      "core-sidenav--disabled-item__y2k-dark",
+      "core-sidenav--disabled-item__matcha-light",
+      "core-sidenav--disabled-item__matcha-dark",
+      "core-sidenav--disabled-item__chocolate-light",
+      "core-sidenav--disabled-item__chocolate-dark",
+      "core-sidenav--hidden-section-header__neutral-light",
+      "core-sidenav--hidden-section-header__neutral-dark",
+      "core-sidenav--hidden-section-header__butter-light",
+      "core-sidenav--hidden-section-header__butter-dark",
+      "core-sidenav--hidden-section-header__gothic-light",
+      "core-sidenav--hidden-section-header__gothic-dark",
+      "core-sidenav--hidden-section-header__stone-light",
+      "core-sidenav--hidden-section-header__stone-dark",
+      "core-sidenav--hidden-section-header__y2k-light",
+      "core-sidenav--hidden-section-header__y2k-dark",
+      "core-sidenav--hidden-section-header__matcha-light",
+      "core-sidenav--hidden-section-header__matcha-dark",
+      "core-sidenav--hidden-section-header__chocolate-light",
+      "core-sidenav--hidden-section-header__chocolate-dark",
+      "core-sidenav--end-content__neutral-light",
+      "core-sidenav--end-content__neutral-dark",
+      "core-sidenav--end-content__butter-light",
+      "core-sidenav--end-content__butter-dark",
+      "core-sidenav--end-content__gothic-light",
+      "core-sidenav--end-content__gothic-dark",
+      "core-sidenav--end-content__stone-light",
+      "core-sidenav--end-content__stone-dark",
+      "core-sidenav--end-content__y2k-light",
+      "core-sidenav--end-content__y2k-dark",
+      "core-sidenav--end-content__matcha-light",
+      "core-sidenav--end-content__matcha-dark",
+      "core-sidenav--end-content__chocolate-light",
+      "core-sidenav--end-content__chocolate-dark",
+      "core-sidenav--row-actions__neutral-light",
+      "core-sidenav--row-actions__neutral-dark",
+      "core-sidenav--row-actions__butter-light",
+      "core-sidenav--row-actions__butter-dark",
+      "core-sidenav--row-actions__gothic-light",
+      "core-sidenav--row-actions__gothic-dark",
+      "core-sidenav--row-actions__stone-light",
+      "core-sidenav--row-actions__stone-dark",
+      "core-sidenav--row-actions__y2k-light",
+      "core-sidenav--row-actions__y2k-dark",
+      "core-sidenav--row-actions__matcha-light",
+      "core-sidenav--row-actions__matcha-dark",
+      "core-sidenav--row-actions__chocolate-light",
+      "core-sidenav--row-actions__chocolate-dark",
+      "core-sidenav--header-end-content__neutral-light",
+      "core-sidenav--header-end-content__neutral-dark",
+      "core-sidenav--header-end-content__butter-light",
+      "core-sidenav--header-end-content__butter-dark",
+      "core-sidenav--header-end-content__gothic-light",
+      "core-sidenav--header-end-content__gothic-dark",
+      "core-sidenav--header-end-content__stone-light",
+      "core-sidenav--header-end-content__stone-dark",
+      "core-sidenav--header-end-content__y2k-light",
+      "core-sidenav--header-end-content__y2k-dark",
+      "core-sidenav--header-end-content__matcha-light",
+      "core-sidenav--header-end-content__matcha-dark",
+      "core-sidenav--header-end-content__chocolate-light",
+      "core-sidenav--header-end-content__chocolate-dark",
+      "core-sidenav--header-end-content-with-menu__neutral-light",
+      "core-sidenav--header-end-content-with-menu__neutral-dark",
+      "core-sidenav--header-end-content-with-menu__butter-light",
+      "core-sidenav--header-end-content-with-menu__butter-dark",
+      "core-sidenav--header-end-content-with-menu__gothic-light",
+      "core-sidenav--header-end-content-with-menu__gothic-dark",
+      "core-sidenav--header-end-content-with-menu__stone-light",
+      "core-sidenav--header-end-content-with-menu__stone-dark",
+      "core-sidenav--header-end-content-with-menu__y2k-light",
+      "core-sidenav--header-end-content-with-menu__y2k-dark",
+      "core-sidenav--header-end-content-with-menu__matcha-light",
+      "core-sidenav--header-end-content-with-menu__matcha-dark",
+      "core-sidenav--header-end-content-with-menu__chocolate-light",
+      "core-sidenav--header-end-content-with-menu__chocolate-dark",
+      "core-sidenav--collapsible-items__neutral-light",
+      "core-sidenav--collapsible-items__neutral-dark",
+      "core-sidenav--collapsible-items__butter-light",
+      "core-sidenav--collapsible-items__butter-dark",
+      "core-sidenav--collapsible-items__gothic-light",
+      "core-sidenav--collapsible-items__gothic-dark",
+      "core-sidenav--collapsible-items__stone-light",
+      "core-sidenav--collapsible-items__stone-dark",
+      "core-sidenav--collapsible-items__y2k-light",
+      "core-sidenav--collapsible-items__y2k-dark",
+      "core-sidenav--collapsible-items__matcha-light",
+      "core-sidenav--collapsible-items__matcha-dark",
+      "core-sidenav--collapsible-items__chocolate-light",
+      "core-sidenav--collapsible-items__chocolate-dark",
+      "core-sidenav--collapsible-sidebar__neutral-light",
+      "core-sidenav--collapsible-sidebar__neutral-dark",
+      "core-sidenav--collapsible-sidebar__butter-light",
+      "core-sidenav--collapsible-sidebar__butter-dark",
+      "core-sidenav--collapsible-sidebar__gothic-light",
+      "core-sidenav--collapsible-sidebar__gothic-dark",
+      "core-sidenav--collapsible-sidebar__stone-light",
+      "core-sidenav--collapsible-sidebar__stone-dark",
+      "core-sidenav--collapsible-sidebar__y2k-light",
+      "core-sidenav--collapsible-sidebar__y2k-dark",
+      "core-sidenav--collapsible-sidebar__matcha-light",
+      "core-sidenav--collapsible-sidebar__matcha-dark",
+      "core-sidenav--collapsible-sidebar__chocolate-light",
+      "core-sidenav--collapsible-sidebar__chocolate-dark",
+      "core-sidenav--iconless-nested-items__neutral-light",
+      "core-sidenav--iconless-nested-items__neutral-dark",
+      "core-sidenav--iconless-nested-items__butter-light",
+      "core-sidenav--iconless-nested-items__butter-dark",
+      "core-sidenav--iconless-nested-items__gothic-light",
+      "core-sidenav--iconless-nested-items__gothic-dark",
+      "core-sidenav--iconless-nested-items__stone-light",
+      "core-sidenav--iconless-nested-items__stone-dark",
+      "core-sidenav--iconless-nested-items__y2k-light",
+      "core-sidenav--iconless-nested-items__y2k-dark",
+      "core-sidenav--iconless-nested-items__matcha-light",
+      "core-sidenav--iconless-nested-items__matcha-dark",
+      "core-sidenav--iconless-nested-items__chocolate-light",
+      "core-sidenav--iconless-nested-items__chocolate-dark",
+      "core-sidenav--hidden-collapse__neutral-light",
+      "core-sidenav--hidden-collapse__neutral-dark",
+      "core-sidenav--hidden-collapse__butter-light",
+      "core-sidenav--hidden-collapse__butter-dark",
+      "core-sidenav--hidden-collapse__gothic-light",
+      "core-sidenav--hidden-collapse__gothic-dark",
+      "core-sidenav--hidden-collapse__stone-light",
+      "core-sidenav--hidden-collapse__stone-dark",
+      "core-sidenav--hidden-collapse__y2k-light",
+      "core-sidenav--hidden-collapse__y2k-dark",
+      "core-sidenav--hidden-collapse__matcha-light",
+      "core-sidenav--hidden-collapse__matcha-dark",
+      "core-sidenav--hidden-collapse__chocolate-light",
+      "core-sidenav--hidden-collapse__chocolate-dark",
+      "core-sidenav-collapse-ownership--acceptance__neutral-light",
+      "core-sidenav-collapse-ownership--acceptance__neutral-dark",
+      "core-sidenav-collapse-ownership--acceptance__butter-light",
+      "core-sidenav-collapse-ownership--acceptance__butter-dark",
+      "core-sidenav-collapse-ownership--acceptance__gothic-light",
+      "core-sidenav-collapse-ownership--acceptance__gothic-dark",
+      "core-sidenav-collapse-ownership--acceptance__stone-light",
+      "core-sidenav-collapse-ownership--acceptance__stone-dark",
+      "core-sidenav-collapse-ownership--acceptance__y2k-light",
+      "core-sidenav-collapse-ownership--acceptance__y2k-dark",
+      "core-sidenav-collapse-ownership--acceptance__matcha-light",
+      "core-sidenav-collapse-ownership--acceptance__matcha-dark",
+      "core-sidenav-collapse-ownership--acceptance__chocolate-light",
+      "core-sidenav-collapse-ownership--acceptance__chocolate-dark"
+    ],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

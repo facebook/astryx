@@ -1,0 +1,463 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5617,
+  "headSha": "8f4bcf47ca7207a58a418a644b0c803118adc404",
+  "testedSha": "8f4bcf47ca7207a58a418a644b0c803118adc404",
+  "baseSha": "c2ae093f4e82c23ae419602cdd2186c464e1e159",
+  "run": {
+    "id": 33232925620,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-toast--themed-toast-action__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "6a9b9f09bd303dafd00b201eabcccacedb39216a564cb168f943966aae652428",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "4190b6ab73a43ed3e2b0be81838e3fe12f4e23e71e2d63e6fea4f3611e3dfc83",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "7a82c1b44f43e7cb6e0ad1340188dda634b7a3a3c3dd428151acadfedced5992",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3059a3e9f991d0b3c7afceb4730901c75b795f93efba0accbc4dc217612d34e0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "212415ed0b64a6dc6d3b5f8cca7402c3a8bc99c7e3f4e5502e64e8831e24270e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "a55d60ff49f0a01375096a408ee8895730070001a8bbb2604b3c985e42560ecf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ceb968b695b947184c249c0bc5a8ed8885515269cd4c2ec624043fb7ccaf1a81",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "04528a2090aa3d437b1c945ef91f51d39498588bfcf54ab81ccfee1022c2e3d8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "bb900bd1002d990632cdd078df3672fd8e702c785da6d1a74d4b267afbb008ca",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "518d55172a51b2e14da76a6f196da5ce031f6ee30b3cbae3116a056780e0678e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "76d646aaa7f0220a248ebea51518273dc8cf5434fcdb5fb1a329838ce407b1ca",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "534934b016004c826c3cc16cf35c486efa809de3db3c6fbced66ed23bbe39f80",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "ab2b4eec7dd0a5a9b15eebf8876aa6be4669ee0e99e76d8ced178a99d14d1d23",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--themed-toast-action__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "shot": {
+        "sha256": "3a75e620d8e4a9206381af26d9e1d8fa35223f9d30be831a74bda39d64bc2488",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--themed-toast-action",
+        "title": "Core/Toast",
+        "name": "Themed Toast Action",
+        "component": "Toast",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-08-29T04:25:02.209Z",
+    "context": {
+      "sha": "8f4bcf47ca7207a58a418a644b0c803118adc404",
+      "runId": "33232925620",
+      "runAttempt": "1",
+      "headSha": "8f4bcf47ca7207a58a418a644b0c803118adc404",
+      "baseSha": "c2ae093f4e82c23ae419602cdd2186c464e1e159",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Toast"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Toast/Toast.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-08-28T23:48:22.758Z",
+      "sha": "c6a8b21aeedf3b915dd4a4ef72e127013de2c731",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 252,
+      "unchanged": 238,
+      "changed": 0,
+      "added": 14,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [
+      "core-toast--themed-toast-action__neutral-light",
+      "core-toast--themed-toast-action__neutral-dark",
+      "core-toast--themed-toast-action__butter-light",
+      "core-toast--themed-toast-action__butter-dark",
+      "core-toast--themed-toast-action__gothic-light",
+      "core-toast--themed-toast-action__gothic-dark",
+      "core-toast--themed-toast-action__stone-light",
+      "core-toast--themed-toast-action__stone-dark",
+      "core-toast--themed-toast-action__y2k-light",
+      "core-toast--themed-toast-action__y2k-dark",
+      "core-toast--themed-toast-action__matcha-light",
+      "core-toast--themed-toast-action__matcha-dark",
+      "core-toast--themed-toast-action__chocolate-light",
+      "core-toast--themed-toast-action__chocolate-dark"
+    ],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

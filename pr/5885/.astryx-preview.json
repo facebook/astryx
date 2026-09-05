@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5885,
+    "headSha": "7f6b93ce0970b4593d185c57f8faa3eceec063b1",
+    "headRef": "fix/rtl-coverage-gaps",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 33683714060,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/5885/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5885/sandbox/",
+      "indexSha256": "34f514aa38d426860a7353eb2a2c9821c1df7eee9067171492fd420f0ab814ac"
+    }
+  }
+}

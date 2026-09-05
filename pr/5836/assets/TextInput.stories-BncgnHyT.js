@@ -1,0 +1,339 @@
+import{i as e,s as t}from"./preload-helper-CT_b8DTk.js";import{t as n}from"./react-B7Te67-h.js";import{t as r}from"./jsx-runtime-DqZldVDK.js";import{n as i,t as a}from"./TextInput-91RhHAff.js";import{W as o,o as s,t as c,wt as l}from"./esm-CL1f8dHF.js";var u,d,f,p,m,h,g,_,v,y,b,x,S,C,w,T,E,D,O,k,A,j,M,N,P,F,I,L,R,z;e((()=>{u=t(n()),a(),c(),d=r(),f={title:`Core/TextInput`,component:i,tags:[`autodocs`],argTypes:{label:{control:`text`,description:`Label text (required)`},isLabelHidden:{control:`boolean`,description:`Visually hide the label (still accessible to screen readers)`},placeholder:{control:`text`,description:`Placeholder text`},description:{control:`text`,description:`Description text displayed between the label and input`},value:{control:`text`,description:`Current input value (required)`},size:{control:`select`,options:[`sm`,`md`,`lg`],description:`Size variant`},isOptional:{control:`boolean`,description:`Whether the field is optional (mutually exclusive with isRequired)`},isRequired:{control:`boolean`,description:`Whether the field is required (mutually exclusive with isOptional)`},isDisabled:{control:`boolean`,description:`Whether the input is disabled`},isReadOnly:{control:`boolean`,description:`Whether the input is read-only. The value still submits with the form but cannot be edited. Unlike isDisabled it is not dimmed and stays in the tab order.`},disabledMessage:{control:`text`,description:`Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled TextInput in Tooltip.`},status:{control:`object`,description:`Status indicator with type (warning/error/success) and optional message`},labelTooltip:{control:`text`,description:`Tooltip text to display in an info icon at the end of the label`}}},p={render:e=>{let[t,n]=(0,u.useState)(e.value??``);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Name`,placeholder:`Enter your name`}},m={render:e=>{let[t,n]=(0,u.useState)(e.value??``);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Email`,description:`We'll never share your email with anyone.`,placeholder:`Enter your email`}},h={render:e=>{let[t,n]=(0,u.useState)(e.value??``);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Search`,isLabelHidden:!0,placeholder:`Search...`}},g={render:e=>{let[t,n]=(0,u.useState)(e.value??`Hello, world!`);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Greeting`,value:`Hello, world!`}},_={render:()=>{let[e,t]=(0,u.useState)(``),[n,r]=(0,u.useState)(``),[a,o]=(0,u.useState)(`Pre-filled value`),[s,c]=(0,u.useState)(``),[l,f]=(0,u.useState)(``),[p,m]=(0,u.useState)(``),[h,g]=(0,u.useState)(``),[_,v]=(0,u.useState)(`Disabled input`);return(0,d.jsxs)(`div`,{style:{display:`flex`,flexDirection:`column`,gap:`16px`,maxWidth:`300px`},children:[(0,d.jsx)(i,{label:`Visible label`,value:e,onChange:t,placeholder:`Enter text...`}),(0,d.jsx)(i,{label:`With description`,description:`Helpful description text`,value:s,onChange:c,placeholder:`Enter text...`}),(0,d.jsx)(i,{label:`Hidden label`,isLabelHidden:!0,value:n,onChange:r,placeholder:`Hidden label input`}),(0,d.jsx)(i,{label:`With value`,value:a,onChange:o}),(0,d.jsx)(i,{label:`Optional field`,isOptional:!0,value:l,onChange:f,placeholder:`Optional...`}),(0,d.jsx)(i,{label:`Required field`,isRequired:!0,value:p,onChange:m,placeholder:`Required...`}),(0,d.jsx)(i,{label:`Description with optional`,description:`Enter your nickname`,isOptional:!0,value:h,onChange:g,placeholder:`Nickname...`}),(0,d.jsx)(i,{label:`Disabled field`,isDisabled:!0,value:_,onChange:v})]})}},v={render:e=>{let[t,n]=(0,u.useState)(e.value??``);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Nickname`,isOptional:!0,placeholder:`Enter your nickname`}},y={render:e=>{let[t,n]=(0,u.useState)(e.value??``);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Username`,isRequired:!0,placeholder:`Enter your username`}},b={render:e=>{let[t,n]=(0,u.useState)(e.value??``);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Bio`,description:`Tell us about yourself`,isOptional:!0,placeholder:`Your bio here...`}},x={render:e=>{let[t,n]=(0,u.useState)(e.value??`ACCT-4417-9920`);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Account number`,isReadOnly:!0,value:`ACCT-4417-9920`}},S={render:e=>{let[t,n]=(0,u.useState)(e.value??`Cannot edit this`);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Locked Field`,isDisabled:!0,value:`Cannot edit this`}},C={render:e=>{let[t,n]=(0,u.useState)(e.value??`alice@example.com`);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Owner`,isDisabled:!0,disabledMessage:`You need the Editor role to change this`,value:`alice@example.com`}},w={render:e=>{let[t,n]=(0,u.useState)(e.value??``);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Search`,placeholder:`Search...`,startIcon:o}},T={render:e=>{let[t,n]=(0,u.useState)(e.value??``);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Search`,placeholder:`Search...`,startIcon:o,size:`sm`}},E={render:()=>{let[e,t]=(0,u.useState)(``),[n,r]=(0,u.useState)(``),[a,o]=(0,u.useState)(``);return(0,d.jsxs)(`div`,{style:{display:`flex`,flexDirection:`column`,gap:`16px`,maxWidth:`300px`},children:[(0,d.jsx)(i,{label:`Small (28px)`,value:e,onChange:t,placeholder:`Small size`,size:`sm`}),(0,d.jsx)(i,{label:`Medium (32px)`,value:n,onChange:r,placeholder:`Medium size (default)`,size:`md`}),(0,d.jsx)(i,{label:`Large (36px)`,value:a,onChange:o,placeholder:`Large size`,size:`lg`})]})}},D={render:()=>{let[e,t]=(0,u.useState)(``),[n,r]=(0,u.useState)(``),[a,c]=(0,u.useState)(``);return(0,d.jsxs)(`div`,{style:{display:`flex`,flexDirection:`column`,gap:`16px`,maxWidth:`300px`},children:[(0,d.jsx)(i,{label:`Search`,value:e,onChange:t,placeholder:`Search...`,startIcon:o}),(0,d.jsx)(i,{label:`Email`,value:n,onChange:r,placeholder:`Enter your email`,startIcon:l}),(0,d.jsx)(i,{label:`Username`,value:a,onChange:c,placeholder:`Enter your username`,startIcon:s})]})}},O={render:e=>{let[t,n]=(0,u.useState)(e.value??`invalid@`);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Email`,placeholder:`Enter your email`,status:{type:`error`,message:`Please enter a valid email address`}}},k={render:e=>{let[t,n]=(0,u.useState)(e.value??`user123`);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Username`,placeholder:`Enter your username`,status:{type:`warning`,message:`This username is already taken`}}},A={render:e=>{let[t,n]=(0,u.useState)(e.value??`validuser`);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Username`,placeholder:`Enter your username`,status:{type:`success`,message:`Username is available`}}},j={render:e=>{let[t,n]=(0,u.useState)(e.value??`test`);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Field`,placeholder:`Enter value`,status:{type:`error`}}},M={render:()=>{let[e,t]=(0,u.useState)(`invalid@`),[n,r]=(0,u.useState)(`user123`),[a,o]=(0,u.useState)(`validuser`),[s,c]=(0,u.useState)(`test`);return(0,d.jsxs)(`div`,{style:{display:`flex`,flexDirection:`column`,gap:`16px`,maxWidth:`300px`},children:[(0,d.jsx)(i,{label:`Error with message`,value:e,onChange:t,status:{type:`error`,message:`Please enter a valid email`}}),(0,d.jsx)(i,{label:`Warning with message`,value:n,onChange:r,status:{type:`warning`,message:`This username may be taken`}}),(0,d.jsx)(i,{label:`Success with message`,value:a,onChange:o,status:{type:`success`,message:`Username is available`}}),(0,d.jsx)(i,{label:`Error without message`,value:s,onChange:c,status:{type:`error`}})]})}},N={render:e=>{let[t,n]=(0,u.useState)(e.value??``);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`API Key`,placeholder:`Enter your API key`,labelTooltip:`Your unique API key for authentication. Keep this secret!`}},P={render:e=>{let[t,n]=(0,u.useState)(e.value??``);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{type:`password`,label:`Password`,placeholder:`Enter your password`}},F={render:e=>{let[t,n]=(0,u.useState)(e.value??``);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Webhook URL`,placeholder:`https://example.com/webhook`,labelTooltip:`The URL where we will send event notifications.`,isOptional:!0}},I={render:e=>{let[t,n]=(0,u.useState)(e.value??`Hello world`);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Search`,placeholder:`Type to search...`,hasClear:!0}},L={render:e=>{let[t,n]=(0,u.useState)(e.value??`invalid-email`);return(0,d.jsx)(i,{...e,value:t,onChange:n})},args:{label:`Email`,hasClear:!0,status:{type:`error`,message:`Invalid email address`}}},R={render:()=>{let[e,t]=(0,u.useState)(`invalid@`),[n,r]=(0,u.useState)(`invalid@`),[a,o]=(0,u.useState)(`invalid@`);return(0,d.jsxs)(`div`,{style:{display:`flex`,flexDirection:`column`,gap:24,width:280},children:[(0,d.jsx)(i,{label:`Attached (default)`,value:e,onChange:t,status:{type:`error`,message:`Enter a valid email`}}),(0,d.jsx)(i,{label:`Detached`,value:n,onChange:r,status:{type:`error`,message:`Enter a valid email`},statusVariant:`detached`}),(0,d.jsx)(i,{label:`Tooltip (focus, hover, or tap the status icon)`,value:a,onChange:o,status:{type:`error`,message:`Enter a valid email`},statusVariant:`tooltip`})]})}},p.parameters={...p.parameters,docs:{...p.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Name',
+    placeholder: 'Enter your name'
+  }
+}`,...p.parameters?.docs?.source}}},m.parameters={...m.parameters,docs:{...m.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Email',
+    description: "We'll never share your email with anyone.",
+    placeholder: 'Enter your email'
+  }
+}`,...m.parameters?.docs?.source}}},h.parameters={...h.parameters,docs:{...h.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Search',
+    isLabelHidden: true,
+    placeholder: 'Search...'
+  }
+}`,...h.parameters?.docs?.source}}},g.parameters={...g.parameters,docs:{...g.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'Hello, world!');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Greeting',
+    value: 'Hello, world!'
+  }
+}`,...g.parameters?.docs?.source}}},_.parameters={..._.parameters,docs:{..._.parameters?.docs,source:{originalSource:`{
+  render: () => {
+    const [value1, setValue1] = useState('');
+    const [value2, setValue2] = useState('');
+    const [value3, setValue3] = useState('Pre-filled value');
+    const [value4, setValue4] = useState('');
+    const [value5, setValue5] = useState('');
+    const [value6, setValue6] = useState('');
+    const [value7, setValue7] = useState('');
+    const [value8, setValue8] = useState('Disabled input');
+    return <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '16px',
+      maxWidth: '300px'
+    }}>
+        <TextInput label="Visible label" value={value1} onChange={setValue1} placeholder="Enter text..." />
+        <TextInput label="With description" description="Helpful description text" value={value4} onChange={setValue4} placeholder="Enter text..." />
+        <TextInput label="Hidden label" isLabelHidden value={value2} onChange={setValue2} placeholder="Hidden label input" />
+        <TextInput label="With value" value={value3} onChange={setValue3} />
+        <TextInput label="Optional field" isOptional value={value5} onChange={setValue5} placeholder="Optional..." />
+        <TextInput label="Required field" isRequired value={value6} onChange={setValue6} placeholder="Required..." />
+        <TextInput label="Description with optional" description="Enter your nickname" isOptional value={value7} onChange={setValue7} placeholder="Nickname..." />
+        <TextInput label="Disabled field" isDisabled value={value8} onChange={setValue8} />
+      </div>;
+  }
+}`,..._.parameters?.docs?.source}}},v.parameters={...v.parameters,docs:{...v.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Nickname',
+    isOptional: true,
+    placeholder: 'Enter your nickname'
+  }
+}`,...v.parameters?.docs?.source}}},y.parameters={...y.parameters,docs:{...y.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Username',
+    isRequired: true,
+    placeholder: 'Enter your username'
+  }
+}`,...y.parameters?.docs?.source}}},b.parameters={...b.parameters,docs:{...b.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Bio',
+    description: 'Tell us about yourself',
+    isOptional: true,
+    placeholder: 'Your bio here...'
+  }
+}`,...b.parameters?.docs?.source}}},x.parameters={...x.parameters,docs:{...x.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'ACCT-4417-9920');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Account number',
+    isReadOnly: true,
+    value: 'ACCT-4417-9920'
+  }
+}`,...x.parameters?.docs?.source}}},S.parameters={...S.parameters,docs:{...S.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'Cannot edit this');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Locked Field',
+    isDisabled: true,
+    value: 'Cannot edit this'
+  }
+}`,...S.parameters?.docs?.source}}},C.parameters={...C.parameters,docs:{...C.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'alice@example.com');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Owner',
+    isDisabled: true,
+    disabledMessage: 'You need the Editor role to change this',
+    value: 'alice@example.com'
+  }
+}`,...C.parameters?.docs?.source}}},w.parameters={...w.parameters,docs:{...w.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Search',
+    placeholder: 'Search...',
+    startIcon: MagnifyingGlassIcon
+  }
+}`,...w.parameters?.docs?.source}}},T.parameters={...T.parameters,docs:{...T.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Search',
+    placeholder: 'Search...',
+    startIcon: MagnifyingGlassIcon,
+    size: 'sm'
+  }
+}`,...T.parameters?.docs?.source}}},E.parameters={...E.parameters,docs:{...E.parameters?.docs,source:{originalSource:`{
+  render: () => {
+    const [sm, setSm] = useState('');
+    const [md, setMd] = useState('');
+    const [lg, setLg] = useState('');
+    return <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '16px',
+      maxWidth: '300px'
+    }}>
+        <TextInput label="Small (28px)" value={sm} onChange={setSm} placeholder="Small size" size="sm" />
+        <TextInput label="Medium (32px)" value={md} onChange={setMd} placeholder="Medium size (default)" size="md" />
+        <TextInput label="Large (36px)" value={lg} onChange={setLg} placeholder="Large size" size="lg" />
+      </div>;
+  }
+}`,...E.parameters?.docs?.source}}},D.parameters={...D.parameters,docs:{...D.parameters?.docs,source:{originalSource:`{
+  render: () => {
+    const [search, setSearch] = useState('');
+    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
+    return <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '16px',
+      maxWidth: '300px'
+    }}>
+        <TextInput label="Search" value={search} onChange={setSearch} placeholder="Search..." startIcon={MagnifyingGlassIcon} />
+        <TextInput label="Email" value={email} onChange={setEmail} placeholder="Enter your email" startIcon={EnvelopeIcon} />
+        <TextInput label="Username" value={username} onChange={setUsername} placeholder="Enter your username" startIcon={UserIcon} />
+      </div>;
+  }
+}`,...D.parameters?.docs?.source}}},O.parameters={...O.parameters,docs:{...O.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'invalid@');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Email',
+    placeholder: 'Enter your email',
+    status: {
+      type: 'error',
+      message: 'Please enter a valid email address'
+    }
+  }
+}`,...O.parameters?.docs?.source}}},k.parameters={...k.parameters,docs:{...k.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'user123');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Username',
+    placeholder: 'Enter your username',
+    status: {
+      type: 'warning',
+      message: 'This username is already taken'
+    }
+  }
+}`,...k.parameters?.docs?.source}}},A.parameters={...A.parameters,docs:{...A.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'validuser');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Username',
+    placeholder: 'Enter your username',
+    status: {
+      type: 'success',
+      message: 'Username is available'
+    }
+  }
+}`,...A.parameters?.docs?.source}}},j.parameters={...j.parameters,docs:{...j.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'test');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Field',
+    placeholder: 'Enter value',
+    status: {
+      type: 'error'
+    }
+  }
+}`,...j.parameters?.docs?.source}}},M.parameters={...M.parameters,docs:{...M.parameters?.docs,source:{originalSource:`{
+  render: () => {
+    const [error, setError] = useState('invalid@');
+    const [warning, setWarning] = useState('user123');
+    const [success, setSuccess] = useState('validuser');
+    const [errorNoMsg, setErrorNoMsg] = useState('test');
+    return <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '16px',
+      maxWidth: '300px'
+    }}>
+        <TextInput label="Error with message" value={error} onChange={setError} status={{
+        type: 'error',
+        message: 'Please enter a valid email'
+      }} />
+        <TextInput label="Warning with message" value={warning} onChange={setWarning} status={{
+        type: 'warning',
+        message: 'This username may be taken'
+      }} />
+        <TextInput label="Success with message" value={success} onChange={setSuccess} status={{
+        type: 'success',
+        message: 'Username is available'
+      }} />
+        <TextInput label="Error without message" value={errorNoMsg} onChange={setErrorNoMsg} status={{
+        type: 'error'
+      }} />
+      </div>;
+  }
+}`,...M.parameters?.docs?.source}}},N.parameters={...N.parameters,docs:{...N.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'API Key',
+    placeholder: 'Enter your API key',
+    labelTooltip: 'Your unique API key for authentication. Keep this secret!'
+  }
+}`,...N.parameters?.docs?.source}}},P.parameters={...P.parameters,docs:{...P.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    type: 'password',
+    label: 'Password',
+    placeholder: 'Enter your password'
+  }
+}`,...P.parameters?.docs?.source}}},F.parameters={...F.parameters,docs:{...F.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Webhook URL',
+    placeholder: 'https://example.com/webhook',
+    labelTooltip: 'The URL where we will send event notifications.',
+    isOptional: true
+  }
+}`,...F.parameters?.docs?.source}}},I.parameters={...I.parameters,docs:{...I.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'Hello world');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Search',
+    placeholder: 'Type to search...',
+    hasClear: true
+  }
+}`,...I.parameters?.docs?.source}}},L.parameters={...L.parameters,docs:{...L.parameters?.docs,source:{originalSource:`{
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'invalid-email');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Email',
+    hasClear: true,
+    status: {
+      type: 'error',
+      message: 'Invalid email address'
+    }
+  }
+}`,...L.parameters?.docs?.source}}},R.parameters={...R.parameters,docs:{...R.parameters?.docs,source:{originalSource:`{
+  render: () => {
+    const [a, setA] = useState('invalid@');
+    const [b, setB] = useState('invalid@');
+    const [c, setC] = useState('invalid@');
+    return <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 24,
+      width: 280
+    }}>
+        <TextInput label="Attached (default)" value={a} onChange={setA} status={{
+        type: 'error',
+        message: 'Enter a valid email'
+      }} />
+        <TextInput label="Detached" value={b} onChange={setB} status={{
+        type: 'error',
+        message: 'Enter a valid email'
+      }} statusVariant="detached" />
+        <TextInput label="Tooltip (focus, hover, or tap the status icon)" value={c} onChange={setC} status={{
+        type: 'error',
+        message: 'Enter a valid email'
+      }} statusVariant="tooltip" />
+      </div>;
+  }
+}`,...R.parameters?.docs?.source}}},z=`Default.WithDescription.WithHiddenLabel.WithValue.AllVariations.OptionalField.RequiredField.DescriptionWithOptional.ReadOnly.Disabled.DisabledWithMessage.WithStartIcon.WithStartIconAndSmallSize.SizeVariants.StartIconVariations.ErrorStatus.WarningStatus.SuccessStatus.StatusWithoutMessage.StatusVariations.WithTooltip.Password.TooltipWithOptional.Clearable.ClearableWithStatus.StatusVariantComparison`.split(`.`)}))();export{_ as AllVariations,I as Clearable,L as ClearableWithStatus,p as Default,b as DescriptionWithOptional,S as Disabled,C as DisabledWithMessage,O as ErrorStatus,v as OptionalField,P as Password,x as ReadOnly,y as RequiredField,E as SizeVariants,D as StartIconVariations,R as StatusVariantComparison,M as StatusVariations,j as StatusWithoutMessage,A as SuccessStatus,F as TooltipWithOptional,k as WarningStatus,m as WithDescription,h as WithHiddenLabel,w as WithStartIcon,T as WithStartIconAndSmallSize,N as WithTooltip,g as WithValue,z as __namedExportsOrder,f as default};

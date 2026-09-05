@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5993,
+  "headSha": "d104e1e976114ef6e68d609a90775a376212e548",
+  "testedSha": "d104e1e976114ef6e68d609a90775a376212e548",
+  "baseSha": "6e6b9b476713156899fc8bd2107f3f3ee2d26a90",
+  "run": {
+    "id": 33935621344,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-collapsible--single-mode__neutral-light",
+      "kind": "changed",
+      "beforeSha256": "ceb6d736f6edd011fee42ea70ebc0cb48357947dfc0aaea8da4ea01320b93324",
+      "shot": {
+        "sha256": "006715d480d7a3b9961036cde3d4280015ff13ea2cfa56ae171c5f9ec0c08d07",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode — Leading Chevron",
+        "component": "Collapsible",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-collapsible--single-mode__neutral-dark",
+      "kind": "changed",
+      "beforeSha256": "9fee231ab835a6a3241476cfd4187acd8ed04fb7e6426b3f153218a25d30752c",
+      "shot": {
+        "sha256": "be93baa55d0392330bd7fd5195a5952c2e28537aba0179ab2e8475588c472348",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode — Leading Chevron",
+        "component": "Collapsible",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-09-05T01:41:51.116Z",
+    "context": {
+      "sha": "d104e1e976114ef6e68d609a90775a376212e548",
+      "runId": "33935621344",
+      "runAttempt": "1",
+      "headSha": "d104e1e976114ef6e68d609a90775a376212e548",
+      "baseSha": "6e6b9b476713156899fc8bd2107f3f3ee2d26a90",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Collapsible"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Collapsible/Collapsible.tsx",
+          "packages/core/src/Collapsible/CollapsibleGroup.tsx",
+          "packages/core/src/Collapsible/CollapsibleGroupContext.tsx",
+          "packages/core/src/Collapsible/index.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-03T16:04:27.248Z",
+      "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 0,
+      "changed": 2,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [
+      {
+        "key": "core-collapsible--single-mode__neutral-light",
+        "diffPixels": 3534,
+        "diffRatio": 0.004494,
+        "sizeChanged": false,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode — Leading Chevron",
+        "component": "Collapsible",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      },
+      {
+        "key": "core-collapsible--single-mode__neutral-dark",
+        "diffPixels": 3417,
+        "diffRatio": 0.004345,
+        "sizeChanged": false,
+        "storyId": "core-collapsible--single-mode",
+        "title": "Core/Collapsible",
+        "name": "Single Mode — Leading Chevron",
+        "component": "Collapsible",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    ],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}
