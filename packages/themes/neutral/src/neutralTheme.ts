@@ -46,6 +46,14 @@ const neutralLocalTokens: Record<string, TokenValue> = {
     '#fafafa33',
     '#0a0a0a33',
   ],
+  '--astryx-theme-neutral-color-destructive-overlay-hover': [
+    withAlpha(red.light[70], '0D'),
+    withAlpha(red.dark[65], '0D'),
+  ],
+  '--astryx-theme-neutral-color-destructive-overlay-pressed': [
+    withAlpha(red.light[70], '1A'),
+    withAlpha(red.dark[65], '1A'),
+  ],
 };
 
 const statusFill = {
@@ -160,67 +168,55 @@ export const neutralTheme = defineTheme({
     ],
     '--color-tint-hover': ['black', 'white'],
 
-    '--color-background-red': [red.light[85], withAlpha(red.dark[75], '3D')],
+    '--color-background-red': [red.light[85], red.dark[25]],
     '--color-border-red': [red.light[80], red.light[65]],
     '--color-icon-red': [red.light[30], red.dark[75]],
-    '--color-text-red': [red.light[30], red.dark[85]],
+    '--color-text-red': [red.light[30], red.dark[80]],
 
-    '--color-background-orange': [
-      orange.light[85],
-      withAlpha(orange.light[75], '3D'),
-    ],
+    '--color-background-orange': [orange.light[85], orange.dark[25]],
     '--color-border-orange': [orange.light[85], orange.dark[65]],
     '--color-icon-orange': [orange.light[30], orange.light[75]],
-    '--color-text-orange': [orange.light[30], orange.dark[85]],
+    '--color-text-orange': [orange.light[30], orange.dark[80]],
 
-    '--color-background-yellow': [
-      yellow.dark[90],
-      withAlpha(yellow.light[75], '3D'),
-    ],
+    '--color-background-yellow': [yellow.dark[90], yellow.dark[25]],
     '--color-border-yellow': [yellow.dark[80], yellow.light[65]],
     '--color-icon-yellow': [yellow.light[30], yellow.light[75]],
-    '--color-text-yellow': [yellow.light[30], yellow.light[85]],
+    '--color-text-yellow': [yellow.light[30], yellow.light[80]],
 
-    '--color-background-green': [
-      green.dark[85],
-      withAlpha(green.light[75], '3D'),
-    ],
+    '--color-background-green': [green.dark[85], green.dark[25]],
     '--color-border-green': [green.dark[80], green.light[65]],
     '--color-icon-green': [green.light[30], green.light[75]],
-    '--color-text-green': [green.light[30], green.light[80]],
+    '--color-text-green': [green.light[30], green.light[75]],
 
-    '--color-background-teal': [teal.light[85], withAlpha(teal.dark[75], '3D')],
+    '--color-background-teal': [teal.light[85], teal.dark[25]],
     '--color-border-teal': [teal.light[80], teal.dark[65]],
     '--color-icon-teal': [teal.light[30], teal.dark[75]],
-    '--color-text-teal': [teal.light[30], teal.light[85]],
+    '--color-text-teal': [teal.light[30], teal.light[80]],
 
-    '--color-background-cyan': [cyan.dark[85], withAlpha(cyan.dark[75], '3D')],
+    '--color-background-cyan': [cyan.dark[85], cyan.dark[25]],
     '--color-border-cyan': [cyan.dark[80], cyan.dark[65]],
     '--color-icon-cyan': [cyan.light[30], cyan.dark[75]],
-    '--color-text-cyan': [cyan.light[30], cyan.dark[85]],
+    '--color-text-cyan': [cyan.light[30], cyan.dark[80]],
 
-    '--color-background-blue': [blue.light[85], withAlpha(blue.dark[75], '3D')],
+    '--color-background-blue': [blue.light[85], blue.dark[25]],
     '--color-border-blue': [blue.light[80], blue.dark[65]],
     '--color-icon-blue': [blue.light[30], blue.dark[75]],
-    '--color-text-blue': [blue.light[30], blue.dark[85]],
+    '--color-text-blue': [blue.light[30], blue.dark[80]],
 
-    '--color-background-purple': [
-      purple.light[90],
-      withAlpha(purple.light[75], '3D'),
-    ],
+    '--color-background-purple': [purple.light[90], purple.dark[25]],
     '--color-border-purple': [purple.light[85], purple.light[70]],
     '--color-icon-purple': [purple.light[30], purple.light[75]],
-    '--color-text-purple': [purple.light[30], purple.dark[85]],
+    '--color-text-purple': [purple.light[30], purple.dark[80]],
 
-    '--color-background-pink': [pink.light[85], withAlpha(pink.dark[75], '3D')],
+    '--color-background-pink': [pink.light[85], pink.dark[25]],
     '--color-border-pink': [pink.light[85], pink.light[70]],
     '--color-icon-pink': [pink.light[30], pink.dark[75]],
-    '--color-text-pink': [pink.light[30], pink.dark[85]],
+    '--color-text-pink': [pink.light[30], pink.dark[80]],
 
-    '--color-background-gray': [neutral.light[90], 'var(--color-neutral)'],
+    '--color-background-gray': [neutral.light[90], neutral.dark[20]],
     '--color-border-gray': [neutral.light[85], neutral.dark[15]],
     '--color-icon-gray': [neutral.light[35], neutral.dark[65]],
-    '--color-text-gray': [neutral.light[15], neutral.dark[90]],
+    '--color-text-gray': [neutral.light[15], neutral.dark[85]],
 
     // =========================================================================
     // Radius — slightly larger than default (kept as-is)
@@ -277,6 +273,10 @@ export const neutralTheme = defineTheme({
       'variant:destructive': {
         backgroundColor: 'var(--color-error-muted)',
         color: 'var(--color-error)',
+        '--color-overlay-hover':
+          'var(--astryx-theme-neutral-color-destructive-overlay-hover)',
+        '--color-overlay-pressed':
+          'var(--astryx-theme-neutral-color-destructive-overlay-pressed)',
       },
     },
 
@@ -403,7 +403,6 @@ export const neutralTheme = defineTheme({
         '--color-warning': 'var(--color-text-yellow)',
       },
       'status:error': {
-        '--color-error-muted': 'var(--color-background-red)',
         '--color-text-primary': 'var(--color-text-red)',
         '--color-text-secondary': 'var(--color-text-red)',
         '--color-error': 'var(--color-text-red)',

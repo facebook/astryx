@@ -66,7 +66,7 @@ describe('neutral theme palette mappings', () => {
       ),
       '--color-background-red': lightDark(
         neutralPalettes.red.light[85],
-        `${neutralPalettes.red.dark[75]}3D`,
+        neutralPalettes.red.dark[25],
       ),
       '--color-border-red': lightDark(
         neutralPalettes.red.light[80],
@@ -78,11 +78,11 @@ describe('neutral theme palette mappings', () => {
       ),
       '--color-text-red': lightDark(
         neutralPalettes.red.light[30],
-        neutralPalettes.red.dark[85],
+        neutralPalettes.red.dark[80],
       ),
       '--color-background-orange': lightDark(
         neutralPalettes.orange.light[85],
-        `${neutralPalettes.orange.light[75]}3D`,
+        neutralPalettes.orange.dark[25],
       ),
       '--color-border-orange': lightDark(
         neutralPalettes.orange.light[85],
@@ -94,11 +94,11 @@ describe('neutral theme palette mappings', () => {
       ),
       '--color-text-orange': lightDark(
         neutralPalettes.orange.light[30],
-        neutralPalettes.orange.dark[85],
+        neutralPalettes.orange.dark[80],
       ),
       '--color-background-yellow': lightDark(
         neutralPalettes.yellow.dark[90],
-        `${neutralPalettes.yellow.light[75]}3D`,
+        neutralPalettes.yellow.dark[25],
       ),
       '--color-border-yellow': lightDark(
         neutralPalettes.yellow.dark[80],
@@ -110,11 +110,11 @@ describe('neutral theme palette mappings', () => {
       ),
       '--color-text-yellow': lightDark(
         neutralPalettes.yellow.light[30],
-        neutralPalettes.yellow.light[85],
+        neutralPalettes.yellow.light[80],
       ),
       '--color-background-green': lightDark(
         neutralPalettes.green.dark[85],
-        `${neutralPalettes.green.light[75]}3D`,
+        neutralPalettes.green.dark[25],
       ),
       '--color-border-green': lightDark(
         neutralPalettes.green.dark[80],
@@ -126,11 +126,11 @@ describe('neutral theme palette mappings', () => {
       ),
       '--color-text-green': lightDark(
         neutralPalettes.green.light[30],
-        neutralPalettes.green.light[80],
+        neutralPalettes.green.light[75],
       ),
       '--color-background-teal': lightDark(
         neutralPalettes.teal.light[85],
-        `${neutralPalettes.teal.dark[75]}3D`,
+        neutralPalettes.teal.dark[25],
       ),
       '--color-border-teal': lightDark(
         neutralPalettes.teal.light[80],
@@ -142,11 +142,11 @@ describe('neutral theme palette mappings', () => {
       ),
       '--color-text-teal': lightDark(
         neutralPalettes.teal.light[30],
-        neutralPalettes.teal.light[85],
+        neutralPalettes.teal.light[80],
       ),
       '--color-background-cyan': lightDark(
         neutralPalettes.cyan.dark[85],
-        `${neutralPalettes.cyan.dark[75]}3D`,
+        neutralPalettes.cyan.dark[25],
       ),
       '--color-border-cyan': lightDark(
         neutralPalettes.cyan.dark[80],
@@ -158,11 +158,11 @@ describe('neutral theme palette mappings', () => {
       ),
       '--color-text-cyan': lightDark(
         neutralPalettes.cyan.light[30],
-        neutralPalettes.cyan.dark[85],
+        neutralPalettes.cyan.dark[80],
       ),
       '--color-background-blue': lightDark(
         neutralPalettes.blue.light[85],
-        `${neutralPalettes.blue.dark[75]}3D`,
+        neutralPalettes.blue.dark[25],
       ),
       '--color-border-blue': lightDark(
         neutralPalettes.blue.light[80],
@@ -174,11 +174,11 @@ describe('neutral theme palette mappings', () => {
       ),
       '--color-text-blue': lightDark(
         neutralPalettes.blue.light[30],
-        neutralPalettes.blue.dark[85],
+        neutralPalettes.blue.dark[80],
       ),
       '--color-background-purple': lightDark(
         neutralPalettes.purple.light[90],
-        `${neutralPalettes.purple.light[75]}3D`,
+        neutralPalettes.purple.dark[25],
       ),
       '--color-border-purple': lightDark(
         neutralPalettes.purple.light[85],
@@ -190,11 +190,11 @@ describe('neutral theme palette mappings', () => {
       ),
       '--color-text-purple': lightDark(
         neutralPalettes.purple.light[30],
-        neutralPalettes.purple.dark[85],
+        neutralPalettes.purple.dark[80],
       ),
       '--color-background-pink': lightDark(
         neutralPalettes.pink.light[85],
-        `${neutralPalettes.pink.dark[75]}3D`,
+        neutralPalettes.pink.dark[25],
       ),
       '--color-border-pink': lightDark(
         neutralPalettes.pink.light[85],
@@ -206,11 +206,38 @@ describe('neutral theme palette mappings', () => {
       ),
       '--color-text-pink': lightDark(
         neutralPalettes.pink.light[30],
-        neutralPalettes.pink.dark[85],
+        neutralPalettes.pink.dark[80],
+      ),
+      '--color-background-gray': lightDark(
+        neutralPalettes.neutral.light[90],
+        neutralPalettes.neutral.dark[20],
+      ),
+      '--color-text-gray': lightDark(
+        neutralPalettes.neutral.light[15],
+        neutralPalettes.neutral.dark[85],
       ),
     };
 
     expect(neutralTheme.tokens).toMatchObject(mappings);
+  });
+
+  it('keeps dark categorical text readable on its background', () => {
+    const pairs = [
+      [neutralPalettes.red.dark[80], neutralPalettes.red.dark[25]],
+      [neutralPalettes.orange.dark[80], neutralPalettes.orange.dark[25]],
+      [neutralPalettes.yellow.light[80], neutralPalettes.yellow.dark[25]],
+      [neutralPalettes.green.light[75], neutralPalettes.green.dark[25]],
+      [neutralPalettes.teal.light[80], neutralPalettes.teal.dark[25]],
+      [neutralPalettes.cyan.dark[80], neutralPalettes.cyan.dark[25]],
+      [neutralPalettes.blue.dark[80], neutralPalettes.blue.dark[25]],
+      [neutralPalettes.purple.dark[80], neutralPalettes.purple.dark[25]],
+      [neutralPalettes.pink.dark[80], neutralPalettes.pink.dark[25]],
+      [neutralPalettes.neutral.dark[85], neutralPalettes.neutral.dark[20]],
+    ] as const;
+
+    for (const [foreground, background] of pairs) {
+      expect(contrastRatio(foreground, background)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });
 
@@ -271,6 +298,12 @@ describe('neutral theme-local status mappings', () => {
 });
 
 describe('neutral Banner tint mappings', () => {
+  it('keeps the error background on the semantic muted token', () => {
+    expect(
+      neutralTheme.components?.banner?.['status:error'],
+    ).not.toHaveProperty('--color-error-muted');
+  });
+
   it('uses light overlays in light mode and dark overlays in dark mode', () => {
     expect(neutralTheme.localTokens).toMatchObject({
       '--astryx-theme-neutral-color-on-tint-neutral':
@@ -286,6 +319,25 @@ describe('neutral Banner tint mappings', () => {
         'var(--astryx-theme-neutral-color-on-tint-overlay-hover)',
       '--color-overlay-pressed':
         'var(--astryx-theme-neutral-color-on-tint-overlay-pressed)',
+    });
+  });
+});
+
+describe('neutral destructive Button interaction treatment', () => {
+  it('uses component-scoped red palette overlays', () => {
+    expect(neutralTheme.localTokens).toMatchObject({
+      '--astryx-theme-neutral-color-destructive-overlay-hover':
+        'light-dark(#ff7f770D, #ee736c0D)',
+      '--astryx-theme-neutral-color-destructive-overlay-pressed':
+        'light-dark(#ff7f771A, #ee736c1A)',
+    });
+    expect(
+      neutralTheme.components?.button?.['variant:destructive'],
+    ).toMatchObject({
+      '--color-overlay-hover':
+        'var(--astryx-theme-neutral-color-destructive-overlay-hover)',
+      '--color-overlay-pressed':
+        'var(--astryx-theme-neutral-color-destructive-overlay-pressed)',
     });
   });
 });
