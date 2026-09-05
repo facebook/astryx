@@ -402,35 +402,46 @@ function generateHeadingWeightOverrides(
   components: Record<string, unknown>,
   parts: string[],
   surface?: 'dark' | 'light',
+  inheritedComponents?: Record<string, unknown>,
 ): void {
   const headingRules = components.heading;
   if (!headingRules || typeof headingRules !== 'object') {
     return;
   }
   const headingRuleMap = headingRules as Record<string, unknown>;
+  const inheritedHeadingRules = inheritedComponents?.heading;
+  const inheritedHeadingRuleMap =
+    inheritedHeadingRules && typeof inheritedHeadingRules === 'object'
+      ? (inheritedHeadingRules as Record<string, unknown>)
+      : undefined;
 
   for (const [weightName, weightValue] of Object.entries(
     HEADING_WEIGHT_TOKEN_MAP,
   )) {
-    // A standalone authored weight is authoritative only when it actually
-    // supplies the base font weight. Combined selectors are narrower, and a
-    // color-only weight rule still needs the generated font-weight fallback.
-    const authoredWeightRule = headingRuleMap[`weight:${weightName}`];
-    if (
-      authoredWeightRule != null &&
-      typeof authoredWeightRule === 'object' &&
-      !Array.isArray(authoredWeightRule) &&
-      Object.hasOwn(authoredWeightRule, 'fontWeight') &&
-      (authoredWeightRule as Record<string, unknown>).fontWeight != null
-    ) {
-      continue;
-    }
+    const styleKey = `weight:${weightName}`;
+    const authoredWeight = getAuthoredHeadingWeight(headingRuleMap, styleKey);
+    const inheritedWeight = inheritedHeadingRuleMap
+      ? getAuthoredHeadingWeight(inheritedHeadingRuleMap, styleKey)
+      : undefined;
+    const effectiveWeight = authoredWeight ?? inheritedWeight ?? weightValue;
     const suffix = parseStyleKey(`weight:${weightName}`);
     const selector = surface
       ? `:is(${mediaSelector(surface)}) :is(${componentClassSelector('heading', suffix)})`
       : componentClassSelector('heading', suffix);
-    parts.push(`  ${selector} { font-weight: ${weightValue}; }`);
+    parts.push(`  ${selector} { font-weight: ${effectiveWeight}; }`);
   }
+}
+
+function getAuthoredHeadingWeight(
+  headingRuleMap: Record<string, unknown>,
+  styleKey: string,
+): string | undefined {
+  const rule = headingRuleMap[styleKey];
+  if (rule == null || typeof rule !== 'object' || Array.isArray(rule)) {
+    return undefined;
+  }
+  const fontWeight = (rule as Record<string, unknown>).fontWeight;
+  return typeof fontWeight === 'string' ? fontWeight : undefined;
 }
 
 /**
@@ -808,10 +819,15 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
         }
       }
 
-      // Apply the explicit Heading weight prop after media-specific type
-      // rules. Theme-authored weight targets are skipped by the helper so
-      // those targeted values remain authoritative.
-      generateHeadingWeightOverrides(onMedia.components, parts, surface);
+      // Apply the effective explicit Heading weight after media-specific type
+      // rules. A surface-authored target wins, followed by the inherited main
+      // target and then the built-in token fallback.
+      generateHeadingWeightOverrides(
+        onMedia.components,
+        parts,
+        surface,
+        theme.components,
+      );
     }
   }
 
