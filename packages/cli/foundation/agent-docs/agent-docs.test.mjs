@@ -555,6 +555,15 @@ describe('installAgentDocs', () => {
     expect(fs.existsSync(path.join(tmpDir, '.claude'))).toBe(false);
   });
 
+  it('respects --agent muse preset: creates AGENTS.md', () => {
+    setupCorePackage(tmpDir);
+
+    const written = installAgentDocs(tmpDir, {agent: 'muse'});
+
+    expect(written).toEqual(['AGENTS.md']);
+    expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
+  });
+
   it('respects explicit --paths', () => {
     setupCorePackage(tmpDir);
 
@@ -671,6 +680,11 @@ describe('resolveAgentPaths', () => {
     fs.writeFileSync(path.join(tmpDir, 'HERMES.md'), '');
     const result = resolveAgentPaths(tmpDir, 'hermes');
     expect(result).toEqual({inject: ['HERMES.md'], create: []});
+  });
+
+  it('muse preset creates AGENTS.md when nothing exists', () => {
+    const result = resolveAgentPaths(tmpDir, 'muse');
+    expect(result).toEqual({inject: [], create: ['AGENTS.md']});
   });
 
   it('claude preset still creates .claude/CLAUDE.md when nothing exists (hermes is additive)', () => {

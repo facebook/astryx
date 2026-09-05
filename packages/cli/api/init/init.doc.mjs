@@ -45,7 +45,7 @@ export const doc = {
     {
       name: 'options.agent',
       type: 'string',
-      description: 'Agent preset: claude, cursor, codex, hermes, all.',
+      description: 'Agent preset: claude, cursor, codex, hermes, muse, all.',
     },
     {
       name: 'options.agentDocsPath',
@@ -75,7 +75,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_UNKNOWN_AGENT',
-      when: '`agent` is not one of claude, cursor, codex, hermes, all',
+      when: '`agent` is not one of claude, cursor, codex, hermes, muse, all',
     },
     {
       code: 'ERR_UNKNOWN_FEATURE',

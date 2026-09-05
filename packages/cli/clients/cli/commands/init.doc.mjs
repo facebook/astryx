@@ -40,9 +40,9 @@ export const doc = {
     {
       flag: '--agent <tool>',
       param: 'options.agent',
-      choices: ['claude', 'cursor', 'codex', 'hermes', 'all'],
+      choices: ['claude', 'cursor', 'codex', 'hermes', 'muse', 'all'],
       description:
-        'Target AI tool for agent docs: claude, cursor, codex, hermes, all',
+        'Target AI tool for agent docs: claude, cursor, codex, hermes, muse, all',
     },
     {
       flag: '--agent-docs-path <path...>',
