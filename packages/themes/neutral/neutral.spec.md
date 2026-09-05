@@ -180,10 +180,10 @@ theme-build artifacts.
 
 ## Decision log
 
-The decisions below record settled input for the portions they name. This
-record's approval covers the exact palette only. Token mappings, local-token
-roles, and rendered-evidence questions stay explicitly separate for later
-review and release.
+The decisions below record settled input for the portions they name. DEC-2
+approves the exact palette, and DEC-4 approves the reviewed token mappings
+shipped by this release. Local-token roles and rendered-evidence questions
+remain subject to the specific approval gates stated in their decisions.
 
 ### DEC-1 — Own one exact Neutral filled-accent-status role
 
