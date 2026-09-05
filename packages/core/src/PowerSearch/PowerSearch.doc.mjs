@@ -41,7 +41,8 @@ export const docs = {
     {
       name: 'label',
       type: 'string',
-      description: 'Accessible label for the search input.',
+      description:
+        'Accessible label for PowerSearch. On touch it names the field-wide filter-management trigger and the content-search field inside the sheet.',
       default: "'Search'",
     },
     {
@@ -53,7 +54,8 @@ export const docs = {
     {
       name: 'placeholder',
       type: 'string',
-      description: 'Placeholder text shown when no filters are selected.',
+      description:
+        'Placeholder shown when no filters are selected. On touch it also becomes the content-search placeholder inside Add filter when contentSearchFieldKey is configured.',
       default: "'Search...'",
     },
     {
@@ -65,7 +67,8 @@ export const docs = {
     {
       name: 'hasClear',
       type: 'boolean',
-      description: 'Show a clear-all button for removing all filters.',
+      description:
+        'Show a clear-all action for removing all editable filters. On touch the action lives in the filter-management sheet.',
       default: 'true',
     },
     {
@@ -122,7 +125,7 @@ export const docs = {
       name: 'maxSearchResults',
       type: 'number',
       description:
-        'Max ranked results for a non-empty query. Does not affect a field value editor. Browsing with an empty query shows up to 1,000 fields.',
+        'Max ranked results for a non-empty query in the main or touch-management suggestion list. Does not affect a field value editor. Browsing with an empty query shows up to 1,000 fields.',
       default: '10',
     },
     {
@@ -134,8 +137,9 @@ export const docs = {
     {
       name: 'popoverSaveButtonLabel',
       type: 'string',
-      description: 'Label for the save button in the edit popover.',
-      default: "'Apply'",
+      description:
+        "Label for the confirmation button. Defaults to 'Apply' in the pointer popover and to 'Add filter' or 'Edit filter' in the touch sheet.",
+      default: "'Apply' (popover) / mode-specific action (touch)",
     },
     {
       name: 'timezoneID',
@@ -146,7 +150,7 @@ export const docs = {
       name: 'handleRef',
       type: 'Ref<PowerSearchHandle>',
       description:
-        'Imperative handle with focusTypeahead() and blurTypeahead() methods.',
+        'Imperative handle with focusTypeahead() and blurTypeahead() methods. On touch these target the field-wide management trigger.',
     },
     {
       name: 'endContent',
@@ -173,17 +177,20 @@ export const docs = {
     {
       name: 'menuWidth',
       type: 'number',
-      description: 'Maximum width for the operator/value dropdown menu in pixels.',
+      description:
+        'Maximum width for the operator/value dropdown menu in pixels.',
     },
     {
       name: 'maxOperatorMenuItems',
       type: 'number',
-      description: 'Maximum number of items displayed in the operator dropdown.',
+      description:
+        'Maximum number of items displayed in the operator dropdown.',
     },
     {
       name: 'tokenOverflowBehavior',
       type: "'none' | 'unfocusedInline' | 'unfocusedLayer'",
-      description: 'Controls how tokens overflow when the container is too narrow. Forwarded to Tokenizer.',
+      description:
+        'Controls how tokens overflow when the container is too narrow. Forwarded to Tokenizer.',
       default: "'none'",
     },
     {
@@ -250,7 +257,7 @@ export const docs = {
   },
   usage: {
     description:
-      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. Use it for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
+      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On supported coarse pointers, the entire field opens a filter-management bottom sheet; capsules remain display-only in the field without edit or remove controls. The management sheet lists every selected filter without a separate list heading, marks editable rows with a trailing chevron, opens that row’s update sheet when pressed, places explicit Cancel and Delete actions beside the edit confirmation, places Add filter at the header’s top-right, and keeps Clear all plus Done in the footer. Every interactive empty state opens directly to Add filter. Clear all removes editable filters and closes the sheet. A string-valued contentSearchFieldKey renders a content-search input in Add filter with the standard PowerSearch field, operator, value, and free-text suggestions in an in-flow divided list below it rather than a popover. Single- and multi-value enum choices share a divided list with trailing checkmarks on selected rows. The field picker shows names only, complex operators stay inline as field-prefixed radios, and the Add filter or Edit filter confirmation returns to management. Nested filters and configured token-overflow behavior retain the typeahead surface. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
       {
         guidance: true,
@@ -275,7 +282,13 @@ export const docs = {
     ],
   },
   theming: {
-    targets: [{className: 'astryx-power-search'}],
+    targets: [
+      {
+        className: 'astryx-power-search',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
+    ],
   },
 };
 
@@ -403,8 +416,9 @@ export const docsZh = {
     {
       name: 'popoverSaveButtonLabel',
       type: 'string',
-      description: '编辑弹出窗口中保存按钮的标签。',
-      default: "'Apply'",
+      description:
+        "确认按钮标签。指针弹出框默认为 'Apply'；触控底部面板根据模式显示 'Add filter' 或 'Edit filter'。",
+      default: "'Apply' (popover) / mode-specific action (touch)",
     },
     {
       name: 'timezoneID',
@@ -442,7 +456,7 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. Use it for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
+      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On supported coarse pointers, the entire field opens a filter-management bottom sheet; capsules remain display-only in the field without edit or remove controls. The management sheet lists every selected filter without a separate list heading, marks editable rows with a trailing chevron, opens that row’s update sheet when pressed, places explicit Cancel and Delete actions beside the edit confirmation, places Add filter at the header’s top-right, and keeps Clear all plus Done in the footer. Every interactive empty state opens directly to Add filter. Clear all removes editable filters and closes the sheet. A string-valued contentSearchFieldKey renders a content-search input in Add filter with the standard PowerSearch field, operator, value, and free-text suggestions in an in-flow divided list below it rather than a popover. Single- and multi-value enum choices share a divided list with trailing checkmarks on selected rows. The field picker shows names only, complex operators stay inline as field-prefixed radios, and the Add filter or Edit filter confirmation returns to management. Nested filters and configured token-overflow behavior retain the typeahead surface. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
       {
         guidance: true,
@@ -471,10 +485,10 @@ export const docsZh = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Structured filter bar where each token represents filter (field+operator+value). Users select fields from typeahead dropdown, configure operators+values in edit popover, manage filters as removable tokens.',
+    'Structured filter bar where each token is field+operator+value. On supported coarse pointers the whole field opens one sheet flow: field capsules are display-only, selected filters appear as chevron-ended rows, row press opens update with explicit Cancel and Delete actions beside the edit confirmation, Add filter sits at the management header’s top-right, enum values use divided checkmark lists, content-search suggestions render in an inline divided list within Add filter, and empty states start in Add filter. Nested filters and configured token overflow retain the typeahead surface.',
   usage: {
     description:
-      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. Use it for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
+      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On supported coarse pointers, the entire field opens a filter-management bottom sheet; capsules remain display-only in the field without edit or remove controls. The management sheet lists every selected filter without a separate list heading, marks editable rows with a trailing chevron, opens that row’s update sheet when pressed, places explicit Cancel and Delete actions beside the edit confirmation, places Add filter at the header’s top-right, and keeps Clear all plus Done in the footer. Every interactive empty state opens directly to Add filter. Clear all removes editable filters and closes the sheet. A string-valued contentSearchFieldKey renders a content-search input in Add filter with the standard PowerSearch field, operator, value, and free-text suggestions in an in-flow divided list below it rather than a popover. Single- and multi-value enum choices share a divided list with trailing checkmarks on selected rows. The field picker shows names only, complex operators stay inline as field-prefixed radios, and the Add filter or Edit filter confirmation returns to management. Nested filters and configured token-overflow behavior retain the typeahead surface. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
       {
         guidance: true,
@@ -521,7 +535,8 @@ export const docsDense = {
     maxSearchResults:
       'Max ranked results for a non-empty query; excludes value editors.',
     menuWidth: 'Main field/search menu width in pixels.',
-    popoverSaveButtonLabel: 'Label for save button in edit popover.',
+    popoverSaveButtonLabel:
+      'Confirmation button label. Defaults to Apply in the pointer popover and to Add filter or Edit filter in the touch sheet.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',
     handleRef:
       'Imperative handle w/ focusTypeahead() + blurTypeahead() methods.',

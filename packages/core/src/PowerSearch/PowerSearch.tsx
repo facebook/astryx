@@ -5,12 +5,16 @@
 /**
  * @file PowerSearch.tsx
  * @input PowerSearchConfig, filters, onChange
- * @output Structured filter bar with token-based filter management
- * @position Main component; forwards DOM ref and exposes tokenizer control via
- *   handleRef
+ * @output Structured filter bar with pointer and coarse-pointer surfaces
+ * @position Public component; selects the touch surface on coarse pointers,
+ *   forwards DOM ref, and exposes surface focus control via handleRef
  *
  * SYNC: When modified, update:
- * - /packages/core/src/PowerSearch/index.ts
+ * - /packages/core/src/PowerSearch/PowerSearch.doc.mjs
+ * - /packages/core/src/PowerSearch/PowerSearch.test.tsx
+ * - /packages/core/src/PowerSearch/PowerSearchRouting.test.tsx
+ * - /packages/core/src/PowerSearch/PowerSearchTouch.tsx
+ * - /apps/storybook/stories/PowerSearch.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/PowerSearch/ (showcase blocks)
  */
 
@@ -55,6 +59,7 @@ import {
 } from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
+import {isRenderable} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {truncateCharacters} from '../utils/characters';
 import {useTranslator} from '../i18n';
@@ -75,6 +80,8 @@ import type {
 } from './types';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useMediaQuery} from '../hooks/useMediaQuery';
+import {PowerSearchTouchSurface} from './PowerSearchTouch';
 // =============================================================================
 // Icon mapping for typeahead entries
 // =============================================================================
@@ -372,7 +379,10 @@ export interface PowerSearchProps extends Omit<
   label?: string;
   /** Visually hide the label. @default true */
   isLabelHidden?: boolean;
-  /** Placeholder text. @default 'Search...' */
+  /**
+   * Placeholder text. On the touch surface it labels the empty field-wide trigger
+   * and the suggestion-backed content-search input. @default 'Search...'
+   */
   placeholder?: string;
   /** Auto-focus on mount. @default false */
   hasAutoFocus?: boolean;
@@ -422,14 +432,17 @@ export interface PowerSearchProps extends Omit<
    * an empty query shows up to 1,000 fields. @default 10
    */
   maxSearchResults?: number;
-  /** Label for the save button in edit popover. @default 'Apply' */
+  /**
+   * Label for the confirmation button. Defaults to 'Apply' in the pointer
+   * popover and to the mode-specific 'Add filter' or 'Edit filter' action in
+   * the touch sheet.
+   */
   popoverSaveButtonLabel?: string;
   /** Timezone ID for date formatting. */
   timezoneID?: string;
   /**
-   * Controls how tokens overflow when the container is too narrow.
-   * Forwarded to Tokenizer.
-   * @default 'none'
+   * Controls token overflow on fine-pointer surfaces. Configured overflow modes
+   * retain that surface on coarse pointers as well. @default 'none'
    */
   tokenOverflowBehavior?: TokenizerOverflowBehavior;
   /**
@@ -481,9 +494,13 @@ type PopoverState =
 /**
  * Structured filter bar where each token represents a filter (field + operator + value).
  *
- * Users select a field from a typeahead dropdown, then configure the operator
- * and value in an edit popover. Filters appear as tokens that can be clicked
- * to edit or removed individually.
+ * On fine pointers, users select fields from a typeahead and configure them in
+ * an edit popover. Supported coarse-pointer configurations instead use the whole
+ * field as a filter-management trigger and open a bottom-sheet flow. Touch
+ * capsules are display-only; editing and removal live in management rows. A
+ * supported content-search field appears inside management with the standard
+ * PowerSearch suggestion list. Nested filters and configured token overflow
+ * retain the typeahead surface.
  *
  * @example
  * ```
@@ -544,7 +561,41 @@ type PopoverState =
  * };
  * ```
  */
-export function PowerSearch({
+function canUseTouchSurface(props: PowerSearchProps): boolean {
+  const {config, tokenOverflowBehavior} = props;
+  if (tokenOverflowBehavior != null && tokenOverflowBehavior !== 'none') {
+    return false;
+  }
+  if (config.contentSearchFieldKey != null) {
+    const contentField = config.fields.find(
+      field => field.key === config.contentSearchFieldKey,
+    );
+    const contentOperator =
+      contentField?.defaultOperator != null
+        ? contentField.operators.find(
+            operator => operator.key === contentField.defaultOperator,
+          )
+        : contentField?.operators[0];
+    if (contentOperator?.value.type !== 'string') {
+      return false;
+    }
+  }
+  return !config.fields.some(field =>
+    field.operators.some(operator => operator.value.type === 'nested'),
+  );
+}
+
+export function PowerSearch(props: PowerSearchProps): ReactNode {
+  const isTouch = useMediaQuery('(pointer: coarse)');
+
+  return isTouch && canUseTouchSurface(props) ? (
+    <PowerSearchTouchSurface {...props} />
+  ) : (
+    <PointerPowerSearch {...props} />
+  );
+}
+
+function PointerPowerSearch({
   config: configProp,
   filters,
   onChange,
@@ -827,6 +878,7 @@ export function PowerSearch({
             field={field}
             operator={operator}
             maxLength={maxTokenLength}
+            size={size}
             onClick={handleClick}
             onRemove={handleRemove}
             isDisabled={isDisabled}
@@ -971,6 +1023,7 @@ export function PowerSearch({
           onCancel={handlePopoverCancel}
           saveButtonLabel={popoverSaveButtonLabel}
           isReadOnly={isReadOnly}
+          timezoneID={timezoneID}
         />
       );
     }
@@ -999,6 +1052,7 @@ export function PowerSearch({
     popoverSaveButtonLabel,
     maxOperatorMenuItems,
     isReadOnly,
+    timezoneID,
   ]);
 
   // Plain-text form of the result count, shared by the visible label and the
@@ -1027,17 +1081,16 @@ export function PowerSearch({
       hasMountedRef.current = true;
       return;
     }
-    if (resultCountText != null) {
+    if (resultCountText != null && resultCountText !== '') {
       announce(resultCountText);
     }
   }, [resultCountText, announce]);
 
   // Build combined endContent from resultCount + endContent props
   const combinedEndContent = useMemo((): React.ReactNode => {
-    const resultCountNode =
-      resultCountText != null ? (
-        <span {...stylex.props(resultCountStyles.text)}>{resultCountText}</span>
-      ) : null;
+    const resultCountNode = isRenderable(resultCountText) ? (
+      <span {...stylex.props(resultCountStyles.text)}>{resultCountText}</span>
+    ) : null;
 
     if (resultCountNode && endContent) {
       return (
@@ -1101,3 +1154,4 @@ export function PowerSearch({
 }
 
 PowerSearch.displayName = 'PowerSearch';
+PointerPowerSearch.displayName = 'PointerPowerSearch';

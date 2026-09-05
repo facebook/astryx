@@ -338,7 +338,11 @@ export interface PowerSearchField {
 export interface PowerSearchConfig {
   readonly name: string;
   readonly fields: ReadonlyArray<PowerSearchField>;
-  /** Key of the field used for content/text search. */
+  /**
+   * Key of the field used for content/text search. Supported string-valued
+   * configurations expose the existing PowerSearch suggestions from the
+   * management-sheet input on coarse pointers.
+   */
   readonly contentSearchFieldKey?: string;
 }
 
@@ -404,6 +408,8 @@ export interface PowerSearchTokenProps {
   readonly field: PowerSearchField;
   readonly operator: PowerSearchOperator;
   readonly maxLength: number;
+  /** Token size inherited from PowerSearch. */
+  readonly size?: 'sm' | 'md' | 'lg';
   readonly onClick?: () => void;
   readonly onRemove?: () => void;
   readonly isDisabled?: boolean;
