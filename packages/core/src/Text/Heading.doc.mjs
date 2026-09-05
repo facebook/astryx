@@ -10,7 +10,10 @@ export const docs = {
     'Semantic heading component that renders h1-h6 elements with themed styling, themed sizing via type scale tokens, and line-clamp truncation.',
   theming: {
     targets: [
-      {className: 'astryx-heading', visualProps: ['level', 'color', 'type']},
+      {
+        className: 'astryx-heading',
+        visualProps: ['level', 'color', 'type', 'weight'],
+      },
     ],
   },
   props: [
