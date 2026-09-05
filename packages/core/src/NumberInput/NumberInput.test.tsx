@@ -2438,3 +2438,197 @@ describe('NumberInput stepper padding coupling', () => {
     expect(css).toContain('border-radius: 2px');
   });
 });
+
+// =============================================================================
+// Family-aligned isLoading + changeAction (input-field family FR5/FR6)
+// =============================================================================
+
+describe('NumberInput changeAction and isLoading', () => {
+  /**
+   * A controlled owner that only accepts the value once its async save
+   * resolves — the shape that exposed the original bug. While the save is in
+   * flight the `value` prop still holds the old number, so anything rendering
+   * or deriving from `value` instead of the optimistic value goes stale.
+   */
+  function createDeferred() {
+    let resolve!: () => void;
+    const promise = new Promise<void>(r => {
+      resolve = r;
+    });
+    return {promise, resolve};
+  }
+
+  function DeferredOwner({
+    initialValue,
+    onSave,
+    hasClear,
+  }: {
+    initialValue: number | null;
+    onSave: (value: number | null) => Promise<void>;
+    hasClear?: true;
+  }) {
+    const [value, setValue] = useState<number | null>(initialValue);
+    return (
+      <NumberInput
+        label="Amount"
+        value={value}
+        hasClear={hasClear}
+        hasNumberSteppers
+        // The owner deliberately does NOT setValue here; it commits only after
+        // the async action resolves, like a server round-trip.
+        onChange={() => {}}
+        changeAction={async (next: number | null) => {
+          await onSave(next);
+          setValue(next);
+        }}
+      />
+    );
+  }
+
+  it('renders the optimistic value while a changeAction is in flight', async () => {
+    const deferred = createDeferred();
+    render(
+      <DeferredOwner initialValue={1} onSave={async () => deferred.promise} />,
+    );
+    const input = screen.getByRole('spinbutton');
+    expect(input).toHaveValue('1');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Increment Amount'}));
+
+    // The pending value is visible immediately, not after the save resolves.
+    await waitFor(() => expect(input).toHaveValue('2'));
+    expect(input).toHaveAttribute('aria-valuenow', '2');
+
+    await act(async () => {
+      deferred.resolve();
+      await deferred.promise;
+    });
+    await waitFor(() => expect(input).toHaveValue('2'));
+  });
+
+  it('exposes one busy presentation while a changeAction is in flight', async () => {
+    const deferred = createDeferred();
+    render(
+      <DeferredOwner initialValue={1} onSave={async () => deferred.promise} />,
+    );
+    const input = screen.getByRole('spinbutton');
+    expect(input).not.toHaveAttribute('aria-busy');
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', {name: 'Increment Amount'}));
+
+    await waitFor(() => expect(input).toHaveAttribute('aria-busy', 'true'));
+    // Exactly one indicator, never a separate one per source of busyness.
+    expect(screen.getAllByRole('status', {name: 'Loading'})).toHaveLength(1);
+
+    await act(async () => {
+      deferred.resolve();
+      await deferred.promise;
+    });
+    await waitFor(() => expect(input).not.toHaveAttribute('aria-busy'));
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('steps from the optimistic value so a second step does not resubmit', async () => {
+    const deferred = createDeferred();
+    const saved: (number | null)[] = [];
+    render(
+      <DeferredOwner
+        initialValue={1}
+        onSave={async next => {
+          saved.push(next);
+          return deferred.promise;
+        }}
+      />,
+    );
+    const input = screen.getByRole('spinbutton');
+    const increment = screen.getByRole('button', {name: 'Increment Amount'});
+
+    fireEvent.click(increment);
+    await waitFor(() => expect(input).toHaveValue('2'));
+
+    // Second step while the first is still in flight must advance to 3.
+    fireEvent.click(increment);
+    await waitFor(() => expect(input).toHaveValue('3'));
+    expect(saved).toEqual([2, 3]);
+
+    await act(async () => {
+      deferred.resolve();
+      await deferred.promise;
+    });
+  });
+
+  it('renders optimistically and passes null through the clear path', async () => {
+    const deferred = createDeferred();
+    const saved: (number | null)[] = [];
+    render(
+      <DeferredOwner
+        initialValue={7}
+        hasClear
+        onSave={async next => {
+          saved.push(next);
+          return deferred.promise;
+        }}
+      />,
+    );
+    const input = screen.getByRole('spinbutton');
+    expect(input).toHaveValue('7');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Clear Amount'}));
+
+    // Field empties immediately and the clear button retires with it.
+    await waitFor(() => expect(input).toHaveValue(''));
+    expect(saved).toEqual([null]);
+    expect(
+      screen.queryByRole('button', {name: 'Clear Amount'}),
+    ).not.toBeInTheDocument();
+    expect(input).toHaveAttribute('aria-busy', 'true');
+
+    await act(async () => {
+      deferred.resolve();
+      await deferred.promise;
+    });
+  });
+
+  it('exposes the same busy presentation for isLoading alone', () => {
+    const {rerender} = render(
+      <NumberInput label="Amount" value={3} onChange={() => {}} />,
+    );
+    const input = screen.getByRole('spinbutton');
+    expect(input).not.toHaveAttribute('aria-busy');
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <NumberInput label="Amount" value={3} onChange={() => {}} isLoading />,
+    );
+    expect(screen.getByRole('spinbutton')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getAllByRole('status', {name: 'Loading'})).toHaveLength(1);
+  });
+
+  it('leaves the no-changeAction path unchanged', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput
+        label="Amount"
+        value={5}
+        onChange={onChange}
+        hasNumberSteppers
+      />,
+    );
+    const input = screen.getByRole('spinbutton');
+
+    fireEvent.keyDown(input, {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenLastCalledWith(6);
+    // No changeAction means nothing is ever busy and no indicator appears.
+    expect(input).not.toHaveAttribute('aria-busy');
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+  });
+});

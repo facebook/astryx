@@ -217,6 +217,19 @@ export const docs = {
       type: '() => void',
       description: 'Callback fired when the user presses the Enter key.',
     },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        'Whether the field value is resolving or being saved. Shares one busy presentation (spinner and aria-busy) with a pending changeAction — the two never render separate indicators.',
+      default: 'false',
+    },
+    {
+      name: 'changeAction',
+      type: '(value: number) => void | Promise<void>  //  (value: number | null) => void | Promise<void> with hasClear',
+      description:
+        'Async action run after onChange for the same value change, in a React transition. The proposed value is shown optimistically — in the field, in aria-valuenow, and as the base for further stepping — until the controlled value accepts or replaces it, and it contributes to the same busy presentation as isLoading. Widens to accept null alongside onChange when hasClear is set.',
+    },
   ],
   theming: {
     targets: [
@@ -492,6 +505,19 @@ export const docsZh = {
       type: '() => void',
       description: '用户按下 Enter 键时触发的回调。',
     },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        '字段值是否正在解析或保存中。与进行中的 changeAction 共用同一个繁忙呈现（加载指示器与 aria-busy），两者不会渲染各自独立的指示器。',
+      default: 'false',
+    },
+    {
+      name: 'changeAction',
+      type: '(value: number) => void | Promise<void>  //  设置 hasClear 时为 (value: number | null) => void | Promise<void>',
+      description:
+        '在同一次值变更中于 onChange 之后运行的异步操作，包裹在 React transition 中。在受控值接受或替换之前，拟定值会以乐观方式呈现——显示在输入框、aria-valuenow 以及后续步进的基准值中——并与 isLoading 共用同一个繁忙呈现。设置 hasClear 时，其类型与 onChange 一同扩展为接受 null。',
+    },
   ],
   theming: {
     targets: [
@@ -695,5 +721,9 @@ export const docsDense = {
     onFocus: 'Callback on focus.',
     onBlur: 'Callback on blur.',
     onEnter: 'Callback on Enter key.',
+    isLoading:
+      'Field value resolving or being saved. Shares one busy presentation (spinner + aria-busy) w/ pending changeAction.',
+    changeAction:
+      'Async action after onChange, in a transition. Proposed value shown optimistically (field, aria-valuenow, stepping base) until controlled value accepts it. Accepts null w/ hasClear.',
   },
 };
