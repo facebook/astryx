@@ -1009,7 +1009,7 @@ function DetailChart({
   const fillId = `detail-fill-${id}`;
 
   return (
-    <div ref={hostRef}>
+    <VStack gap={0} ref={hostRef}>
       {!isSettled ? (
         <Skeleton width="100%" height={CHART_HEIGHT} radius={2} />
       ) : (
@@ -1057,7 +1057,7 @@ function DetailChart({
           </AreaChart>
         </ResponsiveContainer>
       )}
-    </div>
+    </VStack>
   );
 }
 
