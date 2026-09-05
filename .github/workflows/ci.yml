@@ -27,6 +27,9 @@ jobs:
     outputs:
       docsite_only: ${{ steps.scope.outputs.docsite_only }}
       spec_only: ${{ steps.scope.outputs.spec_only }}
+      rtl_audit_components: ${{ steps.rtl-applicability.outputs.audit_components }}
+      rtl_removed_components: ${{ steps.rtl-applicability.outputs.removed_components }}
+      rtl_full_audit: ${{ steps.rtl-applicability.outputs.full_audit }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -35,6 +38,61 @@ jobs:
       - name: Fetch base branch
         if: github.event_name == 'pull_request'
         run: git fetch origin ${{ github.base_ref }} --depth=50
+
+      - name: Materialize trusted RTL applicability policy
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: |
+          set -eu
+          git fetch origin "$BASE_SHA" --depth=1
+          POLICY_ROOT="$RUNNER_TEMP/rtl-applicability-policy"
+          mkdir -p \
+            "$POLICY_ROOT/.github/scripts" \
+            "$POLICY_ROOT/apps/storybook/rtl-audit"
+          POLICY_FILES=(
+            .github/scripts/check-rtl-applicability-registries.mjs
+            apps/storybook/rtl-audit/rtl-audit.mjs
+            apps/storybook/rtl-audit/rtl-audit-coverage.mjs
+          )
+          if git cat-file -e "$BASE_SHA:.github/scripts/check-rtl-applicability-registries.mjs" 2>/dev/null; then
+            for file in "${POLICY_FILES[@]}"; do
+              git show "$BASE_SHA:$file" > "$POLICY_ROOT/$file"
+            done
+          else
+            # One bootstrap is allowed only for this exact reviewed policy
+            # bundle. A partial base policy or any candidate edit fails closed.
+            for file in "${POLICY_FILES[@]}"; do
+              cp "$file" "$POLICY_ROOT/$file"
+            done
+            (
+              cd "$POLICY_ROOT"
+              printf '%s  %s\n' \
+                24eaa3519f8519e74dc427ce649c52df09f13b0e74dd58ad5a78f9c578c1a5ca .github/scripts/check-rtl-applicability-registries.mjs \
+                fa6711472dbf3d930733f1b6a7e174aae3966ac8de6cfa0714a79c46a2f6a906 apps/storybook/rtl-audit/rtl-audit.mjs \
+                d146e0d384a38863a2136518a7c760640824c1d86b0a2a4808b4df15dc33520b apps/storybook/rtl-audit/rtl-audit-coverage.mjs \
+                | sha256sum --check --strict -
+            )
+          fi
+
+      - name: Validate RTL applicability registries
+        id: rtl-applicability
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: |
+          node "$RUNNER_TEMP/rtl-applicability-policy/.github/scripts/check-rtl-applicability-registries.mjs" \
+            --base "$BASE_SHA" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Upload trusted RTL applicability policy
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        uses: actions/upload-artifact@v7
+        with:
+          name: rtl-applicability-policy
+          path: ${{ runner.temp }}/rtl-applicability-policy
+          include-hidden-files: true
+          retention-days: 1
 
       - name: Determine change scope
         id: scope
@@ -845,8 +903,8 @@ jobs:
   #
   # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
   # contextual directional decorations. Curated D2/D3/D4 adds behavior that
-  # needs selectors. The applicability rollup treats unexplained all-N/A as a
-  # coverage gap for both new and existing components.
+  # needs selectors. The applicability rollup fails new gaps while preserving
+  # pre-existing all-N/A components as visible, non-failing coverage debt.
   #
   # SOFT / NON-BLOCKING (continue-on-error): findings surface a scorecard in the
   # job summary but don't block the merge, while the suite is observed for
@@ -981,13 +1039,18 @@ jobs:
                 if (coverage) {
                   out.push("### Applicability coverage");
                   out.push("");
-                  out.push(`**${coverage.measured} measured · ${coverage.verifiedNa} verified N-A · ${coverage.gaps} coverage gap · ${coverage.staleVerifiedNa} stale verified N-A.**`);
+                  out.push(`**${coverage.measured} measured · ${coverage.verifiedNa} verified N-A · ${coverage.knownGaps} known debt · ${coverage.gaps} new gap · ${coverage.staleKnownGaps} stale known gap · ${coverage.staleVerifiedNa} stale verified N-A.**`);
                   out.push("");
-                  const gaps = coverage.results.filter(x => x.status === "coverage-gap" || x.status === "stale-verified-na");
+                  const gaps = coverage.results.filter(x => x.status === "coverage-gap" || x.status === "stale-known-coverage-gap" || x.status === "stale-verified-na");
                   if (gaps.length) {
-                    out.push("| Component | Status | Detail |");
-                    out.push("|-----------|--------|--------|");
+                    out.push("| Component | Finding | Detail |");
+                    out.push("|-----------|---------|--------|");
                     for (const c of gaps) out.push(`| ${c.component} | ${c.status} | ${c.note || c.reason || "unexplained all-N/A result"} |`);
+                    out.push("");
+                  }
+                  const knownDebt = coverage.results.filter(x => x.status === "known-coverage-gap");
+                  if (knownDebt.length) {
+                    out.push(`_${knownDebt.length} pre-existing coverage gap(s) remain visible as known debt; they are not findings introduced by this PR._`);
                     out.push("");
                   }
                 }
@@ -1012,4 +1075,78 @@ jobs:
         with:
           name: rtl-audit-report
           path: rtl-audit-report.json
+          retention-days: 1
+
+  # Applicability-registry changes are blocking even while the general pr-rtl
+  # signal remains soft. Changed N/A declarations and removed debt entries must
+  # now be measured, verified N-A, or absent from both live component rosters.
+  rtl-applicability-registry:
+    name: RTL applicability registry
+    needs: [build-storybook, check-scope]
+    if: >-
+      !cancelled() &&
+      needs.check-scope.result == 'success' &&
+      (needs.check-scope.outputs.rtl_full_audit == 'true' ||
+       needs.check-scope.outputs.rtl_audit_components != '') &&
+      (github.event_name == 'pull_request' || github.event_name == 'merge_group')
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download trusted RTL applicability policy
+        uses: actions/download-artifact@v8
+        with:
+          name: rtl-applicability-policy
+          path: .rtl-applicability-policy
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download Storybook artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Install Playwright
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      - name: Build Storybook for merge queue
+        if: github.event_name == 'merge_group'
+        run: pnpm build && pnpm -F @astryxdesign/storybook build
+
+      - name: Verify applicability registry changes
+        env:
+          AUDIT_COMPONENTS: ${{ needs.check-scope.outputs.rtl_audit_components }}
+          REMOVED_COMPONENTS: ${{ needs.check-scope.outputs.rtl_removed_components }}
+          FULL_AUDIT: ${{ needs.check-scope.outputs.rtl_full_audit }}
+        run: |
+          set -eu
+          cp .rtl-applicability-policy/apps/storybook/rtl-audit/rtl-audit.mjs \
+            apps/storybook/rtl-audit/rtl-audit.mjs
+          cp .rtl-applicability-policy/apps/storybook/rtl-audit/rtl-audit-coverage.mjs \
+            apps/storybook/rtl-audit/rtl-audit-coverage.mjs
+          ARGS=(
+            --storybook-dir apps/storybook/dist
+            --output rtl-applicability-registry-report.json
+            --removed-components "$REMOVED_COMPONENTS"
+            --filter "$AUDIT_COMPONENTS"
+          )
+          if [ "$FULL_AUDIT" = 'true' ]; then
+            ARGS+=(--check-known-gap-roster)
+          fi
+          node apps/storybook/rtl-audit/rtl-audit.mjs "${ARGS[@]}"
+
+      - name: Upload applicability audit report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rtl-applicability-registry-report
+          path: rtl-applicability-registry-report.json
           retention-days: 1

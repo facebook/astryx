@@ -86,6 +86,36 @@ describe('weekly RTL coverage reporting', () => {
     expect(result.summary).not.toContain('RTL-ready across the full library');
   });
 
+  it('reports pre-existing gaps as debt rather than new findings', () => {
+    const result = runSummary(
+      baseReport({
+        enforced: true,
+        total: 1,
+        measured: 0,
+        verifiedNa: 0,
+        knownGaps: 1,
+        gaps: 0,
+        staleKnownGaps: 0,
+        staleVerifiedNa: 0,
+        results: [
+          {
+            component: 'core/Button',
+            status: 'known-coverage-gap',
+            note: 'pre-existing all-N/A coverage debt',
+          },
+        ],
+      }),
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('status=debt');
+    expect(result.output).toContain('total_findings=0');
+    expect(result.output).toContain('coverage_gaps=0');
+    expect(result.output).toContain('known_coverage_gaps=1');
+    expect(result.summary).toContain('Known RTL coverage debt');
+    expect(result.summary).toContain('No new RTL findings');
+    expect(result.summary).not.toContain('RTL-ready across the full library');
+  });
+
   it('allows a component with a recorded verified-N/A reason', () => {
     const result = runSummary(
       baseReport({
@@ -107,6 +137,6 @@ describe('weekly RTL coverage reporting', () => {
     expect(result.status).toBe(0);
     expect(result.output).toContain('status=clean');
     expect(result.output).toContain('verified_na=1');
-    expect(result.summary).toContain('0 coverage gap');
+    expect(result.summary).toContain('0 known debt · 0 new gap');
   });
 });

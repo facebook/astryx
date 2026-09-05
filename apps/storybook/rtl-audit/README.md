@@ -201,26 +201,53 @@ hand-written selectors, run **in addition** to auto-discovery:
 D1 and D6 are intentionally **not** in `targets.json`; auto-discovery covers
 them universally.
 
-### C. Applicability: no unexplained all-N/A components
+### C. Applicability: distinguish rollout debt from regressions
 
 The report rolls every component in the live Core and Lab source roster into one
-of three states:
+of four states:
 
 - **measured**: at least one D1/D5/D6 or curated dimension was applicable;
 - **verified N-A**: `verified-not-applicable.json` records a specific reason
   the component has no direction-sensitive visual, layout, or behavior;
-- **coverage gap**: every dimension returned N-A and no reason is recorded.
+- **known coverage gap**: every dimension returned N-A and
+  `known-coverage-gaps.json` records that the gap predates enforcement;
+- **coverage gap**: every dimension returned N-A, no reason is recorded, and
+  the component is absent from the known-debt baseline.
 
-Coverage gaps are findings. This rule applies to the existing full-library
-weekly sweep and to every new or changed component in PR CI. A component with no
-story is also a gap when it is named by `--filter`; it cannot disappear from the
-report merely because there was nothing to render.
+New coverage gaps are findings in both weekly and filtered PR runs. A component
+with no story is also a new gap when it is named by `--filter`; it cannot
+disappear merely because there was nothing to render. Known gaps remain visible
+in both reports but do not make an unrelated component PR's audit exit nonzero.
 
-A verified-N/A declaration is not an allowlist. If an automatic or curated
-dimension later becomes applicable, the declaration is reported as
-**stale-verified-na** and must be removed or replaced with real coverage.
+Neither registry is an allowlist:
 
-Add a declaration only after reading the component's source and every story:
+- If a verified-N/A component later gains an applicable automatic or curated
+  dimension, it becomes **stale-verified-na**.
+- If a known gap becomes measured or verified N-A, or leaves the source/story
+  roster, it becomes **stale-known-coverage-gap**.
+
+`known-coverage-gaps.json` is removal-only. PR and merge-queue CI compare it
+with the target base through
+`.github/scripts/check-rtl-applicability-registries.mjs`; adding an entry is a
+failure. Removed debt entries and every changed verified-N/A declaration run
+through the blocking `rtl-applicability-registry` job even while general
+`pr-rtl` remains soft. A removal succeeds only when the component is now
+measured, verified N-A, or absent from both the source and Storybook rosters.
+Changes to Core, Lab, Charts, or Vega source, Storybook stories, curated targets,
+or roster/audit code run the entire known-debt roster with strict live-roster
+validation, so a component deletion cannot retain stale debt while leaving both
+registries unchanged. Full sweeps union that baseline with every removed debt row
+and changed verified-N/A declaration, so source changes cannot hide simultaneous
+registry transitions. CI materializes the validator and coverage policy from the
+base; the initial rollout accepts only the pinned bootstrap bundle.
+
+Both stale states are findings. Resolve known debt by adding a real target or a
+reviewed N/A reason and removing that component from
+`known-coverage-gaps.json` in the same change. The debt baseline can only
+shrink; newly added components cannot enter it.
+
+Add an N/A declaration only after reading the component's source and every
+story:
 
 ```json
 [
@@ -231,8 +258,8 @@ Add a declaration only after reading the component's source and every story:
 ]
 ```
 
-An all-N/A scorecard without such a checked-in reason means **unmeasured**, not
-RTL-ready.
+An all-N/A scorecard without a checked-in reason remains **unmeasured**, whether
+it is known rollout debt or a new finding; neither state means RTL-ready.
 
 ## Why relationship-based, not pixel baselines
 
@@ -277,9 +304,10 @@ pnpm rtl:audit -- --curated-only
 ```
 
 Exit code is non-zero if auto-discovery finds a not-RTL component, a curated
-dimension fails, the applicability registry is invalid, or a full-mode run has
-a coverage gap or stale verified-N/A declaration. CI remains soft-gated (see
-below), so the signal does not hard-block yet.
+dimension fails, either applicability registry is invalid, or a full-mode run
+has a new coverage gap, stale known gap, or stale verified-N/A declaration.
+Known coverage debt is reported without changing the exit code. CI remains
+soft-gated (see below), so the signal does not hard-block yet.
 
 ## Adding a curated target
 
