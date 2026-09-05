@@ -459,8 +459,8 @@ export function Dialog({
   const titleId = useId();
 
   const dialogContextValue = useMemo(
-    () => ({isInline, titleId}),
-    [isInline, titleId],
+    () => ({isInline, isOpen, titleId}),
+    [isInline, isOpen, titleId],
   );
 
   // Consumer-provided labels always win over the DialogHeader default.
@@ -495,6 +495,17 @@ export function Dialog({
   // for directional animation origin and focus restoration on close.
   const triggerElementRef = useRef<HTMLElement | null>(null);
 
+  // Capture the rising edge here, during render, not in the effect below.
+  // React runs child mount effects (e.g. DialogHeader's autofocus) before
+  // this component's own effects, so by the time an effect read
+  // document.activeElement it would already be the dialog's own newly
+  // focused content instead of the external trigger (#5637).
+  const wasOpenRef = useRef(isOpen);
+  if (isOpen && !wasOpenRef.current) {
+    triggerElementRef.current = document.activeElement as HTMLElement | null;
+  }
+  wasOpenRef.current = isOpen;
+
   // Derive dismissal behavior from purpose
   const allowEscape = purpose !== 'required';
   const allowBackdropClick = purpose === 'info';
@@ -510,9 +521,8 @@ export function Dialog({
     }
 
     if (isOpen) {
-      // Capture the currently focused element as the trigger — used for
-      // directional animation origin and focus restoration on close.
-      triggerElementRef.current = document.activeElement as HTMLElement | null;
+      // The trigger was already captured during render, above — before any
+      // child mount effect could move focus onto the dialog's own content.
 
       // Set directional CSS custom properties before opening
       const trigger = triggerElementRef.current;

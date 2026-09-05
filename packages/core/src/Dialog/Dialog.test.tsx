@@ -912,4 +912,57 @@ describe('Dialog', () => {
       );
     });
   });
+
+  describe('trigger capture (#5637)', () => {
+    it('restores focus to the external trigger, not a child that autofocuses on open', () => {
+      const opener = document.createElement('button');
+      opener.type = 'button';
+      document.body.appendChild(opener);
+      opener.focus();
+
+      const {rerender} = render(
+        <Dialog isOpen={false} onOpenChange={() => {}}>
+          {null}
+        </Dialog>,
+      );
+      expect(opener).toHaveFocus();
+
+      // Content (including DialogHeader's autofocusing title) mounts only
+      // once isOpen flips true — the shape from the issue repro.
+      rerender(
+        <Dialog isOpen={true} onOpenChange={() => {}}>
+          <DialogHeader title="Review" />
+        </Dialog>,
+      );
+
+      // DialogHeader's own mount effect focuses the title; Dialog must still
+      // have captured `opener`, not the title, as the trigger to restore to.
+      expect(screen.getByRole('heading', {name: 'Review'})).toHaveFocus();
+
+      rerender(
+        <Dialog isOpen={false} onOpenChange={() => {}}>
+          {null}
+        </Dialog>,
+      );
+
+      expect(opener).toHaveFocus();
+      opener.remove();
+    });
+
+    it('does not autofocus a DialogHeader mounted while the dialog is still closed', () => {
+      const opener = document.createElement('button');
+      opener.type = 'button';
+      document.body.appendChild(opener);
+      opener.focus();
+
+      render(
+        <Dialog isOpen={false} onOpenChange={() => {}}>
+          <DialogHeader title="Review" />
+        </Dialog>,
+      );
+
+      expect(opener).toHaveFocus();
+      opener.remove();
+    });
+  });
 });
