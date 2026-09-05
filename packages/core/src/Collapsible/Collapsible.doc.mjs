@@ -83,6 +83,7 @@ export const docs = {
       { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare content across sections, like feature lists or pricing tiers.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view; don\'t make users click to see essential info.' },
+      { guidance: true, description: "In a list of peers — an FAQ, several rows sharing one card — give the trigger its own type (<Text type=\"body\" weight=\"semibold\">). The default is 'large' (17px semibold), which reads as a section heading: right for one Collapsible per Card or Section, too heavy when every row would claim that weight. Let question and answer separate on weight and color instead of size." },
       { guidance: false, description: 'Hide critical or required content behind a collapsible; users may not discover it.' },
       { guidance: false, description: 'Nest collapsibles more than two levels deep; it makes content hard to find and navigate.' },
       { guidance: false, description: 'Use a collapsible for a single short paragraph; just show the text directly instead.' },
@@ -90,7 +91,7 @@ export const docs = {
     anatomy: [
       { name: 'Trigger', required: true, description: 'The always-visible button that toggles the content. Shows a label and a chevron indicator.' },
       { name: 'Chevron', required: false, description: 'Animated arrow that rotates to show open or closed state.' },
-      { name: 'Content', required: false, description: 'The area that hides or reveals when the trigger is clicked.' },
+      { name: 'Content', required: false, description: 'The inner padded area that hides or reveals with the panel. The collapsible-content theme target lives inside the animated clip, so themed padding closes with it.' },
     ],
   },
 };
@@ -105,6 +106,7 @@ export const docsZh = {
       { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare content across sections, like feature lists or pricing tiers.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view; don\'t make users click to see essential info.' },
+      { guidance: true, description: "In a list of peers — an FAQ, several rows sharing one card — give the trigger its own type (<Text type=\"body\" weight=\"semibold\">). The default is 'large' (17px semibold), which reads as a section heading: right for one Collapsible per Card or Section, too heavy when every row would claim that weight. Let question and answer separate on weight and color instead of size." },
       { guidance: false, description: 'Hide critical or required content behind a collapsible; users may not discover it.' },
       { guidance: false, description: 'Nest collapsibles more than two levels deep; it makes content hard to find and navigate.' },
       { guidance: false, description: 'Use a collapsible for a single short paragraph; just show the text directly instead.' },
@@ -123,6 +125,7 @@ export const docsDense = {
       { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare across sections.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when content is needed on first view.' },
+      { guidance: true, description: 'In a list of peers (FAQ, rows sharing one card) give the trigger its own type: <Text type="body" weight="semibold">. The default \'large\' (17px semibold) reads as a section heading — right for one Collapsible per Card or Section, too heavy for a row. Separate question and answer on weight and color, not size.' },
       { guidance: false, description: 'Hide critical content behind a collapsible; users may not discover it.' },
       { guidance: false, description: 'Nest collapsibles more than two levels deep; makes content hard to find and navigate.' },
       { guidance: false, description: 'Use a collapsible for a single short paragraph; just show the text directly instead.' },

@@ -5,6 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Collapsible, CollapsibleGroup} from '@astryxdesign/core/Collapsible';
 import {Card} from '@astryxdesign/core/Card';
+import {Text} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
 import {
   colorVars,
@@ -226,27 +227,53 @@ export const WithoutCard: Story = {
 
 export const Dividers: Story = {
   name: 'Dividers',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "An FAQ: rows, not sections. The triggers set their own type — body at semibold — because the default 'large' (17px semibold) makes every question read as a heading when they are peers in a list. Question and answer then separate on weight and color instead of size.",
+      },
+    },
+  },
   args: {type: 'single', hasDividers: true, defaultValue: 'q1'},
   render: args => (
     <div {...stylex.props(styles.dividedContainer)}>
       <CollapsibleGroup {...args}>
-        <Collapsible trigger="How do I reset my password?" value="q1">
-          <p {...stylex.props(styles.text)}>
+        <Collapsible
+          trigger={
+            <Text type="body" weight="semibold">
+              How do I reset my password?
+            </Text>
+          }
+          value="q1">
+          <Text type="body" color="secondary">
             Go to Settings → Security → Change Password. You'll receive a
             confirmation email.
-          </p>
+          </Text>
         </Collapsible>
-        <Collapsible trigger="Can I change my username?" value="q2">
-          <p {...stylex.props(styles.text)}>
+        <Collapsible
+          trigger={
+            <Text type="body" weight="semibold">
+              Can I change my username?
+            </Text>
+          }
+          value="q2">
+          <Text type="body" color="secondary">
             Usernames can be changed once every 30 days from your profile
             settings.
-          </p>
+          </Text>
         </Collapsible>
-        <Collapsible trigger="How do I delete my account?" value="q3">
-          <p {...stylex.props(styles.text)}>
+        <Collapsible
+          trigger={
+            <Text type="body" weight="semibold">
+              How do I delete my account?
+            </Text>
+          }
+          value="q3">
+          <Text type="body" color="secondary">
             Account deletion is permanent. Your data will be removed within 30
             days.
-          </p>
+          </Text>
         </Collapsible>
       </CollapsibleGroup>
     </div>
