@@ -842,6 +842,36 @@ describe('Dialog', () => {
     });
   });
 
+  describe('teardown while open', () => {
+    // An open modal makes the rest of the document inert, and only close()
+    // undoes it — removing the element does not. React destroys effects when a
+    // subtree is hidden as well as when it unmounts, which is what a router
+    // does to the outgoing route on a client-side navigation: leave a page from
+    // inside an open dialog and the next page arrives with an invisible modal
+    // holding it inert, unclickable until a reload.
+    it('closes the dialog when unmounted while open', () => {
+      const {unmount} = render(
+        <Dialog isOpen={true} onOpenChange={() => {}}>
+          Content
+        </Dialog>,
+      );
+      expect(HTMLDialogElement.prototype.close).not.toHaveBeenCalled();
+
+      unmount();
+      expect(HTMLDialogElement.prototype.close).toHaveBeenCalled();
+    });
+
+    it('does not call close when unmounted already closed', () => {
+      const {unmount} = render(
+        <Dialog isOpen={false} onOpenChange={() => {}}>
+          Content
+        </Dialog>,
+      );
+      unmount();
+      expect(HTMLDialogElement.prototype.close).not.toHaveBeenCalled();
+    });
+  });
+
   describe('isInline', () => {
     it('renders children in a div without a <dialog> element', () => {
       const {container} = render(

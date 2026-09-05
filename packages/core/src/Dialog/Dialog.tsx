@@ -546,6 +546,30 @@ export function Dialog({
     }
   }, [isOpen, isInline]);
 
+  // Release the top layer when this dialog goes away while still open.
+  //
+  // `showModal()` is a document-wide side effect: an open modal makes the rest
+  // of the page inert, and closing the element is the only thing that undoes
+  // it. Removing the element is not enough — the effect above only closes on an
+  // `isOpen` transition, so a dialog that is torn down while open leaves an
+  // invisible modal holding the whole document inert, and nothing on the page
+  // can be clicked until a reload.
+  //
+  // Teardown, not unmount: React destroys effects when a subtree is hidden by
+  // `<Activity>` as well as when it unmounts, and a router that keeps the
+  // outgoing route alive across a client-side navigation hits exactly that
+  // path — leave a page from inside an open dialog and the next page arrives
+  // dead. An empty dependency list is what keeps this to teardown; the open and
+  // close transitions stay entirely with the effect above.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    return () => {
+      if (dialog?.open) {
+        dialog.close();
+      }
+    };
+  }, []);
+
   // Lock body scroll when dialog is open (iOS Safari workaround)
   // Skip for inline rendering — no modal overlay to compensate for.
   useScrollLock(isOpen && !isInline);
