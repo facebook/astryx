@@ -4,8 +4,8 @@
 
 /**
  * @file busyIndicatorLane.tsx
- * @input A wrapper's loading setter, provided around BaseTypeahead
- * @output Context the base uses to hand its busy state to that wrapper
+ * @input A wrapper's loading setter and its own input-busy flag, provided around BaseTypeahead
+ * @output Context the base uses to hand its busy state to that wrapper, and context the wrapper uses to hand its input-busy state to the base
  * @position Package-internal; not exported from the package entry point
  */
 
@@ -106,4 +106,29 @@ export const BusyIndicatorLaneProvider = BusyIndicatorLaneContext.Provider;
  */
 export function useBusyIndicatorLane(): BusyIndicatorLane | null {
   return use(BusyIndicatorLaneContext);
+}
+
+/**
+ * The wrapper's own input-busy state, travelling the other way.
+ *
+ * The input-field family's `isLoading` and a pending `changeAction` mean the
+ * field VALUE is resolving or being saved (`docs/families/input-fields.md`,
+ * FR5 and FR6). Only the wrapper knows that; the base owns source-busy — a
+ * search in flight — and nothing else. Both meanings still surface as one
+ * `aria-busy` on the combobox and one Spinner in the end lane, so the wrapper
+ * hands its half down through this context and the base ORs it into the
+ * attribute it already sets. The base's search lifecycle never reads it.
+ *
+ * A plain context value rather than a store entry: the wrapper already
+ * re-renders for the state that produces it (`useOptimistic` and the
+ * `isLoading` prop), and the base is its child, so nothing extra re-renders
+ * for it. False when the base is used directly.
+ */
+const InputBusyContext = createContext(false);
+InputBusyContext.displayName = 'InputBusyContext';
+
+export const InputBusyProvider = InputBusyContext.Provider;
+
+export function useIsInputBusy(): boolean {
+  return use(InputBusyContext);
 }

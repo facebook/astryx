@@ -20,7 +20,13 @@ import {
   afterEach,
 } from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
-import {Profiler} from 'react';
+import {
+  Component,
+  Profiler,
+  StrictMode,
+  useState,
+  type ReactElement,
+} from 'react';
 import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -1711,6 +1717,965 @@ describe('Tokenizer end-lane reserve', () => {
     });
     await waitFor(() => {
       expect(laneHost(container)).toBeNull();
+    });
+  });
+});
+
+describe('input busy: isLoading and changeAction', () => {
+  // The input-field family contract (`docs/families/input-fields.md`, FR5–FR7):
+  // `isLoading` and a pending `changeAction` mean the field VALUE is busy —
+  // resolving or being saved. A search in flight is the base's own, separate
+  // busy. Both meanings share one Spinner and one `aria-busy`, never two.
+
+  const pendingSource = () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    return {
+      source: {
+        search: async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            settle = resolve;
+          }),
+        bootstrap: () => [],
+      },
+      settle: (items: SearchableItem[] = []) => settle(items),
+    };
+  };
+
+  // Type a query, wait out the (zero) debounce, and pick a result by label.
+  const pick = async (query: string, label: string) => {
+    await act(async () => {
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: query}});
+    });
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 50));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText(label));
+    });
+  };
+
+  // Scoped by name: the result-count announcer is a role="status" live
+  // region too, and it is not the indicator.
+  const loadingIndicators = () =>
+    screen.queryAllByRole('status', {name: 'Loading'});
+
+  it('isLoading shows one named Spinner and aria-busy without touching the search (FR5)', async () => {
+    const onChange = vi.fn();
+    render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={onChange}
+        isLoading
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    expect(loadingIndicators()).toHaveLength(1);
+    expect(input).toHaveAttribute('aria-busy', 'true');
+    // The value is busy; the field is not locked.
+    expect(input).not.toBeDisabled();
+    expect(input).not.toHaveAttribute('readonly');
+
+    // The source is still asked, its results still offered, and picking one
+    // still commits — loading describes the value, not the options.
+    await pick('Al', 'Alice');
+    expect(onChange).toHaveBeenCalledWith([users[0]], {
+      item: users[0],
+      type: 'add',
+    });
+  });
+
+  it('changes nothing for callers that pass neither prop', async () => {
+    const onChange = vi.fn();
+    render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={onChange}
+        debounceMs={0}
+      />,
+    );
+    await pick('Al', 'Alice');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith([users[0]], {
+      item: users[0],
+      type: 'add',
+    });
+    expect(loadingIndicators()).toHaveLength(0);
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-busy');
+  });
+
+  it('runs changeAction after onChange with the same arguments (FR6)', async () => {
+    const order: string[] = [];
+    const onChange = vi.fn((_items: SearchableItem[], _change: unknown) => {
+      order.push('onChange');
+    });
+    const changeAction = vi.fn((_items: SearchableItem[], _change: unknown) => {
+      order.push('changeAction');
+    });
+    render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={onChange}
+        changeAction={changeAction}
+        debounceMs={0}
+      />,
+    );
+    await pick('Al', 'Alice');
+    expect(order).toEqual(['onChange', 'changeAction']);
+    expect(changeAction.mock.calls[0]).toEqual(onChange.mock.calls[0]);
+    expect(changeAction).toHaveBeenCalledWith([users[0]], {
+      item: users[0],
+      type: 'add',
+    });
+  });
+
+  it('shows the proposed tokens and one busy indicator until the Action settles, then reverts to value', async () => {
+    let resolve: () => void = () => {};
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(r => {
+          resolve = r;
+        }),
+    );
+    render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        changeAction={changeAction}
+        debounceMs={0}
+      />,
+    );
+    await pick('Al', 'Alice');
+
+    // Optimistic: the parent has not updated `value`, yet the token is there,
+    // and the field says it is busy — once.
+    expect(
+      screen.getByRole('button', {name: 'Remove Alice'}),
+    ).toBeInTheDocument();
+    expect(loadingIndicators()).toHaveLength(1);
+    expect(screen.getByRole('combobox')).toHaveAttribute('aria-busy', 'true');
+
+    await act(async () => {
+      resolve();
+      await Promise.resolve();
+    });
+    // The Action settled and `value` never accepted the proposal: busy ends
+    // and the proposed token goes with it.
+    await waitFor(() => {
+      expect(loadingIndicators()).toHaveLength(0);
+    });
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-busy');
+    expect(
+      screen.queryByRole('button', {name: 'Remove Alice'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps the proposed tokens once the controlled value accepts them', async () => {
+    let resolve: () => void = () => {};
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(r => {
+          resolve = r;
+        }),
+    );
+    function Harness() {
+      const [value, setValue] = useState<SearchableItem[]>([]);
+      return (
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={value}
+          onChange={items => setValue(items)}
+          changeAction={changeAction}
+          debounceMs={0}
+        />
+      );
+    }
+    render(<Harness />);
+    await pick('Al', 'Alice');
+    expect(
+      screen.getByRole('button', {name: 'Remove Alice'}),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      resolve();
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(loadingIndicators()).toHaveLength(0);
+    });
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-busy');
+    expect(
+      screen.getByRole('button', {name: 'Remove Alice'}),
+    ).toBeInTheDocument();
+    expect(changeAction).toHaveBeenCalledWith([users[0]], {
+      item: users[0],
+      type: 'add',
+    });
+  });
+
+  it("routes a token's remove button through changeAction", () => {
+    const changeAction = vi.fn();
+    render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0], users[1]]}
+        onChange={() => {}}
+        changeAction={changeAction}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Remove Alice'}));
+    expect(changeAction).toHaveBeenCalledWith([users[1]], {
+      item: users[0],
+      type: 'remove',
+    });
+  });
+
+  it('routes Backspace on an empty input through changeAction', () => {
+    const changeAction = vi.fn();
+    render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0], users[1]]}
+        onChange={() => {}}
+        changeAction={changeAction}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('combobox'), {key: 'Backspace'});
+    expect(changeAction).toHaveBeenCalledWith([users[0]], {
+      item: users[1],
+      type: 'remove',
+    });
+  });
+
+  it('routes clear-all through changeAction (FR6 clear conformance)', () => {
+    // The recorded gap the family notes for TextInput's clear — a clear that
+    // bypasses the Action — must not be reproduced here.
+    const changeAction = vi.fn();
+    render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0], users[1]]}
+        onChange={() => {}}
+        changeAction={changeAction}
+        hasClear
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Clear all'}));
+    expect(changeAction).toHaveBeenCalledWith([], {
+      item: users[1],
+      type: 'remove',
+    });
+  });
+
+  it('shares one Spinner and one aria-busy between a search in flight and a busy value (FR7)', async () => {
+    const {source, settle} = pendingSource();
+    render(
+      <Tokenizer
+        label="Members"
+        searchSource={source}
+        value={[]}
+        onChange={() => {}}
+        isLoading
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    await act(async () => {
+      fireEvent.change(input, {target: {value: 'Al'}});
+    });
+    // Both meanings busy at once: still exactly one indicator.
+    expect(loadingIndicators()).toHaveLength(1);
+    expect(input).toHaveAttribute('aria-busy', 'true');
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+    // The search settled; the value is still busy, so nothing changes.
+    expect(loadingIndicators()).toHaveLength(1);
+    expect(input).toHaveAttribute('aria-busy', 'true');
+  });
+
+  describe('Action edges', () => {
+    // One resolver per changeAction call, settled by index so a test can
+    // release the Actions in any order. Every call MUST be settled before the
+    // test ends: React's async-action scope is global, so an Action left
+    // pending here entangles every later test's transitions with it and their
+    // optimistic state never releases.
+    const deferredAction = () => {
+      const resolvers: (() => void)[] = [];
+      const changeAction = vi.fn(
+        async (_items: SearchableItem[], _change: unknown) =>
+          new Promise<void>(r => {
+            resolvers.push(r);
+          }),
+      );
+      const settle = async (index: number) => {
+        await act(async () => {
+          resolvers[index]();
+          await new Promise(r => setTimeout(r, 0));
+        });
+      };
+      return {changeAction, settle};
+    };
+
+    const removeButton = (label: string) =>
+      screen.queryByRole('button', {name: `Remove ${label}`});
+
+    it('runs a second add while the first Action is pending: both tokens show, both Actions run in order, busy holds until both settle', async () => {
+      const {changeAction, settle} = deferredAction();
+      const onChange = vi.fn();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={onChange}
+          changeAction={changeAction}
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      await pick('Al', 'Alice');
+      await pick('Bo', 'Bob');
+
+      // Both proposals at once, and the second Action did not wait for the
+      // first: each ran at once, in order, with the list as proposed then.
+      expect(removeButton('Alice')).toBeInTheDocument();
+      expect(removeButton('Bob')).toBeInTheDocument();
+      expect(changeAction.mock.calls).toEqual([
+        [[users[0]], {item: users[0], type: 'add'}],
+        [[users[0], users[1]], {item: users[1], type: 'add'}],
+      ]);
+      expect(onChange.mock.calls).toEqual(changeAction.mock.calls);
+      expect(loadingIndicators()).toHaveLength(1);
+      expect(input).toHaveAttribute('aria-busy', 'true');
+
+      // The first Action settling releases nothing: the second still holds
+      // both proposals and the one busy presentation.
+      await settle(0);
+      expect(removeButton('Alice')).toBeInTheDocument();
+      expect(removeButton('Bob')).toBeInTheDocument();
+      expect(loadingIndicators()).toHaveLength(1);
+      expect(input).toHaveAttribute('aria-busy', 'true');
+
+      // Both settled and `value` accepted neither: the controlled value wins.
+      await settle(1);
+      await waitFor(() => {
+        expect(loadingIndicators()).toHaveLength(0);
+      });
+      expect(input).not.toHaveAttribute('aria-busy');
+      expect(removeButton('Alice')).not.toBeInTheDocument();
+      expect(removeButton('Bob')).not.toBeInTheDocument();
+    });
+
+    it('removes from the optimistic list while an add Action is pending, and busy holds until every Action settles', async () => {
+      const {changeAction, settle} = deferredAction();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[1]]}
+          onChange={() => {}}
+          changeAction={changeAction}
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      await pick('Al', 'Alice');
+      expect(removeButton('Alice')).toBeInTheDocument();
+
+      // Remove the accepted token while the proposed one is still pending:
+      // the next list derives from what the field shows, so the proposed
+      // token survives and the removed one goes at once.
+      fireEvent.click(removeButton('Bob')!);
+      expect(removeButton('Bob')).not.toBeInTheDocument();
+      expect(removeButton('Alice')).toBeInTheDocument();
+      expect(changeAction).toHaveBeenLastCalledWith([users[0]], {
+        item: users[1],
+        type: 'remove',
+      });
+      expect(loadingIndicators()).toHaveLength(1);
+
+      await settle(0);
+      expect(removeButton('Alice')).toBeInTheDocument();
+      expect(removeButton('Bob')).not.toBeInTheDocument();
+      expect(loadingIndicators()).toHaveLength(1);
+      expect(input).toHaveAttribute('aria-busy', 'true');
+
+      // Neither proposal was accepted: back to the controlled value.
+      await settle(1);
+      await waitFor(() => {
+        expect(loadingIndicators()).toHaveLength(0);
+      });
+      expect(removeButton('Bob')).toBeInTheDocument();
+      expect(removeButton('Alice')).not.toBeInTheDocument();
+    });
+
+    it('routes create-on-Enter through changeAction with the create change', async () => {
+      const {changeAction, settle} = deferredAction();
+      const onChange = vi.fn();
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={{search: () => [], bootstrap: () => []}}
+          value={[]}
+          onChange={onChange}
+          changeAction={changeAction}
+          hasCreate
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'new-tag'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      await act(async () => {
+        fireEvent.keyDown(input, {key: 'Enter'});
+      });
+      const created = {id: 'new-tag', label: 'new-tag'};
+      expect(onChange).toHaveBeenCalledWith([created], {
+        item: created,
+        type: 'create',
+      });
+      expect(changeAction).toHaveBeenCalledWith([created], {
+        item: created,
+        type: 'create',
+      });
+      expect(removeButton('new-tag')).toBeInTheDocument();
+      await settle(0);
+    });
+
+    it('restores a token whose remove Action settled without the value accepting it, keeping focus on the input', async () => {
+      const {changeAction, settle} = deferredAction();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={() => {}}
+          changeAction={changeAction}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      fireEvent.click(removeButton('Bob')!);
+      // Gone at once, busy, and focus moved to the input with the token.
+      expect(removeButton('Bob')).not.toBeInTheDocument();
+      expect(loadingIndicators()).toHaveLength(1);
+      expect(input).toHaveFocus();
+
+      await settle(0);
+      await waitFor(() => {
+        expect(loadingIndicators()).toHaveLength(0);
+      });
+      // The value kept Bob, so Bob is back; focus did not fall to body.
+      expect(removeButton('Bob')).toBeInTheDocument();
+      expect(input).toHaveFocus();
+    });
+
+    it('holds busy while either isLoading or a pending Action is active, and clears only when both release', async () => {
+      const {changeAction, settle} = deferredAction();
+      const view = (isLoading: boolean) => (
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          changeAction={changeAction}
+          isLoading={isLoading}
+          debounceMs={0}
+        />
+      );
+      const {rerender} = render(view(true));
+      const input = screen.getByRole('combobox');
+      await pick('Al', 'Alice');
+      expect(loadingIndicators()).toHaveLength(1);
+
+      // The Action settles and its proposal is withdrawn; isLoading alone
+      // still holds the one busy presentation.
+      await settle(0);
+      await waitFor(() => {
+        expect(removeButton('Alice')).not.toBeInTheDocument();
+      });
+      expect(loadingIndicators()).toHaveLength(1);
+      expect(input).toHaveAttribute('aria-busy', 'true');
+
+      // The reverse: isLoading releases while a new Action is pending.
+      await pick('Bo', 'Bob');
+      rerender(view(false));
+      expect(removeButton('Bob')).toBeInTheDocument();
+      expect(loadingIndicators()).toHaveLength(1);
+      expect(input).toHaveAttribute('aria-busy', 'true');
+
+      await settle(1);
+      await waitFor(() => {
+        expect(loadingIndicators()).toHaveLength(0);
+      });
+      expect(input).not.toHaveAttribute('aria-busy');
+    });
+
+    it('keeps the one Spinner and aria-busy when isLoading turns off while a search is still in flight (FR7)', async () => {
+      const {source, settle} = pendingSource();
+      const view = (isLoading: boolean) => (
+        <Tokenizer
+          label="Members"
+          searchSource={source}
+          value={[]}
+          onChange={() => {}}
+          isLoading={isLoading}
+          debounceMs={0}
+        />
+      );
+      const {rerender} = render(view(true));
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'Al'}});
+      });
+      expect(loadingIndicators()).toHaveLength(1);
+
+      // The value released; the search has not: still exactly one indicator.
+      rerender(view(false));
+      expect(loadingIndicators()).toHaveLength(1);
+      expect(input).toHaveAttribute('aria-busy', 'true');
+
+      await act(async () => {
+        settle([]);
+        await Promise.resolve();
+      });
+      expect(loadingIndicators()).toHaveLength(0);
+      expect(input).not.toHaveAttribute('aria-busy');
+    });
+
+    it('neither offers nor adds an item already proposed by a pending Action (duplicate guard on the optimistic list)', async () => {
+      const {changeAction, settle} = deferredAction();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          changeAction={changeAction}
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      await pick('Al', 'Alice');
+
+      // Search for the proposed item again: it is filtered out of the
+      // results, so Enter has nothing to commit.
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'Al'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      expect(
+        screen.queryByRole('option', {name: 'Alice', hidden: true}),
+      ).not.toBeInTheDocument();
+      await act(async () => {
+        fireEvent.keyDown(input, {key: 'Enter'});
+      });
+      expect(changeAction).toHaveBeenCalledTimes(1);
+      expect(
+        screen.getAllByRole('button', {name: 'Remove Alice'}),
+      ).toHaveLength(1);
+      await settle(0);
+    });
+
+    it('keeps the hidden form carriers on the accepted value while a proposal is pending, then follows the prop', async () => {
+      const {changeAction, settle} = deferredAction();
+      const view = (value: SearchableItem[]) => (
+        <form>
+          <Tokenizer
+            label="Users"
+            htmlName="users"
+            searchSource={userSource}
+            value={value}
+            onChange={() => {}}
+            changeAction={changeAction}
+            debounceMs={0}
+          />
+        </form>
+      );
+      const {container, rerender} = render(view([]));
+      const submitted = () =>
+        new FormData(container.querySelector('form')!).getAll('users');
+      await pick('Al', 'Alice');
+      // The proposal shows; a form would still submit the accepted value.
+      expect(removeButton('Alice')).toBeInTheDocument();
+      expect(submitted()).toEqual([]);
+
+      rerender(view([users[0]]));
+      expect(submitted()).toEqual([users[0].id]);
+      await settle(0);
+      expect(submitted()).toEqual([users[0].id]);
+    });
+
+    it('holds the proposal when the parent replaces value mid-Action, then shows the replacement without busy', async () => {
+      const {changeAction, settle} = deferredAction();
+      const view = (value: SearchableItem[]) => (
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={value}
+          onChange={() => {}}
+          changeAction={changeAction}
+          debounceMs={0}
+        />
+      );
+      const {rerender} = render(view([]));
+      const input = screen.getByRole('combobox');
+      await pick('Al', 'Alice');
+
+      rerender(view([users[1]]));
+      // The proposal, not the replacement, until the Action settles.
+      expect(removeButton('Alice')).toBeInTheDocument();
+      expect(removeButton('Bob')).not.toBeInTheDocument();
+      expect(loadingIndicators()).toHaveLength(1);
+      expect(input).toHaveAttribute('aria-busy', 'true');
+
+      await settle(0);
+      await waitFor(() => {
+        expect(loadingIndicators()).toHaveLength(0);
+      });
+      expect(removeButton('Bob')).toBeInTheDocument();
+      expect(removeButton('Alice')).not.toBeInTheDocument();
+      expect(input).not.toHaveAttribute('aria-busy');
+    });
+
+    it('blocks every Action path while focusable-disabled and keeps the busy feedback (FR4)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const changeAction = vi.fn();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={onChange}
+          changeAction={changeAction}
+          isDisabled
+          disabledMessage="You need edit access to change members"
+          isLoading
+          hasClear
+          hasCreate
+          hasEntriesOnFocus
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      // Busy stays perceivable on the focusable-disabled control...
+      expect(input).toHaveAttribute('aria-disabled', 'true');
+      expect(input).toHaveAttribute('aria-busy', 'true');
+      expect(loadingIndicators()).toHaveLength(1);
+      // ...while no remove or clear affordance is offered.
+      expect(
+        screen.queryByRole('button', {name: /^Remove /}),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: 'Clear all'}),
+      ).not.toBeInTheDocument();
+
+      // Typing — add and create alike — is blocked.
+      await act(async () => {
+        input.focus();
+      });
+      await user.keyboard('Char');
+      expect(input).toHaveValue('');
+      expect(
+        screen.queryByRole('option', {hidden: true}),
+      ).not.toBeInTheDocument();
+
+      // Backspace on the empty input must not remove the last token.
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      expect(screen.getByText('Bob')).toBeInTheDocument();
+      expect(onChange).not.toHaveBeenCalled();
+      expect(changeAction).not.toHaveBeenCalled();
+      expect(loadingIndicators()).toHaveLength(1);
+
+      // ArrowDown must not open the entries shown on focus, and Enter must
+      // not select one: the readOnly input still receives keys.
+      await user.keyboard('{ArrowDown}');
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 60));
+      });
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(
+        screen.queryByRole('option', {hidden: true}),
+      ).not.toBeInTheDocument();
+      await user.keyboard('{Enter}');
+      expect(onChange).not.toHaveBeenCalled();
+      expect(changeAction).not.toHaveBeenCalled();
+    });
+
+    it("ignores a custom token's onRemove while disabled with a reason", () => {
+      const onChange = vi.fn();
+      const changeAction = vi.fn();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0]]}
+          onChange={onChange}
+          changeAction={changeAction}
+          isDisabled
+          disabledMessage="You need edit access to change members"
+          renderToken={(item, onRemove) => (
+            <button type="button" onClick={onRemove}>
+              {`drop ${item.label}`}
+            </button>
+          )}
+        />,
+      );
+      fireEvent.click(
+        screen.getByRole('button', {name: `drop ${users[0].label}`}),
+      );
+      expect(onChange).not.toHaveBeenCalled();
+      expect(changeAction).not.toHaveBeenCalled();
+      expect(screen.getByText(`drop ${users[0].label}`)).toBeInTheDocument();
+    });
+
+    it('surfaces a rejecting changeAction to the nearest error boundary after onChange, once, with no unhandled rejection', async () => {
+      const caught: Error[] = [];
+      class Boundary extends Component<
+        {children: ReactElement},
+        {failed: boolean}
+      > {
+        state = {failed: false};
+        static getDerivedStateFromError() {
+          return {failed: true};
+        }
+        componentDidCatch(error: Error) {
+          caught.push(error);
+        }
+        render() {
+          return this.state.failed ? <p>fallback</p> : this.props.children;
+        }
+      }
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const onChange = vi.fn();
+      const changeAction = vi.fn(async () => {
+        throw new Error('save failed');
+      });
+      render(
+        <Boundary>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[]}
+            onChange={onChange}
+            changeAction={changeAction}
+            debounceMs={0}
+          />
+        </Boundary>,
+      );
+      await pick('Al', 'Alice');
+      await waitFor(() => {
+        expect(screen.getByText('fallback')).toBeInTheDocument();
+      });
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(changeAction).toHaveBeenCalledTimes(1);
+      expect(caught.map(e => e.message)).toEqual(['save failed']);
+      // Nothing of the field, proposal included, is left behind.
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+      expect(removeButton('Alice')).not.toBeInTheDocument();
+      errorSpy.mockRestore();
+    });
+
+    it('runs onChange and changeAction exactly once per add under StrictMode', async () => {
+      const {changeAction, settle} = deferredAction();
+      const onChange = vi.fn();
+      render(
+        <StrictMode>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[]}
+            onChange={onChange}
+            changeAction={changeAction}
+            debounceMs={0}
+          />
+        </StrictMode>,
+      );
+      await pick('Al', 'Alice');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(changeAction).toHaveBeenCalledTimes(1);
+      expect(
+        screen.getAllByRole('button', {name: 'Remove Alice'}),
+      ).toHaveLength(1);
+      await settle(0);
+    });
+
+    it('leaves no stranded busy state for a synchronous void changeAction and yields to the prop', async () => {
+      const changeAction = vi.fn(
+        (_items: SearchableItem[], _change: unknown) => {},
+      );
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          changeAction={changeAction}
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      await pick('Al', 'Alice');
+      expect(changeAction).toHaveBeenCalledTimes(1);
+      await waitFor(() => {
+        expect(loadingIndicators()).toHaveLength(0);
+      });
+      expect(input).not.toHaveAttribute('aria-busy');
+      expect(removeButton('Alice')).not.toBeInTheDocument();
+    });
+
+    it('settles cleanly when unmounted while an Action is pending', async () => {
+      const {changeAction, settle} = deferredAction();
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const {unmount} = render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          changeAction={changeAction}
+          debounceMs={0}
+        />,
+      );
+      await pick('Al', 'Alice');
+      expect(removeButton('Alice')).toBeInTheDocument();
+      unmount();
+      await settle(0);
+      expect(changeAction).toHaveBeenCalledTimes(1);
+      expect(errorSpy).not.toHaveBeenCalled();
+      expect(removeButton('Alice')).not.toBeInTheDocument();
+      errorSpy.mockRestore();
+    });
+
+    it('keeps description, status, and disabled reason in aria-describedby, in that order, while busy, and names the Spinner from the catalog', () => {
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{fr: {'@astryx.typeahead.loading': 'Chargement'}}}>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[]}
+            onChange={() => {}}
+            description="Pick members"
+            status={{type: 'error', message: 'Selection required'}}
+            isDisabled
+            disabledMessage="You need edit access to change members"
+            isLoading
+          />
+        </InternationalizationProvider>,
+      );
+      const input = screen.getByRole('combobox');
+      expect(input).toHaveAttribute('aria-busy', 'true');
+      // Named from the provider's catalog, never Spinner's English fallback.
+      const spinner = screen.getByRole('status', {name: 'Chargement'});
+      expect(
+        screen.queryByRole('status', {name: 'Loading'}),
+      ).not.toBeInTheDocument();
+
+      const ids = input.getAttribute('aria-describedby')!.split(' ');
+      expect(ids.map(id => document.getElementById(id)?.textContent)).toEqual([
+        'Pick members',
+        'Selection required',
+        'You need edit access to change members',
+      ]);
+      for (const id of ids) {
+        expect(document.getElementById(id)).not.toContainElement(spinner);
+      }
+    });
+
+    it('counts a pending proposal toward maxEntries', async () => {
+      const {changeAction, settle} = deferredAction();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          changeAction={changeAction}
+          maxEntries={1}
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      await pick('Al', 'Alice');
+      // At max on the proposal alone: the search offers nothing and Enter
+      // adds nothing.
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'Bo'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      expect(
+        screen.queryByRole('option', {name: 'Bob', hidden: true}),
+      ).not.toBeInTheDocument();
+      await act(async () => {
+        fireEvent.keyDown(input, {key: 'Enter'});
+      });
+      expect(changeAction).toHaveBeenCalledTimes(1);
+      expect(removeButton('Bob')).not.toBeInTheDocument();
+      await settle(0);
+    });
+
+    it('keeps the clear-all control on the accepted value while a clear Action is pending, and a second clear is a no-op', async () => {
+      const {changeAction, settle} = deferredAction();
+      const onChange = vi.fn();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={onChange}
+          changeAction={changeAction}
+          hasClear
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Clear all'}));
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(changeAction).toHaveBeenCalledTimes(1);
+      // The tokens show the proposed empty list, but the clear affordance
+      // follows the accepted value, as Selector's clear does...
+      expect(screen.queryByText(users[0].label)).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('button', {name: 'Clear all'}),
+      ).toBeInTheDocument();
+      expect(loadingIndicators()).toHaveLength(1);
+      // ...and clearing an already-proposed empty list is a no-op.
+      fireEvent.click(screen.getByRole('button', {name: 'Clear all'}));
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(changeAction).toHaveBeenCalledTimes(1);
+      await settle(0);
+      await waitFor(() => {
+        expect(loadingIndicators()).toHaveLength(0);
+      });
+      // Not accepted: the tokens are back and the control is still offered.
+      expect(screen.getByText(users[0].label)).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', {name: 'Clear all'}),
+      ).toBeInTheDocument();
+      expect(onChange).toHaveBeenCalledTimes(1);
     });
   });
 });

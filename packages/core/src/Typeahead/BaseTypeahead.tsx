@@ -27,7 +27,7 @@ import React, {
   type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useBusyIndicatorLane} from './busyIndicatorLane';
+import {useBusyIndicatorLane, useIsInputBusy} from './busyIndicatorLane';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -452,6 +452,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // A wrapper that owns the inline-end lane subscribes through context; see
   // busyIndicatorLane.tsx for why this is not a prop.
   const busyLane = useBusyIndicatorLane();
+  // The wrapper's half of busy: its field value resolving or being saved
+  // (`isLoading`, or a `changeAction` still pending). It reaches only the
+  // combobox's `aria-busy` below — the search lifecycle never reads it.
+  const isInputBusy = useIsInputBusy();
   const onLoadingChangeRef = useRef(busyLane?.onBusyChange);
   useIsomorphicLayoutEffect(() => {
     onLoadingChangeRef.current = busyLane?.onBusyChange;
@@ -814,6 +818,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         return;
       }
 
+      // A focusable-disabled input (isDisabled with a disabled reason) is
+      // readOnly but still receives keys: without this guard ArrowDown could
+      // bootstrap entries and Enter select one (family FR4).
+      if (isDisabled) {
+        return;
+      }
+
       // An IME candidate window uses Enter to commit the composition and
       // Escape/ArrowUp/ArrowDown/Home/End to navigate its own candidates.
       // Without this guard, a composing Enter both fires handleSelect AND
@@ -907,6 +918,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       minQueryLength,
       performBootstrap,
       externalOnKeyDown,
+      isDisabled,
     ],
   );
 
@@ -963,7 +975,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             : undefined
         }
         aria-autocomplete="list"
-        aria-busy={isLoading || undefined}
+        aria-busy={isLoading || isInputBusy || undefined}
         aria-describedby={ariaDescribedBy}
         aria-labelledby={ariaLabelledBy}
         aria-disabled={isFocusableDisabled ? 'true' : undefined}

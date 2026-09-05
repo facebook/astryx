@@ -224,7 +224,7 @@ another implementation helper.
 | MultiSelector   | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | trigger-display modes remain component-owned                                       |
 | ComplexSelector | Field, FormLayout, size, width, `isLoading`, `changeAction`, and status                                                    | no InputGroup or disabled-reason API                                               |
 | Typeahead       | Field, FormLayout, InputGroup, size, width, clear, status, disabled reason, and BaseTypeahead source loading               | no family `isLoading` or `changeAction`; search lifecycle is component-owned       |
-| Tokenizer       | Field, FormLayout, size, width, clear, status, disabled reason, BaseTypeahead source loading, and multi-token block growth | not InputGroup-compatible on current main; no family `isLoading` or `changeAction` |
+| Tokenizer       | Field, FormLayout, size, width, `isLoading`, `changeAction`, clear, status, disabled reason, source busy, and block growth | not InputGroup-compatible on current main; the search lifecycle is component-owned |
 
 ### Implementation gaps
 
