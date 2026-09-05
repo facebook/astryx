@@ -41,7 +41,55 @@ describe('parseTemplate (load boundary)', () => {
       preview: {image: './preview.png', aspectRatio: '16 / 9'},
     });
     expect(parsed.name).toBe('Hero');
-    expect(parsed.preview).toEqual({image: './preview.png', aspectRatio: '16 / 9'});
+    expect(parsed.preview).toEqual({
+      image: './preview.png',
+      aspectRatio: '16 / 9',
+    });
+  });
+
+  it('accepts a standalone block without component ownership', () => {
+    const parsed = parseTemplate({
+      type: 'block',
+      name: 'FilterToolbar',
+      description: 'Filters a data view.',
+      aspectRatio: 16 / 9,
+    });
+    expect(parsed.exampleFor).toBeUndefined();
+  });
+
+  it('requires component ownership for a showcase', () => {
+    expect(() =>
+      parseTemplate({
+        type: 'block',
+        name: 'HeroShowcase',
+        description: 'A component hero.',
+        isShowcase: true,
+      }),
+    ).toThrow(/exampleFor/);
+  });
+
+  it('accepts stable registry slug and alias metadata', () => {
+    const parsed = parseTemplate({
+      type: 'page',
+      name: 'Landing',
+      description: 'A landing page.',
+      registry: {slug: 'landing', aliases: ['old-landing']},
+    });
+    expect(parsed.registry).toEqual({
+      slug: 'landing',
+      aliases: ['old-landing'],
+    });
+  });
+
+  it('rejects invalid registry paths', () => {
+    expect(() =>
+      parseTemplate({
+        type: 'page',
+        name: 'Landing',
+        description: 'A landing page.',
+        registry: {slug: 'Landing Page'},
+      }),
+    ).toThrow(/registry/);
   });
 
   it('rejects a missing name', () => {
@@ -53,7 +101,9 @@ describe('parseTemplate (load boundary)', () => {
   });
 
   it('rejects an empty-string name', () => {
-    expect(reason({type: 'page', name: '', description: 'x'})).toContain('name');
+    expect(reason({type: 'page', name: '', description: 'x'})).toContain(
+      'name',
+    );
   });
 
   it('rejects a missing/invalid type', () => {

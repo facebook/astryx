@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-
 /**
  * @file generate-data.mjs
  *
@@ -21,6 +20,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {createRequire} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolveContentRoot} from './resolve-content-root.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
@@ -28,8 +28,14 @@ import {
   buildTypeDefinitionIndex,
   collectPropTypeRefs,
 } from '../src/lib/typeDefinitions.mjs';
+import {generateShadcnRegistry} from './generate-shadcn-registry.mjs';
+import {
+  blockRegistryIdentity,
+  resolveShadcnRegistryOrigin,
+} from '../src/lib/shadcnRegistry.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
 const DOCSITE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(DOCSITE_ROOT, '..', '..');
 const OUT_DIR = path.join(DOCSITE_ROOT, 'src', 'generated');
@@ -103,19 +109,46 @@ function parseStringLiteral(content, openIdx) {
     if (ch === '\\') {
       const next = content[i + 1];
       switch (next) {
-        case 'n': out += '\n'; i += 2; continue;
-        case 'r': out += '\r'; i += 2; continue;
-        case 't': out += '\t'; i += 2; continue;
-        case 'b': out += '\b'; i += 2; continue;
-        case 'f': out += '\f'; i += 2; continue;
-        case 'v': out += '\v'; i += 2; continue;
-        case '0': out += '\0'; i += 2; continue;
-        case '\n': i += 2; continue; // line continuation
-        case '\r': i += content[i + 2] === '\n' ? 3 : 2; continue;
+        case 'n':
+          out += '\n';
+          i += 2;
+          continue;
+        case 'r':
+          out += '\r';
+          i += 2;
+          continue;
+        case 't':
+          out += '\t';
+          i += 2;
+          continue;
+        case 'b':
+          out += '\b';
+          i += 2;
+          continue;
+        case 'f':
+          out += '\f';
+          i += 2;
+          continue;
+        case 'v':
+          out += '\v';
+          i += 2;
+          continue;
+        case '0':
+          out += '\0';
+          i += 2;
+          continue;
+        case '\n':
+          i += 2;
+          continue; // line continuation
+        case '\r':
+          i += content[i + 2] === '\n' ? 3 : 2;
+          continue;
         case 'u': {
           if (content[i + 2] === '{') {
             const end = content.indexOf('}', i + 3);
-            out += String.fromCodePoint(parseInt(content.slice(i + 3, end), 16));
+            out += String.fromCodePoint(
+              parseInt(content.slice(i + 3, end), 16),
+            );
             i = end + 1;
             continue;
           }
@@ -187,7 +220,16 @@ function readDocMeta(docPath) {
       isHiddenFromOverview,
     };
   } catch {
-    return {group: null, description: '', name: null, displayName: null, hidden: false, keywords: [], category: null, isHiddenFromOverview: false};
+    return {
+      group: null,
+      description: '',
+      name: null,
+      displayName: null,
+      hidden: false,
+      keywords: [],
+      category: null,
+      isHiddenFromOverview: false,
+    };
   }
 }
 
@@ -241,14 +283,35 @@ function discoverPackageDirs() {
     .sort();
 }
 
+const REGISTRY_EXTERNAL_DEPENDENCIES = [
+  '@heroicons/react',
+  '@stylexjs/stylex',
+  'lucide-react',
+  'recharts',
+];
+
+function registryExternalDependencySpecs() {
+  return Object.fromEntries(
+    REGISTRY_EXTERNAL_DEPENDENCIES.map(packageName => {
+      const version = require(`${packageName}/package.json`).version;
+      return [packageName, `${packageName}@${version}`];
+    }),
+  );
+}
+
 // ── 1. Package Registry ────────────────────────────────────────────────
 
 function generatePackageRegistry() {
   console.log('Generating package registry...');
 
   const packageDirs = discoverPackageDirs();
-  const docsitePkg = JSON.parse(fs.readFileSync(path.join(DOCSITE_ROOT, 'package.json'), 'utf-8'));
-  const docsiteDeps = {...docsitePkg.dependencies, ...docsitePkg.devDependencies};
+  const docsitePkg = JSON.parse(
+    fs.readFileSync(path.join(DOCSITE_ROOT, 'package.json'), 'utf-8'),
+  );
+  const docsiteDeps = {
+    ...docsitePkg.dependencies,
+    ...docsitePkg.devDependencies,
+  };
 
   const packages = packageDirs
     .map(dir => {
@@ -261,8 +324,12 @@ function generatePackageRegistry() {
       // Skip packages not installed in the docsite
       if (docsiteDeps[raw.name] == null) return null;
 
-      const hasReadme = fs.existsSync(path.join(CONTENT_ROOT, dir, 'README.md'));
-      const hasChangelog = fs.existsSync(path.join(CONTENT_ROOT, dir, 'CHANGELOG.md'));
+      const hasReadme = fs.existsSync(
+        path.join(CONTENT_ROOT, dir, 'README.md'),
+      );
+      const hasChangelog = fs.existsSync(
+        path.join(CONTENT_ROOT, dir, 'CHANGELOG.md'),
+      );
       const readme = hasReadme
         ? fs.readFileSync(path.join(CONTENT_ROOT, dir, 'README.md'), 'utf-8')
         : null;
@@ -271,7 +338,12 @@ function generatePackageRegistry() {
         : null;
       return {
         name: raw.name,
-        displayName: raw.displayName || raw.name.replace('@astryxdesign/', '').replace('theme-', 'Theme: ').replace(/^\w/, c => c.toUpperCase()),
+        displayName:
+          raw.displayName ||
+          raw.name
+            .replace('@astryxdesign/', '')
+            .replace('theme-', 'Theme: ')
+            .replace(/^\w/, c => c.toUpperCase()),
         version: raw.version,
         description: raw.description || '',
         packagePath: dir,
@@ -308,10 +380,13 @@ export const packages: PackageMeta[] = ${JSON.stringify(packages, null, 2)};
 
 /** Sanitize a doc object for JSON serialization (strip functions, symbols, etc.) */
 function sanitizeForJson(obj) {
-  return JSON.parse(JSON.stringify(obj, (key, value) => {
-    if (typeof value === 'function' || typeof value === 'symbol') return undefined;
-    return value;
-  }));
+  return JSON.parse(
+    JSON.stringify(obj, (key, value) => {
+      if (typeof value === 'function' || typeof value === 'symbol')
+        return undefined;
+      return value;
+    }),
+  );
 }
 
 function extractStringArrayField(content, field) {
@@ -330,7 +405,9 @@ async function generateComponentRegistry() {
   for (const dir of packageDirs) {
     const srcDir = path.join(CONTENT_ROOT, dir, 'src');
     if (!fs.existsSync(srcDir)) continue;
-    const pkgJson = JSON.parse(fs.readFileSync(path.join(CONTENT_ROOT, dir, 'package.json'), 'utf-8'));
+    const pkgJson = JSON.parse(
+      fs.readFileSync(path.join(CONTENT_ROOT, dir, 'package.json'), 'utf-8'),
+    );
     const allDocFiles = findDocFilesRecursive(srcDir);
     if (allDocFiles.length > 0) {
       componentPackages.push({name: pkgJson.name, srcDir, dir});
@@ -352,7 +429,9 @@ async function generateComponentRegistry() {
       if (!entry.isDirectory() || SKIP_DIRS.has(entry.name)) continue;
 
       const dirPath = path.join(pkg.srcDir, entry.name);
-      const docFiles = fs.readdirSync(dirPath).filter(f => f.endsWith('.doc.mjs'));
+      const docFiles = fs
+        .readdirSync(dirPath)
+        .filter(f => f.endsWith('.doc.mjs'));
       if (docFiles.length === 0) continue;
 
       // First pass: find the primary component doc for this directory. Used to
@@ -366,7 +445,12 @@ async function generateComponentRegistry() {
         try {
           const mod = await import(pathToFileURL(dfPath).href);
           const d = mod.docs;
-          if (d && (d.components || d.props) && !d.params && !d.subComponentOf) {
+          if (
+            d &&
+            (d.components || d.props) &&
+            !d.params &&
+            !d.subComponentOf
+          ) {
             dirPrimaryDoc = d.name || null;
             dirPrimaryMeta = {
               name: d.name || null,
@@ -382,7 +466,9 @@ async function generateComponentRegistry() {
             };
             break;
           }
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
 
       for (const docFileName of docFiles) {
@@ -394,7 +480,9 @@ async function generateComponentRegistry() {
           doc = mod.docs;
           if (!doc) continue;
         } catch (err) {
-          console.warn(`  warn: failed to import ${docFileName}: ${err.message}`);
+          console.warn(
+            `  warn: failed to import ${docFileName}: ${err.message}`,
+          );
           continue;
         }
 
@@ -406,7 +494,10 @@ async function generateComponentRegistry() {
         const topDescription = doc.usage?.description || doc.description || '';
         const usage = doc.usage ? sanitizeForJson(doc.usage) : null;
         const theming = doc.theming ? sanitizeForJson(doc.theming) : null;
-        const playground = doc.playground ? sanitizeForJson(doc.playground) : null;
+        const registry = doc.registry ? sanitizeForJson(doc.registry) : null;
+        const playground = doc.playground
+          ? sanitizeForJson(doc.playground)
+          : null;
 
         if (doc.subComponentOf) {
           // Extracted sub-component: lives in its parent's directory in its own
@@ -436,10 +527,13 @@ async function generateComponentRegistry() {
               group: parentMeta.group ?? group,
               category: parentMeta.category ?? category,
               isHiddenFromOverview:
-                doc.isHiddenFromOverview ?? parentMeta.isHiddenFromOverview ?? false,
+                doc.isHiddenFromOverview ??
+                parentMeta.isHiddenFromOverview ??
+                false,
               description: doc.description || parentMeta.topDescription || '',
               keywords: parentMeta.keywords ?? keywords,
               hidden: parentMeta.hidden ?? hidden,
+              registry,
               parentDoc: doc.subComponentOf,
               props: isHookEntry
                 ? []
@@ -455,7 +549,7 @@ async function generateComponentRegistry() {
                 ? null
                 : doc.theming
                   ? sanitizeForJson(doc.theming)
-                  : parentMeta.theming ?? null,
+                  : (parentMeta.theming ?? null),
               params: isHookEntry
                 ? Array.isArray(doc.params)
                   ? sanitizeForJson(doc.params)
@@ -476,7 +570,7 @@ async function generateComponentRegistry() {
                 ? null
                 : doc.playground
                   ? sanitizeForJson(doc.playground)
-                  : parentMeta.playground ?? null,
+                  : (parentMeta.playground ?? null),
             });
           }
         } else if (doc.components && doc.components.length > 0) {
@@ -484,7 +578,9 @@ async function generateComponentRegistry() {
           // top-level props) is emitted as its own entry. Abstract families with
           // no top-level props (e.g. Chat) contribute only their sub-components.
           if (Array.isArray(doc.props) && doc.props.length > 0) {
-            const name = doc.name || docFileName.replace('.doc.mjs', '').replace(/^XDS/, '');
+            const name =
+              doc.name ||
+              docFileName.replace('.doc.mjs', '').replace(/^XDS/, '');
             standaloneNames.add(name);
             components.push({
               name,
@@ -501,6 +597,7 @@ async function generateComponentRegistry() {
               description: doc.description || topDescription,
               keywords,
               hidden,
+              registry,
               parentDoc: name,
               props: sanitizeForJson(doc.props),
               usage,
@@ -563,10 +660,12 @@ async function generateComponentRegistry() {
               importPath: resolveImportPathForPkg(pkg.dir, entry.name),
               group,
               category,
-              isHiddenFromOverview: sub.isHiddenFromOverview ?? isHiddenFromOverview,
+              isHiddenFromOverview:
+                sub.isHiddenFromOverview ?? isHiddenFromOverview,
               description: sub.description || topDescription,
               keywords,
               hidden,
+              registry: sub.registry ? sanitizeForJson(sub.registry) : null,
               parentDoc: doc.name,
               props: isHookEntry
                 ? []
@@ -611,19 +710,25 @@ async function generateComponentRegistry() {
             description: topDescription,
             keywords,
             hidden,
+            registry,
             parentDoc: dirPrimaryDoc,
             props: [],
             usage,
             theming: null,
-            params: Array.isArray(doc.params) ? sanitizeForJson(doc.params) : [],
-            returns: Array.isArray(doc.returns) ? sanitizeForJson(doc.returns) : [],
+            params: Array.isArray(doc.params)
+              ? sanitizeForJson(doc.params)
+              : [],
+            returns: Array.isArray(doc.returns)
+              ? sanitizeForJson(doc.returns)
+              : [],
             relatedComponents: doc.relatedComponents || null,
             relatedHooks: doc.relatedHooks || null,
             playground: null,
           });
         } else {
           // Simple/standalone component
-          const name = doc.name || docFileName.replace('.doc.mjs', '').replace(/^XDS/, '');
+          const name =
+            doc.name || docFileName.replace('.doc.mjs', '').replace(/^XDS/, '');
           standaloneNames.add(name);
           components.push({
             name,
@@ -640,6 +745,7 @@ async function generateComponentRegistry() {
             description: topDescription,
             keywords,
             hidden,
+            registry,
             parentDoc: null,
             props: Array.isArray(doc.props) ? sanitizeForJson(doc.props) : [],
             usage,
@@ -884,6 +990,7 @@ export interface ComponentEntry {
   description: string;
   keywords: string[];
   hidden: boolean;
+  registry: {slug?: string; aliases?: string[]} | null;
   parentDoc: string | null;
   props: PropDoc[];
   /** Declarations for every type referenced from \`props[]\`, \`params[]\`, or
@@ -951,22 +1058,32 @@ function generateGroupedComponentRegistry(allComponents) {
         entry.group === 'Utilities' ||
         (isHook && !entry.parentDoc && entry.directory === 'hooks')
       ) {
-        utilities.push({name: entry.name, displayName, href: `/components/${entry.name}`});
+        utilities.push({
+          name: entry.name,
+          displayName,
+          href: `/components/${entry.name}`,
+        });
         continue;
       }
       if (entry.group) {
         if (!groups.has(entry.group)) groups.set(entry.group, []);
-        groups
-          .get(entry.group)
-          .push({name: entry.name, displayName, href: `/components/${entry.name}`, description: entry.description});
+        groups.get(entry.group).push({
+          name: entry.name,
+          displayName,
+          href: `/components/${entry.name}`,
+          description: entry.description,
+        });
         continue;
       }
       if (isHook && !entry.parentDoc && entry.directory !== 'hooks') {
         const dir = entry.directory;
         if (!groups.has(dir)) groups.set(dir, []);
-        groups
-          .get(dir)
-          .push({name: entry.name, displayName, href: `/components/${entry.name}`, description: entry.description});
+        groups.get(dir).push({
+          name: entry.name,
+          displayName,
+          href: `/components/${entry.name}`,
+          description: entry.description,
+        });
         continue;
       }
       if (
@@ -976,23 +1093,44 @@ function generateGroupedComponentRegistry(allComponents) {
       ) {
         const parent = entry.parentDoc;
         if (!groups.has(parent)) groups.set(parent, []);
-        groups
-          .get(parent)
-          .push({name: entry.name, displayName, href: `/components/${entry.name}`, description: entry.description});
+        groups.get(parent).push({
+          name: entry.name,
+          displayName,
+          href: `/components/${entry.name}`,
+          description: entry.description,
+        });
         continue;
       }
       if (isHook) {
-        utilities.push({name: entry.name, displayName, href: `/components/${entry.name}`});
+        utilities.push({
+          name: entry.name,
+          displayName,
+          href: `/components/${entry.name}`,
+        });
         continue;
       }
-      ungrouped.push({name: entry.name, displayName, href: `/components/${entry.name}`, description: entry.description});
+      ungrouped.push({
+        name: entry.name,
+        displayName,
+        href: `/components/${entry.name}`,
+        description: entry.description,
+      });
     }
 
     const items = [];
     for (const [label, members] of groups) {
       members.sort((a, b) => a.name.localeCompare(b.name));
       if (members.length === 1) {
-        items.push({sortKey: members[0].name, item: {type: 'entry', name: members[0].name, displayName: members[0].displayName, href: members[0].href, description: members[0].description}});
+        items.push({
+          sortKey: members[0].name,
+          item: {
+            type: 'entry',
+            name: members[0].name,
+            displayName: members[0].displayName,
+            href: members[0].href,
+            description: members[0].description,
+          },
+        });
       } else {
         const canonical = members.find(m => m.name === label);
         // Prefer the canonical member's already-required displayName as the
@@ -1003,11 +1141,33 @@ function generateGroupedComponentRegistry(allComponents) {
         const groupDisplayName = canonical
           ? canonical.displayName
           : humanizeGroupLabel(label);
-        items.push({sortKey: label, item: {type: 'group', label, displayName: groupDisplayName, description: (canonical || members[0]).description, entries: members.map(m => ({name: m.name, displayName: m.displayName, href: m.href}))}});
+        items.push({
+          sortKey: label,
+          item: {
+            type: 'group',
+            label,
+            displayName: groupDisplayName,
+            description: (canonical || members[0]).description,
+            entries: members.map(m => ({
+              name: m.name,
+              displayName: m.displayName,
+              href: m.href,
+            })),
+          },
+        });
       }
     }
     for (const entry of ungrouped) {
-      items.push({sortKey: entry.name, item: {type: 'entry', name: entry.name, displayName: entry.displayName, href: entry.href, description: entry.description}});
+      items.push({
+        sortKey: entry.name,
+        item: {
+          type: 'entry',
+          name: entry.name,
+          displayName: entry.displayName,
+          href: entry.href,
+          description: entry.description,
+        },
+      });
     }
     items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
@@ -1073,7 +1233,10 @@ async function generateBlockRegistry() {
     let isShowcase = false;
     let aspectRatio = 1;
     let componentsUsed = [];
-    let exampleFor = '';
+    let exampleFor = null;
+    let alsoExampleFor = [];
+    let alsoShowcaseFor = [];
+    let registry = null;
     try {
       const content = fs.readFileSync(docPath, 'utf-8');
       isShowcase = /isShowcase:\s*true/.test(content);
@@ -1086,18 +1249,36 @@ async function generateBlockRegistry() {
       }
       const cuMatch = content.match(/componentsUsed:\s*\[([^\]]*)\]/);
       if (cuMatch) {
-        componentsUsed = [...cuMatch[1].matchAll(/['"]([^'"]+)['"]/g)].map(m => m[1]);
+        componentsUsed = [...cuMatch[1].matchAll(/['"]([^'"]+)['"]/g)].map(
+          m => m[1],
+        );
       }
       const efMatch = content.match(/exampleFor:\s*['"]([^'"]+)['"]/);
       if (efMatch) {
         exampleFor = efMatch[1];
       }
-    } catch { /* ignore */ }
+      alsoExampleFor = extractStringArrayField(content, 'alsoExampleFor');
+      alsoShowcaseFor = extractStringArrayField(content, 'alsoShowcaseFor');
+      const module = await import(pathToFileURL(docPath).href);
+      registry = module.doc?.registry
+        ? sanitizeForJson(module.doc.registry)
+        : null;
+    } catch {
+      /* ignore */
+    }
+
+    if (isShowcase && !exampleFor) {
+      throw new Error(
+        `Block ${path.relative(REPO_ROOT, docPath)} sets isShowcase without exampleFor`,
+      );
+    }
 
     let source = '';
     try {
       source = fs.readFileSync(tsxPath, 'utf-8');
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     const resolvedName = meta.name || basename;
     blocks.push({
@@ -1113,7 +1294,10 @@ async function generateBlockRegistry() {
       ),
       description: meta.description,
       exampleFor,
+      alsoExampleFor,
+      alsoShowcaseFor,
       isShowcase,
+      registry,
       aspectRatio,
       componentsUsed,
       category: relCategory,
@@ -1139,9 +1323,12 @@ export interface BlockEntry {
    */
   displayName: string;
   description: string;
-  /** The component this block is an example of (e.g. 'Button', 'Dialog') */
-  exampleFor: string;
+  /** Optional component ownership. Null means a standalone block. */
+  exampleFor: string | null;
+  alsoExampleFor: string[];
+  alsoShowcaseFor: string[];
   isShowcase: boolean;
+  registry: {slug?: string; aliases?: string[]} | null;
   aspectRatio: number;
   componentsUsed: string[];
   /** Category path, e.g. 'components/Button' */
@@ -1166,12 +1353,17 @@ async function generateTemplateRegistry() {
 
   const PAGES_DIR = path.join(CLI_ROOT, 'assets', 'templates', 'pages');
   if (!fs.existsSync(PAGES_DIR)) {
-    writeRegistry('templateRegistry.ts', `// Auto-generated — no templates found\nexport const templates = [];\nexport const templateCount = 0;\n`);
+    writeRegistry(
+      'templateRegistry.ts',
+      `// Auto-generated — no templates found\nexport const templates = [];\nexport const templateCount = 0;\n`,
+    );
     return {templates: [], templateCount: 0};
   }
 
   const templates = [];
-  const dirs = fs.readdirSync(PAGES_DIR, {withFileTypes: true}).filter(e => e.isDirectory());
+  const dirs = fs
+    .readdirSync(PAGES_DIR, {withFileTypes: true})
+    .filter(e => e.isDirectory());
 
   for (const dir of dirs) {
     const docPath = path.join(PAGES_DIR, dir.name, 'template.doc.mjs');
@@ -1181,18 +1373,28 @@ async function generateTemplateRegistry() {
 
     let doc;
     try {
-      const mod = await import(fileURLToPath(new URL(`file://${docPath}`)).replace(/\\/g, '/'));
+      const mod = await import(
+        fileURLToPath(new URL(`file://${docPath}`)).replace(/\\/g, '/')
+      );
       doc = mod.doc;
     } catch {
       const meta = readDocMeta(docPath);
-      doc = {name: meta.name || dir.name, description: meta.description, isReady: true};
+      doc = {
+        name: meta.name || dir.name,
+        description: meta.description,
+        isReady: true,
+      };
     }
 
     // Skip scaffolds — these are starter templates, not showcases
     if (doc.scaffold) continue;
 
     let source = '';
-    try { source = fs.readFileSync(pagePath, 'utf-8'); } catch { /* ignore */ }
+    try {
+      source = fs.readFileSync(pagePath, 'utf-8');
+    } catch {
+      /* ignore */
+    }
 
     templates.push({
       slug: dir.name,
@@ -1201,6 +1403,7 @@ async function generateTemplateRegistry() {
       isReady: doc.isReady ?? true,
       category: doc.category || '',
       isHiddenFromOverview: doc.isHiddenFromOverview ?? false,
+      registry: doc.registry ? sanitizeForJson(doc.registry) : null,
       source,
     });
   }
@@ -1219,6 +1422,7 @@ export interface TemplateEntry {
   category: string;
   /** When true, hide from the Templates overview gallery (still CLI-available). */
   isHiddenFromOverview: boolean;
+  registry: {slug?: string; aliases?: string[]} | null;
   source: string;
 }
 
@@ -1237,7 +1441,10 @@ async function generateDocsRegistry() {
 
   const DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
   if (!fs.existsSync(DOCS_DIR)) {
-    writeRegistry('docsRegistry.ts', `// Auto-generated — no docs found\nexport const docTopics = [];\nexport const docsCount = 0;\n`);
+    writeRegistry(
+      'docsRegistry.ts',
+      `// Auto-generated — no docs found\nexport const docTopics = [];\nexport const docsCount = 0;\n`,
+    );
     return {docTopics: [], docsCount: 0};
   }
 
@@ -1250,6 +1457,9 @@ async function generateDocsRegistry() {
     if (file.includes('.doc.zh.') || file.includes('.doc.dense.')) continue;
 
     const topic = match[1];
+    if (DOCSITE_TARGET === 'latest' && topic === 'shadcn-compatibility') {
+      continue;
+    }
     const docPath = path.join(DOCS_DIR, file);
 
     let title = '';
@@ -1267,7 +1477,13 @@ async function generateDocsRegistry() {
       description = meta.description;
     }
 
-    docTopics.push({topic, title: title || topic, description, category: category || null, sections});
+    docTopics.push({
+      topic,
+      title: title || topic,
+      description,
+      category: category || null,
+      sections,
+    });
   }
 
   docTopics.sort((a, b) => a.topic.localeCompare(b.topic));
@@ -1317,30 +1533,38 @@ export const docsCount = ${docTopics.length};
   return {docTopics, docsCount: docTopics.length};
 }
 
-
 async function generateThemeRegistry(packages) {
   console.log('Generating theme registry...');
-  const themePackages = packages.filter(p => p.name.startsWith('@astryxdesign/theme-'));
+  const themePackages = packages.filter(p =>
+    p.name.startsWith('@astryxdesign/theme-'),
+  );
   if (!themePackages.length) {
-    writeRegistry('themeRegistry.ts', `// Auto-generated — no theme packages found
+    writeRegistry(
+      'themeRegistry.ts',
+      `// Auto-generated — no theme packages found
 import type {DefinedTheme} from '@astryxdesign/core/theme';
 export const themeObjects: Record<string, DefinedTheme> = {};
-`);
+`,
+    );
     // Empty CSS aggregator so the globals.css @import doesn't 404.
     writeThemesCss('');
     return 0;
   }
 
-  const imports = themePackages.map(p => {
-    const slug = p.name.replace('@astryxdesign/theme-', '');
-    const exportName = `${slug}Theme`;
-    return `import {${exportName}} from '${p.name}/built';`;
-  }).join('\n');
+  const imports = themePackages
+    .map(p => {
+      const slug = p.name.replace('@astryxdesign/theme-', '');
+      const exportName = `${slug}Theme`;
+      return `import {${exportName}} from '${p.name}/built';`;
+    })
+    .join('\n');
 
-  const entries = themePackages.map(p => {
-    const slug = p.name.replace('@astryxdesign/theme-', '');
-    return `  '${p.name}': ${slug}Theme,`;
-  }).join('\n');
+  const entries = themePackages
+    .map(p => {
+      const slug = p.name.replace('@astryxdesign/theme-', '');
+      return `  '${p.name}': ${slug}Theme,`;
+    })
+    .join('\n');
 
   // The `/built` objects are tokens-only — component overrides are compiled into
   // each theme's CSS file, not the JS object. Extract those overrides here at
@@ -1366,10 +1590,12 @@ export const themeObjects: Record<string, DefinedTheme> = {};
     }
   }
 
-  const fullEntries = themePackages.map(p => {
-    const slug = p.name.replace('@astryxdesign/theme-', '');
-    return `  '${p.name}': {...${slug}Theme, components: componentOverrides['${p.name}']},`;
-  }).join('\n');
+  const fullEntries = themePackages
+    .map(p => {
+      const slug = p.name.replace('@astryxdesign/theme-', '');
+      return `  '${p.name}': {...${slug}Theme, components: componentOverrides['${p.name}']},`;
+    })
+    .join('\n');
 
   const content = `// Auto-generated by scripts/generate-data.mjs — do not edit
 
@@ -1386,7 +1612,10 @@ ${entries}
  * data, safe to import from server components.
  */
 const componentOverrides: Record<string, DefinedTheme['components']> =
-  ${JSON.stringify(componentOverrides, null, 2).split('\n').map((l, i) => (i === 0 ? l : '  ' + l)).join('\n')};
+  ${JSON.stringify(componentOverrides, null, 2)
+    .split('\n')
+    .map((l, i) => (i === 0 ? l : '  ' + l))
+    .join('\n')};
 
 /**
  * Built theme objects with their component overrides re-attached. Used by the
@@ -1449,61 +1678,72 @@ function importsPackageMissingFromDocsite(tsxSource) {
   return imports.some(pkg => _docsiteDeps[pkg] == null);
 }
 
-function generateShowcaseRegistry() {
+function blockSourcePath(block) {
+  return path.join(
+    CLI_ROOT,
+    'assets',
+    'templates',
+    'blocks',
+    block.category,
+    `${block.dirName}.tsx`,
+  );
+}
+
+function generateShowcaseRegistry(blocks, availableRegistryPaths) {
   console.log('Generating showcase registry...');
 
-  const BLOCKS_DIR = path.join(CLI_ROOT, 'assets', 'templates', 'blocks');
   const SHOWCASE_OUT = path.join(OUT_DIR, 'showcases');
 
-  // Clean and recreate
   if (fs.existsSync(SHOWCASE_OUT)) {
     fs.rmSync(SHOWCASE_OUT, {recursive: true});
   }
   fs.mkdirSync(SHOWCASE_OUT, {recursive: true});
 
-  const docFiles = findDocFilesRecursive(BLOCKS_DIR);
   const entries = [];
 
-  for (const docPath of docFiles) {
-    const content = fs.readFileSync(docPath, 'utf-8');
-    const isShowcase = /isShowcase:\s*true/.test(content);
-
-    const efMatch = content.match(/exampleFor:\s*['"]([^'"]+)['"]/);
-    if (!efMatch) continue;
-
-    const exampleFor = efMatch[1];
-    const basename = path.basename(docPath, '.doc.mjs');
-    const tsxSrc = path.join(path.dirname(docPath), basename + '.tsx');
+  for (const block of blocks) {
+    const tsxSrc = blockSourcePath(block);
     if (!fs.existsSync(tsxSrc)) continue;
 
-    // Skip blocks that reference a package the docsite cannot resolve.
-    const tsxContent = fs.readFileSync(tsxSrc, 'utf-8');
-    if (importsPackageMissingFromDocsite(tsxContent)) {
+    if (importsPackageMissingFromDocsite(block.source)) {
       console.log(
-        `  skipping showcase ${basename} — imports a package not installed in the docsite`,
+        `  skipping showcase ${block.dirName} — imports a package not installed in the docsite`,
       );
       continue;
     }
 
-    const alsoShowcaseFor = extractStringArrayField(content, 'alsoShowcaseFor');
+    const identity = blockRegistryIdentity(
+      block.name,
+      block.exampleFor,
+      block.isShowcase,
+      block.registry,
+    );
+    const registryItemPath = availableRegistryPaths?.has(identity.path)
+      ? identity.path
+      : null;
 
-    if (isShowcase) {
-      // Copy the TSX file into generated/showcases/
-      const destFile = `${basename}.tsx`;
+    if (block.isShowcase && block.exampleFor) {
+      const destFile = `${block.dirName}.tsx`;
       fs.copyFileSync(tsxSrc, path.join(SHOWCASE_OUT, destFile));
-      entries.push({exampleFor, basename, destFile});
+      entries.push({
+        exampleFor: block.exampleFor,
+        basename: block.dirName,
+        destFile,
+        registryItemPath,
+      });
     }
 
-    // Blocks can opt into serving as the visual showcase for additional
-    // component or hook pages. This is explicit metadata instead of source
-    // inspection so authors control where examples appear.
-    for (const target of alsoShowcaseFor) {
-      const aliasBasename = `${basename}__${target}`;
+    for (const target of block.alsoShowcaseFor) {
+      const aliasBasename = `${block.dirName}__${target}`;
       const destFile = `${aliasBasename}.tsx`;
       fs.copyFileSync(tsxSrc, path.join(SHOWCASE_OUT, destFile));
-      entries.push({exampleFor: target, basename: aliasBasename, destFile});
+      entries.push({
+        exampleFor: target,
+        basename: aliasBasename,
+        destFile,
+        registryItemPath,
+      });
     }
-
   }
 
   // Deduplicate: one showcase per component (first wins)
@@ -1514,10 +1754,13 @@ function generateShowcaseRegistry() {
     return true;
   });
 
-  // Generate the registry with dynamic imports
-  const importLines = uniqueEntries.map(
-    e => `  '${e.exampleFor}': () => import('./showcases/${e.basename}'),`
-  ).join('\n');
+  const importLines = uniqueEntries
+    .map(e => `  '${e.exampleFor}': () => import('./showcases/${e.basename}'),`)
+    .join('\n');
+  const itemPathLines = uniqueEntries
+    .filter(e => e.registryItemPath)
+    .map(e => `  '${e.exampleFor}': ${JSON.stringify(e.registryItemPath)},`)
+    .join('\n');
 
   const registryContent = `// Auto-generated by scripts/generate-data.mjs — do not edit
 import type {ComponentType} from 'react';
@@ -1527,19 +1770,24 @@ type ShowcaseLoader = () => Promise<{default: ComponentType}>;
 export const showcaseRegistry: Record<string, ShowcaseLoader> = {
 ${importLines}
 };
+
+export const showcaseRegistryItemPaths: Record<string, string> = {
+${itemPathLines}
+};
 `;
 
   writeRegistry('showcaseRegistry.ts', registryContent);
-  console.log(`  copied ${entries.length} showcase files (${uniqueEntries.length} unique components)`);
+  console.log(
+    `  copied ${entries.length} showcase files (${uniqueEntries.length} unique components)`,
+  );
   return uniqueEntries.length;
 }
 
 // ── Main
 
-function generateExampleRegistry() {
+function generateExampleRegistry(blocks, availableRegistryPaths) {
   console.log('Generating example registry...');
 
-  const BLOCKS_DIR = path.join(CLI_ROOT, 'assets', 'templates', 'blocks');
   const EXAMPLES_OUT = path.join(OUT_DIR, 'examples');
 
   if (fs.existsSync(EXAMPLES_OUT)) {
@@ -1547,83 +1795,72 @@ function generateExampleRegistry() {
   }
   fs.mkdirSync(EXAMPLES_OUT, {recursive: true});
 
-  const docFiles = findDocFilesRecursive(BLOCKS_DIR);
   const entries = [];
 
-  for (const docPath of docFiles) {
-    const content = fs.readFileSync(docPath, 'utf-8');
-    const isShowcase = /isShowcase:\s*true/.test(content);
-
-    const efMatch = content.match(/exampleFor:\s*['"]([^'"]+)['"]/);
-    if (!efMatch) continue;
-
-    const exampleFor = efMatch[1];
-    const basename = path.basename(docPath, '.doc.mjs');
-    const tsxSrc = path.join(path.dirname(docPath), basename + '.tsx');
+  for (const block of blocks) {
+    const tsxSrc = blockSourcePath(block);
     if (!fs.existsSync(tsxSrc)) continue;
 
-    // Read name and description from doc meta
-    const name = extractQuotedField(content, 'name');
-    const description = extractQuotedField(content, 'description');
-
-    let source = '';
-    try { source = fs.readFileSync(tsxSrc, 'utf-8'); } catch { /* ignore */ }
-
-    // Skip live-preview entries for blocks the docsite cannot resolve — they'd
-    // break `next build`. The block's code is still shown via the block
-    // registry; only the rendered preview is withheld until the package is a
-    // docsite dependency.
-    if (importsPackageMissingFromDocsite(source)) {
+    if (importsPackageMissingFromDocsite(block.source)) {
       console.log(
-        `  skipping example ${basename} — imports a package not installed in the docsite`,
+        `  skipping example ${block.dirName} — imports a package not installed in the docsite`,
       );
       continue;
     }
 
-    const alsoExampleFor = extractStringArrayField(content, 'alsoExampleFor');
+    const identity = blockRegistryIdentity(
+      block.name,
+      block.exampleFor,
+      block.isShowcase,
+      block.registry,
+    );
+    const registryItemPath = availableRegistryPaths?.has(identity.path)
+      ? identity.path
+      : null;
 
-    if (!isShowcase) {
-      fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${basename}.tsx`));
+    if (!block.isShowcase && block.exampleFor) {
+      fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${block.dirName}.tsx`));
       entries.push({
-        exampleFor,
-        basename,
-        name: name || basename,
-        description: description || '',
-        source,
+        exampleFor: block.exampleFor,
+        basename: block.dirName,
+        registryItemPath,
+        name: block.name || block.dirName,
+        description: block.description || '',
+        source: block.source,
       });
     }
 
-    // Blocks can explicitly appear as examples for additional component or
-    // hook pages. This supports component examples doubling as hook examples
-    // without inferring intent from the TSX source.
-    for (const target of alsoExampleFor) {
-      const aliasBasename = `${basename}__${target}`;
+    for (const target of block.alsoExampleFor) {
+      const aliasBasename = `${block.dirName}__${target}`;
       fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${aliasBasename}.tsx`));
       entries.push({
         exampleFor: target,
         basename: aliasBasename,
-        name: name || basename,
-        description: description || `Example using ${target}.`,
-        source,
+        registryItemPath,
+        name: block.name || block.dirName,
+        description: block.description || `Example using ${target}.`,
+        source: block.source,
       });
     }
-
   }
 
-  // Group by component
   const grouped = {};
   for (const e of entries) {
     if (!grouped[e.exampleFor]) grouped[e.exampleFor] = [];
     grouped[e.exampleFor].push(e);
   }
 
-  // Generate registry: component name → array of example metadata + loaders
-  const componentLines = Object.entries(grouped).map(([comp, examples]) => {
-    const exampleLines = examples.map(
-      e => `    {name: ${JSON.stringify(e.name)}, description: ${JSON.stringify(e.description)}, source: ${JSON.stringify(e.source)}, load: () => import('./examples/${e.basename}')},`
-    ).join('\n');
-    return `  '${comp}': [\n${exampleLines}\n  ],`;
-  }).join('\n');
+  const componentLines = Object.entries(grouped)
+    .map(([comp, examples]) => {
+      const exampleLines = examples
+        .map(
+          e =>
+            `    {name: ${JSON.stringify(e.name)}, description: ${JSON.stringify(e.description)}, registryItemPath: ${JSON.stringify(e.registryItemPath)}, source: ${JSON.stringify(e.source)}, load: () => import('./examples/${e.basename}')},`,
+        )
+        .join('\n');
+      return `  '${comp}': [\n${exampleLines}\n  ],`;
+    })
+    .join('\n');
 
   const registryContent = `// Auto-generated by scripts/generate-data.mjs — do not edit
 import type {ComponentType} from 'react';
@@ -1631,6 +1868,7 @@ import type {ComponentType} from 'react';
 export interface ExampleEntry {
   name: string;
   description: string;
+  registryItemPath: string | null;
   source: string;
   load: () => Promise<{default: ComponentType}>;
 }
@@ -1641,7 +1879,9 @@ ${componentLines}
 `;
 
   writeRegistry('exampleRegistry.ts', registryContent);
-  console.log(`  copied ${entries.length} example blocks for ${Object.keys(grouped).length} components`);
+  console.log(
+    `  copied ${entries.length} example blocks for ${Object.keys(grouped).length} components`,
+  );
   return entries.length;
 }
 
@@ -1650,23 +1890,17 @@ ${componentLines}
 async function generateBlogRegistry() {
   console.log('Generating blog registry...');
 
-  const POSTS_DIR = path.join(
-    DOCSITE_ROOT,
-    'src',
-    'content',
-    'blog',
-    'posts',
-  );
+  const POSTS_DIR = path.join(DOCSITE_ROOT, 'src', 'content', 'blog', 'posts');
 
   // Single source of truth for discovery + validation (shared with tests).
   const {discoverPosts, collectTypes, collectTags} = await import(
-    pathToFileURL(
-      path.join(DOCSITE_ROOT, 'src', 'lib', 'blog', 'posts.mjs'),
-    ).href
+    pathToFileURL(path.join(DOCSITE_ROOT, 'src', 'lib', 'blog', 'posts.mjs'))
+      .href
   );
 
-  // Exclude drafts from production output; include them only in dev.
-  const includeDrafts = process.env.NODE_ENV !== 'production';
+  // Production documents the stable release and excludes experimental posts.
+  // Local development and every draft/preview deployment use the canary target.
+  const includeDrafts = DOCSITE_TARGET === 'canary';
   const posts = discoverPosts(POSTS_DIR, {includeDrafts});
   const types = collectTypes(posts);
   const tags = collectTags(posts);
@@ -1715,28 +1949,112 @@ export const blogDarkImages: string[] = ${JSON.stringify(darkImages, null, 2)};
   return {blogPostCount: posts.length, blogTypeCount: types.length};
 }
 
+function checkShadcnRouteLock(contracts) {
+  const lockPath = path.join(
+    REPO_ROOT,
+    'internal',
+    'shadcn-registry',
+    'routes.lock.json',
+  );
+  const lock = {version: 1, items: contracts};
+  const serialized = `${JSON.stringify(lock, null, 2)}\n`;
+
+  if (process.env.UPDATE_SHADCN_ROUTE_LOCK === '1') {
+    fs.writeFileSync(lockPath, serialized, 'utf8');
+    console.log(`  updated ${path.relative(REPO_ROOT, lockPath)}`);
+    return;
+  }
+
+  if (!fs.existsSync(lockPath)) {
+    throw new Error(
+      `Missing ${path.relative(REPO_ROOT, lockPath)}. Run UPDATE_SHADCN_ROUTE_LOCK=1 node apps/docsite/scripts/generate-data.mjs and review the public route contract.`,
+    );
+  }
+  const current = fs.readFileSync(lockPath, 'utf8');
+  if (current !== serialized) {
+    throw new Error(
+      `Generated shadcn names or routes changed. Preserve old paths with doc.registry.aliases, or intentionally refresh the reviewed lock with UPDATE_SHADCN_ROUTE_LOCK=1 node apps/docsite/scripts/generate-data.mjs.`,
+    );
+  }
+}
+
 async function main() {
   console.log('Generating docsite data...\n');
 
   const packages = generatePackageRegistry();
   const themeCount = await generateThemeRegistry(packages);
-  const {allComponents, totalCount: componentCount} = await generateComponentRegistry();
+  const {allComponents, totalCount: componentCount} =
+    await generateComponentRegistry();
   generateGroupedComponentRegistry(allComponents);
-  const {blockCount, showcaseCount} = await generateBlockRegistry();
-  const {templateCount} = await generateTemplateRegistry();
+  const {blocks, blockCount, showcaseCount} = await generateBlockRegistry();
+  const {templates, templateCount} = await generateTemplateRegistry();
   const {docsCount} = await generateDocsRegistry();
   const {blogPostCount} = await generateBlogRegistry();
-  const showcaseCopied = generateShowcaseRegistry();
-  const examplesCopied = generateExampleRegistry();
+  const shadcnCounts =
+    DOCSITE_TARGET === 'canary'
+      ? generateShadcnRegistry({
+          outDir: path.join(DOCSITE_ROOT, 'public', 'r'),
+          packages,
+          allComponents,
+          blocks,
+          templates,
+          cliRoot: CLI_ROOT,
+          dependencyTag: 'canary',
+          externalDependencySpecs: registryExternalDependencySpecs(),
+        })
+      : null;
+  if (shadcnCounts) {
+    checkShadcnRouteLock(shadcnCounts.contracts);
+  }
+  if (!shadcnCounts) {
+    fs.rmSync(path.join(DOCSITE_ROOT, 'public', 'r'), {
+      recursive: true,
+      force: true,
+    });
+  }
+  const showcaseCopied = generateShowcaseRegistry(
+    blocks,
+    shadcnCounts?.itemPaths,
+  );
+  const examplesCopied = generateExampleRegistry(
+    blocks,
+    shadcnCounts?.itemPaths,
+  );
+  const registryOrigin = resolveShadcnRegistryOrigin(process.env);
+  const registryIsPreview =
+    DOCSITE_TARGET === 'canary' &&
+    registryOrigin !== 'https://astryx.atmeta.com/r';
+  writeRegistry(
+    'shadcnRegistry.ts',
+    `// Auto-generated — do not edit
+export const shadcnRegistryOrigin = ${JSON.stringify(registryOrigin)};
+export const shadcnRegistryIsPreview = ${registryIsPreview};
+`,
+  );
 
   console.log(`\nSummary:`);
   console.log(`  ${packages.length} packages`);
   console.log(`  ${componentCount} components`);
-  console.log(`  ${blockCount} blocks (${showcaseCopied} showcases, ${examplesCopied} examples)`);
+  console.log(
+    `  ${blockCount} blocks (${showcaseCopied} showcases, ${examplesCopied} examples)`,
+  );
   console.log(`  ${templateCount} templates`);
   console.log(`  ${docsCount} doc topics`);
   console.log(`  ${blogPostCount} blog posts`);
   console.log(`  ${themeCount} themes`);
+  if (shadcnCounts) {
+    console.log(
+      `  ${shadcnCounts.total} shadcn registry items ` +
+        `(${shadcnCounts.components} components, ${shadcnCounts.hooks} hooks, ` +
+        `${shadcnCounts.showcases} showcases, ${shadcnCounts.examples} examples, ` +
+        `${shadcnCounts.blocks} standalone blocks, ${shadcnCounts.pages} pages; ` +
+        `${shadcnCounts.skippedUnpublishedComponents} unpublished components, ` +
+        `${shadcnCounts.skippedUnpublishedBlocks} blocks, and ` +
+        `${shadcnCounts.skippedUnpublishedPages} pages skipped)`,
+    );
+  } else {
+    console.log('  shadcn registry disabled for the production target');
+  }
   console.log('Done.');
 }
 

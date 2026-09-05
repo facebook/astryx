@@ -327,13 +327,16 @@ const handler = createMcpHandler(
 
           const showcase = blocks.find(
             (b: BlockEntry) =>
-              exampleNames.includes(b.exampleFor.toLowerCase()) && b.isShowcase,
+              b.exampleFor != null &&
+              exampleNames.includes(b.exampleFor.toLowerCase()) &&
+              b.isShowcase,
           );
 
           // Find related blocks (non-showcase, limit 1 for budget)
           const relatedBlocks = blocks
             .filter(
               (b: BlockEntry) =>
+                b.exampleFor != null &&
                 exampleNames.includes(b.exampleFor.toLowerCase()) &&
                 !b.isShowcase,
             )

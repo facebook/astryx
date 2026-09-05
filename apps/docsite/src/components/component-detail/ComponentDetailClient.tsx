@@ -34,9 +34,20 @@ import {PlaygroundPropsTable} from './PlaygroundPropsTable';
 import {PropsTable} from './PropsTable';
 import type {ComponentEntry} from '../../generated/componentRegistry';
 import type {BlockEntry} from '../../generated/blockRegistry';
-import {showcaseRegistry} from '../../generated/showcaseRegistry';
+import {
+  showcaseRegistry,
+  showcaseRegistryItemPaths,
+} from '../../generated/showcaseRegistry';
 import {exampleRegistry} from '../../generated/exampleRegistry';
+import {
+  shadcnRegistryIsPreview,
+  shadcnRegistryOrigin,
+} from '../../generated/shadcnRegistry';
 import {trackNavigate} from '../../lib/analytics';
+import {
+  shadcnComponentItemPath,
+  shadcnInstallCommand,
+} from '../../lib/shadcnRegistry.mjs';
 
 const styles = stylex.create({
   section: {
@@ -87,6 +98,7 @@ interface ComponentDetailClientProps {
 function OverviewContent({
   comp,
   pkg,
+  pkgVersion,
   showcase: _showcase,
   hasShowcase,
 }: ComponentDetailClientProps & {hasShowcase: boolean}) {
@@ -158,6 +170,53 @@ function OverviewContent({
             {(exampleRegistry[comp.name] || []).map((entry, i) => (
               <ExampleBlock key={i} entry={entry} componentName={comp.name} />
             ))}
+          </VStack>
+        </>
+      )}
+
+      {CURRENT_TARGET === 'canary' && pkg && pkgVersion && (
+        <>
+          <Divider />
+          <VStack gap={2}>
+            <Heading level={2} type="display-3">
+              Use with shadcn
+            </Heading>
+            <MarkdownText type="body">
+              Already using the shadcn registry workflow? Install the real
+              Astryx package and a local public re-export. Component
+              implementation source stays in Astryx. [How compatibility
+              works](/docs/shadcn-compatibility).
+            </MarkdownText>
+            {shadcnRegistryIsPreview && (
+              <Text type="supporting" color="secondary">
+                This install URL expires with the draft preview.
+              </Text>
+            )}
+            <CodeExampleBlock
+              code={shadcnInstallCommand(
+                shadcnComponentItemPath(pkg, comp.name, isHook, comp.registry),
+                shadcnRegistryOrigin,
+              )}
+              language="bash"
+              width="100%"
+              hasCopyButton
+            />
+            {showcaseRegistryItemPaths[comp.name] && (
+              <>
+                <Text type="supporting" color="secondary">
+                  Install the editable showcase composition
+                </Text>
+                <CodeExampleBlock
+                  code={shadcnInstallCommand(
+                    showcaseRegistryItemPaths[comp.name],
+                    shadcnRegistryOrigin,
+                  )}
+                  language="bash"
+                  width="100%"
+                  hasCopyButton
+                />
+              </>
+            )}
           </VStack>
         </>
       )}

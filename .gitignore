@@ -80,6 +80,9 @@ yarn.lock
 .tool-versions
 mise.toml
 
+# Generated shadcn Registry output (rebuilt by the docsite generate step)
+apps/docsite/public/r/
+
 # Generated i18n artifacts (rebuilt from en.json)
 packages/core/locales/pseudo.json
 

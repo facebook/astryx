@@ -728,7 +728,9 @@ describe('blockRegistry', () => {
       expect(block.aspectRatio).not.toBeNaN();
       expect(Array.isArray(block.componentsUsed)).toBe(true);
       expect(block.category).toBeDefined();
-      expect(typeof block.exampleFor).toBe('string');
+      expect(
+        block.exampleFor === null || typeof block.exampleFor === 'string',
+      ).toBe(true);
     }
   });
 
@@ -755,8 +757,8 @@ describe('blockRegistry', () => {
     expect(buttonShowcase).toBeDefined();
   });
 
-  it('every block has exampleFor set', () => {
-    const missing = blocks.filter(b => !b.exampleFor);
+  it('showcases always declare component ownership', () => {
+    const missing = blocks.filter(b => b.isShowcase && !b.exampleFor);
     expect(missing.map(b => b.dirName)).toEqual([]);
   });
 
@@ -764,10 +766,12 @@ describe('blockRegistry', () => {
     const showcases = blocks.filter(b => b.isShowcase);
     const seen = new Map<string, string[]>();
     for (const s of showcases) {
-      if (!seen.has(s.exampleFor)) {
-        seen.set(s.exampleFor, []);
+      expect(s.exampleFor).not.toBeNull();
+      const owner = s.exampleFor!;
+      if (!seen.has(owner)) {
+        seen.set(owner, []);
       }
-      seen.get(s.exampleFor)!.push(s.dirName);
+      seen.get(owner)!.push(s.dirName);
     }
     const dupes = [...seen.entries()].filter(([, v]) => v.length > 1);
     // Some components may legitimately have multiple showcases, but flag them

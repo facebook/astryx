@@ -23,18 +23,62 @@ const previewSchema = z
   })
   .strict();
 
+const registryIdentitySchema = z
+  .object({
+    slug: z
+      .string()
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+      .optional(),
+    aliases: z
+      .array(
+        z
+          .string()
+          .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/),
+      )
+      .optional(),
+  })
+  .strict();
+
 const baseTemplateFields = {
   name: z.string().min(1, 'name is required'),
   description: z.string().min(1, 'description is required'),
   category: z.string().optional(),
   componentsUsed: z.array(z.string()).optional(),
   preview: previewSchema.optional(),
+  registry: registryIdentitySchema.optional(),
 };
 
-const templateEnvelopeSchema = z.discriminatedUnion('type', [
-  z.object({...baseTemplateFields, type: z.literal('page')}).strict(),
-  z.object({...baseTemplateFields, type: z.literal('block')}).strict(),
-]);
+const pageTemplateSchema = z
+  .object({...baseTemplateFields, type: z.literal('page')})
+  .strict();
+const blockTemplateSchema = z
+  .object({
+    ...baseTemplateFields,
+    type: z.literal('block'),
+    exampleFor: z.string().min(1).optional(),
+    alsoExampleFor: z.array(z.string()).optional(),
+    alsoShowcaseFor: z.array(z.string()).optional(),
+    aspectRatio: z.number().positive().optional(),
+    scale: z.number().positive().optional(),
+    isShowcase: z.boolean().optional(),
+  })
+  .strict();
+
+const templateEnvelopeSchema = z
+  .discriminatedUnion('type', [pageTemplateSchema, blockTemplateSchema])
+  .superRefine((template, context) => {
+    if (
+      template.type === 'block' &&
+      template.isShowcase &&
+      !template.exampleFor
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['exampleFor'],
+        message: 'exampleFor is required when isShowcase is true',
+      });
+    }
+  });
 
 /**
  * Validate an unknown value as a stamped template doc, or throw. The zod schema

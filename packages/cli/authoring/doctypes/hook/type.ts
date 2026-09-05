@@ -9,6 +9,7 @@ import type {
   ComponentBestPractice,
   HookParamDoc,
   HookReturnDoc,
+  RegistryDocIdentity,
   UsageDoc,
 } from '../base/type';
 
@@ -41,6 +42,8 @@ export interface HookDoc {
   group?: string;
   /** Search keywords for CLI discovery. */
   keywords?: string[];
+  /** Optional stable slug override and prior aliases for registry output. */
+  registry?: RegistryDocIdentity;
   /** Hook parameters or options object fields. */
   params: HookParamDoc[];
   /** Return value documentation. For object returns, list each field.

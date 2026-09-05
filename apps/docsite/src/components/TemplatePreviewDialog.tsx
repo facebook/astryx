@@ -47,6 +47,15 @@ import {Tooltip} from '@astryxdesign/core/Tooltip';
 import {TemplatePreviewSurface} from './TemplatePreviewSurface';
 import {buildTemplatePlaygroundHref} from './playgroundLink';
 import {trackCopy, trackOpenPlayground, trackNavigate} from '../lib/analytics';
+import {CURRENT_TARGET} from '../lib/docsVersions';
+import {
+  shadcnRegistryIsPreview,
+  shadcnRegistryOrigin,
+} from '../generated/shadcnRegistry';
+import {
+  shadcnInstallCommand,
+  shadcnPageItemPath,
+} from '../lib/shadcnRegistry.mjs';
 
 export interface TemplatePreviewItem {
   slug: string;
@@ -134,18 +143,20 @@ const styles = stylex.create({
   },
 });
 
+type CopiedCommand = 'astryx' | 'shadcn' | null;
+
 interface TemplatePreviewHeaderProps {
   item: TemplatePreviewItem;
   isFullscreen: boolean;
-  cmdCopied: boolean;
-  onCopyCommand: () => void;
+  copiedCommand: CopiedCommand;
+  onCopyCommand: (kind: Exclude<CopiedCommand, null>) => void;
   onClose: () => void;
 }
 
 function TemplatePreviewHeader({
   item,
   isFullscreen,
-  cmdCopied,
+  copiedCommand,
   onCopyCommand,
   onClose,
 }: TemplatePreviewHeaderProps) {
@@ -167,17 +178,59 @@ function TemplatePreviewHeader({
   );
 
   const copyButton = (
-    <HStack gap={2} vAlign="center">
-      <Code>{`npx @astryxdesign/cli template ${item.slug}`}</Code>
-      <Button
-        variant="ghost"
-        isIconOnly
-        size="lg"
-        label={cmdCopied ? 'Copied!' : 'Copy install command'}
-        icon={<Icon icon={cmdCopied ? 'check' : 'copy'} color="inherit" />}
-        onClick={onCopyCommand}
-      />
-    </HStack>
+    <VStack gap={1}>
+      <HStack gap={2} vAlign="center">
+        <Text type="supporting" color="secondary">
+          Astryx CLI
+        </Text>
+        <Code>{`npx @astryxdesign/cli template ${item.slug}`}</Code>
+        <Button
+          variant="ghost"
+          isIconOnly
+          size="lg"
+          label={copiedCommand === 'astryx' ? 'Copied!' : 'Copy Astryx command'}
+          icon={
+            <Icon
+              icon={copiedCommand === 'astryx' ? 'check' : 'copy'}
+              color="inherit"
+            />
+          }
+          onClick={() => onCopyCommand('astryx')}
+        />
+      </HStack>
+      {CURRENT_TARGET === 'canary' && (
+        <HStack gap={2} vAlign="center">
+          <Text type="supporting" color="secondary">
+            {shadcnRegistryIsPreview
+              ? 'shadcn preview (expires)'
+              : 'shadcn experiment'}
+          </Text>
+          <Code>
+            {shadcnInstallCommand(
+              shadcnPageItemPath(item.slug),
+              shadcnRegistryOrigin,
+            )}
+          </Code>
+          <Button
+            variant="ghost"
+            isIconOnly
+            size="lg"
+            label={
+              copiedCommand === 'shadcn'
+                ? 'Copied!'
+                : 'Copy experimental shadcn command'
+            }
+            icon={
+              <Icon
+                icon={copiedCommand === 'shadcn' ? 'check' : 'copy'}
+                color="inherit"
+              />
+            }
+            onClick={() => onCopyCommand('shadcn')}
+          />
+        </HStack>
+      )}
+    </VStack>
   );
 
   const playgroundButton = (
@@ -241,7 +294,7 @@ export function TemplatePreviewDialog({
   onIndexChange,
   variant,
 }: TemplatePreviewDialogProps) {
-  const [cmdCopied, setCmdCopied] = useState(false);
+  const [copiedCommand, setCopiedCommand] = useState<CopiedCommand>(null);
   const [isPending, startTransition] = useTransition();
 
   const count = items.length;
@@ -287,26 +340,37 @@ export function TemplatePreviewDialog({
 
   // Reset the share-copied state when switching templates.
   useEffect(() => {
-    setCmdCopied(false);
+    setCopiedCommand(null);
   }, [index]);
 
   if (!current) {
     return null;
   }
 
-  const useCommand = `npx @astryxdesign/cli template ${current.slug} ./src/app/${current.slug}`;
-  const handleCopyCmd = useCallback(() => {
-    navigator.clipboard.writeText(useCommand).then(() => {
-      setCmdCopied(true);
-      trackCopy({
-        page: 'templates',
-        target: 'cli_command',
-        item: current.slug,
-        category: current.category,
+  const astryxCommand = `npx @astryxdesign/cli template ${current.slug} ./src/app/${current.slug}`;
+  const shadcnCommand = shadcnInstallCommand(
+    shadcnPageItemPath(current.slug),
+    shadcnRegistryOrigin,
+  );
+  const handleCopyCmd = useCallback(
+    (kind: Exclude<CopiedCommand, null>) => {
+      if (kind === 'shadcn' && CURRENT_TARGET !== 'canary') {
+        return;
+      }
+      const command = kind === 'astryx' ? astryxCommand : shadcnCommand;
+      navigator.clipboard.writeText(command).then(() => {
+        setCopiedCommand(kind);
+        trackCopy({
+          page: 'templates',
+          target: kind === 'astryx' ? 'cli_command' : 'install_command',
+          item: current.slug,
+          category: current.category,
+        });
+        setTimeout(() => setCopiedCommand(null), 2000);
       });
-      setTimeout(() => setCmdCopied(false), 2000);
-    });
-  }, [useCommand, current.slug, current.category]);
+    },
+    [astryxCommand, shadcnCommand, current.slug, current.category],
+  );
 
   const isFullscreen = variant === 'fullscreen';
 
@@ -326,7 +390,7 @@ export function TemplatePreviewDialog({
             <TemplatePreviewHeader
               item={current}
               isFullscreen={isFullscreen}
-              cmdCopied={cmdCopied}
+              copiedCommand={copiedCommand}
               onCopyCommand={handleCopyCmd}
               onClose={() => onOpenChange(false)}
             />
