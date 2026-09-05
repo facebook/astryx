@@ -5,7 +5,7 @@
 import {useState} from 'react';
 import {Stepper, Step} from '@astryxdesign/core/Stepper';
 
-export default function StepperHorizontalNarrowCollapsed() {
+export default function StepperWidthResponsiveCollapse() {
   const [active, setActive] = useState(1);
 
   return (
