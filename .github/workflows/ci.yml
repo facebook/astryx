@@ -27,6 +27,8 @@ jobs:
     outputs:
       docsite_only: ${{ steps.scope.outputs.docsite_only }}
       spec_only: ${{ steps.scope.outputs.spec_only }}
+      rtl_audit_components: ${{ steps.rtl-applicability.outputs.audit_components }}
+      rtl_removed_components: ${{ steps.rtl-applicability.outputs.removed_components }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -35,6 +37,17 @@ jobs:
       - name: Fetch base branch
         if: github.event_name == 'pull_request'
         run: git fetch origin ${{ github.base_ref }} --depth=50
+
+      - name: Validate RTL applicability registries
+        id: rtl-applicability
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: |
+          git fetch origin "$BASE_SHA" --depth=1
+          node .github/scripts/check-rtl-applicability-registries.mjs \
+            --base "$BASE_SHA" \
+            --github-output "$GITHUB_OUTPUT"
 
       - name: Determine change scope
         id: scope
@@ -845,8 +858,8 @@ jobs:
   #
   # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
   # contextual directional decorations. Curated D2/D3/D4 adds behavior that
-  # needs selectors. The applicability rollup treats unexplained all-N/A as a
-  # coverage gap for both new and existing components.
+  # needs selectors. The applicability rollup fails new gaps while preserving
+  # pre-existing all-N/A components as visible, non-failing coverage debt.
   #
   # SOFT / NON-BLOCKING (continue-on-error): findings surface a scorecard in the
   # job summary but don't block the merge, while the suite is observed for
@@ -981,13 +994,18 @@ jobs:
                 if (coverage) {
                   out.push("### Applicability coverage");
                   out.push("");
-                  out.push(`**${coverage.measured} measured · ${coverage.verifiedNa} verified N-A · ${coverage.gaps} coverage gap · ${coverage.staleVerifiedNa} stale verified N-A.**`);
+                  out.push(`**${coverage.measured} measured · ${coverage.verifiedNa} verified N-A · ${coverage.knownGaps} known debt · ${coverage.gaps} new gap · ${coverage.staleKnownGaps} stale known gap · ${coverage.staleVerifiedNa} stale verified N-A.**`);
                   out.push("");
-                  const gaps = coverage.results.filter(x => x.status === "coverage-gap" || x.status === "stale-verified-na");
+                  const gaps = coverage.results.filter(x => x.status === "coverage-gap" || x.status === "stale-known-coverage-gap" || x.status === "stale-verified-na");
                   if (gaps.length) {
-                    out.push("| Component | Status | Detail |");
-                    out.push("|-----------|--------|--------|");
+                    out.push("| Component | Finding | Detail |");
+                    out.push("|-----------|---------|--------|");
                     for (const c of gaps) out.push(`| ${c.component} | ${c.status} | ${c.note || c.reason || "unexplained all-N/A result"} |`);
+                    out.push("");
+                  }
+                  const knownDebt = coverage.results.filter(x => x.status === "known-coverage-gap");
+                  if (knownDebt.length) {
+                    out.push(`_${knownDebt.length} pre-existing coverage gap(s) remain visible as known debt; they are not findings introduced by this PR._`);
                     out.push("");
                   }
                 }
@@ -1012,4 +1030,60 @@ jobs:
         with:
           name: rtl-audit-report
           path: rtl-audit-report.json
+          retention-days: 1
+
+  # Applicability-registry changes are blocking even while the general pr-rtl
+  # signal remains soft. Changed N/A declarations and removed debt entries must
+  # now be measured, verified N-A, or absent from both live component rosters.
+  rtl-applicability-registry:
+    name: RTL applicability registry
+    needs: [build-storybook, check-scope]
+    if: >-
+      !cancelled() &&
+      needs.check-scope.result == 'success' &&
+      needs.check-scope.outputs.rtl_audit_components != '' &&
+      (github.event_name == 'pull_request' || github.event_name == 'merge_group')
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download Storybook artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Install Playwright
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      - name: Build Storybook for merge queue
+        if: github.event_name == 'merge_group'
+        run: pnpm build && pnpm -F @astryxdesign/storybook build
+
+      - name: Verify applicability registry changes
+        env:
+          AUDIT_COMPONENTS: ${{ needs.check-scope.outputs.rtl_audit_components }}
+          REMOVED_COMPONENTS: ${{ needs.check-scope.outputs.rtl_removed_components }}
+        run: |
+          node apps/storybook/rtl-audit/rtl-audit.mjs \
+            --storybook-dir apps/storybook/dist \
+            --output rtl-applicability-registry-report.json \
+            --filter "$AUDIT_COMPONENTS" \
+            --removed-components "$REMOVED_COMPONENTS"
+
+      - name: Upload applicability audit report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rtl-applicability-registry-report
+          path: rtl-applicability-registry-report.json
           retention-days: 1
