@@ -265,6 +265,9 @@ export function InteractivePreviewStage({
   const overlayControl = getOverlayPreviewControl(playground);
   const WrapperComponent = wrapper ? getComponent(wrapper.component) : null;
   const [wrapperValue, setWrapperValue] = useState<unknown>(undefined);
+  const [isWrapperMenuOpen, setIsWrapperMenuOpen] = useState<
+    boolean | undefined
+  >(undefined);
 
   const wrapperProps = useMemo(() => {
     const resolved = wrapper?.props
@@ -286,8 +289,15 @@ export function InteractivePreviewStage({
           resolved.onChange(newVal);
         }
       },
+      // A menu wrapper seeded open (`isMenuOpen`) is controlled, so bridge
+      // its open pair too: selecting still closes it and the trigger reopens
+      // it (#5888).
+      ...(typeof resolved.isMenuOpen === 'boolean' && {
+        isMenuOpen: isWrapperMenuOpen ?? resolved.isMenuOpen,
+        onOpenChange: setIsWrapperMenuOpen,
+      }),
     };
-  }, [wrapper, wrapperValue, state, onPropChange]);
+  }, [wrapper, wrapperValue, isWrapperMenuOpen, state, onPropChange]);
 
   const renderPreview = useCallback(
     (rendered: ReactNode): ReactNode => {

@@ -9,6 +9,33 @@ export const docs = {
   isHiddenFromOverview: true,
   description:
     'A single-select group of radio menu items (role="group" of menuitemradio). Owns the selected value and lays its items out with the menu\'s inter-item gap.',
+  playground: {
+    wrapper: {
+      component: 'DropdownMenu',
+      // Open on first load so the radio choices are visible without a click;
+      // the preview bridges `onOpenChange` back so selecting still closes the
+      // menu and the trigger reopens it.
+      props: {
+        button: {label: 'Sort'},
+        presentation: 'popover',
+        isMenuOpen: true,
+      },
+    },
+    defaults: {
+      value: 'newest',
+      label: 'Sort by',
+      children: [
+        {
+          __element: 'DropdownMenuRadioItem',
+          props: {value: 'newest', label: 'Newest'},
+        },
+        {
+          __element: 'DropdownMenuRadioItem',
+          props: {value: 'oldest', label: 'Oldest'},
+        },
+      ],
+    },
+  },
   props: [
     {
       name: 'value',

@@ -307,6 +307,38 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('DropdownMenuRadioGroup declares a menu wrapper and radio choices for its preview (#5888)', () => {
+    const core = components['@astryxdesign/core'];
+    const radioGroup = core.find(c => c.name === 'DropdownMenuRadioGroup');
+
+    expect(radioGroup).toBeDefined();
+    // The menu opens on first load so both choices are visible immediately;
+    // the preview bridges DropdownMenu's `onOpenChange` back to this prop so
+    // selecting still closes the menu and the trigger reopens it.
+    expect(radioGroup!.playground?.wrapper).toMatchObject({
+      component: 'DropdownMenu',
+      props: {
+        button: {label: 'Sort'},
+        presentation: 'popover',
+        isMenuOpen: true,
+      },
+    });
+    expect(radioGroup!.playground?.defaults).toMatchObject({
+      value: 'newest',
+      label: 'Sort by',
+      children: [
+        {
+          __element: 'DropdownMenuRadioItem',
+          props: {value: 'newest', label: 'Newest'},
+        },
+        {
+          __element: 'DropdownMenuRadioItem',
+          props: {value: 'oldest', label: 'Oldest'},
+        },
+      ],
+    });
+  });
+
   it('Citation satisfies its required source prop via playground defaults', () => {
     const core = components['@astryxdesign/core'];
     const citation = core.find(c => c.name === 'Citation');
