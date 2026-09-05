@@ -3,7 +3,6 @@
 ---
 
 [fix] Turn only the chevron glyph in `useTableRowExpansion`, and start its detail panel at the first column rather than the row edge. (#5995)
-
 @ernestt
 
 The rotation was on the `<button>`, which is the hit target and carries the hover chip, so opening a row swung that rounded rectangle and its highlight a quarter turn along with the arrow — most visible mid-animation, where the chip passes through a diamond. It now sits on the glyph, and the button stays put.

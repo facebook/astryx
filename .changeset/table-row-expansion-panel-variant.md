@@ -3,7 +3,6 @@
 ---
 
 [feat] `useTableRowExpansion` accepts `panelVariant`, so the detail panel can sit on the surface behind the table instead of on its own wash. (#5995)
-
 @ernestt
 
 The panel row painted `--color-background-muted` unconditionally, and being a `<tr>` the plugin builds itself, nothing a caller rendered could reach it. That wash is the right default — in a bare table it is the only thing distinguishing a detail panel from another row of data — but it is wrong for a table already sitting on a `Card` or `Section`, where it reads as a third surface stacked on the second rather than as a distinction.

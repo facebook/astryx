@@ -3,7 +3,6 @@
 ---
 
 [fix] Draw the row divider below a `useTableRowExpansion` detail panel rather than above it. (#5995)
-
 @ernestt
 
 An expanded row and its panel are one unit, but the divider was landing between them: the row drew its own bottom border, which put a line between the row and the detail it had just opened, and the panel drew none, so it ran flush into the next row. Both halves of that are backwards — the pair was split down the middle and then fused to the row below.
