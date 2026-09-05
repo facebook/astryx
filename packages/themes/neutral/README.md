@@ -40,6 +40,19 @@ theme-local import. Neutral currently uses 21 numbered stops in each light and
 dark ramp, but that layout is a Neutral decision rather than a requirement for
 other themes.
 
+Exact solid endpoints use the same stable palette namespace as the tonal
+families: `neutralPalettes.black` and `neutralPalettes.white`. Theme definitions
+can assign those values directly to semantic tokens without treating a neutral
+ramp endpoint as the named color.
+
+```ts
+import {neutralPalettes} from '@astryxdesign/theme-neutral';
+
+const tokens = {
+  '--color-background-inverted': [neutralPalettes.black, neutralPalettes.white],
+};
+```
+
 Neutral is the reference implementation for palette-aware theme templates.
 Templates may follow its ownership, review, and alignment workflow without
 copying its colors or stop layout.

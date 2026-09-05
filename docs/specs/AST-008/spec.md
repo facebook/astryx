@@ -85,7 +85,8 @@ outside Core theme normalization and runtime behavior.
   not exceptions. Every candidate exposes exact standalone black and white
   values for direct theme authoring. Stops 0 and 100 repeat those values in
   generated families. Authors MAY omit the repeated endpoints with a custom
-  stop list without losing the standalone values.
+  stop list without losing the standalone values. The family identifiers
+  `black` and `white` are reserved for those standalone values.
 - **FR2a — Custom stop syntax is exact.** Every stop MUST be a finite JSON number
   from 0 through 100 inclusive. Stops MUST be unique and strictly increasing.
   Integer and decimal stops are valid; equivalent numeric spellings such as `5`
@@ -317,9 +318,12 @@ The first production generator defaults each family to the familiar 21-position
 Every candidate exposes exact black and white as standalone authoring values.
 Stops 0 and 100 repeat them in each generated family so authors can retain a
 complete coordinate range or remove the repeated endpoints explicitly without
-losing access to either solid. The generated candidate becomes author-owned
-after review and acceptance. Generator defaults therefore do not become
-palette-validity rules.
+losing access to either solid. Generated TypeScript names the values `black`
+and `white`; theme-owned palette wrappers may expose them alongside families,
+for example as `neutralPalettes.black` and `neutralPalettes.white`. Those names
+are reserved from family identifiers. The generated candidate becomes
+author-owned after review and acceptance. Generator defaults therefore do not
+become palette-validity rules.
 
 Generated palettes are reviewable starting points. Authors may adjust
 family-level inputs and regenerate until the palette matches their intended

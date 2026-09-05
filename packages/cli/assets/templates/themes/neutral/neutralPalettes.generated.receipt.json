@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "recipe": "astryx-oklch-v1",
-  "candidateSha256": "847746fce1b7199c19ec270b76f096cd953df733630853d93cdc64fa4156f78e",
+  "candidateSha256": "5a367f9fd617417c65154b207d88ca21396e3a09b1c7fbd600b399de1cc896e1",
   "request": {
     "recipe": "astryx-oklch-v1",
     "vibrancy": 50,

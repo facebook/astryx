@@ -16,6 +16,8 @@ export const doc = {
     'bounded permits movement within maxDeltaE; flexible treats it as guidance. ' +
     'An anchor needs a mode and stop. Stops apply to every family in one request. ' +
     'The candidate always exposes standalone black and white values for direct theme authoring. ' +
+    'Generated TypeScript exports them as `black` and `white`, so they can be assigned directly ' +
+    'to semantic theme tokens. Those names are reserved and cannot be used as tonal family IDs. ' +
     'The default 0–100 layout also repeats them as family endpoints; a custom stop list can omit those repeated endpoints.',
   importPath: '@astryxdesign/cli/api',
   signature:

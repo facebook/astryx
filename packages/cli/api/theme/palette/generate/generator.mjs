@@ -34,6 +34,7 @@ export const COMPACT_11_STOPS = Object.freeze([
 ]);
 
 const DARK_CHROMA_FACTOR = 0.85;
+const RESERVED_FAMILY_IDS = new Set(['black', 'white']);
 
 /** @param {number} value @param {number} minimum @param {number} maximum */
 function clamp(value, minimum, maximum) {
@@ -578,6 +579,11 @@ export function normalizeGenerationRequest(input) {
     if (!/^[a-z][a-z0-9-]*$/.test(id)) {
       throw new Error(
         `Family ${index} id must use lower-kebab-case characters.`,
+      );
+    }
+    if (RESERVED_FAMILY_IDS.has(id)) {
+      throw new Error(
+        `Family id ${id} is reserved for the standalone ${id} palette value.`,
       );
     }
     if (ids.has(id)) throw new Error(`Duplicate family id: ${id}.`);

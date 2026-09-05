@@ -295,6 +295,18 @@ describe('astryx-oklch-v1 palette generator', () => {
     expect(withAccent.palette.accent.dark[50]).toMatch(/^#[0-9a-f]{6}$/);
   });
 
+  it('reserves black and white for the standalone palette values', () => {
+    for (const id of ['black', 'white']) {
+      expect(() =>
+        generateTonalPalette({
+          families: [{id, name: id, seed: '#777777'}],
+        }),
+      ).toThrow(
+        `Family id ${id} is reserved for the standalone ${id} palette value.`,
+      );
+    }
+  });
+
   it('uses vibrancy to make the generated families more muted or vivid', () => {
     const generate = vibrancy =>
       generateTonalPalette({
