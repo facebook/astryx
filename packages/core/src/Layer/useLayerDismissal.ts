@@ -97,16 +97,16 @@ export interface UseLayerDismissalReturn {
  * The layer does NOT attach a key listener — the stack owns one listener and
  * routes each Escape press to the top-most REGISTERED layer, so one press
  * dismisses exactly one of them. Dialog (and what is built on it), Popover and
- * the menus built on it, Tooltip, HoverCard, Lightbox and MobileNav register
- * today; `BottomSheetSwitcher` registers through its focus trap when modal and
- * still handles its own press when not.
+ * the menus built on it, Tooltip, HoverCard, Lightbox, MobileNav, and lab's
+ * `Drawer` register today. `BottomSheetSwitcher` registers through its focus trap when
+ * modal and still handles its own press when not.
  *
- * `BottomSheet`, `CommandPalette`, `ContextMenu`, `DropdownMenuSubMenu`,
- * `PowerSearchEditPopover` and lab's `Drawer` still run their own Escape
- * listener. They stay safe next to the stack only because each claims the press
- * at element level, and the stack stands down on an already-`defaultPrevented`
- * press — but a registered layer opened INSIDE one of them does not get the
- * press: the host takes it and closes instead. Migrating them is the fix.
+ * `BottomSheet`, `CommandPalette`, `ContextMenu`, `DropdownMenuSubMenu`, and
+ * `PowerSearchEditPopover` still run their own Escape listeners. They stay safe
+ * next to the stack only because each claims the press at element level, and the
+ * stack stands down on an already-`defaultPrevented` press — but a registered
+ * layer opened inside one of them does not get the press. Migrating them is the
+ * fix.
  *
  * Wrap the layer's own content in `LayerDepthProvider` so anything opened from
  * inside it registers as nested.
@@ -133,8 +133,12 @@ export function useLayerDismissal(
 
   const depth = useLayerDepth();
 
-  // Identity for this layer's stack entry, stable across re-registration.
+  // Identity remains stable while one active layer re-registers because its
+  // depth or behavior changed. A later inactive -> active cycle gets a fresh
+  // identity below so its registration order matches a newly shown top-layer
+  // host rather than the component's original mount order.
   const tokenRef = useRef<object>({});
+  const wasRegisteredRef = useRef(false);
 
   // The stack calls these during an event, outside React's render, so they must
   // reach the latest closures rather than the ones captured at registration.
@@ -151,7 +155,12 @@ export function useLayerDismissal(
 
   useEffect(() => {
     if (!isRegistered) {
+      wasRegisteredRef.current = false;
       return;
+    }
+    if (!wasRegisteredRef.current) {
+      tokenRef.current = {};
+      wasRegisteredRef.current = true;
     }
     return registerLayer({
       token: tokenRef.current,

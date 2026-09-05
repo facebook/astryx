@@ -132,11 +132,13 @@ export interface LayerStackEntry {
 }
 
 const entries: LayerStackEntry[] = [];
-// Registration order per layer identity. A layer re-registers whenever its
-// depth or behavior changes — a Dialog whose `purpose` flips while open, a focus trap
-// that moves — and StrictMode remounts every effect once more on top of that.
-// Counting registrations instead would hand the layer a fresh, higher seq each
-// time and promote it above the layers opened over it.
+// Registration order per layer identity. `useLayerDismissal` keeps one token
+// through effect re-registration while an active layer changes depth or behavior
+// — a Dialog whose `purpose` flips while open, a focus trap that moves — and
+// through StrictMode's setup/cleanup replay. Counting those registrations would
+// hand the layer a fresh, higher seq and promote it above layers opened over it.
+// A genuine inactive -> active cycle receives a new token in the hook, matching
+// the browser top layer's show order.
 let seqByToken = new WeakMap<object, number>();
 let nextSeq = 0;
 let isListening = false;
@@ -163,11 +165,11 @@ function seqFor(token: object): number {
  *    `LayerDepthProvider`, which a bare `useFocusTrap` cannot do — it renders
  *    nothing. For those, containment recovers the nesting the tree did not
  *    report.
- * 3. **Registration order.** For unrelated layers, the one that registered
- *    later is on top, matching how the browser's own top layer stacks. A layer
- *    keeps its first place for as long as its identity lives, so one that
- *    closes and reopens does not move to the top — see the known edge in the
- *    pull request.
+ * 3. **Registration order.** For unrelated layers, the one whose current active
+ *    cycle registered later is on top, matching how the browser's own top layer
+ *    stacks. Effect re-registration within that active cycle keeps its place so
+ *    depth or behavior changes cannot jump the queue; a close/reopen cycle gets
+ *    a fresh identity from `useLayerDismissal` and moves to the top.
  *
  * Modality is deliberately NOT a key. Ranking modals above everything sounds
  * right and is not: a hover tip shown inside a modal renders on top of it, so
