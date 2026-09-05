@@ -174,6 +174,10 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-filter/page'),
   ),
+  'table-collapsible': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-collapsible/page'),
+  ),
   'table-grouped': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-grouped/page'),
