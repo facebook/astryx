@@ -20,6 +20,10 @@
  *   4. The augmentation targeted the public component subpath while the prop
  *      type read a map from the implementation module, so TypeScript merged the
  *      public interface but the component still saw the original closed union.
+ *   5. The custom variants existed only as that type augmentation — the built
+ *      JS module never carried a runtime `variants` field, so `resolveTheme()`
+ *      always handed the CLI `variants: null` and `astryx component`'s
+ *      `*`-annotation for theme-added variants could never fire (#5059).
  *
  * Building `astryx theme build` requires a compiled @astryxdesign/core, so this
  * suite builds core once in beforeAll (mirrors build-theme.prose.test.mjs).
@@ -29,7 +33,7 @@ import {describe, it, expect, beforeAll, beforeEach, afterEach} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {ensureCoreBuilt} from './ensure-core-built.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
@@ -265,6 +269,100 @@ describe('theme build custom-variant augmentations', () => {
     } finally {
       fs.rmSync(projectDir, {recursive: true, force: true});
     }
+  });
+
+  it('emits the custom variants into the built module for the CLI to read at runtime', async () => {
+    // The type augmentation alone is invisible to `astryx component`, which
+    // reads the RUNTIME theme module via resolveTheme(). The built module must
+    // carry the same data as `{ [componentKey]: value[] }` — flattened across
+    // props, which is the contract resolve-theme.mjs declares and
+    // component-format.mjs stars in the theming targets table.
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          button: { 'variant:accentOutline': { backgroundColor: 'transparent' } },
+          badge: { 'variant:gray': { backgroundColor: '#eee' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(0);
+
+    const built = await import(
+      pathToFileURL(path.join(tmpDir, 'variants-theme.js')).href
+    );
+    expect(built.variantsThemeTheme.variants).toEqual({
+      button: ['accentOutline'],
+      badge: ['gray'],
+    });
+  });
+
+  it('keeps runtime variants aligned with the .d.ts: non-augmentable props are excluded', async () => {
+    // `size:jumbo` and `type:hero` never type-check (closed literal unions, no
+    // *Map interface), so advertising them through the CLI would teach agents
+    // to write code the compiler rejects. The runtime field mirrors exactly
+    // what the .variants.d.ts declares.
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          button: {
+            'variant:accentOutline': { backgroundColor: 'transparent' },
+            'size:jumbo': { paddingBlock: '40px' },
+          },
+          heading: { 'type:hero': { fontSize: '80px' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(0);
+
+    const built = await import(
+      pathToFileURL(path.join(tmpDir, 'variants-theme.js')).href
+    );
+    expect(built.variantsThemeTheme.variants).toEqual({
+      button: ['accentOutline'],
+    });
+  });
+
+  it('emits no variants field when the theme adds no custom variants', async () => {
+    // Themes without custom values keep the historical module shape — no
+    // `variants` key at all, matching what a pre-#5059 CLI produced and what
+    // component-format.mjs treats as "no theme variants".
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          button: { 'size:jumbo': { paddingBlock: '40px' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(0);
+
+    const built = await import(
+      pathToFileURL(path.join(tmpDir, 'variants-theme.js')).href
+    );
+    expect('variants' in built.variantsThemeTheme).toBe(false);
   });
 
   it('references the variants file from the main .d.ts so the augmentation loads', async () => {
