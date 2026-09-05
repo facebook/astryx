@@ -167,13 +167,22 @@ async function capturePowerSearchEvidence(browser) {
       ['AFTER', ''],
     ]) {
       const page = await context.newPage();
+      await page.addInitScript(recordStoryOutcome);
       await page.goto(
         `http://localhost:${port}/iframe.html?id=core-powersearch--near-full-token-row&viewMode=story${query}`,
         {waitUntil: 'networkidle', timeout: 30000},
       );
       await page.locator('.astryx-tokenizer').waitFor();
+      await page.waitForFunction(
+        () => window.__storyOutcome && window.__storyOutcome.done === true,
+        null,
+        { timeout: 30000 }
+      );
       await page.evaluate(async () => {
         await document.fonts.ready;
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
         await new Promise(resolve =>
           requestAnimationFrame(() => requestAnimationFrame(resolve)),
         );
