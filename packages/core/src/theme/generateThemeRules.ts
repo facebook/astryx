@@ -327,6 +327,72 @@ function expandContainerPadding(
 }
 
 // =============================================================================
+// Declaration assembly — values stay values
+// =============================================================================
+
+/** A custom property (`--color-x`, `--_internal`) or plain property name. */
+const DECLARATION_PROP = /^(--)?[a-zA-Z_][a-zA-Z0-9_-]*$/;
+
+/**
+ * Characters that would let a value terminate its declaration or rule and
+ * continue as arbitrary CSS. Every real token value — colors, gradients,
+ * calc(), light-dark(), font stacks — is free of them outside quoted strings
+ * and url() bodies, where they are inert (a data: URI legitimately carries
+ * `;`), so those spans are blanked before testing. An unterminated span never
+ * matches the blanking pattern, so it fails closed against the raw text.
+ */
+const UNSAFE_STRUCTURE = /[;{}]|\/\*/;
+// eslint-disable-next-line no-control-regex -- control characters are structural here
+const CONTROL_CHARS = /[\x00-\x1f\x7f]/;
+// String spans consume backslash escapes (`\"` stays inside the string), so
+// the pairing here closes each string exactly where CSS does.
+const OPAQUE_SPANS =
+  /url\(\s*("(?:[^"\\\n]|\\[^\n])*"|'(?:[^'\\\n]|\\[^\n])*'|[^)'"\s]*)\s*\)|"(?:[^"\\\n]|\\[^\n])*"|'(?:[^'\\\n]|\\[^\n])*'/g;
+
+/** True when `value` can sit in a declaration without extending past it. */
+function isDeclarationValueSafe(value: string): boolean {
+  if (CONTROL_CHARS.test(value)) {
+    return false;
+  }
+  const blanked = value.replace(OPAQUE_SPANS, 'url()');
+  // A backslash surviving the blanking sits outside every string and url()
+  // body. To CSS it escapes the next character — `\"` is a quote character,
+  // not a string opener — so quote pairing after it would diverge from what
+  // CSS reads, and a "quoted" semicolon would be live. No real token value
+  // escapes anything outside a string or url(); refuse instead of modeling
+  // CSS escape semantics.
+  if (blanked.includes('\\')) {
+    return false;
+  }
+  return !UNSAFE_STRUCTURE.test(blanked);
+}
+
+/**
+ * Assemble `prop: value;` lines, dropping (with a warning) any entry whose
+ * property or value could not stay a single declaration. Theme definitions
+ * are code, but apps do assemble them from stored input (brand colors,
+ * white-labeling), so the generated stylesheet must never extend beyond the
+ * declarations it means to emit.
+ */
+function joinDeclarations(
+  entries: [string, string][],
+  mapProp: (prop: string) => string = p => p,
+): string {
+  const lines: string[] = [];
+  for (const [rawProp, value] of entries) {
+    const prop = mapProp(rawProp);
+    if (!DECLARATION_PROP.test(prop) || !isDeclarationValueSafe(value)) {
+      console.warn(
+        `[astryx theme] dropped "${prop}" — property names and values must not contain CSS-structural characters`,
+      );
+      continue;
+    }
+    lines.push(`    ${prop}: ${value};`);
+  }
+  return lines.join('\n');
+}
+
+// =============================================================================
 // Public API
 // =============================================================================
 
@@ -342,7 +408,24 @@ export function generateThemeRules(theme: DefinedTheme): string[] {
 
   // Helper: resolve a token value — tokens always have computed values
   // since defineTheme runs expandTypeScale to produce them.
-  const val = (key: string): string => tokens[key] || `var(${key})`;
+  // Prose rules interpolate this straight into rule text, so it applies the
+  // same declaration-value rule as joinDeclarations: an unsafe inline value
+  // falls back to the var() reference (which the token block already
+  // dropped), keeping the prose rule intact instead of letting the value
+  // close it.
+  const val = (key: string): string => {
+    const value = tokens[key];
+    if (!value) {
+      return `var(${key})`;
+    }
+    if (!isDeclarationValueSafe(value)) {
+      console.warn(
+        `[astryx theme] dropped "${key}" — property names and values must not contain CSS-structural characters`,
+      );
+      return `var(${key})`;
+    }
+    return value;
+  };
 
   // 1. Token block — CSS custom properties on :scope
   const tokenEntries = [
@@ -350,9 +433,7 @@ export function generateThemeRules(theme: DefinedTheme): string[] {
     ...Object.entries(theme.localTokens ?? {}),
   ];
   if (tokenEntries.length > 0) {
-    const declarations = tokenEntries
-      .map(([prop, value]) => `    ${prop}: ${value};`)
-      .join('\n');
+    const declarations = joinDeclarations(tokenEntries);
     parts.push(`  :scope {\n${declarations}\n  }`);
   }
 
@@ -483,9 +564,7 @@ function generateComponentRules(
 
       // Emit base rule
       if (finalProps.length > 0) {
-        const declarations = finalProps
-          .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-          .join('\n');
+        const declarations = joinDeclarations(finalProps, toKebabCase);
         parts.push(`  ${baseSelector} {\n${declarations}\n  }`);
       }
 
@@ -493,9 +572,7 @@ function generateComponentRules(
       for (const [pseudo, pseudoStyles] of pseudos) {
         const pseudoEntries = Object.entries(pseudoStyles);
         if (pseudoEntries.length > 0) {
-          const declarations = pseudoEntries
-            .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-            .join('\n');
+          const declarations = joinDeclarations(pseudoEntries, toKebabCase);
           parts.push(
             `  ${appendPseudoToSelectorList(baseSelector, pseudo)} {\n${declarations}\n  }`,
           );
@@ -697,9 +774,7 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
     // Token overrides
     const tokenEntries = Object.entries(onMedia.tokens);
     if (tokenEntries.length > 0) {
-      const declarations = tokenEntries
-        .map(([prop, value]) => `    ${prop}: ${value};`)
-        .join('\n');
+      const declarations = joinDeclarations(tokenEntries);
       parts.push(`  ${mediaSelector(surface)} {\n${declarations}\n  }`);
     }
 
@@ -732,18 +807,14 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
           }
 
           if (props.length > 0) {
-            const declarations = props
-              .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-              .join('\n');
+            const declarations = joinDeclarations(props, toKebabCase);
             parts.push(`  ${baseSelector} {\n${declarations}\n  }`);
           }
 
           for (const [pseudo, pseudoStyles] of pseudos) {
             const pseudoEntries = Object.entries(pseudoStyles);
             if (pseudoEntries.length > 0) {
-              const declarations = pseudoEntries
-                .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-                .join('\n');
+              const declarations = joinDeclarations(pseudoEntries, toKebabCase);
               parts.push(
                 `  ${appendPseudoToSelectorList(baseSelector, pseudo)} {\n${declarations}\n  }`,
               );
