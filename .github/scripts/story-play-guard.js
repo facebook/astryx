@@ -21,13 +21,13 @@
  * a story that cannot boot must not pass by silence.
  */
 
-const { chromium } = require('playwright');
+const {chromium} = require('playwright');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 
 const args = process.argv.slice(2);
-const getArg = (name) => {
+const getArg = name => {
   const idx = args.indexOf(`--${name}`);
   return idx !== -1 ? args[idx + 1] : null;
 };
@@ -71,7 +71,7 @@ const CONTENT_TYPES = {
 };
 
 function createServer(dir, listenPort) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const server = http.createServer((req, res) => {
       const filePath = path
         .join(dir, req.url === '/' ? 'index.html' : req.url)
@@ -91,8 +91,7 @@ function createServer(dir, listenPort) {
           return;
         }
         res.writeHead(200, {
-          'Content-Type':
-            CONTENT_TYPES[path.extname(resolved)] || 'text/plain',
+          'Content-Type': CONTENT_TYPES[path.extname(resolved)] || 'text/plain',
         });
         res.end(data);
       });
@@ -106,7 +105,7 @@ function createServer(dir, listenPort) {
 // is emitted only after the play function resolves; every failure mode has
 // its own event. Attached before any preview code runs so no event is missed.
 function recordStoryOutcome() {
-  window.__storyOutcome = { done: false, errors: [] };
+  window.__storyOutcome = {done: false, errors: []};
   const ERROR_EVENTS = [
     'playFunctionThrewException',
     'unhandledErrorsWhilePlaying',
@@ -114,7 +113,7 @@ function recordStoryOutcome() {
     'storyErrored',
     'storyMissing',
   ];
-  const describe = (payload) => {
+  const describe = payload => {
     if (payload == null) return '';
     if (typeof payload === 'string') return payload;
     return [payload.name, payload.title, payload.message, payload.description]
@@ -131,9 +130,9 @@ function recordStoryOutcome() {
       window.__storyOutcome.done = true;
     });
     for (const event of ERROR_EVENTS) {
-      channel.on(event, (payload) => {
+      channel.on(event, payload => {
         window.__storyOutcome.errors.push(
-          `${event}${describe(payload) ? ` — ${describe(payload)}` : ''}`
+          `${event}${describe(payload) ? ` — ${describe(payload)}` : ''}`,
         );
         window.__storyOutcome.done = true;
       });
@@ -147,14 +146,47 @@ async function probe(page, target) {
   const pointerQuery = target.hasTouch ? '&storyPlayPointer=coarse' : '';
   await page.goto(
     `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story${pointerQuery}`,
-    { waitUntil: 'domcontentloaded', timeout: 30000 }
+    {waitUntil: 'domcontentloaded', timeout: 30000},
   );
   await page.waitForFunction(
     () => window.__storyOutcome && window.__storyOutcome.done === true,
     null,
-    { timeout: 30000 }
+    {timeout: 30000},
   );
   return page.evaluate(() => window.__storyOutcome);
+}
+
+async function capturePowerSearchEvidence(browser) {
+  const context = await browser.newContext({
+    viewport: {width: 629, height: 100},
+    deviceScaleFactor: 2,
+  });
+  try {
+    for (const [label, query] of [
+      ['BEFORE', '&visualBaseline=before'],
+      ['AFTER', ''],
+    ]) {
+      const page = await context.newPage();
+      await page.goto(
+        `http://localhost:${port}/iframe.html?id=core-powersearch--near-full-token-row&viewMode=story${query}`,
+        {waitUntil: 'networkidle', timeout: 30000},
+      );
+      await page.locator('.astryx-tokenizer').waitFor();
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+        await new Promise(resolve =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        );
+      });
+      const png = await page.screenshot({
+        clip: {x: 0, y: 0, width: 629, height: 100},
+      });
+      console.log(`POWERSEARCH_${label}_PNG_BASE64=${png.toString('base64')}`);
+      await page.close();
+    }
+  } finally {
+    await context.close();
+  }
 }
 
 async function run() {
@@ -171,7 +203,7 @@ async function run() {
   try {
     for (const target of TARGETS) {
       const context = await browser.newContext({
-        viewport: { width: 1280, height: 900 },
+        viewport: {width: 1280, height: 900},
         hasTouch: target.hasTouch === true,
       });
       const page = await context.newPage();
@@ -180,30 +212,33 @@ async function run() {
         if (outcome.errors.length > 0) {
           failures++;
           console.error(
-            `✗ ${target.component} (${target.story}):\n    ${outcome.errors.join('\n    ')}`
+            `✗ ${target.component} (${target.story}):\n    ${outcome.errors.join('\n    ')}`,
           );
         } else {
           console.log(
-            `✓ ${target.component} (${target.story}): play passed — ${target.guards}`
+            `✓ ${target.component} (${target.story}): play passed — ${target.guards}`,
           );
         }
       } catch (e) {
         failures++;
         console.error(
-          `✗ ${target.component} (${target.story}): no play outcome — ${e.message}`
+          `✗ ${target.component} (${target.story}): no play outcome — ${e.message}`,
         );
       } finally {
         await page.close();
         await context.close();
       }
     }
+    await capturePowerSearchEvidence(browser);
   } finally {
     await browser.close();
     server.close();
   }
 
   if (failures > 0) {
-    console.error(`\nFailing: ${failures} story play function(s) did not pass.`);
+    console.error(
+      `\nFailing: ${failures} story play function(s) did not pass.`,
+    );
     return 1;
   }
   console.log('\nAll story play guards passed.');
@@ -211,10 +246,10 @@ async function run() {
 }
 
 run()
-  .then((code) => {
+  .then(code => {
     process.exitCode = code;
   })
-  .catch((e) => {
+  .catch(e => {
     console.error('Story play guard failed:', e);
     process.exit(1);
   });
