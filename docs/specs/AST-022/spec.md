@@ -11,7 +11,11 @@ approved_at: null
 phase: proposed
 owners: [rubyycheung]
 affects_architecture:
-  [architecture:theme-authoring-contract, architecture:theme-compilation]
+  [
+    architecture:cli-surface,
+    architecture:theme-authoring-contract,
+    architecture:theme-compilation,
+  ]
 affects_families: []
 affects_contributing: []
 affects_consumer_docs: [theme]
@@ -36,7 +40,8 @@ Astryx should therefore support two explicit workflows:
 Materialization is the shared technical operation behind taking a fully owned
 snapshot.
 It resolves inherited and generated theme-authoring values, previews the exact
-change, and writes an equivalent local theme only after the author confirms.
+change, and writes an equivalent local theme only through a separate explicit write
+invocation, not a prompt or read from stdin.
 
 ## Non-goals
 
@@ -68,6 +73,8 @@ change, and writes an equivalent local theme only after the author confirms.
 - **Detach:** materialize a following theme and remove its `extends` relationship.
 - **Freeze:** materialize selected generated scales while retaining any intended
   inheritance relationship.
+- **Lineage-bound local token:** a theme-local name whose declaration and use are
+  valid only through the enrolled exact `extends` lineage that owns it.
 - **Unresolved executable value:** an inherited icon, indicator, syntax definition,
   or other value that tooling cannot safely express as generated source.
 
@@ -104,10 +111,11 @@ unreported base or mutable generator.
 - **FR1 — Following and owning are different promises.** Tooling that starts a new
   theme from an existing theme MUST present following the base and taking a fully
   owned starting point as explicit choices. It MUST explain that following receives
-  later base changes while ownership accepts local maintenance, and MUST receive an
-  author selection before writing. Tooling MAY recommend one choice from the
-  author's stated goal, but MUST NOT silently select it or describe `extends` as a
-  fully independent copy.
+  later base changes while ownership accepts local maintenance, and MUST require an
+  explicit option selecting one before writing. When the option is absent, the CLI
+  MUST return the available choices without writing or reading stdin. Tooling MAY
+  recommend one choice from the author's stated goal, but MUST NOT silently select
+  it or describe `extends` as a fully independent copy.
 - **FR2 — Following preserves current `extends` semantics.** A following theme
   retains its base dependency and may adopt the base's resolved token, component,
   media-surface, icon, indicator, syntax, and local-token changes after an
@@ -126,6 +134,18 @@ unreported base or mutable generator.
   motion, radius, and color configuration. It MUST preserve explicit-token and
   explicit-component precedence. It MUST also inventory local tokens, `onDark`,
   `onLight`, syntax, icons, and indicators rather than silently dropping them.
+- **FR4a — Detach cannot copy lineage-bound local tokens unchanged.** Before
+  removing `extends`, tooling MUST inspect inherited local-token declarations,
+  owner metadata, and every reachable reference. An inherited name is valid only
+  through its exact enrolled base lineage; copying that name into the detached
+  theme would make it a foreign declaration and fail the current validator.
+  Detach MUST therefore stop before writing and require an explicit local-token
+  migration that is reviewed under the owning theme specifications. That migration
+  MUST map affected names into the detached theme's namespace, rewrite every
+  reachable declaration and reference, and preserve any compatibility alias
+  required by the released token contract. If the author does not choose such a
+  migration, tooling MUST retain `extends`, report the lineage dependency, and MUST
+  NOT describe the result as detached or fully owned.
 - **FR5 — Materialization produces authoring source, not only compiled output.** A
   CSS or JavaScript build artifact alone is insufficient because it does not give
   the author an editable theme definition. Output MUST be suitable for committing,
@@ -158,8 +178,8 @@ unreported base or mutable generator.
 - **FR7 — Theme-owned palette references remain owned.** A reference to an exact
   value in the same theme's committed palette file remains a reference by default;
   it does not need to be replaced with a copied hex value. When a palette belongs
-  to another package, tooling MUST ask whether to retain that visible dependency or
-  copy the current value locally.
+  to another package, tooling MUST require an explicit option to retain that visible
+  dependency or copy the current value locally.
 
 ### Executable values and failure behavior
 
@@ -172,9 +192,9 @@ unreported base or mutable generator.
 - **FR9 — Writes are atomic and opt-in.** Preview is the default. Writing requires
   an explicit author action, uses a temporary destination, validates the complete
   result, and replaces target files only after success. Existing modified output
-  MUST NOT be overwritten without explicit confirmation. Detach updates the
-  selected existing theme by adding its resolved values and removing `extends`; it
-  does not create a second theme or require callers to change imports.
+  MUST NOT be overwritten without a separate explicit overwrite option. Detach
+  updates the selected existing theme by adding its resolved values and removing
+  `extends`; it does not create a second theme or require callers to change imports.
 - **FR10 — Partial materialization is explicit.** An author MAY choose to freeze only
   selected generated scales while continuing to follow a base. The preview and
   receipt MUST identify every retained dependency. A partial operation MUST NOT be
@@ -185,9 +205,14 @@ unreported base or mutable generator.
 - **FR11 — Before and after resolve equivalently.** A successful full
   materialization MUST compare the original and proposed themes under the same
   Astryx version. Tokens, component overrides, media-surface overrides, local-token
-  declarations, and registry selections MUST match. A difference blocks the write
-  unless the author explicitly chooses a separate migration that records the
-  intended change.
+  declarations, local-token owner and lineage metadata, and registry selections
+  MUST match. A difference blocks the write unless the author explicitly chooses a
+  separate migration that records the intended change. For a local-token migration,
+  equivalence evidence MUST additionally show the old-to-new name mapping, every
+  rewritten reference, equivalent resolved behavior after applying that mapping,
+  and any required compatibility alias. Compiled differences MUST be limited to the
+  recorded renames and aliases and included in the preview and size comparison; an
+  unaccounted foreign or undeclared name blocks the write.
 - **FR12 — The preview explains consequences.** Before writing, tooling MUST show
   the removed base or generator dependencies, files to be created or changed,
   unresolved executable values, retained dependencies, and an exact semantic
@@ -223,9 +248,11 @@ unreported base or mutable generator.
   present the resulting visual and structural delta. It MUST NOT swap the legacy
   HCT implementation for a new recipe underneath unchanged source.
 - **FR17 — Lifecycle commands use plain language.** The CLI MAY expose distinct
-  `detach` and `freeze` commands or another reviewed vocabulary. Help and prompts
-  MUST explain the outcome in terms of following updates versus owning a snapshot;
-  the internal term `materialize` alone is insufficient user guidance.
+  `detach` and `freeze` commands or another reviewed vocabulary. Help and output
+  MUST explain the outcome in terms of following updates versus owning a snapshot.
+  Commands MUST remain non-interactive: choices and write approval use explicit
+  options or separate preview and write invocations, never prompts or stdin. The
+  internal term `materialize` alone is insufficient user guidance.
 - **FR18 — No current palette work is blocked.** AST-022 governs later lifecycle
   tooling. It MUST NOT delay accepted-palette, palette-generation, validation, or
   theme-adoption work that preserves the current `defineTheme` boundary.
@@ -250,12 +277,14 @@ Choose Neutral as a base
 Inspect dependencies
         |
         +-- Detach from a base
+        |      Inspect inherited local-token lineage
+        |      Migrate lineage-bound names or stop
         |      Resolve inheritance and remove extends
         |
         +-- Freeze generated values
                Replace selected scale config with explicit local values
 
-Preview -> verify equivalence -> author confirms -> atomic write -> receipt
+Preview -> verify equivalence -> explicit write invocation -> atomic write -> receipt
 ```
 
 The exact command names remain an implementation decision. A possible split is
@@ -284,14 +313,15 @@ AST-023.
 
 ## Verification
 
-| Contract  | Verification                                                                                                 | Representative failure                                                                                                            |
-| --------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3   | CLI prompt and source-output fixtures for follow and owned-start choices                                     | A copied theme still imports its selected base, or a following theme is described as independent.                                 |
-| FR4–FR7   | Full-surface fixtures covering generators, inheritance, local tokens, media surfaces, and palette references | A supported surface disappears, precedence changes, or a theme-owned palette reference is needlessly severed.                     |
-| FR5b–FR5d | Source/runtime projection fixtures, compiled-size comparisons, and artifact-boundary checks                  | Reviewing a resolved theme inflates runtime output, or receipts and authoring metadata ship to consumers.                          |
-| FR8–FR10  | Executable-registry, overwrite, partial-freeze, and injected-failure tests                                   | An icon is stringified, a target is partly overwritten, or retained inheritance is hidden.                                        |
-| FR11–FR14 | Normalized-theme equivalence, deterministic snapshots, receipt schema, and preview tests                     | Before and after differ silently, output changes across identical runs, or a receipt omits a dependency.                          |
-| FR15–FR18 | Compatibility fixtures and legacy-color migration comparison                                                 | An unchanged convenience config renders differently, migration hides a color delta, or lifecycle work blocks palette foundations. |
+| Contract  | Verification                                                                                                                   | Representative failure                                                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3   | CLI option and source-output fixtures for follow and owned-start choices                                                       | A missing choice prompts or writes, a copied theme still imports its selected base, or a following theme is described as independent.              |
+| FR4–FR7   | Full-surface fixtures covering generators, inheritance, local tokens, media surfaces, and palette references                   | A supported surface disappears, precedence changes, or a theme-owned palette reference is needlessly severed.                                      |
+| FR4a      | Neutral-derived detach fixtures with inherited declarations and references, with and without an explicit local-token migration | `extends` is removed while Neutral-owned names remain foreign, or the operation claims ownership while retaining an unreported lineage dependency. |
+| FR5b–FR5d | Source/runtime projection fixtures, compiled-size comparisons, and artifact-boundary checks                                    | Reviewing a resolved theme inflates runtime output, or receipts and authoring metadata ship to consumers.                                          |
+| FR8–FR10  | Executable-registry, overwrite, partial-freeze, and injected-failure tests                                                     | An icon is stringified, a target is partly overwritten, or retained inheritance is hidden.                                                         |
+| FR11–FR14 | Normalized-theme equivalence, deterministic snapshots, receipt schema, and preview tests                                       | Before and after differ silently, output changes across identical runs, or a receipt omits a dependency.                                           |
+| FR15–FR18 | Compatibility fixtures and legacy-color migration comparison                                                                   | An unchanged convenience config renders differently, migration hides a color delta, or lifecycle work blocks palette foundations.                  |
 
 ### Completion criteria
 
@@ -301,6 +331,8 @@ This spec moves from `proposed` to `shipped` only when:
 - the supported detach/freeze surface is documented with non-destructive defaults;
 - full and partial materialization account for every current `DefineThemeInput`
   surface;
+- detach fixtures prove that lineage-bound local tokens either receive an explicit,
+  validated migration or block removal of `extends` before any write;
 - authoring projections are separate from compact runtime artifacts, and previews
   show the source and compiled/package-size consequences;
 - unrepresentable executable values fail before writes with actionable guidance;
@@ -363,8 +395,9 @@ replacement explicitly.
 **Decider:** `rubyycheung`, `2026-09-04`
 
 Stable icon, indicator, and syntax imports remain explicit imports. When tooling
-cannot identify a supported source reference, it stops and asks the author for one
-rather than omitting or approximating executable behavior.
+cannot identify a supported source reference, it returns an actionable failure that
+requires the author to supply one on a later invocation rather than omitting or
+approximating executable behavior.
 
 ### DEC-5 — Preserve locally owned palette references
 
@@ -401,3 +434,14 @@ before/after comparison; the operation does not create a second theme.
 A differences-only file still inherits unspecified Core defaults and therefore is
 not fully owned. A fully owned snapshot includes every resolved value available
 through the public theme-authoring contract, even when that output is larger.
+
+### DEC-9 — Detach requires an explicit migration for inherited local tokens
+
+**Reference:** `spec:AST-022/DEC-9`
+**Decider:** `rubyycheung`, `2026-09-05`
+
+Materialization cannot make a lineage-bound local token portable by copying its
+name. Removing the exact base lineage would make that declaration foreign under the
+current validator. Detach therefore stops for a reviewed local-token migration; if
+the author retains the lineage instead, the result continues to follow that base
+and is not fully owned.
