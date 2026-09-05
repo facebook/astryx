@@ -70,6 +70,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -286,6 +287,10 @@ const percentFormat = new Intl.NumberFormat('en-US', {
 const UP_COLOR = 'var(--color-data-categorical-green, #0B991F)';
 const DOWN_COLOR = 'var(--color-data-categorical-red, #F5394F)';
 const GRID_COLOR = 'var(--color-border, rgba(5, 54, 89, 0.1))';
+// Text tokens rather than the categorical pair the charts stroke with: these
+// carry text contrast, which a 12px label needs and a 1.5px line does not.
+const TEXT_UP_COLOR = 'var(--color-text-green, #0B991F)';
+const TEXT_DOWN_COLOR = 'var(--color-text-red, #F5394F)';
 const AXIS_TICK = {
   fontSize: 'var(--font-size-sm, 12px)',
   fill: 'var(--color-text-secondary, #4E606F)',
@@ -306,6 +311,95 @@ function axisTicks(count: number): number[] {
   }
   return Array.from({length: stops}, (_, stop) =>
     Math.round((stop * (count - 1)) / (stops - 1)),
+  );
+}
+
+/**
+ * The width of the box the cards are laid out in, tracked as it changes.
+ *
+ * A media query answers a question about the window, and this template is not
+ * always the window: the docsite preview puts it in a dialog and the catalog
+ * draws it through `scale(0.5)`. Both leave `matchMedia` describing a viewport
+ * the cards cannot see. `@container` asks the right question, but its answer
+ * never leaves CSS and what changes here is the column *list*, which only
+ * React can do — so the box is measured.
+ *
+ * `offsetWidth` for the first read rather than `getBoundingClientRect`: the
+ * observer reports the box as laid out and ignores an ancestor transform,
+ * while the rect bakes it in, so mixing the two under the catalog's scale
+ * opens at half the real width and corrects an instant later.
+ */
+function useSurfaceWidth() {
+  const ref = useRef<HTMLElement>(null);
+  const [width, setWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) {
+      return;
+    }
+    setWidth(node.offsetWidth);
+
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0];
+      if (entry) {
+        setWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, width] as const;
+}
+
+/**
+ * Below this the widest table — credit cards, carrying three money columns
+ * and a change — has less room than its fixed widths ask for, and every table
+ * switches together so the four cards stay legible as one page rather than
+ * four differently-shaped ones.
+ */
+const COMPACT_BELOW_PX = 720;
+
+/**
+ * Every column the compact layout drops, folded into the one that survives:
+ * the figure the group is headlined by, and beneath it the direction and size
+ * of its move. The arrow states the sign that the colour also states, so the
+ * cell still reads where the colour does not.
+ */
+function CompactValueCell({
+  id,
+  amountCents,
+  isLiability,
+}: {
+  id: string;
+  amountCents: number;
+  isLiability?: boolean;
+}) {
+  const range = useRange();
+  const percent = changePercentOf(id, range);
+  const isUp = percent >= 0;
+  const isGood = isLiability ? !isUp : isUp;
+  return (
+    <VStack gap={0} hAlign="end">
+      <Figure>{money(amountCents)}</Figure>
+      {/* Colour on the row so the icon and the figure inherit one value,
+          rather than being told the same thing twice — Text has no success
+          or error of its own to be told with. */}
+      <HStack
+        gap={0.5}
+        vAlign="center"
+        xstyle={styles.delta(isGood ? TEXT_UP_COLOR : TEXT_DOWN_COLOR)}>
+        <Icon
+          icon={isUp ? 'arrowUp' : 'arrowDown'}
+          size="xsm"
+          color="inherit"
+        />
+        <Text type="supporting" color="inherit">
+          {percentFormat.format(Math.abs(percent))}%
+        </Text>
+      </HStack>
+    </VStack>
   );
 }
 
@@ -413,6 +507,22 @@ const bankColumns: TableColumn<BankAccount>[] = [
     width: pixel(110),
     align: 'end',
     renderCell: account => <ChangeCell id={account.id} />,
+  },
+];
+
+// The name cell is reused rather than restated, so the two layouts cannot
+// drift apart in the one column they share.
+const bankCompactColumns: TableColumn<BankAccount>[] = [
+  bankColumns[0],
+  {
+    key: 'available',
+    sortable: true,
+    header: 'Available',
+    width: pixel(150),
+    align: 'end',
+    renderCell: account => (
+      <CompactValueCell id={account.id} amountCents={account.availableCents} />
+    ),
   },
 ];
 
@@ -548,6 +658,24 @@ const creditCardColumns: TableColumn<CreditCardAccount>[] = [
   },
 ];
 
+const creditCardCompactColumns: TableColumn<CreditCardAccount>[] = [
+  creditCardColumns[0],
+  {
+    key: 'balance',
+    sortable: true,
+    header: 'Balance',
+    width: pixel(150),
+    align: 'end',
+    renderCell: card => (
+      <CompactValueCell
+        id={card.id}
+        amountCents={card.balanceCents}
+        isLiability
+      />
+    ),
+  },
+];
+
 const creditCardComparators: Partial<
   Record<string, TableSortComparator<CreditCardAccount>>
 > = {
@@ -637,6 +765,23 @@ const processorColumns: TableColumn<ProcessorAccount>[] = [
   },
 ];
 
+const processorCompactColumns: TableColumn<ProcessorAccount>[] = [
+  processorColumns[0],
+  {
+    key: 'pendingPayout',
+    sortable: true,
+    header: 'Pending payout',
+    width: pixel(150),
+    align: 'end',
+    renderCell: processor => (
+      <CompactValueCell
+        id={processor.id}
+        amountCents={processor.pendingPayoutCents}
+      />
+    ),
+  },
+];
+
 const processorComparators: Partial<
   Record<string, TableSortComparator<ProcessorAccount>>
 > = {
@@ -717,6 +862,23 @@ const investmentColumns: TableColumn<InvestmentAccount>[] = [
     width: pixel(110),
     align: 'end',
     renderCell: account => <ChangeCell id={account.id} />,
+  },
+];
+
+const investmentCompactColumns: TableColumn<InvestmentAccount>[] = [
+  investmentColumns[0],
+  {
+    key: 'marketValue',
+    sortable: true,
+    header: 'Market value',
+    width: pixel(150),
+    align: 'end',
+    renderCell: account => (
+      <CompactValueCell
+        id={account.id}
+        amountCents={account.marketValueCents}
+      />
+    ),
   },
 ];
 
@@ -953,6 +1115,7 @@ const styles = stylex.create({
   wash: {
     backgroundColor: colorVars['--color-background-body'],
   },
+  delta: (color: string) => ({color}),
   swatch: (color: string) => ({
     width: 8,
     height: 8,
@@ -1237,6 +1400,11 @@ export default function ConnectedAccountsTemplate() {
     };
   }, []);
 
+  const [contentRef, contentWidth] = useSurfaceWidth();
+  // Zero is the width before the first measurement, not a narrow box, and
+  // treating it as narrow would flash the compact tables on every mount.
+  const isCompact = contentWidth > 0 && contentWidth < COMPACT_BELOW_PX;
+
   // "All open" has to mean the details too. A control labelled Expand all that
   // opens four cards and leaves thirteen collapsed rows inside them has not
   // expanded all, and its next click would read as Collapse all while most of
@@ -1288,7 +1456,7 @@ export default function ConnectedAccountsTemplate() {
         }
         content={
           <LayoutContent padding={4}>
-            <VStack gap={4}>
+            <VStack gap={4} ref={contentRef}>
               <AccountGroup
                 icon={BuildingLibraryIcon}
                 title="Bank accounts"
@@ -1299,7 +1467,7 @@ export default function ConnectedAccountsTemplate() {
                 onOpenChange={toggleGroup('bank')}>
                 <GroupTable<BankAccount>
                   data={BANK_ACCOUNTS}
-                  columns={bankColumns}
+                  columns={isCompact ? bankCompactColumns : bankColumns}
                   comparators={bankComparators}
                   expandedRows={expandedRows}
                   onToggleRow={toggleRow}
@@ -1319,7 +1487,9 @@ export default function ConnectedAccountsTemplate() {
                 onOpenChange={toggleGroup('cards')}>
                 <GroupTable<CreditCardAccount>
                   data={CREDIT_CARDS}
-                  columns={creditCardColumns}
+                  columns={
+                    isCompact ? creditCardCompactColumns : creditCardColumns
+                  }
                   comparators={creditCardComparators}
                   expandedRows={expandedRows}
                   onToggleRow={toggleRow}
@@ -1339,7 +1509,9 @@ export default function ConnectedAccountsTemplate() {
                 onOpenChange={toggleGroup('processors')}>
                 <GroupTable<ProcessorAccount>
                   data={PROCESSORS}
-                  columns={processorColumns}
+                  columns={
+                    isCompact ? processorCompactColumns : processorColumns
+                  }
                   comparators={processorComparators}
                   expandedRows={expandedRows}
                   onToggleRow={toggleRow}
@@ -1359,7 +1531,9 @@ export default function ConnectedAccountsTemplate() {
                 onOpenChange={toggleGroup('investments')}>
                 <GroupTable<InvestmentAccount>
                   data={INVESTMENTS}
-                  columns={investmentColumns}
+                  columns={
+                    isCompact ? investmentCompactColumns : investmentColumns
+                  }
                   comparators={investmentComparators}
                   expandedRows={expandedRows}
                   onToggleRow={toggleRow}
