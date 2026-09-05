@@ -46,7 +46,7 @@ describe('component audit scope', () => {
 
   it.each([
     ['packages/core/src/Button/Button.tsx', 'core'],
-    ['packages/lab/src/Drawer/Drawer.tsx', 'lab'],
+    ['packages/lab/src/Stat/Stat.tsx', 'lab'],
     ['packages/charts/src/Chart.tsx', 'charts'],
     ['packages/richtext/src/RichTextEditor.tsx', 'richtext'],
     ['packages/vega/src/VegaChart.tsx', 'vega'],
