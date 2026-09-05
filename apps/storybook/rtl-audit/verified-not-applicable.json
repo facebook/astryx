@@ -1,7 +1,11 @@
 [
   {
     "component": "core/Collapsible",
-    "reason": "Nothing in the trigger or the panel is side-specific. The trigger is a `space-between` flex row, so the label hangs off the reading-start edge and the chevron off the reading-end edge in either direction, with no physical left or right anywhere in the styles. The chevron itself rotates between down and up — the one axis that does not mirror, because a panel opens downward in every locale — and it is a vertical glyph to begin with, so there is nothing in it to flip. The panel is a block-flow region whose only geometry is a height transition, and the group's dividers are horizontal rules. No inset, offset, order, transform, drag, scroll, or overlay."
+    "reason": "Nothing in the trigger or the panel is side-specific. The trigger is a `space-between` flex row, so the label hangs off the reading-start edge and the chevron off the reading-end edge in either direction, with no physical left or right anywhere in the styles. The chevron itself rotates between down and up \u2014 the one axis that does not mirror, because a panel opens downward in every locale \u2014 and it is a vertical glyph to begin with, so there is nothing in it to flip. The panel is a block-flow region whose only geometry is a height transition, and the group's dividers are horizontal rules. No inset, offset, order, transform, drag, scroll, or overlay."
+  },
+  {
+    "component": "core/ToggleButton",
+    "reason": "ToggleButton stories lay out label and optional icon in an inline flex row with logical gap only \u2014 no directional glyphs (the toolbar icons are non-directional), no side-specific placement, order, inset, or offset, no scrolling, dragging, or overlays. Elevation is a symmetric box-shadow, direction-independent by construction, so the LTR and RTL renders are mirror-identical."
   },
   {
     "component": "core/Field",
@@ -13,7 +17,7 @@
   },
   {
     "component": "core/Spinner",
-    "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG — two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
+    "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG \u2014 two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
   },
   {
     "component": "core/Table",
@@ -21,7 +25,7 @@
   },
   {
     "component": "core/Text",
-    "reason": "Text sets typography — size, weight, colour, line-height, wrapping, truncation — and nothing else. Its one alignment prop is `justify`, which compiles to the logical `text-align: start | center | end` and defaults to `start`, so text hangs off the correct edge in either direction without a component-side branch. Truncation is `text-overflow: ellipsis` and `-webkit-line-clamp`, both of which put the ellipsis at the reading end on their own, and the tooltip that accompanies a clamped string is placed with the logical `above`/`below`/`start`/`end` vocabulary. Nothing is positioned, nothing is transformed, and the component renders no glyph, separator, or control."
+    "reason": "Text sets typography \u2014 size, weight, colour, line-height, wrapping, truncation \u2014 and nothing else. Its one alignment prop is `justify`, which compiles to the logical `text-align: start | center | end` and defaults to `start`, so text hangs off the correct edge in either direction without a component-side branch. Truncation is `text-overflow: ellipsis` and `-webkit-line-clamp`, both of which put the ellipsis at the reading end on their own, and the tooltip that accompanies a clamped string is placed with the logical `above`/`below`/`start`/`end` vocabulary. Nothing is positioned, nothing is transformed, and the component renders no glyph, separator, or control."
   },
   {
     "component": "core/Timestamp",
