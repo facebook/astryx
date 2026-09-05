@@ -472,11 +472,12 @@ export function buildComponentCoverage({
   verifiedNa = [],
   knownGaps = [],
   removedFromRoster = [],
+  knownGapRosterComponents = components,
   checkKnownGapRoster = true,
   enforced = true,
 }) {
   const rosterKeys = new Set(
-    components.map(component => component.toLowerCase()),
+    knownGapRosterComponents.map(component => component.toLowerCase()),
   );
   const byName = new Map();
   for (const component of components) {
@@ -538,6 +539,13 @@ export function buildComponentCoverage({
       const key = entry.component.toLowerCase();
       const reason = verified.get(key);
       const knownComponent = known.get(key);
+      if (knownComponent && checkKnownGapRoster && !rosterKeys.has(key)) {
+        return {
+          ...entry,
+          status: 'stale-known-coverage-gap',
+          note: 'known coverage gap no longer exists in the live component roster',
+        };
+      }
       if (knownComponent && (entry.applicable.length > 0 || reason)) {
         return {
           ...entry,
@@ -585,13 +593,16 @@ export function buildComponentCoverage({
     });
 
   if (checkKnownGapRoster) {
+    const classifiedKeys = new Set(
+      results.map(result => result.component.toLowerCase()),
+    );
     for (const [key, component] of known) {
-      if (!rosterKeys.has(key)) {
+      if (!rosterKeys.has(key) && !classifiedKeys.has(key)) {
         results.push({
           component,
           applicable: [],
           status: 'stale-known-coverage-gap',
-          note: 'known coverage gap no longer exists in the audited roster',
+          note: 'known coverage gap no longer exists in the live component roster',
         });
       }
     }

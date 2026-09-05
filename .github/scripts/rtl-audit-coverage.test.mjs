@@ -122,7 +122,10 @@ describe('validateRemovedComponents', () => {
       'core/Name, lab/Name, or unknown/Name',
     );
     expect(() =>
-      validateRemovedComponents(['unknown/ChartTooltip', 'unknown/charttooltip']),
+      validateRemovedComponents([
+        'unknown/ChartTooltip',
+        'unknown/charttooltip',
+      ]),
     ).toThrow('duplicate removed component');
   });
 });
@@ -317,6 +320,27 @@ describe('buildComponentCoverage', () => {
       staleKnownGaps: 0,
     });
     expect(coverage.results).toHaveLength(1);
+  });
+
+  it('treats a filtered known gap missing from the live roster as stale', () => {
+    const coverage = buildComponentCoverage({
+      components: ['core/Removed'],
+      knownGapRosterComponents: ['core/Current'],
+      knownGaps: ['core/Removed'],
+      checkKnownGapRoster: true,
+    });
+
+    expect(coverage).toMatchObject({
+      total: 1,
+      knownGaps: 0,
+      staleKnownGaps: 1,
+    });
+    expect(coverage.results).toMatchObject([
+      {
+        component: 'core/Removed',
+        status: 'stale-known-coverage-gap',
+      },
+    ]);
   });
 
   it('classifies a removed debt component separately from a new gap', () => {

@@ -233,6 +233,11 @@ failure. Removed debt entries and every changed verified-N/A declaration run
 through the blocking `rtl-applicability-registry` job even while general
 `pr-rtl` remains soft. A removal succeeds only when the component is now
 measured, verified N-A, or absent from both the source and Storybook rosters.
+Changes to Core, Lab, Charts, or Vega source, Storybook stories, curated targets,
+or roster/audit code run the entire known-debt roster with strict live-roster
+validation, so a component deletion cannot retain stale debt while leaving both
+registries unchanged. CI materializes the validator and coverage policy from the
+base; the initial rollout accepts only the pinned bootstrap bundle.
 
 Both stale states are findings. Resolve known debt by adding a real target or a
 reviewed N/A reason and removing that component from

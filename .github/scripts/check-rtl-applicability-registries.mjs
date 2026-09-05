@@ -6,8 +6,9 @@
  * @input --base <git revision> [--known-gaps <repo-relative JSON path>]
  *   [--verified-na <repo-relative JSON path>] [--github-output <path>]
  * @output Exit 0 for a valid removal-only debt transition and valid verified
- *   N/A declarations. Emits audit_components and removed_components for the
- *   blocking semantic audit, including every baseline entry during bootstrap.
+ *   N/A declarations. Emits audit_components, removed_components, and
+ *   full_audit for the blocking semantic audit. Bootstrap and changes that can
+ *   stale the live roster require a full audit.
  * @position Required PR and merge-queue guard for RTL applicability metadata.
  */
 
@@ -61,6 +62,28 @@ function readBaseFile(file, {allowMissing = false} = {}) {
   }
 }
 
+function changedPaths() {
+  return execFileSync('git', ['diff', '--name-only', `${base}...HEAD`], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+    .split('\n')
+    .map(file => file.trim())
+    .filter(Boolean);
+}
+
+function canStaleApplicability(file) {
+  return (
+    /^packages\/(core|lab|charts|vega)\/src\//.test(file) ||
+    file.startsWith('apps/storybook/stories/') ||
+    file === '.github/scripts/check-rtl-applicability-registries.mjs' ||
+    file === 'apps/storybook/rtl-audit/targets.json' ||
+    file === 'apps/storybook/rtl-audit/rtl-audit.mjs' ||
+    file === 'apps/storybook/rtl-audit/rtl-audit-coverage.mjs' ||
+    file.startsWith('packages/cli/foundation/discovery/')
+  );
+}
+
 function uniqueComponents(components) {
   return [
     ...new Map(
@@ -103,10 +126,10 @@ try {
     currentVerified,
   );
 
-  const auditComponents = uniqueComponents([
-    ...(bootstrapped ? currentKnown : debtRemoved),
-    ...verifiedTransition.changed,
-  ]);
+  const fullAudit = bootstrapped || changedPaths().some(canStaleApplicability);
+  const auditComponents = fullAudit
+    ? currentKnown
+    : uniqueComponents([...debtRemoved, ...verifiedTransition.changed]);
   const removedComponents = uniqueComponents([
     ...debtRemoved,
     ...verifiedTransition.removed,
@@ -116,7 +139,8 @@ try {
     fs.appendFileSync(
       githubOutput,
       `audit_components=${auditComponents.join(',')}\n` +
-        `removed_components=${removedComponents.join(',')}\n`,
+        `removed_components=${removedComponents.join(',')}\n` +
+        `full_audit=${fullAudit}\n`,
     );
   }
 
