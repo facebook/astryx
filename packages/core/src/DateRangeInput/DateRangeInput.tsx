@@ -676,6 +676,9 @@ export function DateRangeInput({
           ref={ref}
           id={id}
           type="button"
+          // Select-only combobox, matching DateInput/DateTimeInput: makes
+          // aria-required/aria-invalid valid here (not allowed on role=button).
+          role="combobox"
           onClick={handleToggle}
           // With a disabledMessage the trigger keeps focusability via
           // aria-disabled so the reason is focus-discoverable; activation is
