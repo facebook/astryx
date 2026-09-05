@@ -417,6 +417,48 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
     expect(boldRules[0]).not.toContain('var(--font-weight-bold)');
   });
 
+  it('does not let a combined selector suppress the generic weight override', () => {
+    const authored = defineTheme({
+      name: 'combined-heading-weight',
+      components: {
+        heading: {
+          'type:hero': {fontWeight: 'var(--font-weight-normal)'},
+          'type:hero+weight:bold': {fontWeight: '900'},
+        },
+      },
+    });
+    const rules = generateThemeRules(authored);
+
+    expect(
+      rules.some(
+        rule =>
+          rule.includes('.astryx-heading.bold') &&
+          rule.includes('font-weight: var(--font-weight-bold)'),
+      ),
+    ).toBe(true);
+  });
+
+  it('fills in font weight when a standalone weight rule only styles another property', () => {
+    const authored = defineTheme({
+      name: 'partial-heading-weight',
+      components: {
+        heading: {
+          'type:hero': {fontWeight: 'var(--font-weight-normal)'},
+          'weight:bold': {color: 'red'},
+        },
+      },
+    });
+    const rules = generateThemeRules(authored);
+
+    expect(
+      rules.some(
+        rule =>
+          rule.includes('.astryx-heading.bold') &&
+          rule.includes('font-weight: var(--font-weight-bold)'),
+      ),
+    ).toBe(true);
+  });
+
   it('re-emits explicit weight overrides after media-specific type rules', () => {
     const themed = defineTheme({
       name: 'media-heading-weight',

@@ -13,7 +13,7 @@
   },
   {
     "component": "core/Heading",
-    "reason": "Heading is typography-only. Its level, type, color, wrapping, truncation, and decoration styles do not position or reorder content on the inline axis; justify uses logical start/end values, and the optional truncation tooltip uses logical placement vocabulary. It renders no directional glyph, separator, control, physical inset, transform, drag, scroll, overlay, or directional keyboard behavior."
+    "reason": "Heading is typography-only. Its level, type, weight, color, wrapping, truncation, and decoration styles do not position or reorder content on the inline axis; justify uses logical start/end values, and the optional truncation tooltip uses logical placement vocabulary. It renders no directional glyph, separator, control, physical inset, transform, drag, scroll, overlay, or directional keyboard behavior."
   },
   {
     "component": "core/Spinner",

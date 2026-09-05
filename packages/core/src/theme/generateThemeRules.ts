@@ -407,16 +407,21 @@ function generateHeadingWeightOverrides(
   if (!headingRules || typeof headingRules !== 'object') {
     return;
   }
+  const headingRuleMap = headingRules as Record<string, unknown>;
 
   for (const [weightName, weightValue] of Object.entries(
     HEADING_WEIGHT_TOKEN_MAP,
   )) {
-    // A targeted theme rule is an intentional design decision. Do not emit a
-    // generated rule after it and silently replace its value.
+    // A standalone authored weight is authoritative only when it actually
+    // supplies the base font weight. Combined selectors are narrower, and a
+    // color-only weight rule still needs the generated font-weight fallback.
+    const authoredWeightRule = headingRuleMap[`weight:${weightName}`];
     if (
-      Object.keys(headingRules).some(key =>
-        key.split('+').includes(`weight:${weightName}`),
-      )
+      authoredWeightRule != null &&
+      typeof authoredWeightRule === 'object' &&
+      !Array.isArray(authoredWeightRule) &&
+      Object.hasOwn(authoredWeightRule, 'fontWeight') &&
+      (authoredWeightRule as Record<string, unknown>).fontWeight != null
     ) {
       continue;
     }
