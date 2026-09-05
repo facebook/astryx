@@ -2,13 +2,13 @@
 schema_version: 1
 template_version: 1
 kind: system-spec
-id: spec:AST-023
-authority: draft
+id: spec:AST-028
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-09-04
+phase: accepted
 owners: [cixzhang]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
@@ -133,13 +133,14 @@ published location. The portable source keeps the root-relative fixture path.
 The CLI copy path currently recognizes Astryx's fixture namespace and replaces
 images with a self-contained SVG placeholder. It strips recognized video sources
 to an empty string rather than place image data in a video element. This behavior
-established the core preview-versus-copy split, but the user contract is not yet
-recorded: why assets are fixtures, which references may be transformed, what a
-safe fallback means, how unsupported formats fail, and why icons are separate.
+established the core preview-versus-copy split, while this record adds the
+previously unwritten requirements for why assets are fixtures, which references
+may be transformed, what a safe fallback means, how unsupported formats fail,
+and why icons are separate.
 
 This specification-only change alters no package, template, asset, preview,
-runtime, or public CLI behavior. Implementation changes follow separately after
-owner approval.
+runtime, or public CLI behavior. Remaining implementation and verification
+follow separately.
 
 ## Verification
 
@@ -169,9 +170,9 @@ This spec moves from `accepted` to `shipped` only when:
 
 ### DEC-1 — Template media demonstrates a composition; consumers replace it
 
-**Reference:** `spec:AST-023/DEC-1`
+**Reference:** `spec:AST-028/DEC-1`
 
-**Decider:** unresolved
+**Decider:** `cixzhang`, `2026-09-04`
 
 Images and videos in Astryx templates are local fixtures for showing the
 intended composition. A copied template is consumer-owned editable source, not a
@@ -183,9 +184,9 @@ asset library or copying them by default into every project.
 
 ### DEC-2 — Preview and copy have different obligations
 
-**Reference:** `spec:AST-023/DEC-2`
+**Reference:** `spec:AST-028/DEC-2`
 
-**Decider:** unresolved
+**Decider:** `cixzhang`, `2026-09-04`
 
 Maintainer previews show the real fixture so the template can be judged. Copied
 source removes the preview dependency and substitutes a media-kind-safe,
@@ -196,9 +197,9 @@ repository-only fixture URLs in generated projects.
 
 ### DEC-3 — Icons require a separate contract
 
-**Reference:** `spec:AST-023/DEC-3`
+**Reference:** `spec:AST-028/DEC-3`
 
-**Decider:** unresolved
+**Decider:** `cixzhang`, `2026-09-04`
 
 This contract covers static image and video fixtures only. Icons have distinct
 semantic, import, registry, and conversion concerns; grouping them with demo
@@ -208,5 +209,4 @@ Rejected: classifying every SVG or image-like source as a template fixture.
 
 ## Open questions
 
-- Does the owner approve DEC-1 through DEC-3 as the template static-fixture and
-  fallback contract?
+None.
