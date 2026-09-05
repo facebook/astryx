@@ -3312,3 +3312,1030 @@ describe('SideNav collapse conflict warning', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 });
+
+describe('SideNav collapsedWidth (#2331)', () => {
+  it('collapses to the icon rail by default', () => {
+    // Regression guard: the existing 48px rail must survive this feature.
+    render(
+      <SideNav collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}>
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation').style.width).toBe('');
+  });
+
+  it('collapses to zero width when collapsedWidth is 0', () => {
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+        }}>
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation').style.width).toBe('0px');
+  });
+
+  it('honours a custom non-zero collapsedWidth', () => {
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: () => {},
+          collapsedWidth: 72,
+        }}>
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation').style.width).toBe('72px');
+  });
+
+  it('does not apply collapsedWidth while expanded', () => {
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: false,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+        }}>
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation').style.width).not.toBe('0px');
+  });
+
+  it('hides a fully-collapsed nav from keyboard and assistive tech', () => {
+    // A 0-width nav is invisible; leaving its links tabbable would strand focus
+    // on something the user cannot see.
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+        }}>
+        <SideNavItem label="Home" href="/" data-testid="item" />
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation', {hidden: true})).toHaveAttribute(
+      'inert',
+    );
+  });
+
+  it('keeps the icon rail reachable — it is still visible', () => {
+    render(
+      <SideNav collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}>
+        <SideNavItem label="Home" href="/" data-testid="item" />
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation')).not.toHaveAttribute('inert');
+  });
+
+  it('does not make an expanded zero-width-capable nav inert', () => {
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: false,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+        }}>
+        <SideNavItem label="Home" href="/" data-testid="item" />
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation')).not.toHaveAttribute('inert');
+  });
+
+  it('collapsedWidth wins over the resizable width when collapsed', () => {
+    // SideNav drops the resizable width on collapse so the rail can win; the
+    // explicit collapsedWidth must beat both.
+    render(
+      <SideNav
+        resizable
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+        }}>
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation').style.width).toBe('0px');
+  });
+});
+
+type DeclarationScope = 'plain' | 'reduced-motion' | 'rtl';
+
+/**
+ * The text of every StyleX rule targeting one of the element's atomic
+ * classes: `.x1abc2` once the `:not(#\#)` specificity padding (and the
+ * doubled class StyleX uses to lift `@media` variants) is stripped. `plain`
+ * reads only the unconditional rules, `reduced-motion` only those inside a
+ * `prefers-reduced-motion` query, and `rtl` only the `:is([dir="rtl"] *)`
+ * variants. jsdom runs no transitions, but StyleX injects its real rules
+ * (runtimeInjection), so the declarations under test are read back from
+ * document.styleSheets.
+ */
+function declarationsOf(element: HTMLElement, scope: DeclarationScope): string {
+  const atomic = new Set(
+    Array.from(element.classList).filter(cls => /^x[0-9a-z]+$/i.test(cls)),
+  );
+  const matching = (rules: CSSRuleList): string => {
+    let css = '';
+    for (const rule of Array.from(rules)) {
+      const {selectorText, cssText} = rule as CSSStyleRule;
+      if (typeof selectorText !== 'string') {
+        continue;
+      }
+      if (selectorText.includes('[dir="rtl"]') !== (scope === 'rtl')) {
+        continue;
+      }
+      const selector = selectorText.replace(/:not\(#\\?#\)/g, '');
+      const lead =
+        scope === 'rtl'
+          ? /^\.([0-9a-z]+)/i.exec(selector)
+          : /^\.([0-9a-z]+)(?:\.\1)*$/i.exec(selector);
+      if (lead != null && atomic.has(lead[1])) {
+        css += cssText + '\n';
+      }
+    }
+    return css;
+  };
+  let css = '';
+  for (const sheet of Array.from(document.styleSheets)) {
+    let rules: CSSRuleList;
+    try {
+      rules = sheet.cssRules;
+    } catch {
+      continue;
+    }
+    if (scope !== 'reduced-motion') {
+      css += matching(rules);
+      continue;
+    }
+    for (const rule of Array.from(rules)) {
+      const query = (rule as Partial<CSSMediaRule>).media?.mediaText;
+      if (
+        typeof query === 'string' &&
+        query.includes('prefers-reduced-motion')
+      ) {
+        css += matching((rule as CSSMediaRule).cssRules);
+      }
+    }
+  }
+  return css;
+}
+
+const plainDeclarationsOf = (element: HTMLElement) =>
+  declarationsOf(element, 'plain');
+const reducedMotionDeclarationsOf = (element: HTMLElement) =>
+  declarationsOf(element, 'reduced-motion');
+const rtlDeclarationsOf = (element: HTMLElement) =>
+  declarationsOf(element, 'rtl');
+
+describe('SideNav isAnimated slide (#2331)', () => {
+  // Only `transform` animates, never `width` (motion convention; MobileNav's
+  // drawer and the collapse button's chevron are the precedents). The nav box
+  // never tweens: while the slide layer translates out, a step-end width
+  // transition holds the expanded width for the slide's duration, then the
+  // box snaps shut in a single reflow; expanding snaps the box open at once
+  // and slides the layer back in. jsdom runs no transitions, but StyleX
+  // injects its real rules here (runtimeInjection), so the declarations the
+  // choreography rests on are read back from document.styleSheets.
+
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  function Animated({
+    isCollapsed,
+    isAnimated,
+    collapsedWidth,
+  }: {
+    isCollapsed: boolean;
+    isAnimated?: boolean;
+    collapsedWidth?: number;
+  }) {
+    return (
+      <SideNav
+        header={<span data-testid="hdr">H</span>}
+        footerIcons={<span data-testid="icons">I</span>}
+        collapsible={{
+          isCollapsed,
+          onCollapsedChange: () => {},
+          collapsedWidth,
+          isAnimated,
+          hasButton: false,
+        }}>
+        <SideNavItem label="Home" href="/" />
+      </SideNav>
+    );
+  }
+
+  it('wraps the zones in one slide layer that animates transform only', () => {
+    render(<Animated isCollapsed={false} isAnimated collapsedWidth={0} />);
+    const nav = screen.getByRole('navigation');
+    // One slab carrying every zone, so the content slides as a unit.
+    expect(nav.children).toHaveLength(1);
+    const layer = nav.firstElementChild as HTMLElement;
+    expect(layer.className).toContain('SideNav__styles.slideLayer');
+    expect(layer.contains(screen.getByTestId('hdr'))).toBe(true);
+    expect(layer.contains(screen.getByTestId('icons'))).toBe(true);
+
+    const layerCss = plainDeclarationsOf(layer);
+    expect(layerCss).toMatch(/transition-property:\s*transform\b/);
+    expect(layerCss).not.toMatch(/transition-property:[^;]*width/);
+    expect(layerCss).toMatch(/transform:\s*translateX\(0\)/);
+  });
+
+  it('holds the box open for exactly the slide, then snaps it shut', () => {
+    const {rerender} = render(
+      <Animated isCollapsed={false} isAnimated collapsedWidth={0} />,
+    );
+    const nav = screen.getByRole('navigation');
+    const layer = nav.firstElementChild as HTMLElement;
+    // Expanded, the box declares no width transition at all.
+    expect(plainDeclarationsOf(nav)).not.toMatch(/transition-property/);
+
+    rerender(<Animated isCollapsed isAnimated collapsedWidth={0} />);
+    const hiddenLayerCss = plainDeclarationsOf(layer);
+    expect(hiddenLayerCss).toMatch(/transform:\s*translateX\(-100%\)/);
+    expect(hiddenLayerCss).not.toMatch(/translateX\(0\)/);
+    const collapsedCss = plainDeclarationsOf(nav);
+    // The width transition runs for the slide's own duration token on a
+    // step-end curve: no intermediate width is ever computed, the start
+    // width holds until the layer is out, then the end width lands in one
+    // jump. It carries no delay and no zero duration of its own.
+    expect(collapsedCss).toMatch(/transition-property:\s*width\b/);
+    expect(collapsedCss).toMatch(/transition-duration:\s*var\(--/);
+    expect(collapsedCss).toMatch(/transition-timing-function:\s*step-end\b/);
+    expect(collapsedCss).not.toMatch(/transition-delay/);
+    expect(nav.style.width).toBe('0px');
+
+    // Expanding drops the stepped snap, so the box reclaims its width at once
+    // while the layer slides back in.
+    rerender(<Animated isCollapsed={false} isAnimated collapsedWidth={0} />);
+    expect(plainDeclarationsOf(nav)).not.toMatch(/transition-property/);
+    expect(plainDeclarationsOf(layer)).toMatch(/transform:\s*translateX\(0\)/);
+  });
+
+  it('keeps every zero-duration transition inside the reduced-motion query', () => {
+    // scripts/build-css.test.mjs rejects a transition-duration: 0s outside an
+    // @media block: zero duration is the reduced-motion opt-out, not a
+    // choreography tool. Both the box and the layer carry the duration token
+    // in their plain rules and are zeroed only under the query.
+    render(<Animated isCollapsed isAnimated collapsedWidth={0} />);
+    const nav = screen.getByRole('navigation', {hidden: true});
+    const layer = nav.firstElementChild as HTMLElement;
+    for (const element of [nav, layer]) {
+      const plain = plainDeclarationsOf(element);
+      expect(plain).toMatch(/transition-duration:\s*var\(--/);
+      expect(plain).not.toMatch(/transition-duration:\s*0s/);
+      expect(reducedMotionDeclarationsOf(element)).toMatch(
+        /transition-duration:\s*0s/,
+      );
+    }
+  });
+
+  it('never animates the rail: isAnimated without collapsedWidth 0 changes nothing', () => {
+    const {rerender} = render(<Animated isCollapsed={false} />);
+    const nav = screen.getByRole('navigation');
+    const plainClasses = nav.className;
+    const plainChildCount = nav.children.length;
+
+    rerender(<Animated isCollapsed={false} isAnimated />);
+    // Byte-identical render: animating the rail would mean animating width,
+    // which the motion convention forbids, so the rail collapse stays instant.
+    expect(nav.className).toBe(plainClasses);
+    expect(nav.children).toHaveLength(plainChildCount);
+  });
+
+  it('does not add the slide layer when the hidden collapse is not animated', () => {
+    render(<Animated isCollapsed={false} collapsedWidth={0} />);
+    const nav = screen.getByRole('navigation');
+    expect(nav.className).not.toContain('slideLayer');
+    expect(nav.children.length).toBeGreaterThan(1);
+  });
+
+  it('keeps content in its expanded form while fully hidden: it slides, never morphs', () => {
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+          isAnimated: true,
+        }}>
+        <SideNavItem label="Plain label item" />
+      </SideNav>,
+    );
+    // Under the rail's collapsed context an icon-less item renders nothing.
+    // A fully hidden nav has no visible collapsed UI to morph into: content
+    // keeps its expanded rendering (inert + the overflow clip hide it), so
+    // the slide carries the real panel out and back in without a re-layout.
+    expect(screen.getByText('Plain label item')).toBeInTheDocument();
+  });
+
+  it('mirrors the slide under RTL', () => {
+    // The layer leaves through the inline-start edge, so a right-to-left
+    // document sends it the other way (MobileNav's drawer pattern).
+    render(<Animated isCollapsed isAnimated collapsedWidth={0} />);
+    const layer = screen.getByRole('navigation', {hidden: true})
+      .firstElementChild as HTMLElement;
+
+    expect(rtlDeclarationsOf(layer)).toMatch(/transform:\s*translateX\(100%\)/);
+    expect(plainDeclarationsOf(layer)).toMatch(
+      /transform:\s*translateX\(-100%\)/,
+    );
+  });
+
+  it('slides when resizable owns the collapse state', () => {
+    // `resizable` may carry the collapse state while `collapsible` still
+    // carries the width and the animation.
+    render(
+      <SideNav
+        resizable={{isCollapsed: true, onCollapseChange: () => {}}}
+        collapsible={{hasButton: false, collapsedWidth: 0, isAnimated: true}}>
+        Content
+      </SideNav>,
+    );
+    const nav = screen.getByRole('navigation', {hidden: true});
+
+    expect(nav.style.width).toBe('0px');
+    expect(nav.children).toHaveLength(1);
+    expect((nav.firstElementChild as HTMLElement).className).toContain(
+      'SideNav__styles.slideLayer',
+    );
+    expect(plainDeclarationsOf(nav)).toMatch(
+      /transition-timing-function:\s*step-end\b/,
+    );
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  // `isAnimated` has exactly one supported partner, `collapsedWidth: 0`. Any
+  // other width snaps by design (the rail would have to animate `width`), and
+  // that must not be silent: the builder asked for motion and got none.
+  it('warns that isAnimated needs collapsedWidth: 0, naming the width it got', () => {
+    render(<Animated isCollapsed={false} isAnimated collapsedWidth={72} />);
+
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('SideNav: '),
+    );
+    const message = String(warn.mock.calls[0][0]);
+    expect(message).toContain('isAnimated');
+    expect(message).toContain('collapsedWidth: 0');
+    expect(message).toContain('collapsedWidth: 72');
+  });
+
+  it('warns for isAnimated on the default icon rail', () => {
+    render(<Animated isCollapsed={false} isAnimated />);
+
+    expect(warn).toHaveBeenCalledOnce();
+    expect(String(warn.mock.calls[0][0])).toContain('icon rail');
+  });
+
+  it('warns once per mount, not once per collapse', () => {
+    const {rerender} = render(<Animated isCollapsed={false} isAnimated />);
+    rerender(<Animated isCollapsed isAnimated />);
+    rerender(<Animated isCollapsed={false} isAnimated />);
+    rerender(<Animated isCollapsed isAnimated />);
+
+    expect(warn).toHaveBeenCalledOnce();
+  });
+
+  it('stays silent for the supported pair and for an unanimated rail', () => {
+    const {unmount} = render(
+      <Animated isCollapsed={false} isAnimated collapsedWidth={0} />,
+    );
+    unmount();
+    render(<Animated isCollapsed={false} collapsedWidth={72} />);
+    render(<Animated isCollapsed={false} isAnimated={false} />);
+    render(<Animated isCollapsed={false} />);
+
+    expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('SideNav resize wrapper (#2331)', () => {
+  // The resizable nav sits in a wrapper with the drag handle. The wrapper has
+  // to survive the collapse: dropping it moved the nav to a new parent, which
+  // remounted it and detached whatever had focus inside. And since the nav
+  // paints `background-color: inherit`, the wrapper must pass the surface
+  // through rather than hand it `transparent`.
+
+  function wrapperOf(nav: HTMLElement): HTMLElement {
+    const wrapper = nav.parentElement as HTMLElement;
+    expect(wrapper.className).toContain('SideNav__styles.resizableContainer');
+    return wrapper;
+  }
+
+  it('keeps the collapsed nav inside the same wrapper, without the handle', () => {
+    const {rerender} = render(
+      <SideNav
+        resizable
+        collapsible={{isCollapsed: false, onCollapsedChange: () => {}}}>
+        Content
+      </SideNav>,
+    );
+    const nav = screen.getByRole('navigation');
+    const wrapper = wrapperOf(nav);
+    expect(screen.getByTestId('astryx-sidenav-resize-handle')).toBeVisible();
+
+    rerender(
+      <SideNav
+        resizable
+        collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}>
+        Content
+      </SideNav>,
+    );
+
+    // Same nav element, same wrapper: no remount happened.
+    expect(screen.getByRole('navigation')).toBe(nav);
+    expect(nav.parentElement).toBe(wrapper);
+    expect(
+      screen.queryByTestId('astryx-sidenav-resize-handle'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not wrap a nav that is not resizable', () => {
+    render(
+      <SideNav collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}>
+        Content
+      </SideNav>,
+    );
+    expect(
+      screen.getByRole('navigation').parentElement?.className,
+    ).not.toContain('resizableContainer');
+  });
+
+  it('passes the surface background through to the nav', () => {
+    render(
+      <SideNav resizable collapsible>
+        Content
+      </SideNav>,
+    );
+    const wrapper = wrapperOf(screen.getByRole('navigation'));
+    expect(plainDeclarationsOf(wrapper)).toMatch(
+      /background-color:\s*inherit\b/,
+    );
+  });
+});
+
+describe('SideNav focus on fully-hidden collapse (#2331)', () => {
+  // Applying `inert` to an ancestor of the focused element yanks focus to
+  // <body> before the visual has caught up. SideNav parks focus somewhere
+  // deliberate first (the collapse toggle rendered outside the nav, else an
+  // explicit blur) and only then applies inert. jsdom does not enforce inert
+  // focus semantics, so these tests assert the handling directly: where focus
+  // lands, that inert is present afterwards, and that it was not yet present
+  // at the moment focus moved.
+
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  function Harness({
+    isCollapsed,
+    hasToggle = false,
+  }: {
+    isCollapsed: boolean;
+    hasToggle?: boolean;
+  }) {
+    // The documented outside-toggle wiring: one controlled config handed to
+    // both the button and the nav.
+    const collapsible = {isCollapsed, onCollapsedChange: () => {}};
+    return (
+      <>
+        {hasToggle && <SideNavCollapseButton collapsible={collapsible} />}
+        <input data-testid="outside" />
+        <SideNav
+          collapsible={{
+            ...collapsible,
+            hasButton: false,
+            collapsedWidth: 0,
+            isAnimated: true,
+          }}>
+          <SideNavItem label="Home" href="/" />
+        </SideNav>
+      </>
+    );
+  }
+
+  /** Reports whether `nav` was already inert when `element` received focus. */
+  function watchInertAtFocus(
+    element: HTMLElement,
+    nav: HTMLElement,
+  ): () => boolean | null {
+    let inertAtFocus: boolean | null = null;
+    const nativeFocus = HTMLElement.prototype.focus;
+    vi.spyOn(element, 'focus').mockImplementation(function (
+      this: HTMLElement,
+      options?: FocusOptions,
+    ) {
+      inertAtFocus = nav.hasAttribute('inert');
+      nativeFocus.call(this, options);
+    });
+    return () => inertAtFocus;
+  }
+
+  it('moves focus to the outside collapse toggle before inert lands', () => {
+    // The controlled flip is the hard path: no click involved (a keyboard
+    // shortcut, or app-driven state), so nothing else moves focus for us.
+    const {rerender} = render(<Harness isCollapsed={false} hasToggle />);
+    const nav = screen.getByRole('navigation');
+    const toggle = screen.getByRole('button', {name: 'Collapse sidebar'});
+    const link = screen.getByRole('link', {name: 'Home'});
+    act(() => link.focus());
+    expect(link).toHaveFocus();
+    const inertAtFocus = watchInertAtFocus(toggle, nav);
+
+    rerender(<Harness isCollapsed hasToggle />);
+
+    expect(toggle).toHaveFocus();
+    expect(inertAtFocus()).toBe(false);
+    expect(nav).toHaveAttribute('inert');
+  });
+
+  it('blurs deliberately when no outside toggle exists', () => {
+    const {rerender} = render(<Harness isCollapsed={false} />);
+    const link = screen.getByRole('link', {name: 'Home'});
+    act(() => link.focus());
+
+    rerender(<Harness isCollapsed />);
+
+    // Nothing sensible to land on, so focus is released to <body> explicitly
+    // and before inert lands: documented behavior, not a browser side effect.
+    // The release is still worth a dev warning: the builder can fix it by
+    // pairing the nav with an outside SideNavCollapseButton.
+    expect(document.body).toHaveFocus();
+    expect(screen.getByRole('navigation', {hidden: true})).toHaveAttribute(
+      'inert',
+    );
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('SideNavCollapseButton'),
+    );
+  });
+
+  it('leaves focus alone when it is outside the nav at collapse time', () => {
+    const {rerender} = render(<Harness isCollapsed={false} hasToggle />);
+    const outside = screen.getByTestId('outside');
+    act(() => outside.focus());
+
+    rerender(<Harness isCollapsed hasToggle />);
+
+    expect(outside).toHaveFocus();
+    expect(screen.getByRole('navigation', {hidden: true})).toHaveAttribute(
+      'inert',
+    );
+  });
+
+  it('parks focus again on the next collapse after re-expanding', () => {
+    // Re-expanding drops inert in the same render (links are focusable again)
+    // and re-arms the parking for the next collapse.
+    const {rerender} = render(<Harness isCollapsed={false} hasToggle />);
+    const nav = screen.getByRole('navigation');
+    const toggle = screen.getByRole('button');
+    act(() => screen.getByRole('link', {name: 'Home'}).focus());
+    rerender(<Harness isCollapsed hasToggle />);
+    expect(toggle).toHaveFocus();
+
+    rerender(<Harness isCollapsed={false} hasToggle />);
+    expect(nav).not.toHaveAttribute('inert');
+    const link = screen.getByRole('link', {name: 'Home'});
+    act(() => link.focus());
+    expect(link).toHaveFocus();
+
+    rerender(<Harness isCollapsed hasToggle />);
+    expect(toggle).toHaveFocus();
+    expect(nav).toHaveAttribute('inert');
+  });
+
+  it('parks focus on a handleRef-connected toggle too', () => {
+    // The deprecated wiring registers the same way as the controlled one.
+    function LegacyHarness({isCollapsed}: {isCollapsed: boolean}) {
+      const handleRef = useRef<SideNavImperativeCollapseHandle>(null);
+      return (
+        <>
+          <SideNavCollapseButton handleRef={handleRef} />
+          <SideNav
+            handleRef={handleRef}
+            collapsible={{
+              isCollapsed,
+              onCollapsedChange: () => {},
+              hasButton: false,
+              collapsedWidth: 0,
+            }}>
+            <SideNavItem label="Home" href="/" />
+          </SideNav>
+        </>
+      );
+    }
+    const {rerender} = render(<LegacyHarness isCollapsed={false} />);
+    act(() => screen.getByRole('link', {name: 'Home'}).focus());
+
+    rerender(<LegacyHarness isCollapsed />);
+
+    expect(screen.getByRole('button')).toHaveFocus();
+    expect(screen.getByRole('navigation', {hidden: true})).toHaveAttribute(
+      'inert',
+    );
+  });
+
+  it('still applies inert after an uncontrolled collapse through the outside toggle', async () => {
+    const user = userEvent.setup();
+    function Uncontrolled() {
+      const handleRef = useRef<SideNavImperativeCollapseHandle>(null);
+      return (
+        <>
+          <SideNavCollapseButton handleRef={handleRef} />
+          <SideNav
+            handleRef={handleRef}
+            collapsible={{
+              defaultIsCollapsed: false,
+              hasButton: false,
+              collapsedWidth: 0,
+              isAnimated: true,
+            }}>
+            <SideNavItem label="Home" href="/" />
+          </SideNav>
+        </>
+      );
+    }
+    render(<Uncontrolled />);
+    const toggle = screen.getByRole('button', {name: 'Collapse sidebar'});
+
+    await user.click(toggle);
+
+    // Focus was already outside the nav (on the toggle), so it stays put.
+    expect(toggle).toHaveFocus();
+    expect(screen.getByRole('navigation', {hidden: true})).toHaveAttribute(
+      'inert',
+    );
+  });
+
+  // An outside toggle belongs to one nav: the one it shares collapse state
+  // with (the controlled `onCollapsedChange`, or the deprecated `handleRef`).
+  // Parking focus on any registered toggle put keyboard users on the control
+  // for a different nav whenever a page had two.
+  describe('with two navs on the page', () => {
+    it("parks focus on the toggle that shares this nav's state, not the first registered", () => {
+      // The first nav's toggle registers first. Collapsing the second nav
+      // must still land on the second toggle.
+      function TwoNavs({isSecondCollapsed}: {isSecondCollapsed: boolean}) {
+        const first = {isCollapsed: false, onCollapsedChange: () => {}};
+        const second = {
+          isCollapsed: isSecondCollapsed,
+          onCollapsedChange: () => {},
+        };
+        return (
+          <>
+            <SideNavCollapseButton collapsible={first} label="First toggle" />
+            <SideNavCollapseButton collapsible={second} label="Second toggle" />
+            <SideNav
+              data-testid="first-nav"
+              collapsible={{...first, hasButton: false, collapsedWidth: 0}}>
+              <SideNavItem label="First home" href="/" />
+            </SideNav>
+            <SideNav
+              data-testid="second-nav"
+              collapsible={{...second, hasButton: false, collapsedWidth: 0}}>
+              <SideNavItem label="Second home" href="/second" />
+            </SideNav>
+          </>
+        );
+      }
+      const {rerender} = render(<TwoNavs isSecondCollapsed={false} />);
+      act(() => screen.getByRole('link', {name: 'Second home'}).focus());
+
+      rerender(<TwoNavs isSecondCollapsed />);
+
+      expect(screen.getByRole('button', {name: 'Second toggle'})).toHaveFocus();
+      expect(screen.getByTestId('second-nav')).toHaveAttribute('inert');
+      expect(screen.getByTestId('first-nav')).not.toHaveAttribute('inert');
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it("never borrows the other nav's toggle: a nav without one blurs", () => {
+      function OneToggle({isFirstCollapsed}: {isFirstCollapsed: boolean}) {
+        const first = {
+          isCollapsed: isFirstCollapsed,
+          onCollapsedChange: () => {},
+        };
+        const second = {isCollapsed: false, onCollapsedChange: () => {}};
+        return (
+          <>
+            <SideNavCollapseButton collapsible={second} />
+            <SideNav
+              collapsible={{...first, hasButton: false, collapsedWidth: 0}}>
+              <SideNavItem label="First home" href="/" />
+            </SideNav>
+            <SideNav
+              collapsible={{...second, hasButton: false, collapsedWidth: 0}}>
+              <SideNavItem label="Second home" href="/second" />
+            </SideNav>
+          </>
+        );
+      }
+      const {rerender} = render(<OneToggle isFirstCollapsed={false} />);
+      act(() => screen.getByRole('link', {name: 'First home'}).focus());
+
+      rerender(<OneToggle isFirstCollapsed />);
+
+      expect(document.body).toHaveFocus();
+      expect(screen.getByRole('button')).not.toHaveFocus();
+    });
+
+    it('matches handleRef wiring per nav', () => {
+      function Legacy({isSecondCollapsed}: {isSecondCollapsed: boolean}) {
+        const firstHandleRef = useRef<SideNavImperativeCollapseHandle>(null);
+        const secondHandleRef = useRef<SideNavImperativeCollapseHandle>(null);
+        return (
+          <>
+            <SideNavCollapseButton
+              handleRef={firstHandleRef}
+              label="First toggle"
+            />
+            <SideNavCollapseButton
+              handleRef={secondHandleRef}
+              label="Second toggle"
+            />
+            <SideNav
+              handleRef={firstHandleRef}
+              collapsible={{
+                isCollapsed: false,
+                onCollapsedChange: () => {},
+                hasButton: false,
+                collapsedWidth: 0,
+              }}>
+              <SideNavItem label="First home" href="/" />
+            </SideNav>
+            <SideNav
+              handleRef={secondHandleRef}
+              collapsible={{
+                isCollapsed: isSecondCollapsed,
+                onCollapsedChange: () => {},
+                hasButton: false,
+                collapsedWidth: 0,
+              }}>
+              <SideNavItem label="Second home" href="/second" />
+            </SideNav>
+          </>
+        );
+      }
+      const {rerender} = render(<Legacy isSecondCollapsed={false} />);
+      act(() => screen.getByRole('link', {name: 'Second home'}).focus());
+
+      rerender(<Legacy isSecondCollapsed />);
+
+      expect(screen.getByRole('button', {name: 'Second toggle'})).toHaveFocus();
+    });
+  });
+
+  it('matches a toggle through resizable-owned collapse state', () => {
+    // `resizable` may own the collapse state; the toggle still shares the
+    // callback, under its own key name.
+    const onCollapseChange = vi.fn();
+    function ResizableOwned({isCollapsed}: {isCollapsed: boolean}) {
+      return (
+        <>
+          <SideNavCollapseButton
+            collapsible={{isCollapsed, onCollapsedChange: onCollapseChange}}
+          />
+          <SideNav
+            resizable={{isCollapsed, onCollapseChange}}
+            collapsible={{hasButton: false, collapsedWidth: 0}}>
+            <SideNavItem label="Home" href="/" />
+          </SideNav>
+        </>
+      );
+    }
+    const {rerender} = render(<ResizableOwned isCollapsed={false} />);
+    act(() => screen.getByRole('link', {name: 'Home'}).focus());
+
+    rerender(<ResizableOwned isCollapsed />);
+
+    expect(screen.getByRole('button')).toHaveFocus();
+  });
+
+  it('keeps focus on the built-in toggle when a resizable nav collapses to the rail', async () => {
+    // The collapsed nav must keep its place in the tree. Dropping the resize
+    // wrapper on collapse remounted the nav, which detached whatever had
+    // focus inside it and sent focus to <body> before any parking could run.
+    const user = userEvent.setup();
+    render(
+      <SideNav resizable collapsible>
+        <SideNavItem label="Home" href="/" />
+      </SideNav>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+
+    expect(screen.getByRole('button', {name: 'Expand sidebar'})).toHaveFocus();
+    expect(
+      screen.queryByTestId('astryx-sidenav-resize-handle'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('matches a toggle rendered after the nav whose callback is recreated every render', () => {
+    // A toggle later in the tree than its nav commits after the nav's layout
+    // effect. Its association must therefore be current from render, not
+    // re-registered on each callback identity: a re-registration would be
+    // absent (detached, not yet re-attached) at the moment the nav looks.
+    function ToggleAfter({isCollapsed}: {isCollapsed: boolean}) {
+      const collapsible = {isCollapsed, onCollapsedChange: () => {}};
+      return (
+        <>
+          <SideNav
+            collapsible={{...collapsible, hasButton: false, collapsedWidth: 0}}>
+            <SideNavItem label="Home" href="/" />
+          </SideNav>
+          <SideNavCollapseButton collapsible={collapsible} />
+        </>
+      );
+    }
+    const {rerender} = render(<ToggleAfter isCollapsed={false} />);
+    rerender(<ToggleAfter isCollapsed={false} />);
+    act(() => screen.getByRole('link', {name: 'Home'}).focus());
+
+    rerender(<ToggleAfter isCollapsed />);
+
+    expect(screen.getByRole('button')).toHaveFocus();
+  });
+
+  it("releases focus and warns once when no toggle shares the nav's state", () => {
+    // Two separately created callbacks: the documented wiring is one
+    // controlled config handed to both sides.
+    function Miswired({isCollapsed}: {isCollapsed: boolean}) {
+      return (
+        <>
+          <SideNavCollapseButton
+            collapsible={{isCollapsed, onCollapsedChange: () => {}}}
+          />
+          <SideNav
+            collapsible={{
+              isCollapsed,
+              onCollapsedChange: () => {},
+              hasButton: false,
+              collapsedWidth: 0,
+            }}>
+            <SideNavItem label="Home" href="/" />
+          </SideNav>
+        </>
+      );
+    }
+    const {rerender} = render(<Miswired isCollapsed={false} />);
+    act(() => screen.getByRole('link', {name: 'Home'}).focus());
+    rerender(<Miswired isCollapsed />);
+
+    expect(document.body).toHaveFocus();
+    expect(screen.getByRole('button')).not.toHaveFocus();
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('SideNavCollapseButton'),
+    );
+
+    // A second collapse with focus inside again does not repeat the warning.
+    rerender(<Miswired isCollapsed={false} />);
+    act(() => screen.getByRole('link', {name: 'Home'}).focus());
+    rerender(<Miswired isCollapsed />);
+    expect(document.body).toHaveFocus();
+    expect(warn).toHaveBeenCalledOnce();
+  });
+
+  it('does not warn when focus was outside the nav and no toggle exists', () => {
+    const {rerender} = render(<Harness isCollapsed={false} />);
+    act(() => screen.getByTestId('outside').focus());
+
+    rerender(<Harness isCollapsed />);
+
+    expect(screen.getByTestId('outside')).toHaveFocus();
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('parks both navs on the one toggle they share', () => {
+    // Two navs driven by one state share one toggle; both may park there.
+    function Shared({isCollapsed}: {isCollapsed: boolean}) {
+      const collapsible = {isCollapsed, onCollapsedChange: () => {}};
+      return (
+        <>
+          <SideNavCollapseButton collapsible={collapsible} />
+          <SideNav
+            data-testid="first-nav"
+            collapsible={{...collapsible, hasButton: false, collapsedWidth: 0}}>
+            <SideNavItem label="First home" href="/" />
+          </SideNav>
+          <SideNav
+            data-testid="second-nav"
+            collapsible={{...collapsible, hasButton: false, collapsedWidth: 0}}>
+            <SideNavItem label="Second home" href="/second" />
+          </SideNav>
+        </>
+      );
+    }
+    const {rerender} = render(<Shared isCollapsed={false} />);
+    act(() => screen.getByRole('link', {name: 'Second home'}).focus());
+
+    rerender(<Shared isCollapsed />);
+
+    expect(screen.getByRole('button')).toHaveFocus();
+    expect(screen.getByTestId('first-nav')).toHaveAttribute('inert');
+    expect(screen.getByTestId('second-nav')).toHaveAttribute('inert');
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('forgets a toggle once it unmounts', () => {
+    // The registration is tied to the element; an unmounted toggle must not
+    // linger as a stale focus target.
+    function Unmounting({
+      isCollapsed,
+      hasToggle,
+    }: {
+      isCollapsed: boolean;
+      hasToggle: boolean;
+    }) {
+      const collapsible = {isCollapsed, onCollapsedChange: () => {}};
+      return (
+        <>
+          {hasToggle && <SideNavCollapseButton collapsible={collapsible} />}
+          <SideNav
+            collapsible={{...collapsible, hasButton: false, collapsedWidth: 0}}>
+            <SideNavItem label="Home" href="/" />
+          </SideNav>
+        </>
+      );
+    }
+    const {rerender} = render(<Unmounting isCollapsed={false} hasToggle />);
+    const toggle = screen.getByRole('button');
+    rerender(<Unmounting isCollapsed={false} hasToggle={false} />);
+    expect(toggle).not.toBeInTheDocument();
+    act(() => screen.getByRole('link', {name: 'Home'}).focus());
+
+    rerender(<Unmounting isCollapsed hasToggle={false} />);
+
+    expect(document.body).toHaveFocus();
+    expect(warn).toHaveBeenCalledOnce();
+  });
+
+  it('never parks on a toggle inside the nav, even one handed the config', () => {
+    // A toggle placed in the header is about to go inert with the rest of
+    // the nav; landing focus there would strand it.
+    function Inside({isCollapsed}: {isCollapsed: boolean}) {
+      const collapsible = {isCollapsed, onCollapsedChange: () => {}};
+      return (
+        <SideNav
+          header={<SideNavCollapseButton collapsible={collapsible} />}
+          collapsible={{...collapsible, hasButton: false, collapsedWidth: 0}}>
+          <SideNavItem label="Home" href="/" />
+        </SideNav>
+      );
+    }
+    const {rerender} = render(<Inside isCollapsed={false} />);
+    act(() => screen.getByRole('link', {name: 'Home'}).focus());
+
+    rerender(<Inside isCollapsed />);
+
+    expect(document.body).toHaveFocus();
+    expect(screen.getByRole('button', {hidden: true})).not.toHaveFocus();
+  });
+
+  it('matches a handleRef toggle against a nav controlled through collapsible', () => {
+    // Mixed wiring: the nav is controlled, the toggle still uses the
+    // deprecated handle. The shared handle ref pairs them.
+    function Mixed({isCollapsed}: {isCollapsed: boolean}) {
+      const handleRef = useRef<SideNavImperativeCollapseHandle>(null);
+      return (
+        <>
+          <SideNavCollapseButton handleRef={handleRef} />
+          <SideNav
+            handleRef={handleRef}
+            collapsible={{
+              isCollapsed,
+              onCollapsedChange: () => {},
+              hasButton: false,
+              collapsedWidth: 0,
+            }}>
+            <SideNavItem label="Home" href="/" />
+          </SideNav>
+        </>
+      );
+    }
+    const {rerender} = render(<Mixed isCollapsed={false} />);
+    act(() => screen.getByRole('link', {name: 'Home'}).focus());
+
+    rerender(<Mixed isCollapsed />);
+
+    expect(screen.getByRole('button')).toHaveFocus();
+    expect(warn).not.toHaveBeenCalled();
+  });
+});
