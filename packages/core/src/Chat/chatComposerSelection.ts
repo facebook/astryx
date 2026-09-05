@@ -11,14 +11,26 @@
  * Selection helpers for the contentEditable chat input. Both the
  * imperative `insertToken` / `insertText` APIs and the paste pipeline
  * need a valid Range inside the editable before they can mutate the
- * DOM. Browsers do NOT create a Selection range when an element is
- * programmatically focused — a Range only exists once the user has
- * clicked inside the editable or we've created one explicitly.
+ * DOM, and history recall needs to know where the caret sits.
  *
- * `ensureCaretInside` centralizes the fallback: if the current
- * Selection has no Range inside the given editable, place a collapsed
- * caret at the end of the editable. Callers can then read
- * `selection.getRangeAt(0)` safely.
+ * What a programmatic `focus()` does to the Selection is browser- and
+ * state-dependent, and it is never what a click on the composer's padding
+ * means. Measured in Chromium: focusing a contentEditable collapses the
+ * caret to offset 0 — the *start* of the draft — whether or not a
+ * selection existed before, and whether the editable is empty or not.
+ * Other engines may instead leave no Range inside the editable at all.
+ *
+ * So the composer never infers the caret from a bare `focus()`:
+ * - `placeCaretAtEnd` states the caret outright, and is what the composer
+ *   shell's click-to-focus uses, because clicking the space after a draft
+ *   means "put me after the text" in every chat composer.
+ * - `getSelectionRangeInside` + `restoreSelectionRange` let the imperative
+ *   `focus()` keep a caret or selection the user already had: it is read
+ *   before focusing, since afterwards the engine's own caret is
+ *   indistinguishable from theirs.
+ * - `ensureCaretInside` is the weaker fallback for callers that only
+ *   need *a* valid Range (paste, imperative insertion): it respects a
+ *   caret that already exists and creates one at the end otherwise.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/ChatComposerInput.tsx (consumer)
@@ -26,11 +38,70 @@
  */
 
 /**
+ * The current Selection's range when it lies inside `editable`, or `null`.
+ *
+ * Callers use this to read the caret *before* focusing, because `focus()`
+ * creates a caret of its own and afterwards the two are indistinguishable.
+ * The range is cloned, so later DOM work cannot mutate the saved position.
+ */
+export function getSelectionRangeInside(editable: HTMLElement): Range | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return null;
+  }
+  const range = selection.getRangeAt(0);
+  if (
+    !editable.contains(range.startContainer) ||
+    !editable.contains(range.endContainer)
+  ) {
+    return null;
+  }
+  return range.cloneRange();
+}
+
+/** Make `range` the current Selection again. */
+export function restoreSelectionRange(range: Range): void {
+  const selection = window.getSelection();
+  if (!selection) {
+    return;
+  }
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+/**
+ * Collapse the Selection to the very end of `editable`'s content,
+ * replacing whatever the Selection held before.
+ *
+ * Unlike {@link ensureCaretInside} this is unconditional: a caret the
+ * browser placed on `focus()` is overwritten, which is the point — that
+ * caret lands at the start of the draft, where ArrowUp means "recall
+ * history" and would discard what the user had typed.
+ *
+ * Returns `true` when the caret was placed, `false` if the Selection API
+ * is unavailable (e.g. a detached document).
+ */
+export function placeCaretAtEnd(editable: HTMLElement): boolean {
+  const selection = window.getSelection();
+  if (!selection) {
+    return false;
+  }
+  const range = document.createRange();
+  range.selectNodeContents(editable);
+  range.collapse(false); // collapse to end
+  selection.removeAllRanges();
+  selection.addRange(range);
+  return true;
+}
+
+/**
  * Ensure the current Selection has a Range inside `editable`.
  *
  * If `window.getSelection()` already has a Range whose `startContainer`
- * is inside `editable`, this is a no-op. Otherwise a collapsed caret
- * is placed at the end of `editable` and the Selection is updated.
+ * is inside `editable`, this is a no-op — including the start-of-draft
+ * caret a `focus()` leaves behind, which is why callers that care where
+ * the caret lands want {@link placeCaretAtEnd} instead. Otherwise a
+ * collapsed caret is placed at the end of `editable`.
  *
  * Returns the live `Selection` on success, or `null` if no Selection
  * is available at all (e.g. detached document, JSDOM without selection

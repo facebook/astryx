@@ -5,7 +5,7 @@
 /**
  * @file Popover.tsx
  * @input Uses React layout measurement and the usePopover hook
- * @output Exports Popover with viewport fitting and conditional overflow
+ * @output Exports Popover with viewport fitting, conditional overflow, and trigger-aware focus
  * @position Layer component; declarative wrapper around usePopover hook
  *
  * For hover-triggered overlays, use HoverCard instead.
@@ -521,7 +521,7 @@ export function Popover({
       // preselected. Keep focus inside the modal dialog by focusing its
       // labeled container; keyboard and AT activation still focus the first
       // content control and expose the expected focus ring.
-      popover.toggleWithOptions({
+      popover.toggle({
         focusTarget:
           role === 'dialog' && event != null && event.detail > 0
             ? 'container'

@@ -43,7 +43,8 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "palette.config.json"
   ],
   "scripts": {
     "build": "node ../../../scripts/clean-dist.mjs && astryx theme build src/neutralTheme.ts -o dist/theme.css --icons-specifier ./icons.mjs && tsup && tsc --project tsconfig.build.json && node ../../../scripts/check-fully-specified.mjs"

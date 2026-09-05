@@ -70,6 +70,40 @@ describe('search leaf — envelope + ranking', () => {
   }, SLOW);
 });
 
+describe('search leaf — matchCount is the total, not the cap', () => {
+  it('reports every match while `results` stays bounded by the limit', async () => {
+    // The regression: `matchCount` used to be `results.length`, so a query
+    // matching 57 things reported 20 — the cap read back as the answer. Any
+    // consumer counting matches (the recorded run, a caller paginating) then
+    // could not tell a capped answer from an exactly-cap-sized one.
+    const capped = await search('button', {cwd, limit: 2});
+    expect(capped.data.results.length).toBe(2);
+    expect(capped.data.matchCount).toBeGreaterThan(2);
+
+    // Same query, no meaningful cap: the count is stable across limits, which
+    // is what makes it a count of MATCHES rather than of what was returned.
+    const full = await search('button', {cwd, limit: 500});
+    expect(full.data.matchCount).toBe(capped.data.matchCount);
+    expect(full.data.results.length).toBe(full.data.matchCount);
+  }, SLOW);
+
+  it('reports 0 for a no-match query', async () => {
+    const r = await search('zzznomatch99', {cwd});
+    expect(r.data.matchCount).toBe(0);
+  }, SLOW);
+
+  it('counts only the requested domain under --type', async () => {
+    const all = await search('button', {cwd, limit: 500});
+    const components = await search('button', {
+      cwd,
+      type: 'component',
+      limit: 500,
+    });
+    expect(components.data.matchCount).toBe(components.data.results.length);
+    expect(components.data.matchCount).toBeLessThanOrEqual(all.data.matchCount);
+  }, SLOW);
+});
+
 describe('search leaf — --type filter', () => {
   it('restricts results to the requested domain', async () => {
     const r = await search('button', {cwd, type: 'component'});

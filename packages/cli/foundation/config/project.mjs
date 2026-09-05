@@ -38,6 +38,7 @@ import {loadIntegrations} from '../integrations/integrations.mjs';
 import {
   setProject as setDebugProject,
   setEventHandler as setDebugEventHandler,
+  setIntegrationEventHandlers as setDebugIntegrationEventHandlers,
 } from '../debug/index.mjs';
 import {
   CORE_PACKAGE,
@@ -113,6 +114,39 @@ function findPackageRoot(startDir) {
     dir = parent;
   }
   return null;
+}
+
+/**
+ * Whether this project accepts `debug` handlers contributed by the
+ * integrations it loads.
+ *
+ * On by default: installing an integration is how a project asks for that
+ * package's behaviour, and a handler it contributes is behaviour. A project
+ * that wants none of it says so in its package.json —
+ *
+ *     {"astryx": {"inheritDebug": false}}
+ *
+ * package.json rather than astryx.config because the answer has to survive an
+ * older CLI reading the same project: an unknown config key is a hard config
+ * error, while `astryx` in package.json is inert to every version that does not
+ * look for it. Only `false` opts out; anything else, including a missing file,
+ * leaves inheritance on.
+ *
+ * This governs INHERITED handlers only. A project's own `debug` always runs.
+ *
+ * @param {string|null} configPath
+ * @returns {boolean}
+ */
+function inheritsIntegrationDebug(configPath) {
+  if (!configPath) return true;
+  try {
+    const pkgPath = path.join(path.dirname(configPath), 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    return pkg?.astryx?.inheritDebug !== false;
+  } catch {
+    // No package.json, or unreadable/malformed — not an opt-out.
+    return true;
+  }
 }
 
 /**
@@ -233,6 +267,18 @@ export class Project {
       // recorder collects provisionally until now precisely because the config
       // could not be read any earlier; it only needs the handler by exit.
       setDebugEventHandler(config.debug);
+      // Integrations may contribute a handler too, as a `debug` NAMED export
+      // from their manifest module. Both destinations receive the event: an
+      // app that sets `debug` to watch its own runs must not thereby drop out
+      // of an integration's debug logs, and an integration must not silence the
+      // app. Passed as one ordered list rather than appended one at a time,
+      // because Project.load can run more than once in a process and appending
+      // would deliver twice.
+      setDebugIntegrationEventHandlers(
+        inheritsIntegrationDebug(configPath)
+          ? loadedIntegrations.map(integration => integration.__debug)
+          : [],
+      );
       setDebugProject({
         hasConfig: Boolean(configPath),
         integrationCount: integrations.length,

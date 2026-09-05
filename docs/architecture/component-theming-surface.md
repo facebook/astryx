@@ -19,6 +19,7 @@ applies_to:
     packages/core/src/theme/themingTargets.test.ts,
     packages/core/src/theme/extensibleAxes.test.ts,
     packages/core/src/theme/derivedVarRegistry.test.ts,
+    docs/contributing/api-conventions.md,
     docs/templates/knowledge/component-spec.md,
     scripts/check-knowledge.mjs,
   ]
@@ -170,7 +171,15 @@ but acceptance alone is best effort, not a compatibility promise.
 - **INV13 — Family ownership is explicit.** A family document may own a shared
   target for several components, but local docs link to that owner rather than
   leaving ownership to inference.
-- **INV14 — Conditional styling does not create conditional API.** Adaptation
+- **INV14 — Extensible axes need a theme-independent fallback.** A prop axis may
+  be theme-extensible only when it is visual and an unavailable custom value has
+  one safe, deterministic baseline that does not depend on the active theme.
+  `Heading.type` qualifies because required `Heading.level` provides that
+  baseline. `Icon.size` does not: no missing custom size can be inferred without
+  silently changing geometry, alignment, or composition. Behavioral, structural,
+  placement, directional, and state-machine axes remain closed regardless. A
+  theme may redefine an existing value on a closed axis, but it may not add one.
+- **INV15 — Conditional styling does not create conditional API.** Adaptation
   rules may style only visual-prop values already present in the built-in or
   effective root surface. New values are declared at the root before any rule
   uses them, so generated types do not depend on a media condition.
@@ -188,6 +197,13 @@ how themes become output, or the design rationale for a component's appearance.
   create CSS API. A `none` entry classifies the current state as `intentional`,
   `reachability-gap`, or `unsettled`; changing reachability updates the mapping,
   while future exposure still follows normal public-target review.
+- Opening a prop axis to theme-defined values classifies the axis and records its
+  no-match fallback in the owning component contract or governing system spec.
+  Review proves the axis is visual, the fallback is safe and theme-independent,
+  and every ineligible axis stays closed. A focused component test covers the
+  custom value with no matching active theme rule. `extensibleAxes.test.ts`
+  checks only the structural wiring: the public map, `themeProps()` reflection,
+  and consumer metadata.
 - Adding a property to a target's `guaranteedProperties` records its purpose and
   scope, proves a rational observable effect on the owned anatomy part, and adds
   representative compiler/runtime coverage. Catalog membership alone does not add
@@ -225,7 +241,9 @@ how themes become output, or the design rationale for a component's appearance.
 - Runtime `themeProps()` calls emit the target and state contract.
 - `scripts/check-knowledge.mjs`, `themingTargets.test.ts`,
   `extensibleAxes.test.ts`, and `derivedVarRegistry.test.ts` enforce the
-  source/metadata/generated relationship.
+  source/metadata/generated relationship. `extensibleAxes.test.ts` proves only
+  structural consistency; component contracts, review, and focused component
+  tests prove whether an axis may be open and whether its fallback is safe.
 - Family contracts own shared target semantics when multiple components adopt
   one part contract.
 
@@ -236,20 +254,31 @@ how themes become output, or the design rationale for a component's appearance.
 
 ## Verification
 
-| Invariant    | Evidence                                                         | Failure signal                                                                                                              |
-| ------------ | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| INV1         | Cross-package target/documentation inventory                     | An exported target in a participating package is invisible to metadata or CLI validation                                    |
-| INV2, INV3   | Bidirectional anatomy-disposition/target check                   | A current target has no semantic part owner, anatomy mechanically creates targets, or `none` silently becomes future policy |
-| INV4, INV5   | Component review plus rendered DOM inspection                    | Public target lands on non-painting plumbing or aliases a child primitive without distinct semantics                        |
-| INV6         | `themingTargets.test.ts` and `extensibleAxes.test.ts`            | State/variant is invisible to the owner target or becomes an unnecessary parallel target                                    |
-| INV7, INV8   | Existing property fixtures (partial; gaps below)                 | A declared property is missing evidence, or an unlisted counterpart is treated as implied                                   |
-| INV9         | API docs and compatibility review                                | Generic property acceptance is presented as a supported compatibility promise                                               |
-| INV10, INV11 | Existing registry/public-var/runtime tests (partial; gaps below) | A public semantic var bypasses admission, or a consumer must write a private var to reach promised behavior                 |
-| INV12, INV13 | Alias and family-owner fixtures                                  | Deprecated aliases count as current parts or cross-doc ownership remains implicit                                           |
-| INV14        | Theme build adaptation fixtures                                  | A rule-only custom value creates conditional CSS without an unconditional public type surface                               |
+| Invariant    | Evidence                                                                                                           | Failure signal                                                                                                              |
+| ------------ | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| INV1         | Cross-package target/documentation inventory                                                                       | An exported target in a participating package is invisible to metadata or CLI validation                                    |
+| INV2, INV3   | Bidirectional anatomy-disposition/target check                                                                     | A current target has no semantic part owner, anatomy mechanically creates targets, or `none` silently becomes future policy |
+| INV4, INV5   | Component review plus rendered DOM inspection                                                                      | Public target lands on non-painting plumbing or aliases a child primitive without distinct semantics                        |
+| INV6         | `themingTargets.test.ts` and `extensibleAxes.test.ts`                                                              | State/variant is invisible to the owner target or becomes an unnecessary parallel target                                    |
+| INV7, INV8   | Existing property fixtures (partial; gaps below)                                                                   | A declared property is missing evidence, or an unlisted counterpart is treated as implied                                   |
+| INV9         | API docs and compatibility review                                                                                  | Generic property acceptance is presented as a supported compatibility promise                                               |
+| INV10, INV11 | Existing registry/public-var/runtime tests (partial; gaps below)                                                   | A public semantic var bypasses admission, or a consumer must write a private var to reach promised behavior                 |
+| INV12, INV13 | Alias and family-owner fixtures                                                                                    | Deprecated aliases count as current parts or cross-doc ownership remains implicit                                           |
+| INV14        | Component contract, owner review, focused no-match fallback test, and structural `extensibleAxes.test.ts` coverage | An ineligible axis opens, a missing rule changes behavior unpredictably, or the map/reflection/docs wiring drifts           |
+| INV15        | Theme build adaptation fixtures                                                                                    | A rule-only custom value creates conditional CSS without an unconditional public type surface                               |
 
 Known conformance and verification gaps:
 
+- The component schema has no machine-readable axis-classification or fallback
+  field. `extensibleAxes.test.ts` therefore checks only structural consistency;
+  it cannot infer whether an axis is visual or its fallback is semantically safe.
+  Component contracts or governing system specs, owner review, and focused
+  fallback tests provide that evidence without treating the structural guard as
+  admission policy.
+- Existing map-backed axes have not all been audited against INV14.
+  `Pagination.variant` and `Banner.container` are known open structural axes and
+  remain conformance gaps until their vocabularies are closed. Passing the
+  structural guard does not make them eligible for extension.
 - The shared catalog is approved, but the component-doc authoring schema has no
   `guaranteedProperties` field. The follow-up must add the exact-name field,
   migrate each current target with its rational catalog subset and reviewed

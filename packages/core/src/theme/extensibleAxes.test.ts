@@ -2,8 +2,11 @@
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 /**
- * @file Guards the EXTENSIBLE prop axes — the `*Map` interfaces a theme
- *   augments — against the theming surface that has to carry them.
+ * @file Guards the STRUCTURAL wiring of extensible prop axes — the `*Map`
+ *   interfaces a theme augments — against the theming surface that has to carry
+ *   them. Whether an axis may be open, and whether an unavailable custom value
+ *   has a safe theme-independent fallback, remain component-contract and review
+ *   decisions with focused fallback tests; source syntax cannot prove either.
  * @input Component sources (*.tsx/*.ts) and their `{Name}.doc.mjs` files.
  * @output Vitest failures naming each map whose axis a theme cannot reach.
  * @position Third sibling of derivedVarRegistry.test.ts (`vars`, `derived`) and
@@ -65,7 +68,9 @@ function sourceFilesUnder(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir, {withFileTypes: true})) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === 'node_modules' || entry.name === '__tests__') {continue;}
+      if (entry.name === 'node_modules' || entry.name === '__tests__') {
+        continue;
+      }
       sourceFilesUnder(full, out);
     } else if (/\.tsx?$/.test(entry.name) && !entry.name.includes('.test.')) {
       out.push(full);
@@ -97,7 +102,9 @@ function collectKeyofAliases(files: string[]): Map<string, string> {
     if (ts.isIntersectionTypeNode(type)) {
       for (const member of type.types) {
         const found = mapBehind(member);
-        if (found != null) {return found;}
+        if (found != null) {
+          return found;
+        }
       }
       return null;
     }
@@ -117,7 +124,9 @@ function collectKeyofAliases(files: string[]): Map<string, string> {
     const visit = (node: ts.Node): void => {
       if (ts.isTypeAliasDeclaration(node)) {
         const map = mapBehind(node.type);
-        if (map != null) {aliases.set(node.name.text, map);}
+        if (map != null) {
+          aliases.set(node.name.text, map);
+        }
       }
       ts.forEachChild(node, visit);
     };
@@ -146,7 +155,9 @@ function mapsTypingAProp(
     const visit = (node: ts.Node): void => {
       if (ts.isInterfaceDeclaration(node) && node.name.text.endsWith('Props')) {
         for (const member of node.members) {
-          if (!ts.isPropertySignature(member) || member.type == null) {continue;}
+          if (!ts.isPropertySignature(member) || member.type == null) {
+            continue;
+          }
           const typeNode = ts.isArrayTypeNode(member.type)
             ? member.type.elementType
             : member.type;
@@ -155,7 +166,9 @@ function mapsTypingAProp(
             ts.isIdentifier(typeNode.typeName)
           ) {
             const map = aliases.get(typeNode.typeName.text);
-            if (map != null) {used.add(map);}
+            if (map != null) {
+              used.add(map);
+            }
           }
         }
       }
@@ -183,7 +196,9 @@ function collectExtensibleAxes(
   const open = propMaps;
   const axes: ExtensibleAxis[] = [];
   for (const file of files) {
-    if (!/\/index\.tsx?$/.test(file)) {continue;}
+    if (!/\/index\.tsx?$/.test(file)) {
+      continue;
+    }
     const dir = relative(SRC_DIR, file).split('/')[0];
     const visit = (node: ts.Node): void => {
       if (
@@ -194,7 +209,9 @@ function collectExtensibleAxes(
         const bare = node.name.text.slice(0, -'Map'.length);
         // The trailing PascalCase word is the prop.
         const match = /([A-Z][a-z0-9]*)$/.exec(bare);
-        if (match == null) {return;}
+        if (match == null) {
+          return;
+        }
         const prop = match[1].charAt(0).toLowerCase() + match[1].slice(1);
         axes.push({dir, mapName: node.name.text, prop});
       }

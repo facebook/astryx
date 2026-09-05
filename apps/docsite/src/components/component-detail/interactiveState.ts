@@ -293,26 +293,35 @@ function getCallbackTargetProp(type: string): string | null {
 /**
  * The state prop a change handler writes back to, or `null` when the preview
  * cannot tell. Prefers the first parameter's name; for `onChange` falls back
- * to the controlled `value` prop, whose payload it carries by convention.
+ * to the controlled `value` prop, whose payload it carries by convention. The
+ * primary `onChange` pair may target an optional, unseeded value prop; secondary
+ * change handlers still require their target to be present in preview state.
  */
 function resolveChangeTarget(
   name: string,
   type: string,
   state: Record<string, unknown>,
+  knownProps: ReadonlySet<string>,
 ): string | null {
   const named = getCallbackTargetProp(type);
-  if (named != null && named in state) {
+  if (
+    named != null &&
+    (named in state || (name === 'onChange' && knownProps.has(named)))
+  ) {
     return named;
   }
-  return name === 'onChange' && 'value' in state ? 'value' : null;
+  return name === 'onChange' && ('value' in state || knownProps.has('value'))
+    ? 'value'
+    : null;
 }
 
 /**
  * Wires controlled-component change handlers back into playground state so the
  * preview reflects interaction (clicking a Pagination page, etc.). A callback
- * whose first parameter names a value prop in `state` (page/onChange,
- * value/onChange, pageSize/onPageSizeChange) replaces its noop with one that
- * updates that prop. isOpen/onOpenChange stays gated behind canControlOpenState.
+ * whose first parameter names a value prop in preview state (page/onChange,
+ * pageSize/onPageSizeChange), or the primary `value` prop for literal
+ * `onChange`, replaces its noop with one that updates that prop.
+ * isOpen/onOpenChange stays gated behind canControlOpenState.
  *
  * `onChange` is the exception to the name match: it conventionally documents
  * its first parameter after the payload it carries (`checked`, `items`,
@@ -330,10 +339,12 @@ export function buildRuntimePreviewState(
     return state;
   }
 
+  const knobs = options?.knobs ?? [];
+  const knownProps = new Set(knobs.map(knob => knob.row.name));
   const next: Record<string, unknown> = {...state};
   let changed = false;
 
-  for (const {row, control} of options?.knobs ?? []) {
+  for (const {row, control} of knobs) {
     if (control.kind !== 'callback') {
       continue;
     }
@@ -342,7 +353,7 @@ export function buildRuntimePreviewState(
     if (!/^on[A-Z].*Change$/.test(row.name) && row.name !== 'onChange') {
       continue;
     }
-    const target = resolveChangeTarget(row.name, row.type, state);
+    const target = resolveChangeTarget(row.name, row.type, state, knownProps);
     if (target == null) {
       continue;
     }

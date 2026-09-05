@@ -444,6 +444,33 @@ describe('component detail preview state', () => {
     expect(onPropChange).toHaveBeenCalledWith('value', 42);
   });
 
+  it('bridges Selector onChange even though its optional value prop is not seeded (#5909 follow-up)', () => {
+    const knobs = pickPrimaryProps('Selector', [
+      prop({name: 'label', type: 'string', required: true}),
+      prop({name: 'options', type: 'SelectorOption[]', required: true}),
+      prop({name: 'value', type: 'string'}),
+      prop({name: 'onChange', type: '(value: string) => void'}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {
+        label: 'Fruit',
+        options: [
+          {value: 'apple', label: 'Apple'},
+          {value: 'orange', label: 'Orange'},
+        ],
+      },
+    });
+    expect(state.value).toBeUndefined();
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+
+    const onPropChange = vi.fn();
+    const runtimeState = buildRuntimePreviewState(state, onPropChange, {knobs});
+
+    (runtimeState.onChange as (value: string) => void)('orange');
+    expect(onPropChange).toHaveBeenCalledWith('value', 'orange');
+  });
+
   it('bridges a Tokenizer removal back to its controlled value', () => {
     const knobs = pickPrimaryProps('Tokenizer', [
       prop({name: 'label', type: 'string', required: true}),
