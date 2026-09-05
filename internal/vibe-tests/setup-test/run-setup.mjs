@@ -75,6 +75,23 @@ const write = (file, content) => {
 };
 const run = (command, commandArgs, cwd) =>
   execFileSync(command, commandArgs, {cwd, stdio: 'pipe', encoding: 'utf8'});
+// pnpm is a .cmd (batch) file on Windows. execFileSync, like spawnSync, can
+// only run a batch file through a shell — a bare 'pnpm' fails with ENOENT
+// and an explicit 'pnpm.cmd' still fails with EINVAL (batch files need a
+// shell even named exactly). Shelling out through cmd.exe /c directly,
+// rather than execFileSync's shell:true, avoids Node's
+// shell-argument-escaping deprecation warning (DEP0190) — every argument
+// here is a hardcoded literal, never user input, so we build the argv
+// ourselves instead of asking execFileSync to build a shell string. See
+// internal/vibe-tests/src/fixture-suite.mjs for the same pattern.
+const runPnpm = (pnpmArgs, cwd) =>
+  process.platform === 'win32'
+    ? execFileSync('cmd.exe', ['/d', '/s', '/c', 'pnpm', ...pnpmArgs], {
+        cwd,
+        stdio: 'pipe',
+        encoding: 'utf8',
+      })
+    : execFileSync('pnpm', pnpmArgs, {cwd, stdio: 'pipe', encoding: 'utf8'});
 
 function copyDirectory(source, destination) {
   ensureDir(destination);
@@ -94,7 +111,7 @@ function prepareDependencies(fixtureId) {
   for (const file of ['package.json', 'pnpm-lock.yaml']) {
     fs.copyFileSync(path.join(fixtureRoot, file), path.join(depsDir, file));
   }
-  run('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts'], depsDir);
+  runPnpm(['install', '--frozen-lockfile', '--ignore-scripts'], depsDir);
   return depsDir;
 }
 
@@ -133,7 +150,7 @@ function createSandbox(fixtureId, sandboxDir, depsDir) {
   copyFixture(fixtureId, sandboxDir);
   linkDependencies(depsDir, sandboxDir);
   installLoggingShim(sandboxDir);
-  run('pnpm', ['build'], sandboxDir);
+  runPnpm(['build'], sandboxDir);
 }
 
 function appendGuidance(sandboxDir, guidanceFile) {

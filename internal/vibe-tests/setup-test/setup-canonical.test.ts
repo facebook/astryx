@@ -62,6 +62,21 @@ function run(command: string, args: string[], cwd: string) {
   });
 }
 
+// pnpm is a .cmd (batch) file on Windows. execFileSync, like spawnSync, can
+// only run a batch file through a shell — a bare 'pnpm' fails with ENOENT
+// and an explicit 'pnpm.cmd' still fails with EINVAL (batch files need a
+// shell even named exactly). Shelling out through cmd.exe /c directly,
+// rather than execFileSync's shell:true, avoids Node's
+// shell-argument-escaping deprecation warning (DEP0190) — every argument
+// here is a hardcoded literal, never user input, so we build the argv
+// ourselves instead of asking execFileSync to build a shell string. See
+// internal/vibe-tests/src/fixture-suite.mjs for the same pattern.
+function runPnpm(args: string[], cwd: string) {
+  return process.platform === 'win32'
+    ? run('cmd.exe', ['/d', '/s', '/c', 'pnpm', ...args], cwd)
+    : run('pnpm', args, cwd);
+}
+
 function edit(file: string, transform: (source: string) => string) {
   const source = fs.readFileSync(file, 'utf8');
   const next = transform(source);
@@ -75,14 +90,14 @@ function ensurePackageBuilds() {
   if (
     !fs.existsSync(path.join(REPO_ROOT, 'packages/core/dist/Button/index.js'))
   ) {
-    run('pnpm', ['-F', '@astryxdesign/core', 'build'], REPO_ROOT);
+    runPnpm(['-F', '@astryxdesign/core', 'build'], REPO_ROOT);
   }
   if (
     !fs.existsSync(
       path.join(REPO_ROOT, 'packages/themes/neutral/dist/theme.css'),
     )
   ) {
-    run('pnpm', ['-F', '@astryxdesign/theme-neutral', 'build'], REPO_ROOT);
+    runPnpm(['-F', '@astryxdesign/theme-neutral', 'build'], REPO_ROOT);
   }
 }
 
@@ -97,7 +112,7 @@ function dependencyRoot(fixture: string) {
   temporaryDirectories.push(parent);
   const root = path.join(parent, 'app');
   copyFixture(fixture, root);
-  run('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts'], root);
+  runPnpm(['install', '--frozen-lockfile', '--ignore-scripts'], root);
   dependencyRoots.set(fixture, root);
   return root;
 }
