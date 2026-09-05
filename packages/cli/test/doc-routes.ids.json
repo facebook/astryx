@@ -62,6 +62,7 @@
     "Dialog",
     "DialogHeader",
     "Divider",
+    "Drawer",
     "DropdownMenu",
     "DropdownMenuCheckboxItem",
     "DropdownMenuDivider",
@@ -536,6 +537,8 @@
     "DividerShowcase",
     "DividerVariants",
     "DividerVertical",
+    "DrawerRowInspector",
+    "DrawerShowcase",
     "DropdownMenuActions",
     "DropdownMenuBottomSheet",
     "DropdownMenuItemBasic",
@@ -1068,5 +1071,8 @@
     "template-doc",
     "theme-doc"
   ],
-  "@astryxdesign/cli/enum": ["error-codes", "response-types"]
+  "@astryxdesign/cli/enum": [
+    "error-codes",
+    "response-types"
+  ]
 }

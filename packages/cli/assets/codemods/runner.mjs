@@ -314,11 +314,15 @@ export async function runCodemods(
 
   // Config and project codemods never read the files under --path, so a
   // missing --path should not block them. Only hard-fail on a missing source
-  // path when there is at least one CODE codemod to run.
+  // path when there is at least one CODE codemod to run — after the same
+  // codemod/skipCodemods selection the execution loop applies below.
   const hasCodeCodemod = versionManifests.some(({transforms}) =>
     transforms.some(
       t =>
-        t.meta?.codemodType !== 'config' && t.meta?.codemodType !== 'project',
+        !(codemod && t.name !== codemod) &&
+        !skipCodemods?.has(t.name) &&
+        t.meta?.codemodType !== 'config' &&
+        t.meta?.codemodType !== 'project',
     ),
   );
   const sourcePathExists = fs.existsSync(resolvedPath);
