@@ -70,7 +70,7 @@ export const doc = {
     {
       type: 'swizzle.copy',
       description:
-        'A receipt after copying the component into the project: the component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer-feedback note.',
+        'A receipt after copying the component into the project: the component name, owning package, output directory, files-copied count, the written file paths (relative to the output directory, nested subdirectories included), whether any file uses StyleX, and an optional maintainer-feedback note.',
     },
   ],
   throws: [
