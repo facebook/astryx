@@ -15,6 +15,10 @@
  * styling to the frame that contains both the list and compact summary, while
  * the semantic `<ol>` remains the measured ref and DOM pass-through target.
  *
+ * The value it publishes is `StepperCoordination`, which is wider than the
+ * deprecated public `StepperContextValue` — see StepperContext.ts for why the
+ * two are split.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Stepper/Stepper.test.tsx (tests for new/changed behavior)
@@ -46,7 +50,7 @@ import {
   StepperContext,
   type StepperOrientation,
   type StepperIndicatorPosition,
-  type StepperContextValue,
+  type StepperCoordination,
 } from './StepperContext';
 
 /**
@@ -407,7 +411,8 @@ export function Stepper({
 
   const [summarySlot, setSummarySlot] = useState<HTMLElement | null>(null);
 
-  const ctxValue = useMemo<StepperContextValue>(
+  const ctxValue = useMemo<StepperCoordination>(
+
     () => ({
       activeStep,
       previousActiveStep,
