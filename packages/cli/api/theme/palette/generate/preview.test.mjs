@@ -7,6 +7,8 @@ const candidate = {
   schemaVersion: 1,
   status: 'candidate',
   recipe: 'astryx-oklch-v1',
+  black: '#000000',
+  white: '#ffffff',
   palette: {
     blue: {
       name: 'Blue',

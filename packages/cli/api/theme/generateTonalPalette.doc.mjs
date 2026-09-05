@@ -15,7 +15,8 @@ export const doc = {
     'Anchor policies are intentional: exact preserves the chosen color at its stop; ' +
     'bounded permits movement within maxDeltaE; flexible treats it as guidance. ' +
     'An anchor needs a mode and stop. Stops apply to every family in one request. ' +
-    'The default 0–100 layout includes exact black and white; a custom stop list can omit them.',
+    'The candidate always exposes standalone black and white values for direct theme authoring. ' +
+    'The default 0–100 layout also repeats them as family endpoints; a custom stop list can omit those repeated endpoints.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'generateTonalPalette(input: TonalPaletteGenerationInput): TonalPaletteCandidate',
@@ -32,7 +33,8 @@ export const doc = {
   returns: [
     {
       type: 'TonalPaletteCandidate',
-      description: 'Deterministic candidate data for author review.',
+      description:
+        'Deterministic candidate data for author review, including standalone black and white values outside the tonal families.',
     },
   ],
   throws: [

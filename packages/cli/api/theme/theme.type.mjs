@@ -139,6 +139,8 @@
  * @property {1} schemaVersion
  * @property {'candidate'} status
  * @property {'astryx-oklch-v1'} recipe
+ * @property {'#000000'} black Exact solid black for theme authoring outside a tonal family.
+ * @property {'#ffffff'} white Exact solid white for theme authoring outside a tonal family.
  * @property {Record<string, {name: string, light?: Record<string, string>, dark?: Record<string, string>}>} palette
  */
 

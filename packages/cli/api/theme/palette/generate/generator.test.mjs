@@ -62,11 +62,13 @@ describe('astryx-oklch-v1 palette generator', () => {
     });
     expect(candidate.palette.blue.light[40]).toMatch(/^#[0-9a-f]{6}$/);
     expect(candidate.palette.blue.dark[40]).toMatch(/^#[0-9a-f]{6}$/);
+    expect(candidate.black).toBe('#000000');
+    expect(candidate.white).toBe('#ffffff');
   });
 
   it('locks the normative recipe fixtures independently from the Sandbox', () => {
     expect(candidateDigest({families})).toBe(
-      '78ca5bd2afe44d448dc7fd2889196c5a562a9d1f1ff8efcccc67aa1d8a94b76c',
+      '44ba910320e57a8a56dd87d6a6540d4d21af97d465c6356c366328bee9949ef2',
     );
     expect(
       candidateDigest({
@@ -88,14 +90,14 @@ describe('astryx-oklch-v1 palette generator', () => {
           },
         ],
       }),
-    ).toBe('e3dbd30b3eb1e4c2a0350e1321ef44bf16c3ae48ac46ada0dad04368cdd6e4a1');
+    ).toBe('e91fe5f5b2350408a0f68bb76e5272011586b4a6d891625dfefeccfb3eebd071');
     expect(
       candidateDigest({
         modeStrategy: 'dark-only',
         stops: [40],
         families: [{id: 'red', name: 'Red', seed: '#d62830'}],
       }),
-    ).toBe('d54fe4d202d7bd49f8a286e97eadf9786fe71e21f15e0058975877581b7e025b');
+    ).toBe('61b51f9d23d389d7a2e4d5b3a4558a5ac301f98c48de729abd92c08537a099f3');
     expect(
       candidateDigest({
         stops: [60, 80, 95],
@@ -105,7 +107,7 @@ describe('astryx-oklch-v1 palette generator', () => {
           {id: 'cyan', name: 'Cyan', seed: '#0c6f82'},
         ],
       }),
-    ).toBe('991080568a4e1c1a4b1b23e1d9908fcdd688607aac6be4c55cd216b74ebe7c3d');
+    ).toBe('26a91ffab53c63a9dc1969568ce0d1b52ba3eefda228e05d61a9e4bd8530a57e');
   });
 
   it('defaults to 21 stops while allowing authors to omit endpoints', () => {

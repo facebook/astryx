@@ -23,6 +23,8 @@ import {
 /** @typedef {{recipe: typeof PALETTE_RECIPE, status: 'candidate', request: NormalizedRequest, families: GeneratedFamily[], coordination: Record<string, unknown>[], errors: {familyId: string, message: string}[]}} PaletteGenerationResult */
 
 export const PALETTE_RECIPE = 'astryx-oklch-v1';
+export const PALETTE_BLACK = '#000000';
+export const PALETTE_WHITE = '#ffffff';
 export const DEFAULT_21_STOPS = Object.freeze([
   0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
   100,
@@ -385,8 +387,8 @@ function assertAnchorSet(anchors, stops) {
       );
     }
     if (
-      (anchor.stop === 0 && color !== '#000000') ||
-      (anchor.stop === 100 && color !== '#ffffff')
+      (anchor.stop === 0 && color !== PALETTE_BLACK) ||
+      (anchor.stop === 100 && color !== PALETTE_WHITE)
     ) {
       throw new Error(
         `Anchor stop ${anchor.stop} is reserved for exact ${anchor.stop === 0 ? 'black' : 'white'}; use an interior stop for a tinted endpoint.`,
@@ -661,6 +663,8 @@ export function generateTonalPalette(input) {
     schemaVersion: 1,
     status: 'candidate',
     recipe: PALETTE_RECIPE,
+    black: PALETTE_BLACK,
+    white: PALETTE_WHITE,
     palette: Object.fromEntries(
       result.families.map(family => [
         family.id,

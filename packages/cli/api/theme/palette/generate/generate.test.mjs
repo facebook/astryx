@@ -48,6 +48,10 @@ describe('themePaletteGenerate', () => {
       50: expect.stringMatching(/^#[0-9a-f]{6}$/),
       80: expect.stringMatching(/^#[0-9a-f]{6}$/),
     });
+    expect(result.data.candidate).toMatchObject({
+      black: '#000000',
+      white: '#ffffff',
+    });
   });
 
   it('writes a candidate and detached reproducibility receipt together', () => {
@@ -74,6 +78,8 @@ describe('themePaletteGenerate', () => {
     expect(receipt.recipe).toBe('astryx-oklch-v1');
     expect(receipt.candidateSha256).toMatch(/^[0-9a-f]{64}$/);
     expect(candidate).toContain('// prettier-ignore');
+    expect(candidate).toContain("export const black = '#000000' as const;");
+    expect(candidate).toContain("export const white = '#ffffff' as const;");
     expect(candidate).toContain('export const palette =');
     expect(candidate).not.toContain('generateTonalPalette');
   });
@@ -90,6 +96,7 @@ describe('themePaletteGenerate', () => {
       fs.readFileSync(path.join(cwd, 'ocean.palette.json'), 'utf-8'),
     );
     expect(written).toEqual(result.data.candidate);
+    expect(written).toMatchObject({black: '#000000', white: '#ffffff'});
     expect(result.data.receipt).toBe('ocean.palette.receipt.json');
   });
 

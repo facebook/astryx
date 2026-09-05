@@ -11,7 +11,8 @@ export const doc = {
     'Reads an explicit JSON request and runs the versioned astryx-oklch-v1 recipe. ' +
     'The command defaults to 21 stops (0 through 100) but accepts any non-empty ordered ' +
     'numeric stop list, including decimals. Stops apply to every family in the request. ' +
-    'Authors may omit the repeated exact black and white endpoints with a custom list. ' +
+    'Authors may omit the repeated endpoints with a custom list; standalone exact black ' +
+    'and white values remain available in every candidate. ' +
     'For anchors, exact preserves the chosen color at its mode and stop; bounded allows ' +
     'movement within maxDeltaE; flexible uses the color as guidance. ' +
     'Without --out it prints a preview. With --out it writes a candidate file and detached ' +
