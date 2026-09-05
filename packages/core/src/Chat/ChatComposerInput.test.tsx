@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ChatComposer} from './ChatComposer';
 import {useChatComposerContext} from './ChatContext';
@@ -1377,6 +1377,79 @@ describe('ChatComposerInput', () => {
       fireEvent.input(textbox);
 
       expect(textbox.getAttribute('aria-expanded')).toBe('true');
+    });
+  });
+
+  describe('trigger menu hover scrolling', () => {
+    // Regression: the scroll-highlighted-item-into-view effect ran for
+    // mouse-hover highlights too. A pointer resting near the bottom of the
+    // menu kept scrolling: each scrollIntoView moved a new option under the
+    // stationary cursor, whose mouseenter re-highlighted and scrolled again.
+    // Hover must highlight only; keyboard navigation keeps its scrolling.
+    function openMenu() {
+      // jsdom does not implement scrollIntoView — install a spy directly.
+      const original = Element.prototype.scrollIntoView;
+      const spy = vi.fn();
+      Element.prototype.scrollIntoView = spy;
+      cleanupFns.push(() => {
+        Element.prototype.scrollIntoView = original;
+      });
+      render(<ChatComposerInput triggers={[createMentionTrigger()]} />);
+      const textbox = screen.getByRole('combobox');
+      textbox.focus();
+      const textNode = document.createTextNode('@');
+      textbox.appendChild(textNode);
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(textNode, 1);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      fireEvent.input(textbox);
+      expect(textbox.getAttribute('aria-expanded')).toBe('true');
+      return {textbox, spy};
+    }
+
+    // The menu layer is a `[popover]` element; jsdom has no popover semantics
+    // so testing-library's role queries see it as hidden. Query via
+    // aria-controls instead.
+    async function getMenuOptions(textbox: HTMLElement) {
+      const listbox = await waitFor(() => {
+        const el = document.getElementById(
+          textbox.getAttribute('aria-controls')!,
+        );
+        const options = el?.querySelectorAll<HTMLElement>('[role="option"]');
+        expect(options?.length ?? 0).toBeGreaterThan(1);
+        return options!;
+      });
+      return Array.from(listbox);
+    }
+
+    const cleanupFns: (() => void)[] = [];
+
+    afterEach(() => {
+      cleanupFns.splice(0).forEach(fn => fn());
+    });
+
+    it('does not scroll when hover highlights an option', async () => {
+      const {textbox, spy} = openMenu();
+      const callsAfterOpen = spy.mock.calls.length;
+
+      const options = await getMenuOptions(textbox);
+      fireEvent.mouseEnter(options[1]);
+
+      expect(options[1]).toHaveAttribute('aria-selected', 'true');
+      expect(spy.mock.calls.length).toBe(callsAfterOpen);
+    });
+
+    it('still scrolls on keyboard navigation', async () => {
+      const {textbox, spy} = openMenu();
+      const callsAfterOpen = spy.mock.calls.length;
+
+      await getMenuOptions(textbox);
+      fireEvent.keyDown(textbox, {key: 'ArrowDown'});
+
+      expect(spy.mock.calls.length).toBeGreaterThan(callsAfterOpen);
     });
   });
 });
