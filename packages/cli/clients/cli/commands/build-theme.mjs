@@ -39,6 +39,10 @@ import {themeAdd} from '../../../api/theme/add/add.mjs';
 import {themeTemplate} from '../../../api/theme/template/template.mjs';
 import {themeList} from '../../../api/theme/list/list.mjs';
 import {themeTargets} from '../../../api/theme/targets/targets.mjs';
+import {
+  serializePaletteCandidate,
+  themePaletteGenerate,
+} from '../../../api/theme/palette/generate/generate.mjs';
 import {themeBuild, importSpecifier} from '../../../api/theme/build/build.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as themeGroup} from './theme.doc.mjs';
@@ -47,11 +51,14 @@ import {doc as themeListCommand} from './theme-list.doc.mjs';
 import {doc as themeAddCommand} from './theme-add.doc.mjs';
 import {doc as themeTemplateCommand} from './theme-template.doc.mjs';
 import {doc as themeTargetsCommand} from './theme-targets.doc.mjs';
+import {doc as themePaletteGroup} from './theme-palette.doc.mjs';
+import {doc as themePaletteGenerateCommand} from './theme-palette-generate.doc.mjs';
 import {doc as themeBuildFn} from '../../../api/theme/themeBuild.doc.mjs';
 import {doc as themeListFn} from '../../../api/theme/themeList.doc.mjs';
 import {doc as themeAddFn} from '../../../api/theme/themeAdd.doc.mjs';
 import {doc as themeTemplateFn} from '../../../api/theme/themeTemplate.doc.mjs';
 import {doc as themeTargetsFn} from '../../../api/theme/themeTargets.doc.mjs';
+import {doc as themePaletteGenerateFn} from '../../../api/theme/themePaletteGenerate.doc.mjs';
 
 /**
  * Path to this CLI's real entry (clients/cli/bin/astryx.mjs), resolved from
@@ -77,7 +84,8 @@ function runThemeBuildOnceChild(file, options) {
   const cliBin = resolveCliBin();
   const args = [cliBin, 'theme', 'build', file];
   if (options.out) args.push('--out', options.out);
-  if (options.iconsSpecifier) args.push('--icons-specifier', options.iconsSpecifier);
+  if (options.iconsSpecifier)
+    args.push('--icons-specifier', options.iconsSpecifier);
   return new Promise((/** @type {(code: number) => void} */ resolve) => {
     const child = spawn(process.execPath, args, {
       stdio: 'inherit',
@@ -211,10 +219,19 @@ function formatTargetsTable(targets) {
     props: t.props.join(', ') || '-',
     states: t.states.join(', ') || '-',
   }));
-  const head = {key: 'key', component: 'component', props: 'props', states: 'states'};
+  const head = {
+    key: 'key',
+    component: 'component',
+    props: 'props',
+    states: 'states',
+  };
   const width = (/** @type {'key'|'component'|'props'} */ field) =>
     [head, ...rows].reduce((max, r) => Math.max(max, r[field].length), 0);
-  const w = {key: width('key'), component: width('component'), props: width('props')};
+  const w = {
+    key: width('key'),
+    component: width('component'),
+    props: width('props'),
+  };
   const line = (/** @type {typeof head} */ r) =>
     [
       r.key.padEnd(w.key),
@@ -269,6 +286,87 @@ export function registerTheme(program) {
       `  ${getCliInvocation()} component <Name>         One component's theming table\n` +
       `  ${getCliInvocation()} docs theme               How component overrides work\n`,
   );
+
+  const palette = defineCommand(theme, themePaletteGroup, {
+    action: (
+      /** @type {unknown} */ options,
+      /** @type {import('commander').Command} */ cmd,
+    ) => {
+      const extras = cmd?.args ?? [];
+      if (extras.length > 0) {
+        const suggestions = (palette.commands ?? []).map(command => ({
+          name: command.name(),
+          reason: 'available subcommand',
+        }));
+        cliError(`unknown subcommand 'theme palette ${String(extras[0])}'`, {
+          suggestions,
+          code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND,
+        });
+        return;
+      }
+      palette.help();
+    },
+  });
+
+  defineCommand(palette, themePaletteGenerateCommand, {
+    fn: themePaletteGenerateFn,
+    action: (
+      /** @type {string} */ configPath,
+      /** @type {{out?: string, preview?: string, overwrite?: boolean}} */ options,
+    ) => {
+      const json = program.opts().json || false;
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemePaletteGenerateResponse} */
+      let result;
+      try {
+        result = themePaletteGenerate(configPath, options, {
+          cwd: process.cwd(),
+        });
+      } catch (error) {
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (error);
+        cliError(err.message, {
+          suggestions: err.suggestions || [],
+          code: err.code,
+        });
+        return;
+      }
+
+      if (json) return jsonOut(result);
+      if (!result.data.output && !result.data.preview) {
+        emit(
+          section(
+            'Palette candidate',
+            `${result.data.familyCount} families · ${result.data.stopCount} stops · ${result.data.modes.join(', ')}`,
+          ),
+          code(serializePaletteCandidate(result.data.candidate).trimEnd()),
+        );
+        return;
+      }
+      if (!result.data.written) {
+        emit(
+          text(
+            '[skip] One or more requested palette outputs already exist — left as is.',
+          ),
+          text('Pass --overwrite to replace both generated candidate files.'),
+        );
+        return;
+      }
+      emit(
+        ...(result.data.output
+          ? [text(`[ok] Wrote ${result.data.output}`)]
+          : []),
+        ...(result.data.receipt
+          ? [text(`[ok] Wrote ${result.data.receipt}`)]
+          : []),
+        ...(result.data.preview
+          ? [text(`[ok] Wrote ${result.data.preview}`)]
+          : []),
+        text(
+          'Review and edit the candidate before adopting it as theme-owned palette data.',
+        ),
+      );
+    },
+  });
 
   defineCommand(theme, themeBuildCommand, {
     fn: themeBuildFn,

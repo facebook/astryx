@@ -191,6 +191,11 @@ export const doc = {
       description:
         'A theme file could not be loaded / parsed into a defineTheme result.',
     },
+    {
+      value: 'ERR_PALETTE_GENERATION',
+      description:
+        'A palette generation request or one of its constraints was invalid.',
+    },
 
     // Upgrade
     {

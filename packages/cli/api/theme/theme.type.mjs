@@ -15,6 +15,7 @@
  * xds --json theme add <slug>               -> theme.add
  * xds --json theme template                 -> theme.template
  * xds --json theme targets [filter]         -> theme.targets
+ * xds --json theme palette generate <file>  -> theme.palette.generate
  * (file not found / parse error)            -> CLIError
  *
  * @position api — colocated typedefs for api/theme/{theme,build,add,list,template,targets,_adapter}
@@ -96,6 +97,58 @@
  * @typedef {object} ThemeTargetsResponse
  * @property {'theme.targets'} type
  * @property {{filter: string | null, componentCount: number, targets: ThemeTargetEntry[]}} data
+ */
+
+/**
+ * A generated palette candidate. The palette is still subject to author review
+ * and is not connected to runtime theme values.
+ * @typedef {object} TonalPaletteAnchor
+ * @property {'light' | 'dark'} mode Mode containing the anchored stop.
+ * @property {number} stop Existing requested stop where the anchor applies.
+ * @property {string} color
+ * @property {'exact' | 'bounded' | 'flexible'} policy `exact` preserves the
+ * chosen color at that stop; `bounded` permits adjustment within `maxDeltaE`;
+ * `flexible` treats the color as guidance and blends toward it.
+ * @property {number} [maxDeltaE] Required non-negative perceptual-distance
+ * limit for a `bounded` anchor.
+ */
+
+/**
+ * @typedef {object} TonalPaletteFamilyInput
+ * @property {string} id
+ * @property {string} seed
+ * @property {string} [name]
+ * @property {'chromatic' | 'neutral'} [kind]
+ * @property {TonalPaletteAnchor[]} [anchors]
+ */
+
+/**
+ * @typedef {object} TonalPaletteGenerationInput
+ * @property {TonalPaletteFamilyInput[]} families
+ * @property {number} [vibrancy] Chroma control from 0 (most muted) through 50
+ * (default) to 100 (most vivid).
+ * @property {'neutral-v1' | 'warm-v1' | 'cool-v1' | 'custom'} [neutralProfile]
+ * @property {'light-only' | 'dark-only' | 'light-and-dark'} [modeStrategy]
+ * @property {number[]} [stops] Ordered stops shared by every requested family;
+ * defaults to 0 through 100 in increments of 5. Decimal stops are supported,
+ * and authors may omit the repeated black and white endpoints.
+ */
+
+/**
+ * @typedef {object} TonalPaletteCandidate
+ * @property {1} schemaVersion
+ * @property {'candidate'} status
+ * @property {'astryx-oklch-v1'} recipe
+ * @property {'#000000'} black Exact solid black for theme authoring outside a tonal family.
+ * @property {'#ffffff'} white Exact solid white for theme authoring outside a tonal family.
+ * @property {Record<string, {name: string, light?: Record<string, string>, dark?: Record<string, string>}>} palette
+ */
+
+/**
+ * xds --json theme palette generate <config>
+ * @typedef {object} ThemePaletteGenerateResponse
+ * @property {'theme.palette.generate'} type
+ * @property {{recipe: 'astryx-oklch-v1', status: 'candidate', familyCount: number, stopCount: number, modes: string[], output: string | null, receipt: string | null, preview: string | null, written: boolean, reason: 'exists' | null, candidate: TonalPaletteCandidate, generationReceipt: Record<string, unknown>}} data
  */
 
 // Make this a module so the @typedefs above are importable as types via

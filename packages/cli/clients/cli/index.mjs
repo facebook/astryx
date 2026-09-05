@@ -79,6 +79,7 @@ export const JSON_SUPPORTED = new Set([
   'theme add',
   'theme template',
   'theme targets',
+  'theme palette generate',
   'upgrade',
   'manifest',
   'doctor',

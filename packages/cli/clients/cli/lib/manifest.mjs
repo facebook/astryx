@@ -79,6 +79,7 @@ export const RESPONSE_TYPES = {
   'theme add': ['theme.list', 'theme.add'],
   'theme template': ['theme.template'],
   'theme targets': ['theme.targets'],
+  'theme palette generate': ['theme.palette.generate'],
   upgrade: ['upgrade.list', 'upgrade.status', 'upgrade.run'],
   manifest: ['manifest'],
   doctor: ['doctor'],
@@ -106,7 +107,11 @@ const EXAMPLES = {
   ],
   build: ['astryx build', 'astryx build "analytics dashboard" --json'],
   swizzle: ['astryx swizzle XDSButton'],
-  template: ['astryx template --json', 'astryx template dashboard ./src/app', 'astryx template --cdn'],
+  template: [
+    'astryx template --json',
+    'astryx template dashboard ./src/app',
+    'astryx template --cdn',
+  ],
   hook: ['astryx hook', 'astryx hook useFocusTrap --json'],
   'theme build': [
     'astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css',
@@ -118,7 +123,14 @@ const EXAMPLES = {
     'astryx theme add matcha ./src/themes/matcha',
   ],
   'theme template': ['astryx theme template', 'astryx theme template --json'],
-  'theme targets': ['astryx theme targets Switch', 'astryx --json theme targets'],
+  'theme targets': [
+    'astryx theme targets Switch',
+    'astryx --json theme targets',
+  ],
+  'theme palette generate': [
+    'astryx theme palette generate palette.config.json',
+    'astryx theme palette generate palette.config.json --out ocean.palette.json',
+  ],
   upgrade: ['astryx upgrade --json'],
   manifest: ['astryx manifest --json', 'astryx --json'],
   doctor: ['astryx doctor', 'astryx doctor --json'],

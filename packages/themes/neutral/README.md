@@ -40,6 +40,19 @@ theme-local import. Neutral currently uses 21 numbered stops in each light and
 dark ramp, but that layout is a Neutral decision rather than a requirement for
 other themes.
 
+Exact solid endpoints use the same stable palette namespace as the tonal
+families: `neutralPalettes.black` and `neutralPalettes.white`. Theme definitions
+can assign those values directly to semantic tokens without treating a neutral
+ramp endpoint as the named color.
+
+```ts
+import {neutralPalettes} from '@astryxdesign/theme-neutral';
+
+const tokens = {
+  '--color-background-inverted': [neutralPalettes.black, neutralPalettes.white],
+};
+```
+
 Neutral opts into a muted dark edge for chromatic families. Stops 5 through 25
 use 50% of their realized chroma, then recover smoothly to the standard dark
 recipe at stop 60. Yellow uses a gentler 65% edge multiplier. Light ramps,
