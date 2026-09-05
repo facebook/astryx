@@ -135,6 +135,21 @@ unreported base or mutable generator.
   including values currently equal to Core defaults. Output that records only
   differences remains dependent on future Core defaults and MUST NOT be labeled
   fully owned.
+- **FR5b — Authoring projection is separate from runtime representation.**
+  Materialization MAY produce a larger, fully explicit source projection so an
+  author can read, edit, review, and rebuild every resolved value. That projection
+  MUST NOT by itself force the shipped theme to carry the same expanded data.
+- **FR5c — Preview shows the size tradeoff.** Before writing, the preview MUST show
+  the source projection and the equivalent compiled/runtime output, including the
+  resulting CSS, JavaScript, and package-size impact compared with the current
+  theme. Inspecting or editing a resolved view MUST NOT be described as free of
+  runtime cost when the selected ownership choice would increase it.
+- **FR5d — Receipts and authoring metadata stay out of runtime artifacts.** Receipts,
+  provenance, comparison evidence, and authoring-only metadata MUST remain in
+  sidecar or development output and MUST NOT be bundled into runtime CSS,
+  JavaScript, or package exports. Equivalent runtime output MUST retain the
+  existing compact representation or use an equivalent deduplicated form. Detach
+  MAY accept a real size increase only as an explicit, previewed ownership tradeoff.
 - **FR6 — Theme ownership has an honest boundary.** Materialization freezes the
   theme values expressible through the current public authoring contract. It MUST
   state the Astryx version used and MUST NOT claim to freeze internal component
@@ -273,6 +288,7 @@ AST-023.
 | --------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
 | FR1–FR3   | CLI prompt and source-output fixtures for follow and owned-start choices                                     | A copied theme still imports its selected base, or a following theme is described as independent.                                 |
 | FR4–FR7   | Full-surface fixtures covering generators, inheritance, local tokens, media surfaces, and palette references | A supported surface disappears, precedence changes, or a theme-owned palette reference is needlessly severed.                     |
+| FR5b–FR5d | Source/runtime projection fixtures, compiled-size comparisons, and artifact-boundary checks                  | Reviewing a resolved theme inflates runtime output, or receipts and authoring metadata ship to consumers.                          |
 | FR8–FR10  | Executable-registry, overwrite, partial-freeze, and injected-failure tests                                   | An icon is stringified, a target is partly overwritten, or retained inheritance is hidden.                                        |
 | FR11–FR14 | Normalized-theme equivalence, deterministic snapshots, receipt schema, and preview tests                     | Before and after differ silently, output changes across identical runs, or a receipt omits a dependency.                          |
 | FR15–FR18 | Compatibility fixtures and legacy-color migration comparison                                                 | An unchanged convenience config renders differently, migration hides a color delta, or lifecycle work blocks palette foundations. |
@@ -285,6 +301,8 @@ This spec moves from `proposed` to `shipped` only when:
 - the supported detach/freeze surface is documented with non-destructive defaults;
 - full and partial materialization account for every current `DefineThemeInput`
   surface;
+- authoring projections are separate from compact runtime artifacts, and previews
+  show the source and compiled/package-size consequences;
 - unrepresentable executable values fail before writes with actionable guidance;
 - before/after structural equivalence is tested under one pinned Astryx version;
 - generated source and receipts are deterministic;
