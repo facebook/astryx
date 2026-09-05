@@ -23,7 +23,7 @@ import {
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 
 const BASELINE_BOOTSTRAP_SHA256 =
-  '8549e008d88a0dcbba64cd704f0a02a98c17cfb3ac1d1d0555ff61823fe6fd40';
+  '0e379f365073a8c0872451208e0a8d57f18ebdee513f3877187cf4b344431155';
 
 const args = process.argv.slice(2);
 const getArg = name => {
