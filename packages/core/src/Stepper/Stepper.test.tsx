@@ -1820,19 +1820,38 @@ describe('Stepper', () => {
       }
     });
 
-    it('declares the default on the Stepper root, where a theme reaches it', () => {
-      // Component vars are root-owned. Declared on each connector instead —
-      // where this started — every connector re-declared 0px on itself, and a
-      // declared value beats an inherited one, so a generated `stepper`
-      // override compiled cleanly and changed nothing.
+    it('defaults to no connector gap at the point of use', () => {
       const {container} = render(onTrack('vertical'));
       const root = container.querySelector('.astryx-stepper') as HTMLElement;
-      expect(declarationsFor(root)).toContain('--step-connector-gap:0px');
-
       const lead = container.querySelector(
         '.astryx-step-connector',
       ) as HTMLElement;
-      expect(declarationsFor(lead)).not.toContain('--step-connector-gap:0px');
+
+      expect(declarationsFor(root)).not.toContain('--step-connector-gap');
+      expect(declarationsFor(lead)).toContain('var(--step-connector-gap,0px)');
+    });
+
+    it('inherits a horizontal frame override without redeclaring the variable', () => {
+      // Horizontal layout props belong to the frame. The list must leave the
+      // public variable undeclared so that value reaches its connectors; the
+      // use-site fallback above supplies 0px when no override exists.
+      const {container} = render(
+        <Stepper
+          activeStep={1}
+          orientation="horizontal"
+          indicatorPosition="on-track"
+          style={{'--step-connector-gap': '6px'} as React.CSSProperties}>
+          <Step step={0} label="One" />
+          <Step step={1} label="Two" />
+        </Stepper>,
+      );
+      const root = container.querySelector('.astryx-stepper') as HTMLElement;
+      const frame = container.querySelector(
+        '.astryx-stepper-frame',
+      ) as HTMLElement;
+      expect(frame.style.getPropertyValue('--step-connector-gap')).toBe('6px');
+      expect(root.style.getPropertyValue('--step-connector-gap')).toBe('');
+      expect(declarationsFor(root)).not.toContain('--step-connector-gap');
     });
 
     it('emits a root-owned override through the theme build path', () => {

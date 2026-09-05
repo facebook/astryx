@@ -233,6 +233,11 @@ const BAR_WIDTH = spacingVars['--spacing-1'];
  *   stretched outside the segment's own box.
  * - `min(…, --spacing-2)` — the flexible segment's own `min-height`, so an
  *   oversized gap leaves a short track rather than an unbounded one.
+ *
+ * The custom property's 0px default belongs at this consumption site rather
+ * than on the list. That lets a horizontal Stepper inherit a consumer value
+ * from its styled frame while a theme can still set the property directly on
+ * the `stepper` target.
  */
 const CONNECTOR_GAP = `max(0px, min(var(--step-connector-gap, 0px), ${spacingVars['--spacing-2']}))`;
 
