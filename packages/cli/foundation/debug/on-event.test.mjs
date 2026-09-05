@@ -25,6 +25,7 @@ import {
   setGlobalOptions,
   setOutcome,
   setEventHandler,
+  setIntegrationEventHandlers,
   noteConfigGateSkipped,
   recordEnvelope,
   recordHelp,
@@ -386,7 +387,16 @@ describe('the config gate, when it guesses wrong', () => {
       noteConfigGateSkipped();
       setEventHandler(() => {});
     });
-    expect(said).toMatch(/astryx\.config sets `debug`/);
+    expect(said).toMatch(/a debug handler was registered/);
+  });
+
+  it('says so when the handler that turns up came from an integration', () => {
+    const said = withStderr(() => {
+      begin({argv: []});
+      noteConfigGateSkipped();
+      setIntegrationEventHandlers([() => {}]);
+    });
+    expect(said).toMatch(/a debug handler was registered/);
   });
 
   it('stays quiet when the gate was right', () => {
@@ -424,7 +434,7 @@ describe('the config gate, when it guesses wrong', () => {
       setEventHandler(() => {});
       setEventHandler(() => {});
     });
-    expect(said.match(/astryx\.config sets/g)).toHaveLength(1);
+    expect(said.match(/a debug handler was registered/g)).toHaveLength(1);
   });
 
   it('stays quiet under --json, where stderr is still not the place', () => {

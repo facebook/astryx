@@ -44,6 +44,15 @@ describe('search leaf — envelope + ranking', () => {
     expect(r.data.results.length).toBeGreaterThan(0);
   }, SLOW);
 
+  it('keeps tokenizer coverage out of the public result shape', async () => {
+    const r = await search('table of contents', {cwd});
+    expect(r.data.results.length).toBeGreaterThan(0);
+    for (const result of r.data.results) {
+      expect(result).not.toHaveProperty('matchedTerms');
+      expect(result).not.toHaveProperty('queryTerms');
+    }
+  }, SLOW);
+
   it('returns an empty result set (not an error) for a no-match query', async () => {
     const r = await search('zzznomatch99', {cwd});
     expect(r.type).toBe('search');
@@ -58,6 +67,40 @@ describe('search leaf — envelope + ranking', () => {
   it('caps results to a positive limit', async () => {
     const r = await search('button', {cwd, limit: 2});
     expect(r.data.results.length).toBeLessThanOrEqual(2);
+  }, SLOW);
+});
+
+describe('search leaf — matchCount is the total, not the cap', () => {
+  it('reports every match while `results` stays bounded by the limit', async () => {
+    // The regression: `matchCount` used to be `results.length`, so a query
+    // matching 57 things reported 20 — the cap read back as the answer. Any
+    // consumer counting matches (the recorded run, a caller paginating) then
+    // could not tell a capped answer from an exactly-cap-sized one.
+    const capped = await search('button', {cwd, limit: 2});
+    expect(capped.data.results.length).toBe(2);
+    expect(capped.data.matchCount).toBeGreaterThan(2);
+
+    // Same query, no meaningful cap: the count is stable across limits, which
+    // is what makes it a count of MATCHES rather than of what was returned.
+    const full = await search('button', {cwd, limit: 500});
+    expect(full.data.matchCount).toBe(capped.data.matchCount);
+    expect(full.data.results.length).toBe(full.data.matchCount);
+  }, SLOW);
+
+  it('reports 0 for a no-match query', async () => {
+    const r = await search('zzznomatch99', {cwd});
+    expect(r.data.matchCount).toBe(0);
+  }, SLOW);
+
+  it('counts only the requested domain under --type', async () => {
+    const all = await search('button', {cwd, limit: 500});
+    const components = await search('button', {
+      cwd,
+      type: 'component',
+      limit: 500,
+    });
+    expect(components.data.matchCount).toBe(components.data.results.length);
+    expect(components.data.matchCount).toBeLessThanOrEqual(all.data.matchCount);
   }, SLOW);
 });
 
@@ -86,6 +129,17 @@ describe('search leaf — exact keyword phrase outranks incidental token matches
     const r = await search('heading navigation', {cwd});
     expect(r.data.results[0]?.name).toBe('Outline');
   }, SLOW);
+
+  it('preserves query coverage metadata on the promoted exact phrase', () => {
+    const query = 'table of contents';
+    const tokens = tokenizeQuery(query);
+    expect(
+      scoreQuery(query, tokens, {
+        name: 'Outline',
+        keywords: [query],
+      }),
+    ).toMatchObject({matched: tokens.length, total: tokens.length});
+  });
 
   it('still returns no results for a nonsense query (the fix does not loosen matching)', async () => {
     const r = await search('zzzzqqqx', {cwd});

@@ -30,6 +30,14 @@ const REPO_ROOT = path.resolve(
   '../../../..',
 );
 const CORE_SRC_DIR = path.join(REPO_ROOT, 'packages/core/src');
+const COMPONENT_REGISTRY_PATH = new URL(
+  '../generated/componentRegistry.ts',
+  import.meta.url,
+);
+const COMPONENT_REGISTRY_SOURCE = fs.readFileSync(
+  COMPONENT_REGISTRY_PATH,
+  'utf-8',
+);
 
 function findFiles(dir: string, predicate: (filePath: string) => boolean) {
   const files: string[] = [];
@@ -173,6 +181,19 @@ describe('packageRegistry', () => {
 // ── Component Registry ─────────────────────────────────────────────────
 
 describe('componentRegistry', () => {
+  it('derives playground types from the CLI authoring contract', () => {
+    const playground: NonNullable<ComponentEntry['playground']> = {
+      wrapper: {component: 'Layout', slotProp: 'start'},
+    };
+    expect(COMPONENT_REGISTRY_SOURCE).toContain(
+      "from '@astryxdesign/cli/authoring'",
+    );
+    expect(COMPONENT_REGISTRY_SOURCE).toContain(
+      'export type PlaygroundConfig = ComponentPlaygroundConfig;',
+    );
+    expect(playground.wrapper?.slotProp).toBe('start');
+  });
+
   it('discovers components in @astryxdesign/core', () => {
     expect(components['@astryxdesign/core']).toBeDefined();
     expect(components['@astryxdesign/core'].length).toBeGreaterThan(100);
@@ -334,6 +355,21 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('Tokenizer satisfies its required value prop via playground defaults', () => {
+    const core = components['@astryxdesign/core'];
+    const tokenizer = core.find(c => c.name === 'Tokenizer');
+    expect(tokenizer).toBeDefined();
+    // `value` is an array of custom items the preview cannot auto-generate;
+    // without this default the properties tab has no interactive preview.
+    expect(tokenizer!.playground?.defaults).toMatchObject({
+      label: 'Tags',
+      value: [
+        {id: '1', label: 'Design'},
+        {id: '2', label: 'Engineering'},
+      ],
+    });
+  });
+
   it('MetadataListItem declares a playground wrapper for realistic preview structure', () => {
     const core = components['@astryxdesign/core'];
     const metadataListItem = core.find(c => c.name === 'MetadataListItem');
@@ -412,6 +448,20 @@ describe('componentRegistry', () => {
     expect(stackItem!.playground?.defaults).toMatchObject({
       size: 'fill',
       children: expect.objectContaining({__element: 'Card'}),
+    });
+  });
+
+  it('LayoutPanel declares a playground wrapper in start slot so hasDivider preview is not 0px (#5897)', () => {
+    const core = components['@astryxdesign/core'];
+    const layoutPanel = core.find(c => c.name === 'LayoutPanel');
+    expect(layoutPanel).toBeDefined();
+    expect(layoutPanel!.playground?.defaults).toMatchObject({
+      children: expect.any(String),
+      hasDivider: true,
+    });
+    expect(layoutPanel!.playground?.wrapper).toMatchObject({
+      component: 'Layout',
+      slotProp: 'start',
     });
   });
 

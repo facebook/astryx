@@ -14,9 +14,10 @@ Every command the CLI prints is then wrong, including the invocation line
 written into the agent-docs block, which agents copy verbatim into their own
 runs.
 
-A single lockfile still outranks everything else in its directory, unchanged.
-When several sit in one directory the tie is broken only from evidence the
-project owns: the declared `packageManager` field, then a committed
+An explicit `packageManager` declaration is authoritative even when the
+project also contains one or several lockfiles. Without a declaration, a
+single lockfile remains decisive. When several lockfiles sit in one directory,
+the tie is broken only from other evidence the project owns: a committed
 package-manager config file (`pnpm-workspace.yaml`, `.yarnrc.yml`,
 `bunfig.toml`). A stray `install` drops a lockfile; it writes none of those.
 

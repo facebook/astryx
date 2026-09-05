@@ -4,8 +4,9 @@
 
 /**
  * @file InteractivePreview tests.
- * @input InteractivePreviewStage and a radio-item playground preview
- * @output Regression coverage for wrapper-owned selection state.
+ * @input InteractivePreviewStage with radio-item and Tokenizer playground previews
+ * @output Regression coverage for wrapper-owned selection state and for the
+ *   controlled-value change bridge.
  */
 
 import {
@@ -20,6 +21,7 @@ import '@testing-library/jest-dom/vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {InteractivePreviewStage} from '../components/component-detail/InteractivePreview';
+import {pickPrimaryProps} from '../components/component-detail/interactiveState';
 
 vi.mock('@stylexjs/stylex', () => ({
   create: (styles: unknown) => styles,
@@ -94,6 +96,41 @@ function MockRadioItem({value, label}: {value: string; label: string}) {
   );
 }
 
+type TokenItem = {id: string; label: string};
+
+function MockTokenizer({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: TokenItem[];
+  onChange: (items: TokenItem[], change: unknown) => void;
+}) {
+  return createElement(
+    'div',
+    {'aria-label': label, role: 'group'},
+    value.map(item =>
+      createElement(
+        'span',
+        {key: item.id},
+        createElement('span', null, item.label),
+        createElement(
+          'button',
+          {
+            onClick: () =>
+              onChange(
+                value.filter(entry => entry.id !== item.id),
+                {item, type: 'remove'},
+              ),
+          },
+          `Remove ${item.label}`,
+        ),
+      ),
+    ),
+  );
+}
+
 vi.mock('@astryxdesign/core', () => ({
   Button: MockButton,
   Card: Box,
@@ -102,6 +139,7 @@ vi.mock('@astryxdesign/core', () => ({
   DropdownMenuRadioGroup: MockRadioGroup,
   DropdownMenuRadioItem: MockRadioItem,
   Text: Box,
+  Tokenizer: MockTokenizer,
   VStack: Box,
 }));
 
@@ -144,5 +182,42 @@ describe('InteractivePreviewStage', () => {
 
     await user.click(item);
     expect(item).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('drops a removed Tokenizer token from the rendered preview (#5981)', async () => {
+    const user = userEvent.setup();
+    const knobs = pickPrimaryProps('Tokenizer', [
+      {name: 'label', type: 'string', description: '', required: true},
+      {name: 'value', type: 'T[]', description: '', required: true},
+      {
+        name: 'onChange',
+        type: '(items: T[], change: TokenizerChange<T>) => void',
+        description: '',
+        required: true,
+      },
+    ]);
+
+    function PreviewHarness() {
+      const [value, setValue] = useState<TokenItem[]>([
+        {id: '1', label: 'Design'},
+        {id: '2', label: 'Engineering'},
+      ]);
+      return createElement(InteractivePreviewStage, {
+        name: 'Tokenizer',
+        state: {label: 'Tags', value},
+        knobs,
+        onPropChange: (_propName: string, nextValue: unknown) =>
+          setValue(nextValue as TokenItem[]),
+      });
+    }
+
+    render(createElement(PreviewHarness));
+    expect(screen.getByText('Design')).toBeInTheDocument();
+    expect(screen.getByText('Engineering')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Remove Design'}));
+
+    expect(screen.queryByText('Design')).not.toBeInTheDocument();
+    expect(screen.getByText('Engineering')).toBeInTheDocument();
   });
 });

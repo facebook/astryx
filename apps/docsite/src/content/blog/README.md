@@ -190,7 +190,5 @@ It's type-aware (a changelog `update`, an `engineering` deep-dive, and a
 `perspective` essay are judged by different profiles), gates on accuracy
 (verifiable claims — commands, APIs, numbers — are checked against the codebase,
 and a confirmed error blocks publish), and checks substance, efficiency, craft,
-and voice **without homogenizing your voice**. The same rubric powers the Copilot
-reviewer at `.github/instructions/blog.instructions.md`, so a blog-post PR gets
-the check automatically. Reading it before you write is the fastest way to land
-an A.
+and voice **without homogenizing your voice**. Reading it before you write is
+the fastest way to land an A.

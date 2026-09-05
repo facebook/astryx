@@ -36,6 +36,22 @@ import {useInputContainer} from '../hooks';
 import {FormLayoutContext} from '../FormLayout/FormLayoutContext';
 
 const styles = stylex.create({
+  // The label and its description read as a single block, with no space
+  // between them. They need a wrapper of their own to get that: as bare
+  // siblings they pick up the column gap of whichever caller holds them
+  // (Field, CheckboxInput, Switch), which is the spacing meant to separate
+  // the label group from the control below it.
+  labelGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  // A hidden label group must not take a slot in the caller's layout, or an
+  // empty box would draw the caller's gap around nothing. Dropping the
+  // wrapper box leaves the sr-only children out of flow directly under the
+  // caller, so the group occupies no space at all.
+  labelGroupHidden: {
+    display: 'contents',
+  },
   label: {
     display: 'flex',
     alignItems: 'center',
@@ -275,49 +291,61 @@ export function FieldLabel({
     </>
   );
 
+  const labelElement = (
+    <LabelElement
+      ref={ref}
+      id={labelID}
+      // `htmlFor` only applies to a real `<label>` associating with a single
+      // control; a group label (span) has no `htmlFor`.
+      htmlFor={isGroupLabel ? undefined : inputID}
+      {...rest}
+      {...mergeProps(
+        // A control that knows what kind of label this is passes its own
+        // target down (CheckboxInput's `checkbox-label`, Switch's
+        // `switch-label`); it arrives as `className` and composes onto this
+        // one. The label itself does not describe its own placement — it
+        // cannot know it, and any encoding it guessed would be wrong for a
+        // caller that arranges labels differently (Field's
+        // `horizontal-labels`).
+        themeProps('field-label'),
+        stylex.props(
+          styles.label,
+          isDisabled && styles.labelDisabled,
+          isLabelHidden && styles.srOnly,
+          xstyle,
+        ),
+        className,
+        style,
+      )}>
+      {labelContent}
+    </LabelElement>
+  );
+
+  // Without a description, preserve the original public DOM: the label itself
+  // remains the caller's flex/grid item and its layout overrides apply there.
+  if (!description) {
+    return labelElement;
+  }
+
   return (
-    <>
-      <LabelElement
-        ref={ref}
-        id={labelID}
-        // `htmlFor` only applies to a real `<label>` associating with a single
-        // control; a group label (span) has no `htmlFor`.
-        htmlFor={isGroupLabel ? undefined : inputID}
-        {...rest}
-        {...mergeProps(
-          // A control that knows what kind of label this is passes its own
-          // target down (CheckboxInput's `checkbox-label`, Switch's
-          // `switch-label`); it arrives as `className` and composes onto this
-          // one. The label itself does not describe its own placement — it
-          // cannot know it, and any encoding it guessed would be wrong for a
-          // caller that arranges labels differently (Field's
-          // `horizontal-labels`).
-          themeProps('field-label'),
-          stylex.props(
-            styles.label,
-            isDisabled && styles.labelDisabled,
-            isLabelHidden && styles.srOnly,
-            xstyle,
-          ),
-          className,
-          style,
+    <div
+      {...stylex.props(
+        styles.labelGroup,
+        isLabelHidden && styles.labelGroupHidden,
+      )}>
+      {labelElement}
+      <span
+        ref={forwardsDescriptionClick ? descriptionRef : undefined}
+        id={descriptionID}
+        {...(forwardsDescriptionClick ? descriptionClickProps : undefined)}
+        {...stylex.props(
+          styles.description,
+          forwardsDescriptionClick && styles.descriptionClickable,
+          isLabelHidden && styles.srOnly,
         )}>
-        {labelContent}
-      </LabelElement>
-      {description && (
-        <span
-          ref={forwardsDescriptionClick ? descriptionRef : undefined}
-          id={descriptionID}
-          {...(forwardsDescriptionClick ? descriptionClickProps : undefined)}
-          {...stylex.props(
-            styles.description,
-            forwardsDescriptionClick && styles.descriptionClickable,
-            isLabelHidden && styles.srOnly,
-          )}>
-          {description}
-        </span>
-      )}
-    </>
+        {description}
+      </span>
+    </div>
   );
 }
 

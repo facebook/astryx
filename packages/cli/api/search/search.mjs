@@ -65,6 +65,7 @@ import {discoverTemplates, extractComponents} from '../template/template.mjs';
 import {loadDocsCatalog, loadTopicDoc} from '../docs/_adapter.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {setResultCoverage} from './coverage.mjs';
 
 /**
  * A search candidate gathered from one content domain. Extra underscore-
@@ -274,7 +275,7 @@ export function scoreQuery(term, tokens, candidate) {
   // of Table-related templates each match "table" and "contents" separately
   // and accumulate a higher raw score (#5239).
   if (full && full.score >= 90) {
-    return {score: full.score + 100, reason: full.reason};
+    return asFull({score: full.score + 100, reason: full.reason});
   }
 
   // Multi-word natural language: score each content token, counting only
@@ -724,39 +725,43 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
     name: c.name,
     score,
     reason,
-    matchedTerms,
-    queryTerms,
     description: c.description || '',
   };
+  let result;
   switch (c.domain) {
     case 'component':
-      return {
+      result = {
         ...base,
         import: c._import,
         command: `astryx component ${c.name}`,
       };
+      break;
     case 'hook':
-      return {
+      result = {
         ...base,
         import: c._import,
         command: `astryx hook ${c.name}`,
       };
+      break;
     case 'doc':
-      return {
+      result = {
         ...base,
         title: c._title,
         command: `astryx docs ${c.name}`,
       };
+      break;
     case 'template':
-      return {
+      result = {
         ...base,
         displayName: c._displayName,
         kind: c._kind,
         command: `astryx template ${c.name}`,
       };
+      break;
     default:
-      return base;
+      result = base;
   }
+  return setResultCoverage(result, matchedTerms, queryTerms);
 }
 
 /**
@@ -767,7 +772,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
  * @param {string} [options.cwd]
  * @param {'component'|'hook'|'doc'|'template'} [options.type] - Restrict to one domain.
  * @param {number} [options.limit] - Max results (default 20).
- * @returns {Promise<{type: 'search', data: {query: string, results: Array<object>}}>}
+ * @returns {Promise<{type: 'search', data: {query: string, matchCount: number, results: Array<object>}}>}
  */
 export async function search(query, options = {}) {
   const {cwd = process.cwd(), type, limit = 20} = options;
@@ -842,7 +847,19 @@ export async function search(query, options = {}) {
       a.name.localeCompare(b.name),
   );
 
+  // `results` is bounded by `limit` so a caller (and the recorded run that
+  // quotes it) never carries an unbounded payload. `matchCount` is the number
+  // of matches that bound was applied TO — reporting `results.length` there
+  // would report the cap back as if it were the answer, so a query matching
+  // 57 things and one matching exactly 20 would be indistinguishable.
   const limited = scored.slice(0, limit);
 
-  return {type: 'search', data: {query: String(query).trim(), results: limited}};
+  return {
+    type: 'search',
+    data: {
+      query: String(query).trim(),
+      matchCount: scored.length,
+      results: limited,
+    },
+  };
 }

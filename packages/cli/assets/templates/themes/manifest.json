@@ -9,10 +9,7 @@
       "maintained": false,
       "entry": "butterTheme.ts",
       "exportName": "butterTheme",
-      "files": [
-        "butterTheme.ts",
-        "icons.tsx"
-      ]
+      "files": ["butterTheme.ts", "icons.tsx"]
     },
     {
       "slug": "chocolate",
@@ -21,10 +18,7 @@
       "maintained": false,
       "entry": "chocolateTheme.ts",
       "exportName": "chocolateTheme",
-      "files": [
-        "chocolateTheme.ts",
-        "icons.tsx"
-      ]
+      "files": ["chocolateTheme.ts", "icons.tsx"]
     },
     {
       "slug": "gothic",
@@ -33,10 +27,7 @@
       "maintained": false,
       "entry": "gothicTheme.ts",
       "exportName": "gothicTheme",
-      "files": [
-        "gothicTheme.ts",
-        "icons.tsx"
-      ]
+      "files": ["gothicTheme.ts", "icons.tsx"]
     },
     {
       "slug": "matcha",
@@ -45,10 +36,7 @@
       "maintained": false,
       "entry": "matchaTheme.ts",
       "exportName": "matchaTheme",
-      "files": [
-        "matchaTheme.ts",
-        "icons.tsx"
-      ]
+      "files": ["matchaTheme.ts", "icons.tsx"]
     },
     {
       "slug": "neutral",
@@ -59,7 +47,11 @@
       "exportName": "neutralTheme",
       "files": [
         "neutralTheme.ts",
-        "icons.tsx"
+        "icons.tsx",
+        "neutralPalettes.ts",
+        "neutralPalettes.generated.ts",
+        "neutralPalettes.generated.receipt.json",
+        "palette.config.json"
       ]
     },
     {
@@ -69,10 +61,7 @@
       "maintained": false,
       "entry": "stoneTheme.ts",
       "exportName": "stoneTheme",
-      "files": [
-        "stoneTheme.ts",
-        "icons.tsx"
-      ]
+      "files": ["stoneTheme.ts", "icons.tsx"]
     },
     {
       "slug": "y2k",
@@ -81,10 +70,7 @@
       "maintained": false,
       "entry": "y2kTheme.ts",
       "exportName": "y2kTheme",
-      "files": [
-        "y2kTheme.ts",
-        "icons.tsx"
-      ]
+      "files": ["y2kTheme.ts", "icons.tsx"]
     }
   ]
 }

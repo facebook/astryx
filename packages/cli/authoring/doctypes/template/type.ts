@@ -115,6 +115,8 @@ export type TemplateCategory =
   | 'Form - Checkout'
   | 'Form - Two-column'
   | 'Form - Wizard'
+  | 'Form - Wizard Dialog'
+  | 'Form - Wizard Inline'
   | 'Form - Modal Overlay'
   | 'Form - Side Sheet'
   | 'Form - Inline Edits'

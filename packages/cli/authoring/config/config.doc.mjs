@@ -48,7 +48,7 @@ export const doc = {
       name: 'debug',
       type: '(event: DebugEvent) => void',
       description:
-        'Record every command run. The handler is synchronous; promises are not awaited and output goes to stderr. Declare `debug` directly in this file so early commands can discover it.',
+        'Record every command run. The handler is synchronous; promises are not awaited and output goes to stderr. Declare `debug` directly in this file so early commands can discover it. An integration can supply one too, as a `debug` named export from its manifest — both run; set `{"astryx": {"inheritDebug": false}}` in package.json to take only your own.',
       example:
         "event => appendFileSync('runs.ndjson', JSON.stringify(event) + '\\n')",
     },

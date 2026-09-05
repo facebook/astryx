@@ -444,6 +444,105 @@ describe('component detail preview state', () => {
     expect(onPropChange).toHaveBeenCalledWith('value', 42);
   });
 
+  it('bridges Selector onChange even though its optional value prop is not seeded (#5909 follow-up)', () => {
+    const knobs = pickPrimaryProps('Selector', [
+      prop({name: 'label', type: 'string', required: true}),
+      prop({name: 'options', type: 'SelectorOption[]', required: true}),
+      prop({name: 'value', type: 'string'}),
+      prop({name: 'onChange', type: '(value: string) => void'}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {
+        label: 'Fruit',
+        options: [
+          {value: 'apple', label: 'Apple'},
+          {value: 'orange', label: 'Orange'},
+        ],
+      },
+    });
+    expect(state.value).toBeUndefined();
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+
+    const onPropChange = vi.fn();
+    const runtimeState = buildRuntimePreviewState(state, onPropChange, {knobs});
+
+    (runtimeState.onChange as (value: string) => void)('orange');
+    expect(onPropChange).toHaveBeenCalledWith('value', 'orange');
+  });
+
+  it('bridges a Tokenizer removal back to its controlled value', () => {
+    const knobs = pickPrimaryProps('Tokenizer', [
+      prop({name: 'label', type: 'string', required: true}),
+      prop({name: 'value', type: 'T[]', required: true}),
+      prop({
+        name: 'onChange',
+        type: '(items: T[], change: TokenizerChange<T>) => void',
+        required: true,
+      }),
+    ]);
+
+    const seeded = [
+      {id: '1', label: 'Design'},
+      {id: '2', label: 'Engineering'},
+    ];
+    const onPropChange = vi.fn();
+    const runtimeState = buildRuntimePreviewState(
+      {label: 'Tags', value: seeded},
+      onPropChange,
+      {knobs},
+    );
+
+    // onChange's first param is `items`, which is not a prop — it falls back
+    // to the controlled `value`, so removing a token updates the preview.
+    expect(runtimeState.onChange).toEqual(expect.any(Function));
+    (runtimeState.onChange as (items: unknown[], change: unknown) => void)(
+      [seeded[1]],
+      {item: seeded[0], type: 'remove'},
+    );
+    expect(onPropChange).toHaveBeenCalledWith('value', [seeded[1]]);
+  });
+
+  it('bridges a Switch toggle back to its controlled value', () => {
+    const knobs = pickPrimaryProps('Switch', [
+      prop({name: 'value', type: 'boolean', required: true}),
+      prop({
+        name: 'onChange',
+        type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void',
+      }),
+    ]);
+
+    const onPropChange = vi.fn();
+    const runtimeState = buildRuntimePreviewState(
+      {value: false},
+      onPropChange,
+      {
+        knobs,
+      },
+    );
+
+    (runtimeState.onChange as (checked: boolean) => void)(true);
+    expect(onPropChange).toHaveBeenCalledWith('value', true);
+  });
+
+  it('does not invent a value target for non-onChange handlers', () => {
+    const knobs = pickPrimaryProps('OverflowList', [
+      prop({name: 'value', type: 'string'}),
+      prop({
+        name: 'onOverflowChange',
+        type: '(overflowItems: OverflowItem[]) => void',
+      }),
+    ]);
+
+    const state = {value: 'a'};
+    const onPropChange = vi.fn();
+    const runtimeState = buildRuntimePreviewState(state, onPropChange, {knobs});
+
+    // `overflowItems` is not a prop, and a named on*Change handler reports
+    // something other than the controlled value — leave it alone.
+    expect(runtimeState).toBe(state);
+  });
+
   it('leaves callbacks alone when no matching value prop exists in state', () => {
     const knobs = pickPrimaryProps('Button', [
       prop({name: 'label', type: 'string'}),
