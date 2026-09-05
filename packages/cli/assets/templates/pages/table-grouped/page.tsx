@@ -78,6 +78,7 @@ import * as stylex from '@stylexjs/stylex';
 import {
   Area,
   AreaChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -858,9 +859,11 @@ function DetailChart({
                 <stop offset="100%" stopColor={color} stopOpacity={0} />
               </linearGradient>
             </defs>
-            {/* No CartesianGrid. A line at every Y tick reads as a table ruled
-            behind a table, and the only one doing work is the baseline the
-            area sits on — which is the axis line, so draw it there. */}
+            {/* No CartesianGrid and no axis line. A rule at every Y tick reads
+              as a table ruled behind a table, and an axis line at the bottom
+              marks the frame rather than anything in the data. The one rule
+              worth drawing is where the window opened: everything above it is
+              the gain the Change column reports, everything below the loss. */}
             <XAxis
               dataKey="day"
               type="number"
@@ -868,8 +871,14 @@ function DetailChart({
               ticks={ticks}
               tickFormatter={(day: number) => data[day]?.label ?? ''}
               tick={AXIS_TICK}
-              axisLine={{stroke: GRID_COLOR}}
+              axisLine={false}
               tickLine={false}
+              interval="preserveStartEnd"
+            />
+            <ReferenceLine
+              y={data[0].value}
+              stroke={GRID_COLOR}
+              strokeDasharray="3 3"
             />
             <YAxis hide domain={['dataMin', 'dataMax']} />
             <Tooltip content={<DetailTooltip color={color} />} />
