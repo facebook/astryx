@@ -549,6 +549,25 @@ describe('BaseTable', () => {
       expect(screen.getByTestId('plugin-table')).toBeInTheDocument();
     });
 
+    it('lets transformTable attach a ref to the <table> without displacing the consumer ref', () => {
+      const pluginRef = vi.fn();
+      const consumerRef = {current: null as HTMLTableElement | null};
+      const plugin: TablePlugin<User> = {
+        transformTable: props => ({...props, ref: pluginRef}),
+      };
+      render(
+        <BaseTable
+          ref={consumerRef}
+          data={users}
+          columns={columns}
+          plugins={[plugin]}
+        />,
+      );
+      const table = screen.getByRole('table');
+      expect(pluginRef).toHaveBeenCalledWith(table);
+      expect(consumerRef.current).toBe(table);
+    });
+
     it('applies transformHeaderRow plugin', () => {
       const plugin: TablePlugin<User> = {
         transformHeaderRow: props => ({

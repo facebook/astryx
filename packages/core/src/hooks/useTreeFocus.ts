@@ -6,7 +6,8 @@
  * @file useTreeFocus.ts
  * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect, isRtlElement
  * @output Exports useTreeFocus hook for WAI-ARIA tree keyboard navigation
- * @position Core hook; used by TreeList for roving tabindex + APG tree keyboard model
+ * @position Core hook; used by TreeList for roving tabindex + APG tree keyboard
+ *   model, and by the Table tree plugin (treegrid rows, via `itemSelector`)
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
@@ -49,6 +50,11 @@ export interface UseTreeFocusOptions {
    * DOM order (collapsed subtrees are not rendered, so they are naturally
    * excluded). Disabled treeitems are still matched and then skipped via
    * {@link UseTreeFocusOptions.isItemDisabled}.
+   *
+   * The same selector resolves which item owns focus on a key press (the
+   * nearest matching ancestor of the active element), so a host whose items
+   * are not treeitems — a treegrid's rows — passes its own selector and
+   * composes the whole keyboard model.
    * @default '[role="treeitem"]'
    */
   itemSelector?: string;
@@ -417,10 +423,12 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
       }
 
       const active = document.activeElement;
-      // Resolve the treeitem that owns focus: the nearest treeitem ancestor of
-      // the active element (never an outer treeitem that merely contains it).
+      // Resolve the item that owns focus: the nearest `itemSelector` ancestor
+      // of the active element (never an outer item that merely contains it).
+      // Matched through the same selector as the item list, so a host whose
+      // items are not treeitems (a treegrid's rows) resolves correctly.
       const activeItem =
-        active instanceof Element ? active.closest('[role="treeitem"]') : null;
+        active instanceof Element ? active.closest(itemSelector) : null;
       const currentIndex = items.findIndex(item => item === activeItem);
       const current = currentIndex >= 0 ? items[currentIndex] : undefined;
 
@@ -546,6 +554,7 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
     },
     [
       getItems,
+      itemSelector,
       typeahead,
       runTypeahead,
       focusEnabledFrom,

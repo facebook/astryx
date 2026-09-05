@@ -14,7 +14,14 @@
  * - /packages/cli/assets/templates/blocks/components/Table/ (showcase blocks)
  */
 
-import {memo, useRef, type ReactElement, type ReactNode, type Ref} from 'react';
+import {
+  memo,
+  useMemo,
+  useRef,
+  type ReactElement,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {
@@ -41,7 +48,7 @@ import {TableCell} from './TableCell';
 import {TableHeaderCell} from './TableHeaderCell';
 import {TableHeader} from './TableHeader';
 import {TableBody} from './TableBody';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {devError} from '../utils/devWarning';
 import {EmptyState} from '../EmptyState';
 import {Text} from '../Text';
@@ -411,6 +418,16 @@ function BaseTableInner<T extends Record<string, unknown>>({
     xstyle: children ? [styles.table, styles.tableAutoLayout] : [styles.table],
   } satisfies TableRenderProps);
 
+  // A plugin may attach its own ref to the <table> (the tree plugin's keyboard
+  // model does). Merge it with the consumer's ref rather than letting either
+  // displace the other. Memoized on the two identities so a callback ref is
+  // not re-attached (null, then the node) on every render.
+  const pluginTableRef = tableRenderProps.ref;
+  const tableRef = useMemo(
+    () => (pluginTableRef == null ? ref : mergeRefs(ref, pluginTableRef)),
+    [ref, pluginTableRef],
+  );
+
   // --- Plugin pipeline: header cells ---
   const headerCells = resolvedColumns.map((col, columnIndex) => {
     const headerContent = col.header ?? col.key;
@@ -524,7 +541,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
 
   let tableElement: ReactNode = (
     <table
-      ref={ref}
+      ref={tableRef}
       {...(ariaRowCount != null ? {'aria-rowcount': ariaRowCount} : null)}
       {...tableRenderProps.htmlProps}
       {...mergeProps(
