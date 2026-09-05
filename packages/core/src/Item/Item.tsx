@@ -208,7 +208,13 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-2'],
+    // The inline inset is published as --_item-inset-inline and the padding
+    // derives from it, so consumers that need to compensate for the inset
+    // (List's isFullBleed) read the var instead of mirroring the values.
+    // Themes that set paddingInline on `item` also feed this var via the
+    // derived var registry, keeping padding and compensation in sync.
+    '--_item-inset-inline': spacingVars['--spacing-2'],
+    paddingInline: 'var(--_item-inset-inline)',
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
@@ -355,7 +361,7 @@ const densityStyles = stylex.create({
   },
   spacious: {
     paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-3'],
+    '--_item-inset-inline': spacingVars['--spacing-3'],
   },
 });
 
