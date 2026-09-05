@@ -29,7 +29,13 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
-import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {
+  getCliInvocation,
+  detectPackageManager,
+  isCliOneOff,
+  CLI_BIN,
+  CLI_PACKAGE,
+} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
 import {emit, section, text, list, code} from '../formatters/index.mjs';
 import {logger} from '../../../api/logger.mjs';
@@ -480,6 +486,14 @@ export function registerTheme(program) {
 
       // theme.add — print where files landed + how to use the theme.
       const {displayName, outputDir, entry, exportName, files} = result.data;
+      const themeEntryPath = path.join(outputDir, entry);
+      // `pnpm x` / `npm run x` / `yarn x` / `bun run x` — hardcoding one of
+      // these hands npm and yarn users a script that only works under pnpm.
+      const pm = detectPackageManager(process.cwd());
+      const runScript =
+        pm === 'pnpm' ? 'pnpm' : pm === 'yarn' ? 'yarn' : pm === 'bun' ? 'bun run' : 'npm run';
+      const addDep =
+        pm === 'pnpm' ? 'pnpm add' : pm === 'yarn' ? 'yarn add' : pm === 'bun' ? 'bun add' : 'npm install';
       const entryModule = importSpecifier(
         outputDir,
         entry.replace(/\.tsx?$/, ''),
@@ -488,14 +502,69 @@ export function registerTheme(program) {
         text(`[ok] Added ${displayName} theme to ${outputDir}/`),
         list(files.map(f => `${outputDir}/${f}`)),
         text(
-          'Use it in your app (import path is relative to a file in src/ — adjust if yours lives elsewhere):',
+          `This is your copy of the ${displayName} theme — edit ${entry} to make it your own. ` +
+            'There are two ways to use it, and they behave differently. Pick one.',
         ),
+        // The previous version of this printed the source import and then said
+        // edits require a rebuild. Both halves are true of DIFFERENT paths, and
+        // together they are wrong: importing the source injects at runtime, so
+        // edits apply on reload and the generated CSS/JS are never read. Saying
+        // otherwise sends people to rebuild artifacts nothing consumes, and
+        // teaches them the build step is ceremony — which is exactly what makes
+        // the built path fail silently later.
+        section('1. Import the source (simplest; styles inject at runtime)'),
         code(
           `import { ${exportName} } from '${entryModule}';\n\n` +
             `<Theme theme={${exportName}}>\n  <App />\n</Theme>`,
         ),
         text(
-          `This is your copy of the ${displayName} theme — edit ${entry} to make it your own.`,
+          'Edits apply on the next reload — nothing to rebuild, and the generated ' +
+            `.css/.js in ${outputDir}/ are unused. The cost is that styles arrive with the ` +
+            'JS, so a server-rendered page paints unthemed until hydration.',
+        ),
+        section('2. Import the built theme (no flash; needs a build step)'),
+        text(
+          `Build it first: \`${getCliInvocation(process.cwd())} theme build ${themeEntryPath}\`. ` +
+            'It prints the exact import pair for the files it wrote — and it is a PAIR: the ' +
+            'built module carries the theme object, the stylesheet carries the rules, and the ' +
+            'built files are named after the theme, not after the entry file.',
+        ),
+        code(
+          `import {${exportName}} from './<theme>';\n` +
+            `import './<theme>.css';\n\n` +
+            `<Theme theme={${exportName}}>\n  <App />\n</Theme>`,
+        ),
+        text(
+          'Note the import is the BUILT module, not the source above — importing the source ' +
+            'here would put you back on path 1 with unused build output. The stylesheet is ' +
+            'present in the first paint, so server-rendered pages are themed immediately. In ' +
+            'exchange, edits do NOT apply until the theme is rebuilt, and a stale artifact is ' +
+            'silent: it still reports as built, so the runtime skips injection and the app ' +
+            'renders the previous theme with no warning.',
+        ),
+        text('If you choose the built path, wire the build in so it cannot be forgotten:'),
+        code(
+          `"scripts": {\n` +
+            `  "build:theme": "${CLI_BIN} theme build ${themeEntryPath}",\n` +
+            `  "predev": "${runScript} build:theme",\n` +
+            `  "prebuild": "${runScript} build:theme"\n` +
+            `}`,
+        ),
+        // A bare `astryx` in a script only resolves once the CLI is a
+        // dependency; a one-off runner leaves node_modules/.bin empty, so the
+        // wiring above would silently never run — the exact failure this is
+        // meant to close.
+        ...(isCliOneOff()
+          ? [
+              text(
+                `That script needs the CLI installed locally — add it first: ` +
+                  `\`${addDep} -D ${CLI_PACKAGE}\`.`,
+              ),
+            ]
+          : []),
+        text(
+          `Or run it directly: \`${getCliInvocation(process.cwd())} theme build ${themeEntryPath}\` ` +
+            `(-w rebuilds on save, -c fails when the committed output is stale).`,
         ),
       );
     },

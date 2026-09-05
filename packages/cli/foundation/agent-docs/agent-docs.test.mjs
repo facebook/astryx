@@ -174,9 +174,20 @@ describe('detectStylingSystem', () => {
     expect(detectStylingSystem(tmpDir)).toBe('css');
   });
 
-  it('detects stylex when the compiler plugin is present', () => {
+  it('detects stylex when the compiler plugin is present AND wired', () => {
     writePkg({'@stylexjs/babel-plugin': '0.0.1'});
+    fs.writeFileSync(
+      path.join(tmpDir, 'babel.config.js'),
+      "module.exports = {plugins: ['@stylexjs/babel-plugin']};",
+    );
     expect(detectStylingSystem(tmpDir)).toBe('stylex');
+  });
+
+  it('does NOT claim stylex when the plugin is installed but never wired', () => {
+    // An installed plugin no bundler invokes compiles nothing. Telling an agent
+    // to write `xstyle` there produces the blank output this detection avoids.
+    writePkg({'@stylexjs/babel-plugin': '0.0.1'});
+    expect(detectStylingSystem(tmpDir)).toBe('css');
   });
 
   it('detects tailwind when tailwindcss is present', () => {
@@ -192,6 +203,10 @@ describe('detectStylingSystem', () => {
 
   it('prefers stylex over tailwind when both are configured', () => {
     writePkg({'@stylexjs/babel-plugin': '0.0.1', tailwindcss: '4.0.0'});
+    fs.writeFileSync(
+      path.join(tmpDir, 'babel.config.js'),
+      "module.exports = {plugins: ['@stylexjs/babel-plugin']};",
+    );
     expect(detectStylingSystem(tmpDir)).toBe('stylex');
   });
 });

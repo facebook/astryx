@@ -6,12 +6,18 @@
  * Runs a series of diagnostic checks against the user's project and
  * environment, returning a structured report. Each check is a small,
  * self-contained function that returns a {@link DoctorCheck} record, so
- * adding a new diagnostic is just appending a function to {@link SYNC_CHECKS}.
+ * adding a new diagnostic is just appending a function to {@link CHECKS}.
  *
- * The engine is intentionally side-effect-free: it only *reads* the
- * filesystem, environment, and package metadata. It never installs, writes,
- * or mutates anything. That makes it safe to run in CI as a gate (exit 1 on
- * any FAIL) and safe for AI agents to invoke with `--json`.
+ * The engine never installs, writes, or mutates anything, which makes it safe
+ * to run in CI as a gate (exit 1 on any FAIL) and safe for AI agents to invoke
+ * with `--json`.
+ *
+ * Two checks do *evaluate* project code, and both are deliberately narrow:
+ * `checkConfig` imports the single opt-in `astryx.config.*` at the project
+ * root, and `checkThemeBuilt` recompiles a theme — but only one that already
+ * has built output on disk (so the user has run `theme build` on it before)
+ * and only after a read-only pre-filter finds evidence of drift. Everything
+ * else reads the filesystem, environment, and package metadata and nothing more.
  *
  * Status semantics:
  *   - 'pass' — everything is healthy.
@@ -29,6 +35,8 @@ import {CLI_ROOT, findCoreDir} from '../../foundation/fs/paths.mjs';
 import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {findConfigPath, Project} from '../../foundation/config/project.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
+import {themeInputsDigest} from '../../foundation/discovery/theme-inputs.mjs';
+import {checkCssEscapes, checkSwizzled} from './theme-drift.mjs';
 
 const _require = createRequire(import.meta.url);
 
@@ -495,6 +503,492 @@ export function checkPeerDeps(ctx) {
 }
 
 /**
+ * How many directories the built-theme scan will walk.
+ *
+ * The bound is on the WALK, not on the findings: capping findings meant the
+ * eleventh theme was never examined, and because the cap was only tested
+ * between directories it did not even bind reliably — twelve themes in one
+ * folder all got through. Every theme the walk reaches is now checked, and
+ * only an enormous tree stops the walk early, which is reported as truncation.
+ */
+const MAX_SCAN_DIRS = 4000;
+
+/** Bytes of a CSS file to read when looking for the @generated banner. */
+const BANNER_BYTES = 1024;
+
+/**
+ * Read the first {@link BANNER_BYTES} of a file without slurping it whole.
+ * @param {string} file
+ * @returns {string}
+ */
+function readHead(file) {
+  let fd;
+  try {
+    fd = fs.openSync(file, 'r');
+    const buf = Buffer.alloc(BANNER_BYTES);
+    const read = fs.readSync(fd, buf, 0, BANNER_BYTES, 0);
+    return buf.subarray(0, read).toString('utf-8');
+  } catch {
+    return '';
+  } finally {
+    if (fd !== undefined) {
+      try {
+        fs.closeSync(fd);
+      } catch {
+        /* already closed */
+      }
+    }
+  }
+}
+
+/**
+ * Locate built theme CSS by its `@generated` banner, and recover the exact
+ * invocation that produced it.
+ *
+ * Looking for built *output* rather than `defineTheme()` *sources* is both
+ * faster and more accurate. Only built output can be stale, so a project
+ * without any is trivially fine; and the banner records the real `Source:` and
+ * `--out`, which beats reverse-engineering them from package.json scripts.
+ * (Scanning sources instead meant reading every .ts/.js in the tree — 2196
+ * files and ~900ms at this repo's root — to answer a question about 25 CSS
+ * files, and it found 18 "themes" at the monorepo root.)
+ *
+ * @param {string} startDir
+ * @returns {{themes: Array<{css: string, dir: string, source: string, out: string|null,
+ *   cli: string|null, core: string|null, inputs: string|null}>, truncated: boolean}}
+ *   `truncated` when the walk stopped at {@link MAX_SCAN_DIRS} without seeing
+ *   the whole project; every theme it DID reach is in `themes`.
+ */
+export function findBuiltThemes(startDir) {
+  // Generated themes live wherever `--out` points, and the CLI's own example
+  // is `theme build ./src/themes/ocean.ts --out ./dist/ocean.css`. Every
+  // build-output directory is therefore a place to LOOK, not to skip: `.next`
+  // held a stale theme that reported "no built theme output found". Only
+  // dependencies and VCS metadata are excluded — nothing else can be ruled out
+  // without re-introducing the silent pass this check exists to remove.
+  const SKIP = new Set(['node_modules', '.git']);
+  /** @type {Array<{css: string, dir: string, source: string, out: string|null,
+   *   cli: string|null, core: string|null, inputs: string|null}>} */
+  const found = [];
+  const stack = [startDir];
+  let truncated = false;
+  let visited = 0;
+  while (stack.length > 0) {
+    if (visited >= MAX_SCAN_DIRS) {
+      truncated = true;
+      break;
+    }
+    visited += 1;
+    const dir = stack.pop();
+    if (!dir) continue;
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, {withFileTypes: true});
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.isSymbolicLink()) continue;
+      const fp = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (!SKIP.has(entry.name)) stack.push(fp);
+        continue;
+      }
+      if (!entry.name.endsWith('.css')) continue;
+      const head = readHead(fp);
+      if (!/@generated by `astryx theme build`/.test(head)) continue;
+      const source = /^\s*\*\s*Source:\s*(\S+)/m.exec(head)?.[1];
+      if (!source) continue;
+      const command = /^\s*\*\s*Command:\s*(.+)$/m.exec(head)?.[1] ?? '';
+      const out = /(?:--out|-o)\s+(\S+)/.exec(command)?.[1] ?? null;
+      // Banner paths are relative to the package the build ran in.
+      found.push({
+        css: fp,
+        dir: packageDirFor(fp, startDir),
+        source,
+        out,
+        cli: /^\s*\*\s*CLI:\s*\S+@(\S+)/m.exec(head)?.[1] ?? null,
+        core: /^\s*\*\s*Core:\s*\S+@(\S+)/m.exec(head)?.[1] ?? null,
+        // Absent on anything built before the build recorded it, and the
+        // literal `unverifiable` when the build could not walk the input set.
+        // Both mean the same thing to the caller: no proof either way.
+        inputs: /^\s*\*\s*Inputs:\s*sha256-(\w+)/m.exec(head)?.[1] ?? null,
+      });
+    }
+  }
+  // `truncated` is load-bearing: a scan that stopped at the bound has not seen
+  // the project, and an unwired stale 11th theme was reproducibly reported as
+  // a clean PASS.
+  return {themes: found.sort((a, b) => a.css.localeCompare(b.css)), truncated};
+}
+
+/**
+ * Decide, WITHOUT evaluating anything, whether a built theme is in step with
+ * its source.
+ *
+ * The previous version of this asked one question — is the entry file newer
+ * than the artifact? — and treated "no" as proof of freshness. It is not. A
+ * theme entry imports its tokens, so editing a token leaves the entry's mtime
+ * untouched and the artifact looks current while `theme build --check` exits 1.
+ * The engine then recompiled to be sure, which means jiti executing the theme
+ * and its whole import graph, with a filesystem cache: real code execution and
+ * a write, from a command whose contract is read-only.
+ *
+ * So freshness is now decided from recorded provenance:
+ *
+ *   1. The banner's CLI/core versions against what is installed. The versions
+ *      are embedded in the output, so a bump alone makes it stale, and mtime
+ *      misses that entirely — after a dependency change the artifact is still
+ *      the newer file.
+ *   2. The banner's input digest against the same digest recomputed from disk.
+ *      That covers the whole local import graph, not just the entry.
+ *
+ * Anything else is `unverifiable`, and the caller must report exactly that.
+ * Fail closed: an artifact built by an older CLI carries no digest, and
+ * "no evidence" must never render as "fine".
+ *
+ * @param {{css: string, dir: string, source: string, cli: string|null,
+ *   core: string|null, inputs: string|null}} entry
+ * @param {DoctorContext} ctx
+ * @returns {{state: 'fresh'|'stale'|'unverifiable', reason: string}}
+ */
+function assessFreshness(entry, ctx) {
+  const cliVersion = readPkg(path.join(CLI_ROOT, 'package.json'))?.version ?? null;
+  if (entry.cli && cliVersion && entry.cli !== cliVersion) {
+    return {state: 'stale', reason: `built by CLI ${entry.cli}, installed is ${cliVersion}`};
+  }
+  const coreVersion = pkgVersion(ctx.coreDir);
+  if (entry.core && coreVersion && entry.core !== coreVersion) {
+    return {state: 'stale', reason: `built against core ${entry.core}, installed is ${coreVersion}`};
+  }
+
+  if (!entry.inputs) {
+    return {
+      state: 'unverifiable',
+      reason: 'the artifact records no input digest (built by an older CLI)',
+    };
+  }
+
+  const sourcePath = path.resolve(entry.dir, entry.source);
+  if (!fs.existsSync(sourcePath)) {
+    return {state: 'unverifiable', reason: `its source ${entry.source} is missing`};
+  }
+
+  const now = themeInputsDigest(sourcePath);
+  if (!now.digest) {
+    return {
+      state: 'unverifiable',
+      reason: `its inputs could not be read completely from ${entry.source}`,
+    };
+  }
+  return now.digest === entry.inputs
+    ? {state: 'fresh', reason: `${now.count} input file(s) unchanged`}
+    : {state: 'stale', reason: `its source files changed since it was built`};
+}
+
+/**
+ * Nearest ancestor directory holding a package.json — the cwd `theme build`
+ * ran in, and therefore the base for the banner's relative paths.
+ *
+ * @param {string} file
+ * @param {string} fallback
+ * @returns {string}
+ */
+function packageDirFor(file, fallback) {
+  let dir = path.dirname(file);
+  for (let i = 0; i < 8; i++) {
+    if (fs.existsSync(path.join(dir, 'package.json'))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return fallback;
+}
+
+/**
+ * Is the build of THIS theme wired into the scripts that `dev`/`build` run?
+ *
+ * If it is, a stale artifact is harmless — it is regenerated before anything
+ * consumes it, and reporting a hard failure for a self-healing condition just
+ * teaches people to ignore the doctor. If it is not, the staleness is real and
+ * silent.
+ *
+ * Matched per SOURCE, and only on an EXACT path. A `predev` that rebuilds one
+ * theme says nothing about a second theme in the same package: answering
+ * "wired" package-wide downgraded a genuinely stale artifact to `info` because
+ * an unrelated sibling happened to be covered.
+ *
+ * Both looser rules that suggested themselves are wrong, and both were tried:
+ *
+ *   - Matching on BASENAME lets `src/brand/theme.ts` cover `src/admin/theme.ts`.
+ *     Same filename, different theme, and the stale one gets excused.
+ *   - Treating an argument-less `astryx theme build` as covering everything.
+ *     It covers nothing: the command requires its `files` argument and exits 1
+ *     with "missing required argument 'files'", so that script is broken, not
+ *     universal.
+ *
+ * Paths are compared normalized and cwd-relative, so `./src/x.ts` and
+ * `src/x.ts` are the same file — that is spelling, not scope.
+ *
+ * @param {string} pkgDir
+ * @param {string} [source] - Theme source, relative to pkgDir. Omit to ask
+ *   whether ANY theme build is wired.
+ * @returns {boolean}
+ */
+export function isThemeBuildWired(pkgDir, source) {
+  const pkg = readPkg(path.join(pkgDir, 'package.json'));
+  const scripts = pkg?.scripts ?? {};
+  const names = Object.keys(scripts);
+  const want = source ? path.normalize(source) : null;
+
+  /**
+   * The segments of a script body that are reached UNCONDITIONALLY.
+   *
+   * Shell is not JavaScript and is not parsed here, so the rule is
+   * conservative: a command behind `&&`, `||` or a pipe runs only if something
+   * else succeeded or failed first, and a body containing any control flow is
+   * beyond what reading can establish. `false && pnpm build:theme` never runs,
+   * and calling it wiring made stale output look self-healing.
+   *
+   * @param {string} body
+   * @returns {string[]}
+   */
+  const ungatedSegments = body => {
+    if (/(^|\s|;)(if|elif|then|else|fi|case|esac|while|until|for|do|done)(\s|;|$)/.test(body)) {
+      return [];
+    }
+    /** @type {string[]} */
+    const out = [];
+    let op = '';
+    let rest = body;
+    while (rest.length > 0) {
+      const m = /(\|\||&&|;|\||&)/.exec(rest);
+      const text = m ? rest.slice(0, m.index) : rest;
+      if (op !== '&&' && op !== '||' && op !== '|') out.push(text);
+      if (!m) break;
+      op = m[1];
+      rest = rest.slice(m.index + m[1].length);
+    }
+    return out;
+  };
+
+  /**
+   * Does this segment invoke `theme build` for the theme we are asking about?
+   *
+   * @param {string} text
+   * @returns {boolean}
+   */
+  const segmentBuildsTheme = text => {
+    const calls = [...text.matchAll(/theme\s+build\s*([^&|;]*)/g)];
+    if (calls.length === 0) return false;
+    if (!want) return true;
+    return calls.some(m => {
+      const target = m[1]
+        .trim()
+        .split(/\s+/)
+        .find(a => a && !a.startsWith('-'));
+      // No path: the command exits 1 without one, so it rebuilds nothing.
+      if (!target) return false;
+      return path.normalize(target) === want;
+    });
+  };
+
+  /**
+   * Is the theme build reached unconditionally from this script?
+   *
+   * A sibling reference inherits its caller's gate. Following `pnpm
+   * build:theme` out of `false && pnpm build:theme` and then judging the
+   * sibling's body on its own reported wiring for a rebuild that never runs —
+   * the gate has to travel with the reference, not be dropped at it.
+   *
+   * @param {string} name
+   * @param {number} depth
+   * @returns {boolean}
+   */
+  const runsThemeBuild = (name, depth) => {
+    if (depth > 4) return false;
+    const body = scripts[name];
+    if (typeof body !== 'string') return false;
+    return ungatedSegments(body).some(segment => {
+      if (segmentBuildsTheme(segment)) return true;
+      // Only a sibling invoked from an UNGATED segment can be relied on.
+      return names.some(
+        other =>
+          other !== name &&
+          new RegExp(`(?:run\\s+|pnpm\\s+|yarn\\s+|npm\\s+run\\s+)${other}\\b`).test(segment) &&
+          runsThemeBuild(other, depth + 1),
+      );
+    });
+  };
+  return ['dev', 'build', 'predev', 'prebuild', 'start', 'prestart'].some(
+    entry => entry in scripts && runsThemeBuild(entry, 0),
+  );
+}
+
+/**
+ * Check 9 — built theme artifacts are in step with their source.
+ *
+ * This is the only silent failure in the theming pipeline: a stale built theme
+ * still carries `__built: true`, so the runtime skips style injection and the
+ * app renders the *previous* theme with no error, no warning, and no visual
+ * hint that anything is wrong.
+ *
+ * Read-only, and evaluating nothing: freshness comes from the provenance the
+ * build recorded (see {@link assessFreshness}). What cannot be proved fresh is
+ * reported as unverified, never as passing.
+ *
+ * Every finding is evaluated and reported in the package that OWNS it. Whether
+ * staleness matters depends on that package's own scripts — a monorepo where
+ * the first theme happens to sit in a wired app used to report `info` for the
+ * whole tree, hiding a genuinely broken sibling that rebuilds nothing.
+ *
+ * @param {DoctorContext} ctx
+ * @returns {Promise<DoctorCheck>}
+ */
+export async function checkThemeBuilt(ctx) {
+  const {themes: built, truncated: builtTruncated} = findBuiltThemes(ctx.cwd);
+  if (built.length === 0) {
+    // "None found" is only meaningful if the whole project was looked at. A
+    // truncated walk that reached no artifact has established nothing: a
+    // 4001-directory project with its theme past the bound reported the
+    // reassuring skip message while the remainder was never examined.
+    return builtTruncated
+      ? {
+          id: 'theme-built',
+          label: 'Built theme freshness',
+          status: 'warn',
+          message:
+            'No built theme output found in the part of this project that was scanned, but the ' +
+            'scan stopped before walking all of it — a stale artifact beyond that point would ' +
+            'not have been seen.',
+          fix: `Run \`${getCliInvocation(ctx.cwd)} doctor\` per package so every directory is covered.`,
+        }
+      : {
+          id: 'theme-built',
+          label: 'Built theme freshness',
+          status: 'info',
+          message:
+            'Skipped — no built theme output found. Importing a defineTheme() source ' +
+            'directly (runtime injection) cannot go stale.',
+        };
+  }
+
+  const rel = (/** @type {string} */ p) => path.relative(ctx.cwd, p) || p;
+
+  /** @type {Array<{rel: string, reason: string, entry: typeof built[number], wired: boolean}>} */
+  const stale = [];
+  /** @type {Array<{rel: string, reason: string}>} */
+  const unverified = [];
+  /** Wiring is a property of the owning package, so resolve it once per package. */
+  /** @type {Map<string, boolean>} */
+  const wiredByPackage = new Map();
+
+  for (const entry of built) {
+    const {state, reason} = assessFreshness(entry, ctx);
+    if (state === 'fresh') continue;
+    if (state === 'unverifiable') {
+      unverified.push({rel: rel(entry.css), reason});
+      continue;
+    }
+    // Wiring is per SOURCE: one theme's predev says nothing about another's.
+    const key = `${entry.dir}\0${entry.source}`;
+    let wired = wiredByPackage.get(key);
+    if (wired === undefined) {
+      wired = isThemeBuildWired(entry.dir, entry.source);
+      wiredByPackage.set(key, wired);
+    }
+    stale.push({rel: rel(entry.css), reason, entry, wired});
+  }
+
+  // Only staleness in a package that rebuilds nothing is a real failure: where
+  // dev/build regenerate first, the artifact on disk is never the one consumed.
+  const broken = stale.filter(s => !s.wired);
+  const selfHealing = stale.filter(s => s.wired);
+
+  if (broken.length > 0) {
+    const summary = broken.map(s => `${s.rel} (${s.reason})`).join(', ');
+    const first = broken[0].entry;
+    // Name the package only when it is genuinely elsewhere. `path.relative`
+    // can come back empty (same directory) or absolute (a symlinked cwd, as on
+    // macOS), and neither is useful in a hint.
+    const where = path.relative(ctx.cwd, first.dir);
+    const inPackage = where && !where.startsWith('..') && !path.isAbsolute(where) ? ` in ${where}` : '';
+    const rebuild =
+      `\`${getCliInvocation(ctx.cwd)} theme build ${first.source}` +
+      `${first.out ? ` --out ${first.out}` : ''}\`${inPackage}`;
+    const alsoHealing =
+      selfHealing.length > 0
+        ? ` (${selfHealing.length} other stale artifact(s) sit in packages that do rebuild them)`
+        : '';
+    const alsoUnverified =
+      unverified.length > 0 ? ` ${unverified.length} more could not be verified.` : '';
+    return {
+      id: 'theme-built',
+      label: 'Built theme freshness',
+      status: 'fail',
+      message:
+        `Built theme output is out of date and nothing rebuilds it: ${summary}${alsoHealing}. ` +
+        `The app renders an older theme than the source describes, with no runtime warning.${alsoUnverified}`,
+      fix:
+        `Rebuild with ${rebuild}, then wire it into that package's predev/prebuild script ` +
+        'so it cannot drift again.',
+    };
+  }
+
+  // Fail closed. An artifact whose freshness cannot be established is not a
+  // passing artifact, and saying so is the whole point of the check.
+  if (unverified.length > 0) {
+    const summary = unverified.map(u => `${u.rel} — ${u.reason}`).join('; ');
+    return {
+      id: 'theme-built',
+      label: 'Built theme freshness',
+      status: 'warn',
+      message: `Could not verify ${unverified.length} built theme(s): ${summary}.`,
+      fix:
+        `Run \`${getCliInvocation(ctx.cwd)} theme build <source> --check\`, which compiles the ` +
+        'theme and compares it against what is on disk. Rebuilding once also records the ' +
+        'input digest this check reads, so later runs can answer without compiling.',
+    };
+  }
+
+  // BEFORE any success-shaped verdict. A bound that is hit means the project
+  // was not fully examined, and "the first ten happen to self-heal" is not
+  // evidence about the eleventh — an unwired stale eleventh theme was never
+  // looked at and the run still returned info.
+  if (builtTruncated) {
+    return {
+      id: 'theme-built',
+      label: 'Built theme freshness',
+      status: 'warn',
+      message:
+        `${built.length} built theme(s) checked and in step with source, but the scan stopped ` +
+        'before walking the whole project, so any theme beyond that point is unverified.',
+      fix: `Run \`${getCliInvocation(ctx.cwd)} doctor\` per package so every built theme is covered.`,
+    };
+  }
+
+  if (selfHealing.length > 0) {
+    const summary = selfHealing.map(s => s.rel).join(', ');
+    return {
+      id: 'theme-built',
+      label: 'Built theme freshness',
+      status: 'info',
+      message:
+        `Built theme output is stale on disk (${summary}), but dev/build regenerate ` +
+        'it first, so nothing will render the old theme.',
+    };
+  }
+
+
+  return {
+    id: 'theme-built',
+    label: 'Built theme freshness',
+    status: 'pass',
+    message: `Built theme output is in step with source (${built.length} theme(s) checked).`,
+  };
+}
+
+/**
  * Check 8 — report the detected package manager, and say so when the project's
  * own declaration disagrees with what is on disk.
  *
@@ -552,15 +1046,25 @@ export function checkPackageManager(ctx) {
 }
 
 /**
- * Ordered list of synchronous check functions. Append here to add a check.
- * (checkConfig is async and is awaited separately by {@link runChecks}.)
- * @type {Array<(ctx: DoctorContext) => DoctorCheck>}
+ * Ordered list of checks. Append here to add a diagnostic; a check may be sync
+ * or async and runs in its declared position either way.
+ *
+ * This used to be a sync-only array with `checkConfig` spliced in by comparing
+ * each function against `checkThemes` by identity. That only ever supported one
+ * async check, and it put the ordering of `config` somewhere other than this
+ * list, where nobody would look for it.
+ *
+ * @type {Array<(ctx: DoctorContext) => DoctorCheck | Promise<DoctorCheck>>}
  */
-export const SYNC_CHECKS = [
+export const CHECKS = [
   checkNodeVersion,
   checkCoreInstalled,
   checkVersionAlignment,
   checkThemes,
+  checkThemeBuilt,
+  checkCssEscapes,
+  checkSwizzled,
+  checkConfig,
   checkAgentDocs,
   checkPeerDeps,
   checkPackageManager,
@@ -609,12 +1113,10 @@ export async function runChecks(options = {}) {
 
   /** @type {DoctorCheck[]} */
   const checks = [];
-  // checkConfig is async; run it in its declared slot (after themes).
-  for (const fn of SYNC_CHECKS) {
-    checks.push(fn(ctx));
-    if (fn === checkThemes) {
-      checks.push(await checkConfig(ctx));
-    }
+  // Sequential on purpose: checks are ordered for readability of the report,
+  // and awaiting a sync return value is free.
+  for (const fn of CHECKS) {
+    checks.push(await fn(ctx));
   }
 
   const summary = {pass: 0, warn: 0, fail: 0, info: 0};
