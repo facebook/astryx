@@ -61,12 +61,26 @@ describe('stripTemplateAssetRefs', () => {
     expect(out).not.toContain('/template-assets/');
   });
 
-  it('strips other video extensions (.webm, .mov, .ogv) the same way', () => {
-    for (const ext of ['webm', 'mov', 'ogv']) {
+  it('strips other video extensions (.webm, .mov, .ogv, .m4v, .mkv) the same way', () => {
+    for (const ext of ['webm', 'mov', 'ogv', 'm4v', 'mkv']) {
       const src = `src: '/template-assets/clip.${ext}',`;
       const out = stripTemplateAssetRefs(src);
       expect(out).toBe("src: '',");
     }
+  });
+
+  it('correctly matches multi-dot filenames up to the final extension', () => {
+    const src = "src: '/template-assets/clip.min.mp4',";
+    const out = stripTemplateAssetRefs(src);
+    expect(out).toBe("src: '',");
+    expect(out).not.toContain('data:image/svg+xml,');
+  });
+
+  it('strips unrecognized non-image extensions to empty string instead of image data URI', () => {
+    const src = "src: '/template-assets/model.bin',";
+    const out = stripTemplateAssetRefs(src);
+    expect(out).toBe("src: '',");
+    expect(out).not.toContain('data:image/svg+xml,');
   });
 
   it('still replaces an adjacent image reference with the placeholder when a video reference is also present', () => {

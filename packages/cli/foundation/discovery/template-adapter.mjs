@@ -154,19 +154,27 @@ const PLACEHOLDER_IMAGE =
 
 /**
  * Extensions that need a video-safe placeholder rather than the image data
- * URI (see stripTemplateAssetRefs). There's no equivalent self-contained
- * inline placeholder for video: unlike an SVG data URI, a `<video src>`
- * needs actual encoded media, and hand-authoring a valid tiny MP4/WebM
- * blob isn't something we can do reliably here — an unverifiable, possibly
- * still-broken binary would just trade one silent failure for another.
- * Rather than mis-render image data as video (the original bug) or guess at
- * binary bytes, video sources are stripped to an empty string so the
- * scaffolded example is honest about needing the builder to supply their
- * own file, instead of silently pointing at something that can't play.
+ * URI (see stripTemplateAssetRefs).
  *
  * @type {Set<string>}
  */
-const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv']);
+const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv', 'm4v', 'mkv']);
+
+/**
+ * Image extensions that safely map to the SVG data URI placeholder.
+ *
+ * @type {Set<string>}
+ */
+const IMAGE_EXTENSIONS = new Set([
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'svg',
+  'webp',
+  'avif',
+  'ico',
+]);
 
 /**
  * Demo-asset sources to strip from scaffolded projects. Template demo imagery
@@ -177,9 +185,12 @@ const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv']);
  * otherwise 404. Genuine third-party URLs (e.g. brand logos from
  * paypalobjects.com) are intentionally left untouched.
  *
+ * Captures the file extension after the final dot to handle multi-dot filenames
+ * (e.g. `/template-assets/clip.min.mp4`).
+ *
  * @type {RegExp}
  */
-const DEMO_ASSET_PATTERN = /\/template-assets\/[\w-]+\.(\w+)/g;
+const DEMO_ASSET_PATTERN = /\/template-assets\/[\w.-]+\.([a-zA-Z0-9]+)/g;
 
 /**
  * Normalize path into Unix path (using forward slashes) for consistent comparison
@@ -194,18 +205,24 @@ function toPosixPath(p) {
 
 /**
  * Replace demo asset references with a placeholder so scaffolded pages
- * render with zero setup. Images get a self-contained data URI; videos
- * (which have no equivalent inline placeholder — see VIDEO_EXTENSIONS) are
- * stripped to an empty src instead of being mis-replaced with image data.
- * Builders drop in their own media either way.
+ * render with zero setup. Recognized images get a self-contained SVG data URI;
+ * videos and unrecognized non-image formats are stripped to an empty string instead of
+ * being mis-replaced with image SVG data.
  *
  * @param {string} source - Template source code.
  * @returns {string} Source with demo asset references replaced.
  */
 export function stripTemplateAssetRefs(source) {
-  return source.replace(DEMO_ASSET_PATTERN, (match, extension) =>
-    VIDEO_EXTENSIONS.has(extension.toLowerCase()) ? '' : PLACEHOLDER_IMAGE,
-  );
+  return source.replace(DEMO_ASSET_PATTERN, (match, extension) => {
+    const ext = extension.toLowerCase();
+    if (VIDEO_EXTENSIONS.has(ext)) {
+      return '';
+    }
+    if (IMAGE_EXTENSIONS.has(ext)) {
+      return PLACEHOLDER_IMAGE;
+    }
+    return '';
+  });
 }
 /**
  * Load a template-spec module and return its metadata object. Supports both
