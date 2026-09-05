@@ -35,6 +35,10 @@ export function focusMenuItemOnHover(
   }
   const el = e.currentTarget;
   if (el !== el.ownerDocument.activeElement) {
-    el.focus();
+    // preventScroll: focusing an off-screen item scrolls it under the
+    // stationary pointer, whose next pointerenter focuses it again — a
+    // runaway auto-scroll loop. Keyboard navigation scrolls via its own
+    // highlight handling; hover must never scroll.
+    el.focus({preventScroll: true});
   }
 }
