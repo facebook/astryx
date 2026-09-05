@@ -41,10 +41,10 @@ geometry, accessible-name requirement, interaction feedback, asynchronous-action
 model, and surface ownership. Each member still owns the semantics specific to a
 momentary action, navigation destination, persistent pressed state, or group.
 
-This family contract also resolves the gap in
-[issue #6012](https://github.com/facebook/astryx/issues/6012): ToggleButton
-renders Button's elevation state but cannot currently express the family's
-resting elevation axis.
+ToggleButton renders Button's elevation state but cannot currently express the
+family's resting elevation axis. Whether that axis belongs on ToggleButton
+remains unresolved because ToggleButton currently uses a transparent ghost
+surface.
 
 ## Membership rule
 
@@ -88,15 +88,15 @@ Membership follows public responsibility, not an import of Button or a rendered
 
 ## Canonical concepts
 
-| Concept          | Values or states                                                        | Default semantics                                                                   | Stability                                |
-| ---------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------- |
-| activation model | momentary action, navigation, persistent press                          | Button and IconButton activate once; ToggleButton represents retained pressed state | shipped distinction                      |
-| content mode     | visible label, custom visible content, icon-only                        | every control has a required accessible `label`; icon-only hides it visually        | shipped family rule                      |
-| size             | `sm`, `md`, `lg`                                                        | `md`; explicit member size wins over an inherited group size                        | shipped family axis                      |
-| visual state     | rest, hover, focus, active, disabled, loading; pressed where applicable | states preserve control geometry and accessible purpose                             | shipped family rule                      |
-| async action     | absent, fire-once, interruptible persistent action                      | ordinary actions deduplicate while pending; persistent toggles remain reversible    | shipped family distinction               |
-| elevation        | `none`, `low`, `med`, `high`                                            | `none`; the element painting the visible surface owns the shadow                    | approved axis; ToggleButton adoption gap |
-| grouping         | standalone, spaced set, connected surface                               | semantics and painted containment decide ownership; grouping alone does not         | family rule                              |
+| Concept          | Values or states                                                        | Default semantics                                                                   | Stability                                                     |
+| ---------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| activation model | momentary action, navigation, persistent press                          | Button and IconButton activate once; ToggleButton represents retained pressed state | shipped distinction                                           |
+| content mode     | visible label, custom visible content, icon-only                        | every control has a required accessible `label`; icon-only hides it visually        | shipped family rule                                           |
+| size             | `sm`, `md`, `lg`                                                        | `md`; explicit member size wins over an inherited group size                        | shipped family axis                                           |
+| visual state     | rest, hover, focus, active, disabled, loading; pressed where applicable | states preserve control geometry and accessible purpose                             | shipped family rule                                           |
+| async action     | absent, fire-once, interruptible persistent action                      | ordinary actions deduplicate while pending; persistent toggles remain reversible    | shipped family distinction                                    |
+| elevation        | `none`, `low`, `med`, `high`                                            | `none`; the element painting the visible surface owns the shadow                    | shipped for Button surfaces; ToggleButton adoption unresolved |
+| grouping         | standalone, spaced set, connected surface                               | semantics and painted containment decide ownership; grouping alone does not         | family rule                                                   |
 
 ## Cross-component invariants
 
@@ -191,17 +191,18 @@ Membership follows public responsibility, not an import of Button or a rendered
 
 ## Adoption and exceptions
 
-| Component                     | Current adoption                                                                       | Gap or exception                                                                                        |
-| ----------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `component:Button`            | owns the shared surface, size, state, Action, link, and elevation mechanisms           | link mode additionally follows `family:navigation-destinations`                                         |
-| `component:IconButton`        | inherits Button props and always selects icon-only presentation                        | tooltip remains explicit consumer guidance                                                              |
-| `component:ToggleButton`      | inherits Button geometry, focus, pending presentation, and rendered elevation state    | public `elevation` prop and matching theme visual metadata are missing under FR8–FR10; tracked by #6012 |
-| `component:ButtonGroup`       | connected surface, inherited size/disabled state, shared elevation, and roving focus   | member elevation is intentionally suppressed while connected                                            |
-| `component:ToggleButtonGroup` | controlled single/multiple selection, inherited size/disabled state, and spaced layout | wrapper is not a painted surface and therefore exposes no family elevation                              |
+| Component                     | Current adoption                                                                       | Gap or exception                                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `component:Button`            | owns the shared surface, size, state, Action, link, and elevation mechanisms           | link mode additionally follows `family:navigation-destinations`                                       |
+| `component:IconButton`        | inherits Button props and always selects icon-only presentation                        | tooltip remains explicit consumer guidance                                                            |
+| `component:ToggleButton`      | inherits Button geometry, focus, pending presentation, and rendered elevation state    | has no public `elevation` prop; its transparent ghost surface leaves elevated presentation unresolved |
+| `component:ButtonGroup`       | connected surface, inherited size/disabled state, shared elevation, and roving focus   | member elevation is intentionally suppressed while connected                                          |
+| `component:ToggleButtonGroup` | controlled single/multiple selection, inherited size/disabled state, and spaced layout | wrapper is not a painted surface and therefore exposes no family elevation                            |
 
-The ToggleButton row is an implementation gap, not an approved family
-exception. Adding the existing optional `Elevation` axis restores family parity
-without changing no-prop rendering.
+ToggleButton elevation is an unresolved design question, not an implementation
+gap. Its current ghost surface is transparent at rest and uses an overlay when
+pressed, so forwarding the existing `Elevation` axis would not by itself define a
+coherent elevated control.
 
 ## Verification map
 
@@ -223,6 +224,10 @@ without changing no-prop rendering.
 
 - **OQ1 — Family approval.** Does the owner approve this membership and the
   shared behavior, state, grouping, and surface-ownership invariants?
+- **OQ2 — ToggleButton elevation.** Should an elevated ToggleButton gain an opaque
+  floating surface for both pressed and unpressed states, or should elevation
+  remain unsupported for ToggleButton? Its current ghost surface is transparent
+  at rest and does not define a complete elevated presentation.
 
 ## Content boundary
 
