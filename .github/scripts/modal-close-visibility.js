@@ -47,7 +47,7 @@ const TARGETS = [
   },
   {
     component: 'Drawer (modal)',
-    story: 'lab-drawer--showcase',
+    story: 'core-drawer--showcase',
     openButton: 'Open inspector',
     // Reproduces the real failure condition: after the native host releases the
     // top layer, this becomes the containing block for the fixed panel.
@@ -56,7 +56,7 @@ const TARGETS = [
   },
   {
     component: 'Drawer (non-modal)',
-    story: 'lab-drawer--row-inspector',
+    story: 'core-drawer--row-inspector',
     openButton: 'web-01 / us-east-1',
     host: 'popover',
     transformAncestor: true,
@@ -65,7 +65,7 @@ const TARGETS = [
   },
   {
     component: 'Drawer (stacked exit)',
-    story: 'lab-drawer--stacked-drawers',
+    story: 'core-drawer--stacked-drawers',
     openButton: 'Open order',
     nestedButton: 'Open line item',
     host: 'popover',

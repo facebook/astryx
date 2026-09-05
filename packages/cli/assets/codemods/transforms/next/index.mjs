@@ -7,4 +7,14 @@
  * this file into the resolved version folder.
  */
 
-export default [];
+import migrateLabDrawerImports, {
+  meta as migrateLabDrawerImportsMeta,
+} from './migrate-lab-drawer-imports.mjs';
+
+export default [
+  {
+    name: 'migrate-lab-drawer-imports',
+    transform: migrateLabDrawerImports,
+    meta: migrateLabDrawerImportsMeta,
+  },
+];

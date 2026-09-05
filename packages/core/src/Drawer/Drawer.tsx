@@ -6,7 +6,7 @@
  * @file Drawer.tsx
  * @input Uses React, StyleX, theme tokens, Icon/IconButton, shared focus/dismissal/depth primitives, i18n, scroll locking/dialog presence, BaseProps, merged refs/props, themeProps
  * @output Exports Drawer component and DrawerProps
- * @position Lab implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
+ * @position Core implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
  *
  * Overlay panel for inspectors and detail views — the "click a table row,
  * see its details" pattern. Slides in from the inline start or end edge and
@@ -36,15 +36,17 @@
  * handling and the browser top layer's chronological paint order.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/Drawer/Drawer.doc.mjs (props table, features, usage)
- * - /packages/lab/src/Drawer/Drawer.test.tsx (tests for new/changed behavior)
- * - /packages/lab/src/Drawer/index.ts (exports if types change)
+ * - /packages/core/src/Drawer/Drawer.doc.mjs (props table, features, usage)
+ * - /packages/core/src/Drawer/Drawer.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/Drawer/index.ts (exports if types change)
  * - /apps/storybook/stories/Drawer.stories.tsx (examples and visual coverage)
+ * - /packages/cli/assets/templates/blocks/components/Drawer/DrawerShowcase.tsx
+ * - /packages/cli/assets/templates/blocks/components/Drawer/DrawerRowInspector.tsx
  */
 
 import {useCallback, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {BaseProps} from '@astryxdesign/core';
+import type {BaseProps} from '../BaseProps';
 import {
   borderVars,
   colorVars,
@@ -52,22 +54,14 @@ import {
   easeVars,
   shadowVars,
   spacingVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {Icon} from '@astryxdesign/core/Icon';
-import {IconButton} from '@astryxdesign/core/IconButton';
-import {
-  useFocusTrap,
-  useMergedRefs,
-  useScrollLock,
-} from '@astryxdesign/core/hooks';
-import {LayerDepthProvider, useLayerDismissal} from '@astryxdesign/core/Layer';
-import {useTranslator} from '@astryxdesign/core/i18n';
-import {
-  composeEventHandlers,
-  mergeProps,
-  themeProps,
-} from '@astryxdesign/core/utils';
-import {overlayPaddingReset} from '@astryxdesign/core/Layout';
+} from '../theme/tokens.stylex';
+import {Icon} from '../Icon';
+import {IconButton} from '../IconButton';
+import {useFocusTrap, useMergedRefs, useScrollLock} from '../hooks';
+import {LayerDepthProvider, useLayerDismissal} from '../Layer';
+import {useTranslator} from '../i18n';
+import {composeEventHandlers, mergeProps, themeProps} from '../utils';
+import {overlayPaddingReset} from '../Layout';
 import {useDrawerDialogPresence} from './useDrawerDialogPresence';
 
 // =============================================================================

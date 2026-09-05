@@ -374,7 +374,7 @@
   },
   {
     "component": "Drawer",
-    "storyId": "lab-drawer--sides",
+    "storyId": "core-drawer--sides",
     "dims": [
       "D4"
     ],
