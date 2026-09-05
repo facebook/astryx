@@ -616,14 +616,36 @@ export const NearFullTokenRow: Story = {
         `Empty combobox overlaps Clear all by ${overlap.toFixed(2)}px`,
       );
     }
-    const inputHitTarget = document.elementFromPoint(
-      inputRect.left + inputRect.width / 2,
-      inputRect.top + inputRect.height / 2,
+    const clearHitTarget = document.elementFromPoint(
+      clearRect.left + clearRect.width / 2,
+      clearRect.top + clearRect.height / 2,
     );
-    if (inputHitTarget !== input) {
+    if (!clearHitTarget || !clearButton.contains(clearHitTarget)) {
       throw new Error(
-        `Empty combobox center is hit-tested as ${inputHitTarget?.tagName ?? 'nothing'}`,
+        `Clear all center is hit-tested as ${clearHitTarget?.tagName ?? 'nothing'}`,
       );
+    }
+    const tokenHitTarget = document.elementFromPoint(
+      tokenRect.left + tokenRect.width / 2,
+      tokenRect.top + tokenRect.height / 2,
+    );
+    if (!tokenHitTarget || !finalToken.contains(tokenHitTarget)) {
+      throw new Error(
+        `Final token center is hit-tested as ${tokenHitTarget?.tagName ?? 'nothing'}`,
+      );
+    }
+
+    const hitY = inputRect.top + inputRect.height / 2;
+    let inputHitTarget: Element | null = null;
+    for (let x = Math.ceil(inputRect.left); x < inputRect.right; x += 1) {
+      const candidate = document.elementFromPoint(x + 0.5, hitY);
+      if (candidate === input) {
+        inputHitTarget = candidate;
+        break;
+      }
+    }
+    if (!inputHitTarget) {
+      throw new Error('Empty combobox has no exposed pointer hit target');
     }
     inputHitTarget.dispatchEvent(new MouseEvent('click', {bubbles: true}));
     if (document.activeElement !== input) {
