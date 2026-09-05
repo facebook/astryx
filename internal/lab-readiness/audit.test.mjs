@@ -15,7 +15,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {describe, it, expect, beforeAll, afterAll} from 'vitest';
 
-import {CHECK_KEYS, HUMAN_REVIEW_KEYS} from './catalog.mjs';
+import {CHECK_KEYS, HUMAN_REVIEW_KEYS, getCheck} from './catalog.mjs';
 import {deriveChecks, _internal} from './automated.mjs';
 import {auditCandidate, buildRegistry, buildReport} from './audit.mjs';
 
@@ -99,7 +99,9 @@ describe('automated derivation', () => {
     });
     const derived = deriveChecks(root, candidate);
     expect(derived.accessibilityContracts.state).not.toBe('passed');
-    expect(derived.accessibilityContracts.note).toMatch(/excludes packages\/lab/);
+    expect(derived.accessibilityContracts.note).toMatch(
+      /excludes packages\/lab/,
+    );
   });
 
   it('fails the keyboard check when the RTL sweep stops covering lab', () => {
@@ -119,7 +121,9 @@ describe('automated derivation', () => {
     });
     const derived = deriveChecks(root, candidate);
     expect(derived.accessibilityContracts.state).not.toBe('passed');
-    expect(derived.accessibilityContracts.note).toMatch(/resolves to the analyzer/);
+    expect(derived.accessibilityContracts.note).toMatch(
+      /resolves to the analyzer/,
+    );
   });
 
   it('requires an advertised state to appear in both a story and a test', () => {
@@ -215,7 +219,9 @@ describe('automated derivation', () => {
         "import {scaleLinear} from 'd3-scale';\n" +
         'export function Widget() { return <Text>{String(scaleLinear)}</Text>; }\n',
     });
-    expect(deriveChecks(root, candidate).systemIntegration.state).toBe('passed');
+    expect(deriveChecks(root, candidate).systemIntegration.state).toBe(
+      'passed',
+    );
   });
 
   it('accepts inline type modifiers in the barrel', () => {
@@ -283,6 +289,38 @@ describe('manifest reconciliation', () => {
     for (const key of HUMAN_REVIEW_KEYS) {
       expect(derived[key]).toBeUndefined();
     }
+  });
+
+  it('treats responsive and interaction readiness as an evidenced human-review check', () => {
+    expect(HUMAN_REVIEW_KEYS).toContain('responsiveInteractionReadiness');
+    const readinessCheck = getCheck('responsiveInteractionReadiness');
+    expect(readinessCheck).toMatchObject({
+      stageKey: 'hardenReview',
+      sectionKey: 'humanReview',
+      protocolUrl:
+        'https://github.com/facebook/astryx/wiki/Component-Hardening-Protocol',
+      humanReview: true,
+    });
+    expect(readinessCheck.description).toContain('Blocked');
+    expect(readinessCheck.description).toContain(
+      'mobile viewport/platform constraints',
+    );
+
+    scaffold();
+    const result = auditCandidate(root, {
+      ...candidate,
+      declared: {
+        responsiveInteractionReadiness: {
+          state: 'passed',
+          note: 'Checklist completed with Pass, Blocked, and N/A rows.',
+        },
+      },
+    });
+    const check = result.checks.find(
+      c => c.key === 'responsiveInteractionReadiness',
+    );
+    expect(check.state).toBe('in_progress');
+    expect(check.note).toMatch(/requires linked evidence/);
   });
 });
 

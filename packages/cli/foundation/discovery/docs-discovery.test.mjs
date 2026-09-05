@@ -13,6 +13,8 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+
+import {docs as responsiveInteractionReadinessDocs} from '../../assets/docs/responsive-interaction-readiness.doc.mjs';
 import {
   BUILTIN_DOCS_PACKAGE,
   DocsCatalog,
@@ -31,7 +33,9 @@ function topic(fields) {
     name: 'deploying',
     title: 'Deploying',
     description: 'How to ship it.',
-    sections: [{title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]}],
+    sections: [
+      {title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]},
+    ],
     ...fields,
   };
 }
@@ -64,9 +68,139 @@ describe('discoverBuiltinTopics', () => {
     const topics = discoverBuiltinTopics();
     expect(Object.keys(topics).length).toBeGreaterThan(0);
     expect(topics.tokens).toMatch(/assets[/\\]docs[/\\]tokens\.doc\.mjs$/);
+    expect(topics['responsive-interaction-readiness']).toMatch(
+      /assets[/\\]docs[/\\]responsive-interaction-readiness\.doc\.mjs$/,
+    );
     for (const name of Object.keys(topics)) {
       expect(name).not.toMatch(/\.(zh|dense)$/);
     }
+  });
+
+  it('keeps the responsive-interaction-readiness PR reporting template discoverable and scoped', () => {
+    const serialized = JSON.stringify(responsiveInteractionReadinessDocs);
+    expect(problemsInTopic(responsiveInteractionReadinessDocs)).toEqual([]);
+    expect(serialized).toContain('Reporting in component PRs');
+    expect(serialized).toContain('Status semantics: Pass = evidenced');
+    expect(serialized).toContain('Pass/Fail/Blocked/N/A');
+    expect(serialized).toContain('| Check | Result | Evidence |');
+    expect(serialized).toContain('Applicable core checks');
+    expect(serialized).toContain('Animated overflow/clipping');
+    expect(serialized).toContain('Stack reflow/intermediate-frame evidence');
+    expect(serialized).not.toContain('Not verified');
+  });
+
+  it('keeps the four scenario evidence patterns without device stereotypes', () => {
+    const serialized = JSON.stringify(responsiveInteractionReadinessDocs);
+    for (const scenario of [
+      'Wide viewport + fine pointer + hover',
+      'Narrow viewport + fine pointer + hover',
+      'Narrow viewport + coarse pointer + no hover',
+      'Wide viewport + coarse pointer + no hover',
+    ]) {
+      expect(serialized).toContain(scenario);
+    }
+    expect(serialized).toContain('not mandatory boilerplate');
+    expect(serialized).toContain(
+      'A narrow viewport does not prove touch input',
+    );
+    expect(serialized).toContain(
+      'coarse pointer does not prove a narrow viewport',
+    );
+    expect(serialized).not.toContain('same narrow layout as mobile');
+    expect(serialized).not.toContain('mobile/touch contract');
+    expect(serialized.toLowerCase()).not.toContain(
+      ['desktop', 'with', 'small screen'].join(' '),
+    );
+  });
+
+  it('requires real responsive evidence and both overflow outcomes', () => {
+    const serialized = JSON.stringify(responsiveInteractionReadinessDocs);
+    for (const requiredPhrase of [
+      'every sizing path',
+      'explicit size',
+      'trigger-derived size',
+      'intrinsic content',
+      'consumer overrides',
+      'both inline and block axes',
+      'oversized content scrolls',
+      'content that fits remains unclipped',
+      'actual Storybook viewport or containing layout',
+      'decorative device frame',
+      'normal interaction contract active',
+      'open it through the story interaction',
+    ]) {
+      expect(serialized).toContain(requiredPhrase);
+    }
+  });
+
+  it('keeps platform evidence limits in one policy layer', () => {
+    const serialized = JSON.stringify(responsiveInteractionReadinessDocs);
+    expect(serialized).toContain('Platform evidence policy');
+    for (const requiredPhrase of [
+      'Storybook',
+      'Desktop Playwright engines',
+      'iOS Simulator or physical iOS evidence',
+      'touch dispatch',
+      'native top-layer dialog or popover behavior',
+      'visual viewport/software keyboard behavior',
+      'safe-area/platform chrome',
+      'Bottom-sheet edge continuity',
+      'bottom safe-area inset exactly once',
+      'browser-bar colour matches the rendered sheet surface',
+      'Shared primitive and semantic-family frame',
+      'Components in one semantic family share one presentation policy and visual frame',
+      'Physical-device checks',
+    ]) {
+      expect(serialized).toContain(requiredPhrase);
+    }
+    expect(serialized).toContain('Playwright WebKit is macOS WebKit');
+    expect(serialized).toContain('Cannot prove');
+  });
+
+  it('keeps WCAG AA claims and motion guidance narrow', () => {
+    const serialized = JSON.stringify(responsiveInteractionReadinessDocs);
+    expect(serialized).toContain('WCAG 2.2 Level AA SC 2.5.8');
+    expect(serialized).toContain('at least 24x24 CSS px');
+    expect(serialized).toContain('WCAG 2.2 AA SC 2.2.1');
+    expect(serialized).toContain(
+      'Reduced motion for interaction-affecting motion',
+    );
+    expect(serialized).toContain('Astryx product-quality guidance');
+    expect(serialized).toContain(
+      'cite WCAG 2.2 AA only where timed, moving, or flashing content criteria actually apply',
+    );
+    expect(serialized).not.toMatch(/(?:4[48])(?:x| by )(?:4[48])/);
+    expect(serialized).not.toContain('generic Reduced motion');
+  });
+
+  it('keeps conditional appendices and excludes broader hardening topics', () => {
+    const serialized = JSON.stringify(responsiveInteractionReadinessDocs);
+    expect(serialized).toContain('Adaptive presentation appendix');
+    expect(serialized).toContain('Transient and queued UI appendix');
+    expect(serialized).toContain('Use this appendix only');
+    expect(serialized).toContain('Explicit opt-in');
+    expect(serialized).toContain('queue, replace, or deduplicate');
+    expect(serialized).toContain('Start timeouts only once an item is visible');
+    expect(serialized).toContain('Gesture alternatives and stack lifecycle');
+    for (const excluded of [
+      'Spacing semantics',
+      'universal list-gap',
+      'inter-item spacing',
+      'single-line and multiline',
+      'React instrumentation caveat',
+      'do not mutate a props object to wrap handlers',
+    ]) {
+      expect(serialized).not.toContain(excluded);
+    }
+  });
+
+  it('keeps diagnostics optional and non-normative', () => {
+    const serialized = JSON.stringify(responsiveInteractionReadinessDocs);
+    expect(serialized).toContain('Diagnostics appendix');
+    expect(serialized).toContain('Non-normative aid');
+    expect(serialized).toContain('query-flagged, on-page forensics overlay');
+    expect(serialized).toContain('development-only');
+    expect(serialized).toContain('pointer-events: none');
   });
 });
 
@@ -97,7 +231,9 @@ describe('discoverIntegrationDocs', () => {
       }),
     );
     expect(errors).toEqual([]);
-    expect(records.map(r => [r.name, r.package, r.replaces, r.extendsTopic])).toEqual([
+    expect(
+      records.map(r => [r.name, r.package, r.replaces, r.extendsTopic]),
+    ).toEqual([
       ['deploying', '@acme/widgets', undefined, undefined],
       ['getting-started', '@acme/widgets', 'getting-started', undefined],
       ['theme-extra', '@acme/widgets', undefined, 'theme'],
@@ -126,7 +262,9 @@ describe('discoverIntegrationDocs', () => {
 
   it('reports a doc that exports nothing, rather than skipping it silently', async () => {
     const {records, errors} = await discoverIntegrationDocs(
-      integration('@acme/empty', {'deploying.doc.mjs': 'export const nope = 1;\n'}),
+      integration('@acme/empty', {
+        'deploying.doc.mjs': 'export const nope = 1;\n',
+      }),
     );
     expect(records).toEqual([]);
     expect(errors).toHaveLength(1);
@@ -170,7 +308,11 @@ describe('problemsInTopic', () => {
     // A misspelled required field: the block renders nothing at all.
     expect(
       problemsInTopic(
-        topic({sections: [{title: 'Overview', content: [{type: 'prose', txt: 'oops'}]}]}),
+        topic({
+          sections: [
+            {title: 'Overview', content: [{type: 'prose', txt: 'oops'}]},
+          ],
+        }),
       ),
     ).toEqual([
       'sections[0].content[0].text: required for a prose block',
@@ -180,7 +322,12 @@ describe('problemsInTopic', () => {
     expect(
       problemsInTopic(
         topic({
-          sections: [{title: 'Overview', content: [{type: 'heading', level: 2, text: 'x'}]}],
+          sections: [
+            {
+              title: 'Overview',
+              content: [{type: 'heading', level: 2, text: 'x'}],
+            },
+          ],
         }),
       ),
     ).toContain('sections[0].content[0].level: 2 is not one of 3, 4, 5, 6');
@@ -196,11 +343,15 @@ describe('problemsInTopic', () => {
           ],
         }),
       ),
-    ).toContain('sections[0].content[0].rows[0]: has 1 cells but the table has 2 headers');
+    ).toContain(
+      'sections[0].content[0].rows[0]: has 1 cells but the table has 2 headers',
+    );
   });
 
   it('rejects a name that is not URL-safe', () => {
-    expect(problemsInTopic(topic({name: 'not a topic'})).join('\n')).toContain('URL-safe');
+    expect(problemsInTopic(topic({name: 'not a topic'})).join('\n')).toContain(
+      'URL-safe',
+    );
   });
 });
 
@@ -232,7 +383,7 @@ describe('DocsCatalog', () => {
     const catalog = DocsCatalog.fromBuiltins({tokens: '/cli/tokens.doc.mjs'});
     const issue = catalog.add(record({name: 'tokens'}));
     expect(issue).toMatchObject({code: 'invalid_doc', severity: 'error'});
-    expect(issue.message).toContain("already provided by @astryxdesign/cli");
+    expect(issue.message).toContain('already provided by @astryxdesign/cli');
     expect(issue.message).toContain("replaces: 'tokens'");
     // The built-in topic is untouched.
     expect(catalog.resolve('tokens').package).toBe(BUILTIN_DOCS_PACKAGE);
@@ -244,7 +395,9 @@ describe('DocsCatalog', () => {
       tokens: '/cli/tokens.doc.mjs',
     });
     expect(
-      catalog.add(record({name: 'getting-started', replaces: 'getting-started'})),
+      catalog.add(
+        record({name: 'getting-started', replaces: 'getting-started'}),
+      ),
     ).toBeNull();
     expect(catalog.names()).toEqual(['getting-started', 'tokens']);
     const entry = catalog.resolve('getting-started');
@@ -276,12 +429,16 @@ describe('DocsCatalog', () => {
 
   it('warns, and lets the later package win, when two replace one topic', () => {
     const catalog = DocsCatalog.fromBuiltins({tokens: '/cli/tokens.doc.mjs'});
-    expect(catalog.add(record({name: 'tokens', replaces: 'tokens'}))).toBeNull();
+    expect(
+      catalog.add(record({name: 'tokens', replaces: 'tokens'})),
+    ).toBeNull();
     const issue = catalog.add(
       record({name: 'tokens', package: '@acme/later', replaces: 'tokens'}),
     );
     expect(issue).toMatchObject({code: 'duplicate_doc', severity: 'warning'});
-    expect(issue.message).toContain('@acme/later is configured later, so it wins');
+    expect(issue.message).toContain(
+      '@acme/later is configured later, so it wins',
+    );
     expect(catalog.resolve('tokens').package).toBe('@acme/later');
   });
 
@@ -327,7 +484,11 @@ describe('mergeTopic', () => {
         {title: 'Internal', content: [{type: 'prose', text: 'the meta way'}]},
       ],
     });
-    expect(merged.sections.map(s => s.title)).toEqual(['Install', 'Tokens', 'Internal']);
+    expect(merged.sections.map(s => s.title)).toEqual([
+      'Install',
+      'Tokens',
+      'Internal',
+    ]);
     expect(merged.sections[0].content[0].text).toBe('yarn add');
     expect(merged.sections[1].content[0].text).toBe('use tokens');
     // The base is untouched.
@@ -336,6 +497,8 @@ describe('mergeTopic', () => {
 
   it('takes the title and description only when the overlay states them', () => {
     expect(mergeTopic(base, {sections: []}).title).toBe('Theme');
-    expect(mergeTopic(base, {title: 'Theming', sections: []}).title).toBe('Theming');
+    expect(mergeTopic(base, {title: 'Theming', sections: []}).title).toBe(
+      'Theming',
+    );
   });
 });

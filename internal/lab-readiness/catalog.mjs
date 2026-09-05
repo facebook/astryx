@@ -2,7 +2,7 @@
 
 /**
  * @file catalog.mjs
- * @description The lab graduation rubric: the five lifecycle stages and the 30
+ * @description The lab graduation rubric: the five lifecycle stages and the 31
  *   checks a lab component must pass before it can be promoted into
  *   `@astryxdesign/core`. This is the schema the Storybook readiness panel and
  *   `apps/storybook/.lab-readiness/latest.json` are built against.
@@ -22,7 +22,7 @@
  * Storybook readiness panel that reads the emitted report.
  */
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export const REPORT_KIND = 'astryx-lab-readiness-report';
 
 const SPEC_PROTOCOL =
@@ -82,73 +82,228 @@ const STAGE_META = {
  * readiness panel renders them in, and it is also lifecycle order.
  */
 const CHECKS = [
-  ['research', 'research', 'triage', 'Triage',
-    'A named owner has confirmed the problem and scope.'],
-  ['research', 'research', 'internalResearch', 'Internal research',
-    'Existing Astryx and internal patterns have been audited.'],
-  ['research', 'research', 'externalResearch', 'External research',
-    'Relevant design-system and web precedents have been compared.'],
-  ['research', 'research', 'useCases', 'Use cases',
-    'Primary use cases, non-goals, and constraints are documented.'],
+  [
+    'research',
+    'research',
+    'triage',
+    'Triage',
+    'A named owner has confirmed the problem and scope.',
+  ],
+  [
+    'research',
+    'research',
+    'internalResearch',
+    'Internal research',
+    'Existing Astryx and internal patterns have been audited.',
+  ],
+  [
+    'research',
+    'research',
+    'externalResearch',
+    'External research',
+    'Relevant design-system and web precedents have been compared.',
+  ],
+  [
+    'research',
+    'research',
+    'useCases',
+    'Use cases',
+    'Primary use cases, non-goals, and constraints are documented.',
+  ],
 
-  ['spec', 'spec', 'draftSpec', 'Draft spec',
-    'An RFC describes the component contract and intended behavior.'],
-  ['spec', 'spec', 'surfaceAudit', 'Surface audit',
-    'Composition, naming, variants, states, and tokens are enumerated.'],
-  ['spec', 'spec', 'specReview', 'Spec review',
-    'Design and engineering reviewers have resolved blocking feedback.'],
-  ['spec', 'spec', 'apiArbitration', 'API arbitration',
-    'Competing APIs were evaluated when the choice was non-obvious.'],
-  ['spec', 'spec', 'finalizedSpec', 'Finalized spec',
-    'The accepted contract is recorded as the build baseline.'],
+  [
+    'spec',
+    'spec',
+    'draftSpec',
+    'Draft spec',
+    'An RFC describes the component contract and intended behavior.',
+  ],
+  [
+    'spec',
+    'spec',
+    'surfaceAudit',
+    'Surface audit',
+    'Composition, naming, variants, states, and tokens are enumerated.',
+  ],
+  [
+    'spec',
+    'spec',
+    'specReview',
+    'Spec review',
+    'Design and engineering reviewers have resolved blocking feedback.',
+  ],
+  [
+    'spec',
+    'spec',
+    'apiArbitration',
+    'API arbitration',
+    'Competing APIs were evaluated when the choice was non-obvious.',
+  ],
+  [
+    'spec',
+    'spec',
+    'finalizedSpec',
+    'Finalized spec',
+    'The accepted contract is recorded as the build baseline.',
+  ],
 
-  ['build', 'build', 'implementation', 'Implementation',
-    'The component implements the agreed public contract.'],
-  ['build', 'build', 'systemIntegration', 'System integration',
-    'Tokens, themes, composition, and shared primitives are integrated.'],
-  ['build', 'build', 'stories', 'Stories',
-    'Storybook demonstrates representative states and composition.'],
-  ['build', 'build', 'tests', 'Tests',
-    'Focused behavioral and contract tests cover the implementation.'],
-  ['build', 'build', 'documentation', 'Documentation',
-    'The public API, usage, and important constraints are documented.'],
-  ['build', 'build', 'reviewAndCI', 'Review and CI',
-    'Code review and required automated checks are complete.'],
-  ['build', 'build', 'mergedPR', 'Merged PR',
-    'The build is merged into the lab package.'],
+  [
+    'build',
+    'build',
+    'implementation',
+    'Implementation',
+    'The component implements the agreed public contract.',
+  ],
+  [
+    'build',
+    'build',
+    'systemIntegration',
+    'System integration',
+    'Tokens, themes, composition, and shared primitives are integrated.',
+  ],
+  [
+    'build',
+    'build',
+    'stories',
+    'Stories',
+    'Storybook demonstrates representative states and composition.',
+  ],
+  [
+    'build',
+    'build',
+    'tests',
+    'Tests',
+    'Focused behavioral and contract tests cover the implementation.',
+  ],
+  [
+    'build',
+    'build',
+    'documentation',
+    'Documentation',
+    'The public API, usage, and important constraints are documented.',
+  ],
+  [
+    'build',
+    'build',
+    'reviewAndCI',
+    'Review and CI',
+    'Code review and required automated checks are complete.',
+  ],
+  [
+    'build',
+    'build',
+    'mergedPR',
+    'Merged PR',
+    'The build is merged into the lab package.',
+  ],
 
-  ['hardenChecks', 'automatedAudit', 'tokensTheming', 'Tokens and theming',
-    'Token usage and theme integration pass the automated audit.'],
-  ['hardenChecks', 'automatedAudit', 'reuseNaming', 'Reuse and naming',
-    'Existing primitives are reused and public names follow conventions.'],
-  ['hardenChecks', 'automatedAudit', 'structureTypes', 'Structure and types',
-    'File structure, exports, and TypeScript contracts pass inspection.'],
-  ['hardenChecks', 'automatedAudit', 'accessibilityContracts',
+  [
+    'hardenChecks',
+    'automatedAudit',
+    'tokensTheming',
+    'Tokens and theming',
+    'Token usage and theme integration pass the automated audit.',
+  ],
+  [
+    'hardenChecks',
+    'automatedAudit',
+    'reuseNaming',
+    'Reuse and naming',
+    'Existing primitives are reused and public names follow conventions.',
+  ],
+  [
+    'hardenChecks',
+    'automatedAudit',
+    'structureTypes',
+    'Structure and types',
+    'File structure, exports, and TypeScript contracts pass inspection.',
+  ],
+  [
+    'hardenChecks',
+    'automatedAudit',
+    'accessibilityContracts',
     'Accessibility contracts',
-    'Static and automated accessibility requirements pass.'],
-  ['hardenChecks', 'automatedAudit', 'exportsAuditCI', 'Exports and CI',
-    'Public exports, builds, tests, and required CI checks are green.'],
+    'Static and automated accessibility requirements pass.',
+  ],
+  [
+    'hardenChecks',
+    'automatedAudit',
+    'exportsAuditCI',
+    'Exports and CI',
+    'Public exports, builds, tests, and required CI checks are green.',
+  ],
 
-  ['hardenChecks', 'objectiveFixes', 'stateCoverage', 'State coverage',
-    'All supported interaction and semantic states are covered.'],
-  ['hardenChecks', 'objectiveFixes', 'visualThemes', 'Visual themes',
-    'Light, dark, and nested-theme rendering is verified.'],
-  ['hardenChecks', 'objectiveFixes', 'keyboardAccessibility',
+  [
+    'hardenChecks',
+    'objectiveFixes',
+    'stateCoverage',
+    'State coverage',
+    'All supported interaction and semantic states are covered.',
+  ],
+  [
+    'hardenChecks',
+    'objectiveFixes',
+    'visualThemes',
+    'Visual themes',
+    'Light, dark, and nested-theme rendering is verified.',
+  ],
+  [
+    'hardenChecks',
+    'objectiveFixes',
+    'keyboardAccessibility',
     'Keyboard and accessibility',
-    'Keyboard, focus, semantics, naming, and contrast are verified.'],
-  ['hardenChecks', 'objectiveFixes', 'edgeCases', 'Edge cases',
-    'Empty, overflow, loading, disabled, and stress cases are resolved.'],
-  ['hardenChecks', 'objectiveFixes', 'storyCompleteness', 'Story completeness',
-    'Stories make the completed state and edge-case matrix reviewable.'],
+    'Keyboard, focus, semantics, naming, and contrast are verified.',
+  ],
+  [
+    'hardenChecks',
+    'objectiveFixes',
+    'edgeCases',
+    'Edge cases',
+    'Empty, overflow, loading, disabled, and stress cases are resolved.',
+  ],
+  [
+    'hardenChecks',
+    'objectiveFixes',
+    'storyCompleteness',
+    'Story completeness',
+    'Stories make the completed state and edge-case matrix reviewable.',
+  ],
 
-  ['hardenReview', 'humanReview', 'visualQuality', 'Visual quality',
-    'A human reviewer has approved polish and visual consistency.'],
-  ['hardenReview', 'humanReview', 'compositionQuality', 'Composition quality',
-    'Real compositions confirm the API works beyond isolated demos.'],
-  ['hardenReview', 'humanReview', 'scopeBoundary', 'Scope boundary',
-    'The component\u2019s responsibilities and non-goals remain coherent.'],
-  ['hardenReview', 'humanReview', 'archivedReview', 'Archived review',
-    'The final checklist, decision, and follow-ups are linked.'],
+  [
+    'hardenReview',
+    'humanReview',
+    'visualQuality',
+    'Visual quality',
+    'A human reviewer has approved polish and visual consistency.',
+  ],
+  [
+    'hardenReview',
+    'humanReview',
+    'compositionQuality',
+    'Composition quality',
+    'Real compositions confirm the API works beyond isolated demos.',
+  ],
+  [
+    'hardenReview',
+    'humanReview',
+    'scopeBoundary',
+    'Scope boundary',
+    'The component\u2019s responsibilities and non-goals remain coherent.',
+  ],
+  [
+    'hardenReview',
+    'humanReview',
+    'responsiveInteractionReadiness',
+    'Responsive and Interaction Readiness',
+    'The Responsive and Interaction Readiness rubric records Pass, Fail, Blocked, or N/A outcomes with evidence for responsive layout, input modality, interaction-affecting motion, mobile viewport/platform constraints, and accessibility effects of those behaviors.',
+  ],
+  [
+    'hardenReview',
+    'humanReview',
+    'archivedReview',
+    'Archived review',
+    'The final checklist, decision, and follow-ups are linked.',
+  ],
 ];
 
 export const CHECK_CATALOG = CHECKS.map(

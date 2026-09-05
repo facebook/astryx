@@ -12,7 +12,7 @@ export const docs = {
   sections: [
     {
       title: 'Design Philosophy',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -32,7 +32,7 @@ export const docs = {
     },
     {
       title: 'Rules',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'list',
@@ -40,6 +40,7 @@ export const docs = {
           items: [
             'Use components for everything they cover',
             'Page layout is frame-first: pick the shell and budget regions before writing content (see \`astryx docs layout\`)',
+            'For new or changed components, record Responsive and Interaction Readiness outcomes with Pass/Fail/N/A evidence before shipping responsive or input behavior (see \`astryx docs responsive-interaction-readiness\`)',
             'Dense data renders as rows (Table, List/Item), edge-to-edge with dividers; Card is for widgets, galleries, and settings groups',
             'StyleX or Tailwind for custom styling; both are first-class (see \`astryx docs styling\`)',
             'Semantic tokens, not hardcoded values (see \`astryx docs tokens\`)',
@@ -52,7 +53,7 @@ export const docs = {
     },
     {
       title: 'Styling Approach',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -66,7 +67,7 @@ export const docs = {
     },
     {
       title: 'Anti-Patterns',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'list',
@@ -85,7 +86,7 @@ export const docs = {
     },
     {
       title: 'Design Tokens',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
