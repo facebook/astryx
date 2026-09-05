@@ -34,12 +34,14 @@ const REWARD_MEMBER_NAME = 'Ami Pena';
 const REWARD_MEMBER_AVATAR = '/images/avatars/DATA-Ami-Pena.png';
 
 const styles = stylex.create({
-  // Desktop overlap stage: fixed, viewport-centered 1200px box (shared with the
-  // aurora blobs) so cards track the blobs on resize. Capped to 100vw to avoid
-  // horizontal scroll. Hidden <1024px, where the collage takes over.
+  // Desktop overlap stage: the 1200px art box (shared with the aurora blobs, so
+  // cards track the blobs on resize). Absolute inside the hero's sticky pin
+  // layer rather than fixed to the viewport — see HeroPinRail. Capped to 100vw
+  // to avoid horizontal scroll. Hidden <1024px, where the collage takes over.
   stage: {
-    position: 'fixed',
-    top: 'var(--appshell-header-height, 0px)',
+    position: 'absolute',
+    // The pin layer is already offset a header-height down.
+    top: 0,
     left: '50%',
     transform: 'translateX(-50%)',
     width: 'min(1200px, 100vw)',
@@ -564,7 +566,7 @@ export function HeroFloatingCards({
     );
   }
 
-  // ── Overlap layout (desktop): fixed art composition ───────────────────
+  // ── Overlap layout (desktop): pinned art composition ──────────────────
   return (
     <div {...stylex.props(styles.stage)} aria-hidden="true" inert>
       {/* Leading pill */}
