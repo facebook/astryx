@@ -1212,6 +1212,58 @@ export const NarrowCollapse: Story = {
   },
 };
 
+export const NarrowCollapsedVariants: Story = {
+  name: 'Narrow — Collapsed Variants',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The same 320px horizontal Stepper with each collapsedVariant. hiddenLabel omits the entire compact row—even though onStepClick is present—so it is shorter and leaves only the progress track.',
+      },
+    },
+  },
+  render: () => {
+    const [active, setActive] = useState(1);
+    const steps = ['Cart', 'Shipping', 'Delivery', 'Payment'];
+    const variants = [
+      {
+        value: 'withLabelAndControls',
+        label: 'withLabelAndControls — label and controls',
+      },
+      {value: 'withLabel', label: 'withLabel — label only'},
+      {value: 'hiddenLabel', label: 'hiddenLabel — bare track'},
+    ] as const;
+
+    return (
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 320px))',
+          alignItems: 'start',
+          gap: 40,
+        }}>
+        {variants.map(variant => (
+          <div key={variant.value} style={{width: '100%', maxWidth: 320}}>
+            <Text type="label">{variant.label}</Text>
+            <Stepper
+              activeStep={active}
+              onStepClick={setActive}
+              label="Checkout"
+              horizontalOptions={{
+                minimumStepWidth: 112,
+                collapsedVariant: variant.value,
+              }}>
+              {steps.map((step, index) => (
+                <Step key={step} step={index} label={step} />
+              ))}
+            </Stepper>
+          </div>
+        ))}
+      </div>
+    );
+  },
+};
+
 // ============================================================
 // FRAGMENT-GROUPED STEPS
 // ============================================================
