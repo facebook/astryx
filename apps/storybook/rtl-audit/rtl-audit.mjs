@@ -27,7 +27,7 @@
  * @input --storybook-dir <path> --output <file> [--targets <path>]
  *   [--verified-not-applicable <path>] [--known-coverage-gaps <path>]
  *   [--removed-components <csv>] [--filter <csv>] [--packages <csv>]
- *   [--auto-only] [--curated-only]
+ *   [--check-known-gap-roster] [--auto-only] [--curated-only]
  * @output JSON scorecard: D1/D5/D6 auto verdicts, curated
  *   D2/D3/D4/D7/D8/D9 results, exact planned/completed scan counts, and a
  *   component coverage rollup. Mirrors the pr-a11y accessibility-audit harness.
@@ -106,6 +106,7 @@ const ACTIVE_PACKAGE_NAMES = PACKAGE_FILTER.length > 0
 const REMOVED_COMPONENTS = validateRemovedComponents(
   (getArg('removed-components') || '').split(',').map(s => s.trim()).filter(Boolean),
 );
+const CHECK_KNOWN_GAP_ROSTER = hasFlag('check-known-gap-roster');
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
 // Story-id prefixes the auto-discovery layer sweeps come from the same
@@ -1245,7 +1246,8 @@ async function cleanupRuntime() {
     verifiedNa,
     knownGaps,
     removedFromRoster,
-    checkKnownGapRoster: FILTER.length === 0,
+    knownGapRosterComponents: [...currentComponentKeys],
+    checkKnownGapRoster: FILTER.length === 0 || CHECK_KNOWN_GAP_ROSTER,
     // Partial modes intentionally omit dimensions, so they report but do not
     // enforce applicability gaps.
     enforced: !AUTO_ONLY && !CURATED_ONLY,
