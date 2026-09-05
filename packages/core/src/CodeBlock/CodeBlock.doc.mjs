@@ -37,7 +37,7 @@ export const docs = {
     {
       name: 'hasLineNumbers',
       type: 'boolean',
-      description: 'Show a line number gutter.',
+      description: 'Show a line-number gutter. Unwrapped line numbers remain visible during horizontal scrolling.',
       default: 'false',
     },
     {
@@ -160,6 +160,10 @@ export const docs = {
     ],
     vars: [
       {name: '--_codeblock-gutter-width', description: 'Width of the line-number gutter, computed from the digit count of the last line so the code column starts at a stable offset.', default: '2ch', private: true},
+      {name: '--_codeblock-sticky-background', description: 'Opaque background behind sticky line numbers. Tracks a themed CodeBlock backgroundColor so scrolling code does not show through the gutter.', default: 'var(--color-syntax-background) for card containers; var(--color-background-surface) for section containers', private: true},
+    ],
+    derived: [
+      {property: 'backgroundColor', vars: ['--_codeblock-sticky-background']},
     ],
   },
   usage: {
@@ -173,7 +177,7 @@ export const docs = {
     ],
     anatomy: [
       {name: 'Header Bar', required: false, description: 'Shows the title, language label, and copy button. Appears when any of these props are set.'},
-      {name: 'Line Numbers', required: false, description: 'Numbered gutter along the left edge. Enable with hasLineNumbers.'},
+      {name: 'Line Numbers', required: false, description: 'Numbered gutter along the left edge. Unwrapped line numbers remain visible during horizontal scrolling.'},
       {name: 'Code Body', required: true, description: 'The syntax-highlighted code content.'},
       {name: 'Highlighted Lines', required: false, description: 'Background accent on specific lines to draw attention.'},
       {name: 'Copy Button', required: false, description: 'Copies the code string to the clipboard. Shown by default.'},

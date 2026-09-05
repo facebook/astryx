@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Derived variable registry — maps CSS properties to internal vars.
+ * @file Derived variable registry — maps CSS properties to internal vars, including nested surface fills.
  *
  * Used by generateThemeRules to expand standard CSS properties (borderRadius,
  * padding) into internal CSS custom properties that components read.
@@ -54,6 +54,12 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
     {property: 'borderRadius', vars: ['--_chat-composer-radius']},
     {property: 'padding', vars: ['--_chat-composer-padding']},
   ],
+  'code-block': [
+    {
+      property: 'backgroundColor',
+      vars: ['--_codeblock-sticky-background'],
+    },
+  ],
   dialog: [
     {property: 'borderRadius', vars: ['--_dialog-radius']},
     {property: 'padding', expand: 'container'},
@@ -101,6 +107,7 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
  * nothing. Drop these with the classes, in the next major.
  */
 const DEPRECATED_REGISTRY_KEYS: Record<string, string> = {
+  codeblock: 'code-block',
   hovercard: 'hover-card',
   'progressbar-mark': 'progress-bar-mark',
   textarea: 'text-area',
