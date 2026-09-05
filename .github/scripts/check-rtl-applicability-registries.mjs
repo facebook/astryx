@@ -127,9 +127,11 @@ try {
   );
 
   const fullAudit = bootstrapped || changedPaths().some(canStaleApplicability);
-  const auditComponents = fullAudit
-    ? currentKnown
-    : uniqueComponents([...debtRemoved, ...verifiedTransition.changed]);
+  const transitionComponents = [...debtRemoved, ...verifiedTransition.changed];
+  const auditComponents = uniqueComponents([
+    ...(fullAudit ? currentKnown : []),
+    ...transitionComponents,
+  ]);
   const removedComponents = uniqueComponents([
     ...debtRemoved,
     ...verifiedTransition.removed,

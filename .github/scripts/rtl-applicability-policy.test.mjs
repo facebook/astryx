@@ -29,14 +29,14 @@ function git(root, ...args) {
   return execFileSync('git', args, {cwd: root, encoding: 'utf8'}).trim();
 }
 
-function initializeFixture() {
+function initializeFixture({knownGaps = ['core/Removed']} = {}) {
   const root = temp('rtl-policy');
   for (const file of POLICY_FILES) {
     write(file, fs.readFileSync(path.join(ROOT, file)), root);
   }
   write(
     'apps/storybook/rtl-audit/known-coverage-gaps.json',
-    '["core/Removed"]\n',
+    `${JSON.stringify(knownGaps)}\n`,
     root,
   );
   write('apps/storybook/rtl-audit/verified-not-applicable.json', '[]\n', root);
@@ -124,6 +124,42 @@ describe('RTL applicability policy', () => {
 
     expect(result.status, result.stderr).toBe(0);
     expect(result.output).toContain('full_audit=false\n');
+  });
+
+  it('preserves transition rows when a source change also triggers the debt sweep', () => {
+    const {root, base} = initializeFixture({
+      knownGaps: ['core/Legacy', 'core/Removed'],
+    });
+    write(
+      'apps/storybook/rtl-audit/known-coverage-gaps.json',
+      '["core/Legacy"]\n',
+      root,
+    );
+    write(
+      'apps/storybook/rtl-audit/verified-not-applicable.json',
+      '[{"component":"core/Changed","reason":"No directional behavior."}]\n',
+      root,
+    );
+    write(
+      'packages/core/src/Removed/Removed.tsx',
+      'export const Removed = "changed";\n',
+      root,
+    );
+    git(root, 'add', '.');
+    git(root, 'commit', '-qm', 'combine source and registry transitions');
+
+    const result = runValidator(
+      root,
+      path.join(root, '.github/scripts/check-rtl-applicability-registries.mjs'),
+      base,
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.output).toContain('full_audit=true\n');
+    expect(result.output).toContain(
+      'audit_components=core/Legacy,core/Removed,core/Changed\n',
+    );
+    expect(result.output).toContain('removed_components=core/Removed\n');
   });
 
   it('rejects added debt with base-owned policy even if the PR helper is relaxed', () => {
