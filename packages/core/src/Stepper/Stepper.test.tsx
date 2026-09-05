@@ -1827,14 +1827,14 @@ describe('Stepper', () => {
         '.astryx-step-connector',
       ) as HTMLElement;
 
-      expect(declarationsFor(root)).not.toContain('--step-connector-gap');
+      expect(declarationsFor(root)).toContain('--step-connector-gap:inherit');
       expect(declarationsFor(lead)).toContain('var(--step-connector-gap,0px)');
     });
 
-    it('inherits a horizontal frame override without redeclaring the variable', () => {
+    it('inherits a horizontal frame override through the root', () => {
       // Horizontal layout props belong to the frame. The list must leave the
-      // public variable undeclared so that value reaches its connectors; the
-      // use-site fallback above supplies 0px when no override exists.
+      // public variable inheriting so that value reaches its connectors; the
+      // use-site fallback above supplies 0px when no ancestor sets a value.
       const {container} = render(
         <Stepper
           activeStep={1}
@@ -1850,8 +1850,9 @@ describe('Stepper', () => {
         '.astryx-stepper-frame',
       ) as HTMLElement;
       expect(frame.style.getPropertyValue('--step-connector-gap')).toBe('6px');
+      expect(declarationsFor(frame)).toContain('--step-connector-gap:0px');
       expect(root.style.getPropertyValue('--step-connector-gap')).toBe('');
-      expect(declarationsFor(root)).not.toContain('--step-connector-gap');
+      expect(declarationsFor(root)).toContain('--step-connector-gap:inherit');
     });
 
     it('emits a root-owned override through the theme build path', () => {

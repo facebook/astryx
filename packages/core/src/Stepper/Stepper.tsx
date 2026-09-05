@@ -139,6 +139,10 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
 
 const styles = stylex.create({
   root: {
+    // Horizontal consumer styles live on the frame. Explicit inheritance keeps
+    // the public variable discoverable on this theme target without masking a
+    // frame value; the connector use site supplies the 0px default.
+    '--step-connector-gap': 'inherit',
     display: 'flex',
     width: '100%',
     listStyleType: 'none',
@@ -173,6 +177,7 @@ const styles = stylex.create({
   // places the track and compact summary together. The list fills this frame,
   // so observing its width still measures the complete component constraint.
   frame: {
+    '--step-connector-gap': '0px',
     display: 'flex',
     flexDirection: 'column',
     gap: 0,
