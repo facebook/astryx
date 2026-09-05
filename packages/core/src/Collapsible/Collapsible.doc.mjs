@@ -67,6 +67,12 @@ export const docs = {
       description: 'Callback invoked when the open state changes.',
     },
     {
+      name: 'chevronPlacement',
+      type: "'start' | 'end' | 'none'",
+      description: 'Which side of the trigger the chevron sits on, or `none` to draw none. `end` is a trailing indicator; `start` is a leading disclosure arrow, which also changes the glyph — it points into the row when closed and turns down when open, matching TreeList. `none` is for a trigger that carries its own affordance, such as an icon that becomes an arrow on hover; the trigger keeps aria-expanded either way, but nothing on screen says "this opens" unless your trigger says it. Inside a CollapsibleGroup this defaults to the group\'s chevronPlacement.',
+      default: "'end'",
+    },
+    {
       name: 'value',
       type: 'string',
       description: 'Identifier used for group coordination. Required when placed inside an CollapsibleGroup.',
@@ -89,7 +95,7 @@ export const docs = {
     ],
     anatomy: [
       { name: 'Trigger', required: true, description: 'The always-visible button that toggles the content. Shows a label and a chevron indicator.' },
-      { name: 'Chevron', required: false, description: 'Animated arrow that rotates to show open or closed state.' },
+      { name: 'Chevron', required: false, description: 'Animated arrow that rotates to show open or closed state. Sits after the label by default; chevronPlacement="start" moves it ahead of the label as a leading disclosure arrow, and chevronPlacement="none" drops it so the trigger can supply its own.' },
       { name: 'Content', required: false, description: 'The area that hides or reveals when the trigger is clicked.' },
     ],
   },

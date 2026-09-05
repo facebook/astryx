@@ -7,7 +7,7 @@
  * @input Uses React createContext
  * @output Exports CollapsibleGroupContext, CollapsibleGroupContextValue,
  *   CollapsibleGroupPresentationContext, CollapsibleGroupPresentationValue,
- *   and CollapsibleGroupDensity types
+ *   CollapsibleGroupDensity, and CollapsibleChevronPlacement types
  * @position Context definitions for collapsible group coordination and presentation
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -44,6 +44,21 @@ CollapsibleGroupContext.displayName = 'CollapsibleGroupContext';
 export type CollapsibleGroupDensity = 'compact' | 'balanced' | 'spacious';
 
 /**
+ * Which side of the trigger the chevron sits on, or `none` to draw no chevron
+ * at all.
+ *
+ * `end` is the default trailing indicator. `start` is the leading disclosure
+ * arrow used by tree and file-browser patterns, and it changes the glyph as
+ * well as the side: a leading arrow points into the row when closed and turns
+ * down when open, matching TreeList. `none` hands the affordance to the
+ * trigger's own content.
+ *
+ * One prop rather than a side plus a boolean, because a side and "no chevron"
+ * cannot both be true and a pair of props would let a caller say so.
+ */
+export type CollapsibleChevronPlacement = 'start' | 'end' | 'none';
+
+/**
  * Presentation value provided by CollapsibleGroup so each Collapsible can
  * draw its own group chrome (StyleX has no child selectors, so the group
  * cannot style items from the outside).
@@ -53,6 +68,13 @@ export interface CollapsibleGroupPresentationValue {
   hasDividers: boolean;
   /** Resolved row density, or null to keep the default (unpadded) look. */
   density: CollapsibleGroupDensity | null;
+  /**
+   * Chevron side for the group's items, or null to leave each item on its own
+   * default. An item's own `chevronPlacement` still wins, but mixing sides
+   * within one group reads as a mistake, so the group is the usual place to
+   * set it.
+   */
+  chevronPlacement: CollapsibleChevronPlacement | null;
 }
 
 /**

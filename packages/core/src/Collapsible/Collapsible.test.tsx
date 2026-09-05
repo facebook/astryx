@@ -487,4 +487,202 @@ describe('Collapsible', () => {
       expect(item).not.toHaveAttribute('data-density');
     });
   });
+
+  describe('chevron placement', () => {
+    /**
+     * Placement is a DOM order question. Both the label and the chevron render
+     * as spans, so they are told apart by what they hold — the chevron is the
+     * one carrying the svg — and compared by position rather than tag.
+     */
+    function triggerParts(testId: string) {
+      const button = within(screen.getByTestId(testId)).getByRole('button');
+      const children = [...button.children];
+      return {
+        chevronIndex: children.findIndex(el => el.querySelector('svg')),
+        labelIndex: children.findIndex(el => el.textContent?.trim() !== ''),
+        glyph: button.querySelector('svg')?.innerHTML,
+      };
+    }
+
+    it('puts the chevron after the label by default', () => {
+      render(
+        <Collapsible trigger="A" data-testid="item">
+          Body
+        </Collapsible>,
+      );
+      const {chevronIndex, labelIndex} = triggerParts('item');
+      expect(chevronIndex).toBeGreaterThan(labelIndex);
+    });
+
+    it('puts the chevron before the label when placement is start', () => {
+      render(
+        <Collapsible trigger="A" chevronPlacement="start" data-testid="item">
+          Body
+        </Collapsible>,
+      );
+      const {chevronIndex, labelIndex} = triggerParts('item');
+      expect(chevronIndex).toBeLessThan(labelIndex);
+    });
+
+    it('swaps the glyph with the side, not just the position', () => {
+      // A leading arrow points into the row and turns down; a trailing one
+      // points down and flips up. Reusing one glyph for both would leave a
+      // closed leading chevron pointing the wrong way, so the two placements
+      // must not render the same art.
+      render(
+        <>
+          <Collapsible trigger="A" data-testid="at-end">
+            Body
+          </Collapsible>
+          <Collapsible
+            trigger="A"
+            chevronPlacement="start"
+            data-testid="at-start">
+            Body
+          </Collapsible>
+        </>,
+      );
+      const endGlyph = triggerParts('at-end').glyph;
+      const startGlyph = triggerParts('at-start').glyph;
+      expect(endGlyph).toBeTruthy();
+      expect(startGlyph).toBeTruthy();
+      expect(startGlyph).not.toBe(endGlyph);
+    });
+
+    it('takes the placement from the surrounding group', () => {
+      render(
+        <CollapsibleGroup type="single" chevronPlacement="start">
+          <Collapsible trigger="A" value="a" data-testid="item">
+            Body
+          </Collapsible>
+        </CollapsibleGroup>,
+      );
+      const {chevronIndex, labelIndex} = triggerParts('item');
+      expect(chevronIndex).toBeLessThan(labelIndex);
+    });
+
+    it('lets an item override the group placement', () => {
+      render(
+        <CollapsibleGroup type="single" chevronPlacement="start">
+          <Collapsible
+            trigger="A"
+            value="a"
+            chevronPlacement="end"
+            data-testid="item">
+            Body
+          </Collapsible>
+        </CollapsibleGroup>,
+      );
+      const {chevronIndex, labelIndex} = triggerParts('item');
+      expect(chevronIndex).toBeGreaterThan(labelIndex);
+    });
+
+    it('gives the label the rest of the row when the chevron leads', () => {
+      // The trigger is `space-between`. With the chevron trailing that is what
+      // separates the two, but with it leading there is nothing to absorb the
+      // free space, so an unfilled label would be thrown to the far edge with
+      // a gap behind the arrow. It also has to grow for a trigger that spreads
+      // its own contents to have a row to spread across.
+      render(
+        <Collapsible trigger="A" chevronPlacement="start" data-testid="item">
+          Body
+        </Collapsible>,
+      );
+      const button = within(screen.getByTestId('item')).getByRole('button');
+      const label = [...button.children].find(
+        el => el.textContent?.trim() !== '',
+      );
+      expect(label).toHaveStyle({flexGrow: 1});
+    });
+
+    it('draws no chevron when placement is none', () => {
+      render(
+        <Collapsible trigger="A" chevronPlacement="none" data-testid="item">
+          Body
+        </Collapsible>,
+      );
+      const button = within(screen.getByTestId('item')).getByRole('button');
+      expect(button.querySelector('svg')).toBeNull();
+      expect(button.children).toHaveLength(1);
+    });
+
+    it('keeps the disclosure semantics with no chevron', async () => {
+      // The chevron is the picture of the state, not the state itself. Drop it
+      // and a screen reader must still hear the trigger as a disclosure that
+      // is currently shut, and hear it open.
+      const user = userEvent.setup();
+      render(
+        <Collapsible
+          trigger="A"
+          chevronPlacement="none"
+          defaultIsOpen={false}
+          data-testid="item">
+          Body
+        </Collapsible>,
+      );
+      const button = within(screen.getByTestId('item')).getByRole('button');
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+      await user.click(button);
+      expect(button).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('gives the label the whole row when there is no chevron', () => {
+      // Same reason as a leading chevron: nothing trails the label, so a
+      // shrink-wrapped one would strand a trigger that aligns its own content
+      // against the far edge.
+      render(
+        <Collapsible trigger="A" chevronPlacement="none" data-testid="item">
+          Body
+        </Collapsible>,
+      );
+      const button = within(screen.getByTestId('item')).getByRole('button');
+      const label = [...button.children].find(
+        el => el.textContent?.trim() !== '',
+      );
+      expect(label).toHaveStyle({flexGrow: 1});
+    });
+
+    it('takes none from the surrounding group, and lets an item opt back in', () => {
+      render(
+        <CollapsibleGroup type="single" chevronPlacement="none">
+          <Collapsible trigger="A" value="a" data-testid="bare">
+            Body
+          </Collapsible>
+          <Collapsible
+            trigger="B"
+            value="b"
+            chevronPlacement="end"
+            data-testid="marked">
+            Body
+          </Collapsible>
+        </CollapsibleGroup>,
+      );
+      expect(
+        within(screen.getByTestId('bare'))
+          .getByRole('button')
+          .querySelector('svg'),
+      ).toBeNull();
+      const {chevronIndex, labelIndex} = triggerParts('marked');
+      expect(chevronIndex).toBeGreaterThan(labelIndex);
+    });
+
+    it('does not leak the group placement into a nested collapsible', () => {
+      // Collapsible resets the presentation context around its children, so a
+      // collapsible nested in an item's body keeps its own default.
+      render(
+        <CollapsibleGroup
+          type="single"
+          defaultValue="a"
+          chevronPlacement="start">
+          <Collapsible trigger="A" value="a" data-testid="outer">
+            <Collapsible trigger="B" data-testid="inner">
+              Body
+            </Collapsible>
+          </Collapsible>
+        </CollapsibleGroup>,
+      );
+      const {chevronIndex, labelIndex} = triggerParts('inner');
+      expect(chevronIndex).toBeGreaterThan(labelIndex);
+    });
+  });
 });

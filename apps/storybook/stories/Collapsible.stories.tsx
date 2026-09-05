@@ -61,9 +61,12 @@ export default meta;
 type Story = StoryObj<typeof CollapsibleGroup>;
 
 export const SingleMode: Story = {
-  name: 'Single Mode (default)',
+  name: 'Single Mode — Leading Chevron',
   render: () => (
-    <CollapsibleGroup type="single" defaultValue="general">
+    <CollapsibleGroup
+      type="single"
+      defaultValue="general"
+      chevronPlacement="start">
       <VStack gap={2}>
         <Card>
           <Collapsible trigger="General Settings" value="general">
