@@ -183,11 +183,16 @@ unreported base or mutable generator.
 
 ### Executable values and failure behavior
 
-- **FR8 — Executable values require source-preserving handling.** When an inherited
-  icon, indicator, syntax definition, or other value has a stable public export,
-  generated source MAY preserve it through an explicit import. When tooling cannot
-  reconstruct a supported source reference, the operation MUST report the exact
-  field and stop before writing. It MUST NOT stringify, omit, or replace executable
+- **FR8 — Executable values require source-preserving handling.** Generated source
+  MAY preserve an icon, indicator, syntax definition, or other executable value
+  through an explicit import only when the author intentionally retains and reports
+  that dependency. A fully owned snapshot MUST replace a value inherited from the
+  selected base with equivalent owned local source or an author-supplied local
+  reference that does not import the former base. When tooling cannot safely
+  construct or validate that source, the operation MUST report the exact field and
+  stop before writing. If the author instead retains the base import, the preview
+  and receipt MUST report it and the result MUST NOT be labeled fully owned or
+  source-independent. Tooling MUST NOT stringify, omit, or replace executable
   values with placeholders.
 - **FR9 — Writes are atomic and opt-in.** Preview is the default. Writing requires
   an explicit author action, uses a temporary destination, validates the complete
@@ -313,15 +318,15 @@ AST-023.
 
 ## Verification
 
-| Contract  | Verification                                                                                                                   | Representative failure                                                                                                                             |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3   | CLI option and source-output fixtures for follow and owned-start choices                                                       | A missing choice prompts or writes, a copied theme still imports its selected base, or a following theme is described as independent.              |
-| FR4–FR7   | Full-surface fixtures covering generators, inheritance, local tokens, media surfaces, and palette references                   | A supported surface disappears, precedence changes, or a theme-owned palette reference is needlessly severed.                                      |
-| FR4a      | Neutral-derived detach fixtures with inherited declarations and references, with and without an explicit local-token migration | `extends` is removed while Neutral-owned names remain foreign, or the operation claims ownership while retaining an unreported lineage dependency. |
-| FR5b–FR5d | Source/runtime projection fixtures, compiled-size comparisons, and artifact-boundary checks                                    | Reviewing a resolved theme inflates runtime output, or receipts and authoring metadata ship to consumers.                                          |
-| FR8–FR10  | Executable-registry, overwrite, partial-freeze, and injected-failure tests                                                     | An icon is stringified, a target is partly overwritten, or retained inheritance is hidden.                                                         |
-| FR11–FR14 | Normalized-theme equivalence, deterministic snapshots, receipt schema, and preview tests                                       | Before and after differ silently, output changes across identical runs, or a receipt omits a dependency.                                           |
-| FR15–FR18 | Compatibility fixtures and legacy-color migration comparison                                                                   | An unchanged convenience config renders differently, migration hides a color delta, or lifecycle work blocks palette foundations.                  |
+| Contract  | Verification                                                                                                                   | Representative failure                                                                                                                                   |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3   | CLI option and source-output fixtures for follow and owned-start choices                                                       | A missing choice prompts or writes, a copied theme still imports its selected base, or a following theme is described as independent.                    |
+| FR4–FR7   | Full-surface fixtures covering generators, inheritance, local tokens, media surfaces, and palette references                   | A supported surface disappears, precedence changes, or a theme-owned palette reference is needlessly severed.                                            |
+| FR4a      | Neutral-derived detach fixtures with inherited declarations and references, with and without an explicit local-token migration | `extends` is removed while Neutral-owned names remain foreign, or the operation claims ownership while retaining an unreported lineage dependency.       |
+| FR5b–FR5d | Source/runtime projection fixtures, compiled-size comparisons, and artifact-boundary checks                                    | Reviewing a resolved theme inflates runtime output, or receipts and authoring metadata ship to consumers.                                                |
+| FR8–FR10  | Executable-registry ownership and base-upgrade fixtures, overwrite, partial-freeze, and injected-failure tests                 | An owned icon changes after the former base upgrades, an import dependency is hidden, a target is partly overwritten, or retained inheritance is hidden. |
+| FR11–FR14 | Normalized-theme equivalence, deterministic snapshots, receipt schema, and preview tests                                       | Before and after differ silently, output changes across identical runs, or a receipt omits a dependency.                                                 |
+| FR15–FR18 | Compatibility fixtures and legacy-color migration comparison                                                                   | An unchanged convenience config renders differently, migration hides a color delta, or lifecycle work blocks palette foundations.                        |
 
 ### Completion criteria
 
@@ -336,6 +341,9 @@ This spec moves from `proposed` to `shipped` only when:
 - authoring projections are separate from compact runtime artifacts, and previews
   show the source and compiled/package-size consequences;
 - unrepresentable executable values fail before writes with actionable guidance;
+- fully owned executable-registry fixtures remain unchanged when the former base is
+  upgraded, while intentionally retained imports are reported as dependencies and
+  prevent a fully owned claim;
 - before/after structural equivalence is tested under one pinned Astryx version;
 - generated source and receipts are deterministic;
 - legacy color migration uses the supported palette generator without silently
@@ -389,15 +397,17 @@ Replacing a formula behind unchanged theme source is a visual compatibility brea
 Existing helpers remain stable until authors can compare, materialize, and accept a
 replacement explicitly.
 
-### DEC-4 — Preserve executable source references or fail before writing
+### DEC-4 — Own inherited executable values or report retained dependencies
 
 **Reference:** `spec:AST-022/DEC-4`
 **Decider:** `rubyycheung`, `2026-09-04`
 
-Stable icon, indicator, and syntax imports remain explicit imports. When tooling
-cannot identify a supported source reference, it returns an actionable failure that
-requires the author to supply one on a later invocation rather than omitting or
-approximating executable behavior.
+Stable icon, indicator, and syntax imports remain explicit only for dependencies the
+author intentionally retains. A fully owned snapshot cannot import an executable
+value from its former base because a later base upgrade could change that value.
+Tooling instead writes equivalent owned local source or requires the author to
+supply a local reference on a later invocation. Retaining the base import is a
+reported dependency and prevents the result from being described as fully owned.
 
 ### DEC-5 — Preserve locally owned palette references
 
