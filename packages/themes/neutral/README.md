@@ -49,10 +49,10 @@ Neutral is the reference implementation for palette-aware theme templates.
 Templates may follow its ownership, review, and alignment workflow without
 copying its colors or stop layout.
 
-Use semantic theme tokens in components. Neutral's runtime theme does not import
-the complete authoring palette. Mapping semantic tokens to reviewed stops is a
-separate change, so palette generation and token adoption can be reviewed
-independently.
+Use semantic theme tokens in components. Neutral's theme source maps those roles
+to named palette stops, while the prebuilt theme and CSS contain their resolved
+values. Changing the generated palette must include the regenerated receipt,
+token diff, tests, and visual review.
 
 The committed request and receipt preserve the generation inputs and provenance.
 CLI regeneration is not yet a supported release workflow; until that tooling

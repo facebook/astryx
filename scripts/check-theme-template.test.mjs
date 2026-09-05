@@ -52,6 +52,10 @@ const NEUTRAL_GENERATED_PALETTE = path.join(
   REPO_ROOT,
   'packages/themes/neutral/src/neutralPalettes.generated.ts',
 );
+const NEUTRAL_PALETTE_REFS = path.join(
+  REPO_ROOT,
+  'packages/themes/neutral/src/neutralPaletteRefs.generated.ts',
+);
 const NEUTRAL_GENERATED_RECEIPT = path.join(
   REPO_ROOT,
   'packages/themes/neutral/src/neutralPalettes.generated.receipt.json',
@@ -248,6 +252,10 @@ describe('theme template stays in sync with the theme system', () => {
       [
         NEUTRAL_GENERATED_PALETTE,
         path.join(NEUTRAL_TEMPLATE_DIR, 'neutralPalettes.generated.ts'),
+      ],
+      [
+        NEUTRAL_PALETTE_REFS,
+        path.join(NEUTRAL_TEMPLATE_DIR, 'neutralPaletteRefs.generated.ts'),
       ],
       [
         NEUTRAL_GENERATED_RECEIPT,
