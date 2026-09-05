@@ -11,6 +11,7 @@ import {
   dataTokenDefaults,
   defineTheme,
   generateThemeCSS,
+  generateOnMediaCSS,
   generateThemeRules,
 } from './index';
 import {generateDataTokenDefaultsCSS} from './generateThemeRules';
@@ -394,6 +395,48 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
     const {component, prose} = generateThemeCSS(theme);
     expect(component).toContain('.astryx-heading.bold');
     expect(prose).not.toContain('.astryx-heading.bold');
+  });
+
+  it('keeps a targeted theme weight rule authoritative', () => {
+    const authored = defineTheme({
+      name: 'authored-heading-weight',
+      components: {
+        heading: {
+          'type:hero': {fontWeight: 'var(--font-weight-normal)'},
+          'weight:bold': {fontWeight: '900'},
+        },
+      },
+    });
+    const rules = generateThemeRules(authored);
+    const boldRules = rules.filter(rule =>
+      rule.includes('.astryx-heading.bold'),
+    );
+
+    expect(boldRules).toHaveLength(1);
+    expect(boldRules[0]).toContain('font-weight: 900');
+    expect(boldRules[0]).not.toContain('var(--font-weight-bold)');
+  });
+
+  it('re-emits explicit weight overrides after media-specific type rules', () => {
+    const themed = defineTheme({
+      name: 'media-heading-weight',
+      onDark: {
+        components: {
+          heading: {
+            'type:hero': {fontWeight: 'var(--font-weight-normal)'},
+          },
+        },
+      },
+    });
+    const css = generateOnMediaCSS(themed);
+    const typeIndex = css.indexOf('.astryx-heading.hero');
+    const boldIndex = css.indexOf('.astryx-heading.bold');
+
+    expect(typeIndex).toBeGreaterThanOrEqual(0);
+    expect(boldIndex).toBeGreaterThan(typeIndex);
+    expect(css.slice(boldIndex)).toContain(
+      'font-weight: var(--font-weight-bold)',
+    );
   });
 });
 

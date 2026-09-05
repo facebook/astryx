@@ -401,18 +401,30 @@ const HEADING_WEIGHT_TOKEN_MAP: Record<string, string> = {
 function generateHeadingWeightOverrides(
   components: Record<string, unknown>,
   parts: string[],
+  surface?: 'dark' | 'light',
 ): void {
-  if (!('heading' in components)) {
+  const headingRules = components.heading;
+  if (!headingRules || typeof headingRules !== 'object') {
     return;
   }
 
   for (const [weightName, weightValue] of Object.entries(
     HEADING_WEIGHT_TOKEN_MAP,
   )) {
+    // A targeted theme rule is an intentional design decision. Do not emit a
+    // generated rule after it and silently replace its value.
+    if (
+      Object.keys(headingRules).some(key =>
+        key.split('+').includes(`weight:${weightName}`),
+      )
+    ) {
+      continue;
+    }
     const suffix = parseStyleKey(`weight:${weightName}`);
-    parts.push(
-      `  ${componentClassSelector('heading', suffix)} { font-weight: ${weightValue}; }`,
-    );
+    const selector = surface
+      ? `:is(${mediaSelector(surface)}) :is(${componentClassSelector('heading', suffix)})`
+      : componentClassSelector('heading', suffix);
+    parts.push(`  ${selector} { font-weight: ${weightValue}; }`);
   }
 }
 
@@ -790,6 +802,11 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
           }
         }
       }
+
+      // Apply the explicit Heading weight prop after media-specific type
+      // rules. Theme-authored weight targets are skipped by the helper so
+      // those targeted values remain authoritative.
+      generateHeadingWeightOverrides(onMedia.components, parts, surface);
     }
   }
 
