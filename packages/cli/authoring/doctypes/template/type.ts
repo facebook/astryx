@@ -117,6 +117,7 @@ export type TemplateCategory =
   | 'Form - Wizard'
   | 'Form - Wizard Dialog'
   | 'Form - Wizard Inline'
+  | 'Form - Wizard Vertical'
   | 'Form - Modal Overlay'
   | 'Form - Side Sheet'
   | 'Form - Inline Edits'
