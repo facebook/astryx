@@ -29,6 +29,10 @@ export interface LayoutSlots {
   hasStart: boolean;
   /** Whether an end panel is rendered */
   hasEnd: boolean;
+  /** Whether one or more regions participate in the middle scrollport */
+  hasMiddleScroll: boolean;
+  /** Whether the middle scrollport spans Layout gutters around a constrained row */
+  hasExpandedMiddleScroll: boolean;
 }
 
 /**
@@ -39,6 +43,8 @@ const defaultSlots: LayoutSlots = {
   hasFooter: false,
   hasStart: false,
   hasEnd: false,
+  hasMiddleScroll: false,
+  hasExpandedMiddleScroll: false,
 };
 
 /**

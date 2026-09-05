@@ -125,6 +125,9 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-container'],
     overflow: 'hidden',
   },
+  cwContainerScrollable: {
+    height: 320,
+  },
   cwContainer900: {
     width: 900,
   },
@@ -216,6 +219,7 @@ interface PlaygroundArgs {
   headerPadding: SpacingStep;
   // Content props
   contentPadding: SpacingStep;
+  contentHeight: 'fill' | 'auto';
   contentIsScrollable: boolean;
   // Footer props
   showFooter: boolean;
@@ -225,11 +229,13 @@ interface PlaygroundArgs {
   showStartPanel: boolean;
   startPanelWidth: number;
   startPanelHasDivider: boolean;
+  startPanelHeight: 'fill' | 'auto';
   startPanelIsScrollable: boolean;
   // End panel props
   showEndPanel: boolean;
   endPanelWidth: number;
   endPanelHasDivider: boolean;
+  endPanelHeight: 'fill' | 'auto';
   endPanelIsScrollable: boolean;
 }
 
@@ -247,6 +253,7 @@ export const Playground = {
     headerPadding: 4,
     // Content defaults
     contentPadding: 4,
+    contentHeight: 'fill',
     contentIsScrollable: true,
     // Footer defaults
     showFooter: true,
@@ -256,11 +263,13 @@ export const Playground = {
     showStartPanel: true,
     startPanelWidth: 160,
     startPanelHasDivider: true,
+    startPanelHeight: 'fill',
     startPanelIsScrollable: true,
     // End panel defaults
     showEndPanel: false,
     endPanelWidth: 200,
     endPanelHasDivider: true,
+    endPanelHeight: 'fill',
     endPanelIsScrollable: true,
   },
   argTypes: {
@@ -303,6 +312,12 @@ export const Playground = {
       description: 'Content padding (0 for edge-to-edge content)',
       table: {category: 'Content'},
     },
+    contentHeight: {
+      control: 'select',
+      options: ['fill', 'auto'],
+      description: 'Fill the middle viewport or use natural height',
+      table: {category: 'Content'},
+    },
     contentIsScrollable: {
       control: 'boolean',
       description: 'Enable scrollable overflow',
@@ -340,6 +355,12 @@ export const Playground = {
       description: 'Add a border to the start panel',
       table: {category: 'Start Panel'},
     },
+    startPanelHeight: {
+      control: 'select',
+      options: ['fill', 'auto'],
+      description: 'Fill the middle viewport or use natural height',
+      table: {category: 'Start Panel'},
+    },
     startPanelIsScrollable: {
       control: 'boolean',
       description: 'Enable scrollable overflow for start panel',
@@ -359,6 +380,12 @@ export const Playground = {
     endPanelHasDivider: {
       control: 'boolean',
       description: 'Add a border to the end panel',
+      table: {category: 'End Panel'},
+    },
+    endPanelHeight: {
+      control: 'select',
+      options: ['fill', 'auto'],
+      description: 'Fill the middle viewport or use natural height',
       table: {category: 'End Panel'},
     },
     endPanelIsScrollable: {
@@ -385,6 +412,7 @@ export const Playground = {
             args.showStartPanel ? (
               <LayoutPanel
                 width={args.startPanelWidth}
+                height={args.startPanelHeight}
                 hasDivider={args.startPanelHasDivider}
                 isScrollable={args.startPanelIsScrollable}
                 role="navigation">
@@ -398,6 +426,7 @@ export const Playground = {
           content={
             <LayoutContent
               padding={args.contentPadding}
+              height={args.contentHeight}
               isScrollable={args.contentIsScrollable}>
               <h4 {...stylex.props(styles.subheading)}>Main Content Area</h4>
               <br />
@@ -408,8 +437,8 @@ export const Playground = {
               <br />
               <p {...stylex.props(styles.bodyText)}>
                 Try setting padding to 0 to see how content can extend to the
-                edges, or toggle &quot;isScrollable&quot; to change overflow
-                behavior.
+                edges, switch height to auto to move with the middle scrollport,
+                or toggle isScrollable to change local overflow behavior.
               </p>
               <br />
               <div {...stylex.props(styles.placeholder)}>
@@ -421,6 +450,7 @@ export const Playground = {
             args.showEndPanel ? (
               <LayoutPanel
                 width={args.endPanelWidth}
+                height={args.endPanelHeight}
                 hasDivider={args.endPanelHasDivider}
                 isScrollable={args.endPanelIsScrollable}
                 role="complementary">
@@ -936,10 +966,15 @@ export const ContentWidthWithDividers: Story = {
   render: () => (
     <VStack gap={4} xstyle={styles.storySection}>
       <p {...stylex.props(styles.sectionLabel)}>
-        contentWidth=640 in a 900px container; dividers remain full-bleed while
-        content is constrained
+        contentWidth=640 in a 900px container; aligned content stays constrained
+        while the single-column scrollbar remains at the container edge
       </p>
-      <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
+      <div
+        {...stylex.props(
+          styles.cwContainer,
+          styles.cwContainer900,
+          styles.cwContainerScrollable,
+        )}>
         <Layout
           contentWidth={640}
           defaultHasDividers
@@ -952,15 +987,21 @@ export const ContentWidthWithDividers: Story = {
             </LayoutHeader>
           }
           content={
-            <LayoutContent>
+            <LayoutContent
+              height="auto"
+              role="region"
+              label="Scrollable content width example">
               <p {...stylex.props(styles.bodyText)}>
-                Main content is constrained to 640px and centered. The dividers
-                above and below span the full width of the container.
+                Main content is constrained to 640px and centered. The content
+                area still spans the container, so its scrollbar stays at the
+                outer edge.
               </p>
               <br />
-              <div {...stylex.props(styles.placeholder)}>
-                Placeholder content block
-              </div>
+              {Array.from({length: 8}, (_, index) => (
+                <div key={index} {...stylex.props(styles.placeholder)}>
+                  Scrollable content block {index + 1}
+                </div>
+              ))}
             </LayoutContent>
           }
           footer={
@@ -986,10 +1027,15 @@ export const ContentWidthWithStartPanel: Story = {
   render: () => (
     <VStack gap={4} xstyle={styles.storySection}>
       <p {...stylex.props(styles.sectionLabel)}>
-        contentWidth=640 with a 200px start panel: the middle row (panel +
-        content) is constrained
+        contentWidth=640 with a 200px independently scrolling start panel; the
+        content uses the full-width middle scrollport
       </p>
-      <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
+      <div
+        {...stylex.props(
+          styles.cwContainer,
+          styles.cwContainer900,
+          styles.cwContainerScrollable,
+        )}>
         <Layout
           contentWidth={640}
           defaultHasDividers
@@ -1007,13 +1053,22 @@ export const ContentWidthWithStartPanel: Story = {
             </LayoutPanel>
           }
           content={
-            <LayoutContent>
+            <LayoutContent
+              height="auto"
+              role="region"
+              label="Scrollable settings content">
               <h4 {...stylex.props(styles.subheading)}>General Settings</h4>
               <br />
               <p {...stylex.props(styles.bodyText)}>
-                The start panel and content area together are constrained to
-                640px and centered within the container.
+                The start panel and content area remain inside the 640px frame.
+                The panel stays pinned with its own scrollport while this
+                content moves in the Layout middle scrollport.
               </p>
+              {Array.from({length: 8}, (_, index) => (
+                <div key={index} {...stylex.props(styles.placeholder)}>
+                  Settings content block {index + 1}
+                </div>
+              ))}
             </LayoutContent>
           }
           footer={
@@ -1075,6 +1130,74 @@ export const ContentWidthWithBothPanels: Story = {
             <LayoutFooter>
               <p {...stylex.props(styles.bodyText)}>3 items</p>
             </LayoutFooter>
+          }
+        />
+      </div>
+    </VStack>
+  ),
+};
+
+export const ContentWidthMixedScrolling: Story = {
+  name: 'Content Width — Mixed Region Scrolling',
+  render: () => (
+    <VStack gap={4} xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>
+        Start scrolls independently; content and end move together in the Layout
+        middle scrollport
+      </p>
+      <div
+        {...stylex.props(
+          styles.cwContainer,
+          styles.cwContainer1200,
+          styles.cwContainerScrollable,
+        )}>
+        <Layout
+          contentWidth={800}
+          defaultHasDividers
+          start={
+            <LayoutPanel
+              width={200}
+              hasDivider
+              isScrollable
+              tabIndex={0}
+              role="navigation"
+              label="Independent navigation">
+              <p {...stylex.props(styles.sectionLabel)}>Folders</p>
+              {Array.from({length: 12}, (_, index) => (
+                <NavItem key={index}>Folder {index + 1}</NavItem>
+              ))}
+            </LayoutPanel>
+          }
+          content={
+            <LayoutContent
+              height="auto"
+              role="region"
+              label="Shared document content">
+              {Array.from({length: 10}, (_, index) => (
+                <div key={index} {...stylex.props(styles.placeholder)}>
+                  Document section {index + 1}
+                </div>
+              ))}
+            </LayoutContent>
+          }
+          end={
+            <LayoutPanel
+              width={200}
+              hasDivider
+              height="auto"
+              role="complementary"
+              label="Shared details">
+              <p {...stylex.props(styles.sectionLabel)}>Details</p>
+              <p {...stylex.props(styles.bodyText)}>
+                This panel moves with the document while navigation stays
+                pinned.
+              </p>
+              {Array.from({length: 8}, (_, index) => (
+                <div key={index} {...stylex.props(styles.placeholder)}>
+                  Detail block {index + 1}
+                </div>
+              ))}
+            </LayoutPanel>
           }
         />
       </div>

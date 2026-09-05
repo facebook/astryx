@@ -22,6 +22,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {LayoutAreaContext} from './LayoutAreaContext';
 import {LayoutSlotsContext} from './LayoutSlotsContext';
+import type {LayoutRegionHeight} from './LayoutContent';
 import {mergeProps} from '../utils';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import type {ResizableProps} from '../Resizable/useResizable';
@@ -37,7 +38,6 @@ const styles = stylex.create({
   panel: {
     boxSizing: 'border-box',
     flexShrink: 0,
-    overflow: 'clip',
     // Default: inner padding on all sides (will be overridden by position-specific styles)
     paddingInlineStart: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
     paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
@@ -74,7 +74,18 @@ const styles = stylex.create({
     '--container-padding-block-start': '0px',
     '--container-padding-block-end': '0px',
   },
-  scrollable: {
+  heightFill: {
+    height: '100%',
+    minHeight: 0,
+  },
+  heightAuto: {
+    height: 'auto',
+    minHeight: 0,
+  },
+  overflowStatic: {
+    overflow: 'clip',
+  },
+  overflowScrollable: {
     overflow: 'auto',
   },
   // For start panel: divider on end edge
@@ -119,6 +130,8 @@ export interface LayoutPanelProps extends BaseProps<HTMLDivElement> {
    * - Start panel: border on end edge (right in LTR)
    * - End panel: border on start edge (left in LTR)
    * When false, spacing collapse is applied automatically for seamless visual flow.
+   * Auto-height panels stretch to the shared row's cross-size, so their divider
+   * continues through the full middle region without creating a local scrollport.
    *
    * Note: When using `resizable` with an adjacent `ResizeHandle hasDivider`,
    * set this to `false` to avoid a double-line artifact.
@@ -134,9 +147,19 @@ export interface LayoutPanelProps extends BaseProps<HTMLDivElement> {
   padding?: SpacingStep;
 
   /**
+   * Controls this panel's block-axis sizing.
+   * - `fill`: fills the Layout middle region (default).
+   * - `auto`: content contributes its natural height to the shared row; the panel
+   *   box stretches to that row so backgrounds and dividers remain continuous.
+   *   In a fill-height Layout, the row moves with the middle scrollport.
+   * @default 'fill'
+   */
+  height?: LayoutRegionHeight;
+
+  /**
    * Enables scrollable overflow for the panel.
-   * Set to false for auto-height layouts where sticky positioning
-   * needs to work with parent containers.
+   * Set to false for non-scrolling overflow behavior, including sticky
+   * descendants that need the parent scroll container.
    * @default true
    */
   isScrollable?: boolean;
@@ -183,8 +206,10 @@ export interface LayoutPanelProps extends BaseProps<HTMLDivElement> {
  * Renders with optional divider and context-aware padding.
  * Divider position is auto-detected based on which slot the panel is in.
  *
- * Already provides its own padding and scroll — don't add padding or
- * overflow to children. Use `padding={0}` if you need edge-to-edge content.
+ * Provides context-aware padding and controls height and overflow independently.
+ * `height="auto"` moves the panel with a fill-height Layout's middle scrollport.
+ * Don't add padding or overflow to children. Use `padding={0}` if you need
+ * edge-to-edge content.
  *
  * @example
  * ```
@@ -208,6 +233,7 @@ export interface LayoutPanelProps extends BaseProps<HTMLDivElement> {
 export function LayoutPanel({
   children,
   hasDivider = false,
+  height = 'fill',
   isScrollable = true,
   label,
   padding,
@@ -256,9 +282,11 @@ export function LayoutPanel({
       role={role}
       aria-label={label}
       {...mergeProps(
-        themeProps('layout-panel'),
+        themeProps('layout-panel', {height}),
         stylex.props(
+          height === 'fill' ? styles.heightFill : styles.heightAuto,
           styles.panel,
+          isScrollable ? styles.overflowScrollable : styles.overflowStatic,
           dynamicStyles.sizing(effectiveWidth ?? null),
           // Outer padding on container edges (unless component is full bleed)
           isStartPanel &&
@@ -268,7 +296,6 @@ export function LayoutPanel({
           isEndPanel && !isZeroPadding && padding == null && styles.endPanel,
           !hasHeader && !isZeroPadding && padding == null && styles.noHeader,
           !hasFooter && !isZeroPadding && padding == null && styles.noFooter,
-          isScrollable && styles.scrollable,
           isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
@@ -281,7 +308,9 @@ export function LayoutPanel({
         className,
         style,
       )}
-      {...props}>
+      {...props}
+      data-layout-region="panel"
+      data-layout-height={height}>
       {children}
     </div>
   );
