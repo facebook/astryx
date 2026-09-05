@@ -15,7 +15,11 @@
  * @position packages/core/src/theme/generateThemeRules.ts
  */
 
-import type {DefinedTheme} from './defineTheme';
+import type {ComponentStyleMap, DefinedTheme} from './defineTheme';
+import {
+  normalizeThemeAdaptations,
+  resolveThemeAdaptationRules,
+} from './themeAdaptations';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
 import {dataTokenDefaults} from './domainTokens/dataTokens';
@@ -279,6 +283,7 @@ function parsePadding(props: [string, string][]): ParsedPadding {
 function expandContainerPadding(
   component: string,
   parsed: ParsedPadding,
+  resetInheritedSpecificity = false,
 ): [string, string][] {
   const prefix = cssVar(`${component}-padding`);
   const tokens: [string, string][] = [];
@@ -301,26 +306,47 @@ function expandContainerPadding(
 
   if (allSame) {
     tokens.push([prefix, effectiveInlineStart ?? '']);
-    return tokens;
+  } else {
+    // Directional tokens
+    if (parsed.inlineStart != null || parsed.inlineEnd != null) {
+      // Asymmetric inline — emit start and end separately
+      if (effectiveInlineStart != null) {
+        tokens.push([`${prefix}-inline-start`, effectiveInlineStart]);
+      }
+      if (effectiveInlineEnd != null) {
+        tokens.push([`${prefix}-inline-end`, effectiveInlineEnd]);
+      }
+    } else if (parsed.inline != null) {
+      tokens.push([`${prefix}-inline`, parsed.inline]);
+    }
+    if (parsed.blockStart != null) {
+      tokens.push([`${prefix}-block-start`, parsed.blockStart]);
+    }
+    if (parsed.blockEnd != null) {
+      tokens.push([`${prefix}-block-end`, parsed.blockEnd]);
+    }
   }
 
-  // Directional tokens
-  if (parsed.inlineStart != null || parsed.inlineEnd != null) {
-    // Asymmetric inline — emit start and end separately
-    if (effectiveInlineStart != null) {
-      tokens.push([`${prefix}-inline-start`, effectiveInlineStart]);
+  if (resetInheritedSpecificity) {
+    const emitted = new Set(tokens.map(([name]) => name));
+    const moreSpecific = emitted.has(prefix)
+      ? [
+          `${prefix}-inline`,
+          `${prefix}-inline-start`,
+          `${prefix}-inline-end`,
+          `${prefix}-block-start`,
+          `${prefix}-block-end`,
+        ]
+      : emitted.has(`${prefix}-inline`)
+        ? [`${prefix}-inline-start`, `${prefix}-inline-end`]
+        : [];
+    for (const name of moreSpecific) {
+      if (!emitted.has(name)) {
+        // `initial` makes a custom property guaranteed-invalid so var() follows
+        // its fallback, clearing a more-specific declaration from a root rule.
+        tokens.push([name, 'initial']);
+      }
     }
-    if (effectiveInlineEnd != null) {
-      tokens.push([`${prefix}-inline-end`, effectiveInlineEnd]);
-    }
-  } else if (parsed.inline != null) {
-    tokens.push([`${prefix}-inline`, parsed.inline]);
-  }
-  if (parsed.blockStart != null) {
-    tokens.push([`${prefix}-block-start`, parsed.blockStart]);
-  }
-  if (parsed.blockEnd != null) {
-    tokens.push([`${prefix}-block-end`, parsed.blockEnd]);
   }
 
   return tokens;
@@ -336,13 +362,31 @@ function expandContainerPadding(
  * Returns an array of CSS rule strings — the shared format used by both
  * the runtime path (useInsertionEffect) and the build path (astryx theme build).
  */
-export function generateThemeRules(theme: DefinedTheme): string[] {
+/**
+ * The parts of a theme that turn into CSS rules.
+ *
+ * Narrower than `DefinedTheme` on purpose: an adaptation rule is not a whole
+ * theme, and it calls this with only the values that rule writes. Typing the
+ * parameter as `DefinedTheme` would let a future field be read here and silently
+ * lost for every conditional rule, with no type error to catch it.
+ */
+export interface ThemeRuleSource {
+  /** Resolved portable token values. */
+  tokens: Record<string, string>;
+  /** Resolved theme-local token values. */
+  localTokens?: Record<string, string>;
+  /** Resolved component style overrides. */
+  components?: ComponentStyleMap;
+}
+
+export function generateThemeRules(theme: ThemeRuleSource): string[] {
   const parts: string[] = [];
   const tokens = theme.tokens;
 
-  // Helper: resolve a token value — tokens always have computed values
-  // since defineTheme runs expandTypeScale to produce them.
-  const val = (key: string): string => tokens[key] || `var(${key})`;
+  // Bare prose rules reference semantic variables instead of baking the root
+  // value. That lets adaptation token writes take effect through CSS alone
+  // without duplicating prose selectors inside every media query.
+  const val = (key: string): string => `var(${key})`;
 
   // 1. Token block — CSS custom properties on :scope
   const tokenEntries = [
@@ -389,6 +433,7 @@ function generateComponentRules(
     Record<string, Record<string, string | Record<string, string>>>
   >,
   parts: string[],
+  resetInheritedPaddingSpecificity = false,
 ): void {
   for (const [component, rules] of Object.entries(components)) {
     for (const [key, styles] of Object.entries(rules)) {
@@ -467,7 +512,11 @@ function generateComponentRules(
           ([p]) => !CONTAINER_PADDING_PROPS.has(p),
         );
         const parsed = parsePadding(paddingProps);
-        const containerTokens = expandContainerPadding(component, parsed);
+        const containerTokens = expandContainerPadding(
+          component,
+          parsed,
+          resetInheritedPaddingSpecificity,
+        );
         finalProps = [...nonPaddingProps, ...containerTokens];
       }
 
@@ -762,6 +811,78 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
   return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
 }
 
+/** Generate only the declarations one adaptation rule writes. */
+function generateAdaptationRuleRules(rule: ThemeRuleSource): string[] {
+  const parts: string[] = [];
+  const tokenEntries = [
+    ...Object.entries(rule.tokens),
+    ...Object.entries(rule.localTokens ?? {}),
+  ];
+  if (tokenEntries.length > 0) {
+    const declarations = tokenEntries
+      .map(([prop, value]) => `    ${prop}: ${value};`)
+      .join('\n');
+    parts.push(`  :scope {\n${declarations}\n  }`);
+  }
+
+  if (rule.components) {
+    generateComponentRules(rule.components, parts, true);
+    generateColorOverrides(rule.components, parts);
+    generateSizeOverrides(rule.components, parts);
+  }
+  return parts;
+}
+
+/**
+ * Generate CSS for a theme's ordered adaptation rules.
+ *
+ * Each authored rule stays a separate media block in declaration order. Blocks
+ * are never merged, reordered, or value-diffed: a later rule that deliberately
+ * writes a root value must remain present so it can override an earlier matching
+ * rule. Bare prose follows semantic variables, so token writes need no duplicate
+ * prose selectors here.
+ */
+export function generateAdaptationCSS(theme: DefinedTheme): ThemeCSSOutput {
+  const rules =
+    theme.__adaptationRules ??
+    (theme.__adaptations?.rules?.length
+      ? resolveThemeAdaptationRules(
+          theme.name,
+          normalizeThemeAdaptations(theme.name, theme.__adaptations, undefined),
+          theme.__axes ?? {},
+          theme.tokens,
+          theme.localTokens,
+        )
+      : undefined);
+  if (!rules || rules.length === 0) {
+    return {prose: '', component: ''};
+  }
+
+  const scopeSelector = themeScopeStart(theme.name);
+  const blocks: string[] = [];
+  for (const rule of rules) {
+    const parts = generateAdaptationRuleRules(rule);
+    if (parts.length === 0) {
+      continue;
+    }
+    blocks.push(
+      `@media ${rule.query} {\n  @scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${parts
+        .map(indentRule)
+        .join('\n\n')}\n  }\n}`,
+    );
+  }
+
+  return {prose: '', component: blocks.join('\n\n')};
+}
+
+/** Indent a generated rule one level further, for nesting inside `@media`. */
+function indentRule(rule: string): string {
+  return rule
+    .split('\n')
+    .map(line => (line.length > 0 ? `  ${line}` : line))
+    .join('\n');
+}
+
 /**
  * The `--color-data-*` defaults as one unscoped `:root` block.
  *
@@ -817,6 +938,15 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
   if (component.length > 0) {
     const componentInner = component.join('\n\n');
     componentCss = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
+  }
+
+  // Adaptations follow the root theme in authored order. Media-surface rules
+  // follow adaptations so onDark/onLight keep their specified precedence.
+  const adaptationCss = generateAdaptationCSS(theme);
+  if (adaptationCss.component) {
+    componentCss = componentCss
+      ? `${componentCss}\n\n${adaptationCss.component}`
+      : adaptationCss.component;
   }
 
   const onMediaCss = generateOnMediaCSS(theme);

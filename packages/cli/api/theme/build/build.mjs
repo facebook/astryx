@@ -30,7 +30,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL, fileURLToPath} from 'node:url';
+import {fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {CLI_ROOT, findCoreDir} from '../../../foundation/fs/paths.mjs';
@@ -47,10 +47,7 @@ import {
   collectThemingTargets,
   targetsByKey,
 } from '../../../foundation/discovery/theming-targets.mjs';
-import {
-  collectUnloadedFonts,
-  formatFontLoadingHelp,
-} from './font-warning.mjs';
+import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -62,6 +59,7 @@ import {
 /** @type {any} */ let _defineTheme = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
+/** @type {any} */ let _generateAdaptationCSS = null;
 /** @type {any} */ let _dataTokenDefaults = null;
 /** @type {any} */ let _coreImportError = null;
 try {
@@ -69,6 +67,7 @@ try {
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
+  _generateAdaptationCSS = coreTheme.generateAdaptationCSS;
   _dataTokenDefaults = coreTheme.dataTokenDefaults;
 } catch (e) {
   // Capture the reason so the theme action can surface a precise, actionable
@@ -204,90 +203,135 @@ function toPascalCase(name) {
     .join('');
 }
 
+/** @type {Promise<Record<string, Record<string, string[]>>> | null} */
+let _knownValuesIndexPromise = null;
+
 /**
- * Load known built-in values for a component's visual props from its .doc.mjs file.
- * Parses the type string (e.g. "'info' | 'warning' | 'error' | 'success'") to extract values.
- * Returns a map of { propName: string[] } for props that are visual (listed in theming targets).
- * @param {string} componentName
- * @returns {Promise<Record<string, string[]>>}
+ * Build one target-keyed index of built-in visual-prop values from every core
+ * component doc. A rendered target often lives in a sibling doc (for example,
+ * `astryx-heading` is documented by Text/Heading.doc.mjs), so directory-name
+ * guessing is not a valid lookup strategy.
  */
-async function loadKnownValues(componentName) {
-  // Resolve core src relative to the CLI package, not cwd (which may be a theme package)
-  const cliDir = path.dirname(fileURLToPath(import.meta.url));
-  const coreSrc = path.resolve(cliDir, '../../../../core/src');
-  if (!fs.existsSync(coreSrc)) return {};
-  // Map component name to directory (e.g. 'banner' → 'Banner',
-  // 'dropdown-menu' → 'DropdownMenu'). Theme keys use the rendered class
-  // token, which hyphenates multi-word names, so strip non-letters from BOTH
-  // sides before comparing.
-  const dirs = fs
-    .readdirSync(coreSrc, {withFileTypes: true})
-    .filter(d => d.isDirectory())
-    .map(d => d.name);
-  const target = componentName.toLowerCase().replace(/[^a-z]/g, '');
-  const dir = dirs.find(d => d.toLowerCase().replace(/[^a-z]/g, '') === target);
-  if (!dir) return {};
+async function loadKnownValuesIndex() {
+  const coreRoot = resolveCoreRoot();
+  const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
+  if (!coreSrc || !fs.existsSync(coreSrc)) return {};
 
-  const docPath = path.join(coreSrc, dir, `${dir}.doc.mjs`);
-  if (!fs.existsSync(docPath)) return {};
-
-  try {
-    const docModule = await import(pathToFileURL(docPath).href);
-    const doc = docModule.docs;
-    if (!doc?.theming?.targets) return {};
-
-    // Collect all props — from doc.props or doc.components[].props
-    const allProps = [];
-    if (doc.props) allProps.push(...doc.props);
-    if (doc.components) {
-      for (const comp of doc.components) {
-        if (comp.props) allProps.push(...comp.props);
+  /** @type {any[]} */
+  const docs = [];
+  /** @param {string} dir */
+  async function scan(dir) {
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules' && entry.name !== '__tests__') {
+          await scan(full);
+        }
+        continue;
+      }
+      if (!entry.name.endsWith('.doc.mjs')) continue;
+      try {
+        docs.push(await loadComponentDoc(full));
+      } catch {
+        // One malformed or optional doc must not erase validation for the rest.
       }
     }
-    if (allProps.length === 0) return {};
+  }
+  await scan(coreSrc);
 
-    // Collect visual prop names from theming targets
-    /** @type {Set<string>} */
-    const visualProps = new Set();
-    for (const target of doc.theming.targets) {
-      if (target.visualProps) {
-        for (const vp of target.visualProps) visualProps.add(vp);
-      }
-    }
-
-    // Extract values from prop type strings
-    /** @type {Record<string, string[]>} */
+  /** @param {string} value */
+  const targetName = value =>
+    value
+      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+      .replace(/\s+/g, '-')
+      .toLowerCase();
+  /**
+   * @param {any[]} props
+   * @returns {Record<string, Set<string>>}
+   */
+  const valuesFromProps = props => {
+    /** @type {Record<string, Set<string>>} */
     const result = {};
-    for (const prop of allProps) {
-      if (!visualProps.has(prop.name)) continue;
-      if (!prop.type || typeof prop.type !== 'string') continue;
+    for (const prop of props ?? []) {
+      if (typeof prop?.name !== 'string' || typeof prop?.type !== 'string') {
+        continue;
+      }
+      /** @type {Set<string>} */
+      const values = new Set();
+      for (const match of prop.type.match(/'([^']+)'/g) ?? []) {
+        values.add(match.slice(1, -1));
+      }
+      for (const part of prop.type
+        .split('|')
+        .map((/** @type {string} */ value) => value.trim())) {
+        if (/^-?\d+(?:\.\d+)?$/.test(part)) values.add(part);
+      }
+      if (values.size > 0) result[prop.name] = values;
+    }
+    return result;
+  };
 
-      // Parse union type: "'info' | 'warning' | 'error' | 'success'" → ['info', 'warning', 'error', 'success']
-      const matches = prop.type.match(/'([^']+)'/g);
-      if (matches) {
-        result[prop.name] = matches.map((/** @type {string} */ m) =>
-          m.replace(/'/g, ''),
+  /** @type {Record<string, Record<string, Set<string>>>} */
+  const valuesByOwner = {};
+  for (const doc of docs) {
+    if (typeof doc?.name === 'string') {
+      valuesByOwner[targetName(doc.name)] = valuesFromProps(doc.props);
+    }
+    for (const component of /** @type {any[]} */ (doc?.components ?? [])) {
+      if (typeof component?.name === 'string') {
+        valuesByOwner[targetName(component.name)] = valuesFromProps(
+          component.props,
         );
       }
     }
-    return result;
-  } catch {
-    return {};
   }
+
+  /** @type {Record<string, Record<string, Set<string>>>} */
+  const collected = {};
+  for (const doc of docs) {
+    const localValues = valuesFromProps([
+      ...(doc?.props ?? []),
+      ...(doc?.components ?? []).flatMap(
+        (/** @type {any} */ component) => component?.props ?? [],
+      ),
+    ]);
+    for (const target of doc?.theming?.targets ?? []) {
+      if (typeof target?.className !== 'string') continue;
+      const componentName = target.className.replace(/^astryx-/, '');
+      const ownerValues = valuesByOwner[componentName] ?? {};
+      if (!collected[componentName]) collected[componentName] = {};
+      for (const prop of target.visualProps ?? []) {
+        if (!collected[componentName][prop]) {
+          collected[componentName][prop] = new Set();
+        }
+        for (const value of [
+          ...(localValues[prop] ?? []),
+          ...(ownerValues[prop] ?? []),
+        ]) {
+          collected[componentName][prop].add(value);
+        }
+      }
+    }
+  }
+
+  return Object.fromEntries(
+    Object.entries(collected).map(([component, props]) => [
+      component,
+      Object.fromEntries(
+        Object.entries(props).map(([prop, values]) => [prop, [...values]]),
+      ),
+    ]),
+  );
 }
 
-// Cache for loaded known values
-/** @type {Map<string, Record<string, string[]>>} */
-const _knownValuesCache = new Map();
 /**
  * @param {string} componentName
  * @returns {Promise<Record<string, string[]>>}
  */
 async function getKnownValues(componentName) {
-  if (!_knownValuesCache.has(componentName)) {
-    _knownValuesCache.set(componentName, await loadKnownValues(componentName));
-  }
-  return _knownValuesCache.get(componentName) ?? {};
+  _knownValuesIndexPromise ??= loadKnownValuesIndex();
+  const index = await _knownValuesIndexPromise;
+  return index[componentName] ?? {};
 }
 
 /**
@@ -342,7 +386,6 @@ function readComponentDeclarations(pascalName) {
   _componentDeclCache.set(pascalName, contents);
   return contents;
 }
-
 
 /** @type {Map<string, Array<{moduleName: string, interfacePrefix: string}>>} */
 const _augmentationTargetCache = new Map();
@@ -402,7 +445,8 @@ async function resolveAugmentationTargetCandidates(componentName) {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+        if (entry.name === 'node_modules' || entry.name === '__tests__')
+          continue;
         await scan(full);
         continue;
       }
@@ -475,6 +519,124 @@ function componentHasAugmentableInterface(pascalName, interfaceName) {
 }
 
 /**
+ * Adaptation values from resolved runtime rules, raw input, or normalized built
+ * metadata. Built modules intentionally omit `__adaptationRules`, so every CLI
+ * diagnostic that reads rule intent must also understand `__adaptations`.
+ *
+ * @param {Record<string, any>} themeDef
+ * @returns {Record<string, any>[]}
+ */
+function adaptationRuleValues(themeDef) {
+  if (themeDef.__adaptationRules) {
+    return themeDef.__adaptationRules;
+  }
+  return (themeDef.adaptations?.rules ?? themeDef.__adaptations?.rules ?? [])
+    .map((/** @type {any} */ rule) => rule?.value)
+    .filter(Boolean);
+}
+
+/**
+ * Every `[component, rules]` pair a theme may emit, including ordered
+ * adaptation rules. Validators, private-variable checks, and notices must see
+ * rule-only values even though variant augmentation is root-owned.
+ *
+ * @param {Record<string, any>} themeDef
+ * @returns {[string, Record<string, any>][]}
+ */
+function themedComponentEntries(themeDef) {
+  const maps = [
+    themeDef.components,
+    ...adaptationRuleValues(themeDef).map(
+      (/** @type {any} */ value) => value.components,
+    ),
+  ];
+
+  /** @type {[string, Record<string, any>][]} */
+  const entries = [];
+  for (const map of maps) {
+    if (map) entries.push(...Object.entries(map));
+  }
+  return entries;
+}
+
+/**
+ * Root component entries are the only surface allowed to introduce variants.
+ * @param {Record<string, any>} themeDef
+ * @returns {[string, Record<string, any>][]}
+ */
+function rootComponentEntries(themeDef) {
+  return themeDef.components ? Object.entries(themeDef.components) : [];
+}
+
+/**
+ * Component entries written only by adaptation rules.
+ * @param {Record<string, any>} themeDef
+ * @returns {[string, Record<string, any>][]}
+ */
+function adaptationComponentEntries(themeDef) {
+  const maps = adaptationRuleValues(themeDef).map(
+    (/** @type {any} */ value) => value.components,
+  );
+  return maps.flatMap((/** @type {any} */ map) =>
+    map ? Object.entries(map) : [],
+  );
+}
+
+/**
+ * Reject visual-prop values introduced only inside an adaptation. Built-in
+ * values remain legal; custom values must first exist on the effective root
+ * component surface so generated module augmentation is unconditional.
+ * @param {Record<string, any>} themeDef
+ * @returns {Promise<string[]>}
+ */
+async function validateAdaptationVariantValues(themeDef) {
+  const adaptationEntries = adaptationComponentEntries(themeDef);
+  if (adaptationEntries.length === 0) {
+    return [];
+  }
+
+  /** @type {Set<string>} */
+  const rootValues = new Set();
+  for (const [component, rules] of rootComponentEntries(themeDef)) {
+    for (const key of Object.keys(rules)) {
+      for (const pair of key.split('+')) {
+        if (pair.includes(':')) rootValues.add(`${component}:${pair}`);
+      }
+    }
+  }
+
+  /** @type {string[]} */
+  const errors = [];
+  for (const [component, rules] of adaptationEntries) {
+    const known = await getKnownValues(component);
+    for (const key of Object.keys(rules)) {
+      if (key === 'base') continue;
+      for (const pair of key.split('+')) {
+        const colon = pair.indexOf(':');
+        const prop = colon === -1 ? pair : pair.slice(0, colon);
+        if (colon === -1) continue;
+        const value = pair.slice(colon + 1);
+        // Some public prop types are opaque aliases rather than literal unions.
+        // When docs cannot enumerate an axis, avoid turning that discovery gap
+        // into a false hard failure; the normal component validator still checks
+        // that the axis itself exists.
+        if (!known[prop] || known[prop].length === 0) continue;
+        if (
+          known[prop].includes(value) ||
+          rootValues.has(`${component}:${pair}`)
+        ) {
+          continue;
+        }
+        errors.push(
+          `Adaptation rule introduces "${component}.${prop}:${value}". Declare custom visual-prop values on the root theme first; rules may only style an existing value.`,
+        );
+      }
+    }
+  }
+  return [...new Set(errors)];
+}
+
+/**
  * Generate TypeScript declaration content with module augmentation for custom
  * component prop values found in the theme's `components` keys. Reads known
  * values from doc files to filter out base prop values.
@@ -493,7 +655,8 @@ function componentHasAugmentableInterface(pascalName, interfaceName) {
  * @returns {Promise<string|null>} TypeScript declaration content, or null if no augmentations needed
  */
 async function generateVariantDeclarationsAsync(themeDef) {
-  if (!themeDef.components || Object.keys(themeDef.components).length === 0) {
+  const componentEntries = rootComponentEntries(themeDef);
+  if (componentEntries.length === 0) {
     return null;
   }
 
@@ -501,7 +664,7 @@ async function generateVariantDeclarationsAsync(themeDef) {
   /** @type {Record<string, Record<string, Set<string>>>} */
   const customValues = {};
 
-  for (const [component, rules] of Object.entries(themeDef.components)) {
+  for (const [component, rules] of componentEntries) {
     const knownForComponent = await getKnownValues(component);
 
     for (const key of Object.keys(rules)) {
@@ -539,12 +702,13 @@ async function generateVariantDeclarationsAsync(themeDef) {
       if (values.size === 0) continue;
 
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const target = (await resolveAugmentationTargetCandidates(component)).find(
-        candidate =>
-          componentHasAugmentableInterface(
-            candidate.moduleName,
-            `${candidate.interfacePrefix}${propPascal}Map`,
-          ),
+      const target = (
+        await resolveAugmentationTargetCandidates(component)
+      ).find(candidate =>
+        componentHasAugmentableInterface(
+          candidate.moduleName,
+          `${candidate.interfacePrefix}${propPascal}Map`,
+        ),
       );
 
       // Only augment interfaces that actually exist as an extension point in
@@ -817,10 +981,12 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
    * there is nothing to emit.
    * @param {string} field
    * @param {unknown} value
+   * @param {boolean} [includeEmpty]
    * @returns {string}
    */
-  const serializeField = (field, value) => {
-    if (!value || Object.keys(value).length === 0) return '';
+  const serializeField = (field, value, includeEmpty = false) => {
+    if (value == null || (!includeEmpty && Object.keys(value).length === 0))
+      return '';
     const body = JSON.stringify(value, null, 2)
       .split('\n')
       .map((line, i) => (i === 0 ? line : '  ' + line))
@@ -828,6 +994,9 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
     return `  ${field}: ${body},\n`;
   };
 
+  // Everything a theme that `extends` this built one has to be able to read
+  // back. A field missing here is silently lost by the extending theme.
+  // SYNC: packages/core/src/theme/defineTheme.ts (DefinedTheme)
   const inheritableFields =
     (themeDef.__localTokenLineage !== undefined
       ? `  localTokens: ${JSON.stringify(themeDef.localTokens ?? {}, null, 2)
@@ -846,7 +1015,9 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
       : '') +
     serializeField('components', themeDef.components) +
     serializeField('__onDark', themeDef.__onDark) +
-    serializeField('__onLight', themeDef.__onLight);
+    serializeField('__onLight', themeDef.__onLight) +
+    serializeField('__adaptations', themeDef.__adaptations) +
+    serializeField('__axes', themeDef.__axes ?? {}, true);
 
   return `${iconImport}/**
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
@@ -940,12 +1111,13 @@ async function getKnownComponents() {
 async function validateComponentOverrides(themeDef) {
   /** @type {string[]} */
   const warnings = [];
-  if (!themeDef.components) return warnings;
+  const componentEntries = themedComponentEntries(themeDef);
+  if (componentEntries.length === 0) return warnings;
 
   const knownComponents = await getKnownComponents();
   if (knownComponents == null) return warnings;
 
-  for (const [component, rules] of Object.entries(themeDef.components)) {
+  for (const [component, rules] of componentEntries) {
     // Check component name
     if (!(component in knownComponents)) {
       const similar = Object.keys(knownComponents)
@@ -996,7 +1168,7 @@ async function validateComponentOverrides(themeDef) {
     }
   }
 
-  return warnings;
+  return [...new Set(warnings)];
 }
 
 /**
@@ -1012,23 +1184,33 @@ async function validateComponentOverrides(themeDef) {
 function validatePrivateVars(themeDef) {
   /** @type {string[]} */
   const errors = [];
-  if (!themeDef.components) return errors;
 
-  for (const [component, rules] of Object.entries(themeDef.components)) {
+  for (const [component, rules] of themedComponentEntries(themeDef)) {
     for (const [key, styles] of Object.entries(rules)) {
-      for (const prop of Object.keys(styles)) {
-        if (typeof prop === 'string' && prop.startsWith('--_')) {
-          errors.push(
-            `Component "${component}" (${key}) sets private var "${prop}". ` +
-              `Private vars (--_*) are internal — use standard CSS properties ` +
-              `(e.g. borderRadius, padding) instead. The pipeline expands them automatically.`,
-          );
+      /**
+       * @param {unknown} value
+       * @param {string[]} [path]
+       */
+      const visit = (value, path = []) => {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+        for (const [prop, nested] of Object.entries(value)) {
+          if (prop.startsWith('--_')) {
+            errors.push(
+              `Component "${component}" (${[key, ...path].join(' ')}) sets private var "${prop}". ` +
+                `Private vars (--_*) are internal — use standard CSS properties ` +
+                `(e.g. borderRadius, padding) instead. The pipeline expands them automatically.`,
+            );
+          }
+          visit(nested, [...path, prop]);
         }
-      }
+      };
+      visit(styles);
     }
   }
 
-  return errors;
+  // One entry per distinct message: a component declared both at the root and
+  // in one or more adaptations would otherwise report the same problem twice.
+  return [...new Set(errors)];
 }
 
 /**
@@ -1124,7 +1306,7 @@ export async function themeBuild(
   // `astryx theme build` and the `<Theme>` runtime MUST emit identical CSS, so
   // there is exactly one generation path: @astryxdesign/core/theme. If core could not
   // be imported, fail hard rather than silently producing divergent output.
-  if (!_defineTheme || !_generateThemeRulesSplit) {
+  if (!_defineTheme || !_generateThemeRulesSplit || !_generateAdaptationCSS) {
     throw new AstryxError(
       'Could not load @astryxdesign/core/theme — `astryx theme build` requires a ' +
         'built, resolvable @astryxdesign/core so it emits the same CSS as the ' +
@@ -1147,6 +1329,11 @@ export async function themeBuild(
     // theme has none of them — and hand the WHOLE object over: picking fields
     // by name is how `extends` (and `color`, and `syntax`) used to be dropped
     // on the way in.
+    // Fields that only ever appear on RAW defineTheme() input, never on an
+    // already-resolved theme. Their presence is how the build tells the two
+    // apart and decides to run defineTheme() itself. A field missing from this
+    // list is dropped without a word, so every new input field belongs here.
+    // SYNC: packages/core/src/theme/defineTheme.ts (DefineThemeInput)
     const INPUT_ONLY_FIELDS = [
       'extends',
       'typography',
@@ -1156,15 +1343,39 @@ export async function themeBuild(
       'syntax',
       'onDark',
       'onLight',
+      'adaptations',
     ];
     const needsResolution =
       INPUT_ONLY_FIELDS.some(field => themeDef[field] !== undefined) ||
       ('localTokens' in themeDef && themeDef.__localTokenLineage === undefined);
     if (needsResolution) {
-      resolvedTheme = _defineTheme({...themeDef});
+      try {
+        resolvedTheme = _defineTheme({...themeDef});
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Theme normalization failed.';
+        throw new AstryxError(
+          message,
+          undefined,
+          ERROR_CODES.ERR_THEME_INVALID,
+        );
+      }
     } else {
       resolvedTheme = themeDef;
     }
+
+    const adaptationValueErrors =
+      await validateAdaptationVariantValues(resolvedTheme);
+    if (adaptationValueErrors.length > 0) {
+      throw new AstryxError(
+        adaptationValueErrors.join('\n'),
+        undefined,
+        ERROR_CODES.ERR_THEME_INVALID,
+      );
+    }
+
     const scopeSelector = themeScopeStart(themeDef.name);
     const scopeTo = THEME_SCOPE_TO;
 
@@ -1180,26 +1391,52 @@ export async function themeBuild(
         `@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}\n}`,
       );
     }
-    if (component.length > 0) {
-      const componentInner = component.join('\n\n');
-      const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
-      // #3658: also emit attribute-specific rules so <Theme mode> can override color-scheme.
-      // Decided from the theme's own values, not the generated CSS: that CSS
-      // also carries the data-token defaults, which are light-dark() pairs, so
-      // a substring check on it would fire for every theme.
-      const themeOwnValues = JSON.stringify([
-        resolvedTheme.tokens ?? {},
-        resolvedTheme.localTokens ?? {},
-        resolvedTheme.components ?? {},
-      ]);
-      const colorSchemeDecl = themeOwnValues.includes('light-dark(')
+    // Ordered adaptation rules use the same generator as the runtime path.
+    let adaptationCss;
+    try {
+      adaptationCss = _generateAdaptationCSS(resolvedTheme);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Theme normalization failed.';
+      throw new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
+    }
+    const componentInner = component.join('\n\n');
+    const componentScope =
+      component.length > 0
+        ? `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`
+        : '';
+
+    // #3658: also emit attribute-specific rules so <Theme mode> can override
+    // color-scheme. Inspect root and rule-owned values, not generated CSS, which
+    // also carries theme-independent data-token defaults with light-dark().
+    const themeOwnValues = JSON.stringify([
+      resolvedTheme.tokens ?? {},
+      resolvedTheme.localTokens ?? {},
+      resolvedTheme.components ?? {},
+      ...(resolvedTheme.__adaptationRules ?? []).flatMap(
+        (
+          /** @type {{tokens?: Record<string, string>, localTokens?: Record<string, string>, components?: object}} */ rule,
+        ) => [rule.tokens ?? {}, rule.localTokens ?? {}, rule.components ?? {}],
+      ),
+    ]);
+    const colorSchemeDecl =
+      themeOwnValues.includes('light-dark(') ||
+      adaptationCss.component.includes('light-dark(')
         ? '  :root { color-scheme: light dark; }\n  html[data-theme="light"] { color-scheme: light; }\n  html[data-theme="dark"] { color-scheme: dark; }\n\n'
         : '';
+    if (colorSchemeDecl || componentScope) {
       cssParts.push(
         `@layer astryx-theme {\n${colorSchemeDecl}${componentScope}\n}`,
       );
     }
-    // On-media rules (MediaTheme dark/light surface overrides)
+    if (adaptationCss.prose) {
+      cssParts.push(`@layer reset {\n${adaptationCss.prose}\n}`);
+    }
+    if (adaptationCss.component) {
+      cssParts.push(`@layer astryx-theme {\n${adaptationCss.component}\n}`);
+    }
+    // Media-surface rules come last so onDark/onLight win over matching
+    // adaptations on the same resolved leaf.
     if (_generateOnMediaCSS) {
       const onMediaCss = _generateOnMediaCSS(resolvedTheme);
       if (onMediaCss) {
@@ -1436,7 +1673,16 @@ Or with a <link> tag:
   // theme with a webfont, including a perfect one, and as a warning it made
   // every such build read as defective (it also put the shipped template
   // permanently in violation of its own "compiles with no warnings" guard).
-  const unloadedFonts = collectUnloadedFonts(resolvedTheme);
+  // Adaptation rules are resolved theme writes in their own right, so a family
+  // named only inside one needs the same notice as one named at the root.
+  const unloadedFonts = [
+    ...new Set([
+      ...collectUnloadedFonts(resolvedTheme),
+      ...adaptationRuleValues(resolvedTheme).flatMap(
+        (/** @type {any} */ value) => collectUnloadedFonts(value),
+      ),
+    ]),
+  ];
   for (const family of unloadedFonts) {
     const msg = `Font "${family}" is named by this theme but not loaded — add a <link> or @font-face in your app (recipe: astryx docs typography)`;
     noticeMessages.push(msg);

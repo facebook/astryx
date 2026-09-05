@@ -207,14 +207,15 @@ describe('generateThemeRules', () => {
 
   // --- Prose rules ---
 
-  it('includes prose heading rules with computed values', () => {
+  it('includes prose heading rules linked to semantic tokens', () => {
     const h1Rule = rules.find(
       r => r.trimStart().startsWith(':where(h1)') || r.includes(':where(h1)'),
     );
     expect(h1Rule).toBeDefined();
-    // Prose rules use val() helper which resolves to the token value (now a var ref)
-    expect(h1Rule).toContain('var(--font-size-2xl)');
-    expect(h1Rule).toContain('var(--font-weight-semibold)');
+    // Keep prose linked to semantic variables so conditional token writes apply
+    // through CSS without duplicating these selectors inside every media rule.
+    expect(h1Rule).toContain('var(--text-heading-1-size)');
+    expect(h1Rule).toContain('var(--text-heading-1-weight)');
     // Prose defaults intentionally carry NO block margins: reset.css zeroes
     // raw element margins and the Markdown/Heading components own their spacing
     // via StyleX (@layer astryx-base). Emitting margins here would re-introduce
@@ -223,12 +224,12 @@ describe('generateThemeRules', () => {
     expect(h1Rule).not.toContain('margin-block-end');
   });
 
-  it('includes prose p rule with computed values', () => {
+  it('includes prose p rule linked to semantic tokens', () => {
     const pRule = rules.find(
       r => r.trimStart().startsWith(':where(p)') || r.includes(':where(p)'),
     );
     expect(pRule).toBeDefined();
-    expect(pRule).toContain('var(--font-size-base)');
+    expect(pRule).toContain('var(--text-body-size)');
     expect(pRule).toContain('font-family: var(--font-family-body)');
     expect(pRule).toContain('var(--color-text-primary)');
     // No margins on the prose paragraph default (see heading rule note).
@@ -354,12 +355,12 @@ describe('generateThemeRules with weight overrides', () => {
     );
   });
 
-  it('reflects weight override in prose h3', () => {
+  it('keeps prose h3 linked to the semantic weight token', () => {
     const h3Rule = rules.find(
       r => r.trimStart().startsWith(':where(h3)') || r.includes(':where(h3)'),
     );
     expect(h3Rule).toBeDefined();
-    expect(h3Rule).toContain('var(--font-weight-bold)');
+    expect(h3Rule).toContain('var(--text-heading-3-weight)');
   });
 });
 
