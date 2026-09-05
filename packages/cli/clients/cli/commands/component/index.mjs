@@ -192,7 +192,7 @@ export function registerComponent(program) {
 
         case 'component.detail': {
           const resolvedName = (name || '').replace(/^XDS/, '');
-          const importHint = resolveImportPath(coreDir, resolvedName);
+          const importHint = result.data.import;
           const doc =
             detail === 'brief'
               ? code(formatBrief(result.data, resolvedName, importHint, {themeData}))
