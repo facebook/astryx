@@ -222,7 +222,7 @@ another implementation helper.
 | FileInput       | Field, FormLayout, width, `isLoading`, `changeAction`, clear, status, and disabled reason                                  | no public `size`; compact and dropzone modes are component-owned                   |
 | Selector        | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | DEC-1 permits standalone content-sized width                                       |
 | MultiSelector   | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | trigger-display modes remain component-owned                                       |
-| ComplexSelector | Field, FormLayout, size, width, `isLoading`, `changeAction`, and status                                                    | no InputGroup or disabled-reason API                                               |
+| ComplexSelector | Field, FormLayout, size, width, `isLoading`, `changeAction`, status, and disabled reason                                   | no InputGroup support                                                              |
 | Typeahead       | Field, FormLayout, InputGroup, size, width, clear, status, disabled reason, and BaseTypeahead source loading               | no family `isLoading` or `changeAction`; search lifecycle is component-owned       |
 | Tokenizer       | Field, FormLayout, size, width, clear, status, disabled reason, BaseTypeahead source loading, and multi-token block growth | not InputGroup-compatible on current main; no family `isLoading` or `changeAction` |
 
