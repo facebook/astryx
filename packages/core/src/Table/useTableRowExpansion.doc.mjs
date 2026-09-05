@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableRowExpansion',
   description:
-    'Hook that returns a TablePlugin which expands a full-width detail panel below a row, rendered by the consumer via renderExpanded(item). Adds a leading chevron column and a right-click "Expand/Collapse row" action; the consumer owns the expandedKeys set. Use it for master-detail rows (order details, forms, charts, nested tables). For hierarchical data where child rows reuse the parent columns, use useTableTreeData + useTableTreeState instead.',
+    'Hook that returns a TablePlugin which expands a full-width detail panel below a row, rendered by the consumer via renderExpanded(item). Adds a leading chevron column and a right-click "Expand/Collapse row" action; the consumer owns the expandedKeys set. The panel spans the row but starts its content at the first column, past the chevron, so detail lines up with the labels above it; the inset follows the table density. Use it for master-detail rows (order details, forms, charts, nested tables). For hierarchical data where child rows reuse the parent columns, use useTableTreeData + useTableTreeState instead.',
   props: [
     {
       name: 'expandedKeys',
@@ -40,6 +40,20 @@ export const docs = {
       type: '(item: T) => boolean',
       description:
         'Control which rows are expandable. Non-expandable rows show no chevron, no context-menu action, and never render a panel. Defaults to all rows expandable.',
+    },
+    {
+      name: 'panelVariant',
+      type: "'muted' | 'transparent'",
+      description:
+        "Background behind the detail panel. 'muted' washes it, marking it as commentary on the row above rather than another row of data — in a bare table with no dividers that wash is the only cue. 'transparent' takes whatever surface is behind the table, for a table already on a Card or Section where a second tint reads as a third surface. The wash is a low-alpha near-black, so it is close to invisible over a dark card: 'muted' is largely a light-theme effect.",
+      default: "'muted'",
+    },
+    {
+      name: 'hasRowClickExpansion',
+      type: 'boolean',
+      description:
+        'Toggle a row by clicking anywhere on it, not only on its chevron. A pointer-only convenience layered over the chevron, which stays the accessible control for keyboard and assistive tech. Clicks on interactive cell content (buttons, links, form controls) or on a text selection do not toggle, and non-expandable rows stay inert.',
+      default: 'false',
     },
   ],
   examples: [
@@ -97,7 +111,7 @@ const tree = useTableTreeData({
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Returns a TablePlugin that expands a full-width detail panel below a row via renderExpanded(item). Adds a chevron column + right-click expand/collapse action; consumer owns expandedKeys. For nested child rows that reuse parent columns, use useTableTreeData + useTableTreeState instead.',
+    'Returns a TablePlugin that expands a full-width detail panel below a row via renderExpanded(item). Adds a chevron column + right-click expand/collapse action; consumer owns expandedKeys. Panel content starts at the first column (past the chevron), inset by density. For nested child rows that reuse parent columns, use useTableTreeData + useTableTreeState instead.',
   propDescriptions: {
     expandedKeys: 'Set of currently-expanded row keys. Consumer-owned.',
     onToggle: 'Called with a row key when its expansion is toggled.',
@@ -106,5 +120,9 @@ export const docsDense = {
       'Render the full-width detail panel below an expanded row. Receives the row item.',
     getIsItemExpandable:
       'Control which rows are expandable. Defaults to all rows expandable.',
+    panelVariant:
+      "Detail panel background: 'muted' (default) washes it; 'transparent' takes the surface behind the table, for a table already on a Card.",
+    hasRowClickExpansion:
+      'Toggle a row by clicking anywhere on it, not just the chevron; pointer-only, skips interactive cell content and text selections. Defaults to false.',
   },
 };
