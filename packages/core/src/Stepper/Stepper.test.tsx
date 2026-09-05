@@ -1249,12 +1249,13 @@ describe('Stepper', () => {
         document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
       ).find(element => element.style.width !== '');
       expect(measure).toHaveStyle({width: 'var(--checkout-step-width)'});
-      expect(measure?.closest('ol')).toBe(screen.getByRole('list'));
-      expect(
-        screen
-          .getByRole('list')
-          .style.getPropertyValue('--checkout-step-width'),
-      ).toBe('6rem');
+      const list = screen.getByRole('list');
+      expect(measure?.closest('ol')).toBe(list);
+      const frame = list.parentElement;
+      expect(frame).toHaveClass('astryx-stepper-frame');
+      expect(frame?.style.getPropertyValue('--checkout-step-width')).toBe(
+        '6rem',
+      );
     });
 
     it('responds when a CSS minimum step width resolves to a new size', () => {
