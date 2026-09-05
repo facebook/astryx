@@ -94,6 +94,7 @@ export * from './AlertDialog';
 export * from './Dialog';
 export * from './ContextMenu';
 export * from './DropdownMenu';
+export * from './Drawer';
 export * from './MoreMenu';
 export * from './InteractiveRoleContext';
 export * from './SizeContext';

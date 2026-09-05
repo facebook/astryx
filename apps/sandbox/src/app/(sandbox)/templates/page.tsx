@@ -37,7 +37,8 @@ import {
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {useToast} from '@astryxdesign/core/Toast';
-import {Drawer, Stat} from '@astryxdesign/lab';
+import {Drawer} from '@astryxdesign/core/Drawer';
+import {Stat} from '@astryxdesign/lab';
 
 import {
   TEMPLATE_AUDIT_CATEGORIES,

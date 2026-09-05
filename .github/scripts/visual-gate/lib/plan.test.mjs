@@ -53,7 +53,7 @@ const themeOverrides = {
 describe('storiesInPackages', () => {
   const mixed = [
     ...stories,
-    story({id: 'lab-drawer--default', title: 'Lab/Drawer', name: 'Default', component: 'Drawer'}, '@astryxdesign/lab', false),
+    story({id: 'lab-stat--default', title: 'Lab/Stat', name: 'Default', component: 'Stat'}, '@astryxdesign/lab', false),
     story({id: 'charts-bar--default', title: 'Charts/Bar', name: 'Default', component: 'Bar'}, '@astryxdesign/charts', false),
   ];
 
@@ -110,10 +110,10 @@ describe('canonicalBaselineStories', () => {
   it('drops a canary component even when its story is titled under a canonical group', () => {
     const labInCore = story(
       {
-        id: 'core-drawer--default',
-        title: 'Core/Drawer',
+        id: 'core-stat--default',
+        title: 'Core/Stat',
         name: 'Default',
-        component: 'Drawer',
+        component: 'Stat',
         componentPackage: '@astryxdesign/lab',
       },
       '@astryxdesign/lab',

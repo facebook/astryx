@@ -20,7 +20,7 @@
  * the page for one frame.
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/Drawer/Drawer.test.tsx
+ * - /packages/core/src/Drawer/Drawer.test.tsx
  * - /.github/scripts/modal-close-visibility.js
  */
 
@@ -142,6 +142,7 @@ export function useDrawerDialogPresence({
       // the commit after the next paint, and that one frame is exactly the
       // bug — the panel paints outside the top layer. Both happen in this
       // task, so the browser never gets to paint between them.
+      // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- native-host exit and React visibility must commit in one task
       flushSync(() => {
         setIsRendered(false);
       });

@@ -167,7 +167,7 @@ describe('classifyVisualScope', () => {
 
   it('excludes Lab and records its release channel from package metadata', () => {
     const result = classifyVisualScope(
-      ['packages/lab/src/Drawer/Drawer.tsx'],
+      ['packages/lab/src/Stat/Stat.tsx'],
       root,
     );
     expect(result.hasStableVisual).toBe(false);
@@ -190,7 +190,7 @@ describe('classifyVisualScope', () => {
       execFileSync(
         process.execPath,
         [SCRIPT, '--manifests', manifests, '--github-output', output],
-        {input: 'packages/lab/src/Drawer/Drawer.tsx\n'},
+        {input: 'packages/lab/src/Stat/Stat.tsx\n'},
       ),
     ).toThrow();
   });
