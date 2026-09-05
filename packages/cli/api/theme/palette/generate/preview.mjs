@@ -20,7 +20,10 @@ function escapeHtml(value) {
  * @param {Record<string, string>} colors
  */
 function renderRamp(familyId, familyName, mode, colors) {
-  const swatches = Object.entries(colors)
+  const orderedColors = Object.entries(colors).sort(
+    ([left], [right]) => Number(left) - Number(right),
+  );
+  const swatches = orderedColors
     .map(
       ([stop, color]) => `
         <li class="swatch" title="${escapeHtml(`${familyId}.${mode}[${stop}] — ${color}`)}">
@@ -32,7 +35,7 @@ function renderRamp(familyId, familyName, mode, colors) {
   return `
       <section class="family">
         <h3>${escapeHtml(familyName)}</h3>
-        <ol class="ramp" style="--stop-count:${Object.keys(colors).length}">${swatches}
+        <ol class="ramp" style="--stop-count:${orderedColors.length}">${swatches}
         </ol>
       </section>`;
 }

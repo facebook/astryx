@@ -100,20 +100,20 @@ describe('themePaletteGenerate', () => {
     expect(result.data.receipt).toBe('ocean.palette.receipt.json');
   });
 
-  it('emits requested decimal stops as literal TypeScript keys', () => {
+  it('preserves mixed decimal and integer stop order in every artifact', () => {
     const cwd = fixture();
     fs.writeFileSync(
       path.join(cwd, 'palette.config.json'),
       JSON.stringify({
         modeStrategy: 'light-only',
-        stops: [12.5, 50],
+        stops: [12.5, 50, 80],
         families: [{id: 'blue', seed: '#0074e2'}],
       }),
     );
 
     themePaletteGenerate(
       'palette.config.json',
-      {out: 'ocean.palette.ts'},
+      {out: 'ocean.palette.ts', preview: 'ocean.palette.html'},
       {cwd},
     );
 
@@ -124,6 +124,32 @@ describe('themePaletteGenerate', () => {
     expect(candidate).toContain('"12.5":');
     expect(candidate).toContain('export const palette =');
     expect(candidate).toContain('as const');
+    expect(candidate.indexOf('"12.5":')).toBeLessThan(
+      candidate.indexOf('"50":'),
+    );
+    expect(candidate.indexOf('"50":')).toBeLessThan(candidate.indexOf('"80":'));
+    const preview = fs.readFileSync(
+      path.join(cwd, 'ocean.palette.html'),
+      'utf-8',
+    );
+    expect(preview.indexOf('<strong>12.5</strong>')).toBeLessThan(
+      preview.indexOf('<strong>50</strong>'),
+    );
+    expect(preview.indexOf('<strong>50</strong>')).toBeLessThan(
+      preview.indexOf('<strong>80</strong>'),
+    );
+
+    themePaletteGenerate(
+      'palette.config.json',
+      {out: 'ocean-json.palette.json'},
+      {cwd},
+    );
+    const json = fs.readFileSync(
+      path.join(cwd, 'ocean-json.palette.json'),
+      'utf-8',
+    );
+    expect(json.indexOf('"12.5":')).toBeLessThan(json.indexOf('"50":'));
+    expect(json.indexOf('"50":')).toBeLessThan(json.indexOf('"80":'));
   });
 
   it('writes a standardized preview without requiring palette output', () => {
@@ -200,6 +226,37 @@ describe('themePaletteGenerate', () => {
     expect(
       fs.readFileSync(path.join(cwd, 'ocean.palette.ts'), 'utf-8'),
     ).not.toBe('author edit\n');
+  });
+
+  it('rejects input and output aliases by filesystem identity', () => {
+    const cwd = fixture();
+    const config = path.join(cwd, 'palette.config.json');
+    const alias = path.join(cwd, 'Palette.config.json');
+    if (!fs.existsSync(alias)) fs.linkSync(config, alias);
+    const original = fs.readFileSync(config, 'utf-8');
+
+    expect(() =>
+      themePaletteGenerate(
+        'palette.config.json',
+        {out: 'Palette.config.json', overwrite: true},
+        {cwd},
+      ),
+    ).toThrow('must refer to distinct files');
+    expect(fs.readFileSync(config, 'utf-8')).toBe(original);
+  });
+
+  it('does not reuse or overwrite predictable temporary paths', () => {
+    const cwd = fixture();
+    const oldTemporary = path.join(cwd, `ocean.palette.ts.tmp-${process.pid}`);
+    fs.writeFileSync(oldTemporary, 'author file\n');
+
+    themePaletteGenerate(
+      'palette.config.json',
+      {out: 'ocean.palette.ts', overwrite: true},
+      {cwd},
+    );
+
+    expect(fs.readFileSync(oldTemporary, 'utf-8')).toBe('author file\n');
   });
 
   it('returns stable errors for invalid input', () => {

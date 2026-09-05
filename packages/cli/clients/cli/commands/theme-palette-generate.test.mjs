@@ -39,6 +39,26 @@ describe('astryx theme palette generate', () => {
     expect(fs.readdirSync(temporaryDirectory)).toEqual(['palette.config.json']);
   });
 
+  it('preserves mixed stop order in the terminal preview', async () => {
+    fs.writeFileSync(
+      path.join(temporaryDirectory, 'palette.config.json'),
+      JSON.stringify({
+        modeStrategy: 'light-only',
+        stops: [12.5, 50, 80],
+        families: [{id: 'blue', seed: '#0074e2'}],
+      }),
+    );
+
+    const {status, stdout} = await runCli(
+      ['theme', 'palette', 'generate', 'palette.config.json'],
+      {cwd: temporaryDirectory},
+    );
+
+    expect(status).toBe(0);
+    expect(stdout.indexOf('"12.5":')).toBeLessThan(stdout.indexOf('"50":'));
+    expect(stdout.indexOf('"50":')).toBeLessThan(stdout.indexOf('"80":'));
+  });
+
   it('writes candidate files and returns one JSON envelope', async () => {
     const {status, stdout} = await runCli(
       [

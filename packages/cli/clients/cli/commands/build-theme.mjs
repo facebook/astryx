@@ -39,7 +39,10 @@ import {themeAdd} from '../../../api/theme/add/add.mjs';
 import {themeTemplate} from '../../../api/theme/template/template.mjs';
 import {themeList} from '../../../api/theme/list/list.mjs';
 import {themeTargets} from '../../../api/theme/targets/targets.mjs';
-import {themePaletteGenerate} from '../../../api/theme/palette/generate/generate.mjs';
+import {
+  serializePaletteCandidate,
+  themePaletteGenerate,
+} from '../../../api/theme/palette/generate/generate.mjs';
 import {themeBuild, importSpecifier} from '../../../api/theme/build/build.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as themeGroup} from './theme.doc.mjs';
@@ -335,7 +338,7 @@ export function registerTheme(program) {
             'Palette candidate',
             `${result.data.familyCount} families · ${result.data.stopCount} stops · ${result.data.modes.join(', ')}`,
           ),
-          code(JSON.stringify(result.data.candidate, null, 2)),
+          code(serializePaletteCandidate(result.data.candidate).trimEnd()),
         );
         return;
       }
