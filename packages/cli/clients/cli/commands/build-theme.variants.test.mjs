@@ -159,7 +159,7 @@ describe('theme build custom-variant augmentations', () => {
         tokens: { '--color-bg': '#fff' },
         components: {
           heading: {
-            'type:hero': {},
+            'type:hero': { ':hover': {} },
             'type:eyebrow+color:accent': { letterSpacing: '0.08em' },
           },
         },
