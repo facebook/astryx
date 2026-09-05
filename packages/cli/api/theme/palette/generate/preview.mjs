@@ -57,6 +57,7 @@ function renderMode(candidate, mode) {
     </article>`;
 }
 
+/** @param {import('../../theme.type.mjs').TonalPaletteCandidate} candidate */
 function renderThemeValues(candidate) {
   return `
       <section class="theme-values">
