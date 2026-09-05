@@ -12,6 +12,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {Icon} from '../Icon/Icon';
 import {IconButton} from './IconButton';
 
 describe('IconButton', () => {
@@ -44,6 +45,45 @@ describe('IconButton', () => {
   it('forwards size prop', () => {
     render(<IconButton label="Add" icon={<span>+</span>} size="sm" />);
     expect(screen.getByRole('button', {name: 'Add'})).toBeInTheDocument();
+  });
+
+  it.each([
+    ['sm', 'sm', '1rem'],
+    ['md', 'sm', '1rem'],
+    ['lg', 'md', '1.25rem'],
+  ] as const)(
+    'renders the %s button wrapper and inherited Icon at the same size',
+    (buttonSize, iconSize, renderedSize) => {
+      render(
+        <IconButton
+          label="Add"
+          icon={<Icon icon="check" data-testid="icon" />}
+          size={buttonSize}
+        />,
+      );
+
+      const icon = screen.getByTestId('icon');
+      const wrapper = icon.parentElement;
+      expect(wrapper).not.toBeNull();
+
+      expect(icon).toHaveAttribute('data-size', iconSize);
+      expect(getComputedStyle(icon).width).toBe(renderedSize);
+      expect(getComputedStyle(icon).height).toBe(renderedSize);
+      expect(getComputedStyle(wrapper!).width).toBe(renderedSize);
+      expect(getComputedStyle(wrapper!).height).toBe(renderedSize);
+    },
+  );
+
+  it('preserves an explicit Astryx Icon size', () => {
+    render(
+      <IconButton
+        label="Add"
+        icon={<Icon icon="check" size="lg" data-testid="icon" />}
+        size="sm"
+      />,
+    );
+
+    expect(screen.getByTestId('icon')).toHaveAttribute('data-size', 'lg');
   });
 
   it('handles click events', async () => {

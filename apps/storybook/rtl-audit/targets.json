@@ -11,6 +11,17 @@
     }
   },
   {
+    "component": "Button",
+    "storyId": "core-button--icon-with-text",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "[data-testid=\"button-leading-icon\"]",
+      "next": "[data-testid=\"button-label\"]"
+    }
+  },
+  {
     "component": "ButtonGroup",
     "storyId": "core-buttongroup--horizontal",
     "dims": [

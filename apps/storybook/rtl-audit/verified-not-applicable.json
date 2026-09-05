@@ -12,6 +12,14 @@
     "reason": "FieldStatus uses block-flow message layout and logical padding and corner radii. Its status glyphs are non-directional, and it has no side-specific placement, order, scrolling, dragging, overlays, or directional keyboard behavior."
   },
   {
+    "component": "core/Icon",
+    "reason": "Across the Core/Icon stories, Icon renders one centered, non-directional glyph and only owns its size, color, theme target, and accessibility presentation. It has no component-owned order, inline-side placement, scrolling, dragging, overlay, or keyboard behavior; when a caller chooses a directional glyph, that callsite owns the semantic direction and any required mirroring."
+  },
+  {
+    "component": "core/IconButton",
+    "reason": "Across the Core/IconButton stories, IconButton is a square Button containing one centered, non-directional glyph. It has no leading/trailing relationship, inline-side placement, scrolling, dragging, overlay, or direction-dependent keyboard behavior; the caller owns the semantics and mirroring of any directional glyph supplied to its icon slot."
+  },
+  {
     "component": "core/Spinner",
     "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG — two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
   },

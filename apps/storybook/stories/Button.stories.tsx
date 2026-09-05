@@ -133,8 +133,14 @@ export const IconWithText: Story = {
       <Button
         label="Settings"
         variant="secondary"
-        icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
-      />
+        icon={
+          <Cog6ToothIcon
+            data-testid="button-leading-icon"
+            style={{width: 16, height: 16}}
+          />
+        }>
+        <span data-testid="button-label">Settings</span>
+      </Button>
       <Button
         label="Delete"
         variant="destructive"
