@@ -6,10 +6,10 @@ import {
   type TokenValue,
 } from '@astryxdesign/core/theme';
 import {neutralIconRegistry} from './icons';
-import {neutralPalettes} from './neutralPalettes';
+import {neutralPaletteRefs} from './neutralPaletteRefs.generated';
 
 const {blue, cyan, green, neutral, orange, pink, purple, red, teal, yellow} =
-  neutralPalettes;
+  neutralPaletteRefs;
 const withAlpha = (color: string, alpha: string) => `${color}${alpha}`;
 
 const neutralSyntax = defineSyntaxTheme({
