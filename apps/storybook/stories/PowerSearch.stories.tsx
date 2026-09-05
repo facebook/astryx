@@ -560,7 +560,7 @@ export const NearFullTokenRow: Story = {
       {
         field: 'title',
         operator: 'contains',
-        value: {type: 'string', value: 'aaaaaaaaaaaaaaaaaaaaaaaa'},
+        value: {type: 'string', value: 'aaaaaaaaaaaaaaaaaa'},
       },
     ]);
     return (
@@ -606,11 +606,12 @@ export const NearFullTokenRow: Story = {
       canvasElement.querySelector<HTMLElement>('.astryx-tokenizer');
     const input = wrapper?.querySelector<HTMLInputElement>('[role="combobox"]');
     const tokens = wrapper?.querySelectorAll<HTMLElement>(':scope > span');
+    const firstToken = tokens?.item(0);
     const finalToken = tokens?.item((tokens?.length ?? 0) - 1);
     const clearButton = wrapper?.querySelector<HTMLButtonElement>(
       'button[aria-label="Clear all"]',
     );
-    if (!wrapper || !input || !finalToken || !clearButton) {
+    if (!wrapper || !input || !firstToken || !finalToken || !clearButton) {
       throw new Error('Near-full token-row fixture did not render as expected');
     }
     const isCoarsePointer = matchMedia('(pointer: coarse)').matches;
@@ -638,6 +639,7 @@ export const NearFullTokenRow: Story = {
     );
 
     const inputRect = input.getBoundingClientRect();
+    const firstTokenRect = firstToken.getBoundingClientRect();
     const tokenRect = finalToken.getBoundingClientRect();
     const clearRect = clearButton.getBoundingClientRect();
     let clearHitLeft = 0;
@@ -658,6 +660,11 @@ export const NearFullTokenRow: Story = {
       left: clearRect.left + clearHitLeft,
       right: clearRect.right - clearHitRight,
     };
+    if (Math.abs(firstTokenRect.top - tokenRect.top) > 0.5) {
+      throw new Error(
+        `Fixture tokens wrapped before the empty combobox check: first token top ${firstTokenRect.top.toFixed(2)}, final token top ${tokenRect.top.toFixed(2)}`,
+      );
+    }
     if (inputRect.top >= tokenRect.bottom) {
       throw new Error(
         `Empty combobox wrapped onto a blank row: input top ${inputRect.top.toFixed(2)}, final token bottom ${tokenRect.bottom.toFixed(2)}`,
