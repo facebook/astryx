@@ -242,6 +242,34 @@ describe('useLayerDismissal', () => {
       expect(older).not.toHaveBeenCalled();
     });
 
+    it('moves a reopened unrelated layer above siblings that stayed open', () => {
+      const first = vi.fn();
+      const second = vi.fn();
+      const {rerender} = render(
+        <>
+          <Layer onDismiss={first} />
+          <Layer onDismiss={second} />
+        </>,
+      );
+
+      rerender(
+        <>
+          <Layer onDismiss={first} isActive={false} />
+          <Layer onDismiss={second} />
+        </>,
+      );
+      rerender(
+        <>
+          <Layer onDismiss={first} />
+          <Layer onDismiss={second} />
+        </>,
+      );
+
+      pressEscape();
+      expect(first).toHaveBeenCalledTimes(1);
+      expect(second).not.toHaveBeenCalled();
+    });
+
     it('keeps ordering under StrictMode, which mounts every effect twice', () => {
       const first = vi.fn();
       const second = vi.fn();
