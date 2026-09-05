@@ -62,6 +62,38 @@ function run(command: string, args: string[], cwd: string) {
   });
 }
 
+// Cross-platform equivalent of `cp -al`: recurse into real directories,
+// hard-link regular files, and recreate symlinks as symlinks rather than
+// dereferencing them. pnpm's Windows node_modules layout is junction-heavy
+// (readdirSync reports these as isSymbolicLink(), not isDirectory()), and
+// Windows can't hard-link a reparse point, so those need
+// `fs.symlinkSync(..., 'junction')` — the one symlink type Windows creates
+// without elevated privileges.
+function linkDirectory(source: string, destination: string) {
+  fs.mkdirSync(destination, {recursive: true});
+  for (const entry of fs.readdirSync(source, {withFileTypes: true})) {
+    const from = path.join(source, entry.name);
+    const to = path.join(destination, entry.name);
+    if (entry.isSymbolicLink()) {
+      const target = fs.readlinkSync(from);
+      const isDir = fs.statSync(from).isDirectory();
+      fs.symlinkSync(
+        target,
+        to,
+        process.platform === 'win32'
+          ? isDir
+            ? 'junction'
+            : 'file'
+          : undefined,
+      );
+    } else if (entry.isDirectory()) {
+      linkDirectory(from, to);
+    } else {
+      fs.linkSync(from, to);
+    }
+  }
+}
+
 function edit(file: string, transform: (source: string) => string) {
   const source = fs.readFileSync(file, 'utf8');
   const next = transform(source);
@@ -112,14 +144,9 @@ function preparePair(fixture: string) {
   const arm = path.join(root, 'arm');
   for (const destination of [baseline, arm]) {
     copyFixture(fixture, destination);
-    run(
-      'cp',
-      [
-        '-al',
-        path.join(deps, 'node_modules'),
-        path.join(destination, 'node_modules'),
-      ],
-      root,
+    linkDirectory(
+      path.join(deps, 'node_modules'),
+      path.join(destination, 'node_modules'),
     );
   }
 
