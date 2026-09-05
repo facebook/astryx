@@ -30,6 +30,14 @@ const REPO_ROOT = path.resolve(
   '../../../..',
 );
 const CORE_SRC_DIR = path.join(REPO_ROOT, 'packages/core/src');
+const COMPONENT_REGISTRY_PATH = new URL(
+  '../generated/componentRegistry.ts',
+  import.meta.url,
+);
+const COMPONENT_REGISTRY_SOURCE = fs.readFileSync(
+  COMPONENT_REGISTRY_PATH,
+  'utf-8',
+);
 
 function findFiles(dir: string, predicate: (filePath: string) => boolean) {
   const files: string[] = [];
@@ -173,6 +181,19 @@ describe('packageRegistry', () => {
 // ── Component Registry ─────────────────────────────────────────────────
 
 describe('componentRegistry', () => {
+  it('derives playground types from the CLI authoring contract', () => {
+    const playground: NonNullable<ComponentEntry['playground']> = {
+      wrapper: {component: 'Layout', slotProp: 'start'},
+    };
+    expect(COMPONENT_REGISTRY_SOURCE).toContain(
+      "from '@astryxdesign/cli/authoring'",
+    );
+    expect(COMPONENT_REGISTRY_SOURCE).toContain(
+      'export type PlaygroundConfig = ComponentPlaygroundConfig;',
+    );
+    expect(playground.wrapper?.slotProp).toBe('start');
+  });
+
   it('discovers components in @astryxdesign/core', () => {
     expect(components['@astryxdesign/core']).toBeDefined();
     expect(components['@astryxdesign/core'].length).toBeGreaterThan(100);
@@ -298,6 +319,57 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('PowerSearch supplies representative config and filters playground defaults', () => {
+    const core = components['@astryxdesign/core'];
+    const powerSearch = core.find(c => c.name === 'PowerSearch');
+    expect(powerSearch).toBeDefined();
+    expect(powerSearch!.playground?.defaults).toMatchObject({
+      config: {
+        name: 'IssueSearch',
+        fields: [
+          {
+            key: 'status',
+            operators: [
+              {
+                key: 'is',
+                value: {
+                  type: 'enum',
+                  values: [
+                    {value: 'open', label: 'Open'},
+                    {value: 'closed', label: 'Closed'},
+                  ],
+                },
+              },
+            ],
+          },
+          {key: 'title'},
+        ],
+      },
+      filters: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: {type: 'enum', value: 'open'},
+        },
+      ],
+    });
+  });
+
+  it('Tokenizer satisfies its required value prop via playground defaults', () => {
+    const core = components['@astryxdesign/core'];
+    const tokenizer = core.find(c => c.name === 'Tokenizer');
+    expect(tokenizer).toBeDefined();
+    // `value` is an array of custom items the preview cannot auto-generate;
+    // without this default the properties tab has no interactive preview.
+    expect(tokenizer!.playground?.defaults).toMatchObject({
+      label: 'Tags',
+      value: [
+        {id: '1', label: 'Design'},
+        {id: '2', label: 'Engineering'},
+      ],
+    });
+  });
+
   it('MetadataListItem declares a playground wrapper for realistic preview structure', () => {
     const core = components['@astryxdesign/core'];
     const metadataListItem = core.find(c => c.name === 'MetadataListItem');
@@ -320,6 +392,76 @@ describe('componentRegistry', () => {
     });
     expect(layoutHeader!.playground?.wrapper).toMatchObject({
       component: 'Layout',
+    });
+  });
+
+  it('Grid declares playground children so the preview is not empty (#5892)', () => {
+    const core = components['@astryxdesign/core'];
+    const grid = core.find(c => c.name === 'Grid');
+    expect(grid).toBeDefined();
+    expect(grid!.playground?.defaults).toMatchObject({
+      columns: 3,
+      gap: 2,
+      children: expect.arrayContaining([
+        expect.objectContaining({__element: 'Card'}),
+      ]),
+    });
+  });
+
+  it('GridSpan declares a playground wrapper for realistic preview geometry (#5893)', () => {
+    const core = components['@astryxdesign/core'];
+    const gridSpan = core.find(c => c.name === 'GridSpan');
+    expect(gridSpan).toBeDefined();
+    expect(gridSpan!.playground?.wrapper).toMatchObject({
+      component: 'Grid',
+      props: {columns: 3, gap: 2},
+    });
+    expect(gridSpan!.playground?.defaults).toMatchObject({
+      columns: 2,
+      children: expect.any(String),
+    });
+  });
+
+  it.each(['Stack', 'HStack', 'VStack'])(
+    '%s declares playground children so the preview is not empty (#5894, #5898, #5900)',
+    name => {
+      const core = components['@astryxdesign/core'];
+      const entry = core.find(c => c.name === name);
+      expect(entry).toBeDefined();
+      expect(entry!.playground?.defaults).toMatchObject({
+        gap: 2,
+        children: expect.arrayContaining([
+          expect.objectContaining({__element: 'Card'}),
+        ]),
+      });
+    },
+  );
+
+  it('StackItem declares a playground wrapper for realistic preview geometry (#5899)', () => {
+    const core = components['@astryxdesign/core'];
+    const stackItem = core.find(c => c.name === 'StackItem');
+    expect(stackItem).toBeDefined();
+    expect(stackItem!.playground?.wrapper).toMatchObject({
+      component: 'HStack',
+      props: {gap: 2, width: 300},
+    });
+    expect(stackItem!.playground?.defaults).toMatchObject({
+      size: 'fill',
+      children: expect.objectContaining({__element: 'Card'}),
+    });
+  });
+
+  it('LayoutPanel declares a playground wrapper in start slot so hasDivider preview is not 0px (#5897)', () => {
+    const core = components['@astryxdesign/core'];
+    const layoutPanel = core.find(c => c.name === 'LayoutPanel');
+    expect(layoutPanel).toBeDefined();
+    expect(layoutPanel!.playground?.defaults).toMatchObject({
+      children: expect.any(String),
+      hasDivider: true,
+    });
+    expect(layoutPanel!.playground?.wrapper).toMatchObject({
+      component: 'Layout',
+      slotProp: 'start',
     });
   });
 
@@ -978,6 +1120,19 @@ describe('Card playground defaults', () => {
     expect(typeof defaults!.isSelected).toBe('boolean');
     expect(defaults!.children).toBeTruthy();
     expect(typeof defaults!.children).toBe('object');
+  });
+});
+
+describe('CheckIndicator playground defaults (#5890)', () => {
+  it('starts the Properties preview in its visible checked state', () => {
+    const checkIndicator = Object.values(components)
+      .flat()
+      .find(component => component.name === 'CheckIndicator');
+
+    expect(checkIndicator).toBeDefined();
+    expect(checkIndicator!.playground?.defaults).toMatchObject({
+      state: 'checked',
+    });
   });
 });
 

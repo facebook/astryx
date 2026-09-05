@@ -105,7 +105,11 @@ describe('e2e smoke: the bin does not run a project config it was not asked to',
   // its integrations. Most commands never did either. Running a project's own
   // code on `astryx --version`, for a project that never opted in, is a cost
   // this feature does not get to impose, so the bin reads the config as text
-  // and only loads it when `debug` appears. Only a real process can show this.
+  // and only loads it when it mentions something that can produce a handler:
+  // `debug` (the project's own) or `integrations` (which may export one).
+  // A project that lists integrations has asked for those packages' code to
+  // run; a project that lists neither has asked for none of this. Only a real
+  // process can show the difference.
   const projects = [];
 
   function project(configBody) {
@@ -125,29 +129,34 @@ describe('e2e smoke: the bin does not run a project config it was not asked to',
     return {dir, evaluated: () => fs.existsSync(marker)};
   }
 
+  /** @param {{dir: string}} p */
+  function runVersion(p) {
+    return spawnSync(process.execPath, [CLI_BIN, '--version'], {
+      cwd: p.dir,
+      encoding: 'utf8',
+      timeout: 30_000,
+    });
+  }
+
   afterAll(() => {
     for (const dir of projects) fs.rmSync(dir, {recursive: true, force: true});
   });
 
-  it('leaves a config without the key unevaluated', () => {
-    const p = project('export default { integrations: [] };\n');
-    const res = spawnSync(process.execPath, [CLI_BIN, '--version'], {
-      cwd: p.dir,
-      encoding: 'utf8',
-      timeout: 30_000,
-    });
-    expect(res.status).toBe(0);
+  it('leaves a config that mentions neither key unevaluated', () => {
+    const p = project('export default { experimental: {} };\n');
+    expect(runVersion(p).status).toBe(0);
     expect(p.evaluated()).toBe(false);
   });
 
-  it('still loads a config that opts in', () => {
+  it('still loads a config that opts in with debug', () => {
     const p = project('export default { debug: () => {} };\n');
-    const res = spawnSync(process.execPath, [CLI_BIN, '--version'], {
-      cwd: p.dir,
-      encoding: 'utf8',
-      timeout: 30_000,
-    });
-    expect(res.status).toBe(0);
+    expect(runVersion(p).status).toBe(0);
+    expect(p.evaluated()).toBe(true);
+  });
+
+  it('loads a config that declares integrations, which may contribute one', () => {
+    const p = project("export default { integrations: ['@acme/widgets'] };\n");
+    expect(runVersion(p).status).toBe(0);
     expect(p.evaluated()).toBe(true);
   });
 });

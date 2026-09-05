@@ -7,6 +7,17 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Message',
   description: 'Sender context wrapper: handles avatar, name, metadata, and alignment based on sender role.',
+  playground: {
+    defaults: {
+      sender: 'assistant',
+      children: {
+        __element: 'ChatMessageBubble',
+        children: 'Here is the summary you asked for.',
+      },
+      avatar: {__element: 'Avatar', props: {name: 'Astra', size: 'sm'}},
+    },
+    wrapper: {component: 'Stack', props: {width: 480}},
+  },
   props: [
     {
       name: 'sender',
@@ -19,6 +30,12 @@ export const docs = {
       type: 'ReactNode',
       description: 'Free-form content: bubbles, asset lists, tool calls, images. Custom (non-bubble) children render flush with the message edge; wrap them in a ghost ChatMessageBubble to align them with the bubble text column.',
       required: true,
+      slotElements: [
+        {
+          __element: 'ChatMessageBubble',
+          children: 'Message text',
+        },
+      ],
     },
     {
       name: 'avatar',

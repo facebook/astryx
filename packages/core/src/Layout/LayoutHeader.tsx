@@ -11,6 +11,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Layout/Layout.doc.mjs
+ * - /packages/core/src/Layout/LayoutHeader.doc.mjs
  * - /apps/storybook/stories/Layout.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Layout/ (showcase blocks)
  */
@@ -26,6 +27,7 @@ import type {SizeValue, SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {
   paddingStyles,
+  paddingBlockEndStyles,
   containerPaddingInlineVarStyles,
   containerPaddingBlockStartVarStyles,
   containerPaddingBlockEndVarStyles,
@@ -105,6 +107,15 @@ export interface LayoutHeaderProps extends BaseProps<HTMLDivElement> {
   padding?: SpacingStep;
 
   /**
+   * Block-end (bottom) padding override. Takes precedence over `padding` on
+   * that edge only; the block-start edge and both inline edges are left alone.
+   * `paddingBlockEnd={0}` docks the last child on the header's bottom edge, so
+   * a tab strip's underline meets `hasDivider` with no hand-written margin.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   */
+  paddingBlockEnd?: SpacingStep;
+
+  /**
    * Accessible label for the landmark.
    * Required when role is set and multiple landmarks of the same type exist.
    */
@@ -140,6 +151,7 @@ export function LayoutHeader({
   height,
   label,
   padding,
+  paddingBlockEnd,
   role,
   xstyle,
   className,
@@ -179,6 +191,12 @@ export function LayoutHeader({
           padding != null && containerPaddingInlineVarStyles[padding],
           padding != null && containerPaddingBlockStartVarStyles[padding],
           padding != null && containerPaddingBlockEndVarStyles[padding],
+          // Per-edge override last so it wins over `padding` on its own edge.
+          // The container var moves with it so bleed children compensate
+          // against the padding actually applied, not the one asked for.
+          paddingBlockEnd != null && paddingBlockEndStyles[paddingBlockEnd],
+          paddingBlockEnd != null &&
+            containerPaddingBlockEndVarStyles[paddingBlockEnd],
         )}>
         {children}
       </div>

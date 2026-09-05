@@ -111,7 +111,7 @@ export const doc = {
     {
       value: 'search',
       description:
-        'The echoed query plus a ranked SearchResultEntry[] (domain, name, score, reason, description, follow-up command, and import path where relevant).',
+        'The echoed query, `matchCount` (how many candidates matched in total, before `limit`), plus a ranked SearchResultEntry[] bounded by `limit` (domain, name, score, reason, description, follow-up command, and import path where relevant).',
     },
 
     // build
@@ -123,7 +123,7 @@ export const doc = {
     {
       value: 'build.kit',
       description:
-        'The grouped composition kit: echoed query, hasResults/matchCount/directMatch fields, the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.',
+        'The grouped composition kit: echoed query, hasResults/matchCount/directMatch fields (matchCount is the total matched, never a cap read back), the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.',
     },
 
     // swizzle

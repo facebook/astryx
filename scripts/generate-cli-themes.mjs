@@ -1,10 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Bundles each theme's source (`src/<slug>Theme.ts` + `icons.tsx`) and a
- * `manifest.json` into `packages/cli/assets/templates/themes/` so `astryx theme add`
- * can scaffold a theme without the package installed — like page templates.
- * Run from the repo root; commit the output so the published CLI carries it.
+ * @file Bundles each theme's source, optional icons and palette-authoring
+ * artifacts, and a `manifest.json` into
+ * `packages/cli/assets/templates/themes/` so `astryx theme add` can scaffold a
+ * complete, reproducible theme without the package installed. Run from the repo
+ * root; commit the output so the published CLI carries it.
  */
 
 import * as fs from 'node:fs';
@@ -84,18 +85,38 @@ function main() {
     const themeFileName = `${id}Theme.ts`;
     const themeFile = path.join(srcDir, themeFileName);
 
-    // The theme file imports './icons', so bundle it too (optional).
-    const iconsFile = path.join(srcDir, 'icons.tsx');
-    const hasIcons = fs.existsSync(iconsFile);
-
     const outDir = path.join(CLI_THEMES_OUT, slug);
     fs.mkdirSync(outDir, {recursive: true});
 
     const files = [themeFileName];
     fs.copyFileSync(themeFile, path.join(outDir, themeFileName));
-    if (hasIcons) {
-      files.push('icons.tsx');
-      fs.copyFileSync(iconsFile, path.join(outDir, 'icons.tsx'));
+
+    // Keep optional theme-owned authoring artifacts with the template. A
+    // palette-backed theme must remain reproducible after `theme add`, not
+    // merely compile because a generated palette file happened to be copied.
+    const optionalFiles = [
+      {source: path.join(srcDir, 'icons.tsx'), output: 'icons.tsx'},
+      {
+        source: path.join(srcDir, `${id}Palettes.ts`),
+        output: `${id}Palettes.ts`,
+      },
+      {
+        source: path.join(srcDir, `${id}Palettes.generated.ts`),
+        output: `${id}Palettes.generated.ts`,
+      },
+      {
+        source: path.join(srcDir, `${id}Palettes.generated.receipt.json`),
+        output: `${id}Palettes.generated.receipt.json`,
+      },
+      {
+        source: path.join(THEMES_SRC_ROOT, slug, 'palette.config.json'),
+        output: 'palette.config.json',
+      },
+    ];
+    for (const file of optionalFiles) {
+      if (!fs.existsSync(file.source)) continue;
+      files.push(file.output);
+      fs.copyFileSync(file.source, path.join(outDir, file.output));
     }
 
     // Pull the human description from the package.json (falls back to empty).

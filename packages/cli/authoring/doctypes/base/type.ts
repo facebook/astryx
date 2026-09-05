@@ -256,8 +256,10 @@ export interface ComponentPlaygroundConfig {
   wrapper?: {
     /** Parent component name as exported from `@astryxdesign/core`, e.g. `'TabList'`. */
     component: string;
-    /** Props for the wrapper. The previewed sub-component becomes its `children`. */
+    /** Props for the wrapper. The previewed sub-component becomes its `children` unless slotProp is set. */
     props?: Record<string, unknown>;
+    /** Wrapper prop that receives the previewed sub-component instead of `children`. */
+    slotProp?: string;
   };
 }
 

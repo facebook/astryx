@@ -278,24 +278,28 @@ export const SizeComparison: Story = {
         }}>
         <CheckboxInput
           label="Medium size (default)"
+          data-testid="checkbox-md"
           value={value1}
           onChange={setValue1}
           size="md"
         />
         <CheckboxInput
           label="Small size"
+          data-testid="checkbox-sm"
           value={value2}
           onChange={setValue2}
           size="sm"
         />
         <CheckboxInput
           label="Medium size checked"
+          data-testid="checkbox-md"
           value={value3}
           onChange={setValue3}
           size="md"
         />
         <CheckboxInput
           label="Small size checked"
+          data-testid="checkbox-sm"
           value={value4}
           onChange={setValue4}
           size="sm"

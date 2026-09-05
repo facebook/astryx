@@ -573,6 +573,90 @@ describe('visual acceptance', () => {
     ).toEqual(['core-button--default__neutral-light']);
   });
 
+  it('plans a published component whose only story is titled under another group', () => {
+    const storybook = path.join(root, 'storybook-foreign-group');
+    fs.mkdirSync(storybook);
+    writeJSON(path.join(storybook, 'index.json'), {
+      entries: {
+        resizable: {
+          type: 'story',
+          id: 'lab-resizable--split',
+          title: 'Lab/Resizable',
+          name: 'Default',
+          componentPath: '../../packages/core/src/Resizable/index.ts',
+          tags: [],
+        },
+      },
+    });
+    const baselineFile = path.join(
+      pages,
+      'visual-gate',
+      'baseline',
+      'manifest.json',
+    );
+    const baseline = JSON.parse(fs.readFileSync(baselineFile, 'utf8'));
+    baseline.shots['lab-resizable--split__neutral-light'] = {
+      ...baseline.shots[KEY],
+      key: 'lab-resizable--split__neutral-light',
+      storyId: 'lab-resizable--split',
+      title: 'Lab/Resizable',
+      name: 'Default',
+      component: 'Resizable',
+    };
+    writeJSON(baselineFile, baseline);
+    const scope = path.join(root, 'scope-foreign-group.json');
+    writeJSON(scope, {
+      hasStableVisual: true,
+      broadStableVisual: false,
+      stableComponents: ['Resizable'],
+      stableThemes: [],
+    });
+    const output = path.join(root, 'foreign-group-plan.json');
+    run('trusted-plan', {
+      scope,
+      baseline: path.join(pages, 'visual-gate', 'baseline'),
+      'storybook-dir': storybook,
+      output,
+    });
+    expect(
+      JSON.parse(fs.readFileSync(output, 'utf8')).map(shot => shot.key),
+    ).toEqual(['lab-resizable--split__neutral-light']);
+  });
+
+  it('refuses an empty trusted plan in the words every lane refuses one', () => {
+    const storybook = path.join(root, 'storybook-unseeded');
+    fs.mkdirSync(storybook);
+    writeJSON(path.join(storybook, 'index.json'), {
+      entries: {
+        card: {
+          type: 'story',
+          id: 'core-card--default',
+          title: 'Core/Card',
+          name: 'Default',
+          componentPath: '../../packages/core/src/Card/index.ts',
+          tags: [],
+        },
+      },
+    });
+    const scope = path.join(root, 'scope-unseeded.json');
+    writeJSON(scope, {
+      hasStableVisual: true,
+      broadStableVisual: false,
+      stableComponents: ['Card'],
+      stableThemes: [],
+    });
+    expect(
+      fail('trusted-plan', {
+        scope,
+        baseline: path.join(pages, 'visual-gate', 'baseline'),
+        'storybook-dir': storybook,
+        output: path.join(root, 'unseeded-plan.json'),
+      }),
+    ).toMatch(
+      /The trusted component scope planned no shots;.*manual baseline workflow\./,
+    );
+  });
+
   it('fails closed when any touched component has no representative story', () => {
     const storybook = path.join(root, 'storybook-missing-component');
     fs.mkdirSync(storybook);

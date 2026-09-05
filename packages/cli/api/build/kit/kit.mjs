@@ -14,6 +14,7 @@
  */
 
 import {search} from '../../search/search.mjs';
+import {getResultCoverage} from '../../search/coverage.mjs';
 
 /** A page at/above this score is a confident direct match. */
 const PAGE_DIRECT = 95;
@@ -85,16 +86,23 @@ export async function buildKit(query, options = {}) {
       await search(query, {cwd, type, limit})
     );
   const results = result.data.results;
+  // The TOTAL number of matches, not the number that survived `limit`. The kit
+  // below is deliberately small (≤3 pages, ≤5 blocks, ≤6 components) and
+  // `results` is itself capped, so every other count here is a cap; this is the
+  // one field that says how much the query actually matched.
+  const matchCount = result.data.matchCount;
 
   /**
    * Did this result answer enough of the query to stand as a page?
-   * Single-concept queries have nothing to cover, so they always pass.
-   * @param {{matchedTerms?: number, queryTerms?: number}} r
+   * Single-concept queries have nothing to cover, so they always pass. Coverage
+   * stays in a module-private WeakMap and never enters public search/build JSON.
+   * @param {object} r
    */
   const covers = r => {
-    const total = r.queryTerms ?? 1;
+    const coverage = getResultCoverage(r);
+    const total = coverage?.total ?? 1;
     if (total <= 1) return true;
-    return (r.matchedTerms ?? 0) / total >= PAGE_COVERAGE;
+    return (coverage?.matched ?? 0) / total >= PAGE_COVERAGE;
   };
 
   const pages = results
@@ -137,7 +145,8 @@ export async function buildKit(query, options = {}) {
   const hint =
     pages.length + blocks.length + domain.length < THIN_KIT
       ? {
-          reason: 'Few matches. This is keyword search, not semantic — try other wordings.',
+          reason:
+            'Few matches. This is keyword search, not semantic — try other wordings.',
           commands: ['component --list', 'template --list'],
         }
       : undefined;
@@ -148,8 +157,8 @@ export async function buildKit(query, options = {}) {
       query: result.data.query,
       // Distinguishes "search found nothing" (renderer shows "No matches")
       // from a weak-but-non-empty result set (renderer still shows the kit).
-      hasResults: results.length > 0,
-      matchCount: results.length,
+      hasResults: matchCount > 0,
+      matchCount,
       directMatch,
       pages,
       blocks,

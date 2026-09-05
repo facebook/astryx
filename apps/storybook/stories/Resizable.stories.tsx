@@ -28,7 +28,7 @@ const ps = stylex.create({
 });
 
 const meta: Meta<typeof ResizeHandle> = {
-  title: 'Lab/Resizable',
+  title: 'Core/Resizable',
   component: ResizeHandle,
   tags: ['autodocs'],
   parameters: {

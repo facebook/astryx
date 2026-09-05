@@ -46,6 +46,13 @@ const config: PowerSearchConfig = {
       label: 'Priority',
       operators: [{key: 'equals', label: 'equals', value: {type: 'string'}}],
     },
+    {
+      key: 'created',
+      label: 'Created',
+      operators: [
+        {key: 'between', label: 'is between', value: {type: 'date_range'}},
+      ],
+    },
   ],
 };
 
@@ -60,6 +67,32 @@ const priorityFilter: PartialFilter = {
   operator: 'equals',
   value: {type: 'string', value: 'high'},
 };
+
+const dateRangeFilter: PartialFilter = {
+  field: 'created',
+  operator: 'between',
+  value: {
+    type: 'date_range',
+    value: {
+      start: {
+        type: 'ABSOLUTE',
+        unixSeconds: Date.parse('2026-01-05T00:00:00Z') / 1000,
+      },
+      end: {
+        type: 'ABSOLUTE',
+        unixSeconds: Date.parse('2026-01-07T00:00:00Z') / 1000,
+      },
+    },
+  },
+};
+
+function dateButton(date: string): HTMLButtonElement {
+  const button = document.querySelector(`button[data-date="${date}"]`);
+  if (!(button instanceof HTMLButtonElement)) {
+    throw new Error(`Expected calendar button for ${date}`);
+  }
+  return button;
+}
 
 function valueInput(): HTMLInputElement {
   return screen.getByRole('textbox', {name: 'Value'});
@@ -189,6 +222,96 @@ describe('PowerSearchFilterEditor', () => {
       field: 'status',
       operator: 'is',
       value: {type: 'string', value: 'closed'},
+    });
+  });
+
+  it('saves an ordered date range after reverse endpoint selection', () => {
+    const onSave = vi.fn();
+    render(
+      <PowerSearchFilterEditor
+        config={config}
+        filter={dateRangeFilter}
+        mode="edit"
+        onSave={onSave}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByRole('button', {name: 'Open calendar'})).toHaveLength(
+      1,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Open calendar'}));
+    fireEvent.click(dateButton('2026-01-20'));
+    fireEvent.click(dateButton('2026-01-10'));
+    fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith({
+      field: 'created',
+      operator: 'between',
+      value: {
+        type: 'date_range',
+        value: {
+          start: {
+            type: 'ABSOLUTE',
+            unixSeconds: Date.parse('2026-01-10T00:00:00Z') / 1000,
+          },
+          end: {
+            type: 'ABSOLUTE',
+            unixSeconds: Date.parse('2026-01-20T00:00:00Z') / 1000,
+          },
+        },
+      },
+    });
+  });
+
+  it('saves an ordered date range after keyboard endpoint selection and Apply', () => {
+    const onSave = vi.fn();
+    render(
+      <PowerSearchFilterEditor
+        config={config}
+        filter={dateRangeFilter}
+        mode="edit"
+        onSave={onSave}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: 'Open calendar'}));
+
+    const later = dateButton('2026-01-20');
+    later.focus();
+    fireEvent.keyDown(later, {key: 'Enter'});
+    expect(onSave).not.toHaveBeenCalled();
+    // jsdom does not synthesize the native button click from Enter.
+    fireEvent.click(later);
+
+    const earlier = dateButton('2026-01-10');
+    earlier.focus();
+    fireEvent.keyDown(earlier, {key: 'Enter'});
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.click(earlier);
+
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith({
+      field: 'created',
+      operator: 'between',
+      value: {
+        type: 'date_range',
+        value: {
+          start: {
+            type: 'ABSOLUTE',
+            unixSeconds: Date.parse('2026-01-10T00:00:00Z') / 1000,
+          },
+          end: {
+            type: 'ABSOLUTE',
+            unixSeconds: Date.parse('2026-01-20T00:00:00Z') / 1000,
+          },
+        },
+      },
     });
   });
 

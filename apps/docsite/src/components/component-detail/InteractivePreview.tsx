@@ -264,19 +264,41 @@ export function InteractivePreviewStage({
   const wrapper = playground?.wrapper ?? null;
   const overlayControl = getOverlayPreviewControl(playground);
   const WrapperComponent = wrapper ? getComponent(wrapper.component) : null;
+  const [wrapperValue, setWrapperValue] = useState<unknown>(undefined);
+
   const wrapperProps = useMemo(() => {
     const resolved = wrapper?.props
       ? (resolveValue(wrapper.props) as Record<string, unknown>)
       : {};
-    // Wrapper parents require an onChange that can't be serialized; no-op it.
-    if (!('onChange' in resolved)) {
-      resolved.onChange = () => {};
-    }
-    return resolved;
-  }, [wrapper]);
+
+    const activeValue =
+      wrapperValue !== undefined ? wrapperValue : resolved.value;
+
+    return {
+      ...resolved,
+      value: activeValue,
+      onChange: (newVal: unknown) => {
+        setWrapperValue(newVal);
+        if (onPropChange && 'value' in state) {
+          onPropChange('value', newVal);
+        }
+        if (typeof resolved.onChange === 'function') {
+          resolved.onChange(newVal);
+        }
+      },
+    };
+  }, [wrapper, wrapperValue, state, onPropChange]);
+
   const renderPreview = useCallback(
     (rendered: ReactNode): ReactNode => {
       if (wrapper && WrapperComponent) {
+        const slotProp = (wrapper as {slotProp?: string}).slotProp;
+        if (slotProp) {
+          return createElement(WrapperComponent, {
+            ...wrapperProps,
+            [slotProp]: rendered,
+          });
+        }
         return createElement(WrapperComponent, wrapperProps, rendered);
       }
       return rendered;
