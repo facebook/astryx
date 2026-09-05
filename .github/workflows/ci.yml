@@ -153,8 +153,27 @@ jobs:
           printf '%s\n' "$FILES" \
             | node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT"
 
-  # Run tests (parallel with build)
-  test:
+  # Tests run as two parallel lanes joined by `test` below.
+  #
+  # They used to be one `pnpm test` on a 2-core runner, which ran both Vitest
+  # projects back to back and was terminated around 20 minutes with no summary
+  # — no assertion output, so nothing said which suite was at fault. `main` was
+  # already at ~19m15, so the budget, not any one test, was the defect.
+  #
+  # The projects are independent by construction (see vitest.config.ts: `ui` is
+  # jsdom + StyleX, `node` is everything else), so running them as two jobs
+  # costs no duplicate execution and each lane carries roughly half the work.
+  # `node` is the heavier lane — locally 570s against the ui project's 244s —
+  # so it takes the larger supported runner while `ui` stays on the 2-core arm
+  # box.
+  #
+  # The repo-wide guardrail steps ride the LIGHTER lane, so the slow one is
+  # nothing but tests.
+  #
+  # `test` remains a job, so the required check of that name still exists and
+  # still reports for every PR. This mirrors the `build` join over
+  # build-storybook + build-sandbox below.
+  test-ui:
     needs: [check-scope]
     if: ${{ always() && !cancelled() }}
     runs-on: 2-core-ubuntu-arm
@@ -208,8 +227,50 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm lab:readiness:check
 
-      - run: pnpm test
+      - run: pnpm vitest run --project ui
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
+
+  test-node:
+    needs: [check-scope]
+    if: ${{ always() && !cancelled() }}
+    runs-on: 4-core-ubuntu
+    permissions:
+      contents: read
+    steps:
+      - name: Require successful scope classification
+        if: needs.check-scope.result != 'success'
+        run: |
+          echo "Change scope could not be classified; refusing to skip required work."
+          exit 1
+
+      - name: Skip heavy work for lightweight docs
+        if: needs.check-scope.outputs.docsite_only == 'true' || needs.check-scope.outputs.spec_only == 'true'
+        run: echo "Lightweight documentation PR — skipping full test suite"
+
+      - uses: actions/checkout@v7
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
+
+      - uses: ./.github/actions/setup
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
+
+      - run: pnpm vitest run --project node
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
+
+  # Historical required check name. Both lanes always run (they skip their own
+  # steps for lightweight docs, exactly as the single job did), so this asserts
+  # success rather than tolerating a skip.
+  test:
+    needs: [test-ui, test-node]
+    if: ${{ always() && !cancelled() }}
+    runs-on: ubuntu-slim
+    permissions: {}
+    steps:
+      - name: Assert both test lanes succeeded
+        run: |
+          echo "test-ui:   ${{ needs.test-ui.result }}"
+          echo "test-node: ${{ needs.test-node.result }}"
+          [ "${{ needs.test-ui.result }}" = "success" ] || exit 1
+          [ "${{ needs.test-node.result }}" = "success" ] || exit 1
 
   # Build storybook + typecheck + analyze components (parallel with test and
   # build-sandbox). Uploads the storybook preview and analysis artifacts for

@@ -180,7 +180,29 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(parsed.type).toBe('search');
     expect(parsed.data.query).toBe('button');
     expect(Array.isArray(parsed.data.results)).toBe(true);
+    expect(parsed.data.matchCount).toBeGreaterThanOrEqual(
+      parsed.data.results.length,
+    );
     expect(parsed.data.results[0].name).toBe('Button');
+  });
+
+  it('says how many matched when --limit cut the list short', async () => {
+    // The text view is a projection of the JSON, and the JSON now carries the
+    // match total. A bare "(2)" heading over a capped list reads as "that is
+    // all Astryx has", which is the conclusion `search` exists to prevent.
+    const capped = await runCli(
+      ['search', 'button', '--type', 'component', '--limit', '2'],
+      REPO_ROOT,
+    );
+    expect(capped.status).toBe(0);
+    expect(capped.stdout).toMatch(/^Results for "button" \(2 of \d+\)$/m);
+
+    const uncapped = await runCli(
+      ['search', 'button', '--type', 'component', '--limit', '500'],
+      REPO_ROOT,
+    );
+    expect(uncapped.stdout).toMatch(/^Results for "button" \(\d+\)$/m);
+    expect(uncapped.stdout).not.toMatch(/Results for "button" \(\d+ of/);
   });
 
   it('emits a valid --json envelope with empty results for no match', async () => {
@@ -189,6 +211,7 @@ describe('search CLI — exit codes + JSON contract', () => {
     const parsed = JSON.parse(r.stdout);
     expect(parsed.type).toBe('search');
     expect(parsed.data.results).toEqual([]);
+    expect(parsed.data.matchCount).toBe(0);
   });
 
   it('renders each result as a greppable key: value record', async () => {

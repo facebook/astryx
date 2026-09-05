@@ -32,6 +32,14 @@ on:
         description: Pull request number to reconcile
         required: true
         type: string
+      backfill:
+        description: >-
+          Publish the gate status only. Use this when backfilling heads that
+          predate the required check, so a reconcile cannot also enable
+          auto-merge on a pull request nobody asked to land.
+        required: false
+        default: false
+        type: boolean
 
 permissions: {}
 
@@ -44,13 +52,15 @@ jobs:
   reconcile:
     # Fork review events have read-only tokens. Same-repo reviews reconcile
     # automatically; fork approvals use the trusted issue_comment command path.
+    # The comment filter admits any owner-command shape, including one missing
+    # the head SHA, so the reconciler answers it instead of ignoring it.
     if: >-
       (github.event_name != 'pull_request_review' ||
        github.event.pull_request.head.repo.full_name == github.repository) &&
       (github.event_name != 'issue_comment' ||
        (github.event.issue.pull_request != null &&
-        (startsWith(github.event.comment.body, '/approve-spec ') ||
-         startsWith(github.event.comment.body, '/revoke-spec '))))
+        (startsWith(github.event.comment.body, '/approve-spec') ||
+         startsWith(github.event.comment.body, '/revoke-spec'))))
     runs-on: ubuntu-slim
     permissions:
       contents: read

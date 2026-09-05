@@ -3,8 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "vitest run --root ../.. apps/sandbox --project node",
     "build:deps": "pnpm -F @astryxdesign/theme-neutral build && pnpm -F @astryxdesign/theme-matcha build && pnpm -F @astryxdesign/theme-stone build && pnpm -F @astryxdesign/theme-gothic build && pnpm -F @astryxdesign/theme-chocolate build && pnpm -F @astryxdesign/theme-y2k build && pnpm -F @astryxdesign/theme-butter build",
     "generate:motion-audit": "node \"src/app/(sandbox)/pages/motion-lab/generate-motion-audit.mjs\"",
     "generate:changelog": "node scripts/generate-changelog.js",

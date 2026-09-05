@@ -1,10 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Detect the project's package manager from lockfiles.
+ * @file Detect the project's package manager.
  *
- * Returns the correct command prefix for running package binaries
- * (e.g. 'npx astryx', 'yarn astryx', 'pnpm exec astryx').
+ * The order is: the `packageManager` field a project DECLARES, then the
+ * lockfiles it happens to have, then a committed package-manager config, then
+ * the runner that launched us. Returns the correct command prefix for running
+ * package binaries (e.g. 'npx astryx', 'yarn astryx', 'pnpm exec astryx').
  */
 
 import * as fs from 'node:fs';
@@ -28,7 +30,7 @@ const KNOWN_PMS = ['yarn', 'pnpm', 'bun', 'npm'];
 
 /**
  * Lockfile names by package manager. Order is the tiebreak of LAST resort —
- * see {@link detectPackageManager} for why it should rarely decide anything.
+ * see {@link explainPackageManager} for why it should rarely decide anything.
  * @type {readonly [PackageManager, readonly string[]][]}
  */
 const LOCKFILES = [
@@ -37,6 +39,12 @@ const LOCKFILES = [
   ['bun', ['bun.lockb', 'bun.lock']],
   ['npm', ['package-lock.json']],
 ];
+
+/**
+ * A lockfile found on disk: which package manager owns it, and the file that
+ * was actually there (bun has two spellings), so a caller can name it.
+ * @typedef {{pm: PackageManager, file: string}} FoundLockfile
+ */
 
 /**
  * Narrow an arbitrary string to a known {@link PackageManager}.
@@ -78,14 +86,18 @@ function runningPackageManager() {
 }
 
 /**
- * Every package manager with a lockfile in this directory.
+ * Every lockfile in this directory, with the file that was found.
  * @param {string} dir
- * @returns {PackageManager[]}
+ * @returns {FoundLockfile[]}
  */
 function lockfilesIn(dir) {
-  return LOCKFILES.filter(([, names]) =>
-    names.some(name => fs.existsSync(path.join(dir, name))),
-  ).map(([pm]) => pm);
+  /** @type {FoundLockfile[]} */
+  const found = [];
+  for (const [pm, names] of LOCKFILES) {
+    const file = names.find(name => fs.existsSync(path.join(dir, name)));
+    if (file) found.push({pm, file});
+  }
+  return found;
 }
 
 /**
@@ -119,35 +131,46 @@ function evidenceIn(dir) {
  *   directory and nothing the project owns picks between them. `pm` is then the
  *   neutral `'npx'`: correct under every package manager, wrong under none.
  * @property {string | null} dir - The directory that answered, if any.
- * @property {PackageManager[]} candidates - The tied lockfile owners, when ambiguous.
+ * @property {PackageManager[]} candidates - The lockfile owners in `dir`.
+ * @property {PackageManager | null} declared - The `packageManager` field in
+ *   `dir`, when it names one we know. Non-null means the project SAID which
+ *   one, and `pm` is that.
+ * @property {'declared' | 'lockfile' | 'evidence' | 'runner' | 'none'} source -
+ *   What decided `pm`.
+ * @property {FoundLockfile[]} strayLockfiles - Lockfiles in `dir` that the
+ *   declared field contradicts. Detection ignores them; `astryx doctor` reports
+ *   them, because a tool that trusts the lockfile instead will disagree with us.
  */
 
 /**
  * Detect the project's package manager, with the reasoning attached.
  * Walks up from targetDir, taking the first directory that answers.
  *
- * A single lockfile still wins over everything else in its directory, which is
- * the long-standing behaviour. What changes here is the case of SEVERAL
- * lockfiles in one directory, which the fixed array order used to resolve
- * silently and often wrongly.
+ * The order within a directory, strongest first:
  *
- * That case is not hypothetical. One `yarn install` inside a pnpm project
- * leaves a `yarn.lock` beside the committed `pnpm-lock.yaml` forever, and
- * `fbsource/nest` ships both at its root deliberately. Answering "yarn" from
- * array order then makes every command the CLI prints wrong for that project —
- * including the invocation line written into agent docs, which agents copy.
- *
- * Ambiguity is therefore resolved ONLY from evidence the project owns: the
- * declared `packageManager` field, then a committed package-manager config
- * file. Deliberately NOT `npm_config_user_agent`: an agent that was handed the
- * wrong `yarn astryx` line runs the CLI *through yarn*, so the runner agrees
- * with the mistake and the wrong line reproduces itself forever. The same is
- * true of an installed binary invoked from that shell.
- *
- * When nothing project-owned decides it, the answer is not a guess — it is
- * `'npx'`, which runs correctly under every package manager, plus
- * `ambiguous: true` so `astryx doctor` can report the real problem. (Same idea
- * as `findConfigPath`, which refuses to choose between coexisting configs.)
+ * 1. **The declared `packageManager` field.** This is the project saying which
+ *    one it uses — corepack's field, the only signal a person writes on
+ *    purpose — so it decides, whatever lockfiles happen to sit beside it. A
+ *    single `yarn install` in a pnpm project drops a `yarn.lock` that never
+ *    goes away, and letting that trace outrank the declaration made every
+ *    command the CLI printed wrong for the project, including the invocation
+ *    line written into agent docs, which agents copy. The contradicted
+ *    lockfiles come back as `strayLockfiles` so `doctor` can say so.
+ * 2. **A single lockfile**, when nothing is declared. Unambiguous, and the
+ *    long-standing fallback.
+ * 3. **A committed package-manager config** (`pnpm-workspace.yaml`,
+ *    `.yarnrc.yml`, `bunfig.toml`), when several lockfiles tie and nothing is
+ *    declared. A stray `install` drops a lockfile; it does not write one of
+ *    these.
+ * 4. **Nothing project-owned decides it** — then the answer is not a guess, it
+ *    is `'npx'`, which runs correctly under every package manager, plus
+ *    `ambiguous: true` so `astryx doctor` can report the real problem. (Same
+ *    idea as `findConfigPath`, which refuses to choose between coexisting
+ *    configs.)
+ * 5. **The runner**, only once the whole walk found nothing on disk.
+ *    Deliberately last, and never a tiebreak: an agent handed the wrong `yarn
+ *    astryx` line runs the CLI *through yarn*, so the runner agrees with the
+ *    mistake and the wrong line reproduces itself forever.
  *
  * @param {string} [targetDir=process.cwd()]
  * @returns {PackageManagerResolution}
@@ -158,39 +181,75 @@ export function explainPackageManager(targetDir = process.cwd()) {
 
   while (dir !== root) {
     const locks = lockfilesIn(dir);
-
-    // 1. One lockfile is unambiguous, and outranks the field as it always has.
-    if (locks.length === 1) {
-      return {pm: locks[0], ambiguous: false, dir, candidates: locks};
-    }
-
-    // 2. Several lockfiles: the filesystem cannot say. Only the project can.
-    if (locks.length > 1) {
-      const declared = declaredPackageManager(dir);
-      if (declared && locks.includes(declared)) {
-        return {pm: declared, ambiguous: false, dir, candidates: locks};
-      }
-      const evidence = evidenceIn(dir).filter(pm => locks.includes(pm));
-      if (evidence.length === 1) {
-        return {pm: evidence[0], ambiguous: false, dir, candidates: locks};
-      }
-      return {pm: 'npx', ambiguous: true, dir, candidates: locks};
-    }
-
-    // 3. No lockfile here: the field, if this directory declares one.
+    const candidates = locks.map(lock => lock.pm);
     const declared = declaredPackageManager(dir);
-    if (declared) return {pm: declared, ambiguous: false, dir, candidates: []};
+
+    // 1. The project declared one. Nothing on the filesystem outranks that.
+    if (declared) {
+      return {
+        pm: declared,
+        ambiguous: false,
+        dir,
+        candidates,
+        declared,
+        source: 'declared',
+        strayLockfiles: locks.filter(lock => lock.pm !== declared),
+      };
+    }
+
+    // 2. One lockfile is unambiguous.
+    if (locks.length === 1) {
+      return {
+        pm: locks[0].pm,
+        ambiguous: false,
+        dir,
+        candidates,
+        declared: null,
+        source: 'lockfile',
+        strayLockfiles: [],
+      };
+    }
+
+    // 3. Several lockfiles and no declaration: the filesystem cannot say.
+    //    Only a file the project committed on purpose can.
+    if (locks.length > 1) {
+      const evidence = evidenceIn(dir).filter(pm => candidates.includes(pm));
+      if (evidence.length === 1) {
+        return {
+          pm: evidence[0],
+          ambiguous: false,
+          dir,
+          candidates,
+          declared: null,
+          source: 'evidence',
+          strayLockfiles: [],
+        };
+      }
+      return {
+        pm: 'npx',
+        ambiguous: true,
+        dir,
+        candidates,
+        declared: null,
+        source: 'none',
+        strayLockfiles: [],
+      };
+    }
 
     dir = path.dirname(dir);
   }
 
-  // 4. Nothing on disk said anything anywhere. With no project evidence to
+  // 5. Nothing on disk said anything anywhere. With no project evidence to
   //    contradict, the runner is the only signal there is.
+  const running = runningPackageManager();
   return {
-    pm: runningPackageManager() ?? 'npx',
+    pm: running ?? 'npx',
     ambiguous: false,
     dir: null,
     candidates: [],
+    declared: null,
+    source: running ? 'runner' : 'none',
+    strayLockfiles: [],
   };
 }
 

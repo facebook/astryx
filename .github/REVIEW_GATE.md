@@ -33,10 +33,31 @@ with their read-only token, so an approver uses an issue comment containing
 `/approve-spec <full-head-sha>` instead; that command runs from the trusted
 default branch and a new commit invalidates it.
 
+Only that exact form decides the gate. The command must start the comment,
+lowercase and unindented, because the workflow trigger matches the raw comment
+body — an indented or capitalized command never starts the workflow, so the
+parser refuses it too rather than counting a comment nobody's run ever saw. The
+SHA itself may be either casing. A command that names no commit, names
+something other than one full 40-character SHA, or names a superseded commit
+changes nothing — so the gate replies once per head with the exact command to
+copy, rather than leaving the owner believing they approved.
+
+The gate never re-decides a merged or closed head. A run that starts after the
+merge publishes nothing, and neither does a run yielding to a newer one.
+GitHub has no conditional status write, so the window between the last read and
+the write cannot be closed; the gate makes it one API call wide by reading the
+live pull request last, and if a status still lands on a head that settled
+during that window, the run logs the status as unverified and stops before
+auto-merge.
+
 When a DESIGNOWNER authors a PR, marking it ready for review attests that exact
-head for the design-approval group. That evidence also counts when the PR
-contains non-design current records, but every other applicable code or
-spec-owner group remains separately required.
+head **for the design-approval group only**. The attestation is published only
+for a `.github/DESIGNOWNERS` handle, and it is read back only for a handle that
+is still in that file — a marker left by someone since removed, or published
+before this rule existed, authorizes nothing. It satisfies no other group: the
+spec and theme groups always need a real exact-head review or command from
+someone in their own list. A spec or engineering owner cannot attest their own
+head.
 
 The attestation does not grant auto-merge by itself. The existing gate may enable
 squash auto-merge only when every changed path is a recognized spec record,
@@ -141,6 +162,48 @@ internal contributors' PRs. Owners still self-serve their own domain.
 "1 approving review" requirement. Because a required check blocks non-admin
 merges regardless of write access, this holds internal contributors who have
 write but are not owners. (Repo admins can still bypass.)
+
+`spec-owner-approval` must be a required status context on `main` as well. It is
+published on every PR — `success` when no knowledge records changed — so
+requiring it does not permanently strand unrelated work. **Until it is in the
+required list, a pending owner gate is advisory and does not block the merge
+button.** If the repository ever enables a merge queue, this gate also has to
+report on `merge_group` before the context is required, or queued entries stall
+waiting for a status nothing publishes.
+
+### Making it required (ordered; do not reorder)
+
+An open PR whose head predates the gate has no `spec-owner-approval` status at
+all. Requiring the context first would block those heads on a status no event
+will produce, because the gate only runs on a new event. Backfill first.
+
+1. Land the gate changes, so the default branch has the `backfill` dispatch
+   input. `workflow_dispatch` always runs the default branch's copy.
+2. List the heads that would strand:
+
+   ```sh
+   gh pr list --state open --limit 300 --json number,headRefOid \
+     --jq '.[]|"\(.number) \(.headRefOid)"' \
+   | while read -r pr sha; do
+       state=$(gh api "repos/facebook/astryx/commits/$sha/status" \
+         --jq '[.statuses[]|select(.context=="spec-owner-approval")|.state]
+               | if length==0 then "MISSING" else .[0] end')
+       [ "$state" = MISSING ] && echo "$pr"
+     done
+   ```
+
+3. Backfill each one. `backfill=true` publishes the status and returns before
+   auto-merge, so a reconcile cannot land a PR nobody asked to land:
+
+   ```sh
+   gh workflow run spec-owner-gate.yml -f pr=<number> -f backfill=true
+   ```
+
+4. Re-run the step 2 query and confirm it prints nothing.
+5. Only then add `spec-owner-approval` to the required status checks on `main`.
+
+A `pending` result from the backfill is the correct outcome for a PR that
+genuinely awaits an owner, not a stranded head.
 
 ## Why a commit status (not a check run)
 

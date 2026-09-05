@@ -86,6 +86,11 @@ export async function buildKit(query, options = {}) {
       await search(query, {cwd, type, limit})
     );
   const results = result.data.results;
+  // The TOTAL number of matches, not the number that survived `limit`. The kit
+  // below is deliberately small (≤3 pages, ≤5 blocks, ≤6 components) and
+  // `results` is itself capped, so every other count here is a cap; this is the
+  // one field that says how much the query actually matched.
+  const matchCount = result.data.matchCount;
 
   /**
    * Did this result answer enough of the query to stand as a page?
@@ -152,8 +157,8 @@ export async function buildKit(query, options = {}) {
       query: result.data.query,
       // Distinguishes "search found nothing" (renderer shows "No matches")
       // from a weak-but-non-empty result set (renderer still shows the kit).
-      hasResults: results.length > 0,
-      matchCount: results.length,
+      hasResults: matchCount > 0,
+      matchCount,
       directMatch,
       pages,
       blocks,
