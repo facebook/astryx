@@ -3,13 +3,13 @@
   "repository": "facebook/astryx",
   "pullRequest": {
     "number": 6054,
-    "headSha": "7254b4e950a4769017245e3610f1c26f3fd87b2b",
+    "headSha": "1984a2864091c76ad17186e113a4b3dcfcd1d622",
     "headRef": "dependabot/npm_and_yarn/production-dependencies-6f59f4bffe",
     "headRepository": "facebook/astryx",
     "headRepositoryId": "1131202426"
   },
   "sourceRun": {
-    "id": 33923701802,
+    "id": 33988795426,
     "attempt": 1,
     "conclusion": "failure"
   },
