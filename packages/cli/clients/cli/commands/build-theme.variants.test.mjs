@@ -105,7 +105,18 @@ describe('theme build custom-variant augmentations', () => {
             'variant:accentOutline': { backgroundColor: 'transparent' },
             'size:jumbo': { paddingBlock: '40px' },
           },
-          heading: { 'type:hero': { fontSize: '80px' } },
+          heading: {
+            'weight:bold': { fontWeight: '900' },
+            'type:hero': { fontSize: '80px', fontWeight: '300' },
+          },
+        },
+        onDark: {
+          components: {
+            heading: {
+              'weight:bold': { fontWeight: '800' },
+              'type:hero': { fontWeight: '350' },
+            },
+          },
         },
       };\n`,
     );
@@ -127,6 +138,17 @@ describe('theme build custom-variant augmentations', () => {
     expect(dts).toContain("declare module '@astryxdesign/core/Heading'");
     // …but closed literal-union props still get no dead augmentation.
     expect(dts).not.toMatch(/ButtonSizeMap/);
+
+    const css = fs.readFileSync(
+      path.join(tmpDir, 'variants-theme.css'),
+      'utf-8',
+    );
+    const mainTypeIndex = css.indexOf('.astryx-heading.hero');
+    const mainWeightIndex = css.indexOf('font-weight: 900;', mainTypeIndex);
+    const mediaTypeIndex = css.lastIndexOf('.astryx-heading.hero');
+    const mediaWeightIndex = css.indexOf('font-weight: 800;', mediaTypeIndex);
+    expect(mainWeightIndex).toBeGreaterThan(mainTypeIndex);
+    expect(mediaWeightIndex).toBeGreaterThan(mediaTypeIndex);
   });
 
   it('unions custom Heading types from onDark and onLight into the public type contract', async () => {

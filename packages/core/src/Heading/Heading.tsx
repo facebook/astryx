@@ -25,12 +25,14 @@ import type {
   TextJustify,
   WordBreak,
   TextWrap,
+  TextWeight,
 } from '../theme/types';
 import {
   colorStyles,
   sizeByLevelStyles,
   sizeByTypeStyles,
   defaultWeightByTypeStyles,
+  weightStyles,
   displayStyles,
   justifyStyles,
   truncationStyles,
@@ -97,6 +99,13 @@ export interface HeadingProps extends Omit<
    * ```
    */
   type?: HeadingType;
+
+  /**
+   * Explicit font-weight override. The active theme controls the numeric value
+   * behind each name. When omitted, the selected visual type or heading level
+   * supplies the default.
+   */
+  weight?: TextWeight;
 
   /**
    * Accessibility level override. When set, the `aria-level` will differ
@@ -206,6 +215,7 @@ const levelToTag = {
 export function Heading({
   level,
   type,
+  weight,
   accessibilityLevel,
   color = 'primary',
   display = 'block',
@@ -266,13 +276,19 @@ export function Heading({
       <Component
         ref={mergedRef}
         {...mergeProps(
-          themeProps('heading', {level, color, type}),
+          themeProps('heading', {
+            level,
+            color,
+            type,
+            weight,
+          }),
           stylex.props(
             colorStyles[resolveStyleColor(color)],
             builtinType
               ? sizeByTypeStyles[builtinType]
               : sizeByLevelStyles[level],
             builtinType && defaultWeightByTypeStyles[builtinType],
+            weight && weightStyles[weight],
             // Display: use truncation styles when maxLines > 0
             maxLines === 1
               ? truncationStyles.singleLine

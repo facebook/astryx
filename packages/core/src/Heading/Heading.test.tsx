@@ -237,6 +237,19 @@ describe('Heading', () => {
         expect(element.className).toContain(className);
       }
     });
+
+    it('reflects an explicit weight for theme-layer precedence', () => {
+      render(
+        <Heading level={2} type="hero" weight="bold">
+          Bold custom visual role
+        </Heading>,
+      );
+      const element = screen.getByText('Bold custom visual role');
+
+      expect(element).toHaveAttribute('data-weight', 'bold');
+      expect(element.className).toContain('bold');
+      expect(element.tagName).toBe('H2');
+    });
   });
 
   it('renders astryx-* classes and data attributes for theme targeting', () => {
