@@ -144,8 +144,9 @@ function recordStoryOutcome() {
 
 async function probe(page, target) {
   await page.addInitScript(recordStoryOutcome);
+  const pointerQuery = target.hasTouch ? '&storyPlayPointer=coarse' : '';
   await page.goto(
-    `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story`,
+    `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story${pointerQuery}`,
     { waitUntil: 'domcontentloaded', timeout: 30000 }
   );
   await page.waitForFunction(

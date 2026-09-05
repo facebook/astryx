@@ -580,7 +580,11 @@ export const NearFullTokenRow: Story = {
     if (!wrapper || !input || !finalToken || !clearButton) {
       throw new Error('Near-full token-row fixture did not render as expected');
     }
-    if (!matchMedia('(pointer: coarse)').matches) {
+    const isCoarsePointer = matchMedia('(pointer: coarse)').matches;
+    const requiresCoarsePointer =
+      new URLSearchParams(window.location.search).get('storyPlayPointer') ===
+      'coarse';
+    if (requiresCoarsePointer && !isCoarsePointer) {
       throw new Error('Near-full token-row guard requires a coarse pointer');
     }
 
@@ -603,15 +607,19 @@ export const NearFullTokenRow: Story = {
     const inputRect = input.getBoundingClientRect();
     const tokenRect = finalToken.getBoundingClientRect();
     const clearRect = clearButton.getBoundingClientRect();
-    const clearHitStyle = getComputedStyle(clearButton, '::after');
-    const clearHitLeft = Number.parseFloat(clearHitStyle.left);
-    const clearHitRight = Number.parseFloat(clearHitStyle.right);
-    if (
-      clearHitStyle.content === 'none' ||
-      !Number.isFinite(clearHitLeft) ||
-      !Number.isFinite(clearHitRight)
-    ) {
-      throw new Error('Clear all did not expose its coarse-pointer hit area');
+    let clearHitLeft = 0;
+    let clearHitRight = 0;
+    if (isCoarsePointer) {
+      const clearHitStyle = getComputedStyle(clearButton, '::after');
+      clearHitLeft = Number.parseFloat(clearHitStyle.left);
+      clearHitRight = Number.parseFloat(clearHitStyle.right);
+      if (
+        clearHitStyle.content === 'none' ||
+        !Number.isFinite(clearHitLeft) ||
+        !Number.isFinite(clearHitRight)
+      ) {
+        throw new Error('Clear all did not expose its coarse-pointer hit area');
+      }
     }
     const clearHitRect = {
       left: clearRect.left + clearHitLeft,
