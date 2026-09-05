@@ -1069,7 +1069,7 @@ function validateCustomHeadingTypes(themeDef) {
       standalone == null ||
       typeof standalone !== 'object' ||
       Array.isArray(standalone) ||
-      Object.keys(standalone).length === 0
+      !hasUsableStyleDeclaration(standalone)
     ) {
       errors.push(
         `Custom Heading type "${type}" needs a non-empty standalone ` +
@@ -1078,6 +1078,66 @@ function validateCustomHeadingTypes(themeDef) {
     }
   }
   return errors;
+}
+
+/**
+ * Return true when a style object contains a declaration that the theme
+ * generator can emit. Empty pseudo blocks do not count: they produce no CSS
+ * and would leave the generated type augmentation without a usable rule.
+ *
+ * @param {unknown} styles
+ * @returns {boolean}
+ */
+function hasUsableStyleDeclaration(styles) {
+  if (!styles || typeof styles !== 'object' || Array.isArray(styles)) {
+    return false;
+  }
+  for (const [property, value] of Object.entries(styles)) {
+    if (property.startsWith(':')) {
+      if (hasUsableStyleDeclaration(value)) return true;
+      continue;
+    }
+    if (value !== undefined && value !== null && typeof value !== 'object') {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Custom Heading types are only useful when the installed Core package exposes
+ * the public map that the generated declaration augments. The CLI and Core
+ * are optional peers and can be upgraded independently, so fail explicitly
+ * instead of emitting CSS that application TypeScript cannot consume.
+ *
+ * @param {{components?: Record<string, Record<string, unknown>>}} themeDef
+ * @returns {string[]}
+ */
+function validateHeadingTypeAugmentationSupport(themeDef) {
+  const headingRules = themeDef.components?.heading;
+  if (!headingRules || typeof headingRules !== 'object') return [];
+
+  const hasCustomType = Object.keys(headingRules).some(key =>
+    key.split('+').some(pair => {
+      const colon = pair.indexOf(':');
+      return (
+        colon !== -1 &&
+        pair.slice(0, colon) === 'type' &&
+        pair.slice(colon + 1) &&
+        !BUILTIN_HEADING_TYPES.has(pair.slice(colon + 1))
+      );
+    }),
+  );
+  if (!hasCustomType) return [];
+
+  if (!componentHasAugmentableInterface('Heading', 'HeadingTypeMap')) {
+    return [
+      'Custom Heading types require an installed @astryxdesign/core that ' +
+        'exports HeadingTypeMap from the public Heading subpath. Upgrade Core ' +
+        'before building this theme.',
+    ];
+  }
+  return [];
 }
 
 /**
@@ -1170,6 +1230,9 @@ export async function themeBuild(
   }
 
   const customHeadingErrors = validateCustomHeadingTypes(themeDef);
+  customHeadingErrors.push(
+    ...validateHeadingTypeAugmentationSupport(themeDef),
+  );
   if (customHeadingErrors.length > 0) {
     throw new AstryxError(
       customHeadingErrors.join('\n'),
