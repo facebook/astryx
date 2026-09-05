@@ -106,6 +106,21 @@ const styles = stylex.create({
     width: '100%',
     minWidth: 0,
   },
+  // The CLI command shrinks before the buttons do, and stays on one line.
+  commandGroup: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  commandCode: {
+    flexShrink: 1,
+    minWidth: 0,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  noShrink: {
+    flexShrink: 0,
+  },
   skeletonOverlay: {
     position: 'absolute',
     insetInline: '16px',
@@ -159,7 +174,7 @@ function TemplatePreviewHeader({
       }>
       <Heading level={2}>{item.name}</Heading>
       {item.description && (
-        <Text type="body" color="secondary">
+        <Text type="body" color="secondary" maxLines={2}>
           {item.description}
         </Text>
       )}
@@ -167,8 +182,11 @@ function TemplatePreviewHeader({
   );
 
   const copyButton = (
-    <HStack gap={2} vAlign="center">
-      <Code>{`npx @astryxdesign/cli template ${item.slug}`}</Code>
+    <HStack gap={2} vAlign="center" xstyle={styles.commandGroup}>
+      <Code
+        xstyle={
+          styles.commandCode
+        }>{`npx @astryxdesign/cli template ${item.slug}`}</Code>
       <Button
         variant="ghost"
         isIconOnly
@@ -176,6 +194,7 @@ function TemplatePreviewHeader({
         label={cmdCopied ? 'Copied!' : 'Copy install command'}
         icon={<Icon icon={cmdCopied ? 'check' : 'copy'} color="inherit" />}
         onClick={onCopyCommand}
+        xstyle={styles.noShrink}
       />
     </HStack>
   );
@@ -193,6 +212,7 @@ function TemplatePreviewHeader({
           category: item.category,
         });
       }}
+      xstyle={styles.noShrink}
     />
   );
 
