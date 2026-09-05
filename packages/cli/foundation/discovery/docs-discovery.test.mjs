@@ -13,6 +13,7 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {CLI_ROOT} from '../fs/paths.mjs';
 import {
   BUILTIN_DOCS_PACKAGE,
   DocsCatalog,
@@ -57,6 +58,41 @@ beforeEach(() => {
 
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
+});
+
+describe('assets/docs audience', () => {
+  // packages/cli/assets/docs ships to people BUILDING WITH Astryx, not people
+  // building Astryx itself — see the README's own audience rule and routing
+  // table. These five words are a clean, measured signal for material that
+  // belongs on the wiki instead: 0 hits across the directory as authored
+  // today, 56 in the draft (#5351) that prompted this check. Deliberately
+  // narrower than the README's own longer "tells" list — audit/checklist/gate
+  // also match plenty of innocent prose ("Verification Checklist", "Audit
+  // every reset stylesheet"), which would make the check noisy enough to get
+  // suppressed rather than acted on.
+  const OUR_PROCESS_WORDS =
+    /\b(rubric|readiness|promotion|sign-off|evidence)\b/i;
+  const DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
+
+  it('has no our-process words in a caller-facing doc topic', () => {
+    const hits = [];
+    for (const file of fs.readdirSync(DOCS_DIR)) {
+      if (!file.endsWith('.mjs')) {
+        continue; // README.md documents the rule; it isn't shipped as a topic.
+      }
+      const content = fs.readFileSync(path.join(DOCS_DIR, file), 'utf8');
+      const match = content.match(OUR_PROCESS_WORDS);
+      if (match) {
+        hits.push(`${file}: "${match[0]}"`);
+      }
+    }
+    expect(
+      hits,
+      'This word describes building Astryx, not building with it. Move ' +
+        'the material to the matching wiki page in assets/docs/README.md\'s ' +
+        'routing table instead of shipping it here.',
+    ).toEqual([]);
+  });
 });
 
 describe('discoverBuiltinTopics', () => {
