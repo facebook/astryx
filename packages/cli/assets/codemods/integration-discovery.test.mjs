@@ -150,17 +150,37 @@ describe('integration codemod discovery', () => {
     ).toContain('consumer-new');
   });
 
-  it('fails discovery when a codemod has no default export', async () => {
+  it('silently skips helper files with no default export', async () => {
     scaffold({
-      '0.2.0/broken.mjs': `export const notDefault = 1;\n`,
+      '0.2.0/real.mjs': `export default { type: 'code', title: 'real', transform: () => null };\n`,
+      '0.2.0/helper.transform.mjs': `export const helper = () => {};\n`,
     });
     const project = await Project.load(tmpDir);
-    // Validation now happens at the LOAD boundary (loadModuleWithParser +
-    // parseCodemod); a missing default export is a schema-invalid failure
-    // rather than the old bespoke "must default-export" message.
-    await expect(
-      discoverIntegrationCodemods(project.loadedIntegrations),
-    ).rejects.toThrow(/is invalid/i);
+    const byVersion = await discoverIntegrationCodemods(
+      project.loadedIntegrations,
+    );
+
+    expect([...byVersion.keys()]).toEqual(['0.2.0']);
+    const codemods = byVersion.get('0.2.0');
+    expect(codemods).toHaveLength(1);
+    expect(codemods[0].id).toBe('real');
+  });
+
+  it('silently skips conventional test files even if they import missing packages', async () => {
+    scaffold({
+      '0.2.0/real.mjs': `export default { type: 'code', title: 'real', transform: () => null };\n`,
+      '0.2.0/__tests__/real.test.mjs': `import 'nonexistent-vitest-package';\n`,
+      '0.2.0/other.spec.mjs': `import 'nonexistent-vitest-package';\n`,
+    });
+    const project = await Project.load(tmpDir);
+    const byVersion = await discoverIntegrationCodemods(
+      project.loadedIntegrations,
+    );
+
+    expect([...byVersion.keys()]).toEqual(['0.2.0']);
+    const codemods = byVersion.get('0.2.0');
+    expect(codemods).toHaveLength(1);
+    expect(codemods[0].id).toBe('real');
   });
 
   it('fails discovery when default export is not a codemod envelope', async () => {
