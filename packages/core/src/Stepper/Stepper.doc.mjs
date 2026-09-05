@@ -42,6 +42,16 @@ export const docs = {
           'Use status only to apply a semantic color (accent/success/warning/error); pass a custom icon for richer indicators.',
       },
       {
+        guidance: true,
+        description:
+          "Drive step content from the same state that drives activeStep. The state you pass to <Stepper activeStep> is the state a step's content should read — gate children on it directly rather than reading the stepper back from a context.",
+      },
+      {
+        guidance: false,
+        description:
+          'Call useStepperContext. It is deprecated and will be removed in the next major: a Stepper builds its context from the props you passed it, so the hook returns nothing the call site does not already have. Build custom steps from <Step> and its children, indicator, and endContent slots — a hand-rolled step cannot draw a correct connector track.',
+      },
+      {
         guidance: false,
         description:
           'Use a stepper for fewer than 3 steps; a simple heading or progress bar works better.',
@@ -224,8 +234,14 @@ export const docsDense = {
         description: 'Provide onStepClick for non-linear workflows.',
       },
       {
+        guidance: true,
+        description:
+          'Gate step children on the same state you pass to activeStep.',
+      },
+      {
         guidance: false,
-        description: 'Use for fewer than 3 or more than 7 steps.',
+        description:
+          'Use for fewer than 3 or more than 7 steps. Call useStepperContext (deprecated, removed next major — it returns only props you passed; build custom steps from <Step> slots).',
       },
     ],
   },
@@ -279,6 +295,16 @@ export const docsZh = {
         description: '在窄容器中使用垂直方向，或当步骤有较长描述时。',
       },
       {guidance: true, description: '为非线性工作流程提供 onStepClick。'},
+      {
+        guidance: true,
+        description:
+          '用驱动 activeStep 的同一状态来控制步骤内容，而不是从上下文中回读步骤器状态。',
+      },
+      {
+        guidance: false,
+        description:
+          '使用 useStepperContext。它已弃用，将在下一个主版本中移除：步骤器的上下文完全由你传入的 props 构建，该 hook 不会返回调用处尚未拥有的任何内容。请用 <Step> 及其 children、indicator、endContent 插槽来构建自定义步骤。',
+      },
       {guidance: false, description: '少于3个步骤时使用步骤器。'},
       {guidance: false, description: '超过7个步骤时使用步骤器。'},
     ],

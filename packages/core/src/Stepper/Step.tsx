@@ -57,7 +57,7 @@ import type {BaseProps} from '../BaseProps';
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTranslator} from '../i18n';
-import {useStepperContext} from './StepperContext';
+import {useStepperCoordination} from './StepperContext';
 import {stepMarker} from './stepper.stylex';
 import type {StepStatus} from './StepStatus';
 
@@ -972,7 +972,7 @@ export function Step({
   ...rest
 }: StepProps) {
   const t = useTranslator();
-  const ctx = useStepperContext();
+  const ctx = useStepperCoordination();
   const {
     activeStep,
     previousActiveStep,

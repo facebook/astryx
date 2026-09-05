@@ -13,6 +13,10 @@
  * and direction of a change to choreograph their connector fill; see the
  * CONNECTOR FILL block in Step.tsx.
  *
+ * The value it publishes is `StepperCoordination`, which is wider than the
+ * deprecated public `StepperContextValue` — see StepperContext.ts for why the
+ * two are split.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Stepper/Stepper.test.tsx (tests for new/changed behavior)
@@ -33,7 +37,7 @@ import {
   StepperContext,
   type StepperOrientation,
   type StepperIndicatorPosition,
-  type StepperContextValue,
+  type StepperCoordination,
 } from './StepperContext';
 
 export interface StepperProps extends BaseProps<HTMLOListElement> {
@@ -211,7 +215,7 @@ export function Stepper({
   const previousActiveStep =
     seen.current === activeStep ? seen.previous : seen.current;
 
-  const ctxValue = useMemo<StepperContextValue>(
+  const ctxValue = useMemo<StepperCoordination>(
     () => ({
       activeStep,
       previousActiveStep,
