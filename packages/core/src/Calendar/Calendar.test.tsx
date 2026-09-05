@@ -32,6 +32,34 @@ function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
   return [prose, component].filter(Boolean).join('\n\n');
 }
+// Mock showPopover/hidePopover since they're not implemented in jsdom —
+// the month/year pickers embed Selector, whose popup opens through the
+// native Popover API. Mirrors the block in Selector.test.tsx.
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+});
+
 afterEach(() => {
   __resetLiveRegionsForTest();
 });
@@ -1519,6 +1547,340 @@ describe('Calendar', () => {
       expect(css).toContain('color: var(--color-accent)');
       expect(css).toContain('.astryx-calendar-nav.next');
       expect(css).toContain('background-color: var(--color-accent-muted)');
+    });
+  });
+
+  // ─── Month/year pickers (hasMonthYearPickers) ────────────────
+  describe('month/year pickers', () => {
+    function getMonthPicker() {
+      return screen.getByRole('combobox', {name: 'Month'});
+    }
+    function getYearPicker() {
+      return screen.getByRole('combobox', {name: 'Year'});
+    }
+    // Popover content sits in the DOM but is never "visible" to jsdom's
+    // accessibility tree (see the identical note in Selector.test.tsx), so
+    // options are queried with `hidden: true` — and scoped through the
+    // trigger's aria-controls, because BOTH pickers keep their closed
+    // listboxes rendered inline.
+    function getPickerListbox(trigger: HTMLElement): HTMLElement {
+      const id = trigger.getAttribute('aria-controls');
+      const listbox = id ? document.getElementById(id) : null;
+      if (!listbox) {
+        throw new Error('picker listbox not found');
+      }
+      return listbox;
+    }
+    function getPickerOptions(trigger: HTMLElement): HTMLElement[] {
+      return within(getPickerListbox(trigger)).getAllByRole('option', {
+        hidden: true,
+      });
+    }
+    function getPickerOption(trigger: HTMLElement, name: string): HTMLElement {
+      return within(getPickerListbox(trigger)).getByRole('option', {
+        name,
+        hidden: true,
+      });
+    }
+
+    it('does not render pickers by default (caption stays a static label)', () => {
+      render(<Calendar focusDate="2026-03-15" />);
+
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+      expect(screen.getByText('March 2026')).toBeInTheDocument();
+    });
+
+    it('renders Month and Year pickers reflecting the visible month', () => {
+      render(<Calendar hasMonthYearPickers focusDate="2026-03-15" />);
+
+      expect(getMonthPicker()).toHaveTextContent('March');
+      expect(getYearPicker()).toHaveTextContent('2026');
+      // The pickers replace the static caption; the joined label is gone.
+      expect(screen.queryByText('March 2026')).not.toBeInTheDocument();
+    });
+
+    it('jumps the grid when a month is picked (uncontrolled)', async () => {
+      const user = userEvent.setup();
+      render(<Calendar hasMonthYearPickers focusDate="2026-03-15" />);
+
+      await user.click(getMonthPicker());
+      await user.click(getPickerOption(getMonthPicker(), 'November'));
+
+      expect(getMonthPicker()).toHaveTextContent('November');
+      expect(getDayButton(15, 'November', 2026)).toBeInTheDocument();
+    });
+
+    it('jumps the grid when a year is picked (uncontrolled)', async () => {
+      const user = userEvent.setup();
+      render(<Calendar hasMonthYearPickers focusDate="2026-03-15" />);
+
+      await user.click(getYearPicker());
+      await user.click(getPickerOption(getYearPicker(), '1990'));
+
+      expect(getYearPicker()).toHaveTextContent('1990');
+      expect(getDayButton(15, 'March', 1990)).toBeInTheDocument();
+    });
+
+    it('announces the new month after a picker jump', async () => {
+      const user = userEvent.setup();
+      render(<Calendar hasMonthYearPickers focusDate="2026-03-15" />);
+
+      await user.click(getMonthPicker());
+      await user.click(getPickerOption(getMonthPicker(), 'November'));
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('November 2026');
+      });
+    });
+
+    it('routes a month pick through onFocusDateChange with the first of the month (controlled)', async () => {
+      const user = userEvent.setup();
+      const onFocusDateChange = vi.fn();
+      render(
+        <Calendar
+          hasMonthYearPickers
+          focusDate="2026-03-15"
+          onFocusDateChange={onFocusDateChange}
+        />,
+      );
+
+      await user.click(getMonthPicker());
+      await user.click(getPickerOption(getMonthPicker(), 'November'));
+
+      expect(onFocusDateChange).toHaveBeenCalledWith('2026-11-01');
+      // Controlled: the parent did not update focusDate, so the grid stays.
+      expect(getDayButton(15, 'March', 2026)).toBeInTheDocument();
+    });
+
+    it('derives the year range from min/max', async () => {
+      const user = userEvent.setup();
+      render(
+        <Calendar
+          hasMonthYearPickers
+          focusDate="2026-03-15"
+          min="2024-06-10"
+          max="2028-02-20"
+        />,
+      );
+
+      await user.click(getYearPicker());
+      const years = getPickerOptions(getYearPicker());
+      expect(years).toHaveLength(5);
+      expect(years[0]).toHaveTextContent('2024');
+      expect(years[4]).toHaveTextContent('2028');
+    });
+
+    it('defaults the year range to 1900–2099 when unbounded', async () => {
+      const user = userEvent.setup();
+      render(<Calendar hasMonthYearPickers focusDate="2026-03-15" />);
+
+      await user.click(getYearPicker());
+      const years = getPickerOptions(getYearPicker());
+      expect(years).toHaveLength(200);
+      expect(years[0]).toHaveTextContent('1900');
+      expect(years[199]).toHaveTextContent('2099');
+    });
+
+    it('widens the default year range to include an outlying focus year', () => {
+      render(<Calendar hasMonthYearPickers focusDate="1850-06-15" />);
+
+      // The visible year must always be present, or the picker would show
+      // an empty trigger for a perfectly valid focus date.
+      expect(getYearPicker()).toHaveTextContent('1850');
+    });
+
+    it('keeps an out-of-range visible year present but disabled when bounded', async () => {
+      const user = userEvent.setup();
+      render(
+        <Calendar
+          hasMonthYearPickers
+          focusDate="2020-06-15"
+          min="2024-01-01"
+          max="2025-12-31"
+        />,
+      );
+
+      // The header must still label the visible month — never the Selector
+      // placeholder — even though 2020 sits outside the bounds.
+      expect(getYearPicker()).toHaveTextContent('2020');
+
+      await user.click(getYearPicker());
+      const years = getPickerOptions(getYearPicker());
+      expect(years.map(y => y.textContent)).toEqual([
+        '2020',
+        '2021',
+        '2022',
+        '2023',
+        '2024',
+        '2025',
+      ]);
+      expect(getPickerOption(getYearPicker(), '2020')).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
+      expect(getPickerOption(getYearPicker(), '2024')).not.toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
+    });
+
+    it('shows the visible year when max alone excludes it', () => {
+      render(
+        <Calendar
+          hasMonthYearPickers
+          focusDate="2026-08-15"
+          max="2020-12-31"
+        />,
+      );
+
+      // max-only arm of the widening: the range would otherwise stop at
+      // 2020 and the trigger would fall back to the placeholder.
+      expect(getYearPicker()).toHaveTextContent('2026');
+    });
+
+    it('clamps a year pick down to the max month', async () => {
+      const user = userEvent.setup();
+      render(
+        <Calendar
+          hasMonthYearPickers
+          focusDate="2024-08-15"
+          max="2026-03-20"
+        />,
+      );
+
+      await user.click(getYearPicker());
+      await user.click(getPickerOption(getYearPicker(), '2026'));
+
+      // August 2026 sits past max (March 2026), so the jump clamps back.
+      expect(getMonthPicker()).toHaveTextContent('March');
+      expect(getDayButton(15, 'March', 2026)).toBeInTheDocument();
+    });
+
+    it('disables months outside min/max in the visible year', async () => {
+      const user = userEvent.setup();
+      render(
+        <Calendar
+          hasMonthYearPickers
+          focusDate="2024-08-15"
+          min="2024-06-10"
+          max="2028-02-20"
+        />,
+      );
+
+      await user.click(getMonthPicker());
+      const months = getPickerOptions(getMonthPicker());
+      expect(months).toHaveLength(12);
+      // 2024 is the min year: January–May precede min (2024-06) and are
+      // disabled; June–December are selectable.
+      for (let i = 0; i < 5; i++) {
+        expect(months[i]).toHaveAttribute('aria-disabled', 'true');
+      }
+      for (let i = 5; i < 12; i++) {
+        expect(months[i]).not.toHaveAttribute('aria-disabled', 'true');
+      }
+    });
+
+    it('clamps the month when a year pick would land out of range', async () => {
+      const user = userEvent.setup();
+      render(
+        <Calendar
+          hasMonthYearPickers
+          focusDate="2026-03-15"
+          min="2024-06-10"
+        />,
+      );
+
+      await user.click(getYearPicker());
+      await user.click(getPickerOption(getYearPicker(), '2024'));
+
+      // March 2024 sits before min (June 2024), so the jump clamps forward.
+      expect(getMonthPicker()).toHaveTextContent('June');
+      expect(getDayButton(15, 'June', 2024)).toBeInTheDocument();
+    });
+
+    it('falls back to the static caption when two months are shown', () => {
+      render(
+        <Calendar
+          hasMonthYearPickers
+          numberOfMonths={2}
+          focusDate="2026-03-15"
+        />,
+      );
+
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+      expect(screen.getByText('March 2026 – April 2026')).toBeInTheDocument();
+    });
+
+    it('keeps prev/next buttons working alongside the pickers', async () => {
+      const user = userEvent.setup();
+      render(<Calendar hasMonthYearPickers focusDate="2026-03-15" />);
+
+      await user.click(getButton('Next month'));
+
+      expect(getMonthPicker()).toHaveTextContent('April');
+      expect(getYearPicker()).toHaveTextContent('2026');
+    });
+
+    it('reflects navigateTo jumps in the pickers', () => {
+      let handle: CalendarHandle | null = null;
+      render(
+        <Calendar
+          hasMonthYearPickers
+          focusDate="2026-03-15"
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+
+      act(() => {
+        handle?.navigateTo('1999-12-01');
+      });
+
+      expect(getMonthPicker()).toHaveTextContent('December');
+      expect(getYearPicker()).toHaveTextContent('1999');
+    });
+
+    it('supports keyboard selection through the month picker', async () => {
+      const user = userEvent.setup();
+      render(<Calendar hasMonthYearPickers focusDate="2026-03-15" />);
+
+      getMonthPicker().focus();
+      await user.keyboard('{Enter}');
+      await user.keyboard('{ArrowDown}{Enter}');
+
+      // ArrowDown from the highlighted current month (March) lands on April.
+      expect(getMonthPicker()).toHaveTextContent('April');
+      expect(getDayButton(15, 'April', 2026)).toBeInTheDocument();
+    });
+
+    it('renders the astryx-calendar-picker target on both pickers', () => {
+      render(<Calendar hasMonthYearPickers focusDate="2026-03-15" />);
+
+      const month = document.querySelector(
+        '.astryx-calendar-picker[data-picker="month"]',
+      );
+      const year = document.querySelector(
+        '.astryx-calendar-picker[data-picker="year"]',
+      );
+      expect(month).not.toBeNull();
+      expect(year).not.toBeNull();
+    });
+
+    it('exposes calendar-picker as a themeable defineTheme target', () => {
+      const theme = defineTheme({
+        name: 'calendar-picker-test',
+        components: {
+          'calendar-picker': {
+            base: {color: 'var(--color-accent)'},
+            'picker:year': {fontWeight: '600'},
+          },
+        },
+      });
+      const css = generateThemeTestCSS(theme);
+      expect(css).toContain('.astryx-calendar-picker {');
+      expect(css).toContain('color: var(--color-accent)');
+      expect(css).toContain('.astryx-calendar-picker.year');
     });
   });
 });

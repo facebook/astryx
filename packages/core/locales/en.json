@@ -299,6 +299,14 @@
     "defaultMessage": "Next month",
     "description": "Screen-reader-only label on the right-arrow button in a Calendar's month header (navigates one month forward). Pairs with `calendar.previousMonth`."
   },
+  "@astryx.calendar.month": {
+    "defaultMessage": "Month",
+    "description": "Screen-reader-only label on the month picker in a Calendar's header when `hasMonthYearPickers` is set. Names the control that jumps the grid straight to a month of the visible year. Pairs with `calendar.year`."
+  },
+  "@astryx.calendar.year": {
+    "defaultMessage": "Year",
+    "description": "Screen-reader-only label on the year picker in a Calendar's header when `hasMonthYearPickers` is set. Names the control that jumps the grid straight to a year. Pairs with `calendar.month`."
+  },
   "@astryx.calendar.daySelected": {
     "defaultMessage": "{date}, selected",
     "description": "Accessible name for the Calendar day button that is the current single-mode selection. `{date}` is the localized full date, e.g. \"Thursday, January 15, 2026\". The trailing state word tells screen-reader users the focused day is selected."
