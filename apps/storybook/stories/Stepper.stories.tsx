@@ -1114,6 +1114,157 @@ export const StepAdvance: Story = {
 };
 
 // ============================================================
+// NARROW CONTAINERS — the stepper collapses itself
+// ============================================================
+
+export const NarrowCollapse: Story = {
+  name: 'Narrow — Collapsed Track',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A horizontal stepper measures its own width and collapses once a step has less than `horizontalOptions.minimumStepWidth` (112px by default), so the breakpoint follows the step count rather than the viewport. Pass a number for pixels or a CSS length string such as `7rem`. `horizontalOptions.collapsedVariant` selects `'withLabelAndControls'`, `'withLabel'`, or `'hiddenLabel'`; the last renders only the bare progress track with no compact row. The two indicator positions collapse differently on purpose: `separated` drops its indicators with the labels and repeats the active indicator beside the compact label, while `on-track` keeps its indicators as presentational nodes on the rail and does not repeat the active one beside the label. Controls appear only for `withLabelAndControls` when `onStepClick` is set.",
+      },
+    },
+  },
+  render: () => {
+    const [a, setA] = useState(1);
+    const [b, setB] = useState(1);
+    const [c, setC] = useState(1);
+    const steps = ['Cart', 'Shipping', 'Delivery', 'Payment'];
+    return (
+      <div style={{display: 'grid', gap: 40}}>
+        <div style={{maxWidth: 560}}>
+          <Text type="label">560px — four steps still fit</Text>
+          <Stepper activeStep={a} onStepClick={setA} label="Checkout">
+            {steps.map((s, i) => (
+              <Step key={s} step={i} label={s} />
+            ))}
+          </Stepper>
+        </div>
+        <div style={{maxWidth: 320}}>
+          <Text type="label">320px — separated, navigable</Text>
+          <Stepper activeStep={a} onStepClick={setA} label="Checkout">
+            {steps.map((s, i) => (
+              <Step key={s} step={i} label={s} />
+            ))}
+          </Stepper>
+        </div>
+        <div style={{maxWidth: 320}}>
+          <Text type="label">320px — custom 4rem threshold stays expanded</Text>
+          <Stepper
+            activeStep={a}
+            onStepClick={setA}
+            horizontalOptions={{
+              minimumStepWidth: '4rem',
+              collapsedVariant: 'withLabelAndControls',
+            }}
+            label="Checkout">
+            {steps.map((s, i) => (
+              <Step key={s} step={i} label={s} />
+            ))}
+          </Stepper>
+        </div>
+        <div style={{maxWidth: 320}}>
+          <Text type="label">320px — on-track keeps nodes on the rail</Text>
+          <Stepper
+            activeStep={b}
+            onStepClick={setB}
+            indicatorPosition="on-track"
+            label="Checkout">
+            {steps.map((s, i) => (
+              <Step key={s} step={i} label={s} indicator="number" />
+            ))}
+          </Stepper>
+        </div>
+        <div style={{maxWidth: 320}}>
+          <Text type="label">320px — no onStepClick, so no controls</Text>
+          <Stepper activeStep={c} label="Checkout">
+            {steps.map((s, i) => (
+              <Step key={s} step={i} label={s} />
+            ))}
+          </Stepper>
+          <div style={{marginTop: 12, display: 'flex', gap: 8}}>
+            <Button
+              label="Back"
+              variant="secondary"
+              onClick={() => setC(n => Math.max(0, n - 1))}
+            />
+            <Button
+              label="Continue"
+              onClick={() => setC(n => Math.min(3, n + 1))}
+            />
+          </div>
+        </div>
+        <div style={{maxWidth: 320}}>
+          <Text type="label">
+            320px — a description rides along with the current step
+          </Text>
+          <Stepper activeStep={a} onStepClick={setA} label="Checkout">
+            <Step step={0} label="Cart" description="Review your items" />
+            <Step step={1} label="Shipping" description="Where it goes" />
+            <Step step={2} label="Delivery" description="How fast" />
+            <Step step={3} label="Payment" description="How you pay" />
+          </Stepper>
+        </div>
+      </div>
+    );
+  },
+};
+
+export const NarrowCollapsedVariants: Story = {
+  name: 'Narrow — Collapsed Variants',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The same 320px horizontal Stepper with each collapsedVariant. hiddenLabel omits the entire compact row—even though onStepClick is present—so it is shorter and leaves only the progress track.',
+      },
+    },
+  },
+  render: () => {
+    const [active, setActive] = useState(1);
+    const steps = ['Cart', 'Shipping', 'Delivery', 'Payment'];
+    const variants = [
+      {
+        value: 'withLabelAndControls',
+        label: 'withLabelAndControls — label and controls',
+      },
+      {value: 'withLabel', label: 'withLabel — label only'},
+      {value: 'hiddenLabel', label: 'hiddenLabel — bare track'},
+    ] as const;
+
+    return (
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 320px))',
+          alignItems: 'start',
+          gap: 40,
+        }}>
+        {variants.map(variant => (
+          <div key={variant.value} style={{width: '100%', maxWidth: 320}}>
+            <Text type="label">{variant.label}</Text>
+            <Stepper
+              activeStep={active}
+              onStepClick={setActive}
+              label="Checkout"
+              horizontalOptions={{
+                minimumStepWidth: 112,
+                collapsedVariant: variant.value,
+              }}>
+              {steps.map((step, index) => (
+                <Step key={step} step={index} label={step} />
+              ))}
+            </Stepper>
+          </div>
+        ))}
+      </div>
+    );
+  },
+};
+
+// ============================================================
 // FRAGMENT-GROUPED STEPS
 // ============================================================
 
