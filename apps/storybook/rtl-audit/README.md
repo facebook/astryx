@@ -236,7 +236,9 @@ measured, verified N-A, or absent from both the source and Storybook rosters.
 Changes to Core, Lab, Charts, or Vega source, Storybook stories, curated targets,
 or roster/audit code run the entire known-debt roster with strict live-roster
 validation, so a component deletion cannot retain stale debt while leaving both
-registries unchanged. CI materializes the validator and coverage policy from the
+registries unchanged. Full sweeps union that baseline with every removed debt row
+and changed verified-N/A declaration, so source changes cannot hide simultaneous
+registry transitions. CI materializes the validator and coverage policy from the
 base; the initial rollout accepts only the pinned bootstrap bundle.
 
 Both stale states are findings. Resolve known debt by adding a real target or a

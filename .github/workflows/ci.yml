@@ -68,7 +68,7 @@ jobs:
             (
               cd "$POLICY_ROOT"
               printf '%s  %s\n' \
-                080df132772d8e07f8aec59ed63982cf28f032682002e82b53d082e9a578705c .github/scripts/check-rtl-applicability-registries.mjs \
+                1f059e2d675252d6bd4dfdbb6b72b7dea181ae06b5df0948aac93fac52c2e6e9 .github/scripts/check-rtl-applicability-registries.mjs \
                 fa6711472dbf3d930733f1b6a7e174aae3966ac8de6cfa0714a79c46a2f6a906 apps/storybook/rtl-audit/rtl-audit.mjs \
                 d146e0d384a38863a2136518a7c760640824c1d86b0a2a4808b4df15dc33520b apps/storybook/rtl-audit/rtl-audit-coverage.mjs \
                 | sha256sum --check --strict -
