@@ -102,6 +102,7 @@
     "commander": "^12.1.0",
     "jiti": "^2.7.0",
     "jscodeshift": "^17.3.0",
+    "typescript": "^6.0.3",
     "zod": "^4.4.3"
   },
   "peerDependencies": {

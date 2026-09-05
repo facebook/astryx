@@ -52,6 +52,10 @@ import {
   targetsByKey,
 } from '../../../foundation/discovery/theming-targets.mjs';
 import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
+import {
+  createLiteralTypeResolver,
+  findComponentSourceFile,
+} from './literal-type-resolver.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -211,167 +215,6 @@ function toPascalCase(name) {
 let _knownValuesIndexPromise = null;
 
 /**
- * Resolve finite string/number literal unions from core's source aliases.
- * Unsupported forms and duplicate names stay unresolved so validators never
- * mistake a partial union for the complete public domain.
- *
- * @param {string[]} files
- * @param {Set<string>} requestedNames
- * @returns {Promise<Map<string, string[]>>}
- */
-async function loadLiteralTypeAliases(files, requestedNames) {
-  if (requestedNames.size === 0) return new Map();
-  const {default: jscodeshift} = await import('jscodeshift');
-  const j = jscodeshift.withParser('tsx');
-  /** @type {Map<string, any|null>} */
-  const declarations = new Map();
-  const pending = new Set(requestedNames);
-  const parsedFiles = new Set();
-
-  while (pending.size > 0) {
-    const names = [...pending];
-    pending.clear();
-    let parsedAny = false;
-
-    for (const file of files) {
-      if (parsedFiles.has(file)) continue;
-      let source;
-      try {
-        source = fs.readFileSync(file, 'utf-8');
-      } catch {
-        continue;
-      }
-      const definesRequestedAlias = names.some(name => {
-        const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        return new RegExp(String.raw`\btype\s+${escapedName}\b`).test(source);
-      });
-      if (!definesRequestedAlias) continue;
-
-      parsedFiles.add(file);
-      parsedAny = true;
-      try {
-        const root = j(source);
-        root
-          .find(j.TSTypeAliasDeclaration)
-          .forEach((/** @type {{node: any}} */ aliasPath) => {
-            const name = aliasPath.node.id?.name;
-            if (!name) return;
-            declarations.set(
-              name,
-              declarations.has(name) ? null : aliasPath.node.typeAnnotation,
-            );
-          });
-      } catch {
-        // A source file that cannot be parsed must not invalidate other aliases.
-      }
-    }
-
-    for (const declaration of declarations.values()) {
-      if (!declaration) continue;
-      j(declaration)
-        .find(j.TSTypeReference)
-        .forEach((/** @type {{node: any}} */ referencePath) => {
-          const name =
-            referencePath.node.typeName?.type === 'Identifier'
-              ? referencePath.node.typeName.name
-              : null;
-          if (name && !declarations.has(name)) pending.add(name);
-        });
-    }
-    if (!parsedAny) break;
-  }
-
-  /** @type {Map<string, string[]|null>} */
-  const cache = new Map();
-  /**
-   * @param {string} name
-   * @param {Set<string>} stack
-   * @returns {string[]|null}
-   */
-  const resolveName = (name, stack = new Set()) => {
-    if (cache.has(name)) return cache.get(name) ?? null;
-    const declaration = declarations.get(name);
-    if (!declaration || stack.has(name)) return null;
-    const nextStack = new Set(stack).add(name);
-    const values = resolveNode(declaration, nextStack);
-    cache.set(name, values);
-    return values;
-  };
-
-  /**
-   * @param {any} node
-   * @param {Set<string>} stack
-   * @returns {string[]|null}
-   */
-  function resolveNode(node, stack) {
-    if (!node) return null;
-    if (node.type === 'TSParenthesizedType') {
-      return resolveNode(node.typeAnnotation, stack);
-    }
-    if (node.type === 'TSLiteralType') {
-      const value = node.literal?.value;
-      return typeof value === 'string' || typeof value === 'number'
-        ? [String(value)]
-        : null;
-    }
-    if (node.type === 'TSTypeReference') {
-      const name =
-        node.typeName?.type === 'Identifier' ? node.typeName.name : null;
-      return name ? resolveName(name, stack) : null;
-    }
-    if (node.type === 'TSUnionType') {
-      const values = new Set();
-      for (const member of node.types ?? []) {
-        const resolved = resolveNode(member, stack);
-        if (!resolved) return null;
-        for (const value of resolved) values.add(value);
-      }
-      return [...values];
-    }
-    return null;
-  }
-
-  /** @type {Map<string, string[]>} */
-  const resolved = new Map();
-  for (const name of declarations.keys()) {
-    const values = resolveName(name);
-    if (values && values.length > 0) resolved.set(name, values);
-  }
-  return resolved;
-}
-
-/**
- * Resolve a doc prop type when it is a finite union of string/number literals
- * and source aliases. Returns null for open or unsupported type expressions.
- *
- * @param {string} type
- * @param {Map<string, string[]>} aliases
- * @returns {Set<string>|null}
- */
-function literalValuesFromType(type, aliases) {
-  const values = new Set();
-  for (const rawPart of type.split('|')) {
-    const part = rawPart
-      .trim()
-      .replace(/^\((.*)\)$/, '$1')
-      .trim();
-    const stringMatch = part.match(/^'([^']+)'$/);
-    if (stringMatch) {
-      values.add(stringMatch[1]);
-      continue;
-    }
-    if (/^-?\d+(?:\.\d+)?$/.test(part)) {
-      values.add(part);
-      continue;
-    }
-    const aliasValues = aliases.get(part);
-    if (!aliasValues) return null;
-    for (const value of aliasValues) values.add(value);
-  }
-  return values.size > 0 ? values : null;
-}
-
-/**
  * Build one target-keyed index of built-in visual-prop values from every core
  * component doc. A rendered target often lives in a sibling doc (for example,
  * `astryx-heading` is documented by Text/Heading.doc.mjs), so directory-name
@@ -382,10 +225,8 @@ async function loadKnownValuesIndex() {
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return {};
 
-  /** @type {any[]} */
+  /** @type {Array<{doc: any, file: string}>} */
   const docs = [];
-  /** @type {string[]} */
-  const sourceFiles = [];
   /** @param {string} dir */
   async function scan(dir) {
     for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
@@ -396,51 +237,15 @@ async function loadKnownValuesIndex() {
         }
         continue;
       }
-      if (
-        (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) &&
-        !entry.name.includes('.test.') &&
-        !entry.name.includes('.stories.')
-      ) {
-        sourceFiles.push(full);
-      }
       if (!entry.name.endsWith('.doc.mjs')) continue;
       try {
-        docs.push(await loadComponentDoc(full));
+        docs.push({doc: await loadComponentDoc(full), file: full});
       } catch {
         // One malformed or optional doc must not erase validation for the rest.
       }
     }
   }
   await scan(coreSrc);
-  const visualPropNames = new Set(
-    docs.flatMap(doc =>
-      (doc?.theming?.targets ?? []).flatMap(
-        (/** @type {any} */ target) => target?.visualProps ?? [],
-      ),
-    ),
-  );
-  const requestedAliases = new Set();
-  for (const doc of docs) {
-    const props = [
-      ...(doc?.props ?? []),
-      ...(doc?.components ?? []).flatMap(
-        (/** @type {any} */ component) => component?.props ?? [],
-      ),
-    ];
-    for (const prop of props) {
-      if (!visualPropNames.has(prop?.name) || typeof prop?.type !== 'string') {
-        continue;
-      }
-      for (const rawPart of prop.type.split('|')) {
-        const part = rawPart
-          .trim()
-          .replace(/^\((.*)\)$/, '$1')
-          .trim();
-        if (/^[A-Za-z_$][\w$]*$/.test(part)) requestedAliases.add(part);
-      }
-    }
-  }
-  const aliases = await loadLiteralTypeAliases(sourceFiles, requestedAliases);
 
   /** @param {string} value */
   const targetName = value =>
@@ -448,21 +253,76 @@ async function loadKnownValuesIndex() {
       .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
       .replace(/\s+/g, '-')
       .toLowerCase();
+
+  const visualPropNames = new Set(
+    docs.flatMap(({doc}) =>
+      (doc?.theming?.targets ?? []).flatMap(
+        (/** @type {any} */ target) => target?.visualProps ?? [],
+      ),
+    ),
+  );
+  /** @type {Map<string, string|null>} */
+  const sourceFileCache = new Map();
+  /** @param {string} componentName @param {string} docFile */
+  const sourceFor = (componentName, docFile) => {
+    const key = `${docFile}\0${componentName}`;
+    if (!sourceFileCache.has(key)) {
+      sourceFileCache.set(
+        key,
+        findComponentSourceFile(coreSrc, componentName, docFile),
+      );
+    }
+    return sourceFileCache.get(key) ?? null;
+  };
+
+  const typeOwnerFiles = new Set();
+  for (const {doc, file} of docs) {
+    for (const owner of [doc, ...(doc?.components ?? [])]) {
+      if (typeof owner?.name !== 'string') continue;
+      const hasNamedVisualType = (owner.props ?? []).some(
+        (/** @type {any} */ prop) =>
+          visualPropNames.has(prop?.name) &&
+          typeof prop?.type === 'string' &&
+          /^[A-Za-z_$][\w$]*$/.test(prop.type.trim()),
+      );
+      if (!hasNamedVisualType) continue;
+      const source = sourceFor(owner.name, file);
+      if (source) typeOwnerFiles.add(source);
+    }
+  }
+  const typeResolver = await createLiteralTypeResolver([...typeOwnerFiles]);
+
   /**
    * @param {any[]} props
+   * @param {string|null} ownerFile
    * @returns {Record<string, Set<string>>}
    */
-  const valuesFromProps = props => {
+  const valuesFromProps = (props, ownerFile) => {
     /** @type {Record<string, Set<string>>} */
     const result = {};
     for (const prop of props ?? []) {
-      if (typeof prop?.name !== 'string' || typeof prop?.type !== 'string') {
+      if (
+        !visualPropNames.has(prop?.name) ||
+        typeof prop?.name !== 'string' ||
+        typeof prop?.type !== 'string'
+      ) {
         continue;
       }
-      const values = literalValuesFromType(prop.type, aliases);
-      if (values) result[prop.name] = values;
+      const values = typeResolver.resolve(prop.type, ownerFile);
+      if (values?.length) result[prop.name] = new Set(values);
     }
     return result;
+  };
+
+  /**
+   * @param {Record<string, Set<string>>} target
+   * @param {Record<string, Set<string>>} source
+   */
+  const mergePropValues = (target, source) => {
+    for (const [prop, propValues] of Object.entries(source)) {
+      if (!target[prop]) target[prop] = new Set();
+      for (const value of propValues) target[prop].add(value);
+    }
   };
 
   /** @type {Record<string, Record<string, Set<string>>>} */
@@ -473,34 +333,41 @@ async function loadKnownValuesIndex() {
    */
   const mergeOwnerValues = (owner, values) => {
     if (!valuesByOwner[owner]) valuesByOwner[owner] = {};
-    for (const [prop, propValues] of Object.entries(values)) {
-      if (!valuesByOwner[owner][prop]) valuesByOwner[owner][prop] = new Set();
-      for (const value of propValues) valuesByOwner[owner][prop].add(value);
-    }
+    mergePropValues(valuesByOwner[owner], values);
   };
-  for (const doc of docs) {
+
+  for (const {doc, file} of docs) {
     if (typeof doc?.name === 'string') {
-      mergeOwnerValues(targetName(doc.name), valuesFromProps(doc.props));
+      const source = sourceFor(doc.name, file);
+      mergeOwnerValues(
+        targetName(doc.name),
+        valuesFromProps(doc.props, source),
+      );
     }
     for (const component of /** @type {any[]} */ (doc?.components ?? [])) {
-      if (typeof component?.name === 'string') {
-        mergeOwnerValues(
-          targetName(component.name),
-          valuesFromProps(component.props),
-        );
-      }
+      if (typeof component?.name !== 'string') continue;
+      const source = sourceFor(component.name, file);
+      mergeOwnerValues(
+        targetName(component.name),
+        valuesFromProps(component.props, source),
+      );
     }
   }
 
   /** @type {Record<string, Record<string, Set<string>>>} */
   const collected = {};
-  for (const doc of docs) {
-    const localValues = valuesFromProps([
-      ...(doc?.props ?? []),
-      ...(doc?.components ?? []).flatMap(
-        (/** @type {any} */ component) => component?.props ?? [],
-      ),
-    ]);
+  for (const {doc, file} of docs) {
+    /** @type {Record<string, Set<string>>} */
+    const localValues = {};
+    const docSource =
+      typeof doc?.name === 'string' ? sourceFor(doc.name, file) : null;
+    mergePropValues(localValues, valuesFromProps(doc?.props, docSource));
+    for (const component of /** @type {any[]} */ (doc?.components ?? [])) {
+      if (typeof component?.name !== 'string') continue;
+      const source = sourceFor(component.name, file);
+      mergePropValues(localValues, valuesFromProps(component.props, source));
+    }
+
     for (const target of doc?.theming?.targets ?? []) {
       if (typeof target?.className !== 'string') continue;
       const componentName = target.className.replace(/^astryx-/, '');
