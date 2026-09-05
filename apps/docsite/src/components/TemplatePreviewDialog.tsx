@@ -26,6 +26,7 @@ import {
   useCallback,
   useEffect,
   useDeferredValue,
+  useRef,
   useState,
   useTransition,
 } from 'react';
@@ -264,6 +265,30 @@ export function TemplatePreviewDialog({
   const [cmdCopied, setCmdCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  // Release the top layer when this dialog is torn down while still open.
+  //
+  // `showModal()` makes the rest of the document inert, and `close()` is the
+  // only thing that undoes it — removing the element does not. Dialog closes on
+  // an `isOpen` transition, which never happens here: "Open in Playground" is a
+  // client-side navigation, so React tears this subtree down with the dialog
+  // still open and the playground arrives with an invisible modal holding the
+  // whole page inert, unclickable until a reload.
+  //
+  // The element is captured on mount rather than read during cleanup, because
+  // by cleanup time this tree is on its way out and `closest()` may no longer
+  // reach it. Teardown, not unmount: React destroys effects when a subtree is
+  // hidden too, which is what a router does to the outgoing route — and that is
+  // the path that was breaking.
+  const hostRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const dialog = hostRef.current?.closest('dialog');
+    return () => {
+      if (dialog?.open) {
+        dialog.close();
+      }
+    };
+  }, []);
+
   const count = items.length;
   const current = items[index];
   // The deferred index drives the heavy preview surface — it lags behind
@@ -354,7 +379,7 @@ export function TemplatePreviewDialog({
         }
         content={
           <LayoutContent isScrollable={false} padding={0}>
-            <div {...stylex.props(styles.body)}>
+            <div {...stylex.props(styles.body)} ref={hostRef}>
               <TemplatePreviewSurface
                 key={deferredCurrent.slug}
                 slug={deferredCurrent.slug}
