@@ -1,5 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import {describe, it, expect} from 'vitest';
 import {stripTemplateAssetRefs, template} from './template.mjs';
 
@@ -86,6 +89,8 @@ describe('template --skeleton component extraction (prefix-agnostic)', () => {
   // `XDS`-prefixed form, so `--skeleton` returned an empty components list and
   // an empty skeleton body for bare templates.
   it('extracts components and a skeleton from a bare-named template', async () => {
+    // Builds the resolvable-component index over the real core once; that
+    // pass can take several seconds under parallel test workers.
     const result = await template('contact-form', {skeleton: true});
 
     expect(result.type).toBe('template.skeleton');
@@ -101,5 +106,68 @@ describe('template --skeleton component extraction (prefix-agnostic)', () => {
     expect(result.data.skeleton).not.toContain('<XDS');
 
     expect(result.data.skeleton).toContain('columns={{minWidth: 200}}');
+    // Allow generous time for the one-time index build (see above).
+  }, 60000);
+});
+
+describe('template --skeleton advertises only resolvable components', () => {
+  // Regression guard for #4677: template skeletons previously advertised
+  // every JSX tag found in the source (local helpers like TimelineSection
+  // -> Timeline, third-party tags like recharts Line/Bar, type-only names,
+  // undocumented exports like HStack/VStack) even when `astryx component
+  // <Name>` could not resolve them. Now filtered against the exact
+  // resolution index (listResolvableComponentNames), which mirrors
+  // `astryx component <Name>`: core/integration/external docs plus
+  // parent-doc subcomponents, no fuzzy suffix matching.
+  it('no built-in template advertises unresolvable components', async () => {
+    const {
+      discoverTemplates,
+      extractComponents,
+      listResolvableComponentNames,
+    } = await import('./template.mjs');
+    const templates = await discoverTemplates();
+    const builtin = templates.filter(t => !t.package);
+    const registry = await listResolvableComponentNames();
+    expect(registry).toBeTruthy();
+    for (const tmpl of builtin) {
+      const components = extractComponents(tmpl.filePath, registry);
+      for (const comp of components) {
+        expect(registry.has(comp)).toBe(true);
+      }
+    }
+    // Sanity: the sweep is meaningful (registry + templates resolved).
+    expect(registry.size).toBeGreaterThan(0);
+    expect(builtin.length).toBeGreaterThan(0);
+  });
+
+  it('extractComponents keeps exact names: parent-doc subcomponents stay, locals are never rewritten', async () => {
+    // The old registry path fuzzy-stripped suffixes (StackItem -> Stack,
+    // TimelineSection -> Timeline). With the exact-resolution index a name is
+    // advertised iff `astryx component <Name>` resolves it as-is, so
+    // StackItem (a parent-doc subcomponent) must survive verbatim while a
+    // local helper that merely contains a resolvable name must not masquerade
+    // as that component.
+    const {extractComponents} = await import('./template.mjs');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'template-extract-'));
+    const file = path.join(dir, 'Page.tsx');
+    fs.writeFileSync(
+      file,
+      [
+        'function TimelineSection() { return null; }',
+        'export default function Page() {',
+        '  return <StackItem /><TimelineSection /><Timeline /><Badge />;',
+        '}',
+      ].join('\n'),
+    );
+    try {
+      const known = new Set(['StackItem', 'Timeline', 'Badge']);
+      const comps = extractComponents(file, known);
+      expect(comps).toEqual(['Badge', 'StackItem', 'Timeline']);
+      expect(comps).not.toContain('TimelineSection');
+      // Unfiltered mode still reports everything (back-compat).
+      expect(extractComponents(file)).toContain('TimelineSection');
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
   });
 });

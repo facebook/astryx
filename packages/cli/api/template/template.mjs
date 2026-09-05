@@ -16,6 +16,8 @@
  */
 
 import {discoverAll, pkgOf} from '../../foundation/discovery/template-adapter.mjs';
+import {listResolvableComponentNames} from '../../foundation/discovery/component-discovery.mjs';
+import {loadIntegrationsSafely} from '../component/_adapter.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {templateList} from './list/list.mjs';
@@ -39,6 +41,8 @@ export {
   findShowcase,
   extractComponents,
 } from '../../foundation/discovery/template-adapter.mjs';
+
+export {listResolvableComponentNames} from '../../foundation/discovery/component-discovery.mjs';
 
 /**
  * @typedef {import('../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} DiscoveredTemplate
@@ -117,14 +121,29 @@ export async function template(name, options = {}) {
       ERROR_CODES.ERR_AMBIGUOUS_TEMPLATE,
     );
   }
-  const match = candidates[0];
+  const [match] = candidates;
+
+  const resolver = () =>
+    // Integrations are loaded exactly like `astryx component` does, then handed
+    // to the exact-resolution index (it never re-loads the project itself).
+    (async () => {
+      /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} */
+      let integrations = [];
+      try {
+        integrations = await loadIntegrationsSafely(cwd);
+      } catch {
+        // Unloadable projects fall back to core-only resolution; the failure
+        // is surfaced on the discover/doctor paths.
+      }
+      return listResolvableComponentNames(cwd, integrations ?? []);
+    })();
 
   if (skeleton) {
-    return templateSkeleton(match, templates);
+    return templateSkeleton(match, templates, await resolver());
   }
 
   if (show || !targetPath) {
-    return templateShow(match);
+    return templateShow(match, await resolver());
   }
 
   return templateCopy(match, {targetPath, cwd, overwrite});

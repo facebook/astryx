@@ -2,7 +2,8 @@
 
 /**
  * @file `template.show` leaf — return a resolved template's raw source plus the
- * components it composes.
+ * Astryx components it composes (each listed name resolves through
+ * `astryx component <Name>`).
  *
  * @position api/template/show — reads the resolved match's source file; the
  *   template dispatcher routes `show` (and the no-target-path default) here.
@@ -16,9 +17,10 @@ import {extractComponents} from '../../../foundation/discovery/template-adapter.
 /**
  * Build the `template.show` envelope for an already-resolved template.
  * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} match
+ * @param {Set<string>|null} [knownComponents] registry of resolvable component names, or null to skip filtering
  * @returns {import('../template.type.mjs').TemplateShowResponse}
  */
-export function templateShow(match) {
+export function templateShow(match, knownComponents = null) {
   if (!fs.existsSync(match.filePath)) {
     throw new AstryxError(
       `No source file found for template "${match.dirName}"`,
@@ -33,7 +35,7 @@ export function templateShow(match) {
       template: match.dirName,
       description: match.description,
       type: match.type,
-      components: extractComponents(match.filePath),
+      components: extractComponents(match.filePath, knownComponents),
       source: fs.readFileSync(match.filePath, 'utf-8'),
     },
   };
