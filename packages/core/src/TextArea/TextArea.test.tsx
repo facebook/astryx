@@ -871,6 +871,28 @@ describe('TextArea', () => {
     });
   });
 
+  describe('autoComplete prop (#5638)', () => {
+    it('forwards autoComplete to the native textarea unchanged', () => {
+      render(
+        <TextArea
+          label="Reason"
+          value=""
+          onChange={() => {}}
+          autoComplete="off"
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'autocomplete',
+        'off',
+      );
+    });
+
+    it('does not set autocomplete when not provided', () => {
+      render(<TextArea label="Description" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('autocomplete');
+    });
+  });
+
   describe('click-to-focus', () => {
     it('focuses textarea when clicking the start icon', () => {
       render(

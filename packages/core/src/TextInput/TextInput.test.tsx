@@ -520,6 +520,28 @@ describe('TextInput', () => {
     });
   });
 
+  describe('autoComplete prop (#5638)', () => {
+    it('forwards autoComplete to the native input unchanged', () => {
+      render(
+        <TextInput
+          label="Reason"
+          value=""
+          onChange={() => {}}
+          autoComplete="off"
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'autocomplete',
+        'off',
+      );
+    });
+
+    it('does not set autocomplete when not provided', () => {
+      render(<TextInput label="Name" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('autocomplete');
+    });
+  });
+
   describe('onEnter', () => {
     it('calls onEnter when Enter key is pressed', async () => {
       const user = userEvent.setup();

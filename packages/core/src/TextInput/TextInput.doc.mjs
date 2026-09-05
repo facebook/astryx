@@ -163,6 +163,12 @@ export const docs = {
       description:
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        'The native autocomplete attribute, forwarded to the input unchanged. Does not affect the controlled value.',
+    },
   ],
   theming: {
     targets: [
@@ -336,6 +342,12 @@ export const docsZh = {
       description:
         '输入框的 HTML name 属性，用于表单提交。',
     },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        '原生 autocomplete 属性，原样转发给输入框。不影响受控的值。',
+    },
   ],
   theming: {
     targets: [
@@ -418,5 +430,6 @@ export const docsDense = {
     hasClear: 'Shows clear button when input has value. Clears value on click.',
     hasAutoFocus: 'Auto-focus input on mount.',
     htmlName: 'HTML name attr for form submissions.',
+    autoComplete: 'Native autocomplete attr, forwarded unchanged. Does not affect the controlled value.',
   },
 };

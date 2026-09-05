@@ -259,6 +259,13 @@ export interface TextInputProps extends Omit<
    * Callback fired on keydown events on the input.
    */
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  /**
+   * The native `autocomplete` attribute, forwarded to the input unchanged.
+   * The value stays React-controlled regardless — this only hints the
+   * browser/password manager's suggestion behavior (e.g. `'off'` for a
+   * session-scoped field that must not reuse a prior value).
+   */
+  autoComplete?: React.InputHTMLAttributes<HTMLInputElement>['autoComplete'];
 }
 
 /**

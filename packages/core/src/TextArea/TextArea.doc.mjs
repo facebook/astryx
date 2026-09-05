@@ -256,6 +256,12 @@ export const docs = {
       description: 'Callback fired when the textarea loses focus.',
     },
     {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        'The native autocomplete attribute, forwarded to the textarea unchanged. Does not affect the controlled value.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -507,6 +513,11 @@ export const docsZh = {
       description: '文本域失去焦点时触发的回调。',
     },
     {
+      name: 'autoComplete',
+      type: 'string',
+      description: '原生 autocomplete 属性，原样转发给文本域。不影响受控的值。',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -678,6 +689,7 @@ export const docsDense = {
     htmlName: 'HTML name attr for form submissions.',
     onFocus: 'Callback on focus.',
     onBlur: 'Callback on blur.',
+    autoComplete: 'Native autocomplete attr, forwarded unchanged. Does not affect the controlled value.',
     xstyle:
       'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
   },
