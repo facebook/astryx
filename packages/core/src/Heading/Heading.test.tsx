@@ -9,6 +9,12 @@ import {render, screen} from '@testing-library/react';
 import {describe, it, expect, vi} from 'vitest';
 import {Heading} from './Heading';
 
+declare module './index' {
+  interface HeadingTypeMap {
+    hero: true;
+  }
+}
+
 describe('Heading', () => {
   describe('rendering', () => {
     it('renders children correctly', () => {
@@ -208,6 +214,28 @@ describe('Heading', () => {
       );
       const element = screen.getByText('Display Heading');
       expect(element.className).toContain('display-1');
+    });
+
+    it('reflects a theme-augmented visual type and keeps the level baseline', () => {
+      const baseline = render(<Heading level={2}>Baseline</Heading>);
+      const baselineClasses = screen
+        .getByText('Baseline')
+        .className.split(/\s+/)
+        .filter(Boolean);
+      baseline.unmount();
+
+      render(
+        <Heading level={2} type="hero">
+          Custom visual role
+        </Heading>,
+      );
+      const element = screen.getByText('Custom visual role');
+
+      expect(element).toHaveAttribute('data-type', 'hero');
+      expect(element.className).toContain('hero');
+      for (const className of baselineClasses) {
+        expect(element.className).toContain(className);
+      }
     });
   });
 
