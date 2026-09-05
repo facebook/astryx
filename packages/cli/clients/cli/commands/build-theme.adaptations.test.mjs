@@ -316,6 +316,69 @@ describe('theme build adaptations', () => {
     expect(css).toContain('letter-spacing: -0.01em');
   });
 
+  it('accepts built-in values from alias-typed closed props', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themesDir = path.join(project, 'themes');
+    const themeFile = writeTheme(
+      themesDir,
+      'alias-builtins',
+      `{
+        name: 'alias-builtins',
+        adaptations: {
+          rules: [{
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                'avatar-group': {'size:xl': {gap: '12px'}},
+              },
+            },
+          }],
+        },
+      }`,
+    );
+
+    const result = await build(project, themeFile);
+    expect(result.code).toBe(0);
+    expect(
+      fs.readFileSync(path.join(themesDir, 'alias-builtins.css'), 'utf-8'),
+    ).toContain('gap: 12px');
+  });
+
+  it('rejects unsupported values from alias-typed closed props', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themesDir = path.join(project, 'themes');
+    const themeFile = writeTheme(
+      themesDir,
+      'alias-unknown',
+      `{
+        name: 'alias-unknown',
+        adaptations: {
+          rules: [{
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                'avatar-group': {'size:giant': {gap: '12px'}},
+                heading: {'type:body': {fontSize: '48px'}},
+              },
+            },
+          }],
+        },
+      }`,
+    );
+
+    const result = await build(project, themeFile);
+    expect(result.code).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'Adaptation rule introduces "avatar-group.size:giant"',
+    );
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'Adaptation rule introduces "heading.type:body"',
+    );
+    expect(fs.existsSync(path.join(themesDir, 'alias-unknown.css'))).toBe(
+      false,
+    );
+  });
+
   it('warns rather than hard-failing unknown rule targets and axes', async () => {
     const project = path.join(tmpDir, 'project');
     const themesDir = path.join(project, 'themes');

@@ -19,6 +19,10 @@
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
  *
+ * It validates component targets and finite visual-prop domains, resolving
+ * source aliases so closed props cannot emit unreachable selectors while real
+ * augmentation points remain extensible.
+ *
  * With `{check: true}`, it compiles the same outputs in memory but writes
  * nothing: it compares each generated file against what is on disk (ignoring
  * only the volatile `@generated` `Command:` line) and returns a
@@ -48,6 +52,10 @@ import {
   targetsByKey,
 } from '../../../foundation/discovery/theming-targets.mjs';
 import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
+import {
+  createLiteralTypeResolver,
+  findComponentSourceFile,
+} from './literal-type-resolver.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -217,7 +225,7 @@ async function loadKnownValuesIndex() {
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return {};
 
-  /** @type {any[]} */
+  /** @type {Array<{doc: any, file: string}>} */
   const docs = [];
   /** @param {string} dir */
   async function scan(dir) {
@@ -231,7 +239,7 @@ async function loadKnownValuesIndex() {
       }
       if (!entry.name.endsWith('.doc.mjs')) continue;
       try {
-        docs.push(await loadComponentDoc(full));
+        docs.push({doc: await loadComponentDoc(full), file: full});
       } catch {
         // One malformed or optional doc must not erase validation for the rest.
       }
@@ -245,56 +253,121 @@ async function loadKnownValuesIndex() {
       .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
       .replace(/\s+/g, '-')
       .toLowerCase();
+
+  const visualPropNames = new Set(
+    docs.flatMap(({doc}) =>
+      (doc?.theming?.targets ?? []).flatMap(
+        (/** @type {any} */ target) => target?.visualProps ?? [],
+      ),
+    ),
+  );
+  /** @type {Map<string, string|null>} */
+  const sourceFileCache = new Map();
+  /** @param {string} componentName @param {string} docFile */
+  const sourceFor = (componentName, docFile) => {
+    const key = `${docFile}\0${componentName}`;
+    if (!sourceFileCache.has(key)) {
+      sourceFileCache.set(
+        key,
+        findComponentSourceFile(coreSrc, componentName, docFile),
+      );
+    }
+    return sourceFileCache.get(key) ?? null;
+  };
+
+  const typeOwnerFiles = new Set();
+  for (const {doc, file} of docs) {
+    for (const owner of [doc, ...(doc?.components ?? [])]) {
+      if (typeof owner?.name !== 'string') continue;
+      const hasNamedVisualType = (owner.props ?? []).some(
+        (/** @type {any} */ prop) =>
+          visualPropNames.has(prop?.name) &&
+          typeof prop?.type === 'string' &&
+          /^[A-Za-z_$][\w$]*$/.test(prop.type.trim()),
+      );
+      if (!hasNamedVisualType) continue;
+      const source = sourceFor(owner.name, file);
+      if (source) typeOwnerFiles.add(source);
+    }
+  }
+  const typeResolver = await createLiteralTypeResolver([...typeOwnerFiles]);
+
   /**
    * @param {any[]} props
+   * @param {string|null} ownerFile
    * @returns {Record<string, Set<string>>}
    */
-  const valuesFromProps = props => {
+  const valuesFromProps = (props, ownerFile) => {
     /** @type {Record<string, Set<string>>} */
     const result = {};
     for (const prop of props ?? []) {
-      if (typeof prop?.name !== 'string' || typeof prop?.type !== 'string') {
+      if (
+        !visualPropNames.has(prop?.name) ||
+        typeof prop?.name !== 'string' ||
+        typeof prop?.type !== 'string'
+      ) {
         continue;
       }
-      /** @type {Set<string>} */
-      const values = new Set();
-      for (const match of prop.type.match(/'([^']+)'/g) ?? []) {
-        values.add(match.slice(1, -1));
-      }
-      for (const part of prop.type
-        .split('|')
-        .map((/** @type {string} */ value) => value.trim())) {
-        if (/^-?\d+(?:\.\d+)?$/.test(part)) values.add(part);
-      }
-      if (values.size > 0) result[prop.name] = values;
+      const values = typeResolver.resolve(prop.type, ownerFile);
+      if (values?.length) result[prop.name] = new Set(values);
     }
     return result;
   };
 
+  /**
+   * @param {Record<string, Set<string>>} target
+   * @param {Record<string, Set<string>>} source
+   */
+  const mergePropValues = (target, source) => {
+    for (const [prop, propValues] of Object.entries(source)) {
+      if (!target[prop]) target[prop] = new Set();
+      for (const value of propValues) target[prop].add(value);
+    }
+  };
+
   /** @type {Record<string, Record<string, Set<string>>>} */
   const valuesByOwner = {};
-  for (const doc of docs) {
+  /**
+   * @param {string} owner
+   * @param {Record<string, Set<string>>} values
+   */
+  const mergeOwnerValues = (owner, values) => {
+    if (!valuesByOwner[owner]) valuesByOwner[owner] = {};
+    mergePropValues(valuesByOwner[owner], values);
+  };
+
+  for (const {doc, file} of docs) {
     if (typeof doc?.name === 'string') {
-      valuesByOwner[targetName(doc.name)] = valuesFromProps(doc.props);
+      const source = sourceFor(doc.name, file);
+      mergeOwnerValues(
+        targetName(doc.name),
+        valuesFromProps(doc.props, source),
+      );
     }
     for (const component of /** @type {any[]} */ (doc?.components ?? [])) {
-      if (typeof component?.name === 'string') {
-        valuesByOwner[targetName(component.name)] = valuesFromProps(
-          component.props,
-        );
-      }
+      if (typeof component?.name !== 'string') continue;
+      const source = sourceFor(component.name, file);
+      mergeOwnerValues(
+        targetName(component.name),
+        valuesFromProps(component.props, source),
+      );
     }
   }
 
   /** @type {Record<string, Record<string, Set<string>>>} */
   const collected = {};
-  for (const doc of docs) {
-    const localValues = valuesFromProps([
-      ...(doc?.props ?? []),
-      ...(doc?.components ?? []).flatMap(
-        (/** @type {any} */ component) => component?.props ?? [],
-      ),
-    ]);
+  for (const {doc, file} of docs) {
+    /** @type {Record<string, Set<string>>} */
+    const localValues = {};
+    const docSource =
+      typeof doc?.name === 'string' ? sourceFor(doc.name, file) : null;
+    mergePropValues(localValues, valuesFromProps(doc?.props, docSource));
+    for (const component of /** @type {any[]} */ (doc?.components ?? [])) {
+      if (typeof component?.name !== 'string') continue;
+      const source = sourceFor(component.name, file);
+      mergePropValues(localValues, valuesFromProps(component.props, source));
+    }
+
     for (const target of doc?.theming?.targets ?? []) {
       if (typeof target?.className !== 'string') continue;
       const componentName = target.className.replace(/^astryx-/, '');
@@ -304,10 +377,11 @@ async function loadKnownValuesIndex() {
         if (!collected[componentName][prop]) {
           collected[componentName][prop] = new Set();
         }
-        for (const value of [
-          ...(localValues[prop] ?? []),
-          ...(ownerValues[prop] ?? []),
-        ]) {
+        const propValues =
+          ownerValues[prop]?.size > 0
+            ? ownerValues[prop]
+            : (localValues[prop] ?? []);
+        for (const value of propValues) {
           collected[componentName][prop].add(value);
         }
       }
@@ -518,6 +592,112 @@ function componentHasAugmentableInterface(pascalName, interfaceName) {
   return re.test(decl);
 }
 
+/** @type {Map<string, {modulePath: string, interfaceName: string}|null>} */
+const _visualPropAugmentationTargetCache = new Map();
+
+/**
+ * Find the public module/interface pair that makes a visual prop extensible.
+ * Most axes use `<Component><Prop>Map`; Text's historical type axis uses the
+ * `CustomTextTypes` interface in the theme module.
+ *
+ * @param {string} component
+ * @param {string} prop
+ * @returns {Promise<{modulePath: string, interfaceName: string}|null>}
+ */
+async function resolveVisualPropAugmentationTarget(component, prop) {
+  const cacheKey = `${component}:${prop}`;
+  if (_visualPropAugmentationTargetCache.has(cacheKey)) {
+    return _visualPropAugmentationTargetCache.get(cacheKey) ?? null;
+  }
+
+  if (component === 'text' && prop === 'type') {
+    const coreRoot = resolveCoreRoot();
+    const declarations = coreRoot
+      ? [
+          path.join(coreRoot, 'dist', 'theme', 'types.d.ts'),
+          path.join(coreRoot, 'src', 'theme', 'types.ts'),
+        ]
+          .filter(file => fs.existsSync(file))
+          .map(file => fs.readFileSync(file, 'utf-8'))
+          .join('\n')
+      : '';
+    if (/\binterface\s+CustomTextTypes\b/.test(declarations)) {
+      const target = {
+        modulePath: '@astryxdesign/core/theme',
+        interfaceName: 'CustomTextTypes',
+      };
+      _visualPropAugmentationTargetCache.set(cacheKey, target);
+      return target;
+    }
+  }
+
+  const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
+  const candidate = (await resolveAugmentationTargetCandidates(component)).find(
+    candidate =>
+      componentHasAugmentableInterface(
+        candidate.moduleName,
+        `${candidate.interfacePrefix}${propPascal}Map`,
+      ),
+  );
+  const target = candidate
+    ? {
+        modulePath: `@astryxdesign/core/${candidate.moduleName}`,
+        interfaceName: `${candidate.interfacePrefix}${propPascal}Map`,
+      }
+    : null;
+  _visualPropAugmentationTargetCache.set(cacheKey, target);
+  return target;
+}
+
+/**
+ * Whether a rendered target/prop has a real public interface that module
+ * augmentation can widen.
+ *
+ * @param {string} component
+ * @param {string} prop
+ * @returns {Promise<boolean>}
+ */
+async function isExtensibleVisualProp(component, prop) {
+  return (await resolveVisualPropAugmentationTarget(component, prop)) != null;
+}
+
+/**
+ * Reject unknown root values on closed visual props. Extensible props may add
+ * values because the build emits a matching module augmentation.
+ *
+ * @param {Record<string, any>} themeDef
+ * @returns {Promise<string[]>}
+ */
+async function validateRootVariantValues(themeDef) {
+  /** @type {string[]} */
+  const errors = [];
+  for (const [component, rules] of rootComponentEntries(themeDef)) {
+    const known = await getKnownValues(component);
+    for (const key of Object.keys(rules)) {
+      if (key === 'base') continue;
+      for (const pair of key.split('+')) {
+        const colon = pair.indexOf(':');
+        if (colon === -1) continue;
+        const prop = pair.slice(0, colon);
+        const value = pair.slice(colon + 1);
+        const knownValues = known[prop];
+        if (
+          !knownValues ||
+          knownValues.length === 0 ||
+          knownValues.includes(value)
+        ) {
+          continue;
+        }
+        if (await isExtensibleVisualProp(component, prop)) continue;
+        errors.push(
+          `Root theme sets unsupported "${component}.${prop}:${value}". "${prop}" is a closed visual prop; use a built-in value.`,
+        );
+      }
+    }
+  }
+  return [...new Set(errors)];
+}
+
 /**
  * Adaptation values from resolved runtime rules, raw input, or normalized built
  * metadata. Built modules intentionally omit `__adaptationRules`, so every CLI
@@ -616,15 +796,14 @@ async function validateAdaptationVariantValues(themeDef) {
         const prop = colon === -1 ? pair : pair.slice(0, colon);
         if (colon === -1) continue;
         const value = pair.slice(colon + 1);
-        // Some public prop types are opaque aliases rather than literal unions.
-        // When docs cannot enumerate an axis, avoid turning that discovery gap
-        // into a false hard failure; the normal component validator still checks
-        // that the axis itself exists.
-        if (!known[prop] || known[prop].length === 0) continue;
-        if (
-          known[prop].includes(value) ||
-          rootValues.has(`${component}:${pair}`)
-        ) {
+        const knownValues = known[prop];
+        if (knownValues?.includes(value)) continue;
+        const extensible = await isExtensibleVisualProp(component, prop);
+        if (extensible && rootValues.has(`${component}:${pair}`)) continue;
+        // Keep unknown axes advisory-only. For known extensible axes, however,
+        // a rule-only value is always invalid even when docs cannot enumerate
+        // the built-ins.
+        if ((!knownValues || knownValues.length === 0) && !extensible) {
           continue;
         }
         errors.push(
@@ -645,11 +824,11 @@ async function validateAdaptationVariantValues(themeDef) {
  *   banner + status → BannerStatusMap
  *   button + variant → ButtonVariantMap
  *
- * An augmentation is only emitted when `@astryxdesign/core/<Component>` actually
- * exports a matching interface. Props backed by closed literal-union types
- * (e.g. Button `size`, Heading `type`/`level`) have no augmentation point, so
- * generating a `declare module` block for them would be dead code — those are
- * skipped.
+ * An augmentation is only emitted when the public core surface actually exports
+ * a matching interface. Most axes use `<Component><Prop>Map`; Text's historical
+ * type axis uses `CustomTextTypes` in `@astryxdesign/core/theme`. Props backed by
+ * closed literal-union types (e.g. Button `size`, Heading `type`/`level`) have no
+ * augmentation point, so generating a declaration for them would be dead code.
  *
  * @param {{components?: Record<string, Record<string, Record<string, unknown>>>}} themeDef - Theme definition (resolved by defineTheme)
  * @returns {Promise<string|null>} TypeScript declaration content, or null if no augmentations needed
@@ -701,28 +880,14 @@ async function generateVariantDeclarationsAsync(themeDef) {
     for (const [prop, values] of Object.entries(props)) {
       if (values.size === 0) continue;
 
-      const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const target = (
-        await resolveAugmentationTargetCandidates(component)
-      ).find(candidate =>
-        componentHasAugmentableInterface(
-          candidate.moduleName,
-          `${candidate.interfacePrefix}${propPascal}Map`,
-        ),
-      );
+      const target = await resolveVisualPropAugmentationTarget(component, prop);
 
       // Only augment interfaces that actually exist as an extension point in
-      // core. Props backed by closed literal-union types (e.g. Button `size`,
-      // Heading `type`/`level`) have no `*Map` interface — a `declare module`
-      // block against a non-existent interface just creates a new, unused
-      // interface and never extends the component's prop union, so skip it.
+      // core. Closed literal-union props have no target, so they are skipped.
       if (!target) continue;
 
-      const modulePath = `@astryxdesign/core/${target.moduleName}`;
-      const interfaceName = `${target.interfacePrefix}${propPascal}Map`;
-
-      sections.push(`declare module '${modulePath}' {`);
-      sections.push(`  interface ${interfaceName} {`);
+      sections.push(`declare module '${target.modulePath}' {`);
+      sections.push(`  interface ${target.interfaceName} {`);
       for (const v of values) {
         sections.push(`    '${v}': true;`);
       }
@@ -1366,11 +1531,13 @@ export async function themeBuild(
       resolvedTheme = themeDef;
     }
 
-    const adaptationValueErrors =
-      await validateAdaptationVariantValues(resolvedTheme);
-    if (adaptationValueErrors.length > 0) {
+    const variantValueErrors = [
+      ...(await validateRootVariantValues(resolvedTheme)),
+      ...(await validateAdaptationVariantValues(resolvedTheme)),
+    ];
+    if (variantValueErrors.length > 0) {
       throw new AstryxError(
-        adaptationValueErrors.join('\n'),
+        variantValueErrors.join('\n'),
         undefined,
         ERROR_CODES.ERR_THEME_INVALID,
       );

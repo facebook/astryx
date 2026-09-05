@@ -94,6 +94,13 @@ export function buildProbeComponents(targets, propsByComponent, aliases = {}) {
   const skipped = [];
   let selectors = 0;
 
+  /** @param {string} key */
+  const targetOwner = key =>
+    key
+      .split('-')
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('');
+
   for (const target of targets) {
     const styles = (components[target.key] ??= {});
 
@@ -106,9 +113,10 @@ export function buildProbeComponents(targets, propsByComponent, aliases = {}) {
     }
 
     for (const prop of target.props) {
-      const declared = propsByComponent[target.component]?.find(
-        entry => entry.name === prop,
-      );
+      const owner = targetOwner(target.key);
+      const declared =
+        propsByComponent[owner]?.find(entry => entry.name === prop) ??
+        propsByComponent[target.component]?.find(entry => entry.name === prop);
       const values = unionValues(declared?.type, aliases);
       if (values.length === 0) {
         skipped.push({
