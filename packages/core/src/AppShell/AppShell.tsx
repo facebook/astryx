@@ -396,7 +396,10 @@ const styles = stylex.create({
     height: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-2'],
   },
-  // Sticky header for auto height mode
+  // Sticky header for auto height mode. The header stays at its local
+  // stacking level — Field-owned input surfaces contain their own local
+  // z-index layers (AST-027), so no escalated page-level value is needed
+  // for the header to paint above scrolled content.
   headerSticky: {
     position: 'sticky',
     top: 0,

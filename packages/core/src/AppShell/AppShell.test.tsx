@@ -25,6 +25,7 @@ import {InternationalizationProvider} from '../i18n';
 import {MobileNav} from '../MobileNav';
 import {SideNav, SideNavItem, SideNavSection} from '../SideNav';
 import {TopNav, TopNavHeading, TopNavItem} from '../TopNav';
+import {TextInput} from '../TextInput';
 import {useAppShellMobile} from './AppShellMobileContext';
 
 // jsdom doesn't implement showModal/close on <dialog>, so we mock them
@@ -558,6 +559,41 @@ describe('AppShell', () => {
   // ===========================================================================
   // Sticky navigation in auto mode
   // ===========================================================================
+
+  // A Field input wrapper carries a local z-index (it paints above the
+  // attached status message box via a negative-margin overlap), so without a
+  // component-owned isolation boundary it competes with page-level stacking —
+  // a field scrolled underneath the sticky header then paints over it (#5689).
+  // The fix is local containment: the Field root isolates the wrapper's local
+  // layer, so the header needs no escalated z-index to stay above it. This
+  // asserts that ownership boundary — the field's painted surface is an
+  // isolated stacking context — not a comparison between two page-level
+  // z-index values.
+  it('contains Field input stacking locally so the sticky header needs no escalated z-index in auto mode', () => {
+    render(
+      <AppShell height="auto" topNav={<div>Nav</div>}>
+        <TextInput
+          label="Name"
+          statusVariant="detached"
+          value=""
+          onChange={() => {}}
+        />
+      </AppShell>,
+    );
+    const header = screen.getByRole('banner');
+    const inputWrapper = screen.getByRole('textbox').parentElement!;
+    // The detached variant renders the input wrapper outside Field's isolated
+    // attached-status wrapper, so the Field root must own the boundary.
+    const fieldRoot = inputWrapper.parentElement!;
+    expect(inputWrapper).toBeTruthy();
+    expect(getComputedStyle(header).position).toBe('sticky');
+    // The header stays at its normal local stacking level — no escalation.
+    expect(Number(getComputedStyle(header).zIndex)).toBe(1);
+    expect(getComputedStyle(inputWrapper).position).toBe('relative');
+    // Field's local layers cannot escape into page-level stacking: the root
+    // establishes an isolation boundary around the input wrapper's z-index.
+    expect(getComputedStyle(fieldRoot).isolation).toBe('isolate');
+  });
 
   it('wraps header in sticky container in auto mode', () => {
     render(
