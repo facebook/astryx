@@ -658,7 +658,7 @@ export default function ComponentScoresPage() {
 
   // Switching rows keeps the non-modal drawer open. Reset its reading
   // position and move focus to the new heading so the changed audit is
-  // announced and Escape continues to reach the drawer's key handler.
+  // announced and Escape continues to reach the shared dismissal owner.
   useEffect(() => {
     if (!isAuditPanelOpen || !selectedRowId) {
       return;
