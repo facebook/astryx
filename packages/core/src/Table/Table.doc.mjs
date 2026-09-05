@@ -128,12 +128,21 @@ export const docs = {
       {className: 'astryx-table-header'},
       {className: 'astryx-table-body'},
       {className: 'astryx-table-footer'},
-      {className: 'astryx-table-row'},
+      // `selected` is set by useTableSelection on checked rows.
+      {className: 'astryx-table-row', states: ['selected']},
       {className: 'astryx-table-cell', visualProps: ['density']},
       {className: 'astryx-table-header-cell', visualProps: ['density']},
       // Still emitted beside the names above, so themes written against
       // them keep working. Drop in the next major.
       {className: 'astryx-base-table', deprecatedFor: 'table'},
+    ],
+    vars: [
+      {
+        name: '--table-row-selected-background',
+        description:
+          'Colour of the wash useTableSelection paints on checked rows. Republished as the row overlay, so pinned cells replay the same colour. Set it on the table-row selected target to retint the selection; hasRowHighlight: false removes the wash entirely.',
+        default: 'var(--color-accent-muted)',
+      },
     ],
   },
   description: 'Styled, data-driven table with density, dividers, hover highlight, striped rows, and named plugin support. T must extend Record<string, unknown>.',

@@ -14,6 +14,8 @@ import userEvent from '@testing-library/user-event';
 import {Table} from '../../Table';
 import {useTableSelection} from './useTableSelection';
 import {colorVars} from '../../../theme/tokens.stylex';
+import {defineTheme} from '../../../theme/defineTheme';
+import {generateThemeCSS} from '../../../theme/generateThemeRules';
 import type {BodyRowRenderProps, TableColumn} from '../../types';
 
 // =============================================================================
@@ -91,6 +93,60 @@ function SelectionTable({
       idKey="id"
       plugins={{selection: selectionPlugin}}
     />
+  );
+}
+
+/**
+ * Selection table whose row data can change for reasons unrelated to
+ * selection. Renaming keeps the item's `id`, so the row keeps its React key
+ * and the same `<tr>` element re-renders — the situation where React re-owns
+ * the row's `className` while the plugin's imperative theming state has to
+ * survive on it.
+ */
+function RenamingSelectionTable() {
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [items, setItems] = useState<SelectableUser[]>(selectableUsers);
+
+  const selectionPlugin = useTableSelection<SelectableUser>({
+    getIsItemSelected: item => selectedKeys.has(item.id),
+    onSelectItem: ({item, isSelected}) => {
+      const next = new Set(selectedKeys);
+      if (isSelected) {
+        next.add(item.id);
+      } else {
+        next.delete(item.id);
+      }
+      setSelectedKeys(next);
+    },
+    onSelectAll: ({isAllSelected}) => {
+      setSelectedKeys(
+        isAllSelected ? new Set(items.map(u => u.id)) : new Set(),
+      );
+    },
+    getIsAllSelected: () =>
+      items.length > 0 && items.every(u => selectedKeys.has(u.id)),
+  });
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() =>
+          setItems(prev =>
+            prev.map(item =>
+              item.id === '1' ? {...item, name: 'Alicia'} : item,
+            ),
+          )
+        }>
+        Rename Alice
+      </button>
+      <Table
+        data={items}
+        columns={selectableColumns}
+        idKey="id"
+        plugins={{selection: selectionPlugin}}
+      />
+    </div>
   );
 }
 
@@ -216,7 +272,9 @@ describe('useTableSelection', () => {
   });
 
   describe('hasRowHighlight', () => {
-    const selectedBgColor = colorVars['--color-accent-muted'];
+    // The wash resolves through the themeable lever (see the
+    // 'selected-row theming' block below) rather than a fixed colour.
+    const selectedBgColor = `var(--table-row-selected-background, ${colorVars['--color-accent-muted']})`;
 
     it('paints a checked row with the accent wash by default', async () => {
       const user = userEvent.setup();
@@ -346,6 +404,164 @@ describe('useTableSelection', () => {
 
         expect(readOverlay(screen.getAllByRole('row')[2])).toBe('');
       });
+    });
+  });
+
+  // The selected state has to reach the theming system through the same
+  // surface every component uses (the `astryx-table-row` target), and the
+  // wash has to resolve through a value a theme can actually set — otherwise
+  // a theme can only turn the highlight off, never restyle it (#5425).
+  describe('selected-row theming', () => {
+    const selectedWashColor = `var(--table-row-selected-background, ${colorVars['--color-accent-muted']})`;
+
+    it('publishes the selected state on the table-row target', async () => {
+      const user = userEvent.setup();
+      render(<SelectionTable />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+
+      const [selectedRow, unselectedRow] = [
+        screen.getAllByRole('row')[1],
+        screen.getAllByRole('row')[2],
+      ];
+      expect(selectedRow).toHaveClass('astryx-table-row');
+      expect(selectedRow).toHaveClass('selected');
+      expect(selectedRow).toHaveAttribute('data-selected', 'selected');
+      expect(unselectedRow).toHaveClass('astryx-table-row');
+      expect(unselectedRow).not.toHaveClass('selected');
+      expect(unselectedRow).not.toHaveAttribute('data-selected');
+    });
+
+    it('matches the selectors a theme generates for the selected state', async () => {
+      const user = userEvent.setup();
+      render(<SelectionTable />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+
+      // The rule `defineTheme({components: {'table-row': {selected: …}}})`
+      // emits is `.astryx-table-row.selected`; the data-attribute form is the
+      // raw-CSS escape hatch. Both must distinguish selected from unselected.
+      const [selectedRow, unselectedRow] = [
+        screen.getAllByRole('row')[1],
+        screen.getAllByRole('row')[2],
+      ];
+      expect(selectedRow.matches('.astryx-table-row.selected')).toBe(true);
+      expect(selectedRow.matches('[data-selected="selected"]')).toBe(true);
+      expect(unselectedRow.matches('.astryx-table-row.selected')).toBe(false);
+      expect(unselectedRow.matches('[data-selected="selected"]')).toBe(false);
+    });
+
+    it('keeps the published state across a rerender that does not change selection', async () => {
+      const user = userEvent.setup();
+      render(<RenamingSelectionTable />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+
+      const rowBefore = screen.getAllByRole('row')[1];
+      expect(rowBefore).toHaveClass('astryx-table-row');
+      expect(rowBefore).toHaveClass('selected');
+      expect(rowBefore).toHaveAttribute('data-selected', 'selected');
+      expect(rowBefore).toHaveAttribute('aria-selected', 'true');
+
+      // Rerender the selected row itself for a reason unrelated to selection:
+      // same item id, so the same <tr> element re-renders under React.
+      await user.click(screen.getByRole('button', {name: 'Rename Alice'}));
+
+      // The rerender really happened, on the same element...
+      expect(screen.getByText('Alicia')).toBeInTheDocument();
+      const rowAfter = screen.getAllByRole('row')[1];
+      expect(rowAfter).toBe(rowBefore);
+      // ...and the imperatively-published theming state survived it.
+      expect(rowAfter).toHaveClass('astryx-table-row');
+      expect(rowAfter).toHaveClass('selected');
+      expect(rowAfter).toHaveAttribute('data-selected', 'selected');
+      expect(rowAfter).toHaveAttribute('aria-selected', 'true');
+      // The paint contract survived it too.
+      expect(rowAfter.style.backgroundColor).toBe(selectedWashColor);
+      expect(rowAfter.style.getPropertyValue('--table-row-overlay')).toBe(
+        selectedWashColor,
+      );
+    });
+
+    it('clears the published state when a row is unchecked', async () => {
+      const user = userEvent.setup();
+      render(<SelectionTable />);
+
+      const checkbox = screen.getAllByLabelText('Select row')[0];
+      await user.click(checkbox);
+      await user.click(checkbox);
+
+      const row = screen.getAllByRole('row')[1];
+      expect(row).not.toHaveClass('selected');
+      expect(row).not.toHaveAttribute('data-selected');
+      expect(row).not.toHaveAttribute('aria-selected');
+    });
+
+    it('publishes the state even when the wash is opted out', async () => {
+      const user = userEvent.setup();
+      render(<SelectionTable hasRowHighlight={false} />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+
+      // hasRowHighlight drops only the paint. The state a theme keys off —
+      // and the semantics — stay, so a theme can supply its own selected
+      // treatment on a table that turned the built-in wash off.
+      const row = screen.getAllByRole('row')[1];
+      expect(row).toHaveClass('selected');
+      expect(row).toHaveAttribute('data-selected', 'selected');
+      expect(row).toHaveAttribute('aria-selected', 'true');
+      expect(row.style.backgroundColor).toBe('');
+    });
+
+    it('paints the wash through a value a theme can set', async () => {
+      const user = userEvent.setup();
+      render(<SelectionTable />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+
+      // Not a fixed colour: the inline wash reads --table-row-selected-background,
+      // so a theme that sets it retints every checked row without touching the
+      // plugin config.
+      const row = screen.getAllByRole('row')[1];
+      expect(row.style.backgroundColor).toBe(
+        `var(--table-row-selected-background, ${colorVars['--color-accent-muted']})`,
+      );
+      // The same lever is what pinned cells replay, so a themed wash runs
+      // under the freeze line instead of stopping at it.
+      expect(row.style.getPropertyValue('--table-row-overlay')).toBe(
+        `var(--table-row-selected-background, ${colorVars['--color-accent-muted']})`,
+      );
+    });
+
+    it('emits the themed wash on the selected target the row matches', () => {
+      // The full chain, end to end: a theme recolours the wash through the
+      // selected state key, the generated rule lands on
+      // `.astryx-table-row.selected`, and that selector matches exactly the
+      // rows the plugin marks.
+      const {component} = generateThemeCSS(
+        defineTheme({
+          name: 'selection-theme-test',
+          components: {
+            'table-row': {
+              selected: {
+                '--table-row-selected-background': 'var(--color-success-muted)',
+              },
+            },
+          },
+        }),
+      );
+
+      expect(component).toContain('.astryx-table-row.selected');
+      expect(component).toContain(
+        '--table-row-selected-background: var(--color-success-muted)',
+      );
+
+      const selected = document.createElement('tr');
+      selected.className = 'astryx-table-row selected';
+      const unselected = document.createElement('tr');
+      unselected.className = 'astryx-table-row';
+      expect(selected.matches('.astryx-table-row.selected')).toBe(true);
+      expect(unselected.matches('.astryx-table-row.selected')).toBe(false);
     });
   });
 
