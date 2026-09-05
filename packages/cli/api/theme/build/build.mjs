@@ -12,10 +12,11 @@
  * - A .d.ts (plus an optional .variants.d.ts for custom prop values)
  *
  * It performs the writes and returns a `theme.build` receipt — its `warnings`
- * carry override problems and any fonts the theme names but does not load
- * (font-warning.mjs) — or `null` when the theme produced no CSS (nothing to
- * build). Errors throw AstryxError (with
- * a stable code). Human progress is emitted through the shared `logger`
+ * carry override problems, an `icons:` registry that no import backs (the
+ * generated module can only import a registry, so it must omit the key), and
+ * any fonts the theme names but does not load (font-warning.mjs) — or `null`
+ * when the theme produced no CSS (nothing to build). Errors throw AstryxError
+ * (with a stable code). Human progress is emitted through the shared `logger`
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
  *
@@ -728,17 +729,95 @@ function extractThemeDefinitionLegacy(filePath) {
 }
 
 /**
+ * Blank out JS/TS comments so regex scans cannot match inside them, while
+ * leaving everything else — including all string and template-literal
+ * contents — exactly where it was. Comment characters become spaces and
+ * newlines survive, so the result lines up with the original byte for byte.
+ *
+ * A tiny scanner rather than a parse: it tracks just enough state to know
+ * whether `//` or `/*` opens a comment — inside `'…'`, `"…"` and `` `…` ``
+ * they do not. It deliberately does not model regex literals or template
+ * interpolation; the scans this feeds (extractIconInfo) look for import
+ * statements and an `icons:` field, neither of which lives inside those.
+ * @param {string} source
+ * @returns {string}
+ */
+function blankComments(source) {
+  let out = '';
+  /** @type {'code' | 'single' | 'double' | 'template' | 'line' | 'block'} */
+  let state = 'code';
+  for (let i = 0; i < source.length; i++) {
+    const ch = /** @type {string} */ (source[i]);
+    const next = source[i + 1];
+    if (state === 'code') {
+      if (ch === '/' && next === '/') {
+        state = 'line';
+        out += '  ';
+        i++;
+      } else if (ch === '/' && next === '*') {
+        state = 'block';
+        out += '  ';
+        i++;
+      } else {
+        if (ch === "'") state = 'single';
+        else if (ch === '"') state = 'double';
+        else if (ch === '`') state = 'template';
+        out += ch;
+      }
+    } else if (state === 'line') {
+      if (ch === '\n') {
+        state = 'code';
+        out += ch;
+      } else {
+        out += ' ';
+      }
+    } else if (state === 'block') {
+      if (ch === '*' && next === '/') {
+        state = 'code';
+        out += '  ';
+        i++;
+      } else {
+        out += ch === '\n' ? ch : ' ';
+      }
+    } else {
+      // Inside a string or template literal: copy verbatim, honor escapes.
+      out += ch;
+      if (ch === '\\' && next !== undefined) {
+        out += next;
+        i++;
+      } else if (
+        (state === 'single' && ch === "'") ||
+        (state === 'double' && ch === '"') ||
+        (state === 'template' && ch === '`')
+      ) {
+        state = 'code';
+      }
+    }
+  }
+  return out;
+}
+
+/**
  * Extract icon import info from a theme source file.
- * Returns { importPath, exportName } or null if no icons.
  *
  * Looks for patterns like:
  *   import { defaultIconRegistry } from './icons';
  *   icons: defaultIconRegistry,
+ *
+ * The scan runs over comment-blanked source (#5058): the matched specifier is
+ * re-emitted verbatim as executable code in the generated module, so a doc
+ * comment that quotes an old import line — or a commented-out `icons:` field —
+ * must not count as the real thing.
+ *
+ * Returns null when the theme has no `icons:` field. Returns
+ * `{exportName, importPath: null}` when `icons:` names a binding that no
+ * import backs (e.g. a registry declared inline as a local const) — the caller
+ * warns instead of silently dropping the registry from the built theme.
  * @param {string} filePath
- * @returns {{exportName: string, importPath: string} | null}
+ * @returns {{exportName: string, importPath: string | null} | null}
  */
 function extractIconInfo(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8');
+  const content = blankComments(fs.readFileSync(filePath, 'utf8'));
 
   // Find the icons field in defineTheme
   const iconsMatch = content.match(/icons:\s*([a-zA-Z_][a-zA-Z0-9_]*)/);
@@ -751,7 +830,7 @@ function extractIconInfo(filePath) {
     `import\\s*{[^}]*\\b${varName}\\b[^}]*}\\s*from\\s*['"]([^'"]+)['"]`,
   );
   const importMatch = content.match(importRegex);
-  if (!importMatch) return null;
+  if (!importMatch) return {exportName: varName, importPath: null};
 
   return {
     exportName: varName,
@@ -1273,7 +1352,26 @@ export async function themeBuild(
   const jsPath = path.join(outDir, `${baseName}.js`);
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
-  const iconInfo = extractIconInfo(filePath);
+  // Icon registry detection. `importPath: null` means the theme names an
+  // `icons:` binding that no import backs (e.g. a registry declared inline as
+  // a const). The generated module can only *import* a registry — it holds
+  // React elements, which cannot be serialized — so the icons key is omitted;
+  // warn rather than dropping the whole registry silently (#5058).
+  const iconScan = extractIconInfo(filePath);
+  const iconInfo =
+    iconScan && iconScan.importPath != null
+      ? {exportName: iconScan.exportName, importPath: iconScan.importPath}
+      : null;
+  if (iconScan && iconScan.importPath == null) {
+    const msg =
+      `Theme sets \`icons: ${iconScan.exportName}\` but no import of ` +
+      `"${iconScan.exportName}" was found — the generated module can only ` +
+      `import a registry (it holds React elements, which cannot be ` +
+      `serialized), so the built theme will have no icons. Move the registry ` +
+      `to its own module and import it into the theme file.`;
+    warningMessages.push(msg);
+    logger.warn(`  ⚠ ${msg}`);
+  }
 
   // Type augmentation .d.ts if theme has custom prop values. Computed
   // before the main .d.ts so the latter can reference it (see below).
