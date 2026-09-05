@@ -42,7 +42,7 @@ jobs:
       # the action push or open its own PR — peter-evans handles that below so
       # we control title/body/labels.
       - name: Download translations from Crowdin
-        uses: crowdin/github-action@c7af9bc98b01694653031fef2a0dc6c7888ce9bc
+        uses: crowdin/github-action@e4a6c1338b4063c77d46a81875265f9e8bd76f95
         with:
           upload_sources: false
           upload_translations: false
