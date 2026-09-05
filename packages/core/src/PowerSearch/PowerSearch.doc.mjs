@@ -17,6 +17,54 @@ export const docs = {
     'structured',
     'omnibar',
   ],
+  playground: {
+    defaults: {
+      config: {
+        name: 'ExampleSearch',
+        fields: [
+          {
+            key: 'title',
+            label: 'Title',
+            defaultOperator: 'contains',
+            operators: [
+              {
+                key: 'contains',
+                label: 'contains',
+                value: {type: 'string'},
+              },
+            ],
+          },
+          {
+            key: 'status',
+            label: 'Status',
+            defaultOperator: 'is',
+            operators: [
+              {
+                key: 'is',
+                label: 'is',
+                value: {
+                  type: 'enum',
+                  values: [
+                    {value: 'open', label: 'Open'},
+                    {value: 'closed', label: 'Closed'},
+                    {value: 'pending', label: 'Pending'},
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      filters: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: {type: 'enum', value: 'open'},
+        },
+      ],
+      onChange: () => {},
+    },
+  },
   props: [
     {
       name: 'config',
