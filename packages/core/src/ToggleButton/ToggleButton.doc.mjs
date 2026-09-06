@@ -17,7 +17,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-toggle-button-group'},
-      {className: 'astryx-toggle-button', states: ['isPressed']},
+      {className: 'astryx-toggle-button', states: ['isPressed'], visualProps: ['elevation']},
     ],
   },
   description: 'A button that toggles between pressed and unpressed states. Thin wrapper over Button with controlled toggle pattern, icon swap, and font weight emphasis.',
@@ -48,6 +48,13 @@ export const docs = {
       type: "'sm' | 'md' | 'lg'",
       description: 'Button size. Defaults to group size when inside a group.',
       default: "'md'",
+    },
+    {
+      name: 'elevation',
+      type: "'none' | 'low' | 'med' | 'high'",
+      description:
+        'Resting shadow depth for floating (FAB-style) toggle buttons, mirroring Button. `none` is the default flat button; `low`/`med`/`high` map to the shadow token scale. Applies inside a ToggleButtonGroup as well — grouped children retain their own elevation.',
+      default: "'none'",
     },
     {
       name: 'isDisabled',

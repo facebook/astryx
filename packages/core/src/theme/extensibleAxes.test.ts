@@ -35,7 +35,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {readdirSync, readFileSync, existsSync} from 'node:fs';
+import {readdirSync, readFileSync} from 'node:fs';
 import {join, relative} from 'node:path';
 import ts from 'typescript';
 import {stableClassName} from '../naming';
@@ -277,13 +277,18 @@ function collectDocTargets(dir: string): Map<string, DocTarget[]> {
         }
         walk(full);
       } else if (entry.name.endsWith('.doc.mjs')) {
-        const componentDir = relative(SRC_DIR, full).split('/')[0];
+        const fallbackDir = relative(SRC_DIR, full).split('/')[0];
         let doc;
         try {
           doc = require(full).docs;
         } catch {
           continue;
         }
+        // Subcomponent docs can live in their parent's directory (for example,
+        // Text/Heading.doc.mjs). Attribute them to the component they document,
+        // not merely the first path segment.
+        const componentDir =
+          typeof doc?.name === 'string' ? doc.name : fallbackDir;
         const targets = (doc?.theming?.targets ?? [])
           .filter(
             (t: unknown): t is {className: string} =>

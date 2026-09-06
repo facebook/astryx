@@ -34,6 +34,10 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/centered-hero/page'),
   ),
+  'checkout-wizard': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/checkout-wizard/page'),
+  ),
   'classic-gallery': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/classic-gallery/page'),
@@ -77,6 +81,10 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/form-two-column/page'),
   ),
+  'form-wizard': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/form-wizard/page'),
+  ),
   'form-wizard-dialog': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/form-wizard-dialog/page'),
@@ -84,6 +92,10 @@ export const TEMPLATE_COMPONENTS: Record<
   'form-wizard-inline': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/form-wizard-inline/page'),
+  ),
+  'form-wizard-vertical': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/form-wizard-vertical/page'),
   ),
   'gallery-hero': lazy(
     () =>

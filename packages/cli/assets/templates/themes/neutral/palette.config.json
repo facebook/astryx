@@ -3,6 +3,14 @@
   "vibrancy": 50,
   "neutralProfile": "neutral-v1",
   "modeStrategy": "light-and-dark",
+  "darkChromaTaper": {
+    "edgeMultiplier": 0.5,
+    "throughStop": 25,
+    "recoverAtStop": 60,
+    "familyMultipliers": {
+      "yellow": 0.65
+    }
+  },
   "stops": [
     0,
     5,

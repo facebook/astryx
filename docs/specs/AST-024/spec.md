@@ -3,12 +3,12 @@ schema_version: 1
 template_version: 1
 kind: system-spec
 id: spec:AST-024
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-09-04
+phase: accepted
 owners: [rubyycheung]
 affects_architecture: [architecture:theme-authoring-contract]
 affects_families: []
@@ -41,9 +41,8 @@ contract.
 - Allow visual styling to repair an incorrect document outline.
 - Add arbitrary Heading sizes without a theme declaration or local source.
 - Replace `Text`, typography tokens, or the existing type-scale generator.
-- Define how additional typography values are calculated; scale-extension
-  authoring is covered separately by
-  [AST-023](https://github.com/facebook/astryx/pull/6010).
+- Define how additional typography values are calculated; theme-local scale
+  extension authoring remains a separate proposal.
 - Expand the font-weight choices available in every theme in this change.
 
 ## Terms
@@ -150,7 +149,7 @@ therefore permits CSS that its public component API cannot use safely.
   MUST NOT alter accessible name, heading role, semantic level, truncation behavior,
   or `aria-level` handling. Existing Heading accessibility tests remain applicable.
 
-## Proposed API
+## Accepted API
 
 ```ts
 // Excerpt from @astryxdesign/core/Heading
@@ -229,7 +228,7 @@ becomes an option that every Astryx application must support.
 
 ### Completion criteria
 
-This spec moves from `proposed` to `shipped` only when:
+This spec moves from `accepted` to `shipped` only when:
 
 - Heading exposes and consumes one public augmentable type map;
 - theme build emits and loads custom Heading type declarations;
