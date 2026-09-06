@@ -89,12 +89,19 @@ jobs:
         if: needs.check-scope.outputs.spec_only == 'true'
         run: node scripts/check-knowledge.mjs
 
-      # docsite `generate` runs `astryx theme build`, which imports the compiled
-      # @astryxdesign/core/theme entry (dist/theme/index.js). Build core first so that
-      # entry exists — otherwise generate fails with "Cannot find module".
-      - name: Build core package
+      # Docsite `generate` runs `astryx theme build`, which imports the compiled
+      # @astryxdesign/core/theme entry. Its generated preview registry also
+      # imports every configured canary component package. Build those package
+      # exports first so generation and Vitest exercise the same graph as the
+      # canary deployment.
+      - name: Build docsite component packages
         if: needs.check-scope.outputs.spec_only != 'true'
-        run: pnpm -F @astryxdesign/core build
+        run: |
+          pnpm -F @astryxdesign/core build
+          pnpm -F @astryxdesign/lab build
+          pnpm -F @astryxdesign/charts build
+          pnpm -F @astryxdesign/richtext build
+          pnpm -F @astryxdesign/vega build
 
       - name: Generate and test docsite data
         if: needs.check-scope.outputs.spec_only != 'true'
