@@ -10,6 +10,7 @@
 
 import {createContext, use} from 'react';
 import type {SearchableItem} from '../Typeahead';
+import type {SelectorOptionData} from '../Selector';
 
 export interface CommandPaletteContextValue {
   /** Current search query. */
@@ -24,8 +25,13 @@ export interface CommandPaletteContextValue {
   listId: string;
   /** Index-based highlight from useCombobox. -1 = none. */
   highlightedIndex: number;
-  /** Update highlighted index. */
-  setHighlightedIndex: (index: number) => void;
+  /**
+   * Hover-aware highlight from useCombobox: highlights the item without
+   * scrolling, so a stationary pointer cannot re-highlight and auto-scroll in
+   * a runaway loop (#6077). Keyboard paths keep the raw setter inside
+   * useCombobox, which owns scrollIntoView.
+   */
+  onItemMouseEnter: (item: SelectorOptionData, index: number) => void;
   /** Get the DOM id for an item by its flat index. */
   getItemId: (index: number) => string;
   /** Flat list of selectable items in DOM order (after grouping/filtering). */

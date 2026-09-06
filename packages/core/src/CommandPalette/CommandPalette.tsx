@@ -421,11 +421,25 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
 
           // When opening with a preselected value, highlight it once
           // bootstrap results arrive. No value → highlight stays at -1
-          // and ArrowDown naturally moves to the first item.
+          // and ArrowDown naturally moves to the first item. Inline previews
+          // take the hover-aware path so the initial highlight does not
+          // scrollIntoView the surrounding page (#6077).
           if (isBootstrap && value != null && value !== '') {
             const selectedIdx = items.findIndex(item => item.id === value);
             if (selectedIdx >= 0) {
-              combobox.setHighlightedIndex(selectedIdx);
+              if (isInline) {
+                // `items` is the fresh bootstrap result; the closure's
+                // selectableItems may still be empty at commit time.
+                const selectedItem = items[selectedIdx];
+                if (selectedItem) {
+                  combobox.onItemMouseEnter(
+                    {value: selectedItem.id},
+                    selectedIdx,
+                  );
+                }
+              } else {
+                combobox.setHighlightedIndex(selectedIdx);
+              }
             }
           }
         }
@@ -436,6 +450,7 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       searchResults,
       startTransition,
       value,
+      isInline,
       combobox,
       setOptimisticResults,
       announce,
@@ -503,7 +518,7 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       setValue,
       listId,
       highlightedIndex: combobox.highlightedIndex,
-      setHighlightedIndex: combobox.setHighlightedIndex,
+      onItemMouseEnter: combobox.onItemMouseEnter,
       getItemId: combobox.getItemId,
       selectableItems,
       searchResults: optimisticResults,
@@ -521,7 +536,7 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       setValue,
       listId,
       combobox.highlightedIndex,
-      combobox.setHighlightedIndex,
+      combobox.onItemMouseEnter,
       combobox.getItemId,
       selectableItems,
       optimisticResults,

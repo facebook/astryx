@@ -357,6 +357,50 @@ describe('CommandPalette', () => {
     expect(input).not.toHaveAttribute('aria-activedescendant');
   });
 
+  it('highlights on hover without scrolling and scrolls once per key (#6077)', async () => {
+    // CommandPaletteItem must take the hover-aware path (context's
+    // onItemMouseEnter), and the shared useHighlightedOptionScroll effect
+    // must be the single keyboard scroll owner. Calling the raw setter on
+    // hover kept the stationary-pointer runaway path alive, and the item's
+    // own scrollIntoView effect doubled every scroll call.
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    try {
+      render(
+        <CommandPalette
+          isOpen={true}
+          onOpenChange={() => {}}
+          searchSource={simpleSource}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
+      const home = screen.getByText('Home');
+      const settings = screen.getByText('Settings');
+
+      fireEvent.mouseEnter(home);
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      expect(input.getAttribute('aria-activedescendant')).toBe(
+        home.closest('[role="option"]')?.id,
+      );
+
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+      expect(input.getAttribute('aria-activedescendant')).toBe(
+        settings.closest('[role="option"]')?.id,
+      );
+
+      fireEvent.keyDown(input, {key: 'ArrowUp'});
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(2));
+    } finally {
+      delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+        .scrollIntoView;
+    }
+  });
+
   describe('screen reader announcements', () => {
     const politeRegion = () =>
       document.querySelector('[data-astryx-live-region="polite"]');
