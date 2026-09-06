@@ -201,6 +201,30 @@ role without changing its semantic level:
 </Heading>
 ```
 
+## Choosing a visual role or a separate theme
+
+Use a custom Heading type when the name describes a reusable typography job
+inside one design language, such as `hero`, `editorial`, or `sectionTitle`.
+Several roles may coexist on the same page, and `level` continues to follow the
+document outline. Use `weight` when one Heading needs only a named weight change;
+do not create another visual role for that single-property override.
+
+Use a separate theme when the surrounding visual context changes as a system,
+such as a different brand, palette, type family, density, or coordinated styling
+across several components. Apply that theme at the appropriate provider boundary
+so the page or product subtree changes together.
+
+Do not create a separate page theme solely to obtain one Heading treatment, and
+do not use a growing set of Heading types to imitate a broader brand or page
+theme. Keep role names semantic and reusable rather than encoding presentation
+details in names such as `hero64` or creating overlapping names such as `hero`,
+`heroLarge`, and `marketingHero`.
+
+Generated TypeScript declarations make a custom name available throughout the
+program that imports them; they cannot prove that the owning theme is active at a
+particular render site. Applications must still render the custom role under the
+theme that defines its runtime styles.
+
 ## Current-state impact
 
 The accepted spec changes no runtime or public API by itself. Its implementation

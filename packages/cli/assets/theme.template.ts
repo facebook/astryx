@@ -287,8 +287,13 @@ export const myTheme = defineTheme({
         padding: 'var(--spacing-6)',
       },
     },
-    // The same mechanism adds custom Text types: <Text type="hero" />.
+    // The same mechanism adds reusable visual roles to Text and Heading. Use a
+    // role when one typography treatment must coexist with others in this theme;
+    // use a separate theme when brand, palette, type family, density, or several
+    // components change together. Keep Heading.level tied to document structure,
+    // and use Heading.weight for a one-property emphasis change.
     text: {'type:hero': {fontSize: 'var(--font-size-4xl)', lineHeight: '1.05'}},
+    // heading: {'type:hero': {fontSize: 'var(--font-size-4xl)', lineHeight: '1.05'}},
   },
 
   // ───────────────────────────────────────────────────────────────────────

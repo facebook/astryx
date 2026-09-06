@@ -28,7 +28,7 @@ export const docs = {
       name: 'type',
       type: "'display-1' | 'display-2' | 'display-3'",
       description:
-        'Display type variant. Overrides the visual styling from `level` with display-scale sizing (larger, lighter weight, tighter line-height). Themes may add custom visual types. The `level` still determines the HTML element for accessibility. Use for hero banners, marketing headlines, and data callouts.',
+        'Display type variant. Overrides the visual styling from `level` with display-scale sizing (larger, lighter weight, tighter line-height). Themes may add reusable custom visual roles such as hero or editorial; use a separate theme instead when the brand, palette, type family, density, or several components change together. The `level` still determines the HTML element for accessibility.',
     },
     {
       name: 'weight',
@@ -223,7 +223,7 @@ export const docsDense = {
   propDescriptions: {
     level:
       'Heading level; determines HTML element + styling from theme (unless type is set).',
-    type: 'Display variant (display-1/2/3 or a theme-owned custom type); overrides visual styling from level.',
+    type: 'Display variant (display-1/2/3 or a theme-owned custom role); use a custom role for a reusable Heading treatment and a separate theme for broader visual-system changes.',
     weight:
       'Explicit font weight; wins over the visual type or heading-level default.',
     children: 'Heading content.',
