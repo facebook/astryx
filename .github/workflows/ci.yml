@@ -180,13 +180,14 @@ jobs:
   #
   # The projects are independent by construction (see vitest.config.ts: `ui` is
   # jsdom + StyleX, `node` is everything else), so running them as two jobs
-  # costs no duplicate execution and each lane carries roughly half the work.
-  # `node` is the heavier lane — locally 570s against the ui project's 244s —
-  # so it takes the larger supported runner while `ui` stays on the 2-core arm
-  # box.
+  # costs no duplicate execution. They do NOT carry half the work each: on this
+  # CI, `ui` is ~5x the heavier lane, so it takes the larger runner.
   #
-  # The repo-wide guardrail steps ride the LIGHTER lane, so the slow one is
-  # nothing but tests.
+  # The earlier local figure that put `node` ahead (570s vs 244s) was not a
+  # comparable measurement — only the node run was bounded to a small worker
+  # pool, and node is the project whose cost is per-assertion CLI subprocesses.
+  #
+  # The repo-wide guardrail steps ride `test-ui` (~18s of it).
   #
   # `test` remains a job, so the required check of that name still exists and
   # still reports for every PR. This mirrors the `build` join over
@@ -194,7 +195,7 @@ jobs:
   test-ui:
     needs: [check-scope]
     if: ${{ always() && !cancelled() }}
-    runs-on: 2-core-ubuntu-arm
+    runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:
@@ -252,7 +253,7 @@ jobs:
   test-node:
     needs: [check-scope]
     if: ${{ always() && !cancelled() }}
-    runs-on: 4-core-ubuntu
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:

@@ -79,8 +79,11 @@ jobs:
   # independent by construction (vitest.config.ts), so they split cleanly; the
   # typecheck gates need the `pnpm build` they follow, so they stay together in
   # their own lane and take the build with them.
+  #
+  # `ui` is the heavier project by ~4x here, so it takes the larger runner (see
+  # ci.yml's lane comment).
   test-ui:
-    runs-on: 2-core-ubuntu-arm
+    runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:
@@ -93,7 +96,7 @@ jobs:
       - run: pnpm vitest run --project ui
 
   test-node:
-    runs-on: 4-core-ubuntu
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
