@@ -13,8 +13,8 @@
  *      (`XDSButtonVariantMap`) instead of core's real `ButtonVariantMap`, so it
  *      created a new unused interface and never widened the prop union.
  *   2. Props with no augmentation point (closed literal-union types such as
- *      Button `size` or Heading `type`/`level`) still got a `declare module`
- *      block against a `*Map` interface that doesn't exist.
+ *      Button `size` or Heading `level`) still got a `declare module` block
+ *      against a `*Map` interface that doesn't exist.
  *   3. The generated `.variants.d.ts` was never referenced by the main
  *      `<name>.d.ts`, so even a correct augmentation never loaded.
  *   4. The augmentation targeted the public component subpath while the prop
@@ -94,7 +94,33 @@ describe('theme build custom-variant augmentations', () => {
     expect(dts).not.toMatch(/XDSButtonVariantMap/);
   });
 
-  it('emits Heading custom types and skips props with no augmentation point', async () => {
+  it('preserves the historical CustomTextTypes augmentation', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          text: { 'type:hero': { fontSize: '3rem' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(0);
+    const dts = fs.readFileSync(
+      path.join(tmpDir, 'variants-theme.variants.d.ts'),
+      'utf8',
+    );
+    expect(dts).toContain("declare module '@astryxdesign/core/theme'");
+    expect(dts).toMatch(/interface CustomTextTypes\b/);
+    expect(dts).toContain("'hero': true;");
+  });
+
+  it('emits custom values only for augmentation-wired props', async () => {
     const themeFile = writeTheme(
       tmpDir,
       `export default {
@@ -103,7 +129,6 @@ describe('theme build custom-variant augmentations', () => {
         components: {
           button: {
             'variant:accentOutline': { backgroundColor: 'transparent' },
-            'size:jumbo': { paddingBlock: '40px' },
           },
           heading: { 'type:hero': { fontSize: '80px' } },
         },
@@ -125,7 +150,7 @@ describe('theme build custom-variant augmentations', () => {
     expect(dts).toMatch(/interface HeadingTypeMap\b/);
     expect(dts).toContain("'hero': true;");
     expect(dts).toContain("declare module '@astryxdesign/core/Heading'");
-    // …but closed literal-union props still get no dead augmentation.
+    // Closed props still get no dead augmentation.
     expect(dts).not.toMatch(/ButtonSizeMap/);
   });
 
@@ -224,7 +249,7 @@ describe('theme build custom-variant augmentations', () => {
     }
   });
 
-  it('does not emit a .variants.d.ts when every custom value is non-augmentable', async () => {
+  it('rejects custom values on finite closed root axes', async () => {
     const themeFile = writeTheme(
       tmpDir,
       `export default {
@@ -232,6 +257,75 @@ describe('theme build custom-variant augmentations', () => {
         tokens: { '--color-bg': '#fff' },
         components: {
           button: { 'size:jumbo': { paddingBlock: '40px' } },
+          'avatar-group': { 'size:giant': { gap: '40px' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('button.size:jumbo');
+    expect(result.stderr).toContain('avatar-group.size:giant');
+    expect(result.stderr).toContain('This visual prop is closed');
+    expect(
+      fs.existsSync(path.join(tmpDir, 'variants-theme.variants.d.ts')),
+    ).toBe(false);
+  });
+
+  it('rejects custom closed values in media-surface layers', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        onDark: {
+          components: {
+            button: { 'size:jumbo': { paddingBlock: '40px' } },
+          },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('button.size:jumbo');
+    expect(result.stderr).toContain('in onDark components');
+  });
+
+  it('rejects strings outside a mixed literal and numeric domain', async () => {
+    const invalid = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          'metadata-list': { 'columns:arbitrary': { gap: '4px' } },
+        },
+      };\n`,
+    );
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, invalid)],
+      tmpDir,
+    );
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('metadata-list.columns:arbitrary');
+    expect(result.stderr).toContain('a finite number or one of: multi, single');
+  });
+
+  it('accepts canonical fractional values on open numeric axes', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          'metadata-list': { 'columns:0.5': { gap: '4px' } },
         },
       };\n`,
     );
@@ -242,8 +336,28 @@ describe('theme build custom-variant augmentations', () => {
     );
     expect(result.code).toBe(0);
     expect(
-      fs.existsSync(path.join(tmpDir, 'variants-theme.variants.d.ts')),
-    ).toBe(false);
+      fs.readFileSync(path.join(tmpDir, 'variants-theme.css'), 'utf8'),
+    ).toContain('.columns-0\\.5');
+  });
+
+  it('rejects open-domain values that cannot match the selector grammar', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          'code-block': { 'language:objective c': { borderWidth: '2px' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('code-block.language:objective c');
   });
 
   it('rejects an empty or combination-only custom Heading type', async () => {

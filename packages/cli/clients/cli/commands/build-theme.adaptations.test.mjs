@@ -400,6 +400,98 @@ describe('theme build adaptations', () => {
     ).toContain('brandy');
   });
 
+  it('does not treat media-only custom values as adaptation enrollment', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themesDir = path.join(project, 'themes');
+    const themeFile = writeTheme(
+      themesDir,
+      'media-only-variant',
+      `{
+        name: 'media-only-variant',
+        onDark: {
+          components: {
+            button: {'variant:night': {borderWidth: '1px'}},
+          },
+        },
+        adaptations: {
+          rules: [{
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                button: {'variant:night': {borderWidth: '3px'}},
+              },
+            },
+          }],
+        },
+      }`,
+    );
+
+    const result = await build(project, themeFile);
+    expect(result.code).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'button.variant:night',
+    );
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'Declare custom visual-prop values on the root theme first',
+    );
+  });
+
+  it('rejects rule-only values from imported finite aliases', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themesDir = path.join(project, 'themes');
+    const themeFile = writeTheme(
+      themesDir,
+      'rule-only-alias',
+      `{
+        name: 'rule-only-alias',
+        adaptations: {
+          rules: [{
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                'avatar-group': {'size:giant': {gap: '40px'}},
+              },
+            },
+          }],
+        },
+      }`,
+    );
+
+    const result = await build(project, themeFile);
+    expect(result.code).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'avatar-group.size:giant',
+    );
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'This visual prop is closed',
+    );
+  });
+
+  it('allows values on an open visual-prop domain', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themesDir = path.join(project, 'themes');
+    const themeFile = writeTheme(
+      themesDir,
+      'open-language',
+      `{
+        name: 'open-language',
+        adaptations: {
+          rules: [{
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                'code-block': {'language:my-dsl': {borderWidth: '3px'}},
+              },
+            },
+          }],
+        },
+      }`,
+    );
+
+    const result = await build(project, themeFile);
+    expect(result.code).toBe(0);
+  });
+
   it('validates private variables declared only in a rule', async () => {
     const project = path.join(tmpDir, 'project');
     const themesDir = path.join(project, 'themes');

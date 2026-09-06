@@ -1,0 +1,6294 @@
+{
+  "schemaVersion": 1,
+  "packageName": "@astryxdesign/core",
+  "summary": {
+    "targetCount": 276,
+    "targetPropCount": 304,
+    "deprecatedAliasCount": 21,
+    "domainCounts": {
+      "finite": 225,
+      "open": 9,
+      "unresolved": 0
+    },
+    "augmentationInterfaceCount": 20
+  },
+  "augmentationInterfaces": [
+    {
+      "module": "@astryxdesign/core/AppShell",
+      "interface": "AppShellVariantMap",
+      "currentKeys": [
+        "elevated",
+        "section",
+        "surface",
+        "wash"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Avatar",
+      "interface": "AvatarStatusDotVariantMap",
+      "currentKeys": [
+        "error",
+        "neutral",
+        "success"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Badge",
+      "interface": "BadgeVariantMap",
+      "currentKeys": [
+        "blue",
+        "cyan",
+        "error",
+        "green",
+        "info",
+        "neutral",
+        "orange",
+        "pink",
+        "purple",
+        "red",
+        "success",
+        "teal",
+        "warning",
+        "yellow"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Banner",
+      "interface": "BannerContainerMap",
+      "currentKeys": [
+        "card",
+        "section"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Banner",
+      "interface": "BannerStatusMap",
+      "currentKeys": [
+        "error",
+        "info",
+        "success",
+        "warning"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Breadcrumbs",
+      "interface": "BreadcrumbsVariantMap",
+      "currentKeys": [
+        "default",
+        "supporting"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Button",
+      "interface": "ButtonVariantMap",
+      "currentKeys": [
+        "destructive",
+        "ghost",
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Card",
+      "interface": "CardVariantMap",
+      "currentKeys": [
+        "blue",
+        "cyan",
+        "default",
+        "gray",
+        "green",
+        "muted",
+        "orange",
+        "pink",
+        "purple",
+        "red",
+        "teal",
+        "transparent",
+        "yellow"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Dialog",
+      "interface": "DialogVariantMap",
+      "currentKeys": [
+        "fullscreen",
+        "standard"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Divider",
+      "interface": "DividerVariantMap",
+      "currentKeys": [
+        "strong",
+        "subtle"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/FieldStatus",
+      "interface": "FieldStatusVariantMap",
+      "currentKeys": [
+        "attached",
+        "detached",
+        "tooltip"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Heading",
+      "interface": "HeadingTypeMap",
+      "currentKeys": [
+        "display-1",
+        "display-2",
+        "display-3"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Pagination",
+      "interface": "PaginationVariantMap",
+      "currentKeys": [
+        "compact",
+        "count",
+        "dots",
+        "input",
+        "none",
+        "pages"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/ProgressBar",
+      "interface": "ProgressBarVariantMap",
+      "currentKeys": [
+        "accent",
+        "error",
+        "neutral",
+        "success",
+        "warning"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Section",
+      "interface": "SectionVariantMap",
+      "currentKeys": [
+        "muted",
+        "section",
+        "transparent"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/StatusDot",
+      "interface": "StatusDotVariantMap",
+      "currentKeys": [
+        "accent",
+        "error",
+        "neutral",
+        "success",
+        "warning"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/Text",
+      "interface": "TextColorMap",
+      "currentKeys": [
+        "accent",
+        "disabled",
+        "inherit",
+        "placeholder",
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/theme",
+      "interface": "CustomTextTypes",
+      "currentKeys": []
+    },
+    {
+      "module": "@astryxdesign/core/Token",
+      "interface": "TokenColorMap",
+      "currentKeys": [
+        "blue",
+        "cyan",
+        "default",
+        "gray",
+        "green",
+        "orange",
+        "pink",
+        "purple",
+        "red",
+        "teal",
+        "yellow"
+      ]
+    },
+    {
+      "module": "@astryxdesign/core/TreeList",
+      "interface": "TreeListVariantMap",
+      "currentKeys": [
+        "lineGuides",
+        "noGuides"
+      ]
+    }
+  ],
+  "targets": [
+    {
+      "key": "alert-dialog",
+      "className": "astryx-alert-dialog",
+      "props": []
+    },
+    {
+      "key": "app-shell",
+      "className": "astryx-app-shell",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "elevated",
+                "section",
+                "surface",
+                "wash"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/AppShell",
+              "interface": "AppShellVariantMap",
+              "currentKeys": [
+                "elevated",
+                "section",
+                "surface",
+                "wash"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "app-shell-header",
+      "className": "astryx-app-shell-header",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "elevated",
+                "section",
+                "surface",
+                "wash"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/AppShell",
+              "interface": "AppShellVariantMap",
+              "currentKeys": [
+                "elevated",
+                "section",
+                "surface",
+                "wash"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "app-shell-sidenav",
+      "className": "astryx-app-shell-sidenav",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "elevated",
+                "section",
+                "surface",
+                "wash"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/AppShell",
+              "interface": "AppShellVariantMap",
+              "currentKeys": [
+                "elevated",
+                "section",
+                "surface",
+                "wash"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "aspect-ratio",
+      "className": "astryx-aspect-ratio",
+      "props": [
+        {
+          "name": "shape",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "ellipse",
+                "rectangle"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "avatar",
+      "className": "astryx-avatar",
+      "props": [
+        {
+          "name": "shape",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "circle",
+                "rounded",
+                "square"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm",
+                "xl",
+                "xsm"
+              ],
+              "numbers": [
+                16,
+                20,
+                24,
+                32,
+                36,
+                40,
+                48,
+                60,
+                64,
+                72,
+                96,
+                128,
+                144,
+                180
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "avatar-fallback",
+      "className": "astryx-avatar-fallback",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm",
+                "xl",
+                "xsm"
+              ],
+              "numbers": [
+                16,
+                20,
+                24,
+                32,
+                36,
+                40,
+                48,
+                60,
+                64,
+                72,
+                96,
+                128,
+                144,
+                180
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "avatar-group",
+      "className": "astryx-avatar-group",
+      "props": [
+        {
+          "name": "shape",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "circle",
+                "rounded",
+                "square"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm",
+                "xl",
+                "xsm"
+              ],
+              "numbers": [
+                16,
+                20,
+                24,
+                32,
+                36,
+                40,
+                48,
+                60,
+                64,
+                72,
+                96,
+                128,
+                144,
+                180
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "avatar-group-overflow",
+      "className": "astryx-avatar-group-overflow",
+      "props": [
+        {
+          "name": "shape",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "circle",
+                "rounded",
+                "square"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm",
+                "xl",
+                "xsm"
+              ],
+              "numbers": [
+                16,
+                20,
+                24,
+                32,
+                36,
+                40,
+                48,
+                60,
+                64,
+                72,
+                96,
+                128,
+                144,
+                180
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "avatar-status-dot",
+      "className": "astryx-avatar-status-dot",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "neutral",
+                "success"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Avatar",
+              "interface": "AvatarStatusDotVariantMap",
+              "currentKeys": [
+                "error",
+                "neutral",
+                "success"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "avatar-status-dot-glyph",
+      "className": "astryx-avatar-status-dot-glyph",
+      "props": [
+        {
+          "name": "shape",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "minus",
+                "ring"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "badge",
+      "className": "astryx-badge",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "blue",
+                "cyan",
+                "error",
+                "green",
+                "info",
+                "neutral",
+                "orange",
+                "pink",
+                "purple",
+                "red",
+                "success",
+                "teal",
+                "warning",
+                "yellow"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Badge",
+              "interface": "BadgeVariantMap",
+              "currentKeys": [
+                "blue",
+                "cyan",
+                "error",
+                "green",
+                "info",
+                "neutral",
+                "orange",
+                "pink",
+                "purple",
+                "red",
+                "success",
+                "teal",
+                "warning",
+                "yellow"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "banner",
+      "className": "astryx-banner",
+      "props": [
+        {
+          "name": "container",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "card",
+                "section"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Banner",
+              "interface": "BannerContainerMap",
+              "currentKeys": [
+                "card",
+                "section"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "info",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Banner",
+              "interface": "BannerStatusMap",
+              "currentKeys": [
+                "error",
+                "info",
+                "success",
+                "warning"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "banner-content",
+      "className": "astryx-banner-content",
+      "props": [
+        {
+          "name": "container",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "card",
+                "section"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Banner",
+              "interface": "BannerContainerMap",
+              "currentKeys": [
+                "card",
+                "section"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "info",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Banner",
+              "interface": "BannerStatusMap",
+              "currentKeys": [
+                "error",
+                "info",
+                "success",
+                "warning"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "banner-description",
+      "className": "astryx-banner-description",
+      "props": []
+    },
+    {
+      "key": "banner-icon",
+      "className": "astryx-banner-icon",
+      "props": [
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "info",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Banner",
+              "interface": "BannerStatusMap",
+              "currentKeys": [
+                "error",
+                "info",
+                "success",
+                "warning"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "base-table",
+      "className": "astryx-base-table",
+      "deprecatedFor": [
+        "table"
+      ],
+      "aliasOf": [
+        "astryx-table"
+      ],
+      "props": []
+    },
+    {
+      "key": "blockquote",
+      "className": "astryx-blockquote",
+      "props": []
+    },
+    {
+      "key": "bottom-sheet",
+      "className": "astryx-bottom-sheet",
+      "props": []
+    },
+    {
+      "key": "breadcrumb-item",
+      "className": "astryx-breadcrumb-item",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "default",
+                "supporting"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Breadcrumbs",
+              "interface": "BreadcrumbsVariantMap",
+              "currentKeys": [
+                "default",
+                "supporting"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "breadcrumb-item-menu-trigger",
+      "className": "astryx-breadcrumb-item-menu-trigger",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "default",
+                "supporting"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Breadcrumbs",
+              "interface": "BreadcrumbsVariantMap",
+              "currentKeys": [
+                "default",
+                "supporting"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "breadcrumb-menu",
+      "className": "astryx-breadcrumb-menu",
+      "props": []
+    },
+    {
+      "key": "breadcrumbs",
+      "className": "astryx-breadcrumbs",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "default",
+                "supporting"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Breadcrumbs",
+              "interface": "BreadcrumbsVariantMap",
+              "currentKeys": [
+                "default",
+                "supporting"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "button",
+      "className": "astryx-button",
+      "props": [
+        {
+          "name": "elevation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "high",
+                "low",
+                "med",
+                "none"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "destructive",
+                "ghost",
+                "primary",
+                "secondary"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Button",
+              "interface": "ButtonVariantMap",
+              "currentKeys": [
+                "destructive",
+                "ghost",
+                "primary",
+                "secondary"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "button-group",
+      "className": "astryx-button-group",
+      "props": [
+        {
+          "name": "elevation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "high",
+                "low",
+                "med",
+                "none"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "orientation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "horizontal",
+                "vertical"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "calendar",
+      "className": "astryx-calendar",
+      "props": [
+        {
+          "name": "mode",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "range",
+                "single"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "calendar-day",
+      "className": "astryx-calendar-day",
+      "props": [
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "in-range",
+          "role": "state"
+        },
+        {
+          "name": "marker",
+          "role": "state"
+        },
+        {
+          "name": "selected",
+          "role": "state"
+        },
+        {
+          "name": "today",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "calendar-nav",
+      "className": "astryx-calendar-nav",
+      "props": [
+        {
+          "name": "nav",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "next",
+                "prev"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "card",
+      "className": "astryx-card",
+      "props": [
+        {
+          "name": "elevation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "high",
+                "low",
+                "med",
+                "none"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "blue",
+                "cyan",
+                "default",
+                "gray",
+                "green",
+                "muted",
+                "orange",
+                "pink",
+                "purple",
+                "red",
+                "teal",
+                "transparent",
+                "yellow"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Card",
+              "interface": "CardVariantMap",
+              "currentKeys": [
+                "blue",
+                "cyan",
+                "default",
+                "gray",
+                "green",
+                "muted",
+                "orange",
+                "pink",
+                "purple",
+                "red",
+                "teal",
+                "transparent",
+                "yellow"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "carousel",
+      "className": "astryx-carousel",
+      "props": []
+    },
+    {
+      "key": "carousel-scroller",
+      "className": "astryx-carousel-scroller",
+      "props": [
+        {
+          "name": "edgeFade",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "edge-fade"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "gap",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [],
+              "numbers": [
+                0,
+                0.5,
+                1,
+                1.5,
+                2,
+                3,
+                4
+              ]
+            }
+          }
+        },
+        {
+          "name": "padding",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [],
+              "numbers": [
+                0,
+                0.5,
+                1,
+                1.5,
+                2,
+                3,
+                4,
+                5,
+                6,
+                8,
+                10
+              ]
+            }
+          }
+        },
+        {
+          "name": "snap",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "snap"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "center",
+      "className": "astryx-center",
+      "props": [
+        {
+          "name": "axis",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "both",
+                "horizontal",
+                "vertical"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "chat-composer",
+      "className": "astryx-chat-composer",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "chat-composer-drawer",
+      "className": "astryx-chat-composer-drawer",
+      "props": [
+        {
+          "name": "collapsed",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "collapsed"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "chat-composer-input",
+      "className": "astryx-chat-composer-input",
+      "props": []
+    },
+    {
+      "key": "chat-dictation-button",
+      "className": "astryx-chat-dictation-button",
+      "props": []
+    },
+    {
+      "key": "chat-layout",
+      "className": "astryx-chat-layout",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "chat-layout-scroll-button",
+      "className": "astryx-chat-layout-scroll-button",
+      "props": []
+    },
+    {
+      "key": "chat-message",
+      "className": "astryx-chat-message",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "sender",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "assistant",
+                "system",
+                "user"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "chat-message-bubble",
+      "className": "astryx-chat-message-bubble",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "sender",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "assistant",
+                "system",
+                "user"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "filled",
+                "ghost"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "chat-message-list",
+      "className": "astryx-chat-message-list",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "chat-message-metadata",
+      "className": "astryx-chat-message-metadata",
+      "props": []
+    },
+    {
+      "key": "chat-send-button",
+      "className": "astryx-chat-send-button",
+      "props": []
+    },
+    {
+      "key": "chat-system-message",
+      "className": "astryx-chat-system-message",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "default",
+                "divider"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "chat-tokenized-text",
+      "className": "astryx-chat-tokenized-text",
+      "props": []
+    },
+    {
+      "key": "chat-tool-calls",
+      "className": "astryx-chat-tool-calls",
+      "props": []
+    },
+    {
+      "key": "checkbox",
+      "className": "astryx-checkbox",
+      "deprecatedFor": [
+        "checkbox-indicator"
+      ],
+      "aliasOf": [
+        "astryx-checkbox-indicator"
+      ],
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "checked",
+          "role": "state"
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "checkbox-indicator",
+      "className": "astryx-checkbox-indicator",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "checked",
+          "role": "state"
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "checkbox-indicator-check",
+      "className": "astryx-checkbox-indicator-check",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "checkbox-indicator-dash",
+      "className": "astryx-checkbox-indicator-dash",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "checkbox-input",
+      "className": "astryx-checkbox-input",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "checkbox-label",
+      "className": "astryx-checkbox-label",
+      "props": []
+    },
+    {
+      "key": "checkbox-list",
+      "className": "astryx-checkbox-list",
+      "props": []
+    },
+    {
+      "key": "citation",
+      "className": "astryx-citation",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "label",
+                "number"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "clickable-card",
+      "className": "astryx-clickable-card",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "blue",
+                "cyan",
+                "default",
+                "gray",
+                "green",
+                "muted",
+                "orange",
+                "pink",
+                "purple",
+                "red",
+                "teal",
+                "transparent",
+                "yellow"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Card",
+              "interface": "CardVariantMap",
+              "currentKeys": [
+                "blue",
+                "cyan",
+                "default",
+                "gray",
+                "green",
+                "muted",
+                "orange",
+                "pink",
+                "purple",
+                "red",
+                "teal",
+                "transparent",
+                "yellow"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "code",
+      "className": "astryx-code",
+      "props": [
+        {
+          "name": "color",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "inherit",
+                "primary",
+                "secondary"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "code-block",
+      "className": "astryx-code-block",
+      "props": [
+        {
+          "name": "container",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "card",
+                "section"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "language",
+          "role": "visualProp",
+          "domain": {
+            "kind": "open",
+            "primitives": [
+              "string"
+            ]
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "code-block-copy-button",
+      "className": "astryx-code-block-copy-button",
+      "props": []
+    },
+    {
+      "key": "code-block-header",
+      "className": "astryx-code-block-header",
+      "props": [
+        {
+          "name": "container",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "card",
+                "section"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "language",
+          "role": "visualProp",
+          "domain": {
+            "kind": "open",
+            "primitives": [
+              "string"
+            ]
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "code-block-title",
+      "className": "astryx-code-block-title",
+      "props": [
+        {
+          "name": "language",
+          "role": "visualProp",
+          "domain": {
+            "kind": "open",
+            "primitives": [
+              "string"
+            ]
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "codeblock",
+      "className": "astryx-codeblock",
+      "deprecatedFor": [
+        "code-block"
+      ],
+      "aliasOf": [
+        "astryx-code-block"
+      ],
+      "props": [
+        {
+          "name": "container",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "card",
+                "section"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "language",
+          "role": "visualProp",
+          "domain": {
+            "kind": "open",
+            "primitives": [
+              "string"
+            ]
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "codeblock-copy-button",
+      "className": "astryx-codeblock-copy-button",
+      "deprecatedFor": [
+        "code-block-copy-button"
+      ],
+      "aliasOf": [
+        "astryx-code-block-copy-button"
+      ],
+      "props": []
+    },
+    {
+      "key": "codeblock-header",
+      "className": "astryx-codeblock-header",
+      "deprecatedFor": [
+        "code-block-header"
+      ],
+      "aliasOf": [
+        "astryx-code-block-header"
+      ],
+      "props": [
+        {
+          "name": "container",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "card",
+                "section"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "language",
+          "role": "visualProp",
+          "domain": {
+            "kind": "open",
+            "primitives": [
+              "string"
+            ]
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "codeblock-title",
+      "className": "astryx-codeblock-title",
+      "deprecatedFor": [
+        "code-block-title"
+      ],
+      "aliasOf": [
+        "astryx-code-block-title"
+      ],
+      "props": [
+        {
+          "name": "language",
+          "role": "visualProp",
+          "domain": {
+            "kind": "open",
+            "primitives": [
+              "string"
+            ]
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "collapsible",
+      "className": "astryx-collapsible",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "collapsible-content",
+      "className": "astryx-collapsible-content",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "collapsible-group",
+      "className": "astryx-collapsible-group",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "collapsible-trigger",
+      "className": "astryx-collapsible-trigger",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "command-palette-empty",
+      "className": "astryx-command-palette-empty",
+      "props": []
+    },
+    {
+      "key": "command-palette-footer",
+      "className": "astryx-command-palette-footer",
+      "props": []
+    },
+    {
+      "key": "command-palette-group",
+      "className": "astryx-command-palette-group",
+      "props": []
+    },
+    {
+      "key": "command-palette-group-heading",
+      "className": "astryx-command-palette-group-heading",
+      "props": []
+    },
+    {
+      "key": "command-palette-input",
+      "className": "astryx-command-palette-input",
+      "props": []
+    },
+    {
+      "key": "command-palette-item",
+      "className": "astryx-command-palette-item",
+      "props": []
+    },
+    {
+      "key": "command-palette-list",
+      "className": "astryx-command-palette-list",
+      "props": []
+    },
+    {
+      "key": "complex-selector",
+      "className": "astryx-complex-selector",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "ghost",
+                "input"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "complex-selector-indicator-icon",
+      "className": "astryx-complex-selector-indicator-icon",
+      "props": [
+        {
+          "name": "state",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "complex-selector-popup",
+      "className": "astryx-complex-selector-popup",
+      "props": []
+    },
+    {
+      "key": "context-menu",
+      "className": "astryx-context-menu",
+      "props": []
+    },
+    {
+      "key": "date-input",
+      "className": "astryx-date-input",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "date-input-clear-icon",
+      "className": "astryx-date-input-clear-icon",
+      "deprecatedFor": [
+        "input-clear-icon"
+      ],
+      "props": []
+    },
+    {
+      "key": "date-input-toggle-icon",
+      "className": "astryx-date-input-toggle-icon",
+      "props": [
+        {
+          "name": "state",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "date-range-input",
+      "className": "astryx-date-range-input",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "date-range-input-clear-icon",
+      "className": "astryx-date-range-input-clear-icon",
+      "deprecatedFor": [
+        "input-clear-icon"
+      ],
+      "props": []
+    },
+    {
+      "key": "date-range-input-toggle-icon",
+      "className": "astryx-date-range-input-toggle-icon",
+      "props": [
+        {
+          "name": "state",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "date-time-input",
+      "className": "astryx-date-time-input",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "date-time-input-clock-icon",
+      "className": "astryx-date-time-input-clock-icon",
+      "props": []
+    },
+    {
+      "key": "date-time-input-date-segment",
+      "className": "astryx-date-time-input-date-segment",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "date-time-input-time-listbox",
+      "className": "astryx-date-time-input-time-listbox",
+      "props": []
+    },
+    {
+      "key": "date-time-input-time-option",
+      "className": "astryx-date-time-input-time-option",
+      "props": []
+    },
+    {
+      "key": "date-time-input-time-segment",
+      "className": "astryx-date-time-input-time-segment",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "date-time-input-toggle-icon",
+      "className": "astryx-date-time-input-toggle-icon",
+      "props": [
+        {
+          "name": "state",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "dialog",
+      "className": "astryx-dialog",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "fullscreen",
+                "standard"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Dialog",
+              "interface": "DialogVariantMap",
+              "currentKeys": [
+                "fullscreen",
+                "standard"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "divider",
+      "className": "astryx-divider",
+      "props": [
+        {
+          "name": "orientation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "horizontal",
+                "vertical"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "strong",
+                "subtle"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Divider",
+              "interface": "DividerVariantMap",
+              "currentKeys": [
+                "strong",
+                "subtle"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "dropdown-menu",
+      "className": "astryx-dropdown-menu",
+      "props": [
+        {
+          "name": "presentation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "bottom-sheet"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "dropdown-menu-divider",
+      "className": "astryx-dropdown-menu-divider",
+      "props": []
+    },
+    {
+      "key": "dropdown-menu-indicator-icon",
+      "className": "astryx-dropdown-menu-indicator-icon",
+      "props": []
+    },
+    {
+      "key": "dropdown-menu-item",
+      "className": "astryx-dropdown-menu-item",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "destructive"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "dropdown-menu-radio",
+      "className": "astryx-dropdown-menu-radio",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "checked",
+          "role": "state"
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "dropdown-menu-section-heading",
+      "className": "astryx-dropdown-menu-section-heading",
+      "props": []
+    },
+    {
+      "key": "empty-state",
+      "className": "astryx-empty-state",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "empty-state-description",
+      "className": "astryx-empty-state-description",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "empty-state-title",
+      "className": "astryx-empty-state-title",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "field",
+      "className": "astryx-field",
+      "props": [
+        {
+          "name": "layout",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "horizontal-labels"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "field-label",
+      "className": "astryx-field-label",
+      "props": []
+    },
+    {
+      "key": "field-status",
+      "className": "astryx-field-status",
+      "props": [
+        {
+          "name": "type",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "attached",
+                "detached",
+                "tooltip"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/FieldStatus",
+              "interface": "FieldStatusVariantMap",
+              "currentKeys": [
+                "attached",
+                "detached",
+                "tooltip"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "field-status-icon",
+      "className": "astryx-field-status-icon",
+      "props": [
+        {
+          "name": "type",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "file-input",
+      "className": "astryx-file-input",
+      "props": [
+        {
+          "name": "mode",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "dropzone",
+                "input"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "form-layout",
+      "className": "astryx-form-layout",
+      "props": [
+        {
+          "name": "direction",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "horizontal",
+                "horizontal-labels",
+                "vertical"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "grid",
+      "className": "astryx-grid",
+      "props": [
+        {
+          "name": "align",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "center",
+                "end",
+                "start",
+                "stretch"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "columns",
+          "role": "visualProp",
+          "domain": {
+            "kind": "open",
+            "primitives": [
+              "number"
+            ]
+          }
+        },
+        {
+          "name": "gap",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [],
+              "numbers": [
+                0,
+                0.5,
+                1,
+                1.5,
+                2,
+                3,
+                4,
+                5,
+                6,
+                8,
+                10
+              ]
+            }
+          }
+        },
+        {
+          "name": "justify",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "center",
+                "end",
+                "start",
+                "stretch"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "grid-span",
+      "className": "astryx-grid-span",
+      "props": []
+    },
+    {
+      "key": "heading",
+      "className": "astryx-heading",
+      "props": [
+        {
+          "name": "color",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "disabled",
+                "inherit",
+                "placeholder",
+                "primary",
+                "secondary"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Text",
+              "interface": "TextColorMap",
+              "currentKeys": [
+                "accent",
+                "disabled",
+                "inherit",
+                "placeholder",
+                "primary",
+                "secondary"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "level",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [],
+              "numbers": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ]
+            }
+          }
+        },
+        {
+          "name": "type",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "display-1",
+                "display-2",
+                "display-3"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Heading",
+              "interface": "HeadingTypeMap",
+              "currentKeys": [
+                "display-1",
+                "display-2",
+                "display-3"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "hover-card",
+      "className": "astryx-hover-card",
+      "props": []
+    },
+    {
+      "key": "hovercard",
+      "className": "astryx-hovercard",
+      "deprecatedFor": [
+        "hover-card"
+      ],
+      "aliasOf": [
+        "astryx-hover-card"
+      ],
+      "props": []
+    },
+    {
+      "key": "icon",
+      "className": "astryx-icon",
+      "props": [
+        {
+          "name": "color",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "blue",
+                "cyan",
+                "disabled",
+                "error",
+                "gray",
+                "green",
+                "inherit",
+                "orange",
+                "pink",
+                "primary",
+                "purple",
+                "red",
+                "secondary",
+                "success",
+                "teal",
+                "tertiary",
+                "warning",
+                "yellow"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm",
+                "xsm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "input-clear-button",
+      "className": "astryx-input-clear-button",
+      "props": []
+    },
+    {
+      "key": "input-clear-icon",
+      "className": "astryx-input-clear-icon",
+      "props": []
+    },
+    {
+      "key": "input-group",
+      "className": "astryx-input-group",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "input-group-text",
+      "className": "astryx-input-group-text",
+      "props": []
+    },
+    {
+      "key": "input-status-icon",
+      "className": "astryx-input-status-icon",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm",
+                "xsm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "item",
+      "className": "astryx-item",
+      "props": [
+        {
+          "name": "align",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "center",
+                "start"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "kbd",
+      "className": "astryx-kbd",
+      "props": []
+    },
+    {
+      "key": "layout",
+      "className": "astryx-layout",
+      "props": [
+        {
+          "name": "height",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "auto",
+                "fill"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "layout-content",
+      "className": "astryx-layout-content",
+      "props": []
+    },
+    {
+      "key": "layout-footer",
+      "className": "astryx-layout-footer",
+      "props": []
+    },
+    {
+      "key": "layout-header",
+      "className": "astryx-layout-header",
+      "props": []
+    },
+    {
+      "key": "layout-panel",
+      "className": "astryx-layout-panel",
+      "props": []
+    },
+    {
+      "key": "lightbox",
+      "className": "astryx-lightbox",
+      "props": []
+    },
+    {
+      "key": "link",
+      "className": "astryx-link",
+      "props": [
+        {
+          "name": "color",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "disabled",
+                "inherit",
+                "placeholder",
+                "primary",
+                "secondary"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Text",
+              "interface": "TextColorMap",
+              "currentKeys": [
+                "accent",
+                "disabled",
+                "inherit",
+                "placeholder",
+                "primary",
+                "secondary"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "list",
+      "className": "astryx-list",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "listStyle",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "circle",
+                "decimal",
+                "disc",
+                "none"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "list-item",
+      "className": "astryx-list-item",
+      "props": []
+    },
+    {
+      "key": "markdown",
+      "className": "astryx-markdown",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact",
+                "default"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "markdown-blockquote",
+      "className": "astryx-markdown-blockquote",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact",
+                "default"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "markdown-codeblock",
+      "className": "astryx-markdown-codeblock",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact",
+                "default"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "markdown-heading",
+      "className": "astryx-markdown-heading",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact",
+                "default"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "level",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [],
+              "numbers": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "markdown-hr",
+      "className": "astryx-markdown-hr",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact",
+                "default"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "markdown-image",
+      "className": "astryx-markdown-image",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact",
+                "default"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "markdown-list",
+      "className": "astryx-markdown-list",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact",
+                "default"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "markdown-paragraph",
+      "className": "astryx-markdown-paragraph",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact",
+                "default"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "markdown-table",
+      "className": "astryx-markdown-table",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact",
+                "default"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "metadata-list",
+      "className": "astryx-metadata-list",
+      "props": [
+        {
+          "name": "columns",
+          "role": "visualProp",
+          "domain": {
+            "kind": "open",
+            "primitives": [
+              "number"
+            ],
+            "knownLiterals": {
+              "strings": [
+                "multi",
+                "single"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "orientation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "horizontal",
+                "vertical"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "metadata-list-item",
+      "className": "astryx-metadata-list-item",
+      "props": []
+    },
+    {
+      "key": "mobile-nav",
+      "className": "astryx-mobile-nav",
+      "props": [
+        {
+          "name": "side",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "end",
+                "start"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "more-menu",
+      "className": "astryx-more-menu",
+      "props": []
+    },
+    {
+      "key": "multi-selector",
+      "className": "astryx-multi-selector",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "ghost",
+                "input"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "readonly",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "multi-selector-clear-icon",
+      "className": "astryx-multi-selector-clear-icon",
+      "deprecatedFor": [
+        "input-clear-icon"
+      ],
+      "props": []
+    },
+    {
+      "key": "multi-selector-empty-state",
+      "className": "astryx-multi-selector-empty-state",
+      "props": []
+    },
+    {
+      "key": "multi-selector-indicator-icon",
+      "className": "astryx-multi-selector-indicator-icon",
+      "props": [
+        {
+          "name": "state",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "multi-selector-option",
+      "className": "astryx-multi-selector-option",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "select-all",
+          "role": "state"
+        },
+        {
+          "name": "selected",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "multi-selector-popup",
+      "className": "astryx-multi-selector-popup",
+      "props": []
+    },
+    {
+      "key": "multi-selector-search",
+      "className": "astryx-multi-selector-search",
+      "props": []
+    },
+    {
+      "key": "multi-selector-section-heading",
+      "className": "astryx-multi-selector-section-heading",
+      "props": []
+    },
+    {
+      "key": "nav-heading-menu",
+      "className": "astryx-nav-heading-menu",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "nav-heading-menu-item",
+      "className": "astryx-nav-heading-menu-item",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "nav-icon",
+      "className": "astryx-nav-icon",
+      "props": []
+    },
+    {
+      "key": "navicon",
+      "className": "astryx-navicon",
+      "deprecatedFor": [
+        "nav-icon"
+      ],
+      "aliasOf": [
+        "astryx-nav-icon"
+      ],
+      "props": []
+    },
+    {
+      "key": "number-input",
+      "className": "astryx-number-input",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "readonly",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "outline",
+      "className": "astryx-outline",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact",
+                "default"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "outline-indicator",
+      "className": "astryx-outline-indicator",
+      "props": []
+    },
+    {
+      "key": "outline-item",
+      "className": "astryx-outline-item",
+      "props": [
+        {
+          "name": "level",
+          "role": "visualProp",
+          "domain": {
+            "kind": "open",
+            "primitives": [
+              "number"
+            ]
+          }
+        },
+        {
+          "name": "active",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "overflow-list",
+      "className": "astryx-overflow-list",
+      "props": []
+    },
+    {
+      "key": "overlay",
+      "className": "astryx-overlay",
+      "props": []
+    },
+    {
+      "key": "overlay-scrim",
+      "className": "astryx-overlay-scrim",
+      "props": [
+        {
+          "name": "position",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "bottom",
+                "fill",
+                "top"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "pagination",
+      "className": "astryx-pagination",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "compact",
+                "count",
+                "dots",
+                "input",
+                "none",
+                "pages"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Pagination",
+              "interface": "PaginationVariantMap",
+              "currentKeys": [
+                "compact",
+                "count",
+                "dots",
+                "input",
+                "none",
+                "pages"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "pagination-dot",
+      "className": "astryx-pagination-dot",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "active",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "pagination-input-label",
+      "className": "astryx-pagination-input-label",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "pagination-input-total",
+      "className": "astryx-pagination-input-total",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "popover",
+      "className": "astryx-popover",
+      "props": []
+    },
+    {
+      "key": "popover-surface",
+      "className": "astryx-popover-surface",
+      "deprecatedFor": [
+        "popover"
+      ],
+      "props": []
+    },
+    {
+      "key": "power-search",
+      "className": "astryx-power-search",
+      "props": []
+    },
+    {
+      "key": "progress-bar",
+      "className": "astryx-progress-bar",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/ProgressBar",
+              "interface": "ProgressBarVariantMap",
+              "currentKeys": [
+                "accent",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "progress-bar-fill",
+      "className": "astryx-progress-bar-fill",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "disabled",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/ProgressBar",
+              "interface": "ProgressBarVariantMap",
+              "currentKeys": [
+                "accent",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "progress-bar-mark",
+      "className": "astryx-progress-bar-mark",
+      "props": [
+        {
+          "name": "placement",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "fill",
+                "track"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "disabled",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/ProgressBar",
+              "interface": "ProgressBarVariantMap",
+              "currentKeys": [
+                "accent",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "progress-bar-track",
+      "className": "astryx-progress-bar-track",
+      "props": []
+    },
+    {
+      "key": "progressbar",
+      "className": "astryx-progressbar",
+      "deprecatedFor": [
+        "progress-bar"
+      ],
+      "aliasOf": [
+        "astryx-progress-bar"
+      ],
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/ProgressBar",
+              "interface": "ProgressBarVariantMap",
+              "currentKeys": [
+                "accent",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "progressbar-fill",
+      "className": "astryx-progressbar-fill",
+      "deprecatedFor": [
+        "progress-bar-fill"
+      ],
+      "aliasOf": [
+        "astryx-progress-bar-fill"
+      ],
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "disabled",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/ProgressBar",
+              "interface": "ProgressBarVariantMap",
+              "currentKeys": [
+                "accent",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "progressbar-mark",
+      "className": "astryx-progressbar-mark",
+      "deprecatedFor": [
+        "progress-bar-mark"
+      ],
+      "aliasOf": [
+        "astryx-progress-bar-mark"
+      ],
+      "props": [
+        {
+          "name": "placement",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "fill",
+                "track"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "disabled",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/ProgressBar",
+              "interface": "ProgressBarVariantMap",
+              "currentKeys": [
+                "accent",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "progressbar-track",
+      "className": "astryx-progressbar-track",
+      "deprecatedFor": [
+        "progress-bar-track"
+      ],
+      "aliasOf": [
+        "astryx-progress-bar-track"
+      ],
+      "props": []
+    },
+    {
+      "key": "radio",
+      "className": "astryx-radio",
+      "deprecatedFor": [
+        "radio-indicator"
+      ],
+      "aliasOf": [
+        "astryx-radio-indicator"
+      ],
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "checked",
+          "role": "state"
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "radio-dot",
+      "className": "astryx-radio-dot",
+      "deprecatedFor": [
+        "radio-indicator-dot"
+      ],
+      "aliasOf": [
+        "astryx-radio-indicator-dot"
+      ],
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "radio-indicator",
+      "className": "astryx-radio-indicator",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "checked",
+          "role": "state"
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "radio-indicator-dot",
+      "className": "astryx-radio-indicator-dot",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "radio-list",
+      "className": "astryx-radio-list",
+      "props": [
+        {
+          "name": "orientation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "horizontal",
+                "vertical"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "radio-list-item",
+      "className": "astryx-radio-list-item",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "selected",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "resize-handle",
+      "className": "astryx-resize-handle",
+      "props": [
+        {
+          "name": "direction",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "horizontal",
+                "vertical"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "resize-handle-pill",
+      "className": "astryx-resize-handle-pill",
+      "props": []
+    },
+    {
+      "key": "section",
+      "className": "astryx-section",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "muted",
+                "section",
+                "transparent"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Section",
+              "interface": "SectionVariantMap",
+              "currentKeys": [
+                "muted",
+                "section",
+                "transparent"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "segmented-control",
+      "className": "astryx-segmented-control",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "segmented-control-item",
+      "className": "astryx-segmented-control-item",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "selected",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "selectable-card",
+      "className": "astryx-selectable-card",
+      "props": [
+        {
+          "name": "selected",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "false",
+                "true"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "blue",
+                "cyan",
+                "default",
+                "gray",
+                "green",
+                "muted",
+                "orange",
+                "pink",
+                "purple",
+                "red",
+                "teal",
+                "transparent",
+                "yellow"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Card",
+              "interface": "CardVariantMap",
+              "currentKeys": [
+                "blue",
+                "cyan",
+                "default",
+                "gray",
+                "green",
+                "muted",
+                "orange",
+                "pink",
+                "purple",
+                "red",
+                "teal",
+                "transparent",
+                "yellow"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "selector",
+      "className": "astryx-selector",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "ghost",
+                "input"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "readonly",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "selector-check",
+      "className": "astryx-selector-check",
+      "props": []
+    },
+    {
+      "key": "selector-clear-icon",
+      "className": "astryx-selector-clear-icon",
+      "deprecatedFor": [
+        "input-clear-icon"
+      ],
+      "props": []
+    },
+    {
+      "key": "selector-empty-state",
+      "className": "astryx-selector-empty-state",
+      "props": []
+    },
+    {
+      "key": "selector-indicator-icon",
+      "className": "astryx-selector-indicator-icon",
+      "props": [
+        {
+          "name": "state",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "selector-option",
+      "className": "astryx-selector-option",
+      "props": []
+    },
+    {
+      "key": "selector-option-row",
+      "className": "astryx-selector-option-row",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "selected",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "selector-popup",
+      "className": "astryx-selector-popup",
+      "props": []
+    },
+    {
+      "key": "selector-search",
+      "className": "astryx-selector-search",
+      "props": []
+    },
+    {
+      "key": "selector-section-heading",
+      "className": "astryx-selector-section-heading",
+      "props": []
+    },
+    {
+      "key": "side-nav",
+      "className": "astryx-side-nav",
+      "props": [
+        {
+          "name": "mode",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "topbar"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "side-nav-heading",
+      "className": "astryx-side-nav-heading",
+      "props": []
+    },
+    {
+      "key": "side-nav-item",
+      "className": "astryx-side-nav-item",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "selected",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "side-nav-section",
+      "className": "astryx-side-nav-section",
+      "props": []
+    },
+    {
+      "key": "skeleton",
+      "className": "astryx-skeleton",
+      "props": []
+    },
+    {
+      "key": "slider",
+      "className": "astryx-slider",
+      "props": [
+        {
+          "name": "orientation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "horizontal",
+                "vertical"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "slider-thumb",
+      "className": "astryx-slider-thumb",
+      "props": [
+        {
+          "name": "orientation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "horizontal",
+                "vertical"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "slider-track",
+      "className": "astryx-slider-track",
+      "props": [
+        {
+          "name": "orientation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "horizontal",
+                "vertical"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "spinner",
+      "className": "astryx-spinner",
+      "props": [
+        {
+          "name": "shade",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "default",
+                "inherit",
+                "onMedia",
+                "subtle"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm",
+                "xl"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "stack",
+      "className": "astryx-stack",
+      "props": [
+        {
+          "name": "direction",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "horizontal",
+                "vertical"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "gap",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [],
+              "numbers": [
+                0,
+                0.5,
+                1,
+                1.5,
+                2,
+                3,
+                4,
+                5,
+                6,
+                8,
+                10
+              ]
+            }
+          }
+        },
+        {
+          "name": "wrap",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "nowrap",
+                "wrap",
+                "wrap-reverse"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "stack-item",
+      "className": "astryx-stack-item",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "fill",
+                "static"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "status-dot",
+      "className": "astryx-status-dot",
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/StatusDot",
+              "interface": "StatusDotVariantMap",
+              "currentKeys": [
+                "accent",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "statusdot",
+      "className": "astryx-statusdot",
+      "deprecatedFor": [
+        "status-dot"
+      ],
+      "aliasOf": [
+        "astryx-status-dot"
+      ],
+      "props": [
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/StatusDot",
+              "interface": "StatusDotVariantMap",
+              "currentKeys": [
+                "accent",
+                "error",
+                "neutral",
+                "success",
+                "warning"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "step",
+      "className": "astryx-step",
+      "props": [
+        {
+          "name": "progress",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "completed",
+                "in-progress",
+                "not-started"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "step-bar",
+      "className": "astryx-step-bar",
+      "props": []
+    },
+    {
+      "key": "step-connector",
+      "className": "astryx-step-connector",
+      "props": []
+    },
+    {
+      "key": "step-description",
+      "className": "astryx-step-description",
+      "props": [
+        {
+          "name": "progress",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "completed",
+                "in-progress",
+                "not-started"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "step-indicator",
+      "className": "astryx-step-indicator",
+      "props": [
+        {
+          "name": "progress",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "completed",
+                "in-progress",
+                "not-started"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "step-label",
+      "className": "astryx-step-label",
+      "props": [
+        {
+          "name": "disabled",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "disabled"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "progress",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "completed",
+                "in-progress",
+                "not-started"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "stepper",
+      "className": "astryx-stepper",
+      "props": [
+        {
+          "name": "indicatorPosition",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "on-track",
+                "separated"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "orientation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "horizontal",
+                "vertical"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "stepper-frame",
+      "className": "astryx-stepper-frame",
+      "props": []
+    },
+    {
+      "key": "stepper-summary",
+      "className": "astryx-stepper-summary",
+      "props": []
+    },
+    {
+      "key": "switch",
+      "className": "astryx-switch",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "checked",
+          "role": "state"
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "switch-field",
+      "className": "astryx-switch-field",
+      "props": [
+        {
+          "name": "labelPosition",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "start"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "labelSpacing",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "spread"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "switch-label",
+      "className": "astryx-switch-label",
+      "props": []
+    },
+    {
+      "key": "switch-thumb",
+      "className": "astryx-switch-thumb",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "checked",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "tab",
+      "className": "astryx-tab",
+      "props": [
+        {
+          "name": "selected",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "tab-indicator",
+      "className": "astryx-tab-indicator",
+      "props": [
+        {
+          "name": "selected",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "tab-list",
+      "className": "astryx-tab-list",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "tab-menu",
+      "className": "astryx-tab-menu",
+      "props": []
+    },
+    {
+      "key": "tab-menu-dropdown",
+      "className": "astryx-tab-menu-dropdown",
+      "props": []
+    },
+    {
+      "key": "tab-menu-item",
+      "className": "astryx-tab-menu-item",
+      "props": []
+    },
+    {
+      "key": "tab-scroll-button",
+      "className": "astryx-tab-scroll-button",
+      "props": []
+    },
+    {
+      "key": "tab-strip",
+      "className": "astryx-tab-strip",
+      "props": []
+    },
+    {
+      "key": "table",
+      "className": "astryx-table",
+      "props": []
+    },
+    {
+      "key": "table-body",
+      "className": "astryx-table-body",
+      "props": []
+    },
+    {
+      "key": "table-cell",
+      "className": "astryx-table-cell",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "table-footer",
+      "className": "astryx-table-footer",
+      "props": []
+    },
+    {
+      "key": "table-header",
+      "className": "astryx-table-header",
+      "props": []
+    },
+    {
+      "key": "table-header-cell",
+      "className": "astryx-table-header-cell",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "table-row",
+      "className": "astryx-table-row",
+      "props": []
+    },
+    {
+      "key": "table-scroll-wrapper",
+      "className": "astryx-table-scroll-wrapper",
+      "props": []
+    },
+    {
+      "key": "text",
+      "className": "astryx-text",
+      "props": [
+        {
+          "name": "color",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "disabled",
+                "inherit",
+                "placeholder",
+                "primary",
+                "secondary"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Text",
+              "interface": "TextColorMap",
+              "currentKeys": [
+                "accent",
+                "disabled",
+                "inherit",
+                "placeholder",
+                "primary",
+                "secondary"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "2xl",
+                "2xs",
+                "3xl",
+                "3xs",
+                "4xl",
+                "4xs",
+                "base",
+                "lg",
+                "sm",
+                "xl",
+                "xsm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "type",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "body",
+                "code",
+                "display-1",
+                "display-2",
+                "display-3",
+                "inherit",
+                "label",
+                "large",
+                "supporting"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/theme",
+              "interface": "CustomTextTypes",
+              "currentKeys": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "text-area",
+      "className": "astryx-text-area",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "readonly",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "text-area-control",
+      "className": "astryx-text-area-control",
+      "props": []
+    },
+    {
+      "key": "text-area-counter",
+      "className": "astryx-text-area-counter",
+      "props": []
+    },
+    {
+      "key": "text-input",
+      "className": "astryx-text-input",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "readonly",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "textarea",
+      "className": "astryx-textarea",
+      "deprecatedFor": [
+        "text-area"
+      ],
+      "aliasOf": [
+        "astryx-text-area"
+      ],
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "readonly",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "thumbnail",
+      "className": "astryx-thumbnail",
+      "props": []
+    },
+    {
+      "key": "time-input",
+      "className": "astryx-time-input",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "timestamp",
+      "className": "astryx-timestamp",
+      "props": [
+        {
+          "name": "color",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "accent",
+                "disabled",
+                "inherit",
+                "placeholder",
+                "primary",
+                "secondary"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Text",
+              "interface": "TextColorMap",
+              "currentKeys": [
+                "accent",
+                "disabled",
+                "inherit",
+                "placeholder",
+                "primary",
+                "secondary"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "format",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "date",
+                "date_long",
+                "date_time",
+                "date_weekday",
+                "relative",
+                "relative_short",
+                "system_date",
+                "system_date_time",
+                "system_time",
+                "time",
+                "unix_seconds"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "type",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "body",
+                "code",
+                "display-1",
+                "display-2",
+                "display-3",
+                "inherit",
+                "label",
+                "large",
+                "supporting"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/theme",
+              "interface": "CustomTextTypes",
+              "currentKeys": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "timestamp-copy-button",
+      "className": "astryx-timestamp-copy-button",
+      "props": []
+    },
+    {
+      "key": "toast",
+      "className": "astryx-toast",
+      "props": [
+        {
+          "name": "type",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "info"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "toggle-button",
+      "className": "astryx-toggle-button",
+      "props": [
+        {
+          "name": "elevation",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "high",
+                "low",
+                "med",
+                "none"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "isPressed",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "toggle-button-group",
+      "className": "astryx-toggle-button-group",
+      "props": []
+    },
+    {
+      "key": "token",
+      "className": "astryx-token",
+      "props": [
+        {
+          "name": "color",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "blue",
+                "cyan",
+                "default",
+                "gray",
+                "green",
+                "orange",
+                "pink",
+                "purple",
+                "red",
+                "teal",
+                "yellow"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/Token",
+              "interface": "TokenColorMap",
+              "currentKeys": [
+                "blue",
+                "cyan",
+                "default",
+                "gray",
+                "green",
+                "orange",
+                "pink",
+                "purple",
+                "red",
+                "teal",
+                "yellow"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "tokenizer",
+      "className": "astryx-tokenizer",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "toolbar",
+      "className": "astryx-toolbar",
+      "props": [
+        {
+          "name": "size",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "tooltip",
+      "className": "astryx-tooltip",
+      "props": []
+    },
+    {
+      "key": "top-nav",
+      "className": "astryx-top-nav",
+      "props": [
+        {
+          "name": "mode",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "top-nav-heading",
+      "className": "astryx-top-nav-heading",
+      "props": []
+    },
+    {
+      "key": "top-nav-item",
+      "className": "astryx-top-nav-item",
+      "props": [
+        {
+          "name": "mode",
+          "role": "state"
+        },
+        {
+          "name": "selected",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "top-nav-mega-menu",
+      "className": "astryx-top-nav-mega-menu",
+      "props": [
+        {
+          "name": "mode",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "top-nav-mega-menu-featured-card",
+      "className": "astryx-top-nav-mega-menu-featured-card",
+      "props": []
+    },
+    {
+      "key": "top-nav-mega-menu-item",
+      "className": "astryx-top-nav-mega-menu-item",
+      "props": [
+        {
+          "name": "mode",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "top-nav-menu",
+      "className": "astryx-top-nav-menu",
+      "props": []
+    },
+    {
+      "key": "tree-list",
+      "className": "astryx-tree-list",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "variant",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lineGuides",
+                "noGuides"
+              ],
+              "numbers": []
+            }
+          },
+          "augmentationInterfaces": [
+            {
+              "module": "@astryxdesign/core/TreeList",
+              "interface": "TreeListVariantMap",
+              "currentKeys": [
+                "lineGuides",
+                "noGuides"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tree-list-chevron",
+      "className": "astryx-tree-list-chevron",
+      "props": [
+        {
+          "name": "state",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "tree-list-guide",
+      "className": "astryx-tree-list-guide",
+      "props": []
+    },
+    {
+      "key": "tree-list-item",
+      "className": "astryx-tree-list-item",
+      "props": [
+        {
+          "name": "density",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "balanced",
+                "compact",
+                "spacious"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "disabled",
+          "role": "state"
+        },
+        {
+          "name": "selected",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "tree-list-item-label",
+      "className": "astryx-tree-list-item-label",
+      "props": [
+        {
+          "name": "selected",
+          "role": "state"
+        }
+      ]
+    },
+    {
+      "key": "trigger-menu",
+      "className": "astryx-trigger-menu",
+      "props": []
+    },
+    {
+      "key": "typeahead",
+      "className": "astryx-typeahead",
+      "props": [
+        {
+          "name": "size",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "lg",
+                "md",
+                "sm"
+              ],
+              "numbers": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "role": "visualProp",
+          "domain": {
+            "kind": "finite",
+            "values": {
+              "strings": [
+                "error",
+                "success",
+                "warning"
+              ],
+              "numbers": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "typeahead-dropdown",
+      "className": "astryx-typeahead-dropdown",
+      "props": []
+    },
+    {
+      "key": "typeahead-empty-state",
+      "className": "astryx-typeahead-empty-state",
+      "props": []
+    },
+    {
+      "key": "typeahead-item",
+      "className": "astryx-typeahead-item",
+      "props": []
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 /**
  * @file The probe theme: a theme that styles every declared theming target.
  *
- * @input  the component docs (via the CLI's own target enumeration)
+ * @input  the generated Core visual-prop contract
  * @output a `defineTheme` config covering every target, variant and state the
  *         system documents as themeable
  *
@@ -47,30 +47,6 @@ export function probeColor(seed, options = {}) {
 }
 
 /**
- * Prop values from a doc's `type` union — `'a' | 'b' | 'c'` → ['a','b','c'].
- *
- * A named alias (`AvatarSize`) is not a union at this point; `aliases` carries
- * the ones resolved from source, because a doc that says `size: AvatarSize`
- * documents just as real a variant axis as one that spells the union inline,
- * and skipping those left a third of the surface unprobed.
- *
- * A prop whose type is neither (a number, a boolean, an object) contributes
- * nothing: there is no enumerable value set to probe.
- *
- * @param {string | undefined} type
- * @param {Record<string, string[]>} [aliases]
- * @returns {string[]}
- */
-export function unionValues(type, aliases = {}) {
-  if (typeof type !== 'string') return [];
-  const inline = [...type.matchAll(/'([^']+)'/g)].map(match => match[1]);
-  // A union of one is a literal type, not a variant axis.
-  if (inline.length > 1) return inline;
-  const named = aliases[type.trim()];
-  return named && named.length > 1 ? named : [];
-}
-
-/**
  * Non-colour properties whose ownership must be visible in the probe capture.
  * The colours prove that a target is reachable; these values prove that the
  * target sits on the element that paints the documented property.
@@ -80,64 +56,87 @@ const PROPERTY_PROBES = {
 };
 
 /**
- * Build the probe theme's `components` map.
+ * Build the probe theme's `components` map from the same generated contract used
+ * by theme validation. Open domains remain reported rather than guessed.
  *
- * @param {Array<{key: string, component: string, props: string[], states: string[]}>} targets
- * @param {Record<string, Array<{name: string, type?: string}>>} propsByComponent
- * @param {Record<string, string[]>} [aliases] - named type aliases resolved from source
+ * @param {{targets: Array<{key: string, deprecatedFor?: string[], props: Array<{name: string, role: 'visualProp'|'state', domain?: {kind: string, values?: {strings?: string[], numbers?: number[]}}}>}>}} contract
  * @returns {{components: Record<string, Record<string, Record<string, string>>>, coverage: {targets: number, selectors: number, skipped: Array<{key: string, prop: string, reason: string}>}}}
  */
-export function buildProbeComponents(targets, propsByComponent, aliases = {}) {
+export function buildProbeComponents(contract) {
   /** @type {Record<string, Record<string, Record<string, string>>>} */
   const components = {};
   /** @type {Array<{key: string, prop: string, reason: string}>} */
   const skipped = [];
   let selectors = 0;
 
+  const targets = [...contract.targets].sort((a, b) => {
+    const byDeprecation =
+      Number(Boolean(a.deprecatedFor?.length)) -
+      Number(Boolean(b.deprecatedFor?.length));
+    return byDeprecation || a.key.localeCompare(b.key);
+  });
   for (const target of targets) {
     const styles = (components[target.key] ??= {});
-
-    if (!styles.base) {
-      styles.base = {
-        ...paint(`${target.key}`),
-        ...(PROPERTY_PROBES[target.key] ?? {}),
-      };
-      selectors += 1;
-    }
+    const selectorPaint = target.deprecatedFor?.length
+      ? paintCompatibilityAlias
+      : paint;
+    styles.base = {
+      ...selectorPaint(target.key),
+      ...(PROPERTY_PROBES[target.key] ?? {}),
+    };
+    selectors += 1;
 
     for (const prop of target.props) {
-      const declared = propsByComponent[target.component]?.find(
-        entry => entry.name === prop,
-      );
-      const values = unionValues(declared?.type, aliases);
+      if (prop.role === 'state') {
+        if (!styles[prop.name]) {
+          styles[prop.name] = selectorPaint(`${target.key}.${prop.name}`);
+          selectors += 1;
+        }
+        continue;
+      }
+
+      const values =
+        prop.domain?.kind === 'finite'
+          ? [
+              ...(prop.domain.values?.strings ?? []),
+              ...(prop.domain.values?.numbers ?? []).map(String),
+            ]
+          : [];
       if (values.length === 0) {
         skipped.push({
           key: target.key,
-          prop,
-          reason: declared
-            ? `type "${declared.type}" is not an enumerable string union`
-            : 'not a documented prop of the owning component (usually a sub-element derived from another prop)',
+          prop: prop.name,
+          reason: `generated domain is ${prop.domain?.kind ?? 'missing'}`,
         });
         continue;
       }
       for (const value of values) {
-        const selector = `${prop}:${value}`;
+        const selector = `${prop.name}:${value}`;
         if (styles[selector]) continue;
-        styles[selector] = paint(`${target.key}.${selector}`);
+        styles[selector] = selectorPaint(`${target.key}.${selector}`);
         selectors += 1;
       }
-    }
-
-    for (const state of target.states) {
-      if (styles[state]) continue;
-      styles[state] = paint(`${target.key}.${state}`);
-      selectors += 1;
     }
   }
 
   return {
     components,
     coverage: {targets: Object.keys(components).length, selectors, skipped},
+  };
+}
+
+/**
+ * Paint deprecated aliases on properties the canonical probe does not use, so
+ * both classes remain independently observable when they share one element.
+ * @param {string} seed
+ * @returns {{textDecorationColor: string, caretColor: string}}
+ */
+export function paintCompatibilityAlias(seed) {
+  return {
+    textDecorationColor: probeColor(`${seed}/compatibility-decoration`, {
+      lightness: 30,
+    }),
+    caretColor: probeColor(`${seed}/compatibility-caret`, {lightness: 30}),
   };
 }
 
@@ -183,7 +182,7 @@ export function renderProbeTheme({components, coverage}) {
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  ${coverage.targets} targets, ${coverage.selectors} selectors (generated from the docs)
+//   components  ${coverage.targets} targets, ${coverage.selectors} selectors (generated from Core's checked contract)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -192,7 +191,7 @@ export function renderProbeTheme({components, coverage}) {
 //
 // Only \`components\` is generated; the rest are fixed values that live in
 // probeConfig.ts, because they are a contract to assert against rather than a
-// projection of the component docs.
+// projection of Core's generated visual-prop contract.
 
 import {defineSyntaxTheme, defineTheme} from '@astryxdesign/core/theme';
 

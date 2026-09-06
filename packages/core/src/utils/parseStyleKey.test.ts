@@ -16,6 +16,12 @@ describe('parseStyleKey', () => {
     expect(parseStyleKey('level:1')).toBe('.level-1');
   });
 
+  it('escapes punctuation in generated class selectors', () => {
+    expect(parseStyleKey('gap:0.5')).toBe('.gap-0\\.5');
+    expect(parseStyleKey('offset:-1.5')).toBe('.offset--1\\.5');
+    expect(parseStyleKey('variant:with.dot')).toBe('.with\\.dot');
+  });
+
   it('handles compound keys', () => {
     expect(parseStyleKey('variant:destructive+size:sm')).toBe(
       '.destructive.sm',

@@ -37,8 +37,13 @@ point renders the wider layout instead of the mobile layout.
 `defineTheme` now rejects malformed token values instead of coercing non-string
 scalars or accepting arrays with a length other than two. It also validates the
 combined portable and theme-local token graph for every reachable set of matching
-adaptation rules, rejecting cycles before CSS is emitted. Rule-only visual-prop
-values are rejected when tooling can enumerate the finite built-in domain; opaque
-alias-backed domains retain the known validation boundary shared with root themes.
+adaptation rules, rejecting cycles before CSS is emitted. A generated Core
+visual-prop contract now gives theme build the checked domain and augmentation
+wiring for every current component axis. Root and adaptation layers reject
+unsupported values on finite closed axes, including imported aliases, while
+open string/number domains and existing public augmentation points retain their
+intended behavior. Generated component selectors also escape punctuation in class
+tokens, so finite fractional values such as `gap:0.5` match the class emitted by
+`themeProps()`.
 
 @imdreamrunner

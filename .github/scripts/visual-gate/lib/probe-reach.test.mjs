@@ -2,11 +2,18 @@
 
 import {describe, expect, it} from 'vitest';
 
-import {emptyAccumulator, expectedColors, fold, hslToRgb} from './probe-reach.mjs';
-import {paint, probeColor} from './probe-theme.mjs';
+import {
+  emptyAccumulator,
+  expectedColors,
+  fold,
+  hslToRgb,
+} from './probe-reach.mjs';
+import {paint, paintCompatibilityAlias, probeColor} from './probe-theme.mjs';
 
 const rgbOf = seed => hslToRgb(probeColor(seed));
 const textOf = seed => hslToRgb(paint(seed).color);
+const aliasDecorationOf = seed =>
+  hslToRgb(paintCompatibilityAlias(seed).textDecorationColor);
 
 describe('hslToRgb', () => {
   it('matches the rgb() form getComputedStyle returns', () => {
@@ -39,10 +46,37 @@ describe('fold', () => {
   it('accepts proof from text or border, so an element with no background still counts', () => {
     const acc = fold(
       emptyAccumulator(),
-      [{keys: ['icon'], data: [], bg: 'rgba(0, 0, 0, 0)', color: textOf('icon')}],
+      [
+        {
+          keys: ['icon'],
+          data: [],
+          bg: 'rgba(0, 0, 0, 0)',
+          color: textOf('icon'),
+        },
+      ],
       's',
     );
     expect([...acc.verified]).toEqual(['icon']);
+  });
+
+  it('verifies canonical and compatibility classes independently on one element', () => {
+    const acc = fold(
+      emptyAccumulator(),
+      [
+        {
+          keys: ['checkbox-indicator', 'checkbox'],
+          data: [],
+          bg: rgbOf('checkbox-indicator'),
+          decoration: aliasDecorationOf('checkbox'),
+        },
+      ],
+      's',
+    );
+    expect([...acc.verified].sort()).toEqual([
+      'checkbox',
+      'checkbox-indicator',
+    ]);
+    expect(acc.shadowed.size).toBe(0);
   });
 
   it('calls a target shadowed — not failed — when another target on the SAME element won', () => {
@@ -78,21 +112,38 @@ describe('fold', () => {
   });
 
   it('verifies a target whose override arrived', () => {
-    const acc = fold(emptyAccumulator(), [{keys: ['badge'], data: [], bg: rgbOf('badge')}], 's');
+    const acc = fold(
+      emptyAccumulator(),
+      [{keys: ['badge'], data: [], bg: rgbOf('badge')}],
+      's',
+    );
     expect([...acc.verified]).toEqual(['badge']);
     expect(acc.failures.size).toBe(0);
   });
 
   it('fails a target showing the component colour instead of the override', () => {
-    const acc = fold(emptyAccumulator(), [{keys: ['badge'], data: [], bg: 'rgb(0, 100, 224)'}], 's');
+    const acc = fold(
+      emptyAccumulator(),
+      [{keys: ['badge'], data: [], bg: 'rgb(0, 100, 224)'}],
+      's',
+    );
     expect(acc.verified.size).toBe(0);
-    expect(acc.failures.get('badge')).toMatchObject({got: 'rgb(0, 100, 224)', storyId: 's'});
+    expect(acc.failures.get('badge')).toMatchObject({
+      got: 'rgb(0, 100, 224)',
+      storyId: 's',
+    });
   });
 
   it('credits the variant colour on a variant element', () => {
     const acc = fold(
       emptyAccumulator(),
-      [{keys: ['badge'], data: ['variant:info'], bg: rgbOf('badge.variant:info')}],
+      [
+        {
+          keys: ['badge'],
+          data: ['variant:info'],
+          bg: rgbOf('badge.variant:info'),
+        },
+      ],
       's',
     );
     expect([...acc.verified]).toEqual(['badge']);
