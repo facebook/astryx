@@ -1,5 +1,280 @@
 # @xds/core
 
+# 0.5.3
+
+#### New Components
+
+- Add built-in `popover`, `bottom-sheet`, and compact-touch `adaptive` presentation policies to DropdownMenu, MoreMenu, and ContextMenu. (#5395)
+- Add popover, bottom-sheet, and adaptive presentation options to Selector and MultiSelector, with docsite examples for both bottom-sheet variants. (#5395)
+- Add `isReadOnly` to Selector and MultiSelector so selected values remain focusable and form-submittable without exposing selection menus or editing affordances. (#5805)
+- Add the opt-in theme-local token contract for maintained theme families. (#5844)
+- Add `elevation` prop to ToggleButton for floating (FAB-style) toggles, mirroring Button; retained inside a ToggleButtonGroup. (#6012)
+
+#### New Features
+
+- Add structured accessibility requirements and theme coverage support to component documentation. (#5713)
+- Banner: the header's supporting line now carries a stable theme target, `astryx-banner-description`. (#5483) Only the header, the status icon and the content panel were themeable before, so a theme restyling the description — its colour, its type, or the space between it and the title — had to reach in with a structural selector like `.astryx-banner > div:nth-child(2) > div:nth-child(2)`. Purely additive: no existing class, data attribute, or style changes.
+  Nothing else in the header becomes a target. The end area is a layout row — flex, wrap, and the edge compensation that lets its buttons overhang the header padding — not a painted surface, and a theme that wants the header to grow around its buttons instead of letting them overhang sets `padding-block` on the existing `banner` target, which reaches the same height without exposing a private margin. The title, the two controls and the text column are likewise left alone: the column paints nothing (`display: flex; flex-direction: column; gap: 0`) and the space it owns is expressible on `banner-description`, while the title and the controls already render the way the consuming theme wants them.
+- Add `nativePicker` to DateTimeInput for browser and OS date/time pickers, with Astryx time fallbacks for seconds, custom increments, and preset options. Native fields follow DateInput's compact minimum sizing in fit-content layouts. (#5620)
+- Let themes add typed Heading visual roles with a safe semantic-level
+  fallback when the owning theme styles are unavailable. (#6026)
+- RadioListItem and CheckboxListItem accept rich `label` and `description` (#5257)
+  `RadioListItem` typed `label` and `description` as `string` while its sibling `CheckboxListItem` already typed `label` as `ReactNode` — so the same slot had two contracts, and an app whose option descriptions carry links could not type them on either component. Both now take `ReactNode`; the runtime already rendered it.
+
+  `RadioListItem` gains the `aria-label` escape hatch `CheckboxListItem` established, with the same meaning: a plain-text accessible name for the control. The radio differs in one way worth knowing — it points at its visible label for its accessible name, so a rich label still names it from its own text, and `aria-label` is there to narrow a name that reads badly rather than to supply a missing one. `aria-label` now lands on the radio instead of the row `<div>`, where ARIA ignored it.
+
+- Stepper: `--step-connector-gap`, so a theme can stop the on-track connector short of the indicator
+  The on-track layouts draw the connector as one segment either side of the node. A theme that wants the track to leave a hole around the indicator had to reach the two segments separately, and they are only distinguishable by sibling position — which changes with `indicator="none"`.
+
+  One public var does it instead, declared on the Stepper root because component vars are root-owned: a theme writes `stepper: {base: {'--step-connector-gap': '4px'}}` and every connector inherits it. Astryx spends it on whichever side each segment faces the node from, so the pair leaves a symmetric hole and the caller never names the pieces. `0px` by default: the shipped track still reads as one unbroken line.
+
+  Measured in Chromium against a built theme override, reading painted pixels down a 12px segment:
+
+  | value | clipped away | stepper height | | ------- | ------------- | -------------- | | `6px` | 6px | unchanged | | `-4px` | 0 | unchanged | | `1rem` | capped to 8px | unchanged | | `999px` | capped to 8px | unchanged | | `10%` | 1px (of 12px) | unchanged | | `50%` | capped to 6px | unchanged |
+
+  Four things that had to be true and are:
+
+  **A theme override reaches it.** The default is declared once on the root, not on each connector. Declared per-connector, every connector re-declared `0px` on itself, and a value declared on an element beats an inherited one — so a generated `stepper` override compiled cleanly and changed nothing.
+
+  **The value is bounded**, and both halves earn it — neither for padding's reasons. `max(0px, …)` because `inset()` _accepts_ a negative length: Chromium computes `inset(0 0 -4px 0)` as written rather than clamping it the way it clamps negative padding, so the floor has to be declared. `min(…, --spacing-2)` — the flexible segment's own `min-height` — so an oversized gap leaves a short track rather than an unbounded one. Neither can grow the Stepper; a clip cannot change layout. (An earlier padding-based revision grew a three-step Stepper 108px → 144px at `1rem`.)
+
+  **The horizontal clip mirrors under `dir="rtl"`.** `clip-path: inset()` is physical — top/right/bottom/left, no logical form — while the row itself reverses. Left unflipped, the leading segment sits to the _right_ of the node in RTL and still clipped its right edge, so the hole opened at the join between steps instead of at the indicator. Measured before the fix: `con0 x=622, indicator x=606, clips RIGHT edge`. After: `clips LEFT edge`, with LTR unchanged. The block axis needs no handling — `dir` does not reverse it.
+
+  **One declaration covers both layers.** The gap has to reach the track (the segment's own background) and the accent fill (an absolutely placed `::before`). Spending it on each separately meant two declarations on two boxes, so a percentage resolved against a different containing block for each and stopped them ~1.2px apart. A single `clip-path: inset(…)` on the segment clips the element and its pseudo-element together against one reference box, so every accepted value behaves identically on both — which is what [#5824](https://github.com/facebook/astryx/pull/5824) requires of a public input across its full value domain. Clipping also cannot change layout, so the node the segment positions cannot move.
+
+  **No indicator, no gap.** `indicator="none"` renders no node, so a gap there is a hole in a track that is meant to be continuous.
+
+  Any CSS length or percentage is accepted and behaves the same way on both layers. A percentage resolves against each segment's own box, so a fixed and a flexible segment clip by slightly different amounts from one declared value — cosmetic, bounded by the cap, and recorded as accepted rather than fixed.
+
+  **Why a custom property and not a guaranteed CSS property.** A theme target reaches the element, never its `::before`. Measured against a built theme override on `step-connector`: `paddingBlock: 6px` produces no hole at all — the background paints to its border box and the fill is out of reach — its only effect being the Stepper growing 108px → 120px; `paddingBlockEnd: 6px` produces no hole either, and addresses only one of the two edges. Only the component can clip both layers together, mirror per axis and direction, and clamp first.
+
+  Adds `Stepper.spec.md`, the canonical owning record for this public property, carrying that admission argument, the value contract, and the anatomy-to-target map. `Stepper.doc.mjs` gains the anatomy entries its existing `stepper`, `step`, and `step-connector` targets never had, so every current target is anchored to a described part.
+
+  Supersedes the `segment` variant this PR previously proposed. That exposed `lead` / `rail` / `content` as public theming vocabulary, which does not hold up: the words never appeared in the generated docs, they emit bare `lead` / `content` classes where a consumer's own stylesheet can collide with them, and `lead` means different geometry per orientation. The pieces are how this layout happens to be drawn today, not a contract.
+
+- Stepper's `horizontalOptions.collapsedVariant` lets a flow choose `withLabelAndControls`, `withLabel`, or `hiddenLabel` for its compact presentation. Use `withLabel` when the surrounding flow owns Back/Continue, or `hiddenLabel` when surrounding UI owns both the current-step heading and navigation and only a bare progress track is needed. The default preserves both label and controls, its controls require `onStepClick`, and every step keeps its name in the accessible sequence at any width. (#5659)
+- Stepper's `horizontalOptions.minimumStepWidth` configures the per-step width at which a horizontal Stepper collapses. Numbers are interpreted as pixels and strings accept CSS lengths such as `7rem`, `calc(6rem + 8px)`, and custom properties. The browser resolves string units through an invisible measurement element, and changes to the resolved value update the compact layout. Omitting the option preserves the existing 112px threshold. (#5659)
+- Stepper: add `astryx-step-label` and `astryx-step-description` theme targets. (#5728)
+  Both text parts declare their own typography and color, so themes cannot reach them through the `step` target by inheritance. The new targets apply in both indicator positions and reflect `progress` and `status`.
+
+  `step-label` also reflects `disabled`, because the label owns Stepper's disabled text paint. `step-description` does not. The new targets change no default style.
+
+- Stepper collapses itself in narrow containers instead of leaving each consumer to hand-roll a fallback: a horizontal stepper measures its own width and, once a step has under `horizontalOptions.minimumStepWidth` (112px by default), drops the labels to a bare track and uses the configured `collapsedVariant` beneath it. The breakpoint follows the step count rather than the viewport. Both `separated` and `on-track` leave their compact track presentational; navigation moves to named prev/next controls when configured and when `onStepClick` is set. On-track indicators stay on the rail without repeating the active indicator beside the compact label. The full sequence stays intact for screen readers throughout. (#5659)
+  [fix] Step labels hold to a single line and ellipsize rather than wrapping and breaking mid-word, so a row of horizontal steps keeps one height and the track under it stays straight. The full label is still carried in the step's accessible name.
+
+  [fix] The gap between connector segments is now `--spacing-1`, matching the connector's own thickness, so the track reads as one dashed line at any theme scale.
+
+- Add semantic Table row statuses while restoring custom-marker compatibility. Named custom icons keep their released Icon color mapping; raw CSS custom icons now use the caller's paint as required by the current contract. Canary users relying on implicit glyphs should switch from `color` to `status`. (#5832)
+- TabList: add an `isFullBleed` prop so a tab bar can bleed out to its container's inline content edges instead of requiring hand-written negative-margin CSS (#2622). Like Divider's `isFullBleed`, it cancels the nearest padded Layout container's `--container-padding-inline-*` custom properties with negative margins; the inner strip pads back by the amount the bleed exceeds a tab stop's own padding so edge labels remain aligned to the content inset. It is inline-only: TabList owns the inline full bleed, and the container owns the block-end dock. For that, LayoutHeader gains a `paddingBlockEnd` per-edge override in Section's existing spelling — `paddingBlockEnd={0}` docks the header's last child on its bottom edge so a tab strip's underline meets `hasDivider` at any header padding. The `detail-page` template now uses both props, aligns its ghost panel toggle with the container inset, and no longer carries any hand-written tab-row CSS.
+- Add `nativePicker` to TimeInput so coarse pointers use the browser/OS time picker by default, with `always` and `never` overrides. Seconds and custom increments retain Astryx's typed field. (#5811)
+
+#### Fixes
+
+- Keep AppShell's section top bar solid in auto-height mode while content scrolls beneath it. (#5873)
+- Extend attached field-status backgrounds behind the lower half of their
+  controls so rounded and pill-shaped inputs connect without visible gaps while the control remains visually above and receives pointer input across the overlap. (#5769)
+- BottomSheet now keeps the iOS Safari browser-bar edge consistent with the sheet surface for both modal and non-modal presentations. (#5373)
+- Keep loading-button spinners at full contrast while interaction is
+  blocked, and suppress pressed feedback for disabled and loading buttons. (#5627)
+- Carousel: mirror the single-edge fade gradients under RTL so the mask fades the physical edge that actually hides content (overflowStart/overflowEnd are logical edges, the gradients were always physical left/right) (#5586)
+- ChatComposerInput no longer discards a pending draft when you click the
+  composer's padding and press ArrowUp. Focusing a contentEditable collapses the caret to the start of the draft, which is the one position where ArrowUp means "recall history", so the first ArrowUp after that click replaced what you had typed. The composer now places the caret after the draft when it focuses itself — clicking the space after the text means "put me there" — so ArrowUp moves the caret with a draft present and still recalls history when the composer is empty. Multi-line caret navigation is unchanged. (#6051)
+- ChatComposer: add a keyboard-only focus ring around the composer body when its editor receives focus (#5648)
+  The ring uses the shared theme focus tokens and does not appear for pointer focus or when an internal action button owns focus.
+- Chat/useChatStreamScroll: an upward scroll releases auto-follow in both motion modes, and only the reader can release it. While following, the hook owns the container's position: it disables CSS scroll anchoring on the scroll element, so the only move the browser makes on its own is the resize clamp onto the bottom, and any other upward move is read as the reader. A wheel or drag a nested scroller consumes, or a block collapsing above the viewport, no longer touches the lock either way; unlocked, anchoring is restored. The wheel and touch listeners are gone. `jumpToBottom` also cancels the spring's pending frame, so animation loops cannot stack. (#5662, #5663)
+- ChatToolCalls now announces pending, running, complete, and failed statuses to assistive technology, including expandable rows and collapsed tool-call groups. (#5666)
+- ChatComposerInput: ArrowUp/Down only recall message history at the text boundaries, so the caret can move between lines of a multi-line draft (#4284)
+- CheckIndicator: start the docsite properties preview in the checked state (#5972)
+  Seeds a `checked` playground default so the properties-tab preview shows a visible indicator on first load instead of an empty stage.
+- `Collapsible`'s trigger label now fills the row instead of hugging its own content, so a composed trigger can put something at the far edge next to the chevron. The trigger is a `space-between` flex row, but its label span had no `flex-grow` — so the free space collected between the label and the chevron, and a trigger built as `<HStack>` with a right-hand element (a date, a count, a status) had that element parked against the label with a gap after it, unable to reach the edge that `space-between` implies. `flexGrow: 1` on the label is the whole change. For a plain text trigger nothing moves: the label was already flush to the start edge and the chevron to the end, and the box that grew is one the text does not fill. The flex floor is deliberately left at `auto`, so no label can now be squeezed narrower than its own content and start overlapping the chevron. (#5933)
+- DropdownMenuRadioItem: add playground wrapper and wire wrapper selection state for docsite preview (#5917)
+  Wraps DropdownMenuRadioItem in DropdownMenuRadioGroup wrapper and keeps the wrapper's selection independent from the item's value knob, so aria-checked stays false until the item is activated and updates on click.
+- Keep DropdownMenu and submenu flyouts inside the viewport with safe inline gutters and viewport-aware height limits. Only overflowing menus become internal scroll containers, while `menuWidth` keeps its existing minimum-width behavior up to the available space. (#5395)
+  [feat] Add an opt-in `presentation` prop for data-driven DropdownMenu instances so products can render the same actions as an anchored popover or a modal bottom sheet according to their own responsive input policy.
+- FieldLabel: a field's description now sits flush under its label without breaking existing label layout overrides. (#5673)
+  A label and its description are one block of text, but nothing in `FieldLabel` said so. It returned a fragment, leaving the `<label>` and the description `<span>` as bare siblings of whatever column happened to hold them — so the space between them was set by that parent's `gap`, the same declaration that separates the label group from the control below it. No caller could close the pair without also pulling the control up against the description, and each had picked its own value.
+
+  Measured in Chromium as `description.top - label.bottom`:
+
+  | | label → description | description → control | | ------------------------- | ------------------- | ----------------------------------- | | `Field`, `TextInput` | 4px → **0px** | 4px → 4px | | `CheckboxInput`, `Switch` | 2px → **0px** | n/a — control sits beside the label |
+
+  The label and description now share a wrapper of their own, so the space between them is theirs to set rather than a side effect of the caller's column. Only the pair closes up: the description → control gap is unchanged, so fields keep their existing rhythm. `CheckboxInput` and `Switch` each carried a 2px label wrapper to do this job locally, which the shared wrapper makes redundant, so all three callers now agree instead of each choosing a value.
+
+  A hidden label group takes `display: contents`, so the wrapper box leaves the caller's layout entirely and the sr-only label and description stay out of flow exactly as they were — a hidden label still costs no space and draws no gap.
+
+  This is one change in `FieldLabel` rather than a change across the ~20 input components, because every input reaches its label through `Field`.
+
+- useFocusTrap only restores focus when focus actually entered the trap while it was active. (#5651)
+  `useFocusTrap` captured `document.activeElement` on activation and restored focus to it on deactivation whenever focus would otherwise be lost to `<body>`. For popups that deliberately keep DOM focus on their trigger — a Typeahead or PowerSearch listbox opened with `role: "none"` and `hasAutoFocus: false` — the trap never receives focus, so the restore fired on outside-click dismissal and re-focused the anchor input. Because the input was then already focused, clicking it again fired no `focus` event and `hasEntriesOnFocus` could not reopen the menu — the control was stuck until a second outside click.
+
+  The restore effect now tracks whether focus entered the trap container at any point while it was active (via a `focusin` listener). If focus never entered, the restore is skipped entirely. Popups that do take focus — Dialog, DropdownMenu, a Typeahead option click — are unaffected.
+
+- Core: track keyboard and pointer modality once per document instead of initializing global listeners from every consuming component. (#5881)
+- LayoutHeader: add playground wrapper and default children for docsite preview (#5918)
+  Prevents the properties-tab preview on the docsite from rendering an empty stage by wrapping LayoutHeader inside a Layout scaffold with representative header text.
+- LayoutPanel: add playground wrapper and default children for docsite preview (#5919)
+  Prevents the properties-tab preview on the docsite from rendering an empty stage by wrapping LayoutPanel inside a Layout scaffold with representative panel content in start slot.
+- Streamed Markdown no longer goes blank when the line still arriving
+  contains an escaped pipe. A `\|` is literal text, not a table-cell delimiter, so a line carrying only escaped pipes is ordinary prose and renders as it streams instead of being held back as an unfinished table header. Genuine partial table syntax is still suppressed, and incremental parsing stays bounded to the stream tail. (#6051)
+- Popover layers now cap explicit widths and match-trigger sizing to the available viewport with alignment-aware token safe-area gutters, preserving trigger alignment while keeping the painted surface at least one spacing token from both viewport edges. Long content scrolls inside the layer instead of forcing page overflow on narrow viewports. Repeated resize and content-change signals coalesce overflow measurement to once per animation frame. Pointer-activated dialog popovers focus the labeled dialog container so the first action does not appear preselected, while keyboard activation still focuses the first content control. Read-only content uses the same container target without revealing the fallback close button, while preserving Tab access to that fallback escape control. (#5373)
+- Reuse `DateRangeInput` for PowerSearch date-range values so endpoint selection always emits an ordered range. (#6004)
+- useResizable: percentage configuration with an explicit basis (AST-010)
+  Implements the accepted [AST-010](../docs/specs/AST-010/spec.md) contract. Percentages **configure** a pixel size; they never create a second, responsive sizing mode.
+- ResizeHandle: a drag survives the cursor crossing an embedded frame. (#5297) The handle listened for `pointermove`/`pointerup` on `window` without taking pointer capture, so the browser hit-tested every later event — and the moment the cursor entered an `<iframe>` inside the resizable region the events went to the guest document instead. Measured in Chromium, the host received 0 of 25 pointermoves once the cursor was over the frame, the panel stopped tracking, and the `pointerup` was never heard: the handle stayed armed with `data-resizing` set and the body cursor/`user-select` overrides stuck. The drag now takes pointer capture on the grab zone on `pointerdown`, so the whole gesture is delivered there whatever is underneath, and the move/up/cancel handlers sit on that element rather than on `window` (the same shape as Slider and BottomSheet).
+- Breadcrumbs mirrors its built-in slash separator in right-to-left layouts (#5365)
+  Fixes #5364.
+- sharedResizeObserver: independent subscriptions per element (#5817)
+  The module held **one callback per element** — `callbacks.set(element, callback)` overwrote. A second hook observing the same node silently replaced the first, and either one calling `unobserveResize(element)` blinded the other.
+
+  Two hooks on one element is ordinary rather than exotic: a `TabList` root, a `useOverflow` container and a `useTruncation` target are all nodes another hook may reasonably watch.
+
+  `observeResize` now returns an unsubscribe that removes only its own registration, and every caller in the package uses it. `unobserveResize(element, callback)` does the same by hand; the callback-less `unobserveResize(element)` still drops every callback on the element and stays for a caller that owns its element outright.
+
+  Dispatch snapshots the callback keys, so a callback may unsubscribe while the batch is running without skipping its neighbour.
+
+  Prerequisite for AST-010 §Implementation-requirements 9, kept separate so it is reviewable on its own. No component behaviour changes: 8534 core tests pass, and the five observer regressions fail against the old module.
+
+- Spinner: a narrow flex host no longer compresses the box and clips the ring (#5484)
+  The spinner's box carried `overflow: hidden` from the canvas ring it no longer draws. It clipped nothing — the painted circle is inscribed in the box, so hiding or showing the overflow renders the same pixels at every size and shade — but a flex item whose overflow is not `visible` has an automatic minimum size of zero. That left the box with no floor: a flex host narrower than the spinner compressed it while the ring kept drawing at the size its own attributes ask for, and the clip then cut the ring off at the box edge, silently, because a sliced ring still spins.
+
+  Ordinary layouts reached it. A `md` spinner beside a label in a 140px row rendered a 16px box around a 20px ring; an `lg` spinner next to a `flex: 1 0 100px` sibling lost half of its ring. The clip is gone and the box is `flex-shrink: 0`, so the box and the ring stay one measurement and a spinner that does not fit overflows its host visibly instead. Nothing moves for a spinner whose host already fitted it.
+
+- Spinner: the drawn frame follows a themed `--spinner-diameter`, so a
+  themed ring is no longer clipped or off-centre. (#5214)
+
+  `--spinner-diameter` and `--spinner-stroke-width` set the ring in CSS, and the box the ring sits in is composed from those same two vars — but the `<svg>` was sized and given its `viewBox` in JS, from the size's own constants. Theming the diameter therefore left the frame behind: the svg stayed at its default while the box shrank around it, and an overflowing grid item aligns to start rather than centre. Measured in Chromium across the four sizes, a themed ring rendered 1.5-3.3px off-centre with its far edge cropped.
+
+  The svg is now sized in CSS from `--_spinner-box-size` — the same composed var the span is sized from — with no `viewBox`, so one user unit is one pixel and the frame moves with the box. (Not a percentage: the span is a grid whose area is not always definite in both axes, and an unresolved percentage height on an SVG falls back to the replaced-element default of 150px.) The px `width`/ `height` attributes remain as the no-stylesheet fallback, as `r` and `stroke-width` already were. Both circles centre on `cx`/`cy="50%"`, and the arc's twelve-o'clock offset is a CSS rotation about the shape's own box rather than an SVG transform about a centre in user units.
+
+  No change to the default render at any size — same box, ring, stroke and sweep, verified against a build of `main`. What changes is that the documented claim "the rendered box … follows automatically" is now true.
+
+- Table's sortable header button now follows its column's `align`, so an `align: 'end'` or `align: 'center'` column no longer gets a start-hugging header label sitting above right-aligned figures. Sorting wraps the header in a full-width flex button, which the `textAlign` that `align` sets on the cell cannot position; the alignment is now carried onto the button's main axis with a flow-relative `justify-content`, so it keeps mirroring under RTL. (#5928)
+- Route table-row outcomes and completed or failed tool calls through the theme's semantic icon registry. (#5671)
+- `themingTargets.test.ts` now discovers component sources at any depth under `src`, not only in a top-level directory. (#5784) Sources nested a level down — `Table/plugins/<name>/` — were silently exempt from the guard, which is the same drift #3741 was filed to prevent. Nothing was failing (no nested source rendered a `themeProps()` class before this release), so this closes the hole rather than fixing a live break: the guard goes from 294 to 302 assertions.
+- Timestamp relative and compact-relative labels now follow the active provider locale, including locale-specific plural rules and word order. (#5859)
+- Toast: the card's shadow is no longer clipped away. (#5547)
+  Each toast's grid row used `overflow: hidden` throughout its lifetime. The clip is load-bearing while the row opens and closes — it makes the toast read as folding into the stack — but at rest it hugs the card's border box with zero slack on every side and cuts off every shadow the card casts. Astryx's own `--shadow-med` was declared and invisible: against a white page, every sampled pixel below a stock toast was pure white.
+
+  The row now keeps its cross-engine `overflow: hidden` boundary during entry and exit, and releases it to `overflow: visible` only after the opening transition settles. Dismissal restores the clip synchronously. The wrapper keeps its ordinary pointer boundary, so a second click while the toast is still visible is absorbed by the toast rather than falling through to an obscured control underneath.
+
+  This avoids `overflow-clip-margin`, which WebKit 26.5 does not support, while preserving the exact paint boundary the exit shipped with before this fix.
+
+  Settled state is held on the mounted row rather than in a set of toast ids on the viewport, so it cannot outlive the row it describes. A row leaves the DOM by more paths than dismissal — `maxVisible` evicts the oldest when a newer toast arrives, and a `uniqueID` overwrite swaps a new entry into a replaced toast's place — and on neither path does anything on the dismissal path run. An evicted toast that resurfaces once the stack drains therefore mounts clipped and runs its own entry transition, instead of releasing the clip over a row that is still opening.
+
+  One further lifecycle guard: only the row's own transition is read, since `grid-template-rows` is not private to the wrapper and `transitionend` bubbles from any descendant animating its own grid. Reading a descendant's event as the row's own releases the clip before the row has finished opening, and during exit it unmounts the toast mid-collapse.
+
+  Below a settled stock toast on a white page, sampling straight down from the card's bottom border box: `255,255,255` at every offset before; after, the shadow paints `223` at +0px and fades `237 → 243 → 247 → 250 → 253 → 254`, reaching white again at +12px. During exit the row clips again, so anything outside the shrinking row is neither painted nor hit-testable — while the wrapper itself keeps the ordinary pointer boundary it has always had, and still absorbs a click aimed at a toast that is still on screen.
+
+- Reset Toast swipe state when a second touch begins so native pinch and two-finger gestures remain available, and clear transient drag styles before a successful swipe dismissal. (#5676)
+- `ToastViewport` resets the UA popover `width`, so an end-positioned toast lands on the end edge again. (#5822) The viewport reaches the top layer through `popover="manual"`, and the UA stylesheet gives every popover `width: fit-content`. Since the placement rework the viewport is positioned by spanning the inline axis and aligning within itself, and a shrink-wrapped box cannot span — both inset edges cannot be honoured, so the box resolves against the start edge and `align-items: flex-end` aligns the toast to the right of a box sitting on the left. Measured in Chromium at 1200px: a 438px viewport at x=0, with the default `bottomEnd` toast at x=19 instead of x=781. The reset block already neutralised `inset`, `margin`, `border` and `background`; `width` belongs with them.
+- Tokenizer: render and interact in the docsite properties preview (#5982)
+  Seeds playground defaults for the required `value` array so the properties-tab preview shows a labeled field with tokens on first load instead of the missing-required-props placeholder, and wires the preview's `onChange` bridge back to the controlled `value` so removing a token updates the field.
+- TreeList: respect consumer `onKeyDown` `preventDefault` cancellation for APG tree keyboard navigation (#5606)
+  `TreeList` previously processed built-in APG keyboard navigation on the inner `<ul role="tree">` before consumer `onKeyDown` ran on the root `<div>`, preventing consumer `event.preventDefault()` from suppressing built-in arrow navigation.
+
+  Root `onKeyDown` now invokes consumer `onKeyDown` on the root container first and checks `event.defaultPrevented` before handling internal tree navigation for keydown events originating inside the `<ul role="tree">`. Calling `event.preventDefault()` in `onKeyDown` now successfully cancels built-in navigation and leaves focus and roving tabindex unchanged while preserving root handler target contracts.
+
+- Typeahead: the field keeps its width when a value is selected, and the value stays out of the end controls (#5560)
+  Two halves of one promise from the input-field family contract (`docs/families/input-fields.md`): **FR1**, a field's available width does not change because its value did; and **FR2**, a visible end affordance does not have field content painted under it.
+
+  **FR1 — the input keeps its place.** Every other field in the family gets a stable width for free: the `<input>` stays in flow, and the field is as wide as the input's own intrinsic width. Typeahead took the input out of flow and zeroed its width while a token showed, so the field was left measuring the token. In any shrink-to-fit parent it snapped to the value's length. Block-level parents hid it, because they fill their container whatever their content is, which is why no story caught it. The input now keeps its place in the row and its own width — it is only made invisible and inert — and the token is painted over that space rather than beside it. In flow the token would add its own width instead, which is the same value-dependent sizing from the other direction: a long value would grow the field.
+
+  **FR2 — the value is bounded by a content lane.** The input and the token share a content lane: an ordinary flex item, `flex: 1` with `min-width: 0`, that ends exactly where the end lane begins. That is TextInput's own arrangement — the lane takes the free space so the end controls sit in the corner, and yields all of it when the field is narrow, so a narrow field cannot overflow. The token is anchored at both of the lane's inline edges, so a long value ellipsizes at the lane's edge instead of reaching the controls. Positioned against the whole field instead, as the first revision of this change did, it had no idea where those controls start.
+
+  Measured in Chromium. Widths are the field's border box, field in a `max-content` parent, `Field.width` otherwise unset:
+
+  | | empty | short value | long value | | --------------------------------- | ----- | ----------- | ------------ | | TextInput (family baseline) | 199px | 227px | 227px | | Typeahead before | 199px | **54.7px** | **224.09px** | | Typeahead after | 199px | 223px | 223px | | Typeahead in `InputGroup`, before | 397px | **252.7px** | **422.09px** | | Typeahead in `InputGroup`, after | 397px | 421px | 421px |
+
+  The 24px between the empty and valued columns is the clear button entering the row — ordinary for any field whose clear is conditional, it does not vary with the value, and TextInput's is 28px.
+
+  Overlap is the value's trailing edge past the clear button's leading edge; escape is how far the value reaches past the field's border. The middle column is this change's own first revision, which fixed the width and made the overlap worse:
+
+  | field, long value | overlap on main | first revision | now | | ----------------- | --------------- | -------------- | --------------- | | shrink-to-fit | 12px | 28.09px | none, 7px clear | | in `InputGroup` | 12px | 33px | none, 7px clear | | 220px | 12px | 31.09px | none, 7px clear | | 180px | 12px | 33px | none, 7px clear | | 140px | 12px | 33px | none, 7px clear | | escape, 140–220px | none | up to 4px | none |
+
+  No new API and no constants. An earlier revision floored the field with a `--typeahead-min-width` public var defaulting to 200px, which review rightly rejected: it was a second sizing contract beside the documented `Field.width` prop, it was hand-derived (the empty field measures 199, so the floor overshot by 1), `InputGroup` cancelled it, and it could not help `Tokenizer`. Nothing here states a width; the lane's `min-width: 0` is the opposite of a floor.
+
+  `Tokenizer` is **not** fixed here. It shares the family promise and breaks it — 199px empty to 114.7px with one token, in the same probe — but by a different mechanism: its tokens are in flow and wrap, and its input deliberately becomes a 40px continuation lane after them, so what a wrapping multi-value field's width should be is a design question rather than this bug. Its numbers are identical before and after this change.
+
+- Typeahead, Tokenizer: the busy indicator is a Spinner in the field's end lane, and the input keeps its text out from under it (#5555)
+  Three defects in one block. The indicator a search painted was `<Icon icon="clock">` — a static glyph, in a family where every other input paints busy with a `Spinner`, and where `clock` otherwise means _time_. It was an in-flow item at the row's inline end, which is where each field independently parks its clear button, so the two landed on each other: 17×20px of overlap in Typeahead and 19×20px in Tokenizer. The overlap is visual, not functional — the clear button is positioned, so it paints above the in-flow indicator and stays clickable across the whole covered band. And the combobox never carried `aria-busy`, unlike every sibling input.
+
+  The base engine now reports the busy state to the field, which paints it in the one inline-end lane it already owns beside its clear button and end content, and sets `aria-busy` on the input. A caller using `BaseTypeahead` directly is unaffected: it still renders its own visible, named "Loading" status, now a Spinner rather than the clock.
+
+  Typeahead puts both controls **in flow**, as ordinary flex siblings of the input, exactly as TextInput does with its own spinner and clear button — an in-flow box takes up room, so the input cannot run under it and there is nothing to measure. Getting there meant dropping `flex-wrap: wrap` from its wrapper, which the shared field base does not set and TextInput does not use: this field holds at most one token, so there is no second row to wrap to, and wrapping is what made an in-flow lane impossible, since flex moves an item to a new line rather than shrinking it. Measured in Chromium: with `flex-wrap` restored and a token too wide to share the row, the end controls drop to a second row and a 280px field grows from 32px to 46px tall. Unwrapped, a long value ellipsizes in the token instead.
+
+  Tokenizer's own pre-existing case of the overlap closes with it: at 280px with a token and no search running, its clear button covered 20px of the input's content box, and covers none now.
+
+  Tokenizer keeps a measured lane, because it cannot use the in-flow shape: its lane stays pinned to the field's first row while tokens wrap below it, so it has to be out of flow, and an out-of-flow box reserves nothing. Its width is measured with `offsetWidth` rather than `getBoundingClientRect()`. The rect is in viewport space — it carries every CSS transform above the element — while the padding it feeds is in local space, so mixing them broke under any transform: measured in Chromium, `scale(.5)` reserved half of what was needed and put the query back under the controls by 22.83px, and `scale(2)` left the caret in a 202.69px gap. `offsetWidth` is the untransformed border-box width and reports the same number at every scale.
+
+  The measurement reaches CSS as a custom property written to the field wrapper, never as React state, so a lane that grows or shrinks repaints without re-rendering the field. Held in state it cost a second commit every time the lane changed size — once as the spinner arrived and once as it left — which doubled the field's commits across a search for a value no JavaScript reads. The observation is shared too, through the same `observeResize` singleton `useTruncation` uses, so a page of fields costs one callback per frame rather than one observer each. The property is `--_tokenizer-end-lane-width`: private and component-named, like every other runtime layout var in the package, and never something a theme writes.
+
+  The busy indicator now appears in each field's documented anatomy, delegating its theming to `component:Spinner` rather than gaining a target of its own — the disposition `TextArea`, `CheckboxList` and `CommandPalette` already use for the same part.
+
+#### Performance
+
+- Keep Tooltip refs stable across rerenders (#5951)
+- Markdown streaming bounds four incremental-parse operations by the mutable tail: splitting, fence/boundary detection, link-definition collection, and block re-parsing no longer grow with the already-settled document. The parser contract is unchanged: each call returns a fresh, never-mutated snapshot, and replacing already-settled text still re-parses the document. Two costs intentionally remain proportional to the whole input on each call because that contract requires them — the settled-prefix comparison that detects a replaced document, and the pointer-per-block copy behind each returned snapshot. (#5515)
+- Typeahead: skip the loading cycle for synchronous bootstrap sources (#5955)
+  `BaseTypeahead` now applies an array returned by `SearchSource.bootstrap()` immediately instead of entering and leaving the asynchronous loading state. An empty synchronous bootstrap becomes a render no-op, while synchronous entries still open normally. Switching from an in-flight search to a synchronous bootstrap also clears the superseded search's loading state. Promise-backed bootstrap sources keep the existing loading behavior.
+
+#### Documentation
+
+- Grid, Stack, HStack, VStack, GridSpan, and StackItem: seed example content via playground defaults (and, for the two sub-components, a real parent wrapper) so the docsite properties-tab preview renders a working component instead of an empty stage. (#5892, #5893, #5894, #5898, #5899, #5900)
+- The namespaced-icon rationale and the add-a-semantic-icon intro in the icons guide, and the `SideNavItem` `actions` prop description, now use a comma and a colon in place of prose em dashes. Meaning unchanged. (#5647)
+- The Popover presentation best practice and the Banner collapsible best practice now use a straight apostrophe instead of a curly one, so the strings match the rest of the doc copy. Meaning unchanged. (#5772)
+- The Spinner CSS-variable and size descriptions, and the `useTableGroupedRows` description, now use colons and semicolons in place of prose em dashes. Meaning unchanged. (#5597)
+- The Stepper progress bar anatomy description now sets its nested aside in parentheses instead of paired em dashes, so the sentence about multi-segment spans reads plainly in the CLI and doc site. Meaning unchanged. (#5691)
+
+#### Other Changes
+
+- Core's postinstall no longer hand-mirrors the setup contract. `packages/core/scripts/agent-doc-state.mjs` is now GENERATED byte-for-byte from the CLI's dependency-free leaf `packages/cli/foundation/agent-docs/agent-doc-state.mjs`, and `pnpm check:setup-contract` — wired into `check:repo` — fails the build when the two differ. (#4162)
+  The previous guard compared two hand-edited constant lists. That caught a new agent-doc path or a new marker, and nothing else: the predicate itself, and the `shouldNudge` decision matrix duplicated in both postinstall scripts, could still drift and leave layer 1 and layer 2 disagreeing about "is this project set up?" with the test green. `shouldNudge` and the nudge string move into the contract as well, so all four things — paths, markers, predicate, decision — now have one definition and one place to edit.
+
+  Behavior is unchanged, and verified rather than assumed: the nudge text is byte-identical, legacy `<!-- XDS:START -->` blocks still count as set up, all six agent-doc locations are still detected, and both scripts still exit 0 on every path including failure. Core loads its copy with a dynamic import, so a packaging mistake degrades to "no nudge" instead of throwing out of module evaluation and failing a consumer's install. `check:setup-contract` also fails if core stops listing the generated file in `files`, so it cannot go missing in the first place.
+
+- **`minSize` / `maxSize`** join `defaultSize` in one vocabulary: a non-negative finite number, an exact `Npx`, an exact `N%` from 0–100, Table's existing `pixel(value)`, or `percent(value, {min: pixel(value)})` / `percent(value, {max: pixel(value)})` for a percentage with exactly one pixel floor or ceiling. `percent()` requires its options; `'40%'` remains the only unbounded percentage spelling. `minSizePx`/`maxSizePx` remain deprecated aliases, each an exact mutually-exclusive TypeScript union with its replacement; if untyped code supplies both, the unified prop wins and development names the ignored alias.
+- **`containerRef`** (caller-owned) changes only what a percentage is a share of: that element's **content-box** size on the active axis, `direction` selecting inline or block. Omitted, percentages keep the released one-time `window.innerWidth` resolution with its 1200px server fallback.
+- **A percentage default resolves once** into a pixel selection, applying its optional structured floor or ceiling exactly once. Percentage **bounds** re-resolve with their basis, apply that one pixel bound, and clamp the selection — they never rescale it. A basis change is not a user interaction: it fires no `onSizeChange` and persists only resolved pixels.
+- **Everything else stays pixels**, exactly as released: pointer, keyboard, snaps, collapse/expand, persistence, callbacks, and `resize(number)`. `resize('50%')` remains a type error, and `resize(NaN)`, `resize(Infinity)` or a negative now warn and keep the last legal size instead of poisoning state.
+- **Invalid configuration** repairs deterministically — 250px for a default, 50px for a minimum, unbounded for a maximum — identically in development and production, warning only in development. Explicit `maxSize: Infinity` and `maxSizePx: Infinity` keep the released unbounded behavior. The deprecated aliases retain their released exact atomic-string behavior for untyped callers. An inverted pair warns and the maximum wins, preserving the released clamp order.
+
+  The structured API follows Table's existing shape rather than parsing CSS expressions: `Resizable/utils` is a server-safe subpath that re-exports the exact same `pixel()` binding and `PixelWidth` type as `Table/utils`, alongside Resizable's `percent()` and types. `pixel(value)` is the canonical structured static size; raw numbers and exact `Npx` remain compatible. `proportional()` remains Table-only because it describes sibling weight, not a literal percentage of one measured basis. CSS `min()` / `max()` strings are deliberately unsupported.
+
+  The defect this closes: a percentage ceiling could previously only be written in CSS, and CSS stops the paint but not the state. `ResizeHandle` publishes the hook's size as `aria-valuenow`, so the separator announced a width the panel did not have — measured at **899.5 against a 434px panel**. Bounds now clamp the state, so paint, persistence and ARIA describe one geometry.
+
+  `ResizeHandle` also warns in development when its `direction` disagrees with its region's, which previously failed silently. Existing vertical panels must pass `direction: 'vertical'` to `useResizable` as well as `direction="vertical"` to the handle.
+
+  The container basis follows the ref, not the element it first pointed at: replacing the element behind the same `containerRef` re-resolves against the replacement, and the element left behind is unobserved. A container that is not laid out yet — unmounted, `display:none`, detached — measures 0, which is not a measurement: percentages hold the documented temporary 1200px basis until it is real, and nothing is written to `autoSaveId` storage from it. Once the first real basis resolves, the default is committed as a pixel selection with its initial clamp included; a 321px default clamped to 200px therefore stays 200px when the container later grows instead of reviving the raw default.
+
+  A gesture that is cancelled rather than completed — `pointercancel`, a lost pointer capture, a handle unmounted mid-drag — releases the basis it froze through a new optional `_onResizeCancel` on `ResizableProps`. It is not a resize end (a cancelled drag deliberately signals none, per #5297), but it is the end of the gesture. `_onResizeCancel` and `_direction` are both optional: `ResizableProps` is exported, so an object literal that satisfied the released type still compiles.
+
+  Not in scope, per the spec: SideNav's simplified `defaultWidth`/`minWidth`/`maxWidth` stays pixel-only.
+
+  A pixel-only configuration keeps its single render pass even when a `containerRef` is supplied. With no percentage anywhere there is no basis to observe or ref identity to follow, so the pixel selection is made at mount; only a basis-dependent configuration with a supplied container defers until that measurement exists.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @ernestt
+- @freddymeta
+- @Geervan
+- @HelloOjasMutreja
+- @imdreamrunner
+- @jiunshinn
+- @josephfarina
+- @Kyujenius
+- @Lee-Dongwook
+- @ManoharPaturi
+- @mattandryc
+- @nynexman4464
+- @rubyycheung
+- @trakshan-mishra
+- @yyq1025
+
+---
+
 # 0.5.2
 
 #### Fixes

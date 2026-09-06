@@ -46,5 +46,9 @@
   {
     "component": "unknown/ChartTooltip",
     "reason": "ChartTooltip uses explicitly physical left/right/top viewport placement and clamping. It has no logical start/end placement, direction-dependent control order, horizontal scrolling action, or coarse form hit target; tooltip rows inherit bidi layout without component-specific directional logic."
+  },
+  {
+    "component": "unknown/ThreeD",
+    "reason": "The ThreeD documentation family renders Cartesian x/y/z data visualizations in SVG and WebGL. Its axes and pointer-drag rotation are physical data-space interactions that intentionally remain invariant across writing directions; it has no reading-order controls, inline-start/end placement, directional glyphs, or overlays to mirror."
   }
 ]

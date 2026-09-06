@@ -38,9 +38,8 @@ export interface StepperContextValue {
    * on the first render, which is what keeps a stepper that mounts mid-flow
    * from animating its way to the step it opened on.
    *
-   * Internal: not part of the public API, and deliberately not a Stepper prop.
-   * When the connector animates is behaviour the stepper owns, not something a
-   * consumer configures.
+   * Consumers cannot configure this through a Stepper prop; it reflects the
+   * component-owned transition history exposed by the context hook.
    */
   previousActiveStep: number;
   orientation: StepperOrientation;
@@ -60,8 +59,6 @@ export interface StepperContextValue {
    * How many steps have registered. Needed to know how much width each one is
    * getting, and to tell the last step from the rest without counting
    * children — which would couple the stepper to how they were grouped.
-   *
-   * Internal: not part of the public API.
    */
   stepCount: number;
   /**
@@ -73,8 +70,6 @@ export interface StepperContextValue {
    * Decided by the parent because it depends on how much width there is and
    * how many steps are dividing it, and neither is knowable from inside a
    * single step.
-   *
-   * Internal: not part of the public API.
    */
   isCompact: boolean;
   /**
@@ -92,8 +87,6 @@ export interface StepperContextValue {
    *
    * Null until the row exists, which is never on a stepper wide enough not to
    * need one.
-   *
-   * Internal: not part of the public API.
    */
   summarySlot: HTMLElement | null;
   /** CSS length whose resolved value sets the compact per-step threshold. */
