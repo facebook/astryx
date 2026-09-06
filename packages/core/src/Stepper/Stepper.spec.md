@@ -36,8 +36,9 @@ ownership.
 
 ## Compatibility and migration
 
-- `horizontalOptions.minimumStepWidth` defaults to `112`, and
-  `collapsedVariant` defaults to `withLabelAndControls`.
+- `horizontalOptions.minimumStepWidth` defaults to `112` CSS pixels, and
+  `collapsedVariant` defaults to `withLabelAndControls`. The threshold accepts
+  only finite non-negative numbers and interprets them as CSS pixels.
 - `horizontalOptions` owns the per-step compact threshold and compact
   label/control presentation as one horizontal-only public concept.
 - Changes to `horizontalOptions`, its defaults, or any other exported Stepper
@@ -58,8 +59,8 @@ ownership.
   background) and the accent fill (an absolutely placed `::before`) — and the
   single clip that holds both off the indicator.
 - Which pieces an on-track connector is drawn from, and how many.
-- Resolution of `horizontalOptions.minimumStepWidth` through browser layout and
-  the compact state derived from that resolved length, the Stepper width, and
+- Interpretation of the number-only `horizontalOptions.minimumStepWidth` threshold
+  and the compact state derived from that pixel value, the Stepper width, and
   registered steps.
 - Label and Description paint and the target ownership defined by FR9–FR11.
 
@@ -73,11 +74,11 @@ ownership.
 
 ## Public concepts
 
-| Concept                              | Closed values or states                            | Meaning                                                                                                                                                                                    | Availability by variant/orientation/state                                                                     | Default                                                    | Owner               | Stability | Invalid-value behavior                                                                                    |
-| ------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------- | --------- | --------------------------------------------------------------------------------------------------------- |
-| `--step-connector-gap`               | Any CSS `<length-percentage>`                      | How far the track stops short of the indicator, on the side facing it                                                                                                                      | `indicatorPosition="on-track"`, both orientations and both directions, only on steps that render an indicator | `0px`                                                      | `component:Stepper` | stable    | Clamped, never rejected: values below `0` resolve to `0`, values above `--spacing-2` cap at `--spacing-2` |
-| `horizontalOptions.minimumStepWidth` | `number \| string`                                 | Required within `horizontalOptions`; per-step width below which a horizontal Stepper uses its compact presentation; numbers are pixels and strings are CSS lengths resolved by the browser | Horizontal orientation                                                                                        | `112` when `horizontalOptions` is omitted                  | Caller              | stable    | Invalid CSS follows platform width parsing; use a valid CSS length or a number                            |
-| `horizontalOptions.collapsedVariant` | `withLabelAndControls \| withLabel \| hiddenLabel` | Required within `horizontalOptions`; whether compact mode shows a label with navigation controls, a label alone, or only the bare progress track                                           | Compact horizontal orientation; controls require `withLabelAndControls` and `onStepClick`                     | `withLabelAndControls` when `horizontalOptions` is omitted | Caller              | stable    | TypeScript rejects unknown variants                                                                       |
+| Concept                              | Closed values or states                            | Meaning                                                                                                                                          | Availability by variant/orientation/state                                                                     | Default                                                    | Owner               | Stability | Invalid-value behavior                                                                                                                             |
+| ------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--step-connector-gap`               | Any CSS `<length-percentage>`                      | How far the track stops short of the indicator, on the side facing it                                                                            | `indicatorPosition="on-track"`, both orientations and both directions, only on steps that render an indicator | `0px`                                                      | `component:Stepper` | stable    | Clamped, never rejected: values below `0` resolve to `0`, values above `--spacing-2` cap at `--spacing-2`                                          |
+| `horizontalOptions.minimumStepWidth` | finite non-negative `number`                       | Required within `horizontalOptions`; per-step width in CSS pixels below which a horizontal Stepper uses its compact presentation                 | Horizontal orientation                                                                                        | `112` when `horizontalOptions` is omitted                  | Caller              | stable    | Negative, `NaN`, infinite, string, unit-bearing, `calc()`, and custom-property values are unsupported and MUST NOT be reinterpreted as CSS lengths |
+| `horizontalOptions.collapsedVariant` | `withLabelAndControls \| withLabel \| hiddenLabel` | Required within `horizontalOptions`; whether compact mode shows a label with navigation controls, a label alone, or only the bare progress track | Compact horizontal orientation; controls require `withLabelAndControls` and `onStepClick`                     | `withLabelAndControls` when `horizontalOptions` is omitted | Caller              | stable    | TypeScript rejects unknown variants                                                                                                                |
 
 Consumer syntax and description remain in `Stepper.doc.mjs` `theming.vars`.
 
@@ -98,7 +99,7 @@ Consumer syntax and description remain in `Stepper.doc.mjs` `theming.vars`.
 | FR11 | Label and Description each declare `font-size`, `line-height`, and `color`. Those declarations outrank values inherited from `step`, so only direct targets can expose that paint to themes.                                                                                                                                                                                                                                                                                                                                                                                                                        | Current source and Chromium probe               |
 | FR12 | A compact horizontal summary sits directly beneath its track without an additional frame gap.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Current source and narrow-layout evidence       |
 | FR13 | In compact `on-track`, indicators remain on the rail and the active indicator is not repeated beside the summary label; compact `separated` retains the active indicator beside its label.                                                                                                                                                                                                                                                                                                                                                                                                                          | Current source and narrow-layout evidence       |
-| FR14 | `horizontalOptions.minimumStepWidth` accepts pixel numbers and CSS lengths. Its invisible browser-resolved probe remains mounted in every progress state, including all-complete, and recomputes compact state whenever its resolved width changes.                                                                                                                                                                                                                                                                                                                                                                 | Current source, docs, and tests                 |
+| FR14 | `horizontalOptions.minimumStepWidth` accepts only a finite non-negative number interpreted as CSS pixels. No string, CSS unit, `calc()`, custom property, hidden measurement element, or browser-resolved threshold is part of the public contract.                                                                                                                                                                                                                                                                                                                                                                 | Owner-defined number-only threshold             |
 | FR15 | `horizontalOptions.collapsedVariant` keeps horizontal-only configuration together: `withLabelAndControls` shows the label and controls, `withLabel` shows only the label, and `hiddenLabel` renders only the bare progress track with no compact row.                                                                                                                                                                                                                                                                                                                                                               | Current source, docs, and tests                 |
 | FR16 | Changing `isDisabled` on one mounted Step MAY rerender that Step and the compact navigation affordances whose availability depends on it. It MUST NOT unregister or re-register the Step, change registered membership or `stepCount`, replace the shared Stepper context value, or rerender unrelated Steps. Mount, unmount, and a change to the Step's `step` identity are the only events that change membership. Mutable disabled metadata uses a narrowly subscribed channel independent from membership. The affected Step continues to own its disabled interaction and rendered-state semantics under FR10. | Owner-defined render-isolation requirement      |
 
@@ -116,19 +117,19 @@ Astryx paints either text part by status.
 
 ### Representative states
 
-| State                                                           | Required invariant | Allowed variation |
-| --------------------------------------------------------------- | ------------------ | ----------------- |
-| vertical, on-track, indicator                                   | FR2, FR3, FR6      | AV1, AV2          |
-| horizontal, on-track, indicator                                 | FR2, FR3, FR6, FR7 | AV1, AV2          |
-| `dir="rtl"`, horizontal                                         | FR7                | AV1               |
-| `indicator="none"`                                              | FR5                | —                 |
-| value below `0` or above the cap                                | FR4, FR6           | —                 |
-| both indicator positions; each progress/status; disabled Label  | FR9–FR11           | —                 |
-| compact horizontal summary                                      | FR12               | —                 |
-| compact `on-track` and `separated` indicators                   | FR13               | —                 |
-| numeric, `rem`, `calc()`, or custom-property collapse threshold | FR14               | —                 |
-| all-complete with a custom collapse threshold                   | FR14               | —                 |
-| each `collapsedVariant`, with and without `onStepClick`         | FR15               | —                 |
+| State                                                          | Required invariant | Allowed variation |
+| -------------------------------------------------------------- | ------------------ | ----------------- |
+| vertical, on-track, indicator                                  | FR2, FR3, FR6      | AV1, AV2          |
+| horizontal, on-track, indicator                                | FR2, FR3, FR6, FR7 | AV1, AV2          |
+| `dir="rtl"`, horizontal                                        | FR7                | AV1               |
+| `indicator="none"`                                             | FR5                | —                 |
+| value below `0` or above the cap                               | FR4, FR6           | —                 |
+| both indicator positions; each progress/status; disabled Label | FR9–FR11           | —                 |
+| compact horizontal summary                                     | FR12               | —                 |
+| compact `on-track` and `separated` indicators                  | FR13               | —                 |
+| finite non-negative pixel threshold                            | FR14               | —                 |
+| default threshold in ordinary and all-complete progress states | FR14               | —                 |
+| each `collapsedVariant`, with and without `onStepClick`        | FR15               | —                 |
 
 ### Transformation and precedence order
 
@@ -141,9 +142,13 @@ Astryx paints either text part by status.
 
 ### Performance and resources
 
-- Horizontal Stepper instances register their list and one invisible threshold
-  probe with the shared ResizeObserver. The probe lets browser layout resolve CSS
-  lengths and updates compact state when that resolved value changes.
+- Stepper measures its rendered width through one component-owned resize
+  subscription. Compact state compares that width with the registered step count
+  and the number-only pixel threshold from FR14.
+- The current hidden CSS-length probe, `minStepWidthMeasureRef`, resolved-threshold
+  state, and second ResizeObserver subscription are not justified by the intended
+  number-only API. They are an implementation adoption gap, not part of the
+  public contract.
 - Step membership and mutable per-Step navigation metadata use separate update
   channels. Registration is lifecycle-bound. Disabled metadata may use a
   lifecycle-stable ref, store, or another narrowly subscribed mechanism; the
@@ -152,9 +157,9 @@ Astryx paints either text part by status.
 
 ## Accessibility contract
 
-The threshold probe is empty and `aria-hidden`; it adds no accessible content or
-focus stop. Compact layout preserves the ordered-list role and `aria-current`
-handling while moving optional navigation to the summary controls.
+Compact layout preserves the ordered-list role and `aria-current` handling while
+moving optional navigation to the summary controls. Threshold calculation adds no
+hidden measurement content to the accessibility tree.
 
 ## Design relationships
 
@@ -222,7 +227,7 @@ parts. Their own typography and color declarations make `inherits: step` false;
 | FR11                | Exact-head Chromium probe                                       | Themed `step`, Label, and Description                                                                         | If inheritance reaches the text, the Step target's probe color appears there.                                                                                                                                                                                                                    | `audit:Stepper/theming`  |
 | FR12                | `Stepper.test.tsx` compact frame gap assertion                  | Compact horizontal summary                                                                                    | Restoring frame spacing separates the summary from the track and fails the suite.                                                                                                                                                                                                                | `audit:Stepper/layout`   |
 | FR13                | `Stepper.test.tsx` compact indicator assertions                 | Compact `separated` and `on-track`                                                                            | Repeating the on-track active indicator, or dropping the separated one, fails the suite.                                                                                                                                                                                                         | `audit:Stepper/layout`   |
-| FR14                | `Stepper.test.tsx` threshold measurement assertions             | Default, pixel number, CSS length, resolved-value change                                                      | Parsing a CSS string in JavaScript or observing only the list fails the suite.                                                                                                                                                                                                                   | `audit:Stepper/layout`   |
+| FR14                | Type, runtime-validation, and compact-threshold assertions      | Default, zero, positive finite pixel number, negative, `NaN`, infinity, string/CSS input, all-complete state  | A string or non-finite/negative value becomes a CSS length, a hidden threshold probe is required, or pixel comparison changes across progress states.                                                                                                                                            | `audit:Stepper/layout`   |
 | FR15                | `Stepper.test.tsx` collapsed-variant assertions                 | Three variants, with and without navigation                                                                   | A variant shows an unrequested label/control or changes the accessible sequence.                                                                                                                                                                                                                 | `audit:Stepper/layout`   |
 | FR16                | Registration, context-identity, and render-count mutation tests | Mounted Step `false → true → false` in compact/non-compact layouts; Step identity change; unmount; StrictMode | Disabled updates change only the affected Step and dependent compact controls; registration setup/cleanup and `stepCount` stay unchanged; provider identity and unrelated Step render counts stay stable; identity change/unmount update membership once; disabled DOM semantics remain correct. | `audit:Stepper/behavior` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                   | Canonical anatomy and the nine current targets                                                                | A target with no anatomy owner, or a stale/extra part, fails repository validation.                                                                                                                                                                                                              | `audit:Stepper/theming`  |
@@ -289,13 +294,26 @@ changes rendered labels, focus targets, navigation controls, and preserved
 content rather than paint alone.
 
 `horizontalOptions` keeps these horizontal-only decisions out of the Stepper's
-top-level API. `minimumStepWidth` names the per-step space the caller is
-guaranteeing. A number is pixels, following other Astryx size props; a string is
-a CSS length. The browser resolves strings on an invisible descendant of the
-public list, so relative units and inherited custom properties keep their CSS
-meaning without a partial JavaScript length parser. `collapsedVariant` is one
-closed choice because its values describe the complete compact presentation and
-avoid conflicting boolean combinations.
+top-level API. `minimumStepWidth` names the finite non-negative per-step pixel
+width the caller is guaranteeing. It does not accept CSS strings, units,
+`calc()`, or custom properties; the component compares the numeric threshold
+directly with measured Stepper geometry. `collapsedVariant` is one closed choice
+because its values describe the complete compact presentation and avoid
+conflicting boolean combinations.
+
+### DEC-4 — The compact threshold is a finite pixel number
+
+**Reference:** `component:Stepper/DEC-4`
+**Decider:** `cixzhang`, `2026-09-06`
+
+`horizontalOptions.minimumStepWidth` accepts only a finite non-negative number
+and interprets it as CSS pixels. The threshold is a compact-layout input, not a
+CSS styling seam. A number keeps the comparison explicit, portable, and
+independent from inherited styling or a hidden measurement element.
+
+Rejected: CSS strings, units, `calc()`, and custom properties. Supporting those
+forms would add browser-resolved threshold state, a hidden probe, and another
+ResizeObserver subscription without an intended public need.
 
 ## Open questions
 
