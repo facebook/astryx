@@ -3,7 +3,8 @@
 
 /**
  * @file package-source.js
- * @description Packages XDS raw source files into a distributable tarball
+ * @description Packages XDS raw source files and its generated visual-prop
+ * contract into a distributable tarball
  *
  * Usage: node scripts/package-source.js
  * Output: dist/xds-core-{version}.tgz
@@ -16,6 +17,7 @@ const { execSync } = require('node:child_process');
 const ROOT = path.resolve(__dirname, '..');
 const CORE_DIR = path.join(ROOT, 'packages', 'core');
 const SRC_DIR = path.join(CORE_DIR, 'src');
+const THEME_VISUAL_PROPS = path.join(CORE_DIR, 'theme-visual-props.json');
 const DIST_DIR = path.join(ROOT, 'dist-source');
 const AGENT_TOOLS_DIR = path.join(ROOT, 'packages', 'cli');
 const PKG = require(path.join(CORE_DIR, 'package.json'));
@@ -395,6 +397,11 @@ function main() {
   // Copy source files
   console.log('Copying source files...');
   copyDir(SRC_DIR, DIST_DIR);
+  fs.copyFileSync(
+    THEME_VISUAL_PROPS,
+    path.join(DIST_DIR, 'theme-visual-props.json'),
+  );
+  console.log('  Copied: theme-visual-props.json');
 
   // Create package.json
   console.log('\nCreating package.json...');

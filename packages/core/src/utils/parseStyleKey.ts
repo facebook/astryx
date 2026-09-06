@@ -14,8 +14,9 @@
  * and `[data-variant="secondary"]` in the DOM), but generated theme CSS still
  * uses these class selectors until the selector contract migrates fully.
  *
- * Values starting with a digit get prefixed with the prop name since
- * CSS class names can't start with a number.
+ * Numeric values get prefixed with the prop name since CSS class names can't
+ * start with a number. Punctuation in the resulting class token is escaped so
+ * fractional numeric values match the literal DOM class.
  *
  * Bare state names (no colon) are used directly as class names.
  * This supports state-based theming targets like 'checked', 'disabled',
@@ -31,6 +32,10 @@
  * parseStyleKey('variant:destructive+size:sm')  // '.destructive.sm'
  * ```
  */
+function escapeClassToken(value: string): string {
+  return value.replace(/[^A-Za-z0-9_-]/g, character => `\\${character}`);
+}
+
 export function parseStyleKey(key: string): string {
   if (key === 'base') {
     return '';
@@ -44,11 +49,8 @@ export function parseStyleKey(key: string): string {
       if (value === undefined) {
         return `.${prop}`;
       }
-      // CSS classes can't start with a digit — prefix with prop name
-      if (/^\d/.test(value)) {
-        return `.${prop}-${value}`;
-      }
-      return `.${value}`;
+      const classToken = /^-?\d/.test(value) ? `${prop}-${value}` : value;
+      return `.${escapeClassToken(classToken)}`;
     })
     .join('');
 }

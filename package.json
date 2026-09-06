@@ -11,7 +11,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
     "check:package-boundaries": "node scripts/check-package-boundaries.js",
-    "check:repo": "pnpm check:sync && pnpm check:knowledge && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits && pnpm check:cli-structure && pnpm check:use-client && pnpm check:portable-scripts && pnpm check:i18n-catalog && pnpm check:cldr-weekdays && pnpm check:fixtures && pnpm check:setup-contract",
+    "check:repo": "pnpm check:sync && pnpm check:knowledge && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits && pnpm check:cli-structure && pnpm check:use-client && pnpm check:portable-scripts && pnpm check:i18n-catalog && pnpm check:cldr-weekdays && pnpm check:fixtures && pnpm check:setup-contract && pnpm check:theme-visual-props",
     "check:fixtures": "node internal/vibe-tests/scripts/fixture-suite.mjs verify",
     "generate:cldr-weekdays": "node scripts/generate-cldr-weekdays.mjs",
     "check:cldr-weekdays": "node scripts/generate-cldr-weekdays.mjs --check",
@@ -61,7 +61,9 @@
     "dev:sandbox": "pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/sandbox dev",
     "dev:sandbox:source": "ASTRYX_SOURCE=1 pnpm -F @astryxdesign/sandbox dev",
     "npm:prune-canaries": "node scripts/npm/prune-canaries.mjs",
-    "check:knowledge": "node scripts/check-knowledge.mjs"
+    "check:knowledge": "node scripts/check-knowledge.mjs",
+    "generate:theme-visual-props": "node scripts/generate-theme-visual-props.mjs --write",
+    "check:theme-visual-props": "node scripts/generate-theme-visual-props.mjs --check"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

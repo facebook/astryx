@@ -20,6 +20,12 @@ describe('themeProps', () => {
     );
   });
 
+  it('prefixes fractional and negative numeric values with the prop name', () => {
+    expect(themeProps('stack', {gap: 0.5, offset: -1}).className).toBe(
+      'astryx-stack gap-0.5 offset--1',
+    );
+  });
+
   it('skips null and undefined props', () => {
     expect(
       themeProps('button', {variant: 'primary', size: undefined}).className,

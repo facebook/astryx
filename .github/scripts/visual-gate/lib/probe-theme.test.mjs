@@ -2,29 +2,36 @@
 
 import {describe, expect, it} from 'vitest';
 
-import {buildProbeComponents, probeColor, unionValues} from './probe-theme.mjs';
+import {buildProbeComponents, probeColor} from './probe-theme.mjs';
 
-describe('unionValues', () => {
-  it('reads an inline string union', () => {
-    expect(unionValues("'sm' | 'md' | 'lg'")).toEqual(['sm', 'md', 'lg']);
-  });
-
-  it('resolves a named alias, so a doc that says `size: AvatarSize` is still probed', () => {
-    expect(unionValues('AvatarSize', {AvatarSize: ['sm', 'lg']})).toEqual([
-      'sm',
-      'lg',
-    ]);
-  });
-
-  it('ignores a single-literal type — that is a constant, not a variant axis', () => {
-    expect(unionValues("'only'")).toEqual([]);
-  });
-
-  it('ignores a type with no enumerable values', () => {
-    expect(unionValues('number')).toEqual([]);
-    expect(unionValues(undefined)).toEqual([]);
-  });
-});
+const contract = {
+  targets: [
+    {
+      key: 'badge',
+      className: 'astryx-badge',
+      components: ['Badge'],
+      props: [
+        {
+          name: 'variant',
+          role: 'visualProp',
+          domain: {
+            kind: 'finite',
+            values: {strings: ['error', 'info'], numbers: []},
+          },
+        },
+      ],
+    },
+    {
+      key: 'switch',
+      className: 'astryx-switch',
+      components: ['Switch'],
+      props: [
+        {name: 'checked', role: 'state'},
+        {name: 'disabled', role: 'state'},
+      ],
+    },
+  ],
+};
 
 describe('probeColor', () => {
   it('is deterministic, so a baseline stays comparable across runs', () => {
@@ -43,26 +50,15 @@ describe('probeColor', () => {
 });
 
 describe('buildProbeComponents', () => {
-  const targets = [
-    {key: 'badge', component: 'Badge', props: ['variant'], states: []},
-    {
-      key: 'switch',
-      component: 'Switch',
-      props: [],
-      states: ['checked', 'disabled'],
-    },
-  ];
-  const props = {Badge: [{name: 'variant', type: "'info' | 'error'"}]};
-
-  it('covers every target with a base selector', () => {
-    const {components} = buildProbeComponents(targets, props);
+  it('covers every current target with a base selector', () => {
+    const {components} = buildProbeComponents(contract);
     expect(Object.keys(components).sort()).toEqual(['badge', 'switch']);
     expect(components.badge.base).toBeDefined();
     expect(components.switch.base).toBeDefined();
   });
 
-  it('expands a variant prop into one selector per documented value', () => {
-    const {components} = buildProbeComponents(targets, props);
+  it('expands a finite visual prop into one selector per generated value', () => {
+    const {components} = buildProbeComponents(contract);
     expect(Object.keys(components.badge).sort()).toEqual([
       'base',
       'variant:error',
@@ -71,7 +67,7 @@ describe('buildProbeComponents', () => {
   });
 
   it('covers every declared state', () => {
-    const {components} = buildProbeComponents(targets, props);
+    const {components} = buildProbeComponents(contract);
     expect(Object.keys(components.switch).sort()).toEqual([
       'base',
       'checked',
@@ -80,42 +76,81 @@ describe('buildProbeComponents', () => {
   });
 
   it('paints text and background differently, so an invisible-text regression is still visible', () => {
-    const {components} = buildProbeComponents(targets, props);
+    const {components} = buildProbeComponents(contract);
     expect(components.badge.base.color).not.toBe(
       components.badge.base.backgroundColor,
     );
   });
 
   it('gives Popover a radius probe so the painted surface ownership is visible', () => {
-    const {components} = buildProbeComponents(
-      [{key: 'popover', component: 'Popover', props: [], states: []}],
-      {},
-    );
+    const {components} = buildProbeComponents({
+      targets: [
+        {
+          key: 'popover',
+          className: 'astryx-popover',
+          components: ['Popover'],
+          props: [],
+        },
+      ],
+    });
     expect(components.popover.base.borderRadius).toBe('32px');
   });
 
-  it('reports a visual prop it cannot enumerate instead of dropping it silently', () => {
-    const {coverage} = buildProbeComponents(
-      [{key: 'stack', component: 'Stack', props: ['gap'], states: []}],
-      {Stack: []},
-    );
+  it('reports an open visual prop instead of inventing probe values', () => {
+    const {coverage} = buildProbeComponents({
+      targets: [
+        {
+          key: 'code-block',
+          className: 'astryx-code-block',
+          components: ['CodeBlock'],
+          props: [
+            {
+              name: 'language',
+              role: 'visualProp',
+              domain: {kind: 'open', primitives: ['string']},
+            },
+          ],
+        },
+      ],
+    });
     expect(coverage.skipped).toEqual([
       {
-        key: 'stack',
-        prop: 'gap',
-        reason: expect.stringContaining('not a documented prop'),
+        key: 'code-block',
+        prop: 'language',
+        reason: 'generated domain is open',
       },
     ]);
   });
 
+  it('keeps deprecated aliases in probe coverage until Core removes them', () => {
+    const {components} = buildProbeComponents({
+      targets: [
+        ...contract.targets,
+        {
+          key: 'old-badge',
+          className: 'astryx-old-badge',
+          components: ['Badge'],
+          deprecatedFor: ['badge'],
+          props: [],
+        },
+      ],
+    });
+    expect(components).toHaveProperty('old-badge');
+    expect(Object.keys(components).at(-1)).toBe('old-badge');
+    expect(components.badge.base.backgroundColor).toBeDefined();
+    expect(components.badge.base.textDecorationColor).toBeUndefined();
+    expect(components['old-badge'].base.backgroundColor).toBeUndefined();
+    expect(components['old-badge'].base.textDecorationColor).toBeDefined();
+  });
+
   it('counts what it covered, which is what the CI guard asserts', () => {
-    const {coverage} = buildProbeComponents(targets, props);
+    const {coverage} = buildProbeComponents(contract);
     expect(coverage).toMatchObject({targets: 2, selectors: 6});
   });
 
-  it('is deterministic — same docs, same theme, so regeneration is a no-op diff', () => {
-    expect(buildProbeComponents(targets, props)).toEqual(
-      buildProbeComponents(targets, props),
+  it('is deterministic — same contract, same theme, so regeneration is a no-op diff', () => {
+    expect(buildProbeComponents(contract)).toEqual(
+      buildProbeComponents(contract),
     );
   });
 });

@@ -23,7 +23,7 @@
  * `variant:info` override beating `base` is the cascade working, not a miss.
  */
 
-import {paint} from './probe-theme.mjs';
+import {paint, paintCompatibilityAlias} from './probe-theme.mjs';
 
 /**
  * `hsl(H S% L%)` → the `rgb(r, g, b)` string getComputedStyle returns.
@@ -36,7 +36,8 @@ export function hslToRgb(hsl) {
   const lightness = l / 100;
   const k = n => (n + h / 30) % 12;
   const a = saturation * Math.min(lightness, 1 - lightness);
-  const f = n => lightness - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const f = n =>
+    lightness - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
   const to255 = n => Math.round(f(n) * 255);
   return `rgb(${to255(0)}, ${to255(8)}, ${to255(4)})`;
 }
@@ -53,7 +54,12 @@ export function expectedColors(key, data) {
   // Every property the generator paints, for every selector that addresses
   // this element — an element with no background can still prove the override
   // arrived through its text or border colour.
-  return seeds.flatMap(seed => Object.values(paint(seed))).map(hslToRgb);
+  return seeds
+    .flatMap(seed => [
+      ...Object.values(paint(seed)),
+      ...Object.values(paintCompatibilityAlias(seed)),
+    ])
+    .map(hslToRgb);
 }
 
 /**
@@ -76,7 +82,15 @@ export const READ_TARGETS = `(() => {
     // reading carries every co-located target and the caller decides.
     const keys = [...el.classList].filter(c => c.startsWith('astryx-')).map(c => c.slice(7));
     if (keys.length === 0) continue;
-    out.push({keys, data, bg: cs.backgroundColor, color: cs.color, border: cs.borderTopColor});
+    out.push({
+      keys,
+      data,
+      bg: cs.backgroundColor,
+      color: cs.color,
+      border: cs.borderTopColor,
+      decoration: cs.textDecorationColor,
+      caret: cs.caretColor,
+    });
   }
   return out;
 })()`;
@@ -90,15 +104,14 @@ export const READ_TARGETS = `(() => {
  * un-verify it.
  *
  * @param {{verified: Set<string>, failures: Map<string, object>}} acc
- * @param {Array<{key: string, data: string[], bg: string}>} readings
+ * @param {Array<{keys: string[], data: string[], bg: string, color?: string, border?: string, decoration?: string, caret?: string}>} readings
  * @param {string} storyId
  */
 export function fold(acc, readings, storyId) {
-  for (const {keys, data, bg, color, border} of readings) {
-    // The probe paints background, text and border from independent hashes, so
-    // an element that cannot show a background (an inline glyph, a
-    // display:contents wrapper) can still prove the override arrived.
-    const painted = [bg, color, border];
+  for (const {keys, data, bg, color, border, decoration, caret} of readings) {
+    // Canonical targets and compatibility aliases paint disjoint properties, so
+    // co-located classes can both prove reachability on one element.
+    const painted = [bg, color, border, decoration, caret].filter(Boolean);
 
     for (const key of keys) {
       if (acc.verified.has(key)) continue;
@@ -115,11 +128,16 @@ export function fold(acc, readings, storyId) {
       // "these two targets are one element" is worth knowing and is NOT the
       // same finding as "this override reaches nothing".
       const sibling = keys.some(
-        other => other !== key && painted.some(v => expectedColors(other, data).includes(v)),
+        other =>
+          other !== key &&
+          painted.some(v => expectedColors(other, data).includes(v)),
       );
       if (sibling) {
         if (!acc.failures.has(key) && !acc.shadowed.has(key)) {
-          acc.shadowed.set(key, {storyId, sharesElementWith: keys.filter(k => k !== key)});
+          acc.shadowed.set(key, {
+            storyId,
+            sharesElementWith: keys.filter(k => k !== key),
+          });
         }
         continue;
       }

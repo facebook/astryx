@@ -13,7 +13,7 @@ function toDataAttributeName(prop: string): `data-${string}` {
 
 function classTokenForPropValue(prop: string, value: string): string {
   // CSS classes can't start with a digit — prefix with prop name.
-  return /^\d/.test(value) ? `${prop}-${value}` : value;
+  return /^-?\d/.test(value) ? `${prop}-${value}` : value;
 }
 
 /**
@@ -31,8 +31,8 @@ function classTokenForPropValue(prop: string, value: string): string {
  * <!-- SYNC: packages/core/src/naming.ts (namespace prefix source of truth) -->
  * <!-- SYNC: packages/core/src/utils/parseStyleKey.ts -->
  *
- * Values starting with a digit get prefixed with the prop name since
- * CSS class names can't start with a number (e.g. level=1 → "level-1").
+ * Numeric values get prefixed with the prop name since CSS class names can't
+ * start with a number (e.g. level=1 → "level-1", offset=-1 → "offset--1").
  * Data attributes keep the literal value (e.g. `data-level="1"`).
  *
  * @param component - Component name in lowercase (e.g. 'button', 'card')

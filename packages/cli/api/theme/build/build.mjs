@@ -17,7 +17,9 @@
  * build). Errors throw AstryxError (with
  * a stable code). Human progress is emitted through the shared `logger`
  * (silent by default), so the CLI keeps its exact output while a programmatic
- * caller stays quiet.
+ * caller stays quiet. Component selector values are checked against Core's
+ * generated visual-prop contract, so root, media, adaptations, generated
+ * augmentations, and visual probes share the same TypeScript-derived domains.
  *
  * With `{check: true}`, it compiles the same outputs in memory but writes
  * nothing: it compares each generated file against what is on disk (ignoring
@@ -47,6 +49,13 @@ import {
   collectThemingTargets,
   targetsByKey,
 } from '../../../foundation/discovery/theming-targets.mjs';
+import {
+  finiteVisualPropValues,
+  indexThemeVisualPropsContract,
+  loadThemeVisualPropsContract,
+  ThemeVisualPropsContractError,
+  visualPropAcceptsValue,
+} from '../../../foundation/discovery/theme-visual-props.mjs';
 import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
@@ -212,7 +221,7 @@ let _knownValuesIndexPromise = null;
  * `astryx-heading` is documented by Text/Heading.doc.mjs), so directory-name
  * guessing is not a valid lookup strategy.
  */
-async function loadKnownValuesIndex() {
+async function loadLegacyKnownValuesIndex() {
   const coreRoot = resolveCoreRoot();
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return {};
@@ -324,6 +333,58 @@ async function loadKnownValuesIndex() {
   );
 }
 
+let _visualPropContractLoaded = false;
+/** @type {ReturnType<typeof indexThemeVisualPropsContract>|null} */
+let _visualPropContractIndex = null;
+
+/**
+ * Load the generated contract shipped by the installed Core package. Missing or
+ * unsupported-version contracts retain the legacy doc-based validation boundary;
+ * a malformed supported artifact is a broken package and fails before output.
+ */
+function getVisualPropContractIndex() {
+  if (_visualPropContractLoaded) return _visualPropContractIndex;
+  const coreRoot = resolveCoreRoot();
+  if (!coreRoot) {
+    _visualPropContractLoaded = true;
+    return null;
+  }
+  try {
+    const contract = loadThemeVisualPropsContract(coreRoot);
+    _visualPropContractIndex = contract
+      ? indexThemeVisualPropsContract(contract)
+      : null;
+    _visualPropContractLoaded = true;
+  } catch (error) {
+    if (error instanceof ThemeVisualPropsContractError) {
+      throw new AstryxError(
+        `Installed @astryxdesign/core has an invalid theme visual-prop contract: ${error.message}`,
+        undefined,
+        ERROR_CODES.ERR_THEME_INVALID,
+      );
+    }
+    throw error;
+  }
+  return _visualPropContractIndex;
+}
+
+async function loadKnownValuesIndex() {
+  const contract = getVisualPropContractIndex();
+  if (contract) {
+    return Object.fromEntries(
+      [...contract].map(([target, entry]) => [
+        target,
+        Object.fromEntries(
+          [...entry.props]
+            .filter(([, prop]) => prop.role === 'visualProp')
+            .map(([name, prop]) => [name, finiteVisualPropValues(prop)]),
+        ),
+      ]),
+    );
+  }
+  return loadLegacyKnownValuesIndex();
+}
+
 /**
  * @param {string} componentName
  * @returns {Promise<Record<string, string[]>>}
@@ -332,6 +393,14 @@ async function getKnownValues(componentName) {
   _knownValuesIndexPromise ??= loadKnownValuesIndex();
   const index = await _knownValuesIndexPromise;
   return index[componentName] ?? {};
+}
+
+/**
+ * @param {string} componentName
+ * @param {string} propName
+ */
+function getVisualPropContract(componentName, propName) {
+  return getVisualPropContractIndex()?.get(componentName)?.props.get(propName);
 }
 
 /**
@@ -553,7 +622,7 @@ function adaptationRuleValues(themeDef) {
  */
 function themedComponentEntries(themeDef) {
   const maps = [
-    themeDef.components,
+    ...getThemeComponentLayers(themeDef).map(layer => layer.components),
     ...adaptationRuleValues(themeDef).map(
       (/** @type {any} */ value) => value.components,
     ),
@@ -565,15 +634,6 @@ function themedComponentEntries(themeDef) {
     if (map) entries.push(...Object.entries(map));
   }
   return entries;
-}
-
-/**
- * Root component entries are the only surface allowed to introduce variants.
- * @param {Record<string, any>} themeDef
- * @returns {[string, Record<string, any>][]}
- */
-function rootComponentEntries(themeDef) {
-  return themeDef.components ? Object.entries(themeDef.components) : [];
 }
 
 /**
@@ -591,52 +651,73 @@ function adaptationComponentEntries(themeDef) {
 }
 
 /**
- * Reject visual-prop values introduced only inside an adaptation. Built-in
- * values remain legal; custom values must first exist on the effective root
- * component surface so generated module augmentation is unconditional.
- * @param {Record<string, any>} themeDef
- * @returns {Promise<string[]>}
+ * @param {Record<string, any>} rules
+ * @returns {Array<{prop: string, value: string}>}
  */
-async function validateAdaptationVariantValues(themeDef) {
-  const adaptationEntries = adaptationComponentEntries(themeDef);
-  if (adaptationEntries.length === 0) {
-    return [];
-  }
-
-  /** @type {Set<string>} */
-  const rootValues = new Set();
-  for (const [component, rules] of rootComponentEntries(themeDef)) {
-    for (const key of Object.keys(rules)) {
-      for (const pair of key.split('+')) {
-        if (pair.includes(':')) rootValues.add(`${component}:${pair}`);
-      }
+function visualPropPairs(rules) {
+  const pairs = [];
+  for (const key of Object.keys(rules ?? {})) {
+    if (key === 'base') continue;
+    for (const selector of key.split('+')) {
+      const colon = selector.indexOf(':');
+      if (colon === -1) continue;
+      pairs.push({
+        prop: selector.slice(0, colon),
+        value: selector.slice(colon + 1),
+      });
     }
   }
+  return pairs;
+}
 
-  /** @type {string[]} */
+/** @param {any} contract */
+function visualPropDomainDescription(contract) {
+  const known = finiteVisualPropValues(contract);
+  if (contract?.domain?.kind === 'finite') {
+    return `one of: ${known.join(', ')}`;
+  }
+  const sentinels = [
+    ...(contract?.domain?.knownLiterals?.strings ?? []),
+    ...(contract?.domain?.knownLiterals?.numbers ?? []).map(String),
+  ];
+  if (contract?.domain?.primitives?.includes('number')) {
+    return sentinels.length > 0
+      ? `a finite number or one of: ${sentinels.join(', ')}`
+      : 'a finite number';
+  }
+  return 'a value allowed by the component contract';
+}
+
+/**
+ * Reject custom values on finite closed axes in every root-owned component
+ * layer. Augmentation-wired axes and genuinely open domains retain their
+ * existing authoring behavior.
+ *
+ * @param {Record<string, any>} themeDef
+ * @returns {string[]}
+ */
+function validateRootVisualPropValues(themeDef) {
+  if (!getVisualPropContractIndex()) return [];
   const errors = [];
-  for (const [component, rules] of adaptationEntries) {
-    const known = await getKnownValues(component);
-    for (const key of Object.keys(rules)) {
-      if (key === 'base') continue;
-      for (const pair of key.split('+')) {
-        const colon = pair.indexOf(':');
-        const prop = colon === -1 ? pair : pair.slice(0, colon);
-        if (colon === -1) continue;
-        const value = pair.slice(colon + 1);
-        // Some public prop types are opaque aliases rather than literal unions.
-        // When docs cannot enumerate an axis, avoid turning that discovery gap
-        // into a false hard failure; the normal component validator still checks
-        // that the axis itself exists.
-        if (!known[prop] || known[prop].length === 0) continue;
+  for (const {name: layer, components} of getThemeComponentLayers(themeDef)) {
+    for (const [component, rules] of Object.entries(components)) {
+      for (const {prop, value} of visualPropPairs(rules)) {
+        const contract = getVisualPropContract(component, prop);
+        if (contract?.role !== 'visualProp') continue;
+        const accepted = visualPropAcceptsValue(contract, value);
         if (
-          known[prop].includes(value) ||
-          rootValues.has(`${component}:${pair}`)
+          accepted === null ||
+          accepted ||
+          (contract.augmentationInterfaces?.length ?? 0) > 0
         ) {
           continue;
         }
+        const guidance = visualPropDomainDescription(contract);
         errors.push(
-          `Adaptation rule introduces "${component}.${prop}:${value}". Declare custom visual-prop values on the root theme first; rules may only style an existing value.`,
+          `Unsupported value "${component}.${prop}:${value}" in ${layer} components. ` +
+            (contract.domain.kind === 'finite'
+              ? `This visual prop is closed; use ${guidance}.`
+              : `Use ${guidance}.`),
         );
       }
     }
@@ -645,19 +726,85 @@ async function validateAdaptationVariantValues(themeDef) {
 }
 
 /**
+ * Values declared by the effective root `components` map. Media-surface and
+ * adaptation layers may style them but do not enroll new conditional values.
+ *
+ * @param {Record<string, any>} themeDef
+ * @returns {Set<string>}
+ */
+function rootVisualPropValues(themeDef) {
+  const values = new Set();
+  for (const [component, rules] of Object.entries(themeDef.components ?? {})) {
+    for (const {prop, value} of visualPropPairs(rules)) {
+      values.add(`${component}:${prop}:${value}`);
+    }
+  }
+  return values;
+}
+
+/**
+ * Reject visual-prop values introduced only inside an adaptation. Built-in
+ * values remain legal; custom values must first exist on the effective root
+ * component surface so generated module augmentation is unconditional.
+ * @param {Record<string, any>} themeDef
+ * @returns {Promise<string[]>}
+ */
+async function validateAdaptationVariantValues(themeDef) {
+  const adaptationEntries = adaptationComponentEntries(themeDef);
+  if (adaptationEntries.length === 0) return [];
+
+  const contractIndex = getVisualPropContractIndex();
+  const rootValues = rootVisualPropValues(themeDef);
+  /** @type {string[]} */
+  const errors = [];
+
+  for (const [component, rules] of adaptationEntries) {
+    const legacyKnown = contractIndex ? null : await getKnownValues(component);
+    for (const {prop, value} of visualPropPairs(rules)) {
+      const contract = contractIndex?.get(component)?.props.get(prop);
+      if (contract?.role === 'visualProp') {
+        const accepted = visualPropAcceptsValue(contract, value);
+        if (accepted === null || accepted) continue;
+        if (
+          (contract.augmentationInterfaces?.length ?? 0) > 0 &&
+          rootValues.has(`${component}:${prop}:${value}`)
+        ) {
+          continue;
+        }
+        errors.push(
+          (contract.augmentationInterfaces?.length ?? 0) > 0
+            ? `Adaptation rule introduces "${component}.${prop}:${value}". Declare custom visual-prop values on the root theme first; rules may only style an existing value.`
+            : `Adaptation rule uses unsupported value "${component}.${prop}:${value}". ${
+                contract.domain.kind === 'finite'
+                  ? 'This visual prop is closed; use'
+                  : 'Use'
+              } ${visualPropDomainDescription(contract)}.`,
+        );
+        continue;
+      }
+
+      // Compatibility with Core packages predating the generated contract.
+      const known = legacyKnown?.[prop] ?? [];
+      if (
+        known.length === 0 ||
+        known.includes(value) ||
+        rootValues.has(`${component}:${prop}:${value}`)
+      ) {
+        continue;
+      }
+      errors.push(
+        `Adaptation rule introduces "${component}.${prop}:${value}". Declare custom visual-prop values on the root theme first; rules may only style an existing value.`,
+      );
+    }
+  }
+  return [...new Set(errors)];
+}
+
+/**
  * Generate TypeScript declaration content with module augmentation for custom
- * component prop values found in the theme's `components` keys. Reads known
- * values from doc files to filter out base prop values.
- *
- * Interface naming convention: PascalCase(component) + PascalCase(prop) + Map
- *   banner + status → BannerStatusMap
- *   button + variant → ButtonVariantMap
- *
- * An augmentation is only emitted when `@astryxdesign/core/<Component>` actually
- * exports a matching interface. Props backed by closed literal-union types
- * (e.g. Button `size`, Heading `type`/`level`) have no augmentation point, so
- * generating a `declare module` block for them would be dead code — those are
- * skipped.
+ * component prop values found in root-owned component layers. The generated
+ * Core contract names the exact public module/interface; older Core packages
+ * retain the previous naming/interface fallback.
  *
  * @param {{components?: Record<string, Record<string, Record<string, unknown>>>}} themeDef - Theme definition (resolved by defineTheme)
  * @returns {Promise<string|null>} TypeScript declaration content, or null if no augmentations needed
@@ -706,40 +853,63 @@ async function generateVariantDeclarationsAsync(themeDef) {
   if (!hasCustom) return null;
 
   const sections = ['// Generated by astryx theme build', 'export {};', ''];
+  const contractIndex = getVisualPropContractIndex();
+  /** @type {Map<string, {module: string, interface: string, values: Set<string>}>} */
+  const augmentations = new Map();
 
   for (const [component, props] of Object.entries(customValues)) {
     for (const [prop, values] of Object.entries(props)) {
       if (values.size === 0) continue;
 
-      const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const target = (
-        await resolveAugmentationTargetCandidates(component)
-      ).find(candidate =>
-        componentHasAugmentableInterface(
-          candidate.moduleName,
-          `${candidate.interfacePrefix}${propPascal}Map`,
-        ),
-      );
-
-      // Only augment interfaces that actually exist as an extension point in
-      // core. Props backed by closed literal-union types (e.g. Button `size`,
-      // Heading `type`/`level`) have no `*Map` interface — a `declare module`
-      // block against a non-existent interface just creates a new, unused
-      // interface and never extends the component's prop union, so skip it.
-      if (!target) continue;
-
-      const modulePath = `@astryxdesign/core/${target.moduleName}`;
-      const interfaceName = `${target.interfacePrefix}${propPascal}Map`;
-
-      sections.push(`declare module '${modulePath}' {`);
-      sections.push(`  interface ${interfaceName} {`);
-      for (const v of values) {
-        sections.push(`    '${v}': true;`);
+      const propContract = getVisualPropContract(component, prop);
+      let targets =
+        propContract?.role === 'visualProp'
+          ? (propContract.augmentationInterfaces ?? [])
+          : [];
+      if (!contractIndex) {
+        const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
+        const legacyTarget = (
+          await resolveAugmentationTargetCandidates(component)
+        ).find(candidate =>
+          componentHasAugmentableInterface(
+            candidate.moduleName,
+            `${candidate.interfacePrefix}${propPascal}Map`,
+          ),
+        );
+        targets = legacyTarget
+          ? [
+              {
+                module: `@astryxdesign/core/${legacyTarget.moduleName}`,
+                interface: `${legacyTarget.interfacePrefix}${propPascal}Map`,
+              },
+            ]
+          : [];
       }
-      sections.push('  }');
-      sections.push('}');
-      sections.push('');
+
+      for (const target of targets) {
+        const key = `${target.module}:${target.interface}`;
+        const section = augmentations.get(key) ?? {
+          module: target.module,
+          interface: target.interface,
+          values: new Set(),
+        };
+        for (const value of values) section.values.add(value);
+        augmentations.set(key, section);
+      }
     }
+  }
+
+  for (const section of [...augmentations.values()].sort((a, b) =>
+    `${a.module}:${a.interface}`.localeCompare(`${b.module}:${b.interface}`),
+  )) {
+    sections.push(`declare module '${section.module}' {`);
+    sections.push(`  interface ${section.interface} {`);
+    for (const value of [...section.values].sort()) {
+      sections.push(`    '${value}': true;`);
+    }
+    sections.push('  }');
+    sections.push('}');
+    sections.push('');
   }
 
   // If every custom value targeted a non-augmentable prop, there's nothing to
@@ -1090,6 +1260,13 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
  * @returns {Promise<Record<string, string[]> | null>}
  */
 async function loadKnownComponents() {
+  const contract = getVisualPropContractIndex();
+  if (contract) {
+    return Object.fromEntries(
+      [...contract].map(([target, entry]) => [target, [...entry.props.keys()]]),
+    );
+  }
+
   const coreRoot = resolveCoreRoot();
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return null;
@@ -1536,11 +1713,13 @@ export async function themeBuild(
       resolvedTheme = themeDef;
     }
 
-    const adaptationValueErrors =
-      await validateAdaptationVariantValues(resolvedTheme);
-    if (adaptationValueErrors.length > 0) {
+    const visualPropErrors = [
+      ...validateRootVisualPropValues(resolvedTheme),
+      ...(await validateAdaptationVariantValues(resolvedTheme)),
+    ];
+    if (visualPropErrors.length > 0) {
       throw new AstryxError(
-        adaptationValueErrors.join('\n'),
+        visualPropErrors.join('\n'),
         undefined,
         ERROR_CODES.ERR_THEME_INVALID,
       );
