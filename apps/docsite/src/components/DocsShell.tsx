@@ -219,7 +219,7 @@ export function DocsShell({children, packages, docTopics}: DocsShellProps) {
                   {libraryPackages.map(p => (
                     <SideNavItem
                       key={p.name}
-                      label={p.displayName}
+                      label={p.name}
                       href={`/docs/${p.name.replace('@astryxdesign/', '')}`}
                       isSelected={
                         pathname ===
