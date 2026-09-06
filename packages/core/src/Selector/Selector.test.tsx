@@ -1728,6 +1728,44 @@ describe('Selector', () => {
           .scrollIntoView;
       }
     });
+
+    it('highlights on hover without scrolling, keyboard still scrolls (#6077)', async () => {
+      // Hover must highlight only: scrollIntoView under a stationary pointer
+      // moves the next option under it, re-highlighting and scrolling again —
+      // a runaway auto-scroll loop with no user input.
+      const scrollIntoView = vi.fn();
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: scrollIntoView,
+      });
+      try {
+        const user = userEvent.setup();
+        const longOptions = Array.from(
+          {length: 20},
+          (_, i) => `Option ${i + 1}`,
+        );
+        render(<Selector label="Fruit" options={longOptions} />);
+
+        await user.tab();
+        await user.keyboard('{Enter}'); // open
+        scrollIntoView.mockClear();
+
+        const options = screen.getAllByRole('option', {hidden: true});
+        fireEvent.mouseEnter(options[3]);
+
+        const trigger = screen.getByRole('combobox');
+        expect(trigger.getAttribute('aria-activedescendant')).toBe(
+          options[3].id,
+        );
+        expect(scrollIntoView).not.toHaveBeenCalled();
+
+        await user.keyboard('{ArrowDown}');
+        expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+      } finally {
+        delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+          .scrollIntoView;
+      }
+    });
   });
 
   describe('typeahead', () => {

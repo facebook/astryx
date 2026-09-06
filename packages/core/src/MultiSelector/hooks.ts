@@ -13,6 +13,7 @@
  */
 
 import {useCallback, useRef, useState} from 'react';
+import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import type {MultiSelectorOptionData} from './types';
 
 interface UseMultiComboboxOptions {
@@ -107,13 +108,22 @@ export function useMultiCombobox({
     }
   }, [isDisabled, wasJustDismissed, isOpen, onOpen, closeAndReset, hasSearch]);
 
+  // The scroll effect lives here, the highlight owner, so the hover/keyboard
+  // split is shared instead of re-implemented in MultiSelector.tsx (#6077).
+  const highlightOnHover = useHighlightedOptionScroll({
+    isOpen,
+    highlightedIndex,
+    setHighlightedIndex,
+    getOptionId: getItemId,
+  });
+
   const onItemMouseEnter = useCallback(
     (item: MultiSelectorOptionData, index: number) => {
       if (!item.disabled) {
-        setHighlightedIndex(index);
+        highlightOnHover(index);
       }
     },
-    [],
+    [highlightOnHover],
   );
 
   const onKeyDown = useCallback(

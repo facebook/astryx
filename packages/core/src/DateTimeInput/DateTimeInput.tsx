@@ -98,6 +98,7 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {useLocale, useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {NativeDateSegment} from './NativeDateSegment';
 import {NativeTimeSegment} from './NativeTimeSegment';
 import {TouchDateTimeField} from './TouchDateTimeField';
@@ -1145,22 +1146,15 @@ function PointerDateTimeField({
       ? timeOptions.length - 1
       : highlightedTimeIndex;
 
-  // Keep the active option visible. The listbox is a fixed-height scroll
-  // container, so without this a list opens at midnight with the highlight far
-  // below the fold, and keyboard navigation walks off-screen. Mirrors
-  // BaseTypeahead's scrollIntoView({block: 'nearest'}).
-  useEffect(() => {
-    if (
-      !timePopover.isOpen ||
-      activeTimeIndex < 0 ||
-      activeTimeIndex >= timeOptions.length
-    ) {
-      return;
-    }
-    document
-      .getElementById(timeOptionId(activeTimeIndex))
-      ?.scrollIntoView?.({block: 'nearest'});
-  }, [timePopover.isOpen, activeTimeIndex, timeOptionId, timeOptions.length]);
+  // Keep the active option visible; hover highlights never scroll (#6077).
+  // Both sides live in useHighlightedOptionScroll.
+  const highlightTimeOnHover = useHighlightedOptionScroll({
+    isOpen: timePopover.isOpen,
+    highlightedIndex: activeTimeIndex,
+    setHighlightedIndex: setHighlightedTimeIndex,
+    getOptionId: timeOptionId,
+    itemCount: timeOptions.length,
+  });
 
   /**
    * The selected time in the same shape the options carry. splitDateTime slices
@@ -1881,7 +1875,7 @@ function PointerDateTimeField({
                     // option, or blur would fire its own commit first.
                     onPointerDown={e => e.preventDefault()}
                     onClick={() => commitTimeOption(option.time)}
-                    onMouseEnter={() => setHighlightedTimeIndex(index)}
+                    onMouseEnter={() => highlightTimeOnHover(index)}
                     {...mergeProps(
                       themeProps('date-time-input-time-option'),
                       stylex.props(

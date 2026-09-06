@@ -11,6 +11,7 @@
  */
 
 import {useCallback, useState} from 'react';
+import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {RefObject} from 'react';
 import type {SelectorOptionData} from './types';
@@ -273,13 +274,22 @@ export function useCombobox({
     hasSearch,
   ]);
 
+  // The scroll effect lives here, the highlight owner, so every consumer
+  // (Selector, CommandPalette) shares one hover/keyboard split (#6077).
+  const highlightOnHover = useHighlightedOptionScroll({
+    isOpen,
+    highlightedIndex,
+    setHighlightedIndex,
+    getOptionId: getItemId,
+  });
+
   const onItemMouseEnter = useCallback(
     (item: SelectorOptionData, index: number) => {
       if (!item.disabled) {
-        setHighlightedIndex(index);
+        highlightOnHover(index);
       }
     },
-    [],
+    [highlightOnHover],
   );
 
   const onKeyDown = useCallback(

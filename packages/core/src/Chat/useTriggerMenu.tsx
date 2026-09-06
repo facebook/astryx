@@ -30,6 +30,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
+import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {
   colorVars,
   spacingVars,
@@ -597,23 +598,15 @@ export function useTriggerMenu(
     [listboxId],
   );
 
-  // Scroll highlighted item into view on keyboard navigation.
-  // Hover-triggered highlights must NOT scroll: scrollIntoView moves the next
-  // option under the stationary cursor, whose mouseenter re-highlights and
-  // scrolls again — a runaway auto-scroll loop when the pointer rests near
-  // the bottom of the menu. Skip one effect run per hover-driven change.
-  const hoverHighlightRef = useRef(false);
-  useEffect(() => {
-    if (hoverHighlightRef.current) {
-      hoverHighlightRef.current = false;
-      return;
-    }
-    if (!popover.isOpen || state.highlightedIndex < 0) {
-      return;
-    }
-    const el = document.getElementById(getItemId(state.highlightedIndex));
-    el?.scrollIntoView({block: 'nearest'});
-  }, [state.highlightedIndex, popover.isOpen, getItemId]);
+  // Keep the highlighted option visible during keyboard navigation; hover
+  // highlights never scroll (#6077). Both sides live in useHighlightedOptionScroll.
+  const highlightOnHover = useHighlightedOptionScroll({
+    isOpen: popover.isOpen,
+    highlightedIndex: state.highlightedIndex,
+    setHighlightedIndex: index =>
+      setState(prev => ({...prev, highlightedIndex: index})),
+    getOptionId: getItemId,
+  });
 
   // ARIA props for the editable element. Combobox attributes
   // (aria-expanded/haspopup/controls/activedescendant) are only valid on
@@ -671,14 +664,7 @@ export function useTriggerMenu(
                 e.preventDefault(); // Keep focus in the editable
                 selectItem(item);
               }}
-              onMouseEnter={() =>
-                setState(prev => {
-                  if (prev.highlightedIndex !== idx) {
-                    hoverHighlightRef.current = true;
-                  }
-                  return {...prev, highlightedIndex: idx};
-                })
-              }
+              onMouseEnter={() => highlightOnHover(idx)}
               {...stylex.props(
                 styles.item,
                 idx === state.highlightedIndex && styles.itemHighlighted,
@@ -728,7 +714,7 @@ export function useTriggerMenu(
         xstyle: styles.popoverSurface,
       },
     );
-  }, [popover, listboxId, state, selectItem, getItemId, t]);
+  }, [popover, listboxId, state, selectItem, getItemId, highlightOnHover, t]);
 
   return {
     state,

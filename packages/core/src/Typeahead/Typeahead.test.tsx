@@ -1376,6 +1376,48 @@ describe('BaseTypeahead paste behavior', () => {
         .scrollIntoView;
     }
   });
+
+  it('highlights on hover without scrolling, keyboard still scrolls (#6077)', async () => {
+    // Hover must highlight only: scrollIntoView under a stationary pointer
+    // moves the next option under it, re-highlighting and scrolling again —
+    // a runaway auto-scroll loop with no user input.
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    try {
+      const user = userEvent.setup();
+      render(
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+      await user.paste('e'); // matches Cherry, Date, Elderberry
+      await waitFor(() => {
+        expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
+      });
+
+      scrollIntoView.mockClear();
+      const options = screen.getAllByRole('option', {hidden: true});
+      fireEvent.mouseEnter(options[1]);
+
+      expect(input.getAttribute('aria-activedescendant')).toBe(options[1].id);
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      await user.keyboard('{ArrowDown}');
+      expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+    } finally {
+      delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+        .scrollIntoView;
+    }
+  });
 });
 
 describe('Typeahead disabledMessage', () => {
