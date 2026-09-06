@@ -110,8 +110,13 @@ A breakpoint map alone emits no CSS. Only rules with adaptation values do.
   generative axis expands against the root axis metadata, and every produced leaf
   counts as a write by that rule. Missing required scale fields MUST be supplied
   rather than synthesized from approximate built-in defaults. A rule may style an
-  existing component visual-prop value but MUST NOT introduce a new value; states
-  are component-owned and never theme-generated.
+  existing component visual-prop value and is not an enrollment surface for new
+  values. When tooling can resolve a prop's finite built-in domain, it MUST reject
+  a rule-only value that is neither built in nor present on the effective root
+  component surface. An opaque alias-backed domain that current validation cannot
+  resolve MAY retain the same pass-through behavior as root-theme validation;
+  accepting such a value does not make the axis extensible. States are
+  component-owned and never theme-generated.
 - **FR5 — Media surfaces remain more specific.** Adaptation values resolve over the
   root theme. When an `onDark` or `onLight` override and an adaptation write the
   same resolved leaf, the media-surface value wins. Adaptations do not create a
@@ -157,7 +162,10 @@ A breakpoint map alone emits no CSS. Only rules with adaptation values do.
   private-variable checks, font notices, and `light-dark()` color-scheme detection
   MUST inspect values declared only in rules. Generated variant/type validation
   MUST reject a rule-only visual-prop value absent from the effective root
-  component surface.
+  component surface when the prop's finite built-in domain is resolvable. For an
+  opaque alias-backed domain that the current validator cannot enumerate, tooling
+  MAY retain the existing root-theme validation boundary instead of failing
+  closed; this is a known validation limitation, not a new extension point.
 - **IR4 — Built themes preserve extension semantics.** A built theme's JavaScript
   module retains the effective width-breakpoint map, normalized generative-axis
   metadata, enrolled local-token lineage, and ordered normalized rules required
@@ -195,13 +203,13 @@ extension metadata remain useful implementation evidence.
 
 ## Verification
 
-| Contract | Verification                                                  | Representative states                                                                                                                                                    | Failure signal                                                                                                                                          |
-| -------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3  | Width-breakpoint and condition matrix plus browser boundaries | defaults/overrides; from/below/range; pointer/contrast/motion; multi-field AND; empty/no rules                                                                           | A point acts as an upper bound, intervals gap/overlap, fields OR together, or an unused map emits CSS.                                                  |
-| FR4–FR7  | Shared resolver, surface, cascade-order, and extension tests  | enrolled/unenrolled local tokens; incomplete scales; later generated vs earlier explicit leaves; surface collisions; broad/narrow reorder; child append/removal attempts | A rule enrolls a local name, widens vocabulary, approximates missing input, escapes order, beats a surface, or loses inherited order.                   |
-| FR8      | Theme/AppShell integration                                    | all names/`none`; SSR hint; no/nearest/root/nested theme; exact boundaries                                                                                               | AppShell uses the wrong map, equality, or scope.                                                                                                        |
-| IR1–IR3  | Runtime/build and CLI positive/negative fixtures              | invalid map/range/field; source axis metadata; duplicate `when`; root-restoring rules; declaration targets; rule-only visual values; non-CSS token reads                 | Invalid input writes output, metadata disappears, blocks merge/reorder/drop, targets diverge, adaptation leaks into JS reads, or tooling misses values. |
-| IR4      | Generated-module import and size tests                        | no rules/rules; source/built parent and child; generative/local-token metadata                                                                                           | Breakpoints, rules, order, or metadata disappear; extension diverges; CSS text enters the module; or resolved layers duplicate.                         |
+| Contract | Verification                                                  | Representative states                                                                                                                                                                                           | Failure signal                                                                                                                                                                                          |
+| -------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3  | Width-breakpoint and condition matrix plus browser boundaries | defaults/overrides; from/below/range; pointer/contrast/motion; multi-field AND; empty/no rules                                                                                                                  | A point acts as an upper bound, intervals gap/overlap, fields OR together, or an unused map emits CSS.                                                                                                  |
+| FR4–FR7  | Shared resolver, surface, cascade-order, and extension tests  | enrolled/unenrolled local tokens; incomplete scales; resolvable/opaque visual-prop domains; later generated vs earlier explicit leaves; surface collisions; broad/narrow reorder; child append/removal attempts | A rule enrolls a local name, a resolvable rule-only value widens vocabulary, an opaque-domain pass-through is treated as an extension point, missing input is approximated, or inherited order is lost. |
+| FR8      | Theme/AppShell integration                                    | all names/`none`; SSR hint; no/nearest/root/nested theme; exact boundaries                                                                                                                                      | AppShell uses the wrong map, equality, or scope.                                                                                                                                                        |
+| IR1–IR3  | Runtime/build and CLI positive/negative fixtures              | invalid map/range/field; source axis metadata; duplicate `when`; root-restoring rules; declaration targets; resolvable and opaque rule-only visual values; non-CSS token reads                                  | Invalid input writes output, metadata disappears, blocks merge/reorder/drop, targets diverge, adaptation leaks into JS reads, or tooling misses a resolvable value.                                     |
+| IR4      | Generated-module import and size tests                        | no rules/rules; source/built parent and child; generative/local-token metadata                                                                                                                                  | Breakpoints, rules, order, or metadata disappear; extension diverges; CSS text enters the module; or resolved layers duplicate.                                                                         |
 
 ## Decision log
 

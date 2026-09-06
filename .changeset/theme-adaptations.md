@@ -37,6 +37,8 @@ point renders the wider layout instead of the mobile layout.
 `defineTheme` now rejects malformed token values instead of coercing non-string
 scalars or accepting arrays with a length other than two. It also validates the
 combined portable and theme-local token graph for every reachable set of matching
-adaptation rules, rejecting cycles before CSS is emitted.
+adaptation rules, rejecting cycles before CSS is emitted. Rule-only visual-prop
+values are rejected when tooling can enumerate the finite built-in domain; opaque
+alias-backed domains retain the known validation boundary shared with root themes.
 
 @imdreamrunner

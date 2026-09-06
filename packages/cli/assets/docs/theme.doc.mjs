@@ -367,7 +367,7 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'A rule may replace a theme-local token only when the exact name is already enrolled by root `localTokens` or an enrolled base. Custom component visual-prop values must also be declared on the root theme before an adaptation styles them. When rules can match together, their ordered portable and local token writes are validated as one effective graph; any reachable cycle fails before CSS is emitted.',
+          text: 'A rule may replace a theme-local token only when the exact name is already enrolled by root `localTokens` or an enrolled base. Custom component visual-prop values are introduced on the root theme before an adaptation styles them. Build validation rejects rule-only values when it can enumerate the prop domain; opaque alias-backed domains retain the same known validation boundary as root themes and are not thereby extensible. When rules can match together, their ordered portable and local token writes are validated as one effective graph; any reachable cycle fails before CSS is emitted.',
         },
         {
           type: 'prose',

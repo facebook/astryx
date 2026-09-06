@@ -340,8 +340,10 @@ export const myTheme = defineTheme({
    *
    * `from` includes its point; `below` excludes it. The other supported axes
    * are primary-pointer precision, contrast preference, and motion preference.
-   * A rule may replace only theme-local names and custom visual-prop values
-   * already declared by the root theme or its exact base lineage.
+   * Custom visual-prop values are introduced at the root before a rule uses
+   * them. Build validation rejects rule-only values when it can enumerate the
+   * prop domain; opaque alias-backed domains retain the known root-validation
+   * boundary and are not extension points.
    */
   // adaptations is opt-in. Replace this empty block with the commented
   // example below when the theme needs environmental values.
