@@ -16,7 +16,11 @@ modules: []
 families: []
 design_specs: []
 architecture:
-  [architecture:component-theming-surface, architecture:public-component-api]
+  [
+    architecture:component-theming-surface,
+    architecture:public-component-api,
+    architecture:react-update-propagation,
+  ]
 contributing: []
 system_specs: [spec:AST-002/DEC-1]
 ---
@@ -200,6 +204,9 @@ parts. Their own typography and color declarations make `inherits: step` false;
   variables.
 - `architecture:public-component-api` owns the API admission bar those variables
   must also pass.
+- `architecture:react-update-propagation` owns the shared boundaries for
+  lifecycle registration, mutable metadata, context fan-out, and render-isolation
+  evidence. FR16 projects those boundaries onto Stepper's concrete behavior.
 
 ## Verification map
 
