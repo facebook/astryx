@@ -327,4 +327,60 @@ export const myTheme = defineTheme({
    */
   // onDark: {tokens: {'--color-accent': '#90CAF9'}, components: {button: {'variant:ghost': {borderWidth: '1px'}}}},
   // onLight: {tokens: {'--color-accent': '#0B5FCC'}},
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Theme adaptations
+  // ───────────────────────────────────────────────────────────────────────
+
+  /**
+   * Opt-in values for reviewed environmental conditions. Width points use the
+   * fixed names `sm`, `md`, `lg`, `xl`, and `2xl`; overriding the map alone
+   * emits no CSS. Fields inside `when` are ANDed, and matching rules cascade in
+   * authored order so later writes win.
+   *
+   * `from` includes its point; `below` excludes it. The other supported axes
+   * are primary-pointer precision, contrast preference, and motion preference.
+   * A rule may replace only theme-local names and custom visual-prop values
+   * already declared by the root theme or its exact base lineage.
+   */
+  // adaptations is opt-in. Replace this empty block with the commented
+  // example below when the theme needs environmental values.
+  adaptations: {rules: []},
+  // adaptations: {
+  //   widthBreakpoints: {
+  //     sm: 640,
+  //     md: 768,
+  //     lg: 1024,
+  //     xl: 1280,
+  //     '2xl': 1536,
+  //   },
+  //   rules: [
+  //     {
+  //       // Narrow at every pointer precision.
+  //       when: {width: {below: 'md'}},
+  //       value: {tokens: {'--spacing-4': '12px'}},
+  //     },
+  //     {
+  //       // Taller controls under a finger or stylus at every width.
+  //       when: {pointer: 'coarse'},
+  //       value: {
+  //         tokens: {
+  //           '--size-element-sm': '36px',
+  //           '--size-element-md': '40px',
+  //           '--size-element-lg': '44px',
+  //         },
+  //       },
+  //     },
+  //     // Combined conditions are peers, not nested syntax:
+  //     // {
+  //     //   when: {
+  //     //     width: {from: 'lg', below: 'xl'},
+  //     //     pointer: 'coarse',
+  //     //     contrast: 'more',
+  //     //     motion: 'reduce',
+  //     //   },
+  //     //   value: {components: {card: {base: {borderWidth: '2px'}}}},
+  //     // },
+  //   ],
+  // },
 });

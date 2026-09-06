@@ -30,7 +30,7 @@ verified_by:
     packages/core/src/theme/extensibleAxes.test.ts,
     packages/core/src/theme/derivedVarRegistry.test.ts,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-012/DEC-2, spec:AST-012/DEC-3]
 ---
 
 # Component theming surface
@@ -79,6 +79,11 @@ public `.doc.mjs` `theming.targets[].visualProps` / `states` metadata, and check
 component-spec metadata describe those selector axes without exposing maintainer
 dispositions to consumers; they do not declare which CSS properties have
 guaranteed behavior.
+
+An adaptation rule may style an existing visual-prop value but does not create a
+conditional type surface. A custom value is introduced on the effective root
+`components` map, where build tooling can generate unconditional module
+augmentation; adaptation rules may then restyle that value under conditions.
 
 The shared guaranteed-property catalog is:
 
@@ -174,6 +179,10 @@ but acceptance alone is best effort, not a compatibility promise.
   silently changing geometry, alignment, or composition. Behavioral, structural,
   placement, directional, and state-machine axes remain closed regardless. A
   theme may redefine an existing value on a closed axis, but it may not add one.
+- **INV15 — Conditional styling does not create conditional API.** Adaptation
+  rules may style only visual-prop values already present in the built-in or
+  effective root surface. New values are declared at the root before any rule
+  uses them, so generated types do not depend on a media condition.
 
 This record does not own semantic token definitions, theme authoring precedence,
 how themes become output, or the design rationale for a component's appearance.
@@ -240,8 +249,8 @@ how themes become output, or the design rationale for a component's appearance.
 
 ## Deciding specs
 
-None. The qualification rule, consumer boundary, property support tiers, and
-capability-based package scope were selected by the system owner.
+- `spec:AST-012/DEC-2` and `spec:AST-012/DEC-3` constrain adaptation component
+  writes to the closed ordered rule model.
 
 ## Verification
 
@@ -256,6 +265,7 @@ capability-based package scope were selected by the system owner.
 | INV10, INV11 | Existing registry/public-var/runtime tests (partial; gaps below)                                                   | A public semantic var bypasses admission, or a consumer must write a private var to reach promised behavior                 |
 | INV12, INV13 | Alias and family-owner fixtures                                                                                    | Deprecated aliases count as current parts or cross-doc ownership remains implicit                                           |
 | INV14        | Component contract, owner review, focused no-match fallback test, and structural `extensibleAxes.test.ts` coverage | An ineligible axis opens, a missing rule changes behavior unpredictably, or the map/reflection/docs wiring drifts           |
+| INV15        | Theme build adaptation fixtures                                                                                    | A rule-only custom value creates conditional CSS without an unconditional public type surface                               |
 
 Known conformance and verification gaps:
 
