@@ -1,5 +1,19 @@
 # @xds/theme-gothic
 
+# 0.5.3
+
+#### Fixes
+
+- Rename built-in syntax theme identifiers. (#5847)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
 # 0.5.2
 
 ---
