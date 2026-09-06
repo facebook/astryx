@@ -249,7 +249,18 @@ contract props after `rest` so spread order cannot change semantics.
 
 ## Open visual vocabularies and closed axes
 
-A theme-extensible visual vocabulary uses a public `*Map` interface in the
+The [component theming surface](../architecture/component-theming-surface.md#boundaries-and-invariants)
+admits a theme-extensible prop axis only when it is visual and an unavailable
+custom value has one safe, deterministic baseline independent of the active
+theme. `Heading.type` qualifies because required `Heading.level` supplies that
+baseline. `Icon.size` does not: choosing a fallback size would silently change
+geometry, alignment, or composition.
+
+Behavioral, structural, placement, directional, and state-machine axes stay
+closed. A theme may redefine an existing value on a closed axis, but it may not
+add one.
+
+An admitted theme-extensible vocabulary uses a public `*Map` interface in the
 component subpath barrel. Derive the prop type from its keys.
 
 ```ts
@@ -265,10 +276,11 @@ export interface ButtonVariantMap {
 export type ButtonVariant = keyof ButtonVariantMap;
 ```
 
-A theme can add a visual value through module augmentation of
-`@astryxdesign/core/Button`. Keep behavioral and structural axes closed when a
-theme must not invent new meanings. Examples include interaction modes,
-directions, placement rules, and finite state-machine states.
+A theme can add an admitted visual value through module augmentation of
+`@astryxdesign/core/Button`. The component contract or governing system spec and
+focused test must show the fallback when no matching theme rule is active; the
+shared structural guard checks only the public map, `themeProps()` reflection,
+and theming metadata.
 
 Do not assume a nested `theme.components.button.variants` shape. Follow the current
 [theme authoring contract](../architecture/theme-authoring-contract.md) for
@@ -409,7 +421,8 @@ Before requesting review:
   intent.
 - **Check the shared grammar.** Cover names, optionality, callback/Action order,
   cancellation, ref target, DOM pass-through, and whether each string axis is
-  open or closed.
+  open or closed. An open axis must name and test its safe theme-independent
+  fallback when no matching theme rule is active.
 - **Protect compatibility.** State defaults and observable behavior. Include a
   migration for a released breaking change.
 - **Ship API evidence together.** When consumer usage or a documented promise
@@ -441,8 +454,9 @@ out of architecture records.
 - An Action suppresses its callback, or handler order accidentally removes a
   promised consumer cancellation path.
 - A callback is required only because all inputs were assumed to require it.
-- A theme-extensible visual value is a closed union, or a behavioral axis is
-  opened to theme augmentation.
+- An eligible theme-extensible visual value is a closed union, an axis opens
+  without a safe theme-independent fallback, or a behavioral, structural,
+  placement, directional, or state-machine axis is opened to augmentation.
 - `BaseProps` is applied to a component without one stable contract element, or
   accepted DOM props never reach that element.
 - `xstyle`, `className`, `style`, a ref, or an event handler is dropped or

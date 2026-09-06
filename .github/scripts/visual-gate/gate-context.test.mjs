@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {execFileSync} from 'node:child_process';
+import {execFileSync, spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -63,7 +63,7 @@ describe('stable release plan authority', () => {
   it('owns a closed Neutral and Probe baseline without preserving obsolete keys', () => {
     const source = fs.readFileSync(SCRIPT, 'utf8');
     expect(source).toContain("const RELEASE_TIERS = ['surface', 'probe'];");
-    expect(source).toContain('storiesInStorybookGroups(');
+    expect(source).toContain('canonicalBaselineStories(');
     expect(source).not.toContain('shots = withBaselineCoverage(');
     expect(source).toContain('const baselineManifest = rawBaseline;');
     expect(source).toContain(
@@ -72,6 +72,25 @@ describe('stable release plan authority', () => {
     expect(source).toContain(
       'readThemeCatalog(REPO_ROOT, config.baselineThemes)',
     );
+  });
+});
+
+describe('empty visual plans', () => {
+  it('refuses to capture a plan with no shots instead of reporting it clean', () => {
+    fs.writeFileSync(plan, JSON.stringify([]));
+    const result = spawnSync(
+      process.execPath,
+      [SCRIPT, 'check', '--plan-file', plan, '--out', output],
+      {encoding: 'utf8'},
+    );
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(
+      /The exact trusted plan planned no shots;.*manual baseline workflow\./,
+    );
+    // The refusal comes before the shutter: nothing is captured, nothing is
+    // compared, and there is no clean verdict for a reader to trust.
+    expect(fs.existsSync(path.join(output, 'manifest.json'))).toBe(false);
+    expect(fs.existsSync(path.join(output, 'verdict.json'))).toBe(false);
   });
 });
 

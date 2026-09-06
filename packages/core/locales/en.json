@@ -1175,6 +1175,14 @@
     "defaultMessage": "Progress",
     "description": "Screen-reader-only fallback name for the Stepper's ordered list of steps, describing the sequence as a whole (e.g. `Progress`). Used as the aria-label when the consumer does not pass a `label`. Singular per ARIA convention."
   },
+  "@astryx.stepper.previousStep": {
+    "defaultMessage": "Previous step",
+    "description": "Accessible name and tooltip for the button that moves a Stepper back one step. Only rendered when the stepper is narrow enough that step labels have collapsed, and only when the stepper is navigable at all."
+  },
+  "@astryx.stepper.nextStep": {
+    "defaultMessage": "Next step",
+    "description": "Accessible name and tooltip for the button that moves a Stepper forward one step. Counterpart to `stepper.previousStep`; keep the two parallel."
+  },
   "@astryx.step.goToStep": {
     "defaultMessage": "Go to step {stepNumber, number}: {label}",
     "description": "Accessible name for a clickable step in the Stepper. {stepNumber} is the 1-based position, {label} is the step's visible label."

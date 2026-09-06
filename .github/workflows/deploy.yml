@@ -67,7 +67,19 @@ jobs:
       - name: Check package.json exports are in sync
         run: node scripts/sync-exports.js --check
 
-  test:
+  # The push gate, as three parallel lanes joined by `test` below.
+  #
+  # This was one job running both Vitest projects, a full `pnpm build`, and
+  # eight typecheck gates on a 2-core runner — strictly more than ci.yml's
+  # `test`, which was already being terminated around 20 minutes with no
+  # summary. Same defect, later surface: main's post-merge gate was over the
+  # same budget.
+  #
+  # Nothing is dropped and nothing runs twice. The two Vitest projects are
+  # independent by construction (vitest.config.ts), so they split cleanly; the
+  # typecheck gates need the `pnpm build` they follow, so they stay together in
+  # their own lane and take the build with them.
+  test-ui:
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -78,15 +90,39 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      - run: pnpm test
+      - run: pnpm vitest run --project ui
+
+  test-node:
+    runs-on: 4-core-ubuntu
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - uses: ./.github/actions/setup
+
+      - run: pnpm vitest run --project node
+
+  # Typecheck gates mirroring the PR `build` job in ci.yml. ci.yml only runs
+  # on pull_request/merge_group, so a typecheck error can land on main (its
+  # push only runs the suite) undetected — then break the `build` check on
+  # every open PR, which typechecks the PR merged with main (see #3197).
+  # Running them here closes that gap and blocks a broken deploy.
+  typecheck:
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - uses: ./.github/actions/setup
 
       - run: pnpm build
 
-      # Typecheck gates mirroring the PR `build` job in ci.yml. ci.yml only runs
-      # on pull_request/merge_group, so a typecheck error can land on main (its
-      # push only runs `pnpm test`) undetected — then break the `build` check on
-      # every open PR, which typechecks the PR merged with main (see #3197).
-      # Running them here closes that gap and blocks a broken deploy.
       - name: Verify package exports
         run: node scripts/verify-exports.mjs
 
@@ -113,6 +149,24 @@ jobs:
 
       - name: Typecheck core (including tests)
         run: pnpm -F @astryxdesign/core typecheck
+
+  # Historical job name, kept because `deploy` gates the publish on
+  # `needs.test.result == 'success'`. Every lane must pass for that to hold, so
+  # this asserts all three rather than merely depending on them.
+  test:
+    needs: [test-ui, test-node, typecheck]
+    if: ${{ always() && !cancelled() }}
+    runs-on: ubuntu-slim
+    permissions: {}
+    steps:
+      - name: Assert every push gate succeeded
+        run: |
+          echo "test-ui:    ${{ needs.test-ui.result }}"
+          echo "test-node:  ${{ needs.test-node.result }}"
+          echo "typecheck:  ${{ needs.typecheck.result }}"
+          [ "${{ needs.test-ui.result }}" = "success" ] || exit 1
+          [ "${{ needs.test-node.result }}" = "success" ] || exit 1
+          [ "${{ needs.typecheck.result }}" = "success" ] || exit 1
 
   # Build everything the site needs, in parallel with `test`. The results are
   # handed to `deploy` as artifacts, so a broken test run never publishes —

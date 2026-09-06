@@ -113,6 +113,24 @@ export interface TabListProps extends Omit<BaseProps<HTMLElement>, 'onChange'> {
    */
   hasDivider?: boolean;
   /**
+   * Bleeds the strip out to its container's content edges.
+   *
+   * Both halves are computed from the `--container-padding-*` custom
+   * properties a padded Layout container publishes. The strip's box is pulled
+   * out through the container's inline padding, so a `hasDivider` underline —
+   * or the header's own divider, when the strip is docked on it — spans the
+   * full content width. The strip then pads back in by whatever that bleed
+   * exceeds a stop's own inline padding, so the first and last label still
+   * land on the container's content inset rather than 4px short of it.
+   *
+   * Outside a padded container the properties are unset, the pad-back clamps
+   * to zero, and the strip is left exactly as it was. Block-edge docking stays
+   * with the surrounding layout because it cannot be detected through nested
+   * wrappers without pulling a mid-content strip into its siblings.
+   * @default false
+   */
+  isFullBleed?: boolean;
+  /**
    * ARIA role for the strip.
    *
    * `"tablist"` asks for the WAI-ARIA tabs pattern: `role="tablist"` /
@@ -166,6 +184,17 @@ export interface TabListProps extends Omit<BaseProps<HTMLElement>, 'onChange'> {
 const RING_BLEED = `calc(${focusVars['--focus-outline-width']} + ${focusVars['--focus-outline-offset']})`;
 const BLEED_VAR = '--_tab-strip-bleed';
 const BLEED = `var(${BLEED_VAR})`;
+
+/**
+ * A stop's own inline padding, restated here because a full-bleed strip has to
+ * subtract it: the strip pads back in only the part of the container's padding
+ * the stop does not already supply, so the edge label lands on the content
+ * inset. Kept in step with `Tab`/`TabMenu`'s `paddingInline` by hand — the
+ * import would be circular.
+ */
+const STOP_INLINE_PADDING = spacingVars['--spacing-3'];
+const EDGE_PAD_START = `max(var(--container-padding-inline-start, 0px) - ${STOP_INLINE_PADDING}, 0px)`;
+const EDGE_PAD_END = `max(var(--container-padding-inline-end, 0px) - ${STOP_INLINE_PADDING}, 0px)`;
 const INDICATOR_BLEED = 'calc(-1 * var(--_tab-indicator-bottom, -1px))';
 const BLOCK_END_BLEED = `max(${BLEED}, ${INDICATOR_BLEED})`;
 
@@ -258,6 +287,15 @@ const styles = stylex.create({
     },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
+  // Put back the part of the bleed a stop's own inline padding does not
+  // already supply, so the first and last label land on the container's
+  // content inset while their boxes still hang out over it. Applied after
+  // `stripScroll` because both write the strip's inline padding; the ring
+  // bleed is carried through so the negative margin there still cancels it.
+  fullBleedStrip: {
+    paddingInlineStart: `calc(var(${BLEED_VAR}, 0px) + ${EDGE_PAD_START})`,
+    paddingInlineEnd: `calc(var(${BLEED_VAR}, 0px) + ${EDGE_PAD_END})`,
+  },
   fadeStart: {
     maskImage: {
       default: FADE_FROM_START,
@@ -309,6 +347,16 @@ const styles = stylex.create({
   arrowEnd: {
     insetInlineEnd: 0,
   },
+  fullBleed: {
+    // Cancel the container's inline padding so the strip's box reaches its
+    // content edges. Same spelling as Divider's `isFullBleed`.
+    marginInlineStart: 'calc(-1 * var(--container-padding-inline-start, 0px))',
+    marginInlineEnd: 'calc(-1 * var(--container-padding-inline-end, 0px))',
+    // The `nav` base clamps to 100%, which would pull the widened box back.
+    maxWidth: 'none',
+    width:
+      'calc(100% + var(--container-padding-inline-start, 0px) + var(--container-padding-inline-end, 0px))',
+  },
 });
 
 const arrowSizeStyles = stylex.create({
@@ -349,6 +397,7 @@ export function TabList({
   size: sizeProp,
   layout = 'hug',
   hasDivider = false,
+  isFullBleed = false,
   role,
   overflow = 'auto',
   xstyle,
@@ -624,6 +673,7 @@ export function TabList({
             styles.nav,
             layout === 'fill' && styles.fill,
             hasDivider && styles.divider,
+            isFullBleed && styles.fullBleed,
             xstyle,
           ),
           className,
@@ -640,6 +690,7 @@ export function TabList({
             stylex.props(
               styles.strip,
               hasScroll && styles.stripScroll,
+              isFullBleed && styles.fullBleedStrip,
               fadeStyle,
             ),
           )}>

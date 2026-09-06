@@ -1083,6 +1083,28 @@ function isHorizontalRule(line: string): boolean {
   return true;
 }
 
+/**
+ * Whether a line holds a pipe that could delimit table cells.
+ *
+ * A backslash-escaped `\|` is literal text inside one cell — `splitTableRow`
+ * keeps it verbatim — so a line whose only pipes are escaped shows no partial
+ * table syntax while it streams. Used by `trimUnsettledStructural` to decide
+ * whether an unfinished trailing line is a table header worth holding back.
+ */
+function hasUnescapedPipe(line: string): boolean {
+  for (let index = 0; index < line.length; index++) {
+    if (line[index] === '\\') {
+      // Skip the escaped character, whatever it is.
+      index++;
+      continue;
+    }
+    if (line[index] === '|') {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** GFM separator row: cells contain only dashes/colons. */
 function isTableSeparator(line: string): boolean {
   if (!line.includes('|')) {
@@ -1903,12 +1925,16 @@ function trimUnsettledStructural(text: string): string {
     }
 
     // Table: only suppress if this is a lone header without a separator.
-    // If the line has `|` and the line before it is NOT a separator,
-    // and THIS line is not a separator, and there's no established table
-    // above (header + separator pair), hold it back.
-    if (trimmed.includes('|') && !isTableSeparator(last)) {
+    // If the line has an unescaped `|` and the line before it is NOT a
+    // separator, and THIS line is not a separator, and there's no established
+    // table above (header + separator pair), hold it back. An escaped `\|` is
+    // ordinary prose, not a cell delimiter, so a line carrying only those is
+    // never held back — holding it back blanks the text while it streams.
+    if (hasUnescapedPipe(trimmed) && !isTableSeparator(last)) {
       // Is there a separator anywhere above that would make this part of
-      // an established table? Walk up to find header+separator pair.
+      // an established table? Walk up to find header+separator pair. The
+      // header test mirrors the block parser's own `includes('|')`, which
+      // accepts an escaped-only header line once its separator arrives.
       let tableEstablished = false;
       for (let i = lines.length - 2; i >= 1; i--) {
         if (isTableSeparator(lines[i]) && lines[i - 1].includes('|')) {

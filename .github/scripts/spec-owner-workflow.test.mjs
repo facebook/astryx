@@ -4,7 +4,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
+import {createRequire} from 'node:module';
 import {describe, expect, it} from 'vitest';
+
+const require = createRequire(import.meta.url);
 
 const root = path.resolve(import.meta.dirname, '../..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -160,17 +163,22 @@ describe('spec-only workflow contract', () => {
       .replace(/\s+/g, ' ')
       .trim();
     expect(reconcileCondition).toBe(
-      "(github.event_name != 'pull_request_review' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'issue_comment' || (github.event.issue.pull_request != null && (startsWith(github.event.comment.body, '/approve-spec ') || startsWith(github.event.comment.body, '/revoke-spec '))))",
+      "(github.event_name != 'pull_request_review' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'issue_comment' || (github.event.issue.pull_request != null && (startsWith(github.event.comment.body, '/approve-spec') || startsWith(github.event.comment.body, '/revoke-spec'))))",
     );
     expect(workflow).toContain('pull_request_review:');
     expect(workflow).toContain('issue_comment:');
     expect(workflow).toContain('permissions: {}');
     expect(workflow).not.toContain('pull_request_review_target');
+    // The filter must admit a command that omits the head SHA so the
+    // reconciler can answer it; a trailing space would drop it silently.
     expect(workflow).toContain(
-      "startsWith(github.event.comment.body, '/approve-spec ')",
+      "startsWith(github.event.comment.body, '/approve-spec')",
     );
     expect(workflow).toContain(
-      "startsWith(github.event.comment.body, '/revoke-spec ')",
+      "startsWith(github.event.comment.body, '/revoke-spec')",
+    );
+    expect(workflow).not.toContain(
+      "startsWith(github.event.comment.body, '/approve-spec ')",
     );
     expect(reconciler).toContain('expectedCount: after.changed_files');
     expect(reconciler).toContain('scope.touchesKnowledgeRecords');
@@ -184,6 +192,15 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).not.toContain(
       '...new Set([...specOwners, ...engineeringOwners, ...designOwners])',
     );
+    // Only a DESIGNOWNER author self-attests, and only the design group
+    // reads that attestation.
+    expect(reconciler).toContain('designOwners.includes(actor)');
+    expect(reconciler).not.toContain('allOwners.has(actor)');
+    expect(reconciler).toContain(
+      'readyAttestations,\n        owners: designApprovers',
+    );
+    expect(reconciler).toContain('isSettled(initialPr)');
+    expect(reconciler).toContain('isPublishable(headSha)');
     expect(reconciler).toContain('specDecision.approved');
     expect(reconciler).toContain('designDecision.approved');
     expect(reconciler).toContain('themeDecision.approved');
@@ -191,6 +208,84 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).toContain('expectedHeadOid: $oid');
     expect(reconciler).toContain('mergeMethod: SQUASH');
     expect(reconciler).toContain('disablePullRequestAutoMerge');
+  });
+
+  it('derives the comment trigger from the parser\u2019s own prefixes', () => {
+    const workflow = read('.github/workflows/spec-owner-gate.yml');
+    const {OWNER_COMMAND_PREFIXES} = require(
+      path.join(root, '.github/scripts/spec-owner-decision.cjs'),
+    );
+
+    // Every prefix the parser accepts must appear in the trigger, and the
+    // trigger must name no prefix the parser does not accept. A mismatch is
+    // the silent failure mode: a comment that parses but never dispatches.
+    const triggerPrefixes = [
+      ...workflow.matchAll(
+        /startsWith\(github\.event\.comment\.body, '([^']+)'\)/g,
+      ),
+    ].map(match => match[1]);
+    expect(new Set(triggerPrefixes)).toEqual(new Set(OWNER_COMMAND_PREFIXES));
+    for (const prefix of triggerPrefixes) {
+      expect(prefix.trimEnd(), prefix).toBe(prefix);
+    }
+  });
+
+  it('offers a backfill dispatch that publishes status without landing', () => {
+    const workflow = read('.github/workflows/spec-owner-gate.yml');
+    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
+
+    expect(workflow).toContain('backfill:');
+    expect(workflow).toContain('type: boolean');
+    expect(reconciler).toContain("context.eventName === 'workflow_dispatch'");
+    expect(reconciler).toContain('backfillOnly');
+    // The guard must sit after the terminal status and before enablement.
+    const publish = reconciler.indexOf(
+      "setFinalStatus(initialHead, 'success', successDescription)",
+    );
+    const guard = reconciler.indexOf('if (backfillOnly) {');
+    const enable = reconciler.indexOf('enablePullRequestAutoMerge');
+    expect(publish).toBeGreaterThan(-1);
+    expect(guard).toBeGreaterThan(publish);
+    expect(enable).toBeGreaterThan(guard);
+  });
+
+  it('keeps the last read before a terminal write on the live pull request', () => {
+    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
+    const guard = reconciler.slice(
+      reconciler.indexOf('async function isLiveHeadWritable('),
+      reconciler.indexOf('async function restoreNewerStatus('),
+    );
+
+    expect(guard).toContain('isSettled(live)');
+    expect(guard).toContain('live.head.sha !== headSha');
+    // isPublishable checks run currency first, then delegates the live read,
+    // so the freshest fact at the moment of the write is the pull request.
+    const publishable = reconciler.slice(
+      reconciler.indexOf('async function isPublishable('),
+      reconciler.indexOf('async function restoreNewerStatus('),
+    );
+    expect(publishable.indexOf('await isCurrentRun(headSha)')).toBeLessThan(
+      publishable.indexOf('isLiveHeadWritable(headSha)'),
+    );
+    expect(reconciler).toContain('treat that status as unverified');
+
+    // Every gate-status write goes through a live guard, restores included.
+    const restore = reconciler.slice(
+      reconciler.indexOf('async function restoreNewerStatus('),
+      reconciler.indexOf('async function isCurrentRun('),
+    );
+    expect(restore).toContain('await isLiveHeadWritable(headSha)');
+    expect(restore.indexOf('await isLiveHeadWritable(headSha)')).toBeLessThan(
+      restore.indexOf('createStatus('),
+    );
+  });
+
+  it('reads a ready attestation back only for a current design owner', () => {
+    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
+    const decision = read('.github/scripts/spec-owner-decision.cjs');
+
+    expect(reconciler).toContain('owners: designOwners');
+    expect(decision).toContain('!allowed.has(owner)');
   });
 
   it('does not run the privileged visual-report path for spec-only PRs', () => {

@@ -153,16 +153,231 @@ describe('VegaChart', () => {
       );
     });
 
-    it('tears down the old View and builds a new one when the spec identity changes', () => {
+    it('tears down the old View and builds a new one when the spec changes', () => {
       const {rerender} = render(<VegaChart spec={VEGA_SPEC} />);
       expect(views).toHaveLength(1);
 
-      rerender(<VegaChart spec={{...VEGA_SPEC}} />);
+      rerender(
+        <VegaChart
+          spec={{...VEGA_SPEC, background: 'red'} as unknown as AnySpec}
+        />,
+      );
 
       expect(views).toHaveLength(2);
       expect(views[0].finalize).toHaveBeenCalledTimes(1);
       expect(views[1].finalize).not.toHaveBeenCalled();
       expect(parseMock).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // The View is the expensive thing this component owns, and rebuilding it
+  // throws away the chart's zoom, hover, and signal state. So a rebuild
+  // follows a change of value, not a change of object identity -- the
+  // documented usage passes spec, options, and data as inline literals.
+  describe('View rebuild policy', () => {
+    it('keeps the View when a re-render passes an equal spec object', () => {
+      const {rerender} = render(<VegaChart spec={VEGA_SPEC} />);
+      expect(views).toHaveLength(1);
+
+      rerender(<VegaChart spec={{...VEGA_SPEC}} />);
+
+      expect(views).toHaveLength(1);
+      expect(views[0].finalize).not.toHaveBeenCalled();
+      expect(parseMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the View when a re-render passes an equal options object', () => {
+      const {rerender} = render(
+        <VegaChart spec={VEGA_SPEC} viewOptions={{renderer: 'canvas'}} />,
+      );
+
+      rerender(
+        <VegaChart spec={VEGA_SPEC} viewOptions={{renderer: 'canvas'}} />,
+      );
+
+      expect(views).toHaveLength(1);
+    });
+
+    it('rebuilds when an options value actually changes', () => {
+      const {rerender} = render(
+        <VegaChart spec={VEGA_SPEC} viewOptions={{renderer: 'canvas'}} />,
+      );
+
+      rerender(<VegaChart spec={VEGA_SPEC} viewOptions={{renderer: 'svg'}} />);
+
+      expect(views).toHaveLength(2);
+      expect(views[1].options).toMatchObject({renderer: 'svg'});
+    });
+
+    it('rebuilds when a function inside the options changes identity', () => {
+      // Two tooltip handlers can look alike and behave differently, so
+      // functions are compared by reference, not walked.
+      const {rerender} = render(
+        <VegaChart spec={VEGA_SPEC} viewOptions={{tooltip: () => {}}} />,
+      );
+
+      rerender(
+        <VegaChart spec={VEGA_SPEC} viewOptions={{tooltip: () => {}}} />,
+      );
+
+      expect(views).toHaveLength(2);
+    });
+
+    // A caller that holds its spec in a ref or a module constant and edits it
+    // in place leaves both renders pointing at the same object. Comparing
+    // props to props sees nothing; the chart would keep rendering old data.
+    it('rebuilds when a nested object shared across renders is mutated', () => {
+      const encoding = {x: {field: 'a', type: 'ordinal'}};
+      const specWith = () =>
+        ({
+          $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+          mark: 'bar',
+          encoding,
+        }) as unknown as AnySpec;
+      const {rerender} = render(<VegaChart spec={specWith()} />);
+      expect(views).toHaveLength(1);
+
+      encoding.x.field = 'b';
+      rerender(<VegaChart spec={specWith()} />);
+
+      expect(views).toHaveLength(2);
+      expect(views[0].finalize).toHaveBeenCalledTimes(1);
+      expect(compileMock.mock.calls[1][0]).toMatchObject({
+        encoding: {x: {field: 'b'}},
+      });
+    });
+
+    it('rebuilds when the very same spec object is mutated in place', () => {
+      const spec = {
+        $schema: 'https://vega.github.io/schema/vega/v6.json',
+        marks: [] as unknown[],
+      } as unknown as AnySpec;
+      const {rerender} = render(<VegaChart spec={spec} />);
+
+      (spec as unknown as {marks: unknown[]}).marks.push({type: 'rect'});
+      rerender(<VegaChart spec={spec} />);
+
+      expect(views).toHaveLength(2);
+    });
+
+    it('hands Vega the caller’s own spec object, not a copy', () => {
+      render(<VegaChart spec={VEGA_SPEC} />);
+
+      expect(parseMock.mock.calls[0][0]).toBe(VEGA_SPEC);
+    });
+
+    // A spec the comparison cannot copy — a reference cycle, or nesting past
+    // its depth bound — is compared by reference instead. That verdict runs
+    // during render, so an "always changed" answer would re-render forever
+    // ("Too many re-renders") and never paint a chart at all.
+    describe('inputs the comparison cannot copy', () => {
+      function nest(depth: number): Record<string, unknown> {
+        let node: Record<string, unknown> = {leaf: 'a'};
+        for (let index = 0; index < depth; index++) {
+          node = {node};
+        }
+        return node;
+      }
+
+      function cyclicSpec(): AnySpec {
+        const spec: Record<string, unknown> = {
+          $schema: 'https://vega.github.io/schema/vega/v6.json',
+          marks: [],
+        };
+        spec.self = spec;
+        return spec as unknown as AnySpec;
+      }
+
+      it('mounts a cyclic spec and builds exactly one View', () => {
+        expect(() => render(<VegaChart spec={cyclicSpec()} />)).not.toThrow();
+
+        expect(views).toHaveLength(1);
+      });
+
+      it('keeps the View across re-renders of the same cyclic spec', () => {
+        const spec = cyclicSpec();
+        const {rerender} = render(<VegaChart spec={spec} />);
+
+        rerender(<VegaChart spec={spec} />);
+        rerender(<VegaChart spec={spec} />);
+
+        expect(views).toHaveLength(1);
+        expect(views[0].finalize).not.toHaveBeenCalled();
+      });
+
+      it('rebuilds exactly once when the cyclic spec is replaced', () => {
+        const {rerender} = render(<VegaChart spec={cyclicSpec()} />);
+        const replacement = cyclicSpec();
+
+        rerender(<VegaChart spec={replacement} />);
+        rerender(<VegaChart spec={replacement} />);
+
+        expect(views).toHaveLength(2);
+        expect(views[0].finalize).toHaveBeenCalledTimes(1);
+      });
+
+      it('mounts a spec nested past the depth bound and keeps its View', () => {
+        const spec = {
+          $schema: 'https://vega.github.io/schema/vega/v6.json',
+          deep: nest(150),
+        } as unknown as AnySpec;
+
+        const {rerender} = render(<VegaChart spec={spec} />);
+        rerender(<VegaChart spec={spec} />);
+
+        expect(views).toHaveLength(1);
+      });
+
+      it('still rebuilds on a shallow change beside a cycle', () => {
+        const spec: Record<string, unknown> = {
+          $schema: 'https://vega.github.io/schema/vega/v6.json',
+          background: 'red',
+        };
+        spec.self = spec;
+        const {rerender} = render(
+          <VegaChart spec={spec as unknown as AnySpec} />,
+        );
+
+        spec.background = 'blue';
+        rerender(<VegaChart spec={spec as unknown as AnySpec} />);
+
+        expect(views).toHaveLength(2);
+      });
+    });
+
+    // `data` is documented as initial values, read once per View. It used to
+    // sit in the Effect's dependencies, so the documented usage -- an inline
+    // `data={{table: rows}}` -- tore the View down on every parent render.
+    it('keeps the View when only data changes', () => {
+      const {rerender} = render(
+        <VegaChart spec={VEGA_SPEC} data={{table: [{a: 1}]}} />,
+      );
+      expect(views).toHaveLength(1);
+      expect(views[0].data).toHaveBeenCalledTimes(1);
+
+      rerender(<VegaChart spec={VEGA_SPEC} data={{table: [{a: 2}]}} />);
+
+      expect(views).toHaveLength(1);
+      expect(views[0].finalize).not.toHaveBeenCalled();
+      // Not reactive: the live View is left exactly as it was.
+      expect(views[0].data).toHaveBeenCalledTimes(1);
+      expect(views[0].data).toHaveBeenCalledWith('table', [{a: 1}]);
+    });
+
+    it('loads the current data when something else rebuilds the View', () => {
+      const {rerender} = render(
+        <VegaChart spec={VEGA_SPEC} data={{table: [{a: 1}]}} />,
+      );
+
+      rerender(
+        <VegaChart
+          spec={{...VEGA_SPEC, background: 'red'} as unknown as AnySpec}
+          data={{table: [{a: 2}]}}
+        />,
+      );
+
+      expect(views).toHaveLength(2);
+      expect(views[1].data).toHaveBeenCalledWith('table', [{a: 2}]);
     });
   });
 

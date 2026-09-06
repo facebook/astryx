@@ -78,12 +78,19 @@ export function registerSearch(program) {
         return;
       }
 
-      recordResultSummary(result.data.results);
+      // The recorded count is the number of MATCHES, not the number that
+      // survived `--limit`. Recording `results.length` would file the cap as
+      // the answer, so "20 matches" and "200 matches, showing 20" would be the
+      // same row in every usage query. The delivered payload stays bounded.
+      recordResultSummary(result.data.results, {
+        resultCount: result.data.matchCount,
+        emptyResult: result.data.matchCount === 0,
+      });
       if (json) return jsonOut(result);
 
       // ── Text output ──────────────────────────────────────────────
       const run = getCliInvocation();
-      const {query: q, results} = result.data;
+      const {query: q, matchCount, results} = result.data;
 
       // No matches is a valid, successful outcome — clean message, exit 0.
       if (results.length === 0) {
@@ -110,8 +117,15 @@ export function registerSearch(program) {
           ]
         : ['name', 'domain', 'displayName', 'import', 'description', 'command'];
 
+      // The heading mirrors the JSON: `matchCount` is what matched, and the
+      // records below are the slice `--limit` allowed. Saying only "(20)" when
+      // 57 matched reads as "that is all there is".
       emit(
-        section(`Results for "${q}" (${results.length})`),
+        section(
+          matchCount > results.length
+            ? `Results for "${q}" (${results.length} of ${matchCount})`
+            : `Results for "${q}" (${results.length})`,
+        ),
         records(results, {fields, format: {command: formatCliCommand}}),
       );
     },

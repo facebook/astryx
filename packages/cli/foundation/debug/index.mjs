@@ -35,6 +35,7 @@ export {
   setProject,
   recordResultSummary,
   setEventHandler,
+  setIntegrationEventHandlers,
   noteConfigGateSkipped,
   setOutcome,
   recordEnvelope,

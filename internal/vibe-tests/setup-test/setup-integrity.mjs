@@ -33,6 +33,15 @@
  * lexical — see `setup-important.mjs`. The flag is found by parsing, so a
  * comment, a JSDoc block, or a prose string that merely names `!important`
  * is silent, while a declaration that carries it fails wherever it is written.
+ *
+ * The pattern-matched hatches — `blanket-reset` and `dark-mode-disabled` — hold
+ * the same line: every one of them is matched against the added line with its
+ * COMMENTS blanked out, located by the parser that owns the file (see
+ * `setup-comments.mjs`). A sentence naming `all: unset`, or a comment
+ * explaining that the host's own `color-scheme` arm was deliberately left
+ * alone, is prose and not a change to the host. Blanking preserves offsets, so
+ * a real hatch written beside a comment is still found, and a file no parser
+ * can read keeps every character subject to the scan.
  */
 
 import * as crypto from 'node:crypto';
@@ -41,6 +50,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {importantDeclarationLines} from './setup-important.mjs';
+import {commentSpans} from './setup-comments.mjs';
 
 export const WHOLESALE_REPLACEMENT_THRESHOLD = Object.freeze({
   minimumDeletedLines: 20,
@@ -66,6 +76,11 @@ const HOST_SOURCE_EXTENSIONS = new Set([
 
 /**
  * The escape hatches found by matching the added line itself.
+ *
+ * Each is matched against the line with its comments blanked out — see
+ * `setup-comments.mjs`. A pattern that reads a comment reports prose as a
+ * change to the host, which is what `hardcoded-important` used to do before
+ * #5856 made it syntactic.
  *
  * `hardcoded-important` is deliberately absent: it is found by parsing the
  * file rather than by matching a line, in `syntacticFindings`.
@@ -558,6 +573,30 @@ function modeArmExemptions(appDir, relativePath, currentSource, removedLines) {
   return pairedModeArmSpans(currentSource);
 }
 
+/**
+ * The spans on each line that no escape hatch may read: the file's comments,
+ * which are prose rather than a change to the host, plus its exempt paired mode
+ * arms.
+ *
+ * A file this module cannot parse contributes no comment spans, so nothing is
+ * exempted on a guess.
+ */
+function hatchMaskFor(appDir, relativePath, currentSource, removedLines) {
+  const masked = lineSpans(
+    currentSource,
+    commentSpans(relativePath, currentSource),
+  );
+  for (const [line, spans] of modeArmExemptions(
+    appDir,
+    relativePath,
+    currentSource,
+    removedLines,
+  )) {
+    masked.set(line, [...(masked.get(line) ?? []), ...spans]);
+  }
+  return masked;
+}
+
 /** The line with its exempt spans blanked out, for escape-hatch matching. */
 function maskSpans(text, spans) {
   if (!spans || spans.length === 0) return text;
@@ -681,8 +720,13 @@ function evidenceFor(relativePath, lines) {
  * numbers where a `!important` is an applied CSS declaration. Intersecting it
  * with the added lines keeps the rule unchanged — only what this change added
  * is judged — while the judgment itself is now syntactic.
+ *
+ * `maskedSpans` does the same job for the pattern-matched hatches: every one of
+ * them reads the line with its comments blanked, so prose that names a hatch is
+ * silent while the hatch itself is found wherever it is written — including on
+ * the same line as the comment that discusses it.
  */
-function findingsFor(relativePath, lines, exemptSpans, importantLines) {
+function findingsFor(relativePath, lines, maskedSpans, importantLines) {
   const findings = [];
   for (const added of lines) {
     if (importantLines?.has(added.line)) {
@@ -693,11 +737,9 @@ function findingsFor(relativePath, lines, exemptSpans, importantLines) {
         message: HARDCODED_IMPORTANT.message,
       });
     }
-    const masked = maskSpans(added.text, exemptSpans?.get(added.line));
+    const masked = maskSpans(added.text, maskedSpans?.get(added.line));
     for (const escapeHatch of ESCAPE_HATCHES) {
-      const subject =
-        escapeHatch.kind === 'dark-mode-disabled' ? masked : added.text;
-      if (escapeHatch.pattern.test(subject)) {
+      if (escapeHatch.pattern.test(masked)) {
         findings.push({
           kind: escapeHatch.kind,
           path: relativePath,
@@ -836,7 +878,7 @@ export function analyzeSetupIntegrity(appDir, attestedDiffSha256) {
           ...findingsFor(
             file.path,
             addedLines,
-            modeArmExemptions(
+            hatchMaskFor(
               resolvedAppDir,
               file.path,
               currentSource,
@@ -871,7 +913,7 @@ export function analyzeSetupIntegrity(appDir, attestedDiffSha256) {
           addedLines,
           currentSource === null
             ? undefined
-            : modeArmExemptions(resolvedAppDir, file.path, currentSource, []),
+            : hatchMaskFor(resolvedAppDir, file.path, currentSource, []),
           currentSource === null
             ? undefined
             : importantDeclarationLines(file.path, currentSource),

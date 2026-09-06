@@ -39,6 +39,9 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  *   such an integration contributes nothing and is surfaced via Project.issues()
  * @property {string[]} [__unknownKeys] manifest keys this CLI does not know —
  *   surfaced as a warning; the rest of the manifest still contributes
+ * @property {import('../../authoring/debug/type').DebugEventHandler} [__debug]
+ *   the manifest module's `debug` NAMED export, when it exported a function.
+ *   Not a manifest key — see {@link loadManifest}.
  */
 
 /** Conventional manifest basenames, in load-precedence order. */
@@ -69,9 +72,17 @@ export function findManifestPaths(dir) {
  * strips the unknown keys: after `parseIntegration` there is nothing left to
  * report. Exposed for validate-integration.
  *
+ * `debug` comes back separately because it is a NAMED export, not a manifest
+ * key. A key would have to survive the manifest schema of every CLI version
+ * already installed against this integration, and older ones reject an unknown
+ * key outright — losing that integration's components, templates and codemods
+ * with it (#5119). A named export is simply not read by a CLI that does not
+ * know about it, so an integration can start contributing one without a
+ * coordinated upgrade.
+ *
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
- * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[]}>}
+ * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler}>}
  */
 export async function loadManifest(file, label = 'integration manifest') {
   const mod = await importUserModule(file);
@@ -79,6 +90,12 @@ export async function loadManifest(file, label = 'integration manifest') {
   return {
     manifest: parseIntegration(raw, label),
     unknownKeys: unknownIntegrationKeys(raw),
+    debug:
+      typeof mod?.debug === 'function'
+        ? /** @type {import('../../authoring/debug/type').DebugEventHandler} */ (
+            mod.debug
+          )
+        : undefined,
   };
 }
 
@@ -178,11 +195,14 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
     let manifest;
     /** @type {string[]} */
     let unknownKeys;
+    /** @type {import('../../authoring/debug/type').DebugEventHandler | undefined} */
+    let debugHandler;
     try {
-      ({manifest, unknownKeys} = await loadManifest(
-        manifestFile,
-        `Integration ${spec}`,
-      ));
+      ({
+        manifest,
+        unknownKeys,
+        debug: debugHandler,
+      } = await loadManifest(manifestFile, `Integration ${spec}`));
     } catch (err) {
       // A manifest that throws on import or fails schema validation must NOT take
       // down every command (component/docs/theme don't need this integration).
@@ -219,6 +239,7 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
       docs: resolveRoot(manifest.docs),
       issuesUrl: manifest.issuesUrl,
       __unknownKeys: unknownKeys,
+      __debug: debugHandler,
       __spec: spec,
       __packageDir: packageDir,
       __manifestFile: manifestFile,

@@ -4,7 +4,7 @@
  * @file Popover.test.tsx
  * @input Uses vitest, Testing Library, node:fs, Popover, Dialog, and
  *   SegmentedControl
- * @output Unit tests for Popover component behavior
+ * @output Unit and compile-time public-contract tests for Popover behavior
  * @position Testing; validates Popover.tsx implementation
  *
  * SYNC: When Popover.tsx changes, update tests to match new behavior
@@ -66,9 +66,10 @@ describe('usePopover public return type', () => {
     const hasDismissalGuard: 'wasJustDismissed' extends keyof UsePopoverReturn
       ? true
       : false = false;
-    const hasInternalToggle: 'toggleWithOptions' extends keyof UsePopoverReturn
+    type PublicToggleParameters = Parameters<UsePopoverReturn['toggle']>;
+    const publicToggleTakesNoOptions: PublicToggleParameters extends []
       ? true
-      : false = false;
+      : false = true;
     type PublicShowOptions = NonNullable<
       Parameters<UsePopoverReturn['show']>[0]
     >;
@@ -77,7 +78,7 @@ describe('usePopover public return type', () => {
       : false = false;
     expect(hasKeepOpenProps).toBe(false);
     expect(hasDismissalGuard).toBe(false);
-    expect(hasInternalToggle).toBe(false);
+    expect(publicToggleTakesNoOptions).toBe(true);
     expect(hasInternalFocusTarget).toBe(false);
   });
 });

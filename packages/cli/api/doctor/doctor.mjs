@@ -495,15 +495,24 @@ export function checkPeerDeps(ctx) {
 }
 
 /**
- * Check 8 — report the detected package manager, and FAIL when several
- * lockfiles tie with nothing project-owned to break them. That tie is the one
- * case where every command the CLI prints can be silently wrong, so it is the
- * one case worth surfacing rather than guessing past.
+ * Check 8 — report the detected package manager, and say so when the project's
+ * own declaration disagrees with what is on disk.
+ *
+ * Two states are worth surfacing rather than guessing past, because in both the
+ * commands the CLI prints can be silently wrong for the project:
+ *
+ * - FAIL: several lockfiles tie with nothing project-owned to break them.
+ * - WARN: a `packageManager` field is declared and a lockfile it contradicts
+ *   sits beside it. Astryx follows the declaration, so its own output is right;
+ *   the warning is that a tool which follows the lockfile will install with
+ *   something else, and that used to be reported as a healthy setup.
+ *
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
 export function checkPackageManager(ctx) {
-  const {pm, ambiguous, dir, candidates} = explainPackageManager(ctx.cwd);
+  const {pm, ambiguous, dir, candidates, declared, strayLockfiles} =
+    explainPackageManager(ctx.cwd);
 
   if (ambiguous) {
     return {
@@ -515,13 +524,29 @@ export function checkPackageManager(ctx) {
     };
   }
 
+  if (declared && strayLockfiles.length > 0) {
+    const files = strayLockfiles.map(lock => lock.file).join(' and ');
+    const owners = [...new Set(strayLockfiles.map(lock => lock.pm))].join(
+      ' and ',
+    );
+    return {
+      id: 'package-manager',
+      label: 'Package manager',
+      status: 'warn',
+      message: `This project declares \`packageManager: ${declared}\` in ${dir}/package.json, but ${files} also sits there. Astryx follows the declaration and prints ${pm} commands; anything that follows the lockfile instead will use ${owners}.`,
+      fix: `Delete ${files} from ${dir} and reinstall with ${declared}, or change the \`packageManager\` field if ${owners} is what this project actually uses.`,
+    };
+  }
+
   return {
     id: 'package-manager',
     label: 'Package manager',
     status: 'info',
     message:
       pm !== 'npx'
-        ? `Detected package manager: ${pm}.`
+        ? declared
+          ? `Detected package manager: ${pm} (declared in ${dir}/package.json).`
+          : `Detected package manager: ${pm}.`
         : 'No lockfile detected — defaulting to npm/npx.',
   };
 }

@@ -4,6 +4,13 @@ Astryx is a public design-system repository. Never commit internal links,
 identifiers, service names, private operational instructions, or other
 Meta-only context.
 
+## Instruction surface
+
+This `AGENTS.md` is the canonical, tool-agnostic instruction surface for the
+repository. Add or change shared agent guidance here rather than duplicating it
+in tool-specific instruction files. Put genuinely path-specific guidance in a
+nested `AGENTS.md`.
+
 ## Start here
 
 - Product builders: use `astryx docs`, component `{Name}.doc.mjs` files, and

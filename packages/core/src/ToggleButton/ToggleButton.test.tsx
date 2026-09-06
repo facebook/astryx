@@ -24,6 +24,54 @@ import {
 // =============================================================================
 
 describe('ToggleButton', () => {
+  describe('elevation', () => {
+    it('reflects the elevation prop as a theme attribute', () => {
+      const attrFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
+        const {container} = render(
+          <ToggleButton
+            label="Filter"
+            isPressed={false}
+            onPressedChange={() => {}}
+            elevation={elevation}
+          />,
+        );
+        return container
+          .querySelector('button')!
+          .getAttribute('data-elevation');
+      };
+      expect(attrFor('none')).toBe('none');
+      expect(attrFor('low')).toBe('low');
+      expect(attrFor('med')).toBe('med');
+      expect(attrFor('high')).toBe('high');
+    });
+
+    it('defaults to flat (elevation none)', () => {
+      const {container} = render(
+        <ToggleButton
+          label="Filter"
+          isPressed={false}
+          onPressedChange={() => {}}
+        />,
+      );
+      expect(container.querySelector('button')).toHaveAttribute(
+        'data-elevation',
+        'none',
+      );
+    });
+
+    it('is retained inside a ToggleButtonGroup — grouped children keep their own elevation', () => {
+      const {container} = render(
+        <ToggleButtonGroup label="View" value={null} onChange={() => {}}>
+          <ToggleButton label="Card" value="card" elevation="high" />
+        </ToggleButtonGroup>,
+      );
+      expect(container.querySelector('button')).toHaveAttribute(
+        'data-elevation',
+        'high',
+      );
+    });
+  });
+
   it('renders with label as visible text', () => {
     render(
       <ToggleButton

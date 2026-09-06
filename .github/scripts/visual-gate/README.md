@@ -114,6 +114,18 @@ The daily gate uses the same boundary: `stableStoryPackages` in
 hold a stable release. Pass `--story-packages '*'` only for an explicit
 non-release audit.
 
+Ownership decides which stories may own canonical frames, and a Storybook title
+is only evidence of it. When the index records the source file of the component
+a story declares, that source decides: a Core component keeps its frames even
+when its story is titled under another group, and a composed demo cannot earn
+one by importing Core. `stableStoryGroups` is the fallback for the stories that
+declare no component at all, where the title group is the only signal there is.
+
+An empty plan is refused rather than reported clean, in every lane. A plan with
+no shots compares nothing, so a scope whose keys are missing from the accepted
+baseline fails closed and says so; seed the missing frames through the manual
+baseline workflow.
+
 `.github/scripts/visual-scope.mjs` owns that classification from package
 metadata; workflow YAML does not hard-code today's package names.
 

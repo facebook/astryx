@@ -5,7 +5,7 @@
 /**
  * @file usePopover.tsx
  * @input Uses useLayer, useFocusTrap, React hooks
- * @output Exports usePopover and a package-internal trigger-aware variant.
+ * @output Exports usePopover and a package-internal variant with refined open options.
  * @position Higher-level layer utility; used by DatePicker, Combobox, etc.
  *
  * Combines popover layer behavior with focus trap for dialog-like popovers.
@@ -323,12 +323,14 @@ export interface UsePopoverReturn {
   };
 }
 
+interface InternalPopoverOpenOptions {
+  skipAutoFocus?: boolean;
+  focusTarget?: 'first' | 'container';
+}
+
 interface InternalUsePopoverReturn extends UsePopoverReturn {
+  toggle: (options?: InternalPopoverOpenOptions) => void;
   wasJustDismissed: () => boolean;
-  toggleWithOptions: (options?: {
-    skipAutoFocus?: boolean;
-    focusTarget?: 'first' | 'container';
-  }) => void;
 }
 
 /**
@@ -467,12 +469,9 @@ function usePopoverImplementation(
     [layer],
   );
 
-  // Show function with optional skipAutoFocus
+  // Show function with optional open preferences
   const show = useCallback(
-    (showOptions?: {
-      skipAutoFocus?: boolean;
-      focusTarget?: 'first' | 'container';
-    }) => {
+    (showOptions?: InternalPopoverOpenOptions) => {
       skipAutoFocusRef.current = showOptions?.skipAutoFocus ?? false;
       focusTargetRef.current = showOptions?.focusTarget ?? 'first';
       layer.show();
@@ -481,11 +480,8 @@ function usePopoverImplementation(
   );
 
   // Toggle function
-  const toggleWithOptions = useCallback(
-    (showOptions?: {
-      skipAutoFocus?: boolean;
-      focusTarget?: 'first' | 'container';
-    }) => {
+  const toggle = useCallback(
+    (showOptions?: InternalPopoverOpenOptions) => {
       if (layer.wasJustDismissed()) {
         return;
       }
@@ -497,7 +493,6 @@ function usePopoverImplementation(
     },
     [layer, show],
   );
-  const toggle = useCallback(() => toggleWithOptions(), [toggleWithOptions]);
 
   // ARIA attributes for the trigger
   const triggerProps = {
@@ -589,7 +584,6 @@ function usePopoverImplementation(
     show,
     hide: layer.hide,
     toggle,
-    toggleWithOptions,
     wasJustDismissed: layer.wasJustDismissed,
     isOpen: layer.isOpen,
     id: layer.id,
@@ -599,11 +593,7 @@ function usePopoverImplementation(
 }
 
 export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
-  const {
-    wasJustDismissed: _,
-    toggleWithOptions: __,
-    ...popover
-  } = usePopoverImplementation(options);
+  const {wasJustDismissed: _, ...popover} = usePopoverImplementation(options);
   return popover;
 }
 

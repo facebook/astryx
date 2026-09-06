@@ -151,6 +151,10 @@ describe('DebugEvent additive fields', () => {
 
   it('accepts persisted schema-v1 events that predate the fields', () => {
     const legacy = structuredClone(collectEvent());
+    // A record written by an older CLI: v1, and carrying the raw session id
+    // that v2 retired. Reading history back must keep working.
+    legacy.schemaVersion = 1;
+    legacy.env.agentSessionId = 'legacy-raw-session';
     for (const key of [
       'resultCount',
       'emptyResult',
@@ -161,7 +165,6 @@ describe('DebugEvent additive fields', () => {
     }
     for (const key of [
       'agentIdentity',
-      'agentSessionId',
       'agentSessionIdHash',
       'agentSessionIdSource',
       'invocationSource',
@@ -178,7 +181,7 @@ describe('DebugEvent additive fields', () => {
       },
       env: {
         agentIdentity: null,
-        agentSessionId: null,
+        agentSessionId: 'legacy-raw-session',
         agentSessionIdHash: null,
         agentSessionIdSource: null,
         invocationSource: 'unknown',
@@ -223,7 +226,7 @@ describe('environment attribution', () => {
     expect(env).toMatchObject({
       agent: 'test-agent',
       agentIdentity: 'test-agent',
-      agentSessionId: 'agent-session-123',
+      agentSessionId: null,
       agentSessionIdSource: 'ASTRYX_AGENT_SESSION_ID',
       invocationSource: 'ai',
     });
@@ -248,12 +251,16 @@ describe('environment attribution', () => {
       'ASTRYX_AGENT_METADATA',
       'id=future-agent,invocation_id=future-session,malformed',
     );
-    expect(captureEnv()).toMatchObject({
+    const env = captureEnv();
+    expect(env).toMatchObject({
       agentIdentity: 'future-agent',
-      agentSessionId: 'future-session',
+      agentSessionId: null,
       agentSessionIdSource: 'ASTRYX_AGENT_METADATA.invocation_id',
       invocationSource: 'ai',
     });
+    expect(env.agentSessionIdHash).toBe(
+      createHash('sha256').update('future-session', 'utf8').digest('hex'),
+    );
   });
 
   it('parses JSON metadata', () => {
@@ -262,12 +269,16 @@ describe('environment attribution', () => {
       'ASTRYX_AGENT_METADATA',
       JSON.stringify({id: 'json-agent', session_id: 'json-session'}),
     );
-    expect(captureEnv()).toMatchObject({
+    const env = captureEnv();
+    expect(env).toMatchObject({
       agentIdentity: 'json-agent',
-      agentSessionId: 'json-session',
+      agentSessionId: null,
       agentSessionIdSource: 'ASTRYX_AGENT_METADATA.session_id',
       invocationSource: 'ai',
     });
+    expect(env.agentSessionIdHash).toBe(
+      createHash('sha256').update('json-session', 'utf8').digest('hex'),
+    );
   });
 
   it('leaves agent fields null without a signal', () => {

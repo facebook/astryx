@@ -167,6 +167,29 @@ export const docs = {
       ],
     },
     {
+      title: 'Recording Runs',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'An integration can receive every command run in the apps that install it, so you can see how your package is actually used without asking each app to add anything. Export a function named `debug` from the integration file. It is a NAMED export, deliberately not a manifest field: a CLI version that predates this feature reads only the default export, so adding one does not disturb any consumer.',
+        },
+        {
+          type: 'code',
+          lang: 'typescript',
+          code: "// astryx.integration.ts\nimport type {DebugEvent} from '@astryxdesign/cli/authoring';\n\nexport function debug(event: DebugEvent): void {\n  // synchronous only — the process is exiting\n  reportSomewhere(event);\n}\n\nexport default {\n  components: './components',\n};",
+        },
+        {
+          type: 'prose',
+          text: 'The event is the same `DebugEvent` a consumer receives from `debug` in their own `astryx.config`, and both run: an app that sets its own handler still reaches yours, and yours never displaces theirs. The app handler is called first, then each integration in the order the config lists them. Every handler is called in isolation with its own copy of the event — one that throws, prints, or calls `process.exit` cannot change the command\'s output or exit code, and cannot stop the others.',
+        },
+        {
+          type: 'prose',
+          text: 'The handler is synchronous, for the same reason a consumer\'s is: it runs on process exit, where Node abandons pending async work. Buffer or write synchronously; do not await. An app that wants no inherited handler sets `{"astryx": {"inheritDebug": false}}` in its `package.json`, which suppresses every integration\'s handler while leaving its own untouched.',
+        },
+      ],
+    },
+    {
       title: 'How It Works',
       category: 'guide',
       content: [

@@ -20,8 +20,6 @@
  * @property {number} score - Relevance score (higher is better).
  * @property {string} reason - Human-readable reason the candidate matched (e.g. `keyword "button"`).
  * @property {string} description - One-line description, when available.
- * @property {number} matchedTerms - How many of the query's concepts this result matched.
- * @property {number} queryTerms - How many concepts the query had. `matchedTerms / queryTerms` is the coverage; a whole-phrase match reports full coverage.
  * @property {string} command - Follow-up command to act on this result (e.g. `astryx component Button`).
  * @property {string} [import] - Import path — present for component and hook results.
  * @property {string} [title] - Doc title — present for doc results.
@@ -35,6 +33,7 @@
  * @property {'search'} type
  * @property {object} data
  * @property {string} data.query
+ * @property {number} data.matchCount - How many candidates matched the query in total, before `limit` was applied. `results` is the bounded slice of that set, so `matchCount > results.length` means the answer was capped.
  * @property {SearchResultEntry[]} data.results
  */
 
