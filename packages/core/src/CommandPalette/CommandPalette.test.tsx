@@ -358,8 +358,8 @@ describe('CommandPalette', () => {
   });
 
   it('highlights on hover without scrolling and scrolls once per key (#6077)', async () => {
-    // CommandPaletteItem must take the hover-aware path (context's
-    // onItemMouseEnter), and the shared useHighlightedOptionScroll effect
+    // Hover must be handled by the root's delegated list handler (routed to
+    // useCombobox's hover-aware path), and the shared useHighlightedOptionScroll effect
     // must be the single keyboard scroll owner. Calling the raw setter on
     // hover kept the stationary-pointer runaway path alive, and the item's
     // own scrollIntoView effect doubled every scroll call.
@@ -381,11 +381,27 @@ describe('CommandPalette', () => {
       const home = screen.getByText('Home');
       const settings = screen.getByText('Settings');
 
-      fireEvent.mouseEnter(home);
+      fireEvent.mouseOver(home);
       expect(scrollIntoView).not.toHaveBeenCalled();
       expect(input.getAttribute('aria-activedescendant')).toBe(
         home.closest('[role="option"]')?.id,
       );
+
+      // Moving between siblings does not re-enter the list container. Include
+      // relatedTarget so the test exercises actual within-list transitions.
+      fireEvent.mouseOut(home, {relatedTarget: settings});
+      fireEvent.mouseOver(settings, {relatedTarget: home});
+      expect(input.getAttribute('aria-activedescendant')).toBe(
+        settings.closest('[role="option"]')?.id,
+      );
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      fireEvent.mouseOut(settings, {relatedTarget: home});
+      fireEvent.mouseOver(home, {relatedTarget: settings});
+      expect(input.getAttribute('aria-activedescendant')).toBe(
+        home.closest('[role="option"]')?.id,
+      );
+      expect(scrollIntoView).not.toHaveBeenCalled();
 
       fireEvent.keyDown(input, {key: 'ArrowDown'});
       await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));

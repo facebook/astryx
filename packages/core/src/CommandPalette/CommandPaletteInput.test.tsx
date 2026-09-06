@@ -118,7 +118,7 @@ describe('CommandPaletteInput dialog context', () => {
       setValue: vi.fn(),
       listId: 'list-1',
       highlightedIndex: -1,
-      onItemMouseEnter: vi.fn(),
+      setHighlightedIndex: vi.fn(),
       getItemId: (i: number) => `item-${i}`,
       selectableItems: [],
       searchResults: [],

@@ -502,6 +502,33 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
     [combobox, handleClose, selectableItems, selectItem],
   );
 
+  // Hover highlight is owned here by a single delegated handler on the list
+  // container: it routes to useCombobox's hover-aware path, which moves the
+  // highlight without scrolling (#6077) — a stationary pointer cannot
+  // re-highlight and auto-scroll in a runaway loop. Keeping it off the public
+  // context preserves CommandPaletteContextValue's setHighlightedIndex shape;
+  // disabled items are skipped via aria-disabled (selectableItems carries no
+  // disabled info). Use mouseover so moves between options bubble to the list;
+  // mouseenter only runs when the pointer enters the list from outside.
+  const handleListMouseOver = useCallback(
+    (e: React.MouseEvent) => {
+      const option = (e.target as HTMLElement).closest?.('[role="option"]');
+      if (!option || option.getAttribute('aria-disabled') === 'true') {
+        return;
+      }
+      const itemValue = option.getAttribute('data-value');
+      if (itemValue == null) {
+        return;
+      }
+      const index = selectableItems.findIndex(item => item.value === itemValue);
+      const item = selectableItems[index];
+      if (item) {
+        combobox.onItemMouseEnter(item, index);
+      }
+    },
+    [combobox, selectableItems],
+  );
+
   const contextValue = useMemo(
     () => ({
       // Input uses optimisticSearch — reflects keystrokes immediately.
@@ -518,7 +545,7 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       setValue,
       listId,
       highlightedIndex: combobox.highlightedIndex,
-      onItemMouseEnter: combobox.onItemMouseEnter,
+      setHighlightedIndex: combobox.setHighlightedIndex,
       getItemId: combobox.getItemId,
       selectableItems,
       searchResults: optimisticResults,
@@ -536,7 +563,7 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       setValue,
       listId,
       combobox.highlightedIndex,
-      combobox.onItemMouseEnter,
+      combobox.setHighlightedIndex,
       combobox.getItemId,
       selectableItems,
       optimisticResults,
@@ -599,7 +626,9 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
           }
           content={
             <LayoutContent padding={0}>
-              <CommandPaletteList>{listContent}</CommandPaletteList>
+              <CommandPaletteList onMouseOver={handleListMouseOver}>
+                {listContent}
+              </CommandPaletteList>
             </LayoutContent>
           }
           footer={

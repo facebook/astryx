@@ -181,14 +181,6 @@ export function CommandPaletteItem({
     }
   }, [isDisabled, value, onSelect, ctx]);
 
-  const handleMouseEnter = useCallback(() => {
-    if (isDisabled || !ctx || itemIndex < 0) {
-      return;
-    }
-    // Hover-aware path: highlights without scrolling (#6077).
-    ctx.onItemMouseEnter(ctx.selectableItems[itemIndex], itemIndex);
-  }, [isDisabled, itemIndex, ctx]);
-
   return (
     <div
       ref={useMergedRefs(ref, itemRef)}
@@ -199,7 +191,7 @@ export function CommandPaletteItem({
       aria-disabled={isDisabled || undefined}
       data-value={value}
       onClick={composeEventHandlers(onClickProp, handleClick)}
-      onMouseEnter={composeEventHandlers(onMouseEnterProp, handleMouseEnter)}
+      onMouseEnter={onMouseEnterProp}
       {...mergeProps(
         themeProps('command-palette-item'),
         stylex.props(
