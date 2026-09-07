@@ -89,12 +89,12 @@ export const BUTTON_STATE_RENDERS: Record<ButtonStateId, StateRender> = {
 
   'clickable-card': activate => (
     <ClickableCard label="Open billing settings" onClick={activate}>
-      <p>Billing</p>
+      <div>Billing</div>
     </ClickableCard>
   ),
   'clickable-card-disabled': activate => (
     <ClickableCard label="Open billing settings" isDisabled onClick={activate}>
-      <p>Billing</p>
+      <div>Billing</div>
     </ClickableCard>
   ),
 
@@ -126,7 +126,7 @@ export const BUTTON_EXCLUSION_RENDERS: Record<ButtonExclusionId, StateRender> =
         label="Open billing settings"
         href="#billing"
         onClick={activate}>
-        <p>Billing</p>
+        <div>Billing</div>
       </ClickableCard>
     ),
   };

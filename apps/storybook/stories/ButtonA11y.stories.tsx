@@ -92,6 +92,13 @@ function exclusionStory(id: string): StoryObj {
 
 const meta: Meta = {
   title: 'a11y/Button pattern',
+  // Audit-only fixtures, which the visual gate's own guidance says take no
+  // visual tag: these exist to be DRIVEN by the accessibility contract, not to
+  // be photographed. Several deliberately render a state no product ships — a
+  // disabled card, a button mid-action — so a baseline frame for them would be
+  // a picture nobody is reviewing, and a diff on one would ask a question
+  // nobody can answer.
+  tags: ['no-visual'],
   parameters: {
     docs: {
       description: {
