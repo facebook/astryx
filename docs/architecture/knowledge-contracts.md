@@ -111,6 +111,16 @@ Every record is either:
   private release or automation systems.
 - **INV9 — Current records have no implicit precedence.** A newer, narrower, or
   more local current record does not silently override another current record.
+- **INV10 — Records govern behavior, not pull requests.** A current record states
+  durable requirements, prohibitions, compatibility, ownership, and evidence. It
+  never approves, classifies, designates, or authorizes a specific pull request.
+  Pull requests and issues may appear only as non-authoritative evidence. The
+  reviewer owns each change's disposition against current authority.
+- **INV11 — Every public delta has an authority result.** Every public API update
+  and every public behavior change is matched to current committed authority
+  before acceptance. Package-export shape is not the only trigger: reachable
+  supporting types, context members, hook returns, defaults, and observable
+  behavior participate too.
 
 ## Writing specifications and contracts
 
@@ -200,15 +210,25 @@ Before any component, module, family, design, theme, or architecture record beco
 1. The record names the code surface that can affect it and the checks that
    verify it.
 2. A pull request touching that surface triggers a focused contract review.
-3. The review records one of four results:
-   - `preserves`: the change still satisfies the current contract;
-   - `settled`: an existing human decision applies and is cited;
-   - `novel-human`: the contract needs a new human decision;
+3. The review records one of five results:
+   - `preserves`: the exact delta restores or retains current authority without
+     adding public API or behavior beyond it;
+   - `settled`: an existing current human decision covers the exact delta and is
+     cited;
+   - `violates`: the exact delta contradicts current authority;
+   - `novel-human`: no current authority settles the exact public API, behavior,
+     ownership, compatibility, or design delta; or
    - `out-of-scope`: another component, module, family, system, or product owns it.
-4. `preserves` and `settled` proceed without asking the human again.
-5. `novel-human` remains blocked until the owning record contains the new
-   decision and receives approval.
-6. Audit freshness is computed from the same code and test relationship, so a
+4. `preserves` and `settled` enter normal correctness review. They are eligible
+   for approval only when the implementation and evidence also pass.
+5. `violates` receives request-changes. The implementation conforms to current
+   authority, or an owner-approved current spec update lands before acceptance.
+6. `novel-human` enters a private human hold. No contributor-facing verdict or
+   approval is published until the owning record contains the exact decision and
+   becomes current.
+7. A bug fix is `preserves` only when it restores existing current authority
+   without changing public API or public behavior beyond that contract.
+8. Audit freshness is computed from the same code and test relationship, so a
    relevant code change cannot leave an audit looking current.
 
 ### Recording a new human decision
@@ -256,12 +276,15 @@ Examples:
 
 - NumberInput changes its stepping math. Its current contract says the final
   operation clamps to `min`/`max`, and the mapped tests still pass. Result:
-  `preserves`; no human question and no spec edit.
+  `preserves`; continue to normal correctness review with no human question.
 - A new NumberInput path uses the same previously approved transformation order.
-  Result: `settled`; cite that `DEC` and continue without asking again.
+  Result: `settled`; cite that `DEC` and continue to normal correctness review.
+- A package-exported context changes a required function parameter while its
+  current contract preserves the earlier operation shape. Result: `violates`;
+  request changes or land an owner-approved compatibility decision first.
 - Selector removes empty indicator space, but no current decision says whether
-  option labels must stay aligned. Result: `novel-human`; the reviewer asks the
-  alignment question and records the answer in Selector's contract.
+  option labels must stay aligned. Result: `novel-human`; hold privately while the
+  owner decides and records the alignment contract.
 - A product requests a one-off width prop for a family-owned input layout rule.
   Result: `out-of-scope`; route the change to the family contract rather than
   creating a component-specific API.
@@ -336,4 +359,5 @@ work.
 | INV1, INV6                        | `scripts/check-knowledge.test.mjs`             | An unapproved current record or unmigrated active record passes                                                                                     |
 | INV5, INV7                        | `.github/scripts/change-scope.test.mjs`        | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                    |
 | Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs` | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current theme record |
-| INV3, INV4                        | Blinded historical review benchmark            | Reviewer re-asks a settled decision or invents a new one                                                                                            |
+| INV3, INV4, INV11                 | Blinded historical review benchmark            | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                  |
+| INV10                             | Record-content and review-disposition fixtures | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                            |

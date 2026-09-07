@@ -22,7 +22,8 @@ deciding_specs: []
 A local state change should update the people-facing output that depends on it
 without forcing unrelated component work. This record defines the shared
 boundaries for child-to-parent registration, mutable metadata, context-provider
-fan-out, pre-paint writes, and render-isolation evidence.
+fan-out, pre-paint writes, ancestor visibility, exit ownership, and
+render-isolation evidence.
 
 It does not set a universal render-count budget or require one React storage
 primitive. Component and family contracts own their observable behavior and name
@@ -52,11 +53,26 @@ ancestor state. That timing is reserved for observable pre-paint correctness tha
 cannot be derived during render or represented through lifecycle-stable storage.
 It is not the default registration mechanism.
 
+Ancestor visibility primitives such as React Activity/Offscreen, conditional
+rendering, `hidden`, inertness, and display suppression can be stronger than a
+child's transition styles. Framework-generated inline `display: none !important`
+is one such suppression. When a child owns an exit transition, the ancestor keeps
+that subtree paint-eligible until the child reports exit completion; reduced
+motion may use its documented immediate or minimally moving completion path.
+Components must coordinate lifecycle ownership instead of trying to win CSS
+specificity against framework visibility.
+
 Current Stepper source is an adoption gap: changing one mounted Step's
 `isDisabled` value currently reruns registration, writes parent membership and
 metadata state, and replaces the context value consumed by every Step. The
 component contract defines the required bounded outcome; this architecture does
 not authorize or classify any pull request that changes it.
+
+Current AppShell/MobileNav composition is another adoption gap: AppShell switches
+its Activity boundary to hidden in the same commit as close intent, so React may
+apply inline `display: none !important` before MobileNav can paint its owned exit.
+The issue is lifecycle ordering and visibility ownership, not insufficient CSS
+specificity.
 
 ## Boundaries and invariants
 
@@ -91,6 +107,12 @@ not authorize or classify any pull request that changes it.
   use lifecycle-stable refs, split contexts, external stores, selectors, or
   another clear mechanism. The mechanism is not normative; its update boundary,
   cleanup, and observable behavior are.
+- **INV7 — Ancestors preserve child-owned exits.** After close intent, an ancestor
+  MUST keep a child subtree mounted and paint-eligible until the child-owned exit
+  reaches its completion boundary. It MUST NOT preempt that exit through
+  Activity/Offscreen hidden mode, conditional unmounting, `hidden`, inertness,
+  inline `display: none !important`, or equivalent suppression. Only after normal
+  or reduced-motion completion may the ancestor deactivate the subtree.
 
 ## Change coupling
 
@@ -108,6 +130,10 @@ not authorize or classify any pull request that changes it.
 - Each triggered review covers local updates, mount/unmount, identity changes,
   StrictMode setup/cleanup, and the unchanged sibling path. A passing functional
   test without propagation evidence is incomplete.
+- A parent visibility, Activity/Offscreen, conditional-rendering, or inertness
+  change inventories child-owned entry and exit transitions. Real-browser frame
+  evidence proves the child remains paint-eligible through exit completion under
+  normal and reduced motion; DOM/style assertions alone are insufficient.
 - The owning component or family record states which outputs may react. This
   architecture never approves, classifies, designates, or authorizes a specific
   pull request; reviewers classify each change against current authority.
@@ -122,6 +148,10 @@ not authorize or classify any pull request that changes it.
   and representative unchanged siblings.
 - `packages/core/src/Stepper/` — current representative adoption gap and focused
   verification surface for lifecycle-stable membership.
+- `packages/core/src/AppShell/AppShell.tsx` — owns when its visibility boundary
+  deactivates the MobileNav subtree.
+- `packages/core/src/MobileNav/` — owns the drawer's exit transition and reports
+  when normal or reduced-motion completion permits ancestor deactivation.
 
 No single shared runtime module is required. A future shared helper must preserve
 these boundaries and receive its own public or internal ownership review.
@@ -134,14 +164,15 @@ project concrete behavior without repeating these cross-component rules.
 
 ## Verification
 
-| Invariant | Evidence                                                                                                                 | Failure signal                                                                                                                |
-| --------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| INV1      | Pre-paint justification plus render/layout mutation against a lifecycle-stable alternative                               | Registration writes ancestor state before paint without a required observable outcome, or StrictMode duplicates setup/cleanup |
-| INV2      | Registration-count and membership-state assertions across mutable metadata changes, identity changes, mount, and unmount | A mutable prop unregisters/re-registers the same child or changes membership/count state                                      |
-| INV3      | Provider-identity and consumer-render instrumentation before and after the narrow update                                 | One narrow metadata update replaces a shared value or rerenders every context consumer                                        |
-| INV4      | Render counters for the affected child, dependent controls, and representative unrelated siblings                        | An unrelated sibling rerenders or a required dependent consumer stays stale                                                   |
-| INV5      | Review-scope guard plus focused render, identity, registration, cleanup, and StrictMode cases                            | A triggering pattern passes with functional assertions alone                                                                  |
-| INV6      | Equivalent behavioral and cleanup tests across the chosen implementation boundary                                        | The contract mandates one storage primitive, leaks subscriptions, or replays stale metadata                                   |
+| Invariant | Evidence                                                                                                                    | Failure signal                                                                                                                |
+| --------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| INV1      | Pre-paint justification plus render/layout mutation against a lifecycle-stable alternative                                  | Registration writes ancestor state before paint without a required observable outcome, or StrictMode duplicates setup/cleanup |
+| INV2      | Registration-count and membership-state assertions across mutable metadata changes, identity changes, mount, and unmount    | A mutable prop unregisters/re-registers the same child or changes membership/count state                                      |
+| INV3      | Provider-identity and consumer-render instrumentation before and after the narrow update                                    | One narrow metadata update replaces a shared value or rerenders every context consumer                                        |
+| INV4      | Render counters for the affected child, dependent controls, and representative unrelated siblings                           | An unrelated sibling rerenders or a required dependent consumer stays stale                                                   |
+| INV5      | Review-scope guard plus focused render, identity, registration, cleanup, and StrictMode cases                               | A triggering pattern passes with functional assertions alone                                                                  |
+| INV6      | Equivalent behavioral and cleanup tests across the chosen implementation boundary                                           | The contract mandates one storage primitive, leaks subscriptions, or replays stale metadata                                   |
+| INV7      | Real-browser painted-frame and computed-visibility evidence for normal/reduced-motion exits, plus reopen/interruption cases | Ancestor hiding or framework `display: none !important` removes the subtree before the child-owned exit completes             |
 
 The test must fail when membership is keyed to mutable metadata and when narrow
 metadata is added to a provider consumed by unrelated siblings. It must also
