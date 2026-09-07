@@ -20,20 +20,25 @@
  * same number. A button's action leaves no trace on the button, so counting the
  * handler is the only honest way to ask whether pressing it did anything.
  *
- * SYNC: A new row in Button.a11y.states.ts needs a named export here, and the
- *   binding's own inventory test fails until it has one.
+ * SYNC: A new row in Button.a11y.states.ts needs a named export here. Nothing
+ *   at compile time catches a missing or renamed one — the Chromium binding
+ *   does, when it navigates to the row's `storyId` and finds no story.
  */
 
 import {useState, type ReactNode} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+// Relative, not `@astryxdesign/core/…`: the package specifier would claim these
+// are published entry points, and they are deliberately not — `__tests__` is
+// excluded from the build and ships in no `dist`. A repo-private path says what
+// this actually is, and matches how other stories reach package internals.
 import {
   BUTTON_BINDING_STATES,
   BUTTON_PATTERN_EXCLUSIONS,
-} from '@astryxdesign/core/Button/__tests__/Button.a11y.states';
+} from '../../../packages/core/src/Button/__tests__/Button.a11y.states';
 import {
   BUTTON_EXCLUSION_RENDERS,
   BUTTON_STATE_RENDERS,
-} from '@astryxdesign/core/Button/__tests__/Button.a11y.renders';
+} from '../../../packages/core/src/Button/__tests__/Button.a11y.renders';
 
 /** Render one control and count how many times its action ran. */
 function Counted({
