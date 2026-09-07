@@ -396,7 +396,7 @@ jobs:
       # by Vitest and Playwright, and neither runner typechecks. This is the
       # only gate over them.
       - name: Typecheck accessibility spec-test contracts
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm -F @astryxdesign/a11y-spec typecheck
 
       - name: Build Storybook
