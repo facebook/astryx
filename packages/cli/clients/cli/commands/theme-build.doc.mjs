@@ -43,6 +43,15 @@ export const doc = {
       description:
         'Verify the committed outputs match the source without writing; exit non-zero if stale',
     },
+    {
+      flag: '--family',
+      param: 'options.family',
+      description:
+        'Build the files as one theme family: a base plus the themes that extends it. ' +
+        'The base stylesheet restates its declarations once, scoped to every member, and each ' +
+        'member stylesheet carries only its own changes — instead of every member restating ' +
+        'the whole resolved token set',
+    },
   ],
   examples: [
     {
@@ -56,6 +65,10 @@ export const doc = {
     {
       label: 'Check for drift (CI)',
       cli: 'astryx theme build ./src/themes/ocean.ts --check',
+    },
+    {
+      label: 'Build a base and its variants as one family (shared tokens emitted once)',
+      cli: 'astryx theme build --family ./src/themes/ocean.ts ./src/themes/ocean-*.ts',
     },
     {
       label: 'Build against a separately compiled icon registry',
