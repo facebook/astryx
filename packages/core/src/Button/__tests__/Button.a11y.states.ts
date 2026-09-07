@@ -23,8 +23,10 @@
  * ./Button.a11y.renders.tsx, in a map TypeScript requires to be exhaustive: a
  * new row here is a compile error until it has a rendering.
  *
- * SYNC: Every row needs a rendering in ./Button.a11y.renders.tsx and a named
- *   export in
+ * A missing rendering is a compile error, so the only thing left to keep in
+ * step by hand is the story export.
+ *
+ * SYNC: Every row needs a named export in
  * - /apps/storybook/stories/ButtonA11y.stories.tsx
  */
 
@@ -39,8 +41,16 @@ export type ButtonBinding =
   | 'ChatSendButton';
 
 /**
- * Every state id, as a type. The render map is keyed by this, so adding a row
- * without a rendering does not compile.
+ * One row of the inventory, with its id kept as a literal. This — not the wider
+ * `ButtonBindingState` interface — is what a lane should accept, so a row it is
+ * handed can still index the render map.
+ */
+export type ButtonBindingRow = (typeof BUTTON_BINDING_STATES)[number];
+
+/**
+ * Every state id, as a union of the literals above. The render map is keyed by
+ * this, so a row without a rendering — or a rendering for a state that does not
+ * exist — is a compile error rather than something a test has to notice.
  */
 export type ButtonStateId = (typeof BUTTON_BINDING_STATES)[number]['id'];
 
@@ -87,7 +97,7 @@ function facts(overrides: Partial<ButtonStateFacts> = {}): ButtonStateFacts {
   return {...OPERABLE, ...overrides};
 }
 
-export const BUTTON_BINDING_STATES: ReadonlyArray<ButtonBindingState> = [
+export const BUTTON_BINDING_STATES = [
   // ---- Button -------------------------------------------------------------
   {
     id: 'button-text',
@@ -232,7 +242,11 @@ export const BUTTON_BINDING_STATES: ReadonlyArray<ButtonBindingState> = [
     visibleLabel: null,
     storyId: 'a11y-button-pattern--chat-send-stop',
   },
-];
+  // `as const satisfies` rather than a `: ReadonlyArray<…>` annotation: the
+  // annotation would widen every `id` to `string`, and ButtonStateId with it,
+  // so the render map would silently accept a missing state and an invented
+  // one alike. This keeps the literal ids AND still checks every row.
+] as const satisfies ReadonlyArray<ButtonBindingState>;
 
 /**
  * Parts that look like they belong to this pattern and deliberately do not,
@@ -242,13 +256,15 @@ export const BUTTON_BINDING_STATES: ReadonlyArray<ButtonBindingState> = [
  * The binding suites assert that each of these really does present the
  * semantics claimed here, so an exclusion cannot quietly become wrong.
  */
-export const BUTTON_PATTERN_EXCLUSIONS: ReadonlyArray<{
+interface ButtonPatternExclusion {
   readonly id: string;
   readonly reason: string;
   readonly storyId: string;
   /** The role this part presents instead, checked by the binding suite. */
   readonly presentsRole: string;
-}> = [
+}
+
+export const BUTTON_PATTERN_EXCLUSIONS = [
   {
     id: 'button-as-link',
     reason:
@@ -263,4 +279,4 @@ export const BUTTON_PATTERN_EXCLUSIONS: ReadonlyArray<{
     storyId: 'a11y-button-pattern--clickable-card-as-link',
     presentsRole: 'link',
   },
-];
+] as const satisfies ReadonlyArray<ButtonPatternExclusion>;

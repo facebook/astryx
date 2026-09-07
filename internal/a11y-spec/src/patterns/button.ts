@@ -76,13 +76,6 @@ const WCAG_2_5_3: WcagCriterion = {
   level: 'A',
   url: `${UNDERSTANDING}/label-in-name.html`,
 };
-const WCAG_3_2_2: WcagCriterion = {
-  standard: 'wcag',
-  id: '3.2.2',
-  name: 'On Input',
-  level: 'A',
-  url: `${UNDERSTANDING}/on-input.html`,
-};
 const WCAG_4_1_2: WcagCriterion = {
   standard: 'wcag',
   id: '4.1.2',
@@ -128,13 +121,6 @@ const APG_SPACE: ApgRequirement = {
   standard: 'apg',
   pattern: 'button',
   requirement: 'Space: Activates the button.',
-  url: `${APG_URL}#keyboardinteraction`,
-};
-const APG_FOCUS_REMAINS: ApgRequirement = {
-  standard: 'apg',
-  pattern: 'button',
-  requirement:
-    'If activating the button does not dismiss the current context, then focus typically remains on the button after activation, e.g., an Apply or Recalculate button.',
   url: `${APG_URL}#keyboardinteraction`,
 };
 

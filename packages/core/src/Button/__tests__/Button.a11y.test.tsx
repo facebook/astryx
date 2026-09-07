@@ -4,8 +4,8 @@
 /**
  * @file Button.a11y.test.tsx
  * @input Uses @astryxdesign/a11y-spec (the button contract, the jsdom harness,
- *   the runner), @testing-library/react, and the five components that adopt the
- *   pattern
+ *   the runner), @testing-library/react, and the shared binding inventory with
+ *   its renderings
  * @output The jsdom lane of every binding to the shared button pattern.
  * @position Binds Button, IconButton, ClickableCard, SideNavCollapseButton, and
  *   ChatSendButton to the reusable contract at the layers jsdom can honestly
@@ -41,7 +41,7 @@ import {
 import {
   BUTTON_BINDING_STATES,
   BUTTON_PATTERN_EXCLUSIONS,
-  type ButtonBindingState,
+  type ButtonBindingRow,
 } from './Button.a11y.states';
 
 /**
@@ -56,7 +56,7 @@ function subjectFor(): Element {
   return screen.getByRole('button', {hidden: true});
 }
 
-async function runState(state: ButtonBindingState): Promise<BindingResult> {
+async function runState(state: ButtonBindingRow): Promise<BindingResult> {
   let activations = 0;
   return runBinding({
     contract: BUTTON_PATTERN,

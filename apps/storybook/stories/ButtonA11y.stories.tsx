@@ -20,7 +20,7 @@
  * same number. A button's action leaves no trace on the button, so counting the
  * handler is the only honest way to ask whether pressing it did anything.
  *
- * SYNC: A new row in Button.a11y.states.tsx needs a named export here, and the
+ * SYNC: A new row in Button.a11y.states.ts needs a named export here, and the
  *   binding's own inventory test fails until it has one.
  */
 
@@ -57,7 +57,7 @@ function Counted({
 function storyFor(id: string): StoryObj {
   const state = BUTTON_BINDING_STATES.find(candidate => candidate.id === id);
   if (state == null) {
-    throw new Error(`no binding state "${id}" — see Button.a11y.states.tsx`);
+    throw new Error(`no binding state "${id}" — see Button.a11y.states.ts`);
   }
   return {
     name: `${state.binding} — ${state.id}`,
@@ -73,7 +73,7 @@ function exclusionStory(id: string): StoryObj {
     candidate => candidate.id === id,
   );
   if (exclusion == null) {
-    throw new Error(`no exclusion "${id}" — see Button.a11y.states.tsx`);
+    throw new Error(`no exclusion "${id}" — see Button.a11y.states.ts`);
   }
   return {
     name: `excluded — ${exclusion.id}`,

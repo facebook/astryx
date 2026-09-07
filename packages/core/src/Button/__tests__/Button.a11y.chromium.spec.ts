@@ -46,7 +46,7 @@ import {BUTTON_KNOWN_FAILURES} from './Button.a11y.known-failures';
 import {
   BUTTON_BINDING_STATES,
   BUTTON_PATTERN_EXCLUSIONS,
-  type ButtonBindingState,
+  type ButtonBindingRow,
 } from './Button.a11y.states';
 
 let storybook: StaticServer;
@@ -66,10 +66,7 @@ function storyUrl(storyId: string): string {
 }
 
 /** Load the story this state names and wait for its control to exist. */
-async function mountState(
-  page: Page,
-  state: ButtonBindingState,
-): Promise<void> {
+async function mountState(page: Page, state: ButtonBindingRow): Promise<void> {
   await page.goto(storyUrl(state.storyId), {waitUntil: 'load'});
   await holdMotionStill(page);
   await page
@@ -97,7 +94,7 @@ async function activationsOn(page: Page): Promise<number> {
 async function runState(
   page: Page,
   cdp: CDPSession,
-  state: ButtonBindingState,
+  state: ButtonBindingRow,
 ): Promise<BindingResult> {
   return runBinding({
     contract: BUTTON_PATTERN,
@@ -180,7 +177,7 @@ test('every excluded part presents the semantics its exclusion claims', async ({
     await page.goto(storyUrl(exclusion.storyId), {waitUntil: 'load'});
     const subject = page
       .locator('#storybook-root')
-      .getByRole(exclusion.presentsRole as 'link')
+      .getByRole(exclusion.presentsRole)
       .first();
     await subject.waitFor({state: 'attached'});
     const harness = createChromiumHarness({page, subject, cdp});
