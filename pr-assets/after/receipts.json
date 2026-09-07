@@ -1,7 +1,7 @@
 [
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--default",
     "screenshot": "AvatarGroupOverflow__static-rest__light.png",
     "mode": "light",
@@ -60,7 +60,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-rest__light.png",
     "mode": "light",
@@ -119,7 +119,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-hover__light.png",
     "mode": "light",
@@ -178,7 +178,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-focus__light.png",
     "mode": "light",
@@ -237,7 +237,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-active__light.png",
     "mode": "light",
@@ -296,7 +296,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--custom-content",
     "screenshot": "AvatarGroupOverflow__custom-content__light.png",
     "mode": "light",
@@ -355,7 +355,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--all-sizes",
     "screenshot": "AvatarGroupOverflow__all-sizes__light.png",
     "mode": "light",
@@ -414,7 +414,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--all-shapes",
     "screenshot": "AvatarGroupOverflow__all-shapes__light.png",
     "mode": "light",
@@ -473,7 +473,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--large-count",
     "screenshot": "AvatarGroupOverflow__long-count__light.png",
     "mode": "light",
@@ -532,7 +532,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--zero-count",
     "screenshot": "AvatarGroupOverflow__zero-count__light.png",
     "mode": "light",
@@ -591,7 +591,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--standalone",
     "screenshot": "AvatarGroupOverflow__standalone__light.png",
     "mode": "light",
@@ -650,7 +650,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--right-to-left",
     "screenshot": "AvatarGroupOverflow__rtl__light.png",
     "mode": "light",
@@ -709,7 +709,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--narrow-container",
     "screenshot": "AvatarGroupOverflow__narrow-320__light.png",
     "mode": "light",
@@ -768,7 +768,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--default",
     "screenshot": "AvatarGroupOverflow__static-rest__dark.png",
     "mode": "dark",
@@ -827,7 +827,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-rest__dark.png",
     "mode": "dark",
@@ -886,7 +886,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-hover__dark.png",
     "mode": "dark",
@@ -945,7 +945,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-focus__dark.png",
     "mode": "dark",
@@ -1004,7 +1004,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-active__dark.png",
     "mode": "dark",
@@ -1063,7 +1063,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--custom-content",
     "screenshot": "AvatarGroupOverflow__custom-content__dark.png",
     "mode": "dark",
@@ -1122,7 +1122,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--all-sizes",
     "screenshot": "AvatarGroupOverflow__all-sizes__dark.png",
     "mode": "dark",
@@ -1181,7 +1181,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--all-shapes",
     "screenshot": "AvatarGroupOverflow__all-shapes__dark.png",
     "mode": "dark",
@@ -1240,7 +1240,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--large-count",
     "screenshot": "AvatarGroupOverflow__long-count__dark.png",
     "mode": "dark",
@@ -1299,7 +1299,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--zero-count",
     "screenshot": "AvatarGroupOverflow__zero-count__dark.png",
     "mode": "dark",
@@ -1358,7 +1358,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--standalone",
     "screenshot": "AvatarGroupOverflow__standalone__dark.png",
     "mode": "dark",
@@ -1417,7 +1417,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--right-to-left",
     "screenshot": "AvatarGroupOverflow__rtl__dark.png",
     "mode": "dark",
@@ -1476,7 +1476,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
+    "build": "c898931c77c44099d99e5cd047b88528d2d40a30",
     "storyId": "core-avatargroupoverflow--narrow-container",
     "screenshot": "AvatarGroupOverflow__narrow-320__dark.png",
     "mode": "dark",
