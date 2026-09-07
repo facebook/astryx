@@ -95,14 +95,26 @@ const WCAG_4_1_2: WcagCriterion = {
 const FAMILY_BUTTONS =
   'https://github.com/facebook/astryx/blob/cb13c1eaa89065cf7656a0d647be428447040d71/docs/families/buttons.md';
 
-/** The clause that adopts operability and keyboard activation. */
+/**
+ * The clause that adopts operability and keyboard activation.
+ *
+ * Reading it as adopting POINTER operability is an interpretation, and worth
+ * naming as one: the clause never says "pointer". It attaches three properties
+ * to the noun "an operable button" — keyboard activation, focus-visible
+ * feedback, `type="button"` — which makes operability a property in its own
+ * right rather than a synonym for the keyboard half, and the clause heading is
+ * "Native action semantics are the default". A control that swallows a click
+ * has no native action semantics. If the family owner reads it more narrowly,
+ * the fix is one line here and the expectation becomes advisory.
+ */
 const FAMILY_BUTTONS_FR2: AstryxRecord = {
   standard: 'astryx',
   id: 'family:buttons',
   clause: 'FR2',
   requirement:
     'A momentary or persistent action renders an operable button with keyboard activation, focus-visible feedback, and `type="button"` unless the component\'s documented form mode says otherwise.',
-  url: `${FAMILY_BUTTONS}#L108-L112`,
+  // L108-L111 is the quoted sentence itself, not the whole bullet.
+  url: `${FAMILY_BUTTONS}#L108-L111`,
 };
 
 /**
@@ -115,7 +127,9 @@ const FAMILY_BUTTONS_FR3: AstryxRecord = {
   id: 'family:buttons',
   clause: 'FR3',
   requirement: 'A disabled member MUST NOT invoke its callback or Action.',
-  url: `${FAMILY_BUTTONS}#L113-L116`,
+  // L113-L114 only: the range stops where the quote does, so it does not
+  // highlight the MAY sentence this citation deliberately excludes.
+  url: `${FAMILY_BUTTONS}#L113-L114`,
 };
 
 const APG_ROLE: ApgRequirement = {

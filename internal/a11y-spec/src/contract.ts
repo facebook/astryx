@@ -228,6 +228,17 @@ export function requiredLayers<Facts>(
   return [expectation.evidenceLayer, ...(expectation.alsoNeeds ?? [])];
 }
 
+/**
+ * A public GitHub URL pinned to one commit.
+ *
+ * A full 40-character sha, not a branch or a tag: both move, and a normative
+ * citation that moves cites whatever the record later becomes. Public GitHub
+ * rather than any https URL, because a link into an internal system is one a
+ * reviewer of this repository cannot open — and must never appear in it.
+ */
+const PINNED_PUBLIC_SOURCE =
+  /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/blob\/[0-9a-f]{40}\/\S+$/;
+
 /** Test name and failure prefix. Carries the id and the source (AST-020 FR4). */
 export function describeExpectation<Facts>(
   expectation: Expectation<Facts>,
@@ -322,13 +333,13 @@ export function definePattern<Facts>(
           );
         }
       }
-      if (!/^https:\/\/[^\s]+$/.test(source.url)) {
+      // One exact shape, rather than a list of the ways a URL can go wrong.
+      // Anything looser lets through the two failures that matter: a link only
+      // this checkout can open, and a link whose bytes move out from under the
+      // quote — `main`, `HEAD`, a tag, a branch named anything at all.
+      if (!PINNED_PUBLIC_SOURCE.test(source.url)) {
         problems.push(
-          `${id} cites Astryx record "${source.id}" with "${source.url}", which is not a public URL — a reviewer outside this checkout cannot read it (AST-020 FR1)`,
-        );
-      } else if (/\/(?:blob|tree)\/(?:main|master)\//.test(source.url)) {
-        problems.push(
-          `${id} cites Astryx record "${source.id}" at a branch URL, which moves; pin it to a commit so the quote stays attached to the bytes it came from`,
+          `${id} cites Astryx record "${source.id}" at "${source.url}". A record cited by a contract has to be readable by anyone reviewing it and pinned to the bytes the requirement was quoted from, so the URL must look like https://github.com/<org>/<repo>/blob/<full commit sha>/<path> (AST-020 FR1)`,
         );
       }
     }

@@ -121,7 +121,16 @@ required failure is not "mostly conformant" (AST-021 FR11).
 
 `required` is earned by a directly applicable WCAG 2.2 A/AA criterion, or by a
 current Astryx record adopting the outcome — never by how easy the check was to
-write. "Directly applicable" means the criterion is the expectation's PRIMARY
+write.
+
+An Astryx record can therefore make an expectation gate, so citing one is held
+to the same standard as citing a specification: name the record (`family:buttons`),
+name the clause (`FR3`), quote the requirement exactly, and link to a public
+GitHub URL pinned to a full commit sha. `definePattern` refuses anything less —
+a branch or tag link moves out from under the quote, and a link into an internal
+system is one a reviewer of this repository cannot open. Quote the operative
+sentence only: splicing a MUST to the MAY that follows it cites a requirement
+the record does not make. "Directly applicable" means the criterion is the expectation's PRIMARY
 source: a supporting citation further down the list is not adoption, or any
 expectation could buy a gate by appending a plausible criterion. Everything else
 is `advisory` and has to say why.

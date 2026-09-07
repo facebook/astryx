@@ -162,7 +162,7 @@ describe('definePattern', () => {
       id: 'family:probes',
       clause: 'FR1',
       requirement: 'A probe MUST probe.',
-      url: 'https://github.com/facebook/astryx/blob/abc1234/docs/families/probes.md',
+      url: `https://github.com/facebook/astryx/blob/${'a'.repeat(40)}/docs/families/probes.md`,
       ...overrides,
     });
 
@@ -183,30 +183,44 @@ describe('definePattern', () => {
       },
     );
 
-    it('refuses a repo-relative path, which only resolves inside a checkout', () => {
+    const PIN = 'a'.repeat(40);
+
+    it.each([
+      // Only resolves inside a checkout.
+      ['docs/families/probes.md'],
+      // Not public: a reviewer of this repository cannot open it, and it must
+      // never appear in it.
+      ['https://www.internalfb.com/code/astryx/docs/families/probes.md'],
+      ['http://github.com/facebook/astryx/blob/' + PIN + '/docs/x.md'],
+      // Every one of these moves out from under the quote.
+      ['https://github.com/facebook/astryx/blob/main/docs/x.md'],
+      ['https://github.com/facebook/astryx/blob/HEAD/docs/x.md'],
+      ['https://github.com/facebook/astryx/blob/develop/docs/x.md'],
+      ['https://github.com/facebook/astryx/blob/v1.2.3/docs/x.md'],
+      ['https://github.com/facebook/astryx/blob/refs/heads/main/docs/x.md'],
+      ['https://github.com/facebook/astryx/raw/' + PIN + '/docs/x.md'],
+      // A short sha is ambiguous over a long enough history.
+      ['https://github.com/facebook/astryx/blob/abc1234/docs/x.md'],
+    ])('refuses %s', url => {
       expect(
-        pattern({
-          expectations: [
-            expectation({sources: [record({url: 'docs/families/probes.md'})]}),
-          ],
-        }),
-      ).toThrow(/is not a public URL/);
+        pattern({expectations: [expectation({sources: [record({url})]})]}),
+      ).toThrow(/pinned to the bytes the requirement was quoted from/);
     });
 
-    it('refuses a branch URL, whose bytes move underneath the quote', () => {
+    it('accepts a public GitHub URL pinned to a full commit sha', () => {
       expect(
         pattern({
           expectations: [
             expectation({
               sources: [
                 record({
-                  url: 'https://github.com/facebook/astryx/blob/main/docs/families/probes.md',
+                  url: `https://github.com/facebook/astryx/blob/${PIN}/docs/families/probes.md#L1-L2`,
                 }),
               ],
             }),
           ],
         }),
-      ).toThrow(/pin it to a commit/);
+      ).not.toThrow();
     });
 
     it('says which record and clause in the citation, not just the id', () => {
