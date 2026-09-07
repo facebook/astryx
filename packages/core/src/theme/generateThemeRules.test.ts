@@ -2,19 +2,48 @@
 
 /**
  * @file generateThemeRules.test.ts
- * Tests that generateThemeRules produces correct, consistent CSS rules
- * for both runtime and build paths.
+ * Tests that shared root, adaptation, and media-surface lowering produces
+ * correct, consistently ordered CSS for both runtime and build paths.
  */
 
 import {describe, it, expect} from 'vitest';
 import {
   dataTokenDefaults,
   defineTheme,
+  generateAdaptationCSS,
   generateThemeCSS,
   generateOnMediaCSS,
   generateThemeRules,
 } from './index';
 import {generateDataTokenDefaultsCSS} from './generateThemeRules';
+
+function topLevelCSSBlocks(css: string): string[] {
+  const blocks: string[] = [];
+  let depth = 0;
+  let start = -1;
+
+  for (let index = 0; index < css.length; index++) {
+    const character = css[index];
+    if (start === -1) {
+      if (/\s/.test(character)) {
+        continue;
+      }
+      start = index;
+    }
+
+    if (character === '{') {
+      depth++;
+    } else if (character === '}') {
+      depth--;
+      if (depth === 0) {
+        blocks.push(css.slice(start, index + 1));
+        start = -1;
+      }
+    }
+  }
+
+  return blocks;
+}
 
 const defaultInput = {
   name: 'default',
@@ -208,14 +237,15 @@ describe('generateThemeRules', () => {
 
   // --- Prose rules ---
 
-  it('includes prose heading rules with computed values', () => {
+  it('includes prose heading rules linked to semantic tokens', () => {
     const h1Rule = rules.find(
       r => r.trimStart().startsWith(':where(h1)') || r.includes(':where(h1)'),
     );
     expect(h1Rule).toBeDefined();
-    // Prose rules use val() helper which resolves to the token value (now a var ref)
-    expect(h1Rule).toContain('var(--font-size-2xl)');
-    expect(h1Rule).toContain('var(--font-weight-semibold)');
+    // Keep prose linked to semantic variables so conditional token writes apply
+    // through CSS without duplicating these selectors inside every media rule.
+    expect(h1Rule).toContain('var(--text-heading-1-size)');
+    expect(h1Rule).toContain('var(--text-heading-1-weight)');
     // Prose defaults intentionally carry NO block margins: reset.css zeroes
     // raw element margins and the Markdown/Heading components own their spacing
     // via StyleX (@layer astryx-base). Emitting margins here would re-introduce
@@ -224,12 +254,12 @@ describe('generateThemeRules', () => {
     expect(h1Rule).not.toContain('margin-block-end');
   });
 
-  it('includes prose p rule with computed values', () => {
+  it('includes prose p rule linked to semantic tokens', () => {
     const pRule = rules.find(
       r => r.trimStart().startsWith(':where(p)') || r.includes(':where(p)'),
     );
     expect(pRule).toBeDefined();
-    expect(pRule).toContain('var(--font-size-base)');
+    expect(pRule).toContain('var(--text-body-size)');
     expect(pRule).toContain('font-family: var(--font-family-body)');
     expect(pRule).toContain('var(--color-text-primary)');
     // No margins on the prose paragraph default (see heading rule note).
@@ -355,12 +385,12 @@ describe('generateThemeRules with weight overrides', () => {
     );
   });
 
-  it('reflects weight override in prose h3', () => {
+  it('keeps prose h3 linked to the semantic weight token', () => {
     const h3Rule = rules.find(
       r => r.trimStart().startsWith(':where(h3)') || r.includes(':where(h3)'),
     );
     expect(h3Rule).toBeDefined();
-    expect(h3Rule).toContain('var(--font-weight-bold)');
+    expect(h3Rule).toContain('var(--text-heading-3-weight)');
   });
 });
 
@@ -512,6 +542,304 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
     expect(typeIndex).toBeGreaterThanOrEqual(0);
     expect(boldIndex).toBeGreaterThan(typeIndex);
     expect(css.slice(boldIndex)).toContain('font-weight: 900');
+  });
+
+  it('scopes Text color and size guards after each media-surface type rule', () => {
+    const themed = defineTheme({
+      name: 'media-text-prop-guards',
+      onDark: {
+        components: {
+          text: {'type:large': {color: '#fff', fontSize: '4rem'}},
+        },
+      },
+      onLight: {
+        components: {
+          text: {'type:body': {color: '#000', fontSize: '0.75rem'}},
+        },
+      },
+    });
+    const css = generateOnMediaCSS(themed);
+
+    for (const [surface, type] of [
+      ['dark', 'large'],
+      ['light', 'body'],
+    ] as const) {
+      const surfacePrefix = `:is([data-astryx-media="${surface}"])`;
+      const typeSelector = `${surfacePrefix} :is(.astryx-text.${type})`;
+      const colorSelector = `${surfacePrefix} :is(.astryx-text.primary)`;
+      const sizeSelector = `${surfacePrefix} :is(.astryx-text.sm)`;
+      const typeIndex = css.indexOf(typeSelector);
+
+      expect(typeIndex).toBeGreaterThanOrEqual(0);
+      expect(css).toContain(
+        `${colorSelector} { color: var(--color-text-primary); }`,
+      );
+      expect(css).toContain(
+        `${sizeSelector} { font-size: var(--font-size-sm); }`,
+      );
+      expect(css.indexOf(colorSelector)).toBeGreaterThan(typeIndex);
+      expect(css.indexOf(sizeSelector)).toBeGreaterThan(typeIndex);
+    }
+  });
+
+  it('keeps a coarse-only weight out of a later fine-only level block', () => {
+    const themed = defineTheme({
+      name: 'exclusive-adapted-heading-weight',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                heading: {'weight:bold': {fontWeight: '800'}},
+              },
+            },
+          },
+          {
+            when: {pointer: 'fine'},
+            value: {
+              components: {
+                heading: {'level:2': {fontWeight: '300'}},
+              },
+            },
+          },
+        ],
+      },
+    });
+    const blocks = topLevelCSSBlocks(generateAdaptationCSS(themed).component);
+    const fineBlock = blocks.find(block =>
+      block.startsWith('@media (pointer: fine)'),
+    );
+    const rootGuard = blocks.find(block => block.startsWith('@scope '));
+
+    expect(fineBlock).toContain('.astryx-heading.level-2');
+    expect(fineBlock).not.toContain('font-weight: 800');
+    expect(rootGuard).toContain(
+      '.astryx-heading.normal { font-weight: var(--font-weight-normal); }',
+    );
+    expect(rootGuard).toContain(
+      '.astryx-heading.medium { font-weight: var(--font-weight-medium); }',
+    );
+    expect(rootGuard).toContain(
+      '.astryx-heading.semibold { font-weight: var(--font-weight-semibold); }',
+    );
+    expect(rootGuard).toContain(
+      '.astryx-heading.bold { font-weight: var(--font-weight-bold); }',
+    );
+    expect(blocks.indexOf(rootGuard!)).toBeGreaterThan(
+      blocks.indexOf(fineBlock!),
+    );
+
+    const weight800Blocks = blocks.filter(block =>
+      block.includes('font-weight: 800'),
+    );
+    expect(weight800Blocks).toHaveLength(2);
+    expect(
+      weight800Blocks.every(block =>
+        block.startsWith('@media (pointer: coarse)'),
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps a coarse weight above a later broad level only when coarse matches', () => {
+    const themed = defineTheme({
+      name: 'broad-adapted-heading-level',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                heading: {'weight:bold': {fontWeight: '800'}},
+              },
+            },
+          },
+          {
+            when: {contrast: 'more'},
+            value: {
+              components: {
+                heading: {'level:2': {fontWeight: '300'}},
+              },
+            },
+          },
+        ],
+      },
+    });
+    const blocks = topLevelCSSBlocks(generateAdaptationCSS(themed).component);
+    const broadLevelBlock = blocks.find(
+      block =>
+        block.startsWith('@media (prefers-contrast: more)') &&
+        block.includes('.astryx-heading.level-2'),
+    );
+    const rootGuard = blocks.find(block => block.startsWith('@scope '));
+    const coarseGuard = blocks
+      .filter(block => block.startsWith('@media (pointer: coarse)'))
+      .at(-1);
+
+    expect(broadLevelBlock).not.toContain('font-weight: 800');
+    expect(rootGuard).toContain(
+      '.astryx-heading.bold { font-weight: var(--font-weight-bold); }',
+    );
+    expect(coarseGuard).toContain('.astryx-heading.bold { font-weight: 800; }');
+    expect(blocks.indexOf(rootGuard!)).toBeGreaterThan(
+      blocks.indexOf(broadLevelBlock!),
+    );
+    expect(blocks.indexOf(coarseGuard!)).toBeGreaterThan(
+      blocks.indexOf(rootGuard!),
+    );
+  });
+
+  it('keeps authored order for two co-matching weight writes', () => {
+    const themed = defineTheme({
+      name: 'ordered-adapted-heading-weight',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                heading: {'weight:bold': {fontWeight: '800'}},
+              },
+            },
+          },
+          {
+            when: {contrast: 'more'},
+            value: {
+              components: {
+                heading: {'weight:bold': {fontWeight: '700'}},
+              },
+            },
+          },
+        ],
+      },
+    });
+    const blocks = topLevelCSSBlocks(generateAdaptationCSS(themed).component);
+    const rootGuard = blocks.find(block => block.startsWith('@scope '));
+    const coarseGuard = blocks
+      .filter(block => block.startsWith('@media (pointer: coarse)'))
+      .at(-1);
+    const contrastGuard = blocks
+      .filter(block => block.startsWith('@media (prefers-contrast: more)'))
+      .at(-1);
+
+    expect(coarseGuard).toContain('font-weight: 800');
+    expect(contrastGuard).toContain('font-weight: 700');
+    expect(blocks.indexOf(coarseGuard!)).toBeGreaterThan(
+      blocks.indexOf(rootGuard!),
+    );
+    expect(blocks.indexOf(contrastGuard!)).toBeGreaterThan(
+      blocks.indexOf(coarseGuard!),
+    );
+  });
+
+  it('uses a root-customized weight as the adaptation fallback', () => {
+    const themed = defineTheme({
+      name: 'root-customized-adapted-heading-weight',
+      components: {
+        heading: {'weight:bold': {fontWeight: '900'}},
+      },
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'fine'},
+            value: {
+              components: {
+                heading: {'level:2': {fontWeight: '300'}},
+              },
+            },
+          },
+        ],
+      },
+    });
+    const blocks = topLevelCSSBlocks(generateAdaptationCSS(themed).component);
+    const fineBlock = blocks.find(block =>
+      block.startsWith('@media (pointer: fine)'),
+    );
+    const rootGuard = blocks.find(block => block.startsWith('@scope '));
+
+    expect(fineBlock).toContain('.astryx-heading.level-2');
+    expect(rootGuard).toContain('.astryx-heading.bold { font-weight: 900; }');
+    expect(blocks.indexOf(rootGuard!)).toBeGreaterThan(
+      blocks.indexOf(fineBlock!),
+    );
+  });
+
+  it('keeps a single rule weight above its own later type write', () => {
+    const themed = defineTheme({
+      name: 'single-adapted-heading-weight',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                heading: {
+                  'weight:bold': {fontWeight: '800'},
+                  'type:hero': {fontWeight: '300'},
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+    const blocks = topLevelCSSBlocks(generateAdaptationCSS(themed).component);
+    const coarseBlocks = blocks.filter(block =>
+      block.startsWith('@media (pointer: coarse)'),
+    );
+    const rootGuard = blocks.find(block => block.startsWith('@scope '));
+
+    expect(coarseBlocks).toHaveLength(2);
+    expect(coarseBlocks[0]).toContain('.astryx-heading.hero');
+    expect(rootGuard).toContain(
+      '.astryx-heading.bold { font-weight: var(--font-weight-bold); }',
+    );
+    expect(coarseBlocks[1]).toContain(
+      '.astryx-heading.bold { font-weight: 800; }',
+    );
+    expect(blocks.at(-1)).toBe(coarseBlocks[1]);
+  });
+
+  it('keeps onDark and onLight weight guards after adaptation guards', () => {
+    const themed = defineTheme({
+      name: 'surface-adapted-heading-weight',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                heading: {'weight:bold': {fontWeight: '800'}},
+              },
+            },
+          },
+        ],
+      },
+      onDark: {
+        components: {
+          heading: {'weight:bold': {fontWeight: '700'}},
+        },
+      },
+      onLight: {
+        components: {
+          heading: {'weight:bold': {fontWeight: '600'}},
+        },
+      },
+    });
+    const css = generateThemeCSS(themed).component;
+
+    expect(css.lastIndexOf('font-weight: 800')).toBeLessThan(
+      css.lastIndexOf('font-weight: 700'),
+    );
+    expect(css.lastIndexOf('font-weight: 700')).toBeLessThan(
+      css.lastIndexOf('font-weight: 600'),
+    );
+    expect(css.slice(css.lastIndexOf('font-weight: 700') - 200)).toContain(
+      '[data-astryx-media="dark"]',
+    );
+    expect(css.slice(css.lastIndexOf('font-weight: 600') - 200)).toContain(
+      '[data-astryx-media="light"]',
+    );
   });
 });
 
@@ -709,6 +1037,50 @@ describe('derived var expansion', () => {
     // …and must NOT land on the flush wrapper, which would re-inset the
     // full-bleed textarea and push the native resize grip off the corner.
     expect(rule).not.toContain('padding-inline: var(--eps-input-padding-x)');
+  });
+
+  it('lowers onDark and onLight text-area paddingInline to the adaptation leaf', () => {
+    const theme = defineTheme({
+      name: 'test-media-derived-text-area',
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {
+              components: {
+                'text-area': {base: {paddingInline: '12px'}},
+              },
+            },
+          },
+        ],
+      },
+      onDark: {
+        components: {
+          'text-area': {base: {paddingInline: '24px'}},
+        },
+      },
+      onLight: {
+        components: {
+          'text-area': {base: {paddingInline: '20px'}},
+        },
+      },
+    });
+
+    const adaptationCss = generateAdaptationCSS(theme).component;
+    const surfaceCss = generateOnMediaCSS(theme);
+    expect(adaptationCss).toContain('--_textarea-inline-padding: 12px');
+    expect(surfaceCss).toContain('--_textarea-inline-padding: 24px');
+    expect(surfaceCss).toContain('--_textarea-inline-padding: 20px');
+    expect(surfaceCss).not.toContain('padding-inline: 24px');
+    expect(surfaceCss).not.toContain('padding-inline: 20px');
+
+    const combinedCss = generateThemeCSS(theme).component;
+    expect(
+      combinedCss.indexOf('--_textarea-inline-padding: 12px'),
+    ).toBeLessThan(combinedCss.lastIndexOf('--_textarea-inline-padding: 24px'));
+    expect(
+      combinedCss.indexOf('--_textarea-inline-padding: 12px'),
+    ).toBeLessThan(combinedCss.lastIndexOf('--_textarea-inline-padding: 20px'));
   });
 
   it('replaces progressbar-mark width/height with vars (no raw properties)', () => {

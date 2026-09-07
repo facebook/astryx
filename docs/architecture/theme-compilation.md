@@ -12,19 +12,30 @@ owners: [cixzhang, imdreamrunner]
 applies_to:
   [
     packages/core/src/theme/generateThemeRules.ts,
+    packages/core/src/theme/themeAdaptations.ts,
     packages/core/src/theme/derivedVarRegistry.ts,
     packages/core/src/theme/Theme.tsx,
     packages/cli/api/theme/build/build.mjs,
+    packages/cli/api/theme/build/core-interception.mjs,
     packages/build/,
   ]
 verified_by:
   [
     packages/core/src/theme/generateThemeRules.test.ts,
+    packages/core/src/theme/themeAdaptations.test.ts,
     packages/core/src/theme/derivedVarRegistry.test.ts,
     packages/cli/api/theme/build/build.test.mjs,
     packages/cli/api/theme/build/build.public-component-vars.test.mjs,
+    packages/cli/api/theme/build/build.adaptation-core-compat.test.mjs,
+    packages/cli/api/theme/build/build.packed-old-core.test.mjs,
   ]
-deciding_specs: [spec:AST-006/DEC-2, spec:AST-006/DEC-4]
+deciding_specs:
+  [
+    spec:AST-006/DEC-2,
+    spec:AST-006/DEC-4,
+    spec:AST-012/DEC-3,
+    spec:AST-012/DEC-4,
+  ]
 ---
 
 # Theme compilation
@@ -48,13 +59,17 @@ The current web compiler works like this:
 
 1. `generateThemeRules` turns portable tokens, theme-local tokens, and component
    overrides into CSS rules.
-2. The same code adds state rules, media-surface rules, scopes, and layers.
-3. The `Theme` provider mounts those rules when a theme was not built ahead of
+2. Ordered adaptation rules compile to separate media blocks after root rules.
+   Blocks preserve author order and are never merged or value-diffed; media-surface
+   overrides compile after them.
+3. The same code adds state rules, media-surface rules, scopes, and layers.
+4. The `Theme` provider mounts those rules when a theme was not built ahead of
    time.
-4. The CLI saves those rules into CSS and packages the related JavaScript and
+5. The CLI saves those rules into CSS and packages the related JavaScript and
    types.
-5. A built theme preserves local-token ownership and lineage metadata and is
-   marked so the provider does not compile or inject it again.
+6. A built theme preserves local-token ownership, effective width points,
+   generative-axis metadata, and normalized ordered rules, and is marked so the
+   provider does not compile or inject it again.
 
 For top-level declarations in base component target rules, the compiler preserves
 generic CSS properties as written. When a guaranteed property needs to reach
@@ -106,6 +121,10 @@ Platform-specific details stay inside that compiler.
   emits the normalized `localTokens` map beside portable declarations without
   rewriting names or values. Runtime and static output use the same rules, and
   invalid enrolled input is rejected before either path writes partial CSS.
+- **INV12 — Adaptation order is observable.** Root declarations emit first,
+  adaptation blocks remain separate in authored order, and media-surface
+  overrides emit last. Duplicate conditions and later root-restoring writes are
+  preserved exactly; runtime and static output use the same blocks.
 
 This record does not own:
 
@@ -135,6 +154,33 @@ This record does not own:
 - Changing scope or layer output tests both source and distribution builds.
 - Changing local-token emission or packaging verifies exact-name runtime/static
   parity, atomic failure, and preservation of built-theme lineage metadata.
+- Changing adaptation output verifies authored block order, duplicate conditions,
+  root-restoring writes, media-surface precedence, derived component lowering,
+  and source/built extension parity.
+- The CLI and core version independently, so a CLI that compiles adaptations
+  against a core that does not is a supported pairing rather than a broken
+  install. That pairing is bounded to the adaptation capability, not a general
+  compatibility scheme for arbitrary older cores: a theme with no adaptation
+  intent builds and emits the same CSS it always did, while valid rules, a custom
+  width map, and present-but-malformed adaptation metadata all count as intent
+  and fail with `ERR_CORE_INCOMPATIBLE` before any output is generated. A
+  complete default width map with no rules is a no-op on both paths, because that
+  is what core writes onto every resolved theme and every shipped built theme.
+  Neither path may emit CSS with adaptation rules missing. Intent is read from
+  resolved metadata when available; because a core that predates adaptations
+  erases it, the build also records each raw `defineTheme()` input and associates
+  it with the theme it produced. Only the selected theme's lineage decides, so an
+  unused adaptive theme elsewhere in the graph does not fail a plain build. If
+  that selected lineage contains an unobserved source package — whether the
+  async fallback bypassed interception or CommonJS reached a core namespace that
+  could not be wrapped — the build fails closed. Built package artifacts remain
+  observable through their retained metadata. Captured raw typography, color,
+  radius, and motion metadata is also retained when the old core omits `__axes`,
+  so a current-core child extending the artifact resolves partial adaptation
+  axes exactly as it would from source. Generated CSS is identical across the
+  two cores for a theme with no adaptation intent; generated JavaScript and
+  `@generated` provenance may differ because they record resolved metadata and
+  the core version, so `--check` can legitimately report drift after an upgrade.
 - Adding a platform compiler names the shared concepts it supports and tests
   that they keep the same meaning. Unsupported concepts fail clearly instead of
   disappearing.
@@ -152,15 +198,23 @@ This record does not own:
   implementation variables.
 - `packages/cli/api/theme/build/build.mjs` saves and packages compiled CSS. Its
   private-variable diagnostic is currently non-blocking; rejecting that input is
-  a named conformance gap, not existing enforcement.
+  a named conformance gap, not existing enforcement. It also owns the
+  adaptation-capability check for the installed core: baseline generation is
+  required, and `generateAdaptationCSS` is demanded by valid or malformed
+  adaptation intent in authored, resolved, or built input.
+  `core-interception.mjs` owns capturing authored input and its generative axes:
+  it hands the loading theme a core whose `defineTheme` is wrapped to record each
+  raw input against the theme it returned, and reports loader paths it could not
+  cover so erased intent never passes as clean.
 - Future platform compilers consume the same `DefinedTheme` behind this boundary.
 
 ## Deciding specs
 
 AST-006 decisions 2 and 4 establish exact local-token output and atomic shared
-validation for enrolled themes. The system owner separately selected one
-definition with platform-specific outputs and the guaranteed, best-effort,
-public-semantic, and private implementation tiers.
+validation for enrolled themes. AST-012 decisions 3 and 4 establish ordered
+adaptation blocks and source/built metadata parity. The system owner separately
+selected one definition with platform-specific outputs and the guaranteed,
+best-effort, public-semantic, and private implementation tiers.
 
 ## Verification
 
@@ -173,6 +227,7 @@ public-semantic, and private implementation tiers.
 | INV8             | Component target metadata and compatibility review                 | Successful generic emission is treated as a guaranteed public behavior                          |
 | INV9, INV10      | Platform compiler tests when another compiler ships                | CSS details enter shared authoring, or shared theme intent silently disappears                  |
 | INV11            | `defineTheme.test.ts` and `build.test.mjs` local-token fixtures    | Runtime/static output rewrites a local name, disagrees, or leaves partial output after failure  |
+| INV12            | `themeAdaptations.test.ts` and CLI adaptation build fixtures       | Rule blocks merge/reorder/drop, surfaces lose precedence, or runtime/static CSS diverges        |
 | Built themes     | Theme and CLI build tests                                          | Runtime recompiles a built theme, or built output omits canonical rules                         |
 
 ## Known conformance and verification gaps
@@ -187,13 +242,13 @@ behavior does not yet conform and must not be treated as enforcement:
   it. Runtime `defineTheme` has no equivalent validation and accepts them. The
   follow-up must reject direct private variables recursively before CSS
   generation across both paths and prove runtime/static parity.
-- **Pseudo and media-surface component overrides bypass derived expansion.**
-  Top-level, non-pseudo base declarations use `derivedVarRegistry`, including
-  `replaces` and container expansion. Base pseudo declarations and
-  `onDark.components` / `onLight.components` declarations currently serialize
-  properties directly. The follow-up must use one component-declaration lowering
-  path for base, pseudo, and media-surface rules, with parity fixtures for a
-  normal mapping, `replaces`, and container padding.
+- **Nested pseudo component declarations bypass derived expansion.** Top-level
+  component declarations at the root, in adaptations, and under
+  `onDark.components` / `onLight.components` use `derivedVarRegistry`, including
+  `replaces` and container expansion. Nested pseudo declarations on those
+  surfaces still serialize properties directly. The follow-up must route nested
+  pseudos through the same component-declaration lowering path, with parity
+  fixtures for a normal mapping, `replaces`, and container padding.
 - **Guaranteed-property coverage is not machine-complete.** The shared catalog is
   normative, but the component-doc schema has no per-target
   `guaranteedProperties` declarations. CI therefore cannot prove that a target

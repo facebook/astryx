@@ -70,6 +70,11 @@ export const doc = {
       description:
         '`@astryxdesign/core` could not be located (not installed / not in a monorepo).',
     },
+    {
+      value: 'ERR_CORE_INCOMPATIBLE',
+      description:
+        'The installed `@astryxdesign/core` loaded but is too old for this input — it lacks a capability the CLI must call to emit correct output (upgrade core).',
+    },
 
     // "Unknown <subject>" lookups
     {

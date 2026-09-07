@@ -15,6 +15,7 @@ applies_to:
     packages/core/src/theme/MediaTheme.tsx,
     packages/core/src/theme/useTheme.ts,
     packages/core/src/theme/themeRegistry.ts,
+    packages/core/src/AppShell/AppShell.tsx,
   ]
 verified_by:
   [
@@ -22,8 +23,9 @@ verified_by:
     packages/core/src/theme/MediaTheme.dom.test.tsx,
     packages/core/src/theme/useTheme.test.tsx,
     packages/core/src/theme/themeRegistry.test.ts,
+    packages/core/src/AppShell/AppShell.test.tsx,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-012/DEC-1]
 ---
 
 # Theme application
@@ -71,6 +73,11 @@ that needs a nested theme must keep that provider context in the same React tree
 off. Compiled theme CSS uses that marker to switch surface tokens while keeping
 the parent theme's component rules.
 
+`AppShell` uses the same provider/root-fallback identity path to resolve named
+mobile-navigation width points. The nearest Theme wins; without provider context
+it follows the registered root theme, and without an active theme it uses the
+standard width map.
+
 ## Boundaries and invariants
 
 - **INV1 — The nearest provider wins.** Children read the closest Theme context
@@ -97,6 +104,10 @@ the parent theme's component rules.
 - **INV9 — Application does not change compiled rules.** The provider may mount,
   share, and remove compiler output. It must not create different theme-to-CSS
   behavior from the build path.
+- **INV10 — Named responsive consumers share Theme metadata.** AppShell resolves
+  `sm`/`md`/`lg`/`xl`/`2xl` from the nearest active theme through the same root
+  fallback as other no-provider consumers. Its mobile side is strictly below the
+  point; equality belongs to the wider layout.
 
 This record does not own theme authoring, token definitions, compiler output, or
 which component parts are public theme targets.
@@ -123,11 +134,12 @@ which component parts are public theme targets.
   detached consumers. Its observation and subscription logic stays
   single-owned; extracting another module is not part of this contract.
 - `MediaTheme.tsx` owns local light/dark surface context.
+- `AppShell.tsx` consumes the nearest effective width map for mobile navigation.
 - `architecture:theme-compilation` owns the CSS that Theme mounts.
 
 ## Deciding specs
 
-None. This record captures the approved Theme provider and hook behavior.
+- `spec:AST-012/DEC-1` owns the fixed width-point vocabulary AppShell consumes.
 
 ## Verification
 
@@ -138,3 +150,4 @@ None. This record captures the approved Theme provider and hook behavior.
 | INV6, INV7       | `useTheme.test.tsx`                       | Provider consumers observe the DOM, fallback observers leak, or system mode resolves incorrectly   |
 | INV8             | `MediaTheme.dom.test.tsx`                 | Surface mode replaces the theme, loses parent component rules, or remounts children                |
 | INV9             | Runtime/build compiler comparison         | Provider-mounted CSS differs from built CSS for the same theme                                     |
+| INV10            | `AppShell.test.tsx`                       | A named point ignores the nearest theme or treats equality as mobile                               |

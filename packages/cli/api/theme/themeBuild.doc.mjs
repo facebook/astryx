@@ -97,6 +97,10 @@ export const doc = {
       when: '@astryxdesign/core/theme cannot be imported; a built, resolvable @astryxdesign/core is required',
     },
     {
+      code: 'ERR_CORE_INCOMPATIBLE',
+      when: 'the selected theme carries ordered-adaptation intent but the installed @astryxdesign/core does not export generateAdaptationCSS (upgrade core)',
+    },
+    {
       code: 'ERR_WRITE_FAILED',
       when: 'writing the outputs fails (staged temp files are rolled back)',
     },

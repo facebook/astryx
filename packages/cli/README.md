@@ -138,54 +138,55 @@ if (isError(result)) {
 
 <!-- BEGIN GENERATED: error-codes -->
 
-| Code                      | Meaning                                                                                                                                        |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ERR_UNKNOWN`             | Fallback for any error without a more specific code.                                                                                           |
-| `ERR_UNKNOWN_COMMAND`     | A top-level command name was not recognized (e.g. `astryx bogus`).                                                                             |
-| `ERR_UNKNOWN_SUBCOMMAND`  | A subcommand under a command group was not recognized (e.g. `astryx theme bogus`).                                                             |
-| `ERR_INVALID_OPTION`      | An unknown flag/option was passed (Commander `unknownOption`).                                                                                 |
-| `ERR_INVALID_ARGUMENT`    | An option/argument had a value Commander's parser rejected.                                                                                    |
-| `ERR_MISSING_ARGUMENT`    | A required positional argument was omitted (Commander `missingArgument`).                                                                      |
-| `ERR_INVALID_LANG`        | `--lang` was given a value outside its choices (en, zh, dense).                                                                                |
-| `ERR_INVALID_DETAIL`      | `--detail` was given a value outside its choices (full, compact, brief).                                                                       |
-| `ERR_NODE_VERSION`        | The running Node.js version is below the supported minimum.                                                                                    |
-| `ERR_CORE_NOT_FOUND`      | `@astryxdesign/core` could not be located (not installed / not in a monorepo).                                                                 |
-| `ERR_UNKNOWN_COMPONENT`   | No component matched the requested name.                                                                                                       |
-| `ERR_UNKNOWN_HOOK`        | No hook matched the requested name.                                                                                                            |
-| `ERR_UNKNOWN_TOPIC`       | No docs topic matched the requested name.                                                                                                      |
-| `ERR_UNKNOWN_SECTION`     | A docs topic exists but the requested section within it does not.                                                                              |
-| `ERR_UNKNOWN_CATEGORY`    | A `--category` filter value did not match any known category.                                                                                  |
-| `ERR_UNKNOWN_TEMPLATE`    | No template matched the requested name.                                                                                                        |
-| `ERR_AMBIGUOUS_TEMPLATE`  | A template id matched more than one template (narrow with --type/--package).                                                                   |
-| `ERR_AMBIGUOUS_COMPONENT` | A component name is owned by more than one package (narrow with --package).                                                                    |
-| `ERR_UNKNOWN_THEME`       | No theme matched the requested slug (theme add).                                                                                               |
-| `ERR_UNKNOWN_PACKAGE`     | No package matched the requested name (discover).                                                                                              |
-| `ERR_UNKNOWN_AGENT`       | An unrecognized `--agent` value was passed to agent-docs/init.                                                                                 |
-| `ERR_UNKNOWN_FEATURE`     | An unrecognized `--features` value was passed to init.                                                                                         |
-| `ERR_UNKNOWN_CODEMOD`     | A `--codemod` value did not match any registered codemod (upgrade).                                                                            |
-| `ERR_CODEMOD_FAILED`      | One or more codemods failed during an upgrade run.                                                                                             |
-| `ERR_NOT_FOUND`           | A generic discover/lookup query matched nothing in any package.                                                                                |
-| `ERR_NO_DOC`              | A component exists but has no typed `.doc.mjs` file.                                                                                           |
-| `ERR_NO_SHOWCASE`         | No showcase exists for the requested component.                                                                                                |
-| `ERR_NO_SOURCE`           | No source file could be located for the requested component/template.                                                                          |
-| `ERR_INVALID_DOC`         | A component's docs failed validation (malformed `.doc.mjs`).                                                                                   |
-| `ERR_FILE_NOT_FOUND`      | A required input file did not exist.                                                                                                           |
-| `ERR_FILE_EXISTS`         | Refused to overwrite an existing file in non-interactive mode.                                                                                 |
-| `ERR_PATH_TRAVERSAL`      | A path escaped its allowed root, or a name contained traversal markers.                                                                        |
-| `ERR_WRITE_FAILED`        | Writing output files failed (and was rolled back).                                                                                             |
-| `ERR_THEME_INVALID`       | A theme definition was missing a required property (e.g. `name`).                                                                              |
-| `ERR_THEME_LOAD`          | A theme file could not be loaded / parsed into a defineTheme result.                                                                           |
-| `ERR_PALETTE_GENERATION`  | A palette generation request or one of its constraints was invalid.                                                                            |
-| `ERR_VERSION_DETECT`      | The current `@astryxdesign/core` version could not be detected.                                                                                |
-| `ERR_INVALID_VERSION`     | A `--from`/`--to` value was not a valid semver string.                                                                                         |
-| `ERR_DEP_MISSING`         | A required external dependency (e.g. jscodeshift) is missing.                                                                                  |
-| `ERR_GH_CLI`              | GitHub CLI (`gh`) is not installed or not authenticated.                                                                                       |
-| `ERR_UNKNOWN_POST`        | No blog post matched the requested slug in the feed.                                                                                           |
-| `ERR_FETCH_FAILED`        | A network fetch (RSS feed or post text) failed.                                                                                                |
-| `ERR_LAYOUT_PARSE`        | A layout expression failed to parse (syntax error, with line/col).                                                                             |
-| `ERR_LAYOUT_INVALID`      | A layout expression parsed but failed validation (unknown component/prop/enum/block).                                                          |
-| `ERR_UNCLASSIFIED_EXIT`   | Recorded in the debug log, never printed: a command exited non-zero without going through cliError/jsonError, so no stable code was available. |
-| `ERR_SIGNAL_TERMINATED`   | Recorded in the debug log, never printed: the process was ended by a signal (Ctrl-C, SIGTERM) before the command reached a terminal path.      |
+| Code                      | Meaning                                                                                                                                                  |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ERR_UNKNOWN`             | Fallback for any error without a more specific code.                                                                                                     |
+| `ERR_UNKNOWN_COMMAND`     | A top-level command name was not recognized (e.g. `astryx bogus`).                                                                                       |
+| `ERR_UNKNOWN_SUBCOMMAND`  | A subcommand under a command group was not recognized (e.g. `astryx theme bogus`).                                                                       |
+| `ERR_INVALID_OPTION`      | An unknown flag/option was passed (Commander `unknownOption`).                                                                                           |
+| `ERR_INVALID_ARGUMENT`    | An option/argument had a value Commander's parser rejected.                                                                                              |
+| `ERR_MISSING_ARGUMENT`    | A required positional argument was omitted (Commander `missingArgument`).                                                                                |
+| `ERR_INVALID_LANG`        | `--lang` was given a value outside its choices (en, zh, dense).                                                                                          |
+| `ERR_INVALID_DETAIL`      | `--detail` was given a value outside its choices (full, compact, brief).                                                                                 |
+| `ERR_NODE_VERSION`        | The running Node.js version is below the supported minimum.                                                                                              |
+| `ERR_CORE_NOT_FOUND`      | `@astryxdesign/core` could not be located (not installed / not in a monorepo).                                                                           |
+| `ERR_CORE_INCOMPATIBLE`   | The installed `@astryxdesign/core` loaded but is too old for this input — it lacks a capability the CLI must call to emit correct output (upgrade core). |
+| `ERR_UNKNOWN_COMPONENT`   | No component matched the requested name.                                                                                                                 |
+| `ERR_UNKNOWN_HOOK`        | No hook matched the requested name.                                                                                                                      |
+| `ERR_UNKNOWN_TOPIC`       | No docs topic matched the requested name.                                                                                                                |
+| `ERR_UNKNOWN_SECTION`     | A docs topic exists but the requested section within it does not.                                                                                        |
+| `ERR_UNKNOWN_CATEGORY`    | A `--category` filter value did not match any known category.                                                                                            |
+| `ERR_UNKNOWN_TEMPLATE`    | No template matched the requested name.                                                                                                                  |
+| `ERR_AMBIGUOUS_TEMPLATE`  | A template id matched more than one template (narrow with --type/--package).                                                                             |
+| `ERR_AMBIGUOUS_COMPONENT` | A component name is owned by more than one package (narrow with --package).                                                                              |
+| `ERR_UNKNOWN_THEME`       | No theme matched the requested slug (theme add).                                                                                                         |
+| `ERR_UNKNOWN_PACKAGE`     | No package matched the requested name (discover).                                                                                                        |
+| `ERR_UNKNOWN_AGENT`       | An unrecognized `--agent` value was passed to agent-docs/init.                                                                                           |
+| `ERR_UNKNOWN_FEATURE`     | An unrecognized `--features` value was passed to init.                                                                                                   |
+| `ERR_UNKNOWN_CODEMOD`     | A `--codemod` value did not match any registered codemod (upgrade).                                                                                      |
+| `ERR_CODEMOD_FAILED`      | One or more codemods failed during an upgrade run.                                                                                                       |
+| `ERR_NOT_FOUND`           | A generic discover/lookup query matched nothing in any package.                                                                                          |
+| `ERR_NO_DOC`              | A component exists but has no typed `.doc.mjs` file.                                                                                                     |
+| `ERR_NO_SHOWCASE`         | No showcase exists for the requested component.                                                                                                          |
+| `ERR_NO_SOURCE`           | No source file could be located for the requested component/template.                                                                                    |
+| `ERR_INVALID_DOC`         | A component's docs failed validation (malformed `.doc.mjs`).                                                                                             |
+| `ERR_FILE_NOT_FOUND`      | A required input file did not exist.                                                                                                                     |
+| `ERR_FILE_EXISTS`         | Refused to overwrite an existing file in non-interactive mode.                                                                                           |
+| `ERR_PATH_TRAVERSAL`      | A path escaped its allowed root, or a name contained traversal markers.                                                                                  |
+| `ERR_WRITE_FAILED`        | Writing output files failed (and was rolled back).                                                                                                       |
+| `ERR_THEME_INVALID`       | A theme definition was missing a required property (e.g. `name`).                                                                                        |
+| `ERR_THEME_LOAD`          | A theme file could not be loaded / parsed into a defineTheme result.                                                                                     |
+| `ERR_PALETTE_GENERATION`  | A palette generation request or one of its constraints was invalid.                                                                                      |
+| `ERR_VERSION_DETECT`      | The current `@astryxdesign/core` version could not be detected.                                                                                          |
+| `ERR_INVALID_VERSION`     | A `--from`/`--to` value was not a valid semver string.                                                                                                   |
+| `ERR_DEP_MISSING`         | A required external dependency (e.g. jscodeshift) is missing.                                                                                            |
+| `ERR_GH_CLI`              | GitHub CLI (`gh`) is not installed or not authenticated.                                                                                                 |
+| `ERR_UNKNOWN_POST`        | No blog post matched the requested slug in the feed.                                                                                                     |
+| `ERR_FETCH_FAILED`        | A network fetch (RSS feed or post text) failed.                                                                                                          |
+| `ERR_LAYOUT_PARSE`        | A layout expression failed to parse (syntax error, with line/col).                                                                                       |
+| `ERR_LAYOUT_INVALID`      | A layout expression parsed but failed validation (unknown component/prop/enum/block).                                                                    |
+| `ERR_UNCLASSIFIED_EXIT`   | Recorded in the debug log, never printed: a command exited non-zero without going through cliError/jsonError, so no stable code was available.           |
+| `ERR_SIGNAL_TERMINATED`   | Recorded in the debug log, never printed: the process was ended by a signal (Ctrl-C, SIGTERM) before the command reached a terminal path.                |
 
 <!-- END GENERATED: error-codes -->
 <!-- Generated by scripts/generate-cli-readme.mjs from the error-codes EnumDoc (== ERROR_CODES). Run `pnpm -F @astryxdesign/cli readme`. -->

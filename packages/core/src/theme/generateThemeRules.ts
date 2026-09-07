@@ -3,7 +3,9 @@
 /**
  * @file Theme CSS generation utilities
  *
- * Shared logic for generating CSS rules from a resolved theme definition.
+ * Shared logic for generating CSS rules from a resolved theme definition,
+ * including one component-leaf lowering path for root, adaptation, and
+ * media-surface values plus condition-correct Heading weight precedence guards.
  * Used by both the runtime path (Theme injects <style>) and the build
  * path (`astryx theme build` pre-compiles to CSS files).
  *
@@ -15,7 +17,11 @@
  * @position packages/core/src/theme/generateThemeRules.ts
  */
 
-import type {DefinedTheme} from './defineTheme';
+import type {ComponentStyleMap, DefinedTheme} from './defineTheme';
+import {
+  normalizeThemeAdaptations,
+  resolveThemeAdaptationRules,
+} from './themeAdaptations';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
 import {dataTokenDefaults} from './domainTokens/dataTokens';
@@ -45,6 +51,18 @@ function mediaSelector(surface: string): string {
 /** Component base-class selector, e.g. '.astryx-button'. */
 function componentClassSelector(component: string, suffix: string): string {
   return `.${classPrefix}-${component}${suffix}`;
+}
+
+type MediaSurface = 'dark' | 'light';
+
+/** Scope a component selector to an inverted media surface when requested. */
+function componentSelector(
+  component: string,
+  suffix: string,
+  surface?: MediaSurface,
+): string {
+  const selector = componentClassSelector(component, suffix);
+  return surface ? `:is(${mediaSelector(surface)}) :is(${selector})` : selector;
 }
 
 /**
@@ -279,6 +297,7 @@ function parsePadding(props: [string, string][]): ParsedPadding {
 function expandContainerPadding(
   component: string,
   parsed: ParsedPadding,
+  resetInheritedSpecificity = false,
 ): [string, string][] {
   const prefix = cssVar(`${component}-padding`);
   const tokens: [string, string][] = [];
@@ -301,26 +320,47 @@ function expandContainerPadding(
 
   if (allSame) {
     tokens.push([prefix, effectiveInlineStart ?? '']);
-    return tokens;
+  } else {
+    // Directional tokens
+    if (parsed.inlineStart != null || parsed.inlineEnd != null) {
+      // Asymmetric inline — emit start and end separately
+      if (effectiveInlineStart != null) {
+        tokens.push([`${prefix}-inline-start`, effectiveInlineStart]);
+      }
+      if (effectiveInlineEnd != null) {
+        tokens.push([`${prefix}-inline-end`, effectiveInlineEnd]);
+      }
+    } else if (parsed.inline != null) {
+      tokens.push([`${prefix}-inline`, parsed.inline]);
+    }
+    if (parsed.blockStart != null) {
+      tokens.push([`${prefix}-block-start`, parsed.blockStart]);
+    }
+    if (parsed.blockEnd != null) {
+      tokens.push([`${prefix}-block-end`, parsed.blockEnd]);
+    }
   }
 
-  // Directional tokens
-  if (parsed.inlineStart != null || parsed.inlineEnd != null) {
-    // Asymmetric inline — emit start and end separately
-    if (effectiveInlineStart != null) {
-      tokens.push([`${prefix}-inline-start`, effectiveInlineStart]);
+  if (resetInheritedSpecificity) {
+    const emitted = new Set(tokens.map(([name]) => name));
+    const moreSpecific = emitted.has(prefix)
+      ? [
+          `${prefix}-inline`,
+          `${prefix}-inline-start`,
+          `${prefix}-inline-end`,
+          `${prefix}-block-start`,
+          `${prefix}-block-end`,
+        ]
+      : emitted.has(`${prefix}-inline`)
+        ? [`${prefix}-inline-start`, `${prefix}-inline-end`]
+        : [];
+    for (const name of moreSpecific) {
+      if (!emitted.has(name)) {
+        // `initial` makes a custom property guaranteed-invalid so var() follows
+        // its fallback, clearing a more-specific declaration from a root rule.
+        tokens.push([name, 'initial']);
+      }
     }
-    if (effectiveInlineEnd != null) {
-      tokens.push([`${prefix}-inline-end`, effectiveInlineEnd]);
-    }
-  } else if (parsed.inline != null) {
-    tokens.push([`${prefix}-inline`, parsed.inline]);
-  }
-  if (parsed.blockStart != null) {
-    tokens.push([`${prefix}-block-start`, parsed.blockStart]);
-  }
-  if (parsed.blockEnd != null) {
-    tokens.push([`${prefix}-block-end`, parsed.blockEnd]);
   }
 
   return tokens;
@@ -336,13 +376,31 @@ function expandContainerPadding(
  * Returns an array of CSS rule strings — the shared format used by both
  * the runtime path (useInsertionEffect) and the build path (astryx theme build).
  */
-export function generateThemeRules(theme: DefinedTheme): string[] {
+/**
+ * The parts of a theme that turn into CSS rules.
+ *
+ * Narrower than `DefinedTheme` on purpose: an adaptation rule is not a whole
+ * theme, and it calls this with only the values that rule writes. Typing the
+ * parameter as `DefinedTheme` would let a future field be read here and silently
+ * lost for every conditional rule, with no type error to catch it.
+ */
+export interface ThemeRuleSource {
+  /** Resolved portable token values. */
+  tokens: Record<string, string>;
+  /** Resolved theme-local token values. */
+  localTokens?: Record<string, string>;
+  /** Resolved component style overrides. */
+  components?: ComponentStyleMap;
+}
+
+export function generateThemeRules(theme: ThemeRuleSource): string[] {
   const parts: string[] = [];
   const tokens = theme.tokens;
 
-  // Helper: resolve a token value — tokens always have computed values
-  // since defineTheme runs expandTypeScale to produce them.
-  const val = (key: string): string => tokens[key] || `var(${key})`;
+  // Bare prose rules reference semantic variables instead of baking the root
+  // value. That lets adaptation token writes take effect through CSS alone
+  // without duplicating prose selectors inside every media query.
+  const val = (key: string): string => `var(${key})`;
 
   // 1. Token block — CSS custom properties on :scope
   const tokenEntries = [
@@ -390,6 +448,17 @@ const HEADING_WEIGHT_TOKEN_MAP: Record<string, string> = {
   bold: 'var(--font-weight-bold)',
 };
 
+interface HeadingWeightOverrideOptions {
+  /** Scope selectors to one on-media surface. */
+  surface?: MediaSurface;
+  /** Effective root components used as the surface fallback. */
+  inheritedComponents?: Record<string, unknown>;
+  /** Emit all standard choices even when this component map has no Heading. */
+  forceAll?: boolean;
+  /** Emit only choices whose rule explicitly writes fontWeight. */
+  authoredOnly?: boolean;
+}
+
 /**
  * Re-emit Heading's explicit weight choices in the theme layer.
  *
@@ -401,14 +470,23 @@ const HEADING_WEIGHT_TOKEN_MAP: Record<string, string> = {
 function generateHeadingWeightOverrides(
   components: Record<string, unknown>,
   parts: string[],
-  surface?: 'dark' | 'light',
-  inheritedComponents?: Record<string, unknown>,
+  {
+    surface,
+    inheritedComponents,
+    forceAll = false,
+    authoredOnly = false,
+  }: HeadingWeightOverrideOptions = {},
 ): void {
   const headingRules = components.heading;
-  if (!headingRules || typeof headingRules !== 'object') {
+  const headingRuleMap =
+    headingRules &&
+    typeof headingRules === 'object' &&
+    !Array.isArray(headingRules)
+      ? (headingRules as Record<string, unknown>)
+      : undefined;
+  if (!headingRuleMap && !forceAll) {
     return;
   }
-  const headingRuleMap = headingRules as Record<string, unknown>;
   const inheritedHeadingRules = inheritedComponents?.heading;
   const inheritedHeadingRuleMap =
     inheritedHeadingRules && typeof inheritedHeadingRules === 'object'
@@ -419,15 +497,18 @@ function generateHeadingWeightOverrides(
     HEADING_WEIGHT_TOKEN_MAP,
   )) {
     const styleKey = `weight:${weightName}`;
-    const authoredWeight = getAuthoredHeadingWeight(headingRuleMap, styleKey);
+    const authoredWeight = headingRuleMap
+      ? getAuthoredHeadingWeight(headingRuleMap, styleKey)
+      : undefined;
+    if (authoredOnly && authoredWeight === undefined) {
+      continue;
+    }
     const inheritedWeight = inheritedHeadingRuleMap
       ? getAuthoredHeadingWeight(inheritedHeadingRuleMap, styleKey)
       : undefined;
     const effectiveWeight = authoredWeight ?? inheritedWeight ?? weightValue;
-    const suffix = parseStyleKey(`weight:${weightName}`);
-    const selector = surface
-      ? `:is(${mediaSelector(surface)}) :is(${componentClassSelector('heading', suffix)})`
-      : componentClassSelector('heading', suffix);
+    const suffix = parseStyleKey(styleKey);
+    const selector = componentSelector('heading', suffix, surface);
     parts.push(`  ${selector} { font-weight: ${effectiveWeight}; }`);
   }
 }
@@ -444,11 +525,17 @@ function getAuthoredHeadingWeight(
   return typeof fontWeight === 'string' ? fontWeight : undefined;
 }
 
+/** Options shared by root, adaptation, and media-surface component lowering. */
+interface ComponentRuleOptions {
+  resetInheritedPaddingSpecificity?: boolean;
+  surface?: MediaSurface;
+}
+
 /**
  * Generate component override rules using the .astryx-* class selector
- * format. Runtime components also emit matching data-* prop reflections; the
- * theme CSS generator will move to data-attribute selectors in a later step.
- * Handles derived var expansion and container padding mapping.
+ * format. Runtime components also emit matching data-* prop reflections for
+ * external selector migrations. Handles derived var expansion and container
+ * padding mapping for every theme layer.
  */
 function generateComponentRules(
   components: Record<
@@ -456,6 +543,10 @@ function generateComponentRules(
     Record<string, Record<string, string | Record<string, string>>>
   >,
   parts: string[],
+  {
+    resetInheritedPaddingSpecificity = false,
+    surface,
+  }: ComponentRuleOptions = {},
 ): void {
   for (const [component, rules] of Object.entries(components)) {
     for (const [key, styles] of Object.entries(rules)) {
@@ -465,7 +556,7 @@ function generateComponentRules(
       }
 
       const suffix = parseStyleKey(key);
-      const baseSelector = componentClassSelector(component, suffix);
+      const baseSelector = componentSelector(component, suffix, surface);
 
       // Separate regular properties from pseudo-class overrides
       const props: [string, string][] = [];
@@ -534,7 +625,11 @@ function generateComponentRules(
           ([p]) => !CONTAINER_PADDING_PROPS.has(p),
         );
         const parsed = parsePadding(paddingProps);
-        const containerTokens = expandContainerPadding(component, parsed);
+        const containerTokens = expandContainerPadding(
+          component,
+          parsed,
+          resetInheritedPaddingSpecificity,
+        );
         finalProps = [...nonPaddingProps, ...containerTokens];
       }
 
@@ -630,6 +725,7 @@ function generateProseRules(
 function generateColorOverrides(
   components: Record<string, unknown>,
   parts: string[],
+  surface?: MediaSurface,
 ): void {
   const TEXT_COLOR_MAP: Record<string, string> = {
     primary: 'var(--color-text-primary)',
@@ -647,17 +743,17 @@ function generateColorOverrides(
     for (const [colorName, colorValue] of Object.entries(TEXT_COLOR_MAP)) {
       if (touchesText) {
         parts.push(
-          `  ${componentClassSelector('text', `.${colorName}`)} { color: ${colorValue}; }`,
+          `  ${componentSelector('text', `.${colorName}`, surface)} { color: ${colorValue}; }`,
         );
       }
       if (touchesHeading) {
         parts.push(
-          `  ${componentClassSelector('heading', `.${colorName}`)} { color: ${colorValue}; }`,
+          `  ${componentSelector('heading', `.${colorName}`, surface)} { color: ${colorValue}; }`,
         );
       }
       if (touchesLink) {
         parts.push(
-          `  ${componentClassSelector('link', `.${colorName}`)} { color: ${colorValue}; }`,
+          `  ${componentSelector('link', `.${colorName}`, surface)} { color: ${colorValue}; }`,
         );
       }
     }
@@ -704,6 +800,7 @@ const TEXT_SIZE_TOKEN_MAP: Record<string, string> = {
 function generateSizeOverrides(
   components: Record<string, unknown>,
   parts: string[],
+  surface?: MediaSurface,
 ): void {
   if (!('text' in components)) {
     return;
@@ -711,7 +808,7 @@ function generateSizeOverrides(
   for (const [sizeName, sizeValue] of Object.entries(TEXT_SIZE_TOKEN_MAP)) {
     const suffix = parseStyleKey(`size:${sizeName}`);
     parts.push(
-      `  ${componentClassSelector('text', suffix)} { font-size: ${sizeValue}; }`,
+      `  ${componentSelector('text', suffix, surface)} { font-size: ${sizeValue}; }`,
     );
   }
 }
@@ -770,64 +867,23 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
       parts.push(`  ${mediaSelector(surface)} {\n${declarations}\n  }`);
     }
 
-    // Component overrides
+    // Component overrides use the same lowering as root and adaptations so a
+    // surface writes the same derived leaf and can win by source order.
     if (onMedia.components) {
-      for (const [component, rules] of Object.entries(onMedia.components)) {
-        for (const [key, styles] of Object.entries(
-          rules as Record<
-            string,
-            Record<string, string | Record<string, string>>
-          >,
-        )) {
-          const entries = Object.entries(styles);
-          if (entries.length === 0) {
-            continue;
-          }
-
-          const suffix = parseStyleKey(key);
-          const baseSelector = `:is(${mediaSelector(surface)}) :is(${componentClassSelector(component, suffix)})`;
-
-          const props: [string, string][] = [];
-          const pseudos: [string, Record<string, string>][] = [];
-
-          for (const [prop, value] of entries) {
-            if (prop.startsWith(':') && typeof value === 'object') {
-              pseudos.push([prop, value]);
-            } else {
-              props.push([prop, value as string]);
-            }
-          }
-
-          if (props.length > 0) {
-            const declarations = props
-              .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-              .join('\n');
-            parts.push(`  ${baseSelector} {\n${declarations}\n  }`);
-          }
-
-          for (const [pseudo, pseudoStyles] of pseudos) {
-            const pseudoEntries = Object.entries(pseudoStyles);
-            if (pseudoEntries.length > 0) {
-              const declarations = pseudoEntries
-                .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-                .join('\n');
-              parts.push(
-                `  ${appendPseudoToSelectorList(baseSelector, pseudo)} {\n${declarations}\n  }`,
-              );
-            }
-          }
-        }
-      }
+      generateComponentRules(onMedia.components, parts, {
+        resetInheritedPaddingSpecificity: true,
+        surface,
+      });
+      generateColorOverrides(onMedia.components, parts, surface);
+      generateSizeOverrides(onMedia.components, parts, surface);
 
       // Apply the effective explicit Heading weight after media-specific type
       // rules. A surface-authored target wins, followed by the inherited main
       // target and then the built-in token fallback.
-      generateHeadingWeightOverrides(
-        onMedia.components,
-        parts,
+      generateHeadingWeightOverrides(onMedia.components, parts, {
         surface,
-        theme.components,
-      );
+        inheritedComponents: theme.components,
+      });
     }
   }
 
@@ -837,6 +893,149 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
 
   const inner = parts.join('\n\n');
   return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
+}
+
+/** Generate only the declarations one adaptation rule writes. */
+function generateAdaptationRuleRules(rule: ThemeRuleSource): string[] {
+  const parts: string[] = [];
+  const tokenEntries = [
+    ...Object.entries(rule.tokens),
+    ...Object.entries(rule.localTokens ?? {}),
+  ];
+  if (tokenEntries.length > 0) {
+    const declarations = tokenEntries
+      .map(([prop, value]) => `    ${prop}: ${value};`)
+      .join('\n');
+    parts.push(`  :scope {\n${declarations}\n  }`);
+  }
+
+  if (rule.components) {
+    generateComponentRules(rule.components, parts, {
+      resetInheritedPaddingSpecificity: true,
+    });
+    generateColorOverrides(rule.components, parts);
+    generateSizeOverrides(rule.components, parts);
+  }
+  return parts;
+}
+
+function hasHeadingComponentRules(
+  components: Record<string, unknown> | undefined,
+): boolean {
+  const headingRules = components?.heading;
+  return (
+    headingRules !== null &&
+    typeof headingRules === 'object' &&
+    !Array.isArray(headingRules)
+  );
+}
+
+function generateAdaptationMediaBlock(
+  query: string,
+  parts: string[],
+  scopeSelector: string,
+): string {
+  return `@media ${query} {\n  @scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${parts
+    .map(indentRule)
+    .join('\n\n')}\n  }\n}`;
+}
+
+/**
+ * Generate CSS for a theme's ordered adaptation rules.
+ *
+ * Each authored rule stays a separate media block in declaration order. Blocks
+ * are never merged, reordered, or value-diffed: a later rule that deliberately
+ * writes a root value must remain present so it can override an earlier matching
+ * rule. Bare prose follows semantic variables, so token writes need no duplicate
+ * prose selectors here.
+ */
+export function generateAdaptationCSS(theme: DefinedTheme): ThemeCSSOutput {
+  // Built themes can reach this compiler without passing through defineTheme.
+  // Validate retained metadata even when it has no rules (and therefore emits
+  // no CSS): width points remain observable through AppShell and inheritance.
+  const normalizedAdaptations =
+    theme.__adaptations === undefined
+      ? undefined
+      : normalizeThemeAdaptations(theme.name, theme.__adaptations, undefined);
+  const rules =
+    theme.__adaptationRules ??
+    (normalizedAdaptations
+      ? resolveThemeAdaptationRules(
+          theme.name,
+          normalizedAdaptations,
+          theme.__axes ?? {},
+          theme.tokens,
+          theme.localTokens,
+        )
+      : undefined);
+  if (!rules || rules.length === 0) {
+    return {prose: '', component: ''};
+  }
+
+  const scopeSelector = themeScopeStart(theme.name);
+  const blocks: string[] = [];
+  const adaptsHeading = rules.some(rule =>
+    hasHeadingComponentRules(rule.components),
+  );
+
+  // Emit ordinary rule writes first, without inherited Heading weight
+  // fallbacks. Carrying an earlier weight into a later block makes that value
+  // active whenever the later condition matches, even if the earlier condition
+  // does not. Pairwise merging cannot repair that: multiple mutually exclusive
+  // earlier rules can each overlap one broad later rule.
+  for (const rule of rules) {
+    const parts = generateAdaptationRuleRules(rule);
+    if (parts.length === 0) {
+      continue;
+    }
+    blocks.push(generateAdaptationMediaBlock(rule.query, parts, scopeSelector));
+  }
+
+  if (adaptsHeading) {
+    // Put one unconditional effective-root guard after every ordinary
+    // adaptation block. It restores the public weight prop above every
+    // conditional type/level default without attributing any prior rule's
+    // value to a condition that did not author it.
+    const rootWeightParts: string[] = [];
+    generateHeadingWeightOverrides(theme.components ?? {}, rootWeightParts, {
+      forceAll: true,
+    });
+    blocks.push(
+      `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${rootWeightParts.join(
+        '\n\n',
+      )}\n}`,
+    );
+
+    // Reapply only explicitly authored conditional weight writes, preserving
+    // authored rule order so co-matching writes retain last-write-wins.
+    for (const rule of rules) {
+      const authoredWeightParts: string[] = [];
+      generateHeadingWeightOverrides(
+        rule.components ?? {},
+        authoredWeightParts,
+        {authoredOnly: true},
+      );
+      if (authoredWeightParts.length > 0) {
+        blocks.push(
+          generateAdaptationMediaBlock(
+            rule.query,
+            authoredWeightParts,
+            scopeSelector,
+          ),
+        );
+      }
+    }
+  }
+
+  return {prose: '', component: blocks.join('\n\n')};
+}
+
+/** Indent a generated rule one level further, for nesting inside `@media`. */
+function indentRule(rule: string): string {
+  return rule
+    .split('\n')
+    .map(line => (line.length > 0 ? `  ${line}` : line))
+    .join('\n');
 }
 
 /**
@@ -894,6 +1093,15 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
   if (component.length > 0) {
     const componentInner = component.join('\n\n');
     componentCss = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
+  }
+
+  // Adaptations follow the root theme in authored order. Media-surface rules
+  // follow adaptations so onDark/onLight keep their specified precedence.
+  const adaptationCss = generateAdaptationCSS(theme);
+  if (adaptationCss.component) {
+    componentCss = componentCss
+      ? `${componentCss}\n\n${adaptationCss.component}`
+      : adaptationCss.component;
   }
 
   const onMediaCss = generateOnMediaCSS(theme);
