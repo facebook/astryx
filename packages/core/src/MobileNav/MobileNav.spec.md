@@ -180,9 +180,9 @@ ownership.
   records MobileNav as a current adopter.
 - `architecture:public-component-api` owns the shared API boundary; this draft
   changes neither MobileNav nor MobileNavToggle API.
-- `architecture:react-update-propagation` owns ancestor visibility and child-exit
-  ordering. AppShell deactivates its visibility boundary only after MobileNav's
-  normal or reduced-motion exit completion.
+- `architecture:visibility-transition-lifecycle` owns ancestor visibility and
+  child-exit ordering. AppShell deactivates its visibility boundary only after
+  MobileNav's normal or reduced-motion exit completion.
 - AppShell remains the higher-level responsive owner. This parent component
   record owns the two MobileNav exports' shared anatomy only.
 
