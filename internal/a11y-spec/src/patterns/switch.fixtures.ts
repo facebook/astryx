@@ -46,7 +46,6 @@ const CONFORMING_FACTS: SwitchStateFacts = {
   operable: true,
   focusable: true,
   disabled: false,
-  visibleLabel: 'Notifications',
   described: false,
   required: false,
   invalid: false,
@@ -100,8 +99,35 @@ export const SWITCH_FIXTURES: readonly SwitchFixture[] = [
     id: 'conforming-label-hidden',
     summary:
       'a switch named for assistive technology with nothing rendered visibly',
-    facts: facts({visibleLabel: null}),
+    facts: facts(),
     html: `<input ${SUBJECT_ATTRIBUTE} type="checkbox" role="switch" aria-label="Notifications">`,
+  },
+  {
+    id: 'conforming-label-sr-only',
+    summary:
+      'a switch whose label is present but clipped away by the sr-only recipe',
+    facts: facts(),
+    html:
+      '<label for="fx" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">Notifications</label>' +
+      `<input id="fx" ${SUBJECT_ATTRIBUTE} type="checkbox" role="switch" aria-label="Notifications">`,
+  },
+  {
+    id: 'conforming-label-decoratively-clipped',
+    summary:
+      'a readable label that happens to carry a decorative clip-path — visible, and it must not read as hidden',
+    facts: facts(),
+    html:
+      '<label for="fx" style="clip-path:circle(60%)">Notifications</label>' +
+      `<input id="fx" ${SUBJECT_ATTRIBUTE} type="checkbox" role="switch">`,
+  },
+  {
+    id: 'conforming-label-hidden-by-ancestor',
+    summary:
+      'a label inside a hidden wrapper: nothing is readable, and the name comes from aria-label',
+    facts: facts(),
+    html:
+      '<div style="visibility:hidden"><label for="fx">Notifications</label></div>' +
+      `<input id="fx" ${SUBJECT_ATTRIBUTE} type="checkbox" role="switch" aria-label="Notifications">`,
   },
   {
     id: 'conforming-disabled',
@@ -135,7 +161,7 @@ export const SWITCH_FIXTURES: readonly SwitchFixture[] = [
   {
     id: 'violating-unnamed',
     summary: 'a switch with no label at all',
-    facts: facts({visibleLabel: null}),
+    facts: facts(),
     html: `<input ${SUBJECT_ATTRIBUTE} type="checkbox" role="switch">`,
   },
   {
@@ -153,13 +179,6 @@ export const SWITCH_FIXTURES: readonly SwitchFixture[] = [
       `tabindex="0" aria-checked="false" onclick="const on = this.getAttribute('aria-checked') !== 'true'; this.setAttribute('aria-checked', String(on)); this.textContent = on ? 'Turn off notifications' : 'Turn on notifications';" onkeydown="if (event.key === ' ') { event.preventDefault(); this.click(); }"`,
       'Turn on notifications',
     ),
-  },
-  {
-    id: 'violating-claims-hidden-label',
-    summary:
-      'a switch that renders a visible label while the binding claims it renders none',
-    facts: facts({visibleLabel: null}),
-    html: nativeSwitch(),
   },
   {
     id: 'violating-down-event-toggle',
@@ -310,12 +329,13 @@ export const SWITCH_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   'switch.required.declared': ['violating-required-unexposed'],
   'switch.invalid.exposed': ['violating-invalid-unexposed'],
   'switch.name.stable-across-change': ['violating-label-changes'],
-  'switch.name.matches-visible-label': [
-    'violating-name-mismatch',
-    'violating-claims-hidden-label',
-  ],
+  'switch.name.matches-visible-label': ['violating-name-mismatch'],
   'switch.state.survives-an-aborted-press': ['violating-down-event-toggle'],
-  'switch.state.keeps-focus-on-change': ['violating-focus-moves-on-change'],
+  'switch.state.keeps-focus-on-change': [
+    'violating-focus-moves-on-change',
+    // A switch that never changes cannot show that focus survives a change.
+    'violating-inert',
+  ],
   'switch.state.pointer-round-trip': ['violating-inert', 'violating-one-way'],
   'switch.state.space-round-trip': [
     'violating-pointer-only',

@@ -45,6 +45,17 @@ export interface SwitchBindingState {
    */
   readonly facts: SwitchStateFacts;
   /**
+   * The label this state is expected to render where a person can read it, or
+   * null when it renders none.
+   *
+   * INVENTORY, not contract input. The shared 2.5.3 expectation reads the
+   * rendered label itself and never consults this — otherwise a binding could
+   * switch a criterion off by describing itself. This exists so the inventory
+   * AST-021 FR2 asks for is checked against the page rather than trusted, and a
+   * typo here is reported as a stale inventory, not as a standards failure.
+   */
+  readonly visibleLabel: string | null;
+  /**
    * The props the jsdom lane renders the switch with. `value` is always the
    * value it is FIRST rendered with — for a state the owner updates into, that
    * is the value before the update, and `facts.checked` is where the update
@@ -68,13 +79,13 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
     id: 'off',
     summary: 'the default: a labelled switch that is off and can be turned on',
     storyId: 'core-switch--default',
+    visibleLabel: 'Enable notifications',
     props: {label: 'Enable notifications', value: false},
     facts: {
       checked: false,
       operable: true,
       focusable: true,
       disabled: false,
-      visibleLabel: 'Enable notifications',
       described: false,
       required: false,
       invalid: false,
@@ -84,13 +95,13 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
     id: 'on',
     summary: 'a switch whose controlled value is already on',
     storyId: 'core-switch--on',
+    visibleLabel: 'Notifications enabled',
     props: {label: 'Notifications enabled', value: true},
     facts: {
       checked: true,
       operable: true,
       focusable: true,
       disabled: false,
-      visibleLabel: 'Notifications enabled',
       described: false,
       required: false,
       invalid: false,
@@ -100,6 +111,7 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
     id: 'described',
     summary: 'a switch with supporting text under its label',
     storyId: 'core-switch--with-description',
+    visibleLabel: 'Dark mode',
     props: {
       label: 'Dark mode',
       description: 'Switch to a darker color scheme for reduced eye strain.',
@@ -110,7 +122,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       operable: true,
       focusable: true,
       disabled: false,
-      visibleLabel: 'Dark mode',
       described: true,
       required: false,
       invalid: false,
@@ -121,6 +132,7 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
     summary:
       'a switch whose label is read by assistive technology but not rendered visibly',
     storyId: 'core-switch--with-hidden-label',
+    visibleLabel: null,
     props: {label: 'Toggle row', isLabelHidden: true, value: false},
     facts: {
       checked: false,
@@ -128,7 +140,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       focusable: true,
       disabled: false,
       // Nothing is rendered visibly, so WCAG 2.5.3 has nothing to compare against.
-      visibleLabel: null,
       described: false,
       required: false,
       invalid: false,
@@ -138,6 +149,7 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
     id: 'disabled',
     summary: 'a natively disabled switch, out of the tab sequence',
     storyId: 'core-switch--disabled',
+    visibleLabel: 'Premium feature',
     props: {
       label: 'Premium feature',
       description: 'Upgrade to enable this option',
@@ -149,7 +161,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       operable: false,
       focusable: false,
       disabled: true,
-      visibleLabel: 'Premium feature',
       described: true,
       required: false,
       invalid: false,
@@ -160,6 +171,7 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
     summary:
       'a switch disabled with a reason: still focusable so the reason is discoverable, still not operable',
     storyId: 'core-switch--disabled-with-message',
+    visibleLabel: 'Enable notifications',
     props: {
       label: 'Enable notifications',
       isDisabled: true,
@@ -171,7 +183,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       operable: false,
       focusable: true,
       disabled: true,
-      visibleLabel: 'Enable notifications',
       described: true,
       required: false,
       invalid: false,
@@ -181,6 +192,7 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
     id: 'required',
     summary: 'a switch that has to be on before the form can be submitted',
     storyId: 'core-switch--required',
+    visibleLabel: 'Accept terms and conditions',
     props: {
       label: 'Accept terms and conditions',
       isRequired: true,
@@ -191,7 +203,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       operable: true,
       focusable: true,
       disabled: false,
-      visibleLabel: 'Accept terms and conditions',
       described: false,
       required: true,
       invalid: false,
@@ -206,6 +217,7 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
     // Switch.test.tsx.
     summary: 'a required switch reporting an error, with the message attached',
     storyId: 'core-switch--with-error-status',
+    visibleLabel: 'Accept terms and conditions',
     props: {
       label: 'Accept terms and conditions',
       isRequired: true,
@@ -220,7 +232,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       operable: true,
       focusable: true,
       disabled: false,
-      visibleLabel: 'Accept terms and conditions',
       described: true,
       required: true,
       invalid: true,
@@ -232,13 +243,13 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       'a switch the owner turned on through another control — the value changed, nobody touched the switch',
     storyId: 'core-switch--controlled-update',
     arrivesBy: 'controlled-update',
+    visibleLabel: 'Sync photos',
     props: {label: 'Sync photos', value: false},
     facts: {
       checked: true,
       operable: true,
       focusable: true,
       disabled: false,
-      visibleLabel: 'Sync photos',
       described: false,
       required: false,
       invalid: false,
@@ -249,13 +260,13 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
     summary:
       'a switch waiting on the change it started: focusable, busy, and not operable until it settles',
     storyId: 'core-switch--loading',
+    visibleLabel: 'Sync photos',
     props: {label: 'Sync photos', isLoading: true, value: false},
     facts: {
       checked: false,
       operable: false,
       focusable: true,
       disabled: false,
-      visibleLabel: 'Sync photos',
       described: false,
       required: false,
       invalid: false,

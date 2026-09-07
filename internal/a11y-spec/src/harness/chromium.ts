@@ -218,15 +218,25 @@ export function createChromiumHarness(
     computed: () => computedNode(cdp, locator),
     visibleLabelText: () =>
       locator.evaluate(element => {
+        // Whether a person can actually read this text.
+        //
+        // `checkVisibility` is the platform's own answer and it walks
+        // ancestors, so a label inside a `visibility: hidden`, `opacity: 0`, or
+        // `display: none` wrapper is correctly invisible without this code
+        // reimplementing the cascade. What it does NOT answer is the sr-only
+        // recipe — 1×1 and clipped, or parked offscreen — because those stay
+        // "visible" to the platform. Hence the box.
+        //
+        // Deliberately NOT a `clip-path`/`clip` test: a decorative clip on a
+        // perfectly readable label would fail one, and the sr-only case it was
+        // meant to catch is already caught by the 1×1 box.
         const shown = (node: Element): boolean => {
-          const style = getComputedStyle(node);
           if (
-            style.visibility === 'hidden' ||
-            style.display === 'none' ||
-            style.opacity === '0' ||
-            // The other sr-only recipes: clipped away, or parked offscreen.
-            (style.clipPath !== 'none' && style.clipPath !== '') ||
-            (style.clip !== 'auto' && style.clip !== '')
+            !node.checkVisibility({
+              visibilityProperty: true,
+              opacityProperty: true,
+              contentVisibilityAuto: true,
+            })
           ) {
             return false;
           }
@@ -234,7 +244,7 @@ export function createChromiumHarness(
           if (box.width <= 1 || box.height <= 1) {
             return false;
           }
-          // Parked outside the viewport on either axis.
+          // Parked off the top or the inline start of the viewport.
           return box.right > 0 && box.bottom > 0;
         };
         const textOf = (node: Element): string | null => {
@@ -298,10 +308,21 @@ export function createChromiumHarness(
       if (box == null) {
         throw new Error('the subject has no box to press on');
       }
+      const viewport = await page.evaluate(() => ({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }));
+      // Release well clear of the control but still inside the viewport: a
+      // gesture that ends out of bounds is not a gesture the browser reports,
+      // and where the fixture happens to sit must not decide whether this runs.
+      const clamp = (value: number, limit: number): number =>
+        Math.max(1, Math.min(value, limit - 1));
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.mouse.down();
-      // Well clear of the control, so the release lands on nothing.
-      await page.mouse.move(box.x + box.width + 200, box.y + box.height + 200);
+      await page.mouse.move(
+        clamp(box.x + box.width + 200, viewport.width),
+        clamp(box.y + box.height + 200, viewport.height),
+      );
       await page.mouse.up();
     },
     press: async key => {

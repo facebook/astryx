@@ -168,8 +168,6 @@ export interface SwitchStateFacts {
   readonly focusable: boolean;
   /** Whether it is meant to be exposed as unavailable. */
   readonly disabled: boolean;
-  /** The visible label text, or null when the label is not rendered visibly. */
-  readonly visibleLabel: string | null;
   /** Whether supporting text is meant to be attached as a description. */
   readonly described: boolean;
   /** Whether it is meant to be exposed as required. */
@@ -316,37 +314,20 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           'The accessible name contains the visible label, so someone using speech input can say what they can read.',
         sources: [WCAG_2_5_3, APG_LABEL],
         covers: ['2.5.3-label-in-name'],
-        // Applies to every state. Whether there IS a visible label is read from
-        // the rendered page, not taken from the binding: a binding that could
-        // switch this criterion off by declaring `visibleLabel: null` would be
-        // grading its own homework.
+        // Applies to every state, and reads BOTH sides off the rendered page.
+        // Nothing here consults the binding: a criterion a binding could switch
+        // off by declaring something about itself would not be a criterion.
         appliesWhen: ALWAYS,
         evidenceLayer: 'accessibility-tree',
         alsoNeeds: ['real-browser'],
         enforcement: 'required',
-        run: async ({subject, facts}) => {
+        run: async ({subject}) => {
           const visible = await subject.visibleLabelText();
-          if (facts.visibleLabel == null) {
-            if (visible != null) {
-              throw new Error(
-                `this state is declared to render no visible label, but "${visible}" is rendered — so either the declaration is wrong, or a visible label is not reaching the accessible name`,
-              );
-            }
-            // Nothing is presented visually, so 2.5.3 has nothing to compare
-            // against: it applies to "components with labels that include text".
-            return;
-          }
           if (visible == null) {
-            throw new Error(
-              `this state is declared to render the visible label "${facts.visibleLabel}", but nothing is rendered visibly`,
-            );
-          }
-          if (
-            !saysInOrder(spokenWords(visible), spokenWords(facts.visibleLabel))
-          ) {
-            throw new Error(
-              `this state declares the visible label "${facts.visibleLabel}", but the page renders "${visible}"`,
-            );
+            // Nothing is presented visually, so there is nothing for a speech
+            // user to say: 2.5.3 applies to "user interface components with
+            // labels that include text or images of text".
+            return;
           }
           const {name} = await subject.computed();
           if (!saysInOrder(spokenWords(name), spokenWords(visible))) {
@@ -627,6 +608,9 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           test: facts => facts.operable && facts.focusable,
         },
         evidenceLayer: 'real-browser',
+        // The claim is about a CHANGE, so the state has to be read before and
+        // after: "focus stayed put" is worth nothing if nothing happened.
+        alsoNeeds: READS_THE_TREE,
         enforcement: 'required',
         run: async ({harness, subject}) => {
           await subject.focus();
@@ -635,10 +619,17 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
               'the switch did not take focus, so this state cannot be changed from the keyboard at all',
             );
           }
+          const before = (await subject.computed()).checked;
           await harness.press('Space');
+          const after = (await subject.computed()).checked;
+          if (after === before) {
+            throw new Error(
+              `pressing Space left the switch ${onOff(after)}, so nothing changed and this expectation has no change to judge`,
+            );
+          }
           if (!(await subject.isFocused())) {
             throw new Error(
-              'changing the switch moved focus off it, so the user is somewhere else without having asked to be',
+              `changing the switch to ${onOff(after)} moved focus off it, so the user is somewhere else without having asked to be`,
             );
           }
         },

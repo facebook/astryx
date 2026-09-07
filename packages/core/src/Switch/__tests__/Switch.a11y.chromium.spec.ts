@@ -57,12 +57,37 @@ test.afterAll(async () => {
   await storybook?.close();
 });
 
+/** Load the story and put it into the state this row describes. */
+async function mountState(
+  page: Page,
+  state: SwitchBindingState,
+): Promise<void> {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=${state.storyId}&viewMode=story`,
+    {waitUntil: 'load'},
+  );
+  await holdMotionStill(page);
+  const root = page.locator('#storybook-root');
+  await root.getByRole('switch').waitFor({state: 'attached'});
+  if (state.arrivesBy === 'controlled-update') {
+    // Getting into this state is the owner's doing, not the user's: the story's
+    // second control changes the value the switch is given. Doing it here, in
+    // the mount, keeps every expectation about the switch.
+    await root.getByRole('button', {name: REMOTE_CONTROL_LABEL}).click();
+    // A mount precondition, not a contract claim: if the owner's change never
+    // reached the control, every expectation below would be about a state this
+    // binding is not in.
+    await root
+      .getByRole('switch', {checked: state.facts.checked})
+      .waitFor({state: 'attached'});
+  }
+}
+
 async function runState(
   page: Page,
   cdp: CDPSession,
   state: SwitchBindingState,
 ): Promise<BindingResult> {
-  const url = `${storybook.origin}/iframe.html?id=${state.storyId}&viewMode=story`;
   return runBinding({
     contract: SWITCH_PATTERN,
     binding: 'Switch',
@@ -72,27 +97,48 @@ async function runState(
     // Reload per expectation: each one starts from the state the story
     // renders, not from whatever the previous expectation toggled it to.
     mount: async () => {
-      await page.goto(url, {waitUntil: 'load'});
-      await holdMotionStill(page);
-      const root = page.locator('#storybook-root');
-      const subject = root.getByRole('switch');
-      await subject.waitFor({state: 'attached'});
-      if (state.arrivesBy === 'controlled-update') {
-        // Getting into this state is the owner's doing, not the user's: the
-        // story's second control changes the value the switch is given. Doing
-        // it here, in the mount, keeps every expectation about the switch.
-        await root.getByRole('button', {name: REMOTE_CONTROL_LABEL}).click();
-        // A mount precondition, not a contract claim: if the owner's change
-        // never reached the control, every expectation below would be about a
-        // state this binding is not in.
-        await root
-          .getByRole('switch', {checked: state.facts.checked})
-          .waitFor({state: 'attached'});
-      }
-      return createChromiumHarness({page, subject, cdp});
+      await mountState(page, state);
+      return createChromiumHarness({
+        page,
+        subject: page.locator('#storybook-root').getByRole('switch'),
+        cdp,
+      });
     },
   });
 }
+
+/**
+ * The inventory AST-021 FR2 asks for, checked against the page rather than
+ * trusted. It is deliberately NOT part of the shared contract: a wrong entry
+ * here is a stale inventory, and reporting it as a WCAG 2.5.3 failure would put
+ * a metadata typo and a real accessibility defect in the same bucket.
+ */
+test('the state inventory describes the labels the page actually renders', async ({
+  page,
+}) => {
+  const cdp = await page.context().newCDPSession(page);
+  const wrong: string[] = [];
+  for (const state of SWITCH_BINDING_STATES) {
+    await mountState(page, state);
+    const harness = createChromiumHarness({
+      page,
+      subject: page.locator('#storybook-root').getByRole('switch'),
+      cdp,
+    });
+    const rendered = await (await harness.subject()).visibleLabelText();
+    // Astryx appends its own required marker; the inventory names the label.
+    const matches =
+      state.visibleLabel == null
+        ? rendered == null
+        : rendered != null && rendered.startsWith(state.visibleLabel);
+    if (!matches) {
+      wrong.push(
+        `${state.id}: inventory says ${JSON.stringify(state.visibleLabel)}, page renders ${JSON.stringify(rendered)}`,
+      );
+    }
+  }
+  expect(wrong).toEqual([]);
+});
 
 for (const state of SWITCH_BINDING_STATES) {
   test(`Switch [${state.id}] — ${state.summary}`, async ({page}) => {
