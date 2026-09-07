@@ -11,7 +11,7 @@ approved_at: 2026-09-02
 phase: accepted
 owners: [cixzhang, josephfarina]
 affects_architecture:
-  [architecture:public-component-api, architecture:cli-response-schema]
+  [architecture:public-component-api, architecture:cli-surface]
 affects_families: []
 affects_contributing: [contributing:release-process, contributing:templates]
 affects_consumer_docs: [release-process, templates]

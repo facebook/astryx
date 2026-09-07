@@ -66,8 +66,8 @@ integrations named in `astryx.config`. Each integration is loaded
 independently, so one broken package degrades that package's contribution and
 never fails the run.
 
-`architecture:cli-response-schema` owns stable response-entry fields and their
-complete type, test, applicable text, and consumer-documentation projections.
+AST-017 DEC-4 owns stable response-entry fields and requires their complete type,
+test, applicable text, and consumer-documentation projections.
 
 ## Boundaries and invariants
 
@@ -119,7 +119,7 @@ updated in the same pull request when it moves an invariant:
 - adding, removing, or renaming a command or subcommand;
 - adding an error code, or changing what an existing code means;
 - a change to a stable JSON envelope or discriminated response-entry field
-  follows `architecture:cli-response-schema`;
+  follows `spec:AST-017/DEC-4`;
 - adding a formatter, or writing to stdout from anywhere other than `emit` and
   `jsonOut`;
 - changing the file layout under `clients/cli/commands`.
@@ -149,7 +149,7 @@ non-interactive guarantee.
 ## Deciding specs
 
 - `spec:AST-017/DEC-4` — stable response fields and their complete projections
-  are owned by `architecture:cli-response-schema`.
+  are current compatibility authority.
 
 ## Verification
 
