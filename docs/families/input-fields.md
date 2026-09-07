@@ -235,16 +235,17 @@ another implementation helper.
   `aria-busy`; selected, source-busy, and grouped combinations do not have the
   focused geometry coverage required by FR1–FR3 and FR7. PRs
   [#5555](https://github.com/facebook/astryx/pull/5555) and
-  [#5682](https://github.com/facebook/astryx/pull/5682) are implementation
-  candidates, not authority. Their in-flow Typeahead approach is compatible with
-  this contract; the specific DOM/CSS mechanism remains component-owned.
+  [#5682](https://github.com/facebook/astryx/pull/5682) document attempted
+  implementations and are non-authoritative evidence. Any implementation keeps its
+  DOM/CSS mechanism component-owned and must be reviewed against this contract at
+  its exact head.
 - **Tokenizer state geometry:** current main positions `endContent` and clear
   controls out of flow without reserving their rendered width, so narrow input
   content can pass underneath them. Token count can also change intrinsic
-  inline size. PR #5555 proposes a component-local reserve. Tokenizer is not an
-  InputGroup-compatible child on current main; [#4405](https://github.com/facebook/astryx/pull/4405)
-  is a separate adoption proposal and its single-row overflow treatment is not
-  approved by this family.
+  inline size. PR #5555 is non-authoritative evidence of an attempted component-
+  local reserve. Tokenizer is not an InputGroup-compatible child on current main;
+  [#4405](https://github.com/facebook/astryx/pull/4405) is separate historical
+  evidence. This family contract does not assign either pull request a verdict.
 - **Selector source-state semantics:** Selector and MultiSelector keep provided
   options available while input `isLoading` is true, but current empty/no-result
   presentation still treats that flag as option-source pending and neither
