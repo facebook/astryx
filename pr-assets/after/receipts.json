@@ -1,7 +1,7 @@
 [
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--default",
     "screenshot": "AvatarGroupOverflow__static-rest__light.png",
     "mode": "light",
@@ -17,8 +17,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "2 more",
       "text": "+2",
@@ -31,7 +32,7 @@
       "backgroundColor": "rgb(255, 255, 255)",
       "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
       "borderColor": "rgb(255, 255, 255)",
-      "outline": "rgb(82, 82, 82) none 0px",
+      "outline": "rgb(82, 82, 82) none 3px",
       "outlineColor": "rgb(82, 82, 82)",
       "fontSize": "16.8px",
       "borderRadius": "9999px",
@@ -49,7 +50,8 @@
       "expected": {
         "mode": "light",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -58,7 +60,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-rest__light.png",
     "mode": "light",
@@ -74,6 +76,7 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "BUTTON",
     "subject": {
       "tag": "BUTTON",
       "role": null,
@@ -106,7 +109,8 @@
       "expected": {
         "mode": "light",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "BUTTON"
       }
     },
     "fonts": "ready",
@@ -115,7 +119,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-hover__light.png",
     "mode": "light",
@@ -131,6 +135,7 @@
       "pointer": "fine"
     },
     "semanticState": "hover",
+    "expectedTag": "BUTTON",
     "subject": {
       "tag": "BUTTON",
       "role": null,
@@ -163,7 +168,8 @@
       "expected": {
         "mode": "light",
         "state": "hover",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "BUTTON"
       }
     },
     "fonts": "ready",
@@ -172,7 +178,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-focus__light.png",
     "mode": "light",
@@ -188,6 +194,7 @@
       "pointer": "fine"
     },
     "semanticState": "focus",
+    "expectedTag": "BUTTON",
     "subject": {
       "tag": "BUTTON",
       "role": null,
@@ -220,7 +227,8 @@
       "expected": {
         "mode": "light",
         "state": "focus",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "BUTTON"
       }
     },
     "fonts": "ready",
@@ -229,7 +237,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-active__light.png",
     "mode": "light",
@@ -245,6 +253,7 @@
       "pointer": "fine"
     },
     "semanticState": "active",
+    "expectedTag": "BUTTON",
     "subject": {
       "tag": "BUTTON",
       "role": null,
@@ -277,7 +286,8 @@
       "expected": {
         "mode": "light",
         "state": "active",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "BUTTON"
       }
     },
     "fonts": "ready",
@@ -286,7 +296,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--custom-content",
     "screenshot": "AvatarGroupOverflow__custom-content__light.png",
     "mode": "light",
@@ -302,8 +312,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "12 more",
       "text": "12+",
@@ -316,7 +327,7 @@
       "backgroundColor": "rgb(255, 255, 255)",
       "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
       "borderColor": "rgb(255, 255, 255)",
-      "outline": "rgb(82, 82, 82) none 0px",
+      "outline": "rgb(82, 82, 82) none 3px",
       "outlineColor": "rgb(82, 82, 82)",
       "fontSize": "16.8px",
       "borderRadius": "9999px",
@@ -334,7 +345,8 @@
       "expected": {
         "mode": "light",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -343,7 +355,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--all-sizes",
     "screenshot": "AvatarGroupOverflow__all-sizes__light.png",
     "mode": "light",
@@ -359,6 +371,7 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
       "tag": "SPAN",
       "role": null,
@@ -391,7 +404,8 @@
       "expected": {
         "mode": "light",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -400,7 +414,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--all-shapes",
     "screenshot": "AvatarGroupOverflow__all-shapes__light.png",
     "mode": "light",
@@ -416,6 +430,7 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
       "tag": "SPAN",
       "role": null,
@@ -448,7 +463,8 @@
       "expected": {
         "mode": "light",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -457,7 +473,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--large-count",
     "screenshot": "AvatarGroupOverflow__long-count__light.png",
     "mode": "light",
@@ -473,8 +489,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "4,912 more",
       "text": "+4912",
@@ -487,7 +504,7 @@
       "backgroundColor": "rgb(255, 255, 255)",
       "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
       "borderColor": "rgb(255, 255, 255)",
-      "outline": "rgb(82, 82, 82) none 0px",
+      "outline": "rgb(82, 82, 82) none 3px",
       "outlineColor": "rgb(82, 82, 82)",
       "fontSize": "16.8px",
       "borderRadius": "9999px",
@@ -505,7 +522,8 @@
       "expected": {
         "mode": "light",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -514,7 +532,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--zero-count",
     "screenshot": "AvatarGroupOverflow__zero-count__light.png",
     "mode": "light",
@@ -530,8 +548,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "0 more",
       "text": "+0",
@@ -544,7 +563,7 @@
       "backgroundColor": "rgb(255, 255, 255)",
       "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
       "borderColor": "rgb(255, 255, 255)",
-      "outline": "rgb(82, 82, 82) none 0px",
+      "outline": "rgb(82, 82, 82) none 3px",
       "outlineColor": "rgb(82, 82, 82)",
       "fontSize": "16.8px",
       "borderRadius": "9999px",
@@ -562,7 +581,8 @@
       "expected": {
         "mode": "light",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -571,7 +591,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--standalone",
     "screenshot": "AvatarGroupOverflow__standalone__light.png",
     "mode": "light",
@@ -587,8 +607,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "2 more",
       "text": "+2",
@@ -601,7 +622,7 @@
       "backgroundColor": "rgb(255, 255, 255)",
       "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
       "borderColor": "rgb(255, 255, 255)",
-      "outline": "rgb(82, 82, 82) none 0px",
+      "outline": "rgb(82, 82, 82) none 3px",
       "outlineColor": "rgb(82, 82, 82)",
       "fontSize": "12.6px",
       "borderRadius": "9999px",
@@ -619,7 +640,8 @@
       "expected": {
         "mode": "light",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -628,7 +650,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--right-to-left",
     "screenshot": "AvatarGroupOverflow__rtl__light.png",
     "mode": "light",
@@ -644,8 +666,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "2 more",
       "text": "+2",
@@ -658,7 +681,7 @@
       "backgroundColor": "rgb(255, 255, 255)",
       "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
       "borderColor": "rgb(255, 255, 255)",
-      "outline": "rgb(82, 82, 82) none 0px",
+      "outline": "rgb(82, 82, 82) none 3px",
       "outlineColor": "rgb(82, 82, 82)",
       "fontSize": "16.8px",
       "borderRadius": "9999px",
@@ -676,7 +699,8 @@
       "expected": {
         "mode": "light",
         "state": "rest",
-        "direction": "rtl"
+        "direction": "rtl",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -685,7 +709,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--narrow-container",
     "screenshot": "AvatarGroupOverflow__narrow-320__light.png",
     "mode": "light",
@@ -701,8 +725,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "2 more",
       "text": "+2",
@@ -715,7 +740,7 @@
       "backgroundColor": "rgb(255, 255, 255)",
       "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
       "borderColor": "rgb(255, 255, 255)",
-      "outline": "rgb(82, 82, 82) none 0px",
+      "outline": "rgb(82, 82, 82) none 3px",
       "outlineColor": "rgb(82, 82, 82)",
       "fontSize": "16.8px",
       "borderRadius": "9999px",
@@ -733,7 +758,8 @@
       "expected": {
         "mode": "light",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -742,7 +768,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--default",
     "screenshot": "AvatarGroupOverflow__static-rest__dark.png",
     "mode": "dark",
@@ -758,8 +784,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "2 more",
       "text": "+2",
@@ -772,7 +799,7 @@
       "backgroundColor": "rgb(38, 38, 38)",
       "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
       "borderColor": "rgb(38, 38, 38)",
-      "outline": "rgb(158, 158, 158) none 0px",
+      "outline": "rgb(158, 158, 158) none 3px",
       "outlineColor": "rgb(158, 158, 158)",
       "fontSize": "16.8px",
       "borderRadius": "9999px",
@@ -790,7 +817,8 @@
       "expected": {
         "mode": "dark",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -799,7 +827,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-rest__dark.png",
     "mode": "dark",
@@ -815,6 +843,7 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "BUTTON",
     "subject": {
       "tag": "BUTTON",
       "role": null,
@@ -847,7 +876,8 @@
       "expected": {
         "mode": "dark",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "BUTTON"
       }
     },
     "fonts": "ready",
@@ -856,7 +886,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-hover__dark.png",
     "mode": "dark",
@@ -872,6 +902,7 @@
       "pointer": "fine"
     },
     "semanticState": "hover",
+    "expectedTag": "BUTTON",
     "subject": {
       "tag": "BUTTON",
       "role": null,
@@ -904,7 +935,8 @@
       "expected": {
         "mode": "dark",
         "state": "hover",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "BUTTON"
       }
     },
     "fonts": "ready",
@@ -913,7 +945,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-focus__dark.png",
     "mode": "dark",
@@ -929,6 +961,7 @@
       "pointer": "fine"
     },
     "semanticState": "focus",
+    "expectedTag": "BUTTON",
     "subject": {
       "tag": "BUTTON",
       "role": null,
@@ -961,7 +994,8 @@
       "expected": {
         "mode": "dark",
         "state": "focus",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "BUTTON"
       }
     },
     "fonts": "ready",
@@ -970,7 +1004,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-active__dark.png",
     "mode": "dark",
@@ -986,6 +1020,7 @@
       "pointer": "fine"
     },
     "semanticState": "active",
+    "expectedTag": "BUTTON",
     "subject": {
       "tag": "BUTTON",
       "role": null,
@@ -1018,7 +1053,8 @@
       "expected": {
         "mode": "dark",
         "state": "active",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "BUTTON"
       }
     },
     "fonts": "ready",
@@ -1027,7 +1063,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--custom-content",
     "screenshot": "AvatarGroupOverflow__custom-content__dark.png",
     "mode": "dark",
@@ -1043,8 +1079,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "12 more",
       "text": "12+",
@@ -1057,7 +1094,7 @@
       "backgroundColor": "rgb(38, 38, 38)",
       "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
       "borderColor": "rgb(38, 38, 38)",
-      "outline": "rgb(158, 158, 158) none 0px",
+      "outline": "rgb(158, 158, 158) none 3px",
       "outlineColor": "rgb(158, 158, 158)",
       "fontSize": "16.8px",
       "borderRadius": "9999px",
@@ -1075,7 +1112,8 @@
       "expected": {
         "mode": "dark",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -1084,7 +1122,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--all-sizes",
     "screenshot": "AvatarGroupOverflow__all-sizes__dark.png",
     "mode": "dark",
@@ -1100,6 +1138,7 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
       "tag": "SPAN",
       "role": null,
@@ -1132,7 +1171,8 @@
       "expected": {
         "mode": "dark",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -1141,7 +1181,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--all-shapes",
     "screenshot": "AvatarGroupOverflow__all-shapes__dark.png",
     "mode": "dark",
@@ -1157,6 +1197,7 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
       "tag": "SPAN",
       "role": null,
@@ -1189,7 +1230,8 @@
       "expected": {
         "mode": "dark",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -1198,7 +1240,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--large-count",
     "screenshot": "AvatarGroupOverflow__long-count__dark.png",
     "mode": "dark",
@@ -1214,8 +1256,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "4,912 more",
       "text": "+4912",
@@ -1228,7 +1271,7 @@
       "backgroundColor": "rgb(38, 38, 38)",
       "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
       "borderColor": "rgb(38, 38, 38)",
-      "outline": "rgb(158, 158, 158) none 0px",
+      "outline": "rgb(158, 158, 158) none 3px",
       "outlineColor": "rgb(158, 158, 158)",
       "fontSize": "16.8px",
       "borderRadius": "9999px",
@@ -1246,7 +1289,8 @@
       "expected": {
         "mode": "dark",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -1255,7 +1299,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--zero-count",
     "screenshot": "AvatarGroupOverflow__zero-count__dark.png",
     "mode": "dark",
@@ -1271,8 +1315,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "0 more",
       "text": "+0",
@@ -1285,7 +1330,7 @@
       "backgroundColor": "rgb(38, 38, 38)",
       "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
       "borderColor": "rgb(38, 38, 38)",
-      "outline": "rgb(158, 158, 158) none 0px",
+      "outline": "rgb(158, 158, 158) none 3px",
       "outlineColor": "rgb(158, 158, 158)",
       "fontSize": "16.8px",
       "borderRadius": "9999px",
@@ -1303,7 +1348,8 @@
       "expected": {
         "mode": "dark",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -1312,7 +1358,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--standalone",
     "screenshot": "AvatarGroupOverflow__standalone__dark.png",
     "mode": "dark",
@@ -1328,8 +1374,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "2 more",
       "text": "+2",
@@ -1342,7 +1389,7 @@
       "backgroundColor": "rgb(38, 38, 38)",
       "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
       "borderColor": "rgb(38, 38, 38)",
-      "outline": "rgb(158, 158, 158) none 0px",
+      "outline": "rgb(158, 158, 158) none 3px",
       "outlineColor": "rgb(158, 158, 158)",
       "fontSize": "12.6px",
       "borderRadius": "9999px",
@@ -1360,7 +1407,8 @@
       "expected": {
         "mode": "dark",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -1369,7 +1417,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--right-to-left",
     "screenshot": "AvatarGroupOverflow__rtl__dark.png",
     "mode": "dark",
@@ -1385,8 +1433,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "2 more",
       "text": "+2",
@@ -1399,7 +1448,7 @@
       "backgroundColor": "rgb(38, 38, 38)",
       "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
       "borderColor": "rgb(38, 38, 38)",
-      "outline": "rgb(158, 158, 158) none 0px",
+      "outline": "rgb(158, 158, 158) none 3px",
       "outlineColor": "rgb(158, 158, 158)",
       "fontSize": "16.8px",
       "borderRadius": "9999px",
@@ -1417,7 +1466,8 @@
       "expected": {
         "mode": "dark",
         "state": "rest",
-        "direction": "rtl"
+        "direction": "rtl",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
@@ -1426,7 +1476,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "f725ec2cb4daf14899cbe55273a51ec44d961dd0",
+    "build": "f657d1d90ee2c7635c8ce506b7af19a889cc9387",
     "storyId": "core-avatargroupoverflow--narrow-container",
     "screenshot": "AvatarGroupOverflow__narrow-320__dark.png",
     "mode": "dark",
@@ -1442,8 +1492,9 @@
       "pointer": "fine"
     },
     "semanticState": "rest",
+    "expectedTag": "SPAN",
     "subject": {
-      "tag": "BUTTON",
+      "tag": "SPAN",
       "role": null,
       "ariaLabel": "2 more",
       "text": "+2",
@@ -1456,7 +1507,7 @@
       "backgroundColor": "rgb(38, 38, 38)",
       "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
       "borderColor": "rgb(38, 38, 38)",
-      "outline": "rgb(158, 158, 158) none 0px",
+      "outline": "rgb(158, 158, 158) none 3px",
       "outlineColor": "rgb(158, 158, 158)",
       "fontSize": "16.8px",
       "borderRadius": "9999px",
@@ -1474,7 +1525,8 @@
       "expected": {
         "mode": "dark",
         "state": "rest",
-        "direction": "ltr"
+        "direction": "ltr",
+        "tag": "SPAN"
       }
     },
     "fonts": "ready",
