@@ -1,7 +1,7 @@
 [
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--default",
     "screenshot": "AvatarGroupOverflow__static-rest__light.png",
     "mode": "light",
@@ -58,7 +58,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-rest__light.png",
     "mode": "light",
@@ -115,7 +115,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-hover__light.png",
     "mode": "light",
@@ -172,7 +172,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-focus__light.png",
     "mode": "light",
@@ -229,7 +229,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-active__light.png",
     "mode": "light",
@@ -286,7 +286,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--custom-content",
     "screenshot": "AvatarGroupOverflow__custom-content__light.png",
     "mode": "light",
@@ -343,7 +343,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--all-sizes",
     "screenshot": "AvatarGroupOverflow__all-sizes__light.png",
     "mode": "light",
@@ -400,7 +400,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--all-shapes",
     "screenshot": "AvatarGroupOverflow__all-shapes__light.png",
     "mode": "light",
@@ -457,7 +457,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--large-count",
     "screenshot": "AvatarGroupOverflow__long-count__light.png",
     "mode": "light",
@@ -514,7 +514,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--zero-count",
     "screenshot": "AvatarGroupOverflow__zero-count__light.png",
     "mode": "light",
@@ -571,7 +571,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--standalone",
     "screenshot": "AvatarGroupOverflow__standalone__light.png",
     "mode": "light",
@@ -628,7 +628,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--right-to-left",
     "screenshot": "AvatarGroupOverflow__rtl__light.png",
     "mode": "light",
@@ -685,7 +685,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--narrow-container",
     "screenshot": "AvatarGroupOverflow__narrow-320__light.png",
     "mode": "light",
@@ -742,7 +742,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--default",
     "screenshot": "AvatarGroupOverflow__static-rest__dark.png",
     "mode": "dark",
@@ -799,7 +799,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-rest__dark.png",
     "mode": "dark",
@@ -856,7 +856,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-hover__dark.png",
     "mode": "dark",
@@ -913,7 +913,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-focus__dark.png",
     "mode": "dark",
@@ -970,7 +970,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--clickable",
     "screenshot": "AvatarGroupOverflow__button-active__dark.png",
     "mode": "dark",
@@ -1027,7 +1027,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--custom-content",
     "screenshot": "AvatarGroupOverflow__custom-content__dark.png",
     "mode": "dark",
@@ -1084,7 +1084,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--all-sizes",
     "screenshot": "AvatarGroupOverflow__all-sizes__dark.png",
     "mode": "dark",
@@ -1141,7 +1141,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--all-shapes",
     "screenshot": "AvatarGroupOverflow__all-shapes__dark.png",
     "mode": "dark",
@@ -1198,7 +1198,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--large-count",
     "screenshot": "AvatarGroupOverflow__long-count__dark.png",
     "mode": "dark",
@@ -1255,7 +1255,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--zero-count",
     "screenshot": "AvatarGroupOverflow__zero-count__dark.png",
     "mode": "dark",
@@ -1312,7 +1312,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--standalone",
     "screenshot": "AvatarGroupOverflow__standalone__dark.png",
     "mode": "dark",
@@ -1369,7 +1369,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--right-to-left",
     "screenshot": "AvatarGroupOverflow__rtl__dark.png",
     "mode": "dark",
@@ -1426,7 +1426,7 @@
   },
   {
     "schemaVersion": 1,
-    "build": "ab8771c04d65",
+    "build": "26fd98782c554b3b446709966acd82083a8e3532",
     "storyId": "core-avatargroupoverflow--narrow-container",
     "screenshot": "AvatarGroupOverflow__narrow-320__dark.png",
     "mode": "dark",
