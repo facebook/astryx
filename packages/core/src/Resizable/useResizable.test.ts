@@ -1648,6 +1648,11 @@ describe('Resizable size source compatibility (AST-010 API3/API4)', () => {
       };
       // @ts-expect-error removed aliases must not compile in dynamic regions
       useResizable(dynamicRemovedMax);
+      const unionWithRemovedMin = null as unknown as
+        | UseResizableSingleConfig
+        | (UseResizableSingleConfig & {minSizePx: number});
+      // @ts-expect-error every union member must exclude removed aliases
+      useResizable(unionWithRemovedMin);
     }
     expect(useRemovedDynamicBoundsCompileChecks).toBeTypeOf('function');
     expect([rem, cssMath, removedMin, removedMax]).toHaveLength(4);

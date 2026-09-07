@@ -1098,23 +1098,26 @@ function useMultiResizable(
 // =============================================================================
 
 /** Removed keys must fail even when a variable bypasses excess-property checks. */
-type RejectRemovedPixelBounds<Config> =
-  Extract<keyof Config, 'minSizePx' | 'maxSizePx'> extends never
-    ? unknown
-    : {
-        [Key in Extract<keyof Config, 'minSizePx' | 'maxSizePx'>]: never;
-      };
+type RejectRemovedPixelBounds<Config> = Config extends unknown
+  ? Config & {minSizePx?: never; maxSizePx?: never}
+  : never;
 
-type SingleResizableArgument<Config> = 'regions' extends keyof Config
-  ? never
-  : Config & RejectRemovedPixelBounds<Config>;
+type SingleResizableArgument<Config> = Config extends unknown
+  ? 'regions' extends keyof Config
+    ? never
+    : RejectRemovedPixelBounds<Config>
+  : never;
 
-type MultiResizableArgument<Config extends UseResizableMultiConfig> = Config & {
-  regions: {
-    [Key in keyof Config['regions']]: Config['regions'][Key] &
-      RejectRemovedPixelBounds<Config['regions'][Key]>;
-  };
-};
+type MultiResizableArgument<Config extends UseResizableMultiConfig> =
+  Config extends unknown
+    ? Config & {
+        regions: {
+          [Key in keyof Config['regions']]: RejectRemovedPixelBounds<
+            Config['regions'][Key]
+          >;
+        };
+      }
+    : never;
 
 export function useResizable<const Config extends UseResizableSingleConfig>(
   config: SingleResizableArgument<Config>,
