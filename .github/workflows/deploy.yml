@@ -156,6 +156,12 @@ jobs:
       - name: Typecheck core (including tests)
         run: pnpm -F @astryxdesign/core typecheck
 
+      # The accessibility spec-test contracts are consumed as TypeScript source
+      # by Vitest and Playwright, and neither runner typechecks. This is the
+      # only gate over them.
+      - name: Typecheck accessibility spec-test contracts
+        run: pnpm -F @astryxdesign/a11y-spec typecheck
+
   # Historical job name, kept because `deploy` gates the publish on
   # `needs.test.result == 'success'`. Every lane must pass for that to hold, so
   # this asserts all three rather than merely depending on them.

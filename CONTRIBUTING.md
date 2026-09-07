@@ -448,6 +448,32 @@ When the audit reports baseline entries as "resolved", delete them from
 > component is accessible — keyboard flows, focus order, screen-reader
 > semantics, and contrast in context still need manual checks.
 
+### Accessibility spec-test contracts
+
+axe finds broad markup violations; it does not know that a switch has to turn
+back off. The reusable **accessibility spec tests** in
+[`internal/a11y-spec/`](internal/a11y-spec/README.md) encode one adopted
+WAI-ARIA APG pattern as a standards-traceable contract, and components bind to
+it. Each expectation names the WCAG success criterion or APG requirement it
+comes from, the evidence layer that can observe it, and whether it gates.
+
+They run in two lanes, and the split is the point: jsdom proves DOM-layer facts
+in `pnpm test`, and everything that needs a computed accessibility tree, real
+focus, or real activation is reported `unrun` there and proven in Chromium.
+
+```bash
+# One-time setup
+pnpm storybook:build
+npx playwright install chromium
+
+pnpm test:a11y-contract      # the Chromium lane (also runs inside pr-a11y)
+```
+
+Adopting the pattern in a new component means binding to the existing contract,
+not copying its assertions — see the package README and
+[`docs/specs/AST-020`](docs/specs/AST-020/spec.md) /
+[`docs/specs/AST-021`](docs/specs/AST-021/spec.md).
+
 ### RTL audits
 
 PRs that touch components also run an RTL audit (`pr-rtl`), scoped to the

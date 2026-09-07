@@ -568,3 +568,24 @@ export const DisabledWithMessage: Story = {
     disabledMessage: 'Notifications are turned off org-wide',
   },
 };
+
+// Waiting on the change it just started. The switch stays focusable and reports
+// itself busy, and activation is blocked until the change settles, so a second
+// press cannot queue a second change.
+export const Loading: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? false);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <Switch
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
+  },
+  args: {
+    label: 'Sync photos',
+    isLoading: true,
+  },
+};

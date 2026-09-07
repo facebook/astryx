@@ -13,6 +13,8 @@ review_triggers: [theming]
 verified_by:
   [
     packages/core/src/Switch/Switch.test.tsx,
+    packages/core/src/Switch/__tests__/Switch.a11y.test.tsx,
+    packages/core/src/Switch/__tests__/Switch.a11y.chromium.spec.ts,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
@@ -97,6 +99,17 @@ This draft does not change or extend Switch's existing accessible name, switch
 role, checked state, busy state, description/status association, or disabled
 behavior.
 
+Switch binds to the shared switch-pattern accessibility contract
+(`internal/a11y-spec`, authored under
+[AST-020](../../../../docs/specs/AST-020/spec.md) and migrated under
+[AST-021](../../../../docs/specs/AST-021/spec.md)). The binding owns the
+standards-derived outcomes — role, accessible name, exposed on/off state,
+description, disabled exposure and inoperability, and pointer and keyboard
+activation — across the representative states listed in
+`__tests__/Switch.a11y.states.ts`. Callback payloads, form participation,
+disabled-reason tooltip composition, and styling remain Switch-owned and stay in
+`Switch.test.tsx`.
+
 ## Design relationships
 
 | Anatomy or state | Design requirement                                       | Representation authority        | Hierarchy role | Component contract |
@@ -146,12 +159,13 @@ making the absence intentional.
 
 ## Verification map
 
-| Contract            | Verification                                                      | Representative states                      | Mutation or failure expectation                                                                                                 | Audit section          |
-| ------------------- | ----------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| FR1                 | `Switch.test.tsx` structure and interaction suites                | On/off, size, label position, hidden label | Removing or reordering stable parts breaks existing role, label, or DOM assertions.                                             | `audit:Switch/anatomy` |
-| FR2                 | `Switch.test.tsx` label-target suite and `themingTargets.test.ts` | Current local targets                      | Removing the label target fails focused coverage; source/docs drift fails the target guard.                                     | `audit:Switch/theming` |
-| FR3                 | `Switch.test.tsx` loading and status suites                       | Busy and detached status                   | Removing composed feedback breaks existing spinner, busy-state, or message assertions.                                          | `audit:Switch/anatomy` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                     | Canonical anatomy and all current targets  | Canonical-key drift, invalid dispositions or target spelling, or an unclaimed current local target fails repository validation. | `audit:Switch/theming` |
+| Contract            | Verification                                                                                                                    | Representative states                                                                      | Mutation or failure expectation                                                                                                                                                             | Audit section          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| FR1                 | `Switch.test.tsx` structure and interaction suites                                                                              | On/off, size, label position, hidden label                                                 | Removing or reordering stable parts breaks existing role, label, or DOM assertions.                                                                                                         | `audit:Switch/anatomy` |
+| FR2                 | `Switch.test.tsx` label-target suite and `themingTargets.test.ts`                                                               | Current local targets                                                                      | Removing the label target fails focused coverage; source/docs drift fails the target guard.                                                                                                 | `audit:Switch/theming` |
+| FR3                 | `Switch.test.tsx` loading and status suites                                                                                     | Busy and detached status                                                                   | Removing composed feedback breaks existing spinner, busy-state, or message assertions.                                                                                                      | `audit:Switch/anatomy` |
+| Switch pattern      | `__tests__/Switch.a11y.test.tsx` (DOM layer) and `__tests__/Switch.a11y.chromium.spec.ts` (accessibility tree and real browser) | Off, on, described, hidden label, disabled, focusable-disabled, required, invalid, loading | Losing the switch role, the accessible name, the exposed state, an attached description, disabled exposure, or either direction of a pointer or Space activation fails the shared contract. | `audit:Switch/anatomy` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                   | Canonical anatomy and all current targets                                                  | Canonical-key drift, invalid dispositions or target spelling, or an unclaimed current local target fails repository validation.                                                             | `audit:Switch/theming` |
 
 The focused Switch suite pins `switch-label`, but does not separately assert the
 exact `switch-field`, `switch`, or `switch-thumb` class placement. The

@@ -160,7 +160,13 @@ jobs:
           fi
           FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
           CHANGED=$(printf '%s\n' "$FILES" | grep -E '^packages/(core|lab)/src/' | grep -v -E '(hooks|theme|utils|i18n|__tests__)/' | head -1 || true)
-          echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          # The shared accessibility spec-test contracts gate inside pr-a11y,
+          # and their component bindings live under `__tests__/` — which the
+          # filter above deliberately excludes. Without this the contract could
+          # be changed, or a binding broken, with the only job that runs it
+          # skipped.
+          A11Y=$(printf '%s\n' "$FILES" | grep -E '^internal/a11y-spec/|\.a11y\.|^playwright\.config\.ts$' | head -1 || true)
+          echo "has_components=$( { [ -n "$CHANGED" ] || [ -n "$A11Y" ]; } && echo true || echo false )" >> "$GITHUB_OUTPUT"
 
           # One classifier owns the release-channel rule. It reads each
           # package's `astryx.canaryOnly` metadata rather than hard-coding
@@ -378,6 +384,13 @@ jobs:
       - name: Typecheck core (including tests)
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/core typecheck
+
+      # The accessibility spec-test contracts are consumed as TypeScript source
+      # by Vitest and Playwright, and neither runner typechecks. This is the
+      # only gate over them.
+      - name: Typecheck accessibility spec-test contracts
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
+        run: pnpm -F @astryxdesign/a11y-spec typecheck
 
       - name: Build Storybook
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
@@ -662,6 +675,16 @@ jobs:
       # the blocking job that runs whenever components change.
       - name: Run story play guard
         run: node .github/scripts/story-play-guard.js --storybook-dir apps/storybook/dist
+
+      # The reusable accessibility spec-test contracts (internal/a11y-spec) and
+      # the component bindings that adopt them. jsdom cannot compute a role or
+      # an accessible name, resolve a real tab sequence, or turn a key press
+      # into an activation, so those expectations are reported `unrun` in the
+      # unit lane and proven here or not at all. Hosted with the sibling
+      # Chromium guards for the same reason they are: pr-a11y is the blocking
+      # job that runs whenever components change.
+      - name: Run accessibility spec-test contracts
+        run: pnpm test:a11y-contract
 
   # The layer order Astryx promises is Astryx < theme < product, and which
   # declaration paints is a cascade fact no jsdom test can settle: the build has

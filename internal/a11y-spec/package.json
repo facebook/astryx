@@ -5,19 +5,12 @@
   "type": "module",
   "description": "Internal: reusable accessibility spec-test contracts and their evidence harnesses. Never published.",
   "main": "./src/index.ts",
-  "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./src/index.ts"
-    },
-    "./chromium": {
-      "types": "./dist/harness/chromium.d.ts",
-      "default": "./src/harness/chromium.ts"
-    }
+    ".": "./src/index.ts",
+    "./chromium": "./src/harness/chromium.ts",
+    "./storybook": "./src/storybook.ts"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   }
 }

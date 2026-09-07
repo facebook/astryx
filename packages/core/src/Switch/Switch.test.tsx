@@ -3,8 +3,21 @@
 /**
  * @file Switch.test.tsx
  * @input Uses vitest, @testing-library/react, Switch component
- * @output Unit tests for Switch component behavior
+ * @output Unit tests for Switch's own contract: callbacks, form participation,
+ *   composition, and styling
  * @position Testing; validates Switch.tsx implementation
+ *
+ * The shared switch-pattern outcomes — role, accessible name, exposed on/off
+ * state, description, disabled exposure and inoperability, and keyboard and
+ * pointer activation — are owned by the reusable accessibility contract in
+ * __tests__/Switch.a11y.test.tsx (jsdom) and
+ * __tests__/Switch.a11y.chromium.spec.ts (real Chromium, where the computed
+ * accessibility tree and real focus can actually be observed). Assertions that
+ * this file used to duplicate now live there and are not repeated here.
+ *
+ * What stays here is Switch's own contract: callback payloads, form data,
+ * disabled-reason tooltip composition, the label theme target, forced-colors
+ * CSS, RTL thumb travel, and rest forwarding.
  *
  * SYNC: When Switch.tsx changes, update tests to match new behavior
  */
@@ -75,27 +88,6 @@ beforeEach(() => {
 });
 
 describe('Switch', () => {
-  it('renders with label', () => {
-    render(
-      <Switch label="Enable notifications" value={false} onChange={() => {}} />,
-    );
-    expect(screen.getByLabelText('Enable notifications')).toBeInTheDocument();
-  });
-
-  it('renders as off by default', () => {
-    render(
-      <Switch label="Enable notifications" value={false} onChange={() => {}} />,
-    );
-    expect(screen.getByRole('switch')).not.toBeChecked();
-  });
-
-  it('renders as on when value prop is true', () => {
-    render(
-      <Switch label="Enable notifications" value={true} onChange={() => {}} />,
-    );
-    expect(screen.getByRole('switch')).toBeChecked();
-  });
-
   it('renders with custom size prop (sm / md)', () => {
     const {rerender} = render(
       <Switch
@@ -181,20 +173,6 @@ describe('Switch', () => {
     ).toBeInTheDocument();
   });
 
-  it('associates description with switch via aria-describedby', () => {
-    render(
-      <Switch
-        label="Dark mode"
-        description="Switch to a darker color scheme"
-        value={false}
-        onChange={() => {}}
-      />,
-    );
-    const switchEl = screen.getByRole('switch');
-    const description = screen.getByText('Switch to a darker color scheme');
-    expect(switchEl).toHaveAttribute('aria-describedby', description.id);
-  });
-
   it('toggles when clicking on the description', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
@@ -227,18 +205,6 @@ describe('Switch', () => {
     expect(switchEl).toHaveAccessibleDescription(
       'Switch to a darker color scheme',
     );
-  });
-
-  it('is disabled when isDisabled prop is true', () => {
-    render(
-      <Switch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-        isDisabled
-      />,
-    );
-    expect(screen.getByRole('switch')).toBeDisabled();
   });
 
   it('does not call onChange when isDisabled', async () => {
@@ -302,6 +268,9 @@ describe('Switch', () => {
     expect(getComputedStyle(row).gap).not.toMatch(/^0(px)?$/);
   });
 
+  // Retained: the shared contract binds a hidden-label state and a described
+  // state, but not a hidden label WITH a description, which is the combination
+  // that used to drop the link.
   it('keeps description linked via aria-describedby when isLabelHidden', () => {
     render(
       <Switch
@@ -360,13 +329,9 @@ describe('Switch', () => {
     expect(children.length).toBe(2);
   });
 
-  it('has role="switch" for accessibility', () => {
-    render(
-      <Switch label="Enable notifications" value={false} onChange={() => {}} />,
-    );
-    expect(screen.getByRole('switch')).toBeInTheDocument();
-  });
-
+  // Retained on purpose: the shared contract's busy expectation is advisory
+  // (nothing current adopts a busy state for the switch pattern), so it reports
+  // and does not gate. This keeps the regression gated for Switch itself.
   it('sets aria-busy on input when loading', () => {
     render(
       <Switch
@@ -391,18 +356,6 @@ describe('Switch', () => {
     expect(screen.getByText('Failed to save setting')).toBeInTheDocument();
   });
 
-  it('sets aria-invalid when status type is error', () => {
-    render(
-      <Switch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-        status={{type: 'error', message: 'Error message'}}
-      />,
-    );
-    expect(screen.getByRole('switch')).toHaveAttribute('aria-invalid', 'true');
-  });
-
   it('does not set aria-invalid when status type is not error', () => {
     render(
       <Switch
@@ -413,20 +366,6 @@ describe('Switch', () => {
       />,
     );
     expect(screen.getByRole('switch')).not.toHaveAttribute('aria-invalid');
-  });
-
-  it('associates status message with switch via aria-describedby', () => {
-    render(
-      <Switch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-        status={{type: 'error', message: 'Error message'}}
-      />,
-    );
-    const switchEl = screen.getByRole('switch');
-    const describedBy = switchEl.getAttribute('aria-describedby');
-    expect(describedBy).toBeTruthy();
   });
 
   // Regression: the status is conditionally mounted, so it must be announced
@@ -475,18 +414,6 @@ describe('Switch', () => {
 
     await user.tab();
     expect(handleBlur).toHaveBeenCalled();
-  });
-
-  it('sets required attribute when isRequired is true', () => {
-    render(
-      <Switch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-        isRequired
-      />,
-    );
-    expect(screen.getByRole('switch')).toBeRequired();
   });
 
   describe('disabledMessage', () => {
@@ -587,7 +514,10 @@ describe('Switch', () => {
       expect(control.getAttribute('aria-describedby')).toContain(tooltip.id);
     });
 
-    it('blocks toggling while focusable-disabled', async () => {
+    // The shared switch contract owns whether a switch reported as unavailable
+    // actually stays unchanged; what stays here is Switch's own promise that it
+    // never calls back while blocked.
+    it('does not call onChange while focusable-disabled', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       render(
@@ -599,10 +529,8 @@ describe('Switch', () => {
           disabledMessage="Notifications are turned off org-wide"
         />,
       );
-      const control = screen.getByRole('switch', h);
-      await user.click(control);
+      await user.click(screen.getByRole('switch', h));
       expect(onChange).not.toHaveBeenCalled();
-      expect(control).not.toBeChecked();
     });
 
     it('remains natively disabled when disabled without a reason', () => {

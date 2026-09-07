@@ -684,6 +684,9 @@ importers:
         specifier: '>=19.0.0'
         version: 19.2.7(react@19.2.7)
     devDependencies:
+      '@astryxdesign/a11y-spec':
+        specifier: workspace:*
+        version: link:../../internal/a11y-spec
       '@astryxdesign/cli':
         specifier: workspace:*
         version: link:../cli
