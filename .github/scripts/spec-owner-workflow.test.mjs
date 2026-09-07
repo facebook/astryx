@@ -132,6 +132,22 @@ describe('spec-only workflow contract', () => {
     );
   });
 
+  it('skips every Storybook build command for spec-only changes', () => {
+    const ci = read('.github/workflows/ci.yml');
+    const jobStart = ci.indexOf('  build-storybook:');
+    const jobEnd = ci.indexOf('\n  build-sandbox:', jobStart);
+    const buildJob = ci.slice(jobStart, jobEnd);
+    const steps = buildJob.split(/\n      - name: /).slice(1);
+    const commandSteps = steps.filter(step =>
+      /\n        run: (?:pnpm|node)/.test(step),
+    );
+
+    expect(commandSteps.length).toBeGreaterThan(0);
+    for (const step of commandSteps) {
+      expect(step).toContain("needs.check-scope.outputs.spec_only != 'true'");
+    }
+  });
+
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain('if: ${{ always() && !cancelled() }}');

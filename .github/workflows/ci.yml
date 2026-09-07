@@ -349,11 +349,11 @@ jobs:
         run: pnpm -F @astryxdesign/charts typecheck:docs
 
       - name: Typecheck rich text docs
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/richtext typecheck:docs
 
       - name: Typecheck Vega docs
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/vega typecheck:docs
 
       - name: Typecheck template docs
