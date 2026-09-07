@@ -263,13 +263,14 @@ another implementation helper.
   omit tooltip or the whole status-placement projection even though Field
   consumes the family sentinel. Follow-up work must make attached capability and
   the three input-level choices accurate in each member's API and docs.
-- **Attached FieldStatus overlap:** PR
-  [#5769](https://github.com/facebook/astryx/pull/5769) expands overlap from a
-  descendant `data-size`, which does not establish that the direct control is
-  eligible or that its owning root reliably reflects the resolved size. The
-  implementation must preserve attached for eligible members while unsupported
-  wrapped, custom, tall, and translucent surfaces retain component-owned
-  placement, normally detached.
+- **Attached FieldStatus overlap:** attached placement is limited to eligible
+  members whose direct control and owning root reliably expose resolved size.
+  Eligible members preserve attached placement; unsupported wrapped, custom, tall,
+  and translucent surfaces retain component-owned placement, normally detached.
+  [PR #5769](https://github.com/facebook/astryx/pull/5769) is non-authoritative
+  evidence of an attempted implementation that derives overlap from a descendant
+  `data-size`; that mechanism does not by itself establish eligibility or root-size
+  ownership.
 - **Verification coverage:** current unit tests prove composition, semantics, and
   individual state behavior, but do not yet provide the complete real-browser
   inline-size/end-overlap matrix below. This current record names those
