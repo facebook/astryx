@@ -26,10 +26,8 @@ import {
   type EvidenceLayer,
 } from '../harness';
 
-const OBSERVES: readonly EvidenceLayer[] = ['unit', 'dom'];
-
 /** What this harness can observe. Exported so a suite need not restate it. */
-export const JSDOM_OBSERVES = OBSERVES;
+export const JSDOM_OBSERVES: readonly EvidenceLayer[] = ['unit', 'dom'];
 
 const HARNESS = 'jsdom';
 
@@ -77,7 +75,7 @@ export function createJsdomHarness(options: JsdomHarnessOptions): Harness {
   const subject = createSubject(options.subject);
   return {
     name: HARNESS,
-    observes: OBSERVES,
+    observes: JSDOM_OBSERVES,
     subject: async () => subject,
     click: async () =>
       unobservable('real-browser', 'a real pointer activation'),

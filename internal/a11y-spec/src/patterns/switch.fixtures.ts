@@ -99,6 +99,15 @@ export const SWITCH_FIXTURES: readonly SwitchFixture[] = [
     html: nativeSwitch('disabled'),
   },
   {
+    id: 'conforming-pending',
+    summary:
+      'a switch that refuses its own change without being disabled — the case where "cannot be changed" and "reported disabled" come apart',
+    facts: facts({operable: false}),
+    html: nativeSwitch(
+      `onclick="event.preventDefault()" onkeydown="if (event.key === ' ') { event.preventDefault(); }"`,
+    ),
+  },
+  {
     id: 'conforming-required',
     summary: 'a required switch',
     facts: facts({required: true}),

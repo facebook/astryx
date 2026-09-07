@@ -34,6 +34,7 @@ import {
 import {Switch, type SwitchProps} from '../Switch';
 import {SWITCH_KNOWN_FAILURES} from './Switch.a11y.known-failures';
 import {
+  REMOTE_CONTROL_LABEL,
   SWITCH_BINDING_STATES,
   type SwitchBindingState,
 } from './Switch.a11y.states';
@@ -81,7 +82,18 @@ async function runState(state: SwitchBindingState): Promise<BindingResult> {
     mount: async () => {
       if (state.arrivesBy === 'controlled-update') {
         render(<RemotelyToggledSwitch {...state.props} />);
-        fireEvent.click(screen.getByRole('button', {name: REMOTE_LABEL}));
+        fireEvent.click(
+          screen.getByRole('button', {name: REMOTE_CONTROL_LABEL}),
+        );
+        // A mount precondition, not a contract claim: if the owner's change
+        // never reached the control, every expectation below would be about a
+        // state this binding is not in.
+        const control = screen.getByRole('switch', {hidden: true});
+        if ((control as HTMLInputElement).checked !== state.facts.checked) {
+          throw new Error(
+            `mounting "${state.id}" did not reach the declared state: the owner's change left the switch ${(control as HTMLInputElement).checked ? 'on' : 'off'}`,
+          );
+        }
       } else {
         render(<ControlledSwitch {...state.props} />);
       }

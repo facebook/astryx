@@ -36,15 +36,13 @@ import {
   type Subject,
 } from '../harness';
 
-const OBSERVES: readonly EvidenceLayer[] = [
+/** What this harness can observe. Exported so a suite need not restate it. */
+export const CHROMIUM_OBSERVES: readonly EvidenceLayer[] = [
   'unit',
   'dom',
   'accessibility-tree',
   'real-browser',
 ];
-
-/** What this harness can observe. Exported so a suite need not restate it. */
-export const CHROMIUM_OBSERVES = OBSERVES;
 
 const KEYS: Record<Key, string> = {
   Space: ' ',
@@ -80,9 +78,9 @@ function property(node: AxNode, name: string): unknown {
 
 function flag(node: AxNode, name: string): boolean {
   const value = property(node, name);
-  // The protocol is not consistent about booleans: `disabled` arrives as a
-  // boolean, some flags as 1, and `invalid` as a string. Accept all three
-  // spellings of true rather than silently reading a set flag as unset.
+  // The protocol is not consistent about booleans across property names, so
+  // accept every spelling of true rather than silently reading a set flag as
+  // unset.
   return value === true || value === 'true' || value === 1;
 }
 
@@ -91,8 +89,8 @@ const AX_TARGET_ATTRIBUTE = 'data-a11y-spec-ax-target';
 /**
  * The engine's own accessibility node for the subject.
  *
- * Playwright's `ariaSnapshot` renders role and name but not the invalid state a
- * field contract needs, so this reads the protocol directly. The protocol addresses DOM nodes by id, and the page is on the far
+ * Playwright's `ariaSnapshot` renders role and name, but not the invalid state
+ * a field contract needs, so this reads the protocol directly. The protocol addresses DOM nodes by id, and the page is on the far
  * side of the bridge, so the subject is marked with a data attribute for the
  * length of the query and unmarked afterwards. A data attribute takes no part
  * in accessibility computation, so marking it cannot change the answer.
@@ -212,7 +210,7 @@ export function createChromiumHarness(
 
   return {
     name: 'chromium',
-    observes: OBSERVES,
+    observes: CHROMIUM_OBSERVES,
     subject: async () => subject,
     click: async (_subject, options) => {
       // Without `force`, Playwright first satisfies itself that the control is

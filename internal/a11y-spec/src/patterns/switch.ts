@@ -341,7 +341,7 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
       {
         id: 'switch.disabled.exposed',
         outcome:
-          'A switch the user cannot operate says so, instead of looking available and doing nothing.',
+          'A switch the binding marks unavailable is reported as unavailable, instead of looking available and doing nothing.',
         sources: [WCAG_4_1_2],
         covers: ['4.1.2-name-role-value'],
         appliesWhen: {

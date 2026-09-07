@@ -23,6 +23,14 @@
 import type {SwitchStateFacts} from '@astryxdesign/a11y-spec';
 import type {SwitchProps} from '../Switch';
 
+/**
+ * The label of the second control the ControlledUpdate story renders beside the
+ * switch. Both lanes press it to reach `on-after-controlled-update`.
+ *
+ * SYNC: /apps/storybook/stories/Switch.stories.tsx — the ControlledUpdate story
+ */
+export const REMOTE_CONTROL_LABEL = 'Turn on remotely';
+
 export interface SwitchBindingState {
   /** Stable state id. Named by known-failure records, so it does not churn. */
   readonly id: string;

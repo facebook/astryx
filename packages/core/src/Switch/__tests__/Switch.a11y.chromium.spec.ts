@@ -37,6 +37,7 @@ import {
 } from '@astryxdesign/a11y-spec/storybook';
 import {SWITCH_KNOWN_FAILURES} from './Switch.a11y.known-failures';
 import {
+  REMOTE_CONTROL_LABEL,
   SWITCH_BINDING_STATES,
   type SwitchBindingState,
 } from './Switch.a11y.states';
@@ -76,7 +77,13 @@ async function runState(
         // Getting into this state is the owner's doing, not the user's: the
         // story's second control changes the value the switch is given. Doing
         // it here, in the mount, keeps every expectation about the switch.
-        await root.getByRole('button', {name: 'Turn on remotely'}).click();
+        await root.getByRole('button', {name: REMOTE_CONTROL_LABEL}).click();
+        // A mount precondition, not a contract claim: if the owner's change
+        // never reached the control, every expectation below would be about a
+        // state this binding is not in.
+        await root
+          .getByRole('switch', {checked: state.facts.checked})
+          .waitFor({state: 'attached'});
       }
       return createChromiumHarness({page, subject, cdp});
     },

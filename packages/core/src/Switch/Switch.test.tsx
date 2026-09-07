@@ -329,9 +329,8 @@ describe('Switch', () => {
     expect(children.length).toBe(2);
   });
 
-  // Retained on purpose: the shared contract's busy expectation is advisory
-  // (nothing current adopts a busy state for the switch pattern), so it reports
-  // and does not gate. This keeps the regression gated for Switch itself.
+  // Retained on purpose: the shared switch contract encodes no busy expectation
+  // — no current record adopts one — so this is the only thing gating it.
   it('sets aria-busy on input when loading', () => {
     render(
       <Switch
