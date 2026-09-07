@@ -209,6 +209,7 @@ describe('positive CI surfaces', () => {
         'packages/core/src/Button/Button.spec.md',
         'packages/core/src/Button/Button.tsx',
       ],
+      surfaces: [SURFACES.KNOWLEDGE, 'runtime:core'],
     },
     {
       name: 'module spec plus Table plugin code',
@@ -216,10 +217,12 @@ describe('positive CI surfaces', () => {
         'packages/core/src/Table/plugins/rowStatus/useTableRowStatus.spec.md',
         'packages/core/src/Table/plugins/rowStatus/useTableRowStatus.tsx',
       ],
+      surfaces: [SURFACES.KNOWLEDGE, 'runtime:core'],
     },
     {
       name: 'tooling plus component code',
       files: [scoreLedger, 'packages/core/src/Button/Button.tsx'],
+      surfaces: [SURFACES.NODE_TOOLING, 'runtime:core'],
     },
     {
       name: 'workflow self-change',
@@ -237,22 +240,30 @@ describe('positive CI surfaces', () => {
       name: 'shared infrastructure',
       files: ['pnpm-lock.yaml'],
     },
-  ])('fails closed for $name', ({files}) => {
+  ])('fails closed for $name', ({files, surfaces}) => {
     const result = classifyChanges(files.map(filename => ({filename})));
     expect(result.toolingOnly).toBe(false);
-    expect(result.surfaces).toContain(SURFACES.SHARED_OR_UNKNOWN);
+    if (surfaces) {
+      expect(result.surfaces).toEqual(surfaces);
+    } else {
+      expect(result.surfaces).toContain(SURFACES.SHARED_OR_UNKNOWN);
+    }
   });
 
   it.each([
-    'packages/core/src/Button/Button.tsx',
-    'packages/lab/src/TransferList/TransferList.tsx',
-    'packages/charts/src/Chart.tsx',
-    'packages/richtext/src/RichTextView.tsx',
-    'packages/vega/src/VegaChart.tsx',
-  ])('routes public package surface %s through broad CI', filename => {
+    ['packages/core/src/Button/Button.tsx', ['runtime:core']],
+    ['packages/lab/src/TransferList/TransferList.tsx', ['runtime:lab']],
+    ['packages/charts/src/Chart.tsx', ['runtime:charts']],
+    ['packages/richtext/src/RichTextView.tsx', ['runtime:richtext']],
+    ['packages/vega/src/VegaChart.tsx', ['runtime:vega']],
+    ['packages/cli/api/build/build.mjs', ['runtime:cli']],
+    ['packages/build/src/vite.ts', ['runtime:build', 'theme-build']],
+    ['packages/themes/neutral/src/neutralTheme.ts', ['theme-build']],
+    ['apps/storybook/stories/Button.stories.tsx', ['storybook-visual']],
+  ])('routes public surface %s through broad CI', (filename, surfaces) => {
     const result = classifyChanges([{filename}]);
     expect(result.toolingOnly).toBe(false);
-    expect(result.surfaces).toEqual([SURFACES.SHARED_OR_UNKNOWN]);
+    expect(result.surfaces).toEqual(surfaces);
   });
 
   it('fails closed when a tooling path was renamed from an unknown path', () => {

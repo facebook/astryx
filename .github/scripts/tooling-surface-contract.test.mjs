@@ -35,10 +35,34 @@ function consumedScoreLedgerExports() {
     .filter(Boolean);
 }
 
+const EXPECTED_CONSUMED_EXPORTS = [
+  'AUDIT_PROMPT',
+  'DEFAULT_LEDGER_URL',
+  'DEFAULT_REPO',
+  'LEDGER_FETCH_TIMEOUT_MS',
+  'SECTION_TITLES',
+  'SECTION_WEIGHTS',
+  'isBlocksShape',
+  'isEvidenceItem',
+  'listComponents',
+];
+
+function expectRecord(value, predicate) {
+  expect(value).not.toBeNull();
+  expect(Array.isArray(value)).toBe(false);
+  expect(typeof value).toBe('object');
+  for (const [key, entry] of Object.entries(value)) {
+    expect(key.length).toBeGreaterThan(0);
+    expect(predicate(entry), `${key} has an invalid projected value`).toBe(
+      true,
+    );
+  }
+}
+
 describe('score-ledger tooling surface', () => {
-  it('keeps every Sandbox projection import available', () => {
-    const consumed = consumedScoreLedgerExports();
-    expect(consumed.length).toBeGreaterThan(0);
+  it('keeps the Sandbox projection import list explicit and available', () => {
+    const consumed = consumedScoreLedgerExports().sort();
+    expect(consumed).toEqual([...EXPECTED_CONSUMED_EXPORTS].sort());
     for (const name of consumed) {
       expect(scoreLedger, `missing Sandbox export ${name}`).toHaveProperty(
         name,
@@ -46,16 +70,41 @@ describe('score-ledger tooling surface', () => {
     }
   });
 
-  it('keeps projected values in the shapes the generated module emits', () => {
-    expect(scoreLedger.AUDIT_PROMPT).toEqual(expect.any(String));
+  it('keeps every serialized value in the exact generated-module shape', () => {
+    expect(typeof scoreLedger.AUDIT_PROMPT).toBe('string');
     expect(scoreLedger.AUDIT_PROMPT.length).toBeGreaterThan(0);
-    expect(scoreLedger.DEFAULT_LEDGER_URL).toMatch(/^https:\/\//);
-    expect(scoreLedger.DEFAULT_REPO).toEqual(expect.any(String));
+    expect(() => new URL(scoreLedger.DEFAULT_LEDGER_URL)).not.toThrow();
+    expect(scoreLedger.DEFAULT_REPO).toMatch(/^[^/]+\/[^/]+$/);
+    expect(Number.isInteger(scoreLedger.LEDGER_FETCH_TIMEOUT_MS)).toBe(true);
     expect(scoreLedger.LEDGER_FETCH_TIMEOUT_MS).toBeGreaterThan(0);
-    expect(scoreLedger.SECTION_TITLES).toEqual(expect.any(Object));
-    expect(scoreLedger.SECTION_WEIGHTS).toEqual(expect.any(Object));
+
+    expectRecord(
+      scoreLedger.SECTION_TITLES,
+      value => typeof value === 'string',
+    );
+    expectRecord(
+      scoreLedger.SECTION_WEIGHTS,
+      value => typeof value === 'number' && Number.isFinite(value),
+    );
+    expect(Object.keys(scoreLedger.SECTION_TITLES).sort()).toEqual(
+      Object.keys(scoreLedger.SECTION_WEIGHTS).sort(),
+    );
+
+    const components = scoreLedger.listComponents();
+    expect(Array.isArray(components)).toBe(true);
+    expect(components.length).toBeGreaterThan(0);
+    for (const component of components) {
+      expect(component).toEqual({
+        component: expect.any(String),
+        package: expect.any(String),
+      });
+      expect(component.component.length).toBeGreaterThan(0);
+      expect(component.package.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('keeps generator-only validators callable', () => {
     expect(scoreLedger.isBlocksShape).toEqual(expect.any(Function));
     expect(scoreLedger.isEvidenceItem).toEqual(expect.any(Function));
-    expect(scoreLedger.listComponents).toEqual(expect.any(Function));
   });
 });
