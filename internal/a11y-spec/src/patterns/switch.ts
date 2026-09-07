@@ -203,7 +203,7 @@ function collapse(value: string): string {
  * Required" — the same words, one decorative separator apart. Comparing raw
  * strings would report that as a failure, which would be wrong.
  */
-function spokenWords(value: string): readonly string[] {
+export function spokenWords(value: string): readonly string[] {
   return collapse(value)
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .split(' ')
@@ -216,8 +216,11 @@ function spokenWords(value: string): readonly string[] {
  * A substring test would be wrong here: "Sync" is a substring of "Syncing
  * photos" but a speech-input user saying "Sync" is not saying the label. Words
  * are compared whole, and their order is kept.
+ *
+ * Exported because a binding's own inventory check needs the same rule: a
+ * looser comparison there would let a stale inventory entry pass unnoticed.
  */
-function saysInOrder(
+export function saysInOrder(
   whole: readonly string[],
   part: readonly string[],
 ): boolean {

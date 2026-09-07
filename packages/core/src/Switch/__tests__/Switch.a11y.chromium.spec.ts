@@ -26,6 +26,8 @@ import {
   formatFailures,
   formatReport,
   runBinding,
+  saysInOrder,
+  spokenWords,
   summarize,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
@@ -107,6 +109,27 @@ async function runState(
   });
 }
 
+/** Astryx renders these after the label text; they are not part of it. */
+const FIELD_MARKERS = ['required', 'optional'];
+
+/**
+ * Whether the page renders exactly the label the inventory claims.
+ *
+ * Word-for-word, not a prefix or a substring: "Sync" must not pass for "Sync
+ * photos", or a half-written entry would sit here unnoticed. The one allowance
+ * is Astryx's own trailing field marker, which the component adds and the
+ * inventory names the label without.
+ */
+function namesTheSameLabel(rendered: string, claimed: string): boolean {
+  const words = [...spokenWords(rendered)];
+  const last = words[words.length - 1];
+  if (last != null && FIELD_MARKERS.includes(last)) {
+    words.pop();
+  }
+  const expected = spokenWords(claimed);
+  return words.length === expected.length && saysInOrder(words, expected);
+}
+
 /**
  * The inventory AST-021 FR2 asks for, checked against the page rather than
  * trusted. It is deliberately NOT part of the shared contract: a wrong entry
@@ -126,11 +149,10 @@ test('the state inventory describes the labels the page actually renders', async
       cdp,
     });
     const rendered = await (await harness.subject()).visibleLabelText();
-    // Astryx appends its own required marker; the inventory names the label.
     const matches =
       state.visibleLabel == null
         ? rendered == null
-        : rendered != null && rendered.startsWith(state.visibleLabel);
+        : rendered != null && namesTheSameLabel(rendered, state.visibleLabel);
     if (!matches) {
       wrong.push(
         `${state.id}: inventory says ${JSON.stringify(state.visibleLabel)}, page renders ${JSON.stringify(rendered)}`,

@@ -66,4 +66,9 @@ export {
 
 export {createJsdomHarness, type JsdomHarnessOptions} from './harness/jsdom';
 
-export {SWITCH_PATTERN, type SwitchStateFacts} from './patterns/switch';
+export {
+  SWITCH_PATTERN,
+  saysInOrder,
+  spokenWords,
+  type SwitchStateFacts,
+} from './patterns/switch';

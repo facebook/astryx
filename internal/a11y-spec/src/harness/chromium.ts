@@ -220,17 +220,26 @@ export function createChromiumHarness(
       locator.evaluate(element => {
         // Whether a person can actually read this text.
         //
-        // `checkVisibility` is the platform's own answer and it walks
-        // ancestors, so a label inside a `visibility: hidden`, `opacity: 0`, or
-        // `display: none` wrapper is correctly invisible without this code
-        // reimplementing the cascade. What it does NOT answer is the sr-only
-        // recipe — 1×1 and clipped, or parked offscreen — because those stay
-        // "visible" to the platform. Hence the box.
+        // Two questions, because no single API answers both.
         //
-        // Deliberately NOT a `clip-path`/`clip` test: a decorative clip on a
-        // perfectly readable label would fail one, and the sr-only case it was
-        // meant to catch is already caught by the 1×1 box.
-        const shown = (node: Element): boolean => {
+        // `checkVisibility` is the platform's own answer to "is this rendered
+        // at all", and it walks ancestors — so a label inside a
+        // `visibility: hidden`, `opacity: 0`, or `display: none` wrapper is
+        // correctly invisible without this code reimplementing the cascade.
+        //
+        // What it cannot answer is whether anything of the element actually
+        // lands on screen: every sr-only recipe stays "visible" to it. So the
+        // element is sampled — if a point over it resolves to the element, to
+        // something inside it, or to something COVERING it, the element paints
+        // there. If every sample resolves to one of the element's own
+        // ancestors, nothing of it paints: it is clipped away, whatever its box
+        // says. If a sample resolves to nothing at all, that point is outside
+        // the viewport.
+        //
+        // Occlusion is deliberately not hiding: a label under an overlay is
+        // still a label a person can read when the overlay moves, and treating
+        // it as hidden would silently switch off the criterion that reads it.
+        const paints = (node: Element): boolean => {
           if (
             !node.checkVisibility({
               visibilityProperty: true,
@@ -241,15 +250,23 @@ export function createChromiumHarness(
             return false;
           }
           const box = node.getBoundingClientRect();
-          if (box.width <= 1 || box.height <= 1) {
-            return false;
-          }
-          // Parked off the top or the inline start of the viewport.
-          return box.right > 0 && box.bottom > 0;
+          const samples: ReadonlyArray<readonly [number, number]> = [
+            [box.x + box.width / 2, box.y + box.height / 2],
+            [box.x + 1, box.y + box.height / 2],
+            [box.right - 1, box.y + box.height / 2],
+          ];
+          return samples.some(([x, y]) => {
+            const at = node.ownerDocument.elementFromPoint(x, y);
+            if (at == null) {
+              // Outside the viewport, so nothing is there to read.
+              return false;
+            }
+            return at === node || node.contains(at) || !at.contains(node);
+          });
         };
         const textOf = (node: Element): string | null => {
           const text = (node.textContent ?? '').replace(/\s+/g, ' ').trim();
-          return text !== '' && shown(node) ? text : null;
+          return text !== '' && paints(node) ? text : null;
         };
 
         // The platform's own labelling order, not any design system's.
@@ -312,17 +329,34 @@ export function createChromiumHarness(
         width: window.innerWidth,
         height: window.innerHeight,
       }));
-      // Release well clear of the control but still inside the viewport: a
-      // gesture that ends out of bounds is not a gesture the browser reports,
-      // and where the fixture happens to sit must not decide whether this runs.
-      const clamp = (value: number, limit: number): number =>
-        Math.max(1, Math.min(value, limit - 1));
+      // Release clear of the control but still inside the viewport: a gesture
+      // that ends out of bounds is not one the browser reports. Which way to
+      // go is decided per axis by whichever side has more room, so a control
+      // flush against an edge does not push the release back INSIDE its own box
+      // — which would be a completed click, and would fail a switch that is
+      // behaving correctly.
+      const away = (start: number, end: number, limit: number): number => {
+        const before = start;
+        const after = limit - end;
+        return before > after
+          ? Math.max(1, start - 200)
+          : Math.min(limit - 1, end + 200);
+      };
+      const releaseX = away(box.x, box.x + box.width, viewport.width);
+      const releaseY = away(box.y, box.y + box.height, viewport.height);
+      const insideTheControl =
+        releaseX >= box.x &&
+        releaseX <= box.x + box.width &&
+        releaseY >= box.y &&
+        releaseY <= box.y + box.height;
+      if (insideTheControl) {
+        throw new Error(
+          'the viewport leaves nowhere to release a press outside this control, so an aborted press cannot be performed here',
+        );
+      }
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.mouse.down();
-      await page.mouse.move(
-        clamp(box.x + box.width + 200, viewport.width),
-        clamp(box.y + box.height + 200, viewport.height),
-      );
+      await page.mouse.move(releaseX, releaseY);
       await page.mouse.up();
     },
     press: async key => {
