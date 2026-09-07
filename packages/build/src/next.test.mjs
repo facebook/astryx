@@ -14,7 +14,7 @@
  *   `config.resolve.alias` cannot tell a winning entry from a shadowed one.
  */
 
-import {describe, it, expect, beforeAll, afterAll} from 'vitest';
+import {describe, it, expect, beforeAll, afterAll, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -362,5 +362,67 @@ describe('withAstryx', () => {
 
     expect(config.marker).toBe(true);
     expect(config.resolve.alias['@astryxdesign/core$']).toBeDefined();
+  });
+});
+
+describe('withAstryx bundler guard', () => {
+  afterEach(() => {
+    delete process.env.TURBOPACK;
+    vi.restoreAllMocks();
+  });
+
+  it('refuses to build a config under Turbopack', () => {
+    process.env.TURBOPACK = '1';
+    expect(() => withAstryx()).toThrow(/requires the webpack bundler/);
+  });
+
+  it('names both ways out in the message', () => {
+    process.env.TURBOPACK = '1';
+    // The two supported routes: keep the source build and pick webpack, or drop
+    // the source build entirely and consume the pre-built package.
+    expect(() => withAstryx()).toThrow(/--webpack/);
+    expect(() => withAstryx()).toThrow(/astryx\.css/);
+  });
+
+  it('refuses before touching the caller config', () => {
+    process.env.TURBOPACK = '1';
+    const webpack = vi.fn();
+    expect(() => withAstryx({webpack})).toThrow();
+    expect(webpack).not.toHaveBeenCalled();
+  });
+
+  it('builds normally when Turbopack is not in play', () => {
+    expect(() => withAstryx()).not.toThrow();
+  });
+});
+
+describe('withAstryx alias coverage', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('warns when no package yields a source entry', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // An app directory with no astryx packages installed: every lookup is
+    // skipped, the alias map comes out empty, and that is the pre-0.5.3 config
+    // rather than a partial one.
+    const empty = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-none-')),
+    );
+    try {
+      withAstryx().webpack({resolve: {}}, {dir: empty});
+      expect(warn).toHaveBeenCalledOnce();
+      expect(warn.mock.calls[0][0]).toMatch(/resolved no `source` entries/);
+    } finally {
+      fs.rmSync(empty, {recursive: true, force: true});
+    }
+  });
+
+  it('stays quiet when at least one package resolves', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Only @astryxdesign/core is installed in the fixture; theme-neutral and
+    // lab are absent and skipped. A partial map is the normal case, not a fault.
+    resolveConfig();
+    expect(warn).not.toHaveBeenCalled();
   });
 });

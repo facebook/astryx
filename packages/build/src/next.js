@@ -20,6 +20,35 @@ const path = require('path');
 const ASTRYX_MODULE = /[\\/]node_modules[\\/]@astryxdesign[\\/]/;
 
 /**
+ * Every alias this helper installs lives in `nextConfig.webpack`, and Turbopack
+ * never calls that hook. So `withAstryx()` under Turbopack reinstates exactly
+ * the failure the aliases exist to prevent: the app resolves the library
+ * through `default` to dist, whose runtime class names are disjoint from the
+ * CSS the PostCSS pass compiles out of source, and the build succeeds with an
+ * unstyled page and nothing logged.
+ *
+ * There is no configuration in which the combination does what the author
+ * intended, so this refuses rather than warning — an unstyled production deploy
+ * costs more than a failed build. Next sets `TURBOPACK` for both
+ * `next dev --turbopack` and `next build --turbopack`, in the parent process
+ * and in each build worker.
+ */
+function assertWebpack() {
+  if (!process.env.TURBOPACK) {
+    return;
+  }
+  throw new Error(
+    'withAstryx() requires the webpack bundler: it configures resolution ' +
+      'through nextConfig.webpack, which Turbopack does not call, so the app ' +
+      'would resolve @astryxdesign/* to dist while the CSS is compiled from ' +
+      'source and render unstyled.\n' +
+      'Run the source build with `next build --webpack` / `next dev --webpack`, ' +
+      'or drop withAstryx() and consume the pre-built package instead — import ' +
+      "'@astryxdesign/core/astryx.css' and skip the babel and PostCSS setup.",
+  );
+}
+
+/**
  * Locate an installed package's directory by walking `node_modules` up from
  * the app, the way Node resolves a bare specifier. Returns null when the
  * package is not installed.
@@ -164,6 +193,8 @@ function sourceEntryAliases(packages, context) {
  * - Sets conditionNames to resolve source exports
  */
 function withAstryx(nextConfig = {}) {
+  assertWebpack();
+
   const astryxPackages = [
     '@astryxdesign/core',
     '@astryxdesign/theme-neutral',
@@ -227,10 +258,26 @@ function withAstryx(nextConfig = {}) {
       // where the resolver, taking the first match, loads astryx source
       // instead. Only a byte-identical `$` key would have replaced ours.
       merged.resolve = merged.resolve || {};
-      merged.resolve.alias = mergeAliases(
-        sourceEntryAliases(astryxPackages, context),
-        merged.resolve.alias,
-      );
+      const generated = sourceEntryAliases(astryxPackages, context);
+
+      // Skipping a package that is not installed is correct on its own — an app
+      // need not depend on all three. Skipping every one of them is not: the
+      // result is zero aliases, which is the pre-0.5.3 config, and the app goes
+      // back to resolving dist against source-compiled CSS. That reads as
+      // working right up to the unstyled page, so say it instead. A warning
+      // rather than a throw because an install layout this helper cannot walk
+      // is not proof the build is wrong.
+      if (Object.keys(generated).length === 0) {
+        console.warn(
+          '[@astryxdesign/build] withAstryx() resolved no `source` entries for ' +
+            `${astryxPackages.join(', ')}. Either none is installed where the ` +
+            'app can see it, or their export maps ship no `source` condition. ' +
+            'The app will resolve them to dist while the PostCSS pass compiles ' +
+            'the library from source, and render unstyled.',
+        );
+      }
+
+      merged.resolve.alias = mergeAliases(generated, merged.resolve.alias);
       return merged;
     },
   };
