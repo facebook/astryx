@@ -424,5 +424,16 @@
       "overlay": ".astryx-rich-text-editor > div:first-child > div:last-child",
       "overlayRoot": ".astryx-rich-text-editor"
     }
+  },
+  {
+    "component": "AvatarGroupOverflow",
+    "storyId": "core-avatargroupoverflow--default",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-avatar-group > .astryx-avatar:first-child",
+      "next": ".astryx-avatar-group-overflow"
+    }
   }
 ]
