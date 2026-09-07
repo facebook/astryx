@@ -290,49 +290,44 @@ Rejected: creating a parallel operation because one internal call path needs
 additional control. That choice exposes internal call-path differences and leaves
 maintainers or consumers to distinguish two names for one action.
 
-### DEC-4 — API review separates objective rejection from owner judgment
+### DEC-4 — API review separates mechanical evidence from owner judgment
 
 **Reference:** `spec:AST-002/DEC-4`
-**Decider:** `cixzhang`, `2026-08-31`
+**Decider:** `cixzhang`, `2026-09-06`
 
-The API gate rejects a missing PR-readable semantic delta, a missing canonical-
-owner-record update, a derivable implementation choice, an overloaded input,
-hidden conditional precedence, or duplicate operation names for one semantic
-action now. Component-local semantics update the component spec; shared semantics
-update their family, architecture, or system owner. During rollout, that canonical
-record may be draft context routed to its owner; draft context never becomes
-policy. Only rejection because the canonical owner lacks `current` authority waits
-for a later current policy that activates enforcement for a covered, benchmarked
-scope. A surviving proposal is presented as an explicit semantic delta for the
-human owner to accept, reject, or refine. Automation does not make that judgment.
+Mechanical review inventories the exact public API and behavior delta, identifies
+the canonical owner, and rejects objective API-shape violations such as derivable
+choices, overloaded inputs, hidden conditional precedence, or duplicate operation
+names for one semantic action. It does not decide unsettled semantics.
 
-Rejected: asking owners to discover both mechanical defects and the intended
-semantic change from implementation code, or rejecting all API work until every
-component contract is current. Either path wastes human judgment or dead-ends the
-coverage rollout.
+When current authority does not settle a surviving proposal, route it privately to
+the human owner. The owner accepts, rejects, or refines the semantic contract; the
+accepted decision becomes review authority only after it is committed in the
+canonical record as `current`.
 
-### DEC-5 — Semantic contracts apply now; broad coverage rejection activates later
+Rejected: asking owners to discover mechanical defects from implementation code,
+treating generated evidence as a semantic decision, or publishing a contributor-
+facing verdict before the owner settles an absent contract.
+
+### DEC-5 — Public changes require committed current authority
 
 **Reference:** `spec:AST-002/DEC-5`
-**Decider:** `cixzhang`, `2026-08-31`
+**Decider:** `cixzhang`, `2026-09-06`
 
-Semantic API contracts apply now at their canonical owner, and the one-canonical-
-operation rule applies now to public and package-internal forms of the same
-semantic action. API changes that lack a PR-readable semantic delta or fail to
-update or add the canonical owning record are rejected now. Component-local
-semantics use the component spec; family-, architecture-, or system-owned
-semantics use that record. The canonical record may remain draft context routed
-to its owner.
+Every public API addition and public behavior change identifies applicable current
+committed authority before implementation acceptance. Draft records provide
+context and route questions, but they are not policy and cannot clear the gate.
+Exact-head owner discussion or approval is decision evidence, not a substitute for
+recording the accepted contract as current.
 
-Broad mechanical rejection because that canonical owner lacks `current`
-authority is not active. It requires a later current policy decision that names
-the enforced scope after that scope has current contract coverage and the
-historical benchmark shows the gate can block changes without unacceptable false
-rejections.
+Missing authority creates the private unsettled path owned by
+`architecture:knowledge-contracts`; it is not permission to accept the change and
+not an automatic contributor-facing rejection. After the canonical decision is
+current, review the implementation's exact head against it.
 
-Rejected: delaying semantic contract ownership until every owning record is
-current, or treating this decision as immediate authorization to reject every API
-change whose canonical owner is draft or missing.
+Rejected: the former staged exception that let one pull request proceed on owner
+approval while leaving its reusable contract draft or missing. That path made the
+same public behavior acceptable in one review and undiscoverable in the next.
 
 ### DEC-6 — Public inputs keep one semantic responsibility
 
