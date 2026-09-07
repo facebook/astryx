@@ -22,10 +22,13 @@ export const doc = {
     'theme adds custom prop values). When another build step emits the icon registry, ' +
     '{iconsSpecifier} declares the fully specified module path for the generated JS import. ' +
     'With {check: true} it writes nothing and instead compares ' +
-    'each output against disk, returning the drift: the CI guard for committed, generated theme CSS.',
+    'each output against disk, returning the drift: the CI guard for committed, generated theme CSS. ' +
+    'With {tokens: true} it additionally writes <name>.tokens.json, a flat dump of the same ' +
+    'resolved tokens keyed by CSS custom property name, for syncing into tooling outside the ' +
+    'runtime (for example, a design tool\'s variables).',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'themeBuild(file: string, options?: {out?: string, check?: boolean, iconsSpecifier?: string}, ctx?: {cwd?: string}): Promise<ThemeBuildResponse | ThemeBuildCheckResponse | null>',
+    'themeBuild(file: string, options?: {out?: string, check?: boolean, iconsSpecifier?: string, tokens?: boolean}, ctx?: {cwd?: string}): Promise<ThemeBuildResponse | ThemeBuildCheckResponse | null>',
   keywords: [
     'theme',
     'build',
@@ -63,6 +66,13 @@ export const doc = {
         'Override the icon-registry import specifier in the generated JS module, for example ./icons.mjs. When omitted, the source specifier is preserved.',
     },
     {
+      name: 'options.tokens',
+      type: 'boolean',
+      description:
+        'Also write <name>.tokens.json: {tokens, localTokens} as flat {cssCustomPropertyName: value} maps, resolved from the same object the CSS is generated from. Off by default so existing builds and --check baselines are unaffected.',
+      default: 'false',
+    },
+    {
       name: 'ctx.cwd',
       type: 'string',
       description:
@@ -73,7 +83,7 @@ export const doc = {
     {
       type: 'theme.build',
       description:
-        'Build receipt: theme name, token- and component-override counts, output size in KB, the written outputs {css, js, dts, and variantsDts when custom prop values were augmented}, and any validation warnings. Resolves to null instead when the theme produced no CSS (nothing to build).',
+        'Build receipt: theme name, token- and component-override counts, output size in KB, the written outputs {css, js, dts, variantsDts when custom prop values were augmented, and tokensJson when {tokens: true}}, and any validation warnings. Resolves to null instead when the theme produced no CSS (nothing to build).',
     },
     {
       type: 'theme.build.check',
@@ -113,6 +123,10 @@ export const doc = {
     {
       label: 'Use a separately compiled icon registry',
       code: "const r = await themeBuild('src/themes/ocean.ts', {iconsSpecifier: './icons.mjs'});",
+    },
+    {
+      label: 'Emit a token dump alongside the usual outputs',
+      code: "const r = await themeBuild('src/themes/ocean.ts', {tokens: true});",
     },
   ],
   command: 'theme build',

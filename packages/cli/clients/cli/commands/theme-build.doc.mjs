@@ -22,7 +22,10 @@ export const doc = {
     'failure; an app with several themes does not need a shell loop. With --check it writes ' +
     'nothing and instead reports whether the committed outputs have drifted from source. ' +
     'When a separate build step emits the icon registry, --icons-specifier declares the ' +
-    'fully specified module path that the generated JS should import.',
+    'fully specified module path that the generated JS should import. --tokens additionally ' +
+    'writes <name>.tokens.json, a flat {cssCustomPropertyName: value} dump of the same ' +
+    'resolved tokens the CSS is generated from — for feeding an external sync (for example, ' +
+    'into a design tool\'s variables) rather than for use by the runtime.',
   fn: 'themeBuild',
   args: [{name: 'files', param: 'file', required: true, variadic: true}],
   options: [
@@ -43,6 +46,12 @@ export const doc = {
       description:
         'Verify the committed outputs match the source without writing; exit non-zero if stale',
     },
+    {
+      flag: '--tokens',
+      param: 'options.tokens',
+      description:
+        'Also write <name>.tokens.json, a flat dump of the theme\'s resolved CSS custom properties',
+    },
   ],
   examples: [
     {
@@ -60,6 +69,10 @@ export const doc = {
     {
       label: 'Build against a separately compiled icon registry',
       cli: 'astryx theme build ./src/themes/ocean.ts --icons-specifier ./icons.mjs',
+    },
+    {
+      label: 'Emit a token dump alongside the usual outputs',
+      cli: 'astryx theme build ./src/themes/ocean.ts --tokens',
     },
   ],
   exitCodes: [

@@ -1039,11 +1039,14 @@ function validatePrivateVars(themeDef) {
  * `logger` (silent by default).
  *
  * @param {string} file - Theme file path, resolved against `cwd`.
- * @param {{out?: string, check?: boolean, iconsSpecifier?: string}} [options] -
+ * @param {{out?: string, check?: boolean, iconsSpecifier?: string, tokens?: boolean}} [options] -
  *   `out` overrides the output CSS path; `check` compares against on-disk outputs
  *   instead of writing. `iconsSpecifier` overrides the icon registry import
  *   specifier in the generated module (e.g. `./icons.mjs`); when omitted, the
- *   specifier scraped from the theme source is emitted unchanged.
+ *   specifier scraped from the theme source is emitted unchanged. `tokens`
+ *   additionally emits a `<name>.tokens.json` machine-readable dump of the
+ *   theme's resolved CSS custom properties (see #5923) — off by default so
+ *   existing builds and `--check` baselines are unaffected.
  * @param {{cwd?: string}} [ctx]
  * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | import('../theme.type.mjs').ThemeBuildCheckResponse | null>}
  */
@@ -1272,6 +1275,9 @@ export async function themeBuild(
   const outDir = path.dirname(outPath);
   const jsPath = path.join(outDir, `${baseName}.js`);
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
+  const tokensJsonPath = options.tokens
+    ? path.join(outDir, `${baseName}.tokens.json`)
+    : null;
 
   const iconInfo = extractIconInfo(filePath);
 
@@ -1306,6 +1312,37 @@ export async function themeBuild(
     generatedHeader(sourceRelative, 'ts', buildCommand, versions) +
     generateBuiltTypes(themeDef, iconInfo, variantsFileName);
 
+  // Machine-readable token dump (opt-in via `--tokens`, see #5923). This is
+  // the same `resolvedTheme` object the CSS generator above already
+  // consumes — nothing is re-resolved, so the dump can never drift from the
+  // CSS it describes. Consumers (e.g. a Figma variable sync script) read
+  // `tokens`/`localTokens` as flat `{cssCustomPropertyName: value}` maps
+  // keyed exactly as they appear in the generated CSS (`--color-accent`,
+  // not a bare token name), so no separate name-mapping step is needed on
+  // the reading side. JSON has no comment syntax, so provenance that would
+  // otherwise sit in a `@generated` header comment is a `$generated` key
+  // instead. Deliberately excludes the invocation string (unlike the CSS/JS
+  // headers' `Command:` line, which `--check` strips before comparing) so
+  // this file has no field that's volatile across otherwise-identical
+  // builds — `--check` compares it byte for byte, with no normalization.
+  const tokensJsonContent = tokensJsonPath
+    ? JSON.stringify(
+        {
+          $generated: {
+            by: 'astryx theme build --tokens',
+            source: sourceRelative,
+            cli: versions.cli,
+            core: versions.core,
+          },
+          name: themeDef.name,
+          tokens: displayTheme.tokens ?? {},
+          localTokens: displayTheme.localTokens ?? {},
+        },
+        null,
+        2,
+      ) + '\n'
+    : null;
+
   // Atomic-ish write: stage every file as `<dest>.tmp`, then rename
   // each into place. If any stage step fails we clean up partials and
   // exit; if a rename fails mid-way we still have the originals (or
@@ -1317,6 +1354,9 @@ export async function themeBuild(
   ];
   if (variantDtsPath && variantContent) {
     writes.push({dest: variantDtsPath, content: variantContent});
+  }
+  if (tokensJsonPath && tokensJsonContent) {
+    writes.push({dest: tokensJsonPath, content: tokensJsonContent});
   }
 
   // Check mode: compare generated content against what's on disk instead of
@@ -1400,6 +1440,9 @@ export async function themeBuild(
       `✓ ${path.relative(cwd, variantDtsPath)} (${augCount} type augmentations)`,
     );
   }
+  if (tokensJsonPath && tokensJsonContent) {
+    logger.log(`✓ ${path.relative(cwd, tokensJsonPath)}`);
+  }
 
   const relOutDir = path.relative(cwd, outDir) || '.';
   const cssBase = path.basename(outPath, '.css');
@@ -1459,6 +1502,9 @@ Or with a <link> tag:
         dts: path.relative(cwd, dtsPath),
         ...(variantDecl && variantDtsPath
           ? {variantsDts: path.relative(cwd, variantDtsPath)}
+          : {}),
+        ...(tokensJsonPath
+          ? {tokensJson: path.relative(cwd, tokensJsonPath)}
           : {}),
       },
       warnings: warningMessages,
