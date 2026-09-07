@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: null
 approved_at: null
 owners: [cixzhang]
-review_triggers: [behavior, theming, accessibility, motion]
+review_triggers: [behavior, theming, accessibility]
 verified_by:
   [
     packages/core/src/MobileNav/MobileNav.test.tsx,
@@ -26,7 +26,6 @@ architecture:
     architecture:component-theming-surface,
     architecture:layer-runtime,
     architecture:public-component-api,
-    architecture:react-update-propagation,
   ]
 contributing: []
 system_specs: []
@@ -37,18 +36,17 @@ system_specs: []
 ## Intent
 
 MobileNav presents mobile navigation in a modal drawer and exports an AppShell-
-aware Toggle button for opening and closing it. This contract records aggregate
-anatomy, theming ownership, exit completion, and the boundary between MobileNav
-motion and AppShell visibility.
+aware Toggle button for opening and closing it. This draft records the aggregate
+consumer anatomy and theming ownership of both exports without changing runtime
+behavior, styling, targets, or public API.
 
 ## Compatibility and migration
 
-- Existing MobileNav and MobileNavToggle props, exports, controlled state, DOM,
-  targets, aliases, and defaults remain the public compatibility baseline.
-- Changes to close lifecycle or ancestor visibility MUST preserve normal and
-  reduced-motion exit completion, focus, dismissal, and rapid reopen behavior.
-- A change that cannot preserve valid released usage follows
-  `architecture:public-component-api` compatibility and migration requirements.
+- Released default preserved: `yes`
+- Compatibility class: additive documentation only; runtime, DOM, styling,
+  targets, aliases, and public API remain unchanged
+- Controlled/uncontrolled behavior: unchanged
+- Migration decision: none
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -77,12 +75,11 @@ documented in `MobileNav.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                       | Evidence                        |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| FR1 | MobileNav renders one Navigation overlay containing a Drawer with a stable Header, Close button, and scrollable Content region.                                                                                                                                                                                                                                                                                 | Current source, docs, and tests |
-| FR2 | Navigation overlay carries the current `mobile-nav` target. Drawer, Header, and Content carry no MobileNav public target.                                                                                                                                                                                                                                                                                       | Current source and public docs  |
-| FR3 | Close button and the separately exported Toggle button use Button's `button` target; Toggle renders only when AppShell mobile context enables it and references the drawer by ID.                                                                                                                                                                                                                               | Current source, docs, and tests |
-| FR4 | After close intent, AppShell MUST keep the MobileNav subtree mounted and paint-eligible until MobileNav reports normal or reduced-motion exit completion. AppShell MUST NOT switch Activity/Offscreen to hidden, unmount, set `hidden`, or allow framework `display: none !important` or equivalent paint suppression to preempt that exit. Interaction MAY become inert during exit without suppressing paint. | Owner-defined exit ownership    |
+| ID  | Candidate invariant                                                                                                                                                               | Basis                           | Draft review state                                 |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
+| FR1 | MobileNav renders one Navigation overlay containing a Drawer with a stable Header, Close button, and scrollable Content region.                                                   | Current source, docs, and tests | Verified current behavior; no new behavior decided |
+| FR2 | Navigation overlay carries the current `mobile-nav` target. Drawer, Header, and Content carry no MobileNav public target.                                                         | Current source and public docs  | Verified current reachability; no target change    |
+| FR3 | Close button and the separately exported Toggle button use Button's `button` target; Toggle renders only when AppShell mobile context enables it and references the drawer by ID. | Current source, docs, and tests | Verified current delegation; no ownership change   |
 
 ### Allowed variation
 
@@ -106,10 +103,8 @@ documented in `MobileNav.doc.mjs`.
 
 ### Transformation and precedence order
 
-- **ORD1 — Close before deactivation.** Close intent updates MobileNav into its exit
-  state. MobileNav remains mounted and paint-eligible through normal or
-  reduced-motion completion. Only then may AppShell deactivate the containing
-  visibility boundary. A framework visibility write never outranks this order.
+- No new side resolution, open-state, close timing, or styling precedence rule is
+  introduced.
 
 ### Performance and resources
 
@@ -117,10 +112,8 @@ documented in `MobileNav.doc.mjs`.
 
 ## Accessibility contract
 
-MobileNav preserves dialog naming, focus containment and return, Toggle
-relationship, Button labels, modal behavior, and dismissal behavior throughout
-open, exiting, deactivated, and rapid-reopen states. Ancestor deactivation cannot
-remove the focus owner or dialog subtree before exit completion.
+This draft does not change or extend MobileNav's existing dialog naming, focus,
+Toggle relationship, Button labels, modal behavior, or dismissal behavior.
 
 ## Design relationships
 
@@ -180,44 +173,28 @@ ownership.
   records MobileNav as a current adopter.
 - `architecture:public-component-api` owns the shared API boundary; this draft
   changes neither MobileNav nor MobileNavToggle API.
-- `architecture:react-update-propagation` owns ancestor visibility and child-exit
-  ordering. AppShell deactivates its visibility boundary only after MobileNav's
-  normal or reduced-motion exit completion.
 - AppShell remains the higher-level responsive owner. This parent component
   record owns the two MobileNav exports' shared anatomy only.
 
 ## Verification map
 
-| Contract            | Verification                                                                                 | Representative states                                                 | Mutation or failure expectation                                                                                                    | Audit section              |
-| ------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| FR1                 | `MobileNav.test.tsx` content/header/close assertions plus source inspection                  | Standalone open and closed drawer                                     | Removing dialog content or the Close action fails tests; distinct Drawer/Header/Content wrappers rely on review.                   | `audit:MobileNav/anatomy`  |
-| FR2                 | Source inspection and `themingTargets.test.ts`                                               | Overlay, Drawer, Header, and Content                                  | Removing the root target or documenting an unshipped child target fails evidence or inventory.                                     | `audit:MobileNav/theming`  |
-| FR3                 | `MobileNavToggle.test.tsx`, `MobileNavReopen.test.tsx`, and source inspection                | Closed/open AppShell drawer and toggle                                | Breaking Button delegation or the ID/state relationship fails focused toggle coverage.                                             | `audit:MobileNav/anatomy`  |
-| FR4                 | Real-browser painted-frame/computed-visibility evidence plus close/reopen/interruption tests | Escape, backdrop, close button, ordinary/reduced motion, rapid reopen | Drawer disappears before exit completes, Activity/framework hiding wins, completion fires twice, or reopen uses stale close state. | `audit:MobileNav/behavior` |
-| Close lifecycle     | `MobileNavCloseEdgeCases.test.tsx` and related close/visibility suites                       | Escape, backdrop, close, reopen, unmount                              | Leaving the modal open or disconnecting state fails existing lifecycle assertions.                                                 | `audit:MobileNav/behavior` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                | Canonical parent anatomy and current target                           | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                                         | `audit:MobileNav/theming`  |
+| Contract            | Verification                                                                  | Representative states                       | Mutation or failure expectation                                                                                  | Audit section              |
+| ------------------- | ----------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| FR1                 | `MobileNav.test.tsx` content/header/close assertions plus source inspection   | Standalone open and closed drawer           | Removing dialog content or the Close action fails tests; distinct Drawer/Header/Content wrappers rely on review. | `audit:MobileNav/anatomy`  |
+| FR2                 | Source inspection and `themingTargets.test.ts`                                | Overlay, Drawer, Header, and Content        | Removing the root target or documenting an unshipped child target fails evidence or inventory.                   | `audit:MobileNav/theming`  |
+| FR3                 | `MobileNavToggle.test.tsx`, `MobileNavReopen.test.tsx`, and source inspection | Closed/open AppShell drawer and toggle      | Breaking Button delegation or the ID/state relationship fails focused toggle coverage.                           | `audit:MobileNav/anatomy`  |
+| Close lifecycle     | `MobileNavCloseEdgeCases.test.tsx` and related close/visibility suites        | Escape, backdrop, close, reopen, unmount    | Leaving the modal open or disconnecting state fails existing lifecycle assertions.                               | `audit:MobileNav/behavior` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                 | Canonical parent anatomy and current target | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                       | `audit:MobileNav/theming`  |
 
-Current unit tests cover lifecycle state and style declarations but do not prove
-that AppShell keeps the subtree paint-eligible across real composed frames. FR4
-requires real-browser evidence because jsdom cannot observe framework visibility
-writes or the rendered exit transition.
+Current tests find header and navigation content by text and the Close action by
+role, but do not identify the distinct Drawer, Header, or Content elements. Their
+existence and nesting are source-inspected; merging or reordering those wrappers
+currently lacks focused regression evidence.
 
 ## Decision log
 
-### DEC-1 — MobileNav owns exit completion before AppShell deactivation
-
-**Reference:** `component:MobileNav/DEC-1`
-**Decider:** `cixzhang`, `2026-09-06`
-
-Close intent begins MobileNav's owned exit. AppShell keeps the subtree mounted and
-paint-eligible until normal or reduced-motion completion, then deactivates its
-visibility boundary. A framework-generated inline visibility override does not
-replace that ordering.
-
-Rejected: switching Activity/Offscreen to hidden in the same commit as close
-intent and attempting to recover the exit by increasing CSS specificity. The
-ancestor lifecycle write wins before a frame can paint, so the fix belongs to
-visibility coordination rather than a stronger drawer style.
+None. This draft records current facts and introduces no component-local design,
+API, theming, responsive, or layer-system decision.
 
 ## Open questions
 
@@ -228,6 +205,5 @@ visibility coordination rather than a stronger drawer style.
 ## Content boundary
 
 This file does not duplicate consumer prop tables/examples, AppShell responsive
-policy, shared layer rules, current audit results, or implementation steps. It
-owns MobileNav's exit completion boundary and links ancestor visibility ordering
-to its architecture owner.
+policy, close-timing mechanics, shared layer rules, current audit results, or
+implementation steps. It links to their owners.

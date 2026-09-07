@@ -66,13 +66,6 @@ integrations named in `astryx.config`. Each integration is loaded
 independently, so one broken package degrades that package's contribution and
 never fails the run.
 
-The CLI catalog may feed other generated surfaces, but CLI discovery does not
-implicitly authorize docsite navigation/search or MCP recommendation policy.
-There is currently no shared current owner deciding which canary packages or
-components those surfaces expose, how readiness is represented consistently, or
-when an agent may be told to install a canary package. A change crossing those
-surfaces is `novel-human` until that owner and exact policy are current.
-
 ## Boundaries and invariants
 
 - **INV1 — The CLI never asks a question.** No prompt, no TTY detection, no
@@ -114,16 +107,6 @@ surfaces is `novel-human` until that owner and exact policy are current.
 - **INV12 — Human chatter never touches stdout in JSON mode.** `humanLog` and
   `humanWarn` are the only chatter primitives, and both are no-ops under
   `--json`.
-- **INV13 — Response-entry fields are machine contracts.** The stable JSON shape
-  includes fields inside discriminated `data` entries, not only the outer
-  envelope. Every field is represented in the canonical response type, contract
-  tests, text projection where applicable, and complete consumer-facing schema
-  documentation.
-- **INV14 — Discovery admission has an explicit owner.** Reusing a generated
-  registry across CLI, docsite navigation/search, or MCP does not make readiness,
-  canary visibility, install guidance, or recommendation policy shared by
-  implication. Each surface links an applicable current owner; a deliberately
-  shared policy is recorded once and projected consistently.
 
 ## Change coupling
 
@@ -132,13 +115,7 @@ updated in the same pull request when it moves an invariant:
 
 - adding, removing, or renaming a command or subcommand;
 - adding an error code, or changing what an existing code means;
-- adding a field to the JSON envelope or any discriminated response-entry
-  schema, removing one, changing its optionality/type/meaning, or changing the
-  shape of one;
-- changing catalog readiness, canary visibility, package/install guidance, or
-  recommendation behavior in CLI, docsite navigation/search, or MCP;
-- changing consumer-facing response schema documentation so it no longer projects
-  every machine-readable field;
+- adding a field to the JSON envelope, or changing the shape of one;
 - adding a formatter, or writing to stdout from anywhere other than `emit` and
   `jsonOut`;
 - changing the file layout under `clients/cli/commands`.
@@ -172,23 +149,17 @@ an invariant above needs a system spec.
 
 ## Verification
 
-| Invariant | Evidence                                                                                       | Failure signal                                                                                 |
-| --------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| INV1      | `clients/cli/commands/interactive-guard.test.mjs`                                              | The subprocess hangs: `signal === 'SIGTERM'` and `status === null`.                            |
-| INV2      | `clients/cli/commands/json-contract.test.mjs`                                                  | `--json` stdout does not parse, or parses to a shape outside the two.                          |
-| INV3      | `foundation/response/error-codes.test.mjs`                                                     | A shipped code disappears, or an envelope carries an unregistered one.                         |
-| INV4      | `clients/cli/formatters/index.test.mjs`, type tests                                            | `emit` accepts a bare string, or output varies between pipe and TTY.                           |
-| INV6      | `pnpm check:cli-structure`                                                                     | A command's file or its doc is missing, or sits at the wrong path.                             |
-| INV8      | `clients/cli/cli-exit-codes.test.mjs`                                                          | The same condition exits differently with and without `--json`.                                |
-| INV13     | Response typedef/schema snapshots, API contract tests, formatters, and generated consumer docs | A response-entry field ships without complete type, test, text, or consumer-schema projection. |
-| INV14     | Cross-surface catalog/readiness inventory and current-owner links                              | CLI metadata silently becomes docsite or MCP admission/recommendation policy.                  |
+| Invariant | Evidence                                            | Failure signal                                                         |
+| --------- | --------------------------------------------------- | ---------------------------------------------------------------------- |
+| INV1      | `clients/cli/commands/interactive-guard.test.mjs`   | The subprocess hangs: `signal === 'SIGTERM'` and `status === null`.    |
+| INV2      | `clients/cli/commands/json-contract.test.mjs`       | `--json` stdout does not parse, or parses to a shape outside the two.  |
+| INV3      | `foundation/response/error-codes.test.mjs`          | A shipped code disappears, or an envelope carries an unregistered one. |
+| INV4      | `clients/cli/formatters/index.test.mjs`, type tests | `emit` accepts a bare string, or output varies between pipe and TTY.   |
+| INV6      | `pnpm check:cli-structure`                          | A command's file or its doc is missing, or sits at the wrong path.     |
+| INV8      | `clients/cli/cli-exit-codes.test.mjs`               | The same condition exits differently with and without `--json`.        |
 
 ## Open questions
 
 - **OQ1 — Should the envelope's `meta` carry the resolved integration set?**
   (`human-api`) An agent cannot currently tell from the output whether a thin
   result means "nothing matches" or "an integration failed to load".
-- **OQ2 — Who owns shared canary discovery admission?** (`human-api`) CLI,
-  docsite navigation/search, and MCP can project one generated catalog, but no
-  current record decides which canary entries they may expose, how readiness is
-  represented, or when agent-facing install/recommendation guidance is allowed.
