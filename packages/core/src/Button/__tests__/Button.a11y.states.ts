@@ -23,11 +23,13 @@
  * ./Button.a11y.renders.tsx, in a map TypeScript requires to be exhaustive: a
  * new row here is a compile error until it has a rendering.
  *
- * A missing rendering is a compile error, so the only thing left to keep in
- * step by hand is the story export.
+ * A row without a rendering is a compile error, so that half needs no
+ * vigilance. The story export is the half that does.
  *
  * SYNC: Every row needs a named export in
  * - /apps/storybook/stories/ButtonA11y.stories.tsx
+ *   Caught at run time, not compile time: the Chromium binding navigates to
+ *   each row's `storyId`, so a missing or renamed export fails that lane.
  */
 
 import type {ButtonStateFacts} from '@astryxdesign/a11y-spec';
