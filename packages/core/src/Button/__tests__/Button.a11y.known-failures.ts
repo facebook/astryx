@@ -55,6 +55,29 @@ export const BUTTON_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
       'IconButton is a thin wrapper over Button and inherits the behaviour exactly.',
   },
 
+  {
+    expectation: 'button.unavailable.inert',
+    binding: 'Button',
+    state: 'button-loading',
+    evidenceLayer: 'real-browser',
+    failureIncludes: 'declared focusable so its reason stays reachable',
+    userImpact:
+      'The third face of the same defect: because the busy button cannot take focus, there is no way to confirm from the keyboard that it declines a second press — the user can neither reach it nor see why it is unavailable.',
+    issue: BUSY_FOCUS_ISSUE,
+    reason:
+      'Same native disabled attribute. Recorded separately because a record names exactly one outcome, and a fix that restored focus without keeping the button inert would satisfy one of these and not the other.',
+  },
+  {
+    expectation: 'button.unavailable.inert',
+    binding: 'IconButton',
+    state: 'icon-button-loading',
+    evidenceLayer: 'real-browser',
+    failureIncludes: 'declared focusable so its reason stays reachable',
+    userImpact: 'The same, from an icon button.',
+    issue: BUSY_FOCUS_ISSUE,
+    reason: 'Inherited from Button, as above.',
+  },
+
   // ---- ClickableCard's role-bearing element cannot be clicked -------------
   {
     expectation: 'button.action.survives-an-aborted-press',

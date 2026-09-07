@@ -305,16 +305,22 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
       {
         id: 'button.action.runs-on-pointer',
         outcome: 'Clicking the button runs its action.',
-        sources: [WCAG_4_1_2, APG_ROLE],
+        // APG-primary, deliberately. 4.1.2 governs how a control is EXPOSED —
+        // name, role, value — not whether it does anything when pressed, so
+        // ordering it first would buy a gate with a citation that does not
+        // carry the claim.
+        sources: [APG_ROLE, WCAG_4_1_2],
         wcagOutcome:
-          'A control announced as a button promises that pressing it does something; one that does nothing has misreported its own role, and 4.1.2 requires the role to be the one the control actually plays.',
-        covers: ['4.1.2-name-role-value', 'apg-interaction'],
+          'A control exposed as a button tells assistive technology that pressing it performs an action; one that performs none has misreported its own role. That is the 4.1.2 outcome this supports — but 4.1.2 does not itself require the action to run.',
+        covers: ['apg-interaction'],
         appliesWhen: {
           condition: 'pressing this state is meant to run its action',
           test: facts => facts.operable,
         },
         evidenceLayer: 'real-browser',
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          'APG-only: no WCAG 2.2 A/AA criterion says a button must do something when clicked — 2.1.1 covers the keyboard, and this is the pointer — and no current Astryx record adopts it, so under AST-020 FR9 it reports. Its keyboard siblings DO gate on 2.1.1, so a button that does nothing at all still fails this contract.',
         run: async ({harness, subject, activations}) => {
           const before = await activations();
           await harness.click(subject);
@@ -442,14 +448,21 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
         id: 'button.unavailable.inert',
         outcome:
           'A button reported as unavailable runs nothing when it is clicked — nor when Enter or Space is pressed on it, wherever it can still be focused.',
-        sources: [WCAG_4_1_2, APG_UNAVAILABLE],
-        covers: ['4.1.2-name-role-value'],
+        // APG-primary for the same reason: 4.1.2 requires unavailability to be
+        // EXPOSED, which button.unavailable.exposed gates on, and says nothing
+        // about whether the control then declines to act.
+        sources: [APG_UNAVAILABLE, WCAG_4_1_2],
+        wcagOutcome:
+          'A control 4.1.2 requires to be exposed as unavailable is telling the user it will not act; acting anyway makes that exposure a lie. 4.1.2 governs the exposure, not the behaviour, so this supports the criterion rather than being required by it.',
+        covers: ['apg-interaction'],
         appliesWhen: {
           condition: 'the binding declares this state unavailable',
           test: facts => facts.unavailable,
         },
         evidenceLayer: 'real-browser',
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          'APG-only, and no current Astryx record adopts it, so under AST-020 FR9 it reports. The exposure half — an unavailable button saying so — is directly applicable 4.1.2 and DOES gate, as button.unavailable.exposed.',
         run: async ({harness, subject, facts, activations}) => {
           const before = await activations();
           await harness.click(subject, {ignoreAvailability: true});

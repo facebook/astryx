@@ -47,6 +47,7 @@ import {
   BUTTON_BINDING_STATES,
   BUTTON_PATTERN_EXCLUSIONS,
   type ButtonBindingRow,
+  type ButtonBindingState,
 } from './Button.a11y.states';
 
 let storybook: StaticServer;
@@ -158,6 +159,57 @@ test('the state inventory describes the labels the page actually renders', async
       wrong.push(
         `${state.id}: inventory says ${JSON.stringify(state.visibleLabel)}, page renders ${JSON.stringify(rendered)}`,
       );
+    }
+  }
+  expect(wrong).toEqual([]);
+});
+
+/**
+ * Every applicability fact, checked against the page.
+ *
+ * An applicability fact can switch a REQUIRED expectation off — declare a state
+ * available and `unavailable.inert` never runs; declare it unfocusable and the
+ * keyboard outcomes never run. So a binding that described itself wrongly could
+ * quietly opt out of the gates that matter most, and nothing else in this
+ * system would notice: the contract reads facts, it does not audit them.
+ *
+ * A mismatch is a stale inventory unless the row lists it in
+ * `declaredNotDelivered` with a known-failure record behind it. Listing a fact
+ * that actually matches fails too, so the escape cannot be padded.
+ */
+test('every applicability fact matches what the page exposes', async ({
+  page,
+}) => {
+  test.setTimeout(3 * 60 * 1000);
+  const cdp = await page.context().newCDPSession(page);
+  const wrong: string[] = [];
+  for (const state of BUTTON_BINDING_STATES) {
+    await mountState(page, state);
+    const subject = page.locator('#storybook-root').getByRole('button').first();
+    const harness = createChromiumHarness({page, subject, cdp});
+    const observed = {
+      unavailable: (await (await harness.subject()).computed()).disabled,
+      focusable: await subject.evaluate(element => {
+        (element as HTMLElement).focus();
+        return element.ownerDocument.activeElement === element;
+      }),
+    };
+    // `as const satisfies` keeps each row's literal type, so an optional field
+    // is absent from the union member of a row that omits it. The interface is
+    // the shape to read it through.
+    const excused = (state as ButtonBindingState).declaredNotDelivered ?? [];
+    for (const fact of ['unavailable', 'focusable'] as const) {
+      const matches = state.facts[fact] === observed[fact];
+      if (!matches && !excused.includes(fact)) {
+        wrong.push(
+          `${state.id}: declares ${fact}=${state.facts[fact]}, page exposes ${observed[fact]} — either the declaration is stale, or this is a real gap that needs a known-failure record and a declaredNotDelivered entry`,
+        );
+      }
+      if (matches && excused.includes(fact)) {
+        wrong.push(
+          `${state.id}: lists ${fact} as declared-but-not-delivered, yet the page delivers it — remove the entry and its known-failure record`,
+        );
+      }
     }
   }
   expect(wrong).toEqual([]);

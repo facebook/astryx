@@ -68,9 +68,17 @@ export interface ButtonBindingState {
   /** What this state is, for the report and the test name. */
   readonly summary: string;
   /**
-   * What the state declares itself to be. These select which expectations apply
-   * — declaring a state unavailable or described turns those expectations on.
-   * They do not assert the negative when false.
+   * What the state is SUPPOSED to be. These select which expectations apply —
+   * declaring a state unavailable or described turns those expectations on, and
+   * they do not assert the negative when false.
+   *
+   * Intent, not observation, and the difference matters: a busy button is meant
+   * to stay focusable, and two components do not deliver that. Recording what
+   * those components actually do would make the expectations that catch it
+   * not-applicable — a contract that quietly stops noticing a defect by
+   * describing it. The gap is recorded in ./Button.a11y.known-failures.ts
+   * instead, and the Chromium binding checks every fact against the page so a
+   * declaration cannot drift from reality unnoticed.
    */
   readonly facts: ButtonStateFacts;
   /**
@@ -86,6 +94,15 @@ export interface ButtonBindingState {
   readonly visibleLabel: string | null;
   /** The checked-in Storybook story the Chromium lane drives. */
   readonly storyId: string;
+  /**
+   * Facts this state deliberately declares as intent that the component does
+   * NOT deliver today, each with the known-failure record that owns the gap.
+   *
+   * The fact-truth check reads this: an unlisted mismatch is a stale inventory
+   * and fails, a listed one is recorded debt. Listing something that is not
+   * actually mismatched also fails, so this cannot be padded.
+   */
+  readonly declaredNotDelivered?: ReadonlyArray<'unavailable' | 'focusable'>;
 }
 
 const OPERABLE: ButtonStateFacts = {
@@ -147,10 +164,16 @@ export const BUTTON_BINDING_STATES = [
   {
     id: 'button-loading',
     binding: 'Button',
-    summary: 'a button waiting on the action it started',
-    facts: facts({operable: false}),
+    summary:
+      'a button waiting on the action it started: the action is unavailable, and it is meant to stay focusable so the user can see that and interrupt it',
+    // `focusable: true` is the declaration, and the component does not deliver
+    // it — see the known-failure records. Declaring what the component does
+    // instead would make the expectations that catch it not-applicable, which
+    // is how a contract quietly stops noticing a defect.
+    facts: facts({operable: false, unavailable: true}),
     visibleLabel: null,
     storyId: 'a11y-button-pattern--button-loading',
+    declaredNotDelivered: ['focusable'],
   },
 
   // ---- IconButton ---------------------------------------------------------
@@ -173,10 +196,12 @@ export const BUTTON_BINDING_STATES = [
   {
     id: 'icon-button-loading',
     binding: 'IconButton',
-    summary: 'an icon button waiting on the action it started',
-    facts: facts({operable: false}),
+    summary:
+      'an icon button waiting on the action it started, meant to stay focusable for the same reason',
+    facts: facts({operable: false, unavailable: true}),
     visibleLabel: null,
     storyId: 'a11y-button-pattern--icon-button-loading',
+    declaredNotDelivered: ['focusable'],
   },
 
   // ---- ClickableCard ------------------------------------------------------
