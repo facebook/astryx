@@ -46,7 +46,11 @@ Astryx keeps different facts in different places:
   measured receipts, known gaps, compatibility, and artifacts.
 - System specs record decisions that cross components or themes or change architecture.
 - Consumer docs explain props, examples, and usage.
-- Audit records hold current evidence and findings.
+- Audit records hold current evidence and findings. The operational store is the
+  automated wiki `component-scores.json`, which supplies the current post-fix score
+  and unresolved findings to the sandbox. The bootstrap reserved colocated
+  `<PublicName>.audit.json` files, but no schema or records activated that path; it is
+  not an audit datastore or current migration target.
 
 The reviewer starts with the changed code and the nearest current component or
 module contract. They follow only the links needed for the question:
@@ -124,6 +128,13 @@ Every record is either:
   before acceptance. Package-export shape is not the only trigger: reachable
   supporting types, context members, hook returns, defaults, and observable
   behavior participate too.
+- **INV12 — Audit state has one automated datastore.** Wiki
+  `component-scores.json` is the operational source for current scores and
+  unresolved findings. The unactivated `<PublicName>.audit.json` convention is
+  retired. A future storage change requires an explicit system decision, versioned
+  data contract, automated migration and reconciliation, sandbox-reader cutover,
+  and rollback evidence; it MUST NOT create per-component shadow ledgers by
+  convention.
 
 ## Writing specifications and contracts
 
@@ -234,6 +245,12 @@ Before any component, module, family, design, theme, or architecture record beco
 8. Audit freshness is computed from the same code and test relationship, so a
    relevant code change cannot leave an audit looking current.
 
+Audit-storage migration is a separate contract change. It requires a versioned
+data contract, automated conversion and reconciliation of existing wiki rows, a
+named source of truth during transition, sandbox-reader cutover, and rollback
+evidence. Repository-local per-component files are not a migration plan by
+themselves.
+
 ### Recording a new human decision
 
 1. A contributor explains the intended behavior in normal pull-request language
@@ -311,6 +328,9 @@ this flow passes the historical review benchmark and is enforced on pull request
   fixture, test, generated, build-output, coverage, dependency, and
   `*.generated.spec.md` paths are ignored consistently by discovery and PR
   routing.
+- Wiki `component-scores.json` is the current operational audit datastore. The
+  historical `<PublicName>.audit.json` reservation never received a schema or active
+  records and is retired by INV10.
 - `packages/themes/<theme>/<theme>.spec.md` contains that package theme's
   canonical record; `docs/themes/README.md` is guidance and an index only.
 - `docs/schemas/knowledge/` defines required structure.
