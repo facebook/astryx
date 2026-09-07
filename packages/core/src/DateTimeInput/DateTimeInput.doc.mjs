@@ -121,14 +121,14 @@ export const docs = {
       name: 'timeIncrement',
       type: '1 | 5 | 10 | 15 | 30',
       description:
-        'Minute step for arrow keys in Astryx\'s typed time field. A non-default value keeps the Astryx time field in nativePicker modes because iOS treats native step as validation, not picker cadence. Ignored by the Astryx touch sheet, which uses wheels.',
+        "Minute step for arrow keys in Astryx's typed time field. A non-default value keeps the Astryx time field in nativePicker modes because iOS treats native step as validation, not picker cadence. Ignored by the Astryx touch sheet, which uses wheels.",
       default: '1',
     },
     {
       name: 'timeOptionInterval',
       type: '5 | 10 | 15 | 30 | 60',
       description:
-        'Minute cadence for the preset-time combobox on Astryx\'s fine-pointer time field. Setting it keeps that Astryx time field even in nativePicker modes because the OS picker has no equivalent preset list. The Astryx touch sheet uses wheels.',
+        "Minute cadence for the preset-time combobox on Astryx's fine-pointer time field. Setting it keeps that Astryx time field even in nativePicker modes because the OS picker has no equivalent preset list. The Astryx touch sheet uses wheels.",
     },
     {
       name: 'hasClear',
@@ -192,8 +192,14 @@ export const docs = {
       name: 'nativePicker',
       type: "'touch' | 'always' | 'never'",
       description:
-        "Which surfaces draw the date and time pickers. 'touch' (the default) uses browser/OS controls on a coarse primary pointer; 'always' uses them wherever input type=date/time are supported; 'never' keeps Astryx's own surfaces everywhere. The native time control is used only for the default minute-precision contract: hasSeconds, non-default timeIncrement, or timeOptionInterval retain Astryx's time field because iOS cannot express them faithfully. Use 'never' when numberOfMonths, weekStartsOn, or visible dateConstraints behavior matters. Constraints are enforced on commit; min/max are forwarded as hints. hourFormat formats the closed time, while the OS picker follows the user's locale.",
+        "Which surfaces draw the date and time pickers. 'touch' (the default) uses browser/OS controls on a coarse primary pointer; 'always' uses them wherever input type=date/time are supported; 'never' keeps Astryx's own surfaces everywhere. The native time control is used only for the default minute-precision contract: hasSeconds, non-default timeIncrement, or timeOptionInterval retain Astryx's time field because iOS cannot express them faithfully. Use 'never' when numberOfMonths, weekStartsOn, or visible dateConstraints behavior matters. Constraints are enforced on commit; min/max are forwarded as hints. hourFormat formats the closed time, while the OS picker follows the user's locale. Mutually exclusive with adaptations.",
       default: "'touch'",
+    },
+    {
+      name: 'adaptations',
+      type: "{default: 'native' | 'popover' | 'bottom-sheet', rules: Array<{when: {width?: {from?: 'sm' | 'md' | 'lg' | 'xl' | '2xl', below?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'}, pointer?: 'coarse' | 'fine'}, value: 'native' | 'popover' | 'bottom-sheet'}>}",
+      description:
+        "Environment-conditioned surface policy, for the cases the pointer-driven nativePicker shorthand cannot express. default is the server-rendered, hydration, and no-match surface; rules are checked in order and the LAST match wins. Width names resolve against the nearest Theme's width points, from is inclusive, below is exclusive, and the fields of one when are ANDed. Each value is exact and holds on any pointer: 'native' is the platform date and time controls, 'popover' the typed fields with anchored calendar and time list, 'bottom-sheet' the coordinated Date/Time sheet. Because 'native' means native for both segments with no per-segment fallback, a policy naming it anywhere — default or any rule, matched today or not — throws when numberOfMonths is 2, weekStartsOn is set at all, hasSeconds is on, timeIncrement is non-default, or timeOptionInterval is set. min, max and dateConstraints stay supported and are enforced on commit. Mutually exclusive with nativePicker; passing both throws. The resolved surface is held while the field has focus or an open picker, so a resize or rotation mid-entry applies only once the field is idle.",
     },
     {
       name: 'width',
@@ -254,6 +260,11 @@ export const docs = {
           "Choose the hour format (12h or 24h) that matches your audience's locale.",
       },
       {
+        guidance: true,
+        description:
+          'Reach for adaptations only when the pointer alone is the wrong question — a width point, a policy the server must render, or a surface a rule should pin. nativePicker stays the short spelling, and the two are mutually exclusive.',
+      },
+      {
         guidance: false,
         description:
           'Use DateTimeInput when only a date is needed; use DateInput instead.',
@@ -309,7 +320,7 @@ export const docs = {
         name: 'Time options popover',
         required: false,
         description:
-          'A list of preset times at the timeOptionInterval cadence. Setting the prop retains Astryx\'s text/combobox time field even when nativePicker otherwise selects native controls; the Astryx touch sheet uses wheels instead.',
+          "A list of preset times at the timeOptionInterval cadence. Setting the prop retains Astryx's text/combobox time field even when nativePicker otherwise selects native controls; the Astryx touch sheet uses wheels instead.",
       },
       {
         name: 'Clear button',
@@ -352,6 +363,11 @@ export const docsZh = {
         guidance: true,
         description:
           "Choose the hour format (12h or 24h) that matches your audience's locale.",
+      },
+      {
+        guidance: true,
+        description:
+          'Use adaptations when the surfaces should follow a width point or a policy the server renders, and nativePicker when the pointer is the whole question. The two props are mutually exclusive.',
       },
       {
         guidance: false,
@@ -529,8 +545,14 @@ export const docsZh = {
       name: 'nativePicker',
       type: "'touch' | 'always' | 'never'",
       description:
-        "选择由哪些界面绘制日期和时间选择器。'touch'（默认）在粗略主指针设备上使用浏览器/操作系统的原生控件；'always' 在支持 input type=date/time 的浏览器中始终使用原生控件；'never' 始终使用 Astryx 自带的界面。原生时间控件仅用于默认的分钟精度：hasSeconds、非默认 timeIncrement 或 timeOptionInterval 会保留 Astryx 时间字段，因为 iOS 无法忠实表达这些行为。需要 numberOfMonths、weekStartsOn 或可见 dateConstraints 行为时请使用 'never'。约束会在提交时执行，min/max 作为提示传给原生控件。hourFormat 格式化关闭状态的时间，而操作系统选择器遵循用户区域设置。",
+        "选择由哪些界面绘制日期和时间选择器。'touch'（默认）在粗略主指针设备上使用浏览器/操作系统的原生控件；'always' 在支持 input type=date/time 的浏览器中始终使用原生控件；'never' 始终使用 Astryx 自带的界面。原生时间控件仅用于默认的分钟精度：hasSeconds、非默认 timeIncrement 或 timeOptionInterval 会保留 Astryx 时间字段，因为 iOS 无法忠实表达这些行为。需要 numberOfMonths、weekStartsOn 或可见 dateConstraints 行为时请使用 'never'。约束会在提交时执行，min/max 作为提示传给原生控件。hourFormat 格式化关闭状态的时间，而操作系统选择器遵循用户区域设置。与 adaptations 互斥。",
       default: "'touch'",
+    },
+    {
+      name: 'adaptations',
+      type: "{default: 'native' | 'popover' | 'bottom-sheet', rules: Array<{when: {width?: {from?: 'sm' | 'md' | 'lg' | 'xl' | '2xl', below?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'}, pointer?: 'coarse' | 'fine'}, value: 'native' | 'popover' | 'bottom-sheet'}>}",
+      description:
+        "按环境决定界面的策略，用于 nativePicker 指针快捷方式无法表达的场景。default 是服务端渲染、注水以及无规则命中时的界面；rules 按顺序检查，最后一条命中的规则获胜。宽度名称按最近的 Theme 宽度断点解析，from 为闭区间、below 为开区间，同一个 when 内的各字段为“与”关系。每个值都是精确的，且与指针无关：'native' 为平台原生日期与时间控件，'popover' 为可输入字段加锚定日历与时间列表，'bottom-sheet' 为协同的日期/时间底部弹层。由于 'native' 表示两个片段都使用原生控件、没有逐片段回退，只要策略中任何位置（default 或任意规则，无论当前是否命中）出现 'native'，同时又设置了 numberOfMonths=2、任何 weekStartsOn、hasSeconds、非默认 timeIncrement 或 timeOptionInterval，就会抛出错误。min、max 和 dateConstraints 仍然支持，并在提交时校验。与 nativePicker 互斥，同时传入两者会抛出错误。字段处于焦点中或选择器打开时，已解析的界面会被锁定，窗口缩放或旋转要等到字段空闲后才生效。",
     },
     {
       name: 'xstyle',
@@ -591,6 +613,11 @@ export const docsDense = {
           "Choose the hour format (12h or 24h) that matches your audience's locale.",
       },
       {
+        guidance: true,
+        description:
+          'nativePicker = pointer shorthand; adaptations={{default, rules}} = exact surface per width/pointer rule, SSR-safe via default. Mutually exclusive.',
+      },
+      {
         guidance: false,
         description:
           'Use DateTimeInput when only a date is needed; use DateInput instead.',
@@ -649,7 +676,9 @@ export const docsDense = {
     weekStartsOn:
       'first day of week in Astryx calendars (0=Sunday, or name e.g. "mon"); ignored by native date controls',
     nativePicker:
-      "date+time surfaces: 'touch' (default) = browser/OS controls on a coarse pointer, 'always' = native on every pointer, 'never' = Astryx calendar/time popovers on fine pointers and coordinated bottom sheet on coarse pointers. use 'never' for numberOfMonths/weekStartsOn/visible dateConstraints/timeOptionInterval; native mode enforces constraints on commit and forwards min/max.",
+      "date+time surfaces: 'touch' (default) = browser/OS controls on a coarse pointer, 'always' = native on every pointer, 'never' = Astryx calendar/time popovers on fine pointers and coordinated bottom sheet on coarse pointers. use 'never' for numberOfMonths/weekStartsOn/visible dateConstraints/timeOptionInterval; native mode enforces constraints on commit and forwards min/max. exclusive with adaptations.",
+    adaptations:
+      "{default, rules} surface policy over 'native' | 'popover' | 'bottom-sheet'; default is the SSR/hydration/no-match value, LAST matching rule wins, width names come from the nearest Theme (from inclusive, below exclusive), when fields ANDed. exact values, any pointer, both segments. a 'native' value anywhere throws with numberOfMonths=2, any weekStartsOn, hasSeconds, non-default timeIncrement, or any timeOptionInterval; min/max/dateConstraints still fine. exclusive with nativePicker. held while focused or open.",
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },
 };

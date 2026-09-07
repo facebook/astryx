@@ -11,7 +11,10 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DateInput/DateInput.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/DateInput/DateInput.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/DateInput/DateInputAdaptations.test.tsx (surface policy tests)
  * - /packages/core/src/DateInput/index.ts (exports if types change)
+ * - /packages/core/src/hooks/useAdaptationSurfaceLatch.ts (holds a surface mid-interaction)
+ * - /packages/core/src/theme/componentAdaptations.ts (policy shape + compiler)
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/DateInput/ (showcase blocks)
  */
@@ -58,9 +61,15 @@ import {
 } from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useAdaptationSurfaceLatch} from '../hooks/useAdaptationSurfaceLatch';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {usePopover} from '../Popover';
+import {
+  forEachAuthoredAdaptationValue,
+  type ComponentAdaptations,
+} from '../theme/componentAdaptations';
+import {useComponentAdaptations} from '../theme/useComponentAdaptations';
 import {NativeDateField} from './NativeDateField';
 import {TouchDateField} from './TouchDateField';
 import {useTooltip} from '../Tooltip';
@@ -160,6 +169,31 @@ export type DateInputSize = keyof typeof sizeStyles;
  * - `'never'`: Astryx's own pickers everywhere
  */
 export type DateInputNativePicker = 'touch' | 'always' | 'never';
+
+/**
+ * The surfaces a resolved DateInput adaptation policy can name.
+ *
+ * The whole domain of `adaptations`, and each value is EXACT — it names one
+ * tree, on any pointer:
+ * - `'native'`: the platform's own control (`<input type="date">`), the surface
+ *   `nativePicker` used to be the only way to ask for
+ * - `'popover'`: the typable field with the calendar in an anchored popover
+ * - `'bottom-sheet'`: the touch field with the swipe-paged month sheet
+ *
+ * Spelled as literals rather than aliased to an internal type, so a consumer's
+ * compiler diagnostics never name something they cannot import.
+ */
+export type DateInputAdaptationValue = 'native' | 'popover' | 'bottom-sheet';
+
+/** Runtime domain for `adaptations`, so an untyped caller is rejected too. */
+const DATE_INPUT_ADAPTATION_VALUES = [
+  'native',
+  'popover',
+  'bottom-sheet',
+] as const satisfies ReadonlyArray<DateInputAdaptationValue>;
+
+/** Diagnostic root for every `adaptations` failure on this component. */
+const ADAPTATIONS_PATH = '<DateInput adaptations>';
 
 export type DateInputFormat = Extract<
   TimestampFormat,
@@ -406,6 +440,139 @@ export interface DateInputProps extends Omit<
    * ```
    */
   nativePicker?: DateInputNativePicker;
+
+  /**
+   * Environment-conditioned surface policy: which of the three pickers this
+   * field renders, decided by rules you write instead of by the pointer alone.
+   *
+   * `default` is the server-rendered, hydration, and no-match value; ordered
+   * `rules` map conditions to the same three values, and the LAST matching rule
+   * wins — condition shape creates no specificity. Width names resolve against
+   * the NEAREST Theme's width points, `from` is inclusive, `below` is
+   * exclusive, and the fields of one `when` are ANDed. An empty `rules` array
+   * is well-formed and pins the field to `default` everywhere.
+   *
+   * Each value is exact and holds on any pointer, which is the difference from
+   * `nativePicker`: `'bottom-sheet'` presents the touch sheet to a mouse if
+   * that is what the policy says, and `'popover'` keeps the typable field on a
+   * phone.
+   *
+   * A policy naming `'native'` anywhere — `default` or ANY rule, matched today
+   * or not — is checked against the props the platform picker cannot express:
+   * `numberOfMonths={2}` and an explicit `weekStartsOn` throw at render, rather
+   * than being silently dropped on whichever device selects that rule. `min`,
+   * `max` and `dateConstraints` stay supported: native mode forwards the bounds
+   * and refuses an out-of-range commit.
+   *
+   * Mutually exclusive with `nativePicker` — the two name the same choice, so
+   * passing both defined values throws before a surface opens. An explicitly
+   * spread `undefined` is not a conflict.
+   *
+   * While the field is in use the resolved surface is held: a rule boundary
+   * crossed during an open picker, or while the field has focus, applies once
+   * the surface has closed and focus has left, so a rotation never swallows a
+   * half-typed date.
+   *
+   * @example
+   * ```
+   * <DateInput
+   *   label="Event date"
+   *   value={date}
+   *   onChange={setDate}
+   *   adaptations={{
+   *     default: 'popover',
+   *     rules: [
+   *       {when: {width: {below: 'md'}, pointer: 'coarse'}, value: 'bottom-sheet'},
+   *       {when: {pointer: 'coarse', width: {below: 'sm'}}, value: 'native'},
+   *     ],
+   *   }}
+   * />
+   * ```
+   */
+  adaptations?: ComponentAdaptations<DateInputAdaptationValue>;
+}
+
+/**
+ * `nativePicker` and `adaptations` name the same choice, so accepting both
+ * would make precedence — not the caller — decide the surface.
+ *
+ * Checked on `undefined`, not on presence: spreading a props bag that carries
+ * an explicit `adaptations: undefined` beside a real `nativePicker` is an
+ * ordinary call, not a conflict (spec:AST-031 FR6).
+ */
+function assertExclusiveSurfaceProps(
+  nativePicker: DateInputNativePicker | undefined,
+  adaptations: ComponentAdaptations<DateInputAdaptationValue> | undefined,
+): void {
+  if (nativePicker !== undefined && adaptations !== undefined) {
+    throw new Error(
+      '<DateInput> received both `nativePicker` and `adaptations`, which select the same surface. Pass `adaptations` for an environment-conditioned policy — its `native` value is what `nativePicker` reaches — or `nativePicker` for the pointer-driven shorthand.',
+    );
+  }
+}
+
+/**
+ * Reject a policy that names a surface it has also made impossible to draw.
+ *
+ * The platform picker has no month grid and no week-start control, so
+ * `numberOfMonths={2}` or an explicit `weekStartsOn` beside a `'native'` value
+ * is a contradiction. Every authored value is checked — `default` and EVERY
+ * rule, including ones today's viewport cannot match — so the failure lands on
+ * the author's machine instead of on the one phone that selects that rule
+ * (spec:AST-031 IR3). It throws in production as well as development: a
+ * silently dropped week start is a wrong calendar, not a warning.
+ *
+ * `weekStartsOn` is rejected on PRESENCE, not on value: `weekStartsOn={0}`
+ * states Sunday, and the platform picker follows the OS locale whatever that
+ * says. `numberOfMonths={1}` is the default shape and passes.
+ *
+ * `min`, `max` and `dateConstraints` are deliberately NOT rejected — native
+ * mode forwards the bounds and enforces every constraint on commit — which is
+ * also why the legacy `nativePicker` path keeps its own quieter fallback: it
+ * predates this policy and drops what it cannot draw.
+ */
+function assertNativeSurfaceIsDrawable(
+  adaptations: ComponentAdaptations<DateInputAdaptationValue>,
+  {numberOfMonths, weekStartsOn}: DateInputProps,
+): void {
+  const conflicts: string[] = [];
+  if (numberOfMonths !== undefined && numberOfMonths !== 1) {
+    conflicts.push(
+      `\`numberOfMonths={${numberOfMonths}}\` (the platform picker has no month grid to widen)`,
+    );
+  }
+  if (weekStartsOn !== undefined) {
+    conflicts.push(
+      `\`weekStartsOn={${JSON.stringify(weekStartsOn)}}\` (the platform picker follows the OS locale's first day of week)`,
+    );
+  }
+  if (conflicts.length === 0) {
+    return;
+  }
+  forEachAuthoredAdaptationValue(
+    adaptations,
+    ADAPTATIONS_PATH,
+    (value, valuePath) => {
+      if (value === 'native') {
+        throw new Error(
+          `${valuePath} is "native", which cannot honor ${conflicts.join(
+            ' or ',
+          )}. Use "popover" or "bottom-sheet" for that value, or drop the prop.`,
+        );
+      }
+    },
+  );
+}
+
+/** Run the latch's focus handler after the caller's own, never instead of it. */
+function composeFocusHandler(
+  callerHandler: React.FocusEventHandler<HTMLElement> | undefined,
+  latchHandler: (event: React.FocusEvent<HTMLElement>) => void,
+): React.FocusEventHandler<HTMLElement> {
+  return event => {
+    callerHandler?.(event);
+    latchHandler(event);
+  };
 }
 
 /**
@@ -902,6 +1069,11 @@ PointerDateField.displayName = 'PointerDateField';
  * surfaces, not two components — so nothing at the call site changes, and a
  * date typed on a laptop and a date thumbed on a phone are the same value.
  *
+ * `adaptations` takes that decision back: an ordered policy over the three
+ * exact surfaces (`native`, `popover`, `bottom-sheet`) resolved against the
+ * nearest Theme's width points and the primary pointer, replacing the built-in
+ * pointer test for the call sites that pass it.
+ *
  * ## Why a runtime switch and not CSS
  *
  * The two surfaces are structurally different — a popover anchored to a text
@@ -921,6 +1093,11 @@ PointerDateField.displayName = 'PointerDateField';
  * with a calendar icon and the formatted date — and differ only in what
  * opens. Nothing moves; the field just starts opening a sheet.
  *
+ * An `adaptations` policy replaces that pointer test with the caller's own
+ * rules, and its `default` is the server truth: the server renders `default`,
+ * the hydration render matches it, and the browser's real answer arrives on the
+ * render after (spec:AST-031 FR3).
+ *
  * @example
  * ```
  * <DateInput
@@ -930,8 +1107,42 @@ PointerDateField.displayName = 'PointerDateField';
  * />
  * ```
  */
-export function DateInput(props: DateInputProps) {
+export function DateInput({adaptations, ...props}: DateInputProps) {
+  // Both props before any hook: a call that names the surface twice is a
+  // mistake to report, not a precedence to resolve.
+  assertExclusiveSurfaceProps(props.nativePicker, adaptations);
+
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
+  // Called unconditionally, with `undefined` for a call site that has no
+  // policy: the resolver then subscribes to nothing and publishes nothing, so
+  // the legacy path below runs exactly the media query it always did.
+  const {value: adaptedSurface} = useComponentAdaptations(adaptations, {
+    path: ADAPTATIONS_PATH,
+    values: DATE_INPUT_ADAPTATION_VALUES,
+  });
+  const {surface, onFocusCapture, onBlurCapture} =
+    useAdaptationSurfaceLatch(adaptedSurface);
+
+  if (adaptations !== undefined) {
+    assertNativeSurfaceIsDrawable(adaptations, props);
+    // The three surfaces are separate trees, so the latch's focus handlers ride
+    // the field root each of them spreads its pass-through props onto.
+    const surfaceProps: DateInputProps = {
+      ...props,
+      onFocusCapture: composeFocusHandler(props.onFocusCapture, onFocusCapture),
+      onBlurCapture: composeFocusHandler(props.onBlurCapture, onBlurCapture),
+    };
+    if (surface === 'native') {
+      return <NativeDateField {...surfaceProps} />;
+    }
+    if (surface === 'bottom-sheet') {
+      return <TouchDateField {...surfaceProps} />;
+    }
+    // 'popover' — and the only other reachable value, since a policy always
+    // resolves to one of its own admitted values.
+    return <PointerDateField {...surfaceProps} />;
+  }
+
   const nativePicker = props.nativePicker ?? 'touch';
 
   // The platform's picker, where the consumer asked for it — see the

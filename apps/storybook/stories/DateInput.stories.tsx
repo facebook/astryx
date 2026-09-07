@@ -1,8 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {DateInput} from '@astryxdesign/core/DateInput';
+import type {DateInputAdaptationValue} from '@astryxdesign/core/DateInput';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
@@ -237,6 +238,298 @@ export const NativePickerModes: Story = {
           nativePicker="never"
         />
       </div>
+    );
+  },
+};
+
+/**
+ * A caller-owned `adaptations` policy: the surface follows rules you write
+ * rather than the pointer alone.
+ *
+ * This one keeps the typable field and its anchored calendar as the default —
+ * the server renders that, and every mouse keeps it — and hands a touch device
+ * to the platform's own picker at any width. `nativePicker="touch"` would say
+ * something close, but only `adaptations` can add a width point to it, render a
+ * chosen surface on the server, or pin a rule to a surface the pointer would
+ * not have picked.
+ *
+ * Rules are checked in author order and the LAST match wins.
+ */
+export const AdaptationsCoarseNative: Story = {
+  name: 'Adaptations — native on a coarse pointer',
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-03-21' as ISODateString,
+    );
+    return (
+      <DateInput
+        label="Event date"
+        description="Platform picker on a finger, typable field with a calendar popover on a mouse"
+        value={value}
+        onChange={setValue}
+        adaptations={{
+          default: 'popover',
+          rules: [{when: {pointer: 'coarse'}, value: 'native'}],
+        }}
+      />
+    );
+  },
+};
+
+/**
+ * The touch sheet on a FINE pointer, kept keyboard operable.
+ *
+ * A policy value is exact: `bottom-sheet` means the swipe-paged month sheet on
+ * whatever pointer is reading this, which is the case a pointer test cannot
+ * express at all. It is also the surface with the weakest unit-test evidence —
+ * jsdom stubs `showModal` and never runs an exit transition, so the suite's
+ * focus assertions are made against a simulation of a modal dialog rather than
+ * one.
+ *
+ * The play function below closes that gap in a real browser: the policy picks
+ * the sheet on a mouse, Enter opens a genuinely modal `<dialog>`, focus moves
+ * inside it, and Escape closes it through the real exit transition and hands
+ * focus back to the field. It runs in Chromium under the story play guard,
+ * which is what makes these assertions a required check rather than a demo.
+ */
+export const AdaptationsFineBottomSheet: Story = {
+  name: 'Adaptations — bottom sheet on a fine pointer',
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-03-21' as ISODateString,
+    );
+    return (
+      <div data-date-sheet-keyboard-fixture>
+        <DateInput
+          label="Event date"
+          description="Policy-pinned touch sheet, on any pointer"
+          value={value}
+          onChange={setValue}
+          min={'2026-02-01' as ISODateString}
+          max={'2026-04-30' as ISODateString}
+          adaptations={{default: 'bottom-sheet', rules: []}}
+        />
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const frame = () =>
+      new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+    /** Poll until `check` is true, or fail loudly. Play has no test lib. */
+    const until = async (what: string, check: () => boolean) => {
+      for (let attempt = 0; attempt < 180; attempt++) {
+        if (check()) {
+          return;
+        }
+        await frame();
+      }
+      throw new Error(`Timed out waiting for ${what}`);
+    };
+
+    const press = (target: Element, key: string) => {
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', {key, bubbles: true, cancelable: true}),
+      );
+      target.dispatchEvent(
+        new KeyboardEvent('keyup', {key, bubbles: true, cancelable: true}),
+      );
+    };
+
+    const fixture = canvasElement.querySelector<HTMLElement>(
+      '[data-date-sheet-keyboard-fixture]',
+    );
+    const input = fixture?.querySelector<HTMLInputElement>(
+      'input[role="combobox"]',
+    );
+    if (!input) {
+      throw new Error('Sheet keyboard fixture did not render a field');
+    }
+
+    // The resolved surface, read off the closed field: only the touch field
+    // refuses the virtual keyboard and advertises a dialog.
+    if (
+      input.inputMode !== 'none' ||
+      input.getAttribute('aria-haspopup') !== 'dialog'
+    ) {
+      throw new Error(
+        'A fine pointer did not get the policy-pinned bottom sheet',
+      );
+    }
+
+    input.focus();
+    press(input, 'Enter');
+
+    await until(
+      'the sheet to open',
+      () => document.querySelector('dialog[open]') != null,
+    );
+    const dialog = document.querySelector<HTMLDialogElement>('dialog[open]');
+    if (!dialog) {
+      throw new Error('The sheet never opened');
+    }
+
+    // `:modal` is the assertion jsdom cannot make: it is true only for a
+    // dialog the browser actually put in the top layer via showModal().
+    if (!dialog.matches(':modal')) {
+      throw new Error('The sheet opened, but not as a modal dialog');
+    }
+    await until('focus to move into the sheet', () =>
+      dialog.contains(document.activeElement),
+    );
+
+    press(document.activeElement ?? dialog, 'Escape');
+
+    // The real exit transition runs here — this is the part the unit suite has
+    // to deliver by hand — and focus comes back only after it finishes.
+    await until(
+      'the sheet to close and focus to return to the field',
+      () =>
+        document.querySelector('dialog[open]') == null &&
+        document.activeElement === input,
+    );
+  },
+};
+
+/**
+ * The resolved surface is HELD while the field is in use.
+ *
+ * The policy here flips itself from the typable field to the touch sheet
+ * shortly after the story mounts — standing in for the rotation, window resize
+ * or theme change that moves a real rule boundary. Focus the field before it
+ * flips and nothing moves: the tree you are typing into is the tree you keep,
+ * caret and draft included. Click away and the pending surface arrives.
+ *
+ * That guarantee is the reason the two props differ here: the legacy
+ * `nativePicker` swaps on the pointer whenever the pointer changes, mid-entry
+ * included, and a policy does not.
+ *
+ * The play function is the real-browser half of the evidence. jsdom can model a
+ * focus move but not dispatch one, and the bug this guards against lives in the
+ * dispatch: a browser fires `focusout` on the control you left, drains
+ * microtasks, and only then fires `focusin` on the one you reached. A latch
+ * that decides in that gap sees focus nowhere and lets go — unmounting the tree
+ * under the pointer and eating the click. Here the browser supplies its own
+ * events, its own `relatedTarget`, and its own ordering.
+ */
+export const AdaptationsLatchedWhileInUse: Story = {
+  name: 'Adaptations — surface held while the field is in use',
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>();
+    const [surface, setSurface] = useState<DateInputAdaptationValue>('popover');
+    useEffect(() => {
+      const timer = setTimeout(() => setSurface('bottom-sheet'), 600);
+      return () => clearTimeout(timer);
+    }, []);
+    return (
+      <div data-date-latch-fixture data-policy={surface}>
+        <DateInput
+          label="Event date"
+          description="Focus the field before the policy flips: it keeps the surface until you leave"
+          value={value}
+          onChange={setValue}
+          adaptations={{default: surface, rules: []}}
+        />
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const frame = () =>
+      new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+    /** Poll until `check` is true, or fail loudly. Play has no test lib. */
+    const until = async (what: string, check: () => boolean) => {
+      for (let attempt = 0; attempt < 180; attempt++) {
+        if (check()) {
+          return;
+        }
+        await frame();
+      }
+      throw new Error(`Timed out waiting for ${what}`);
+    };
+
+    const fixture = canvasElement.querySelector<HTMLElement>(
+      '[data-date-latch-fixture]',
+    );
+    if (!fixture) {
+      throw new Error('Latch fixture did not render');
+    }
+    const typableField = () =>
+      fixture.querySelector<HTMLInputElement>(
+        'input[role="combobox"]:not([inputmode="none"])',
+      );
+
+    const input = typableField();
+    const toggle = fixture.querySelector<HTMLButtonElement>('button');
+    if (!input || !toggle) {
+      throw new Error('The story did not start on the typable field');
+    }
+
+    input.focus();
+    input.value = '3/2/2026';
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+
+    await until(
+      'the policy to flip under the focused field',
+      () => fixture.dataset.policy === 'bottom-sheet',
+    );
+
+    // Held: the policy now names the sheet, and the field is still the one
+    // being typed into — same element, not a re-render of an equivalent one.
+    if (typableField() !== input) {
+      throw new Error('The focused field was swapped out from under the user');
+    }
+
+    // The gap itself, which is the whole bug. A browser dispatches focusout,
+    // drains microtasks, and only then dispatches focusin — so a latch that
+    // defers its decision decides HERE, with focus nowhere. The focusout is
+    // synthesized because only a user gesture can make the browser split the
+    // pair, but everything it feeds the latch is real: React's own listener,
+    // a real FocusEvent, a real relatedTarget.
+    input.dispatchEvent(
+      new FocusEvent('focusout', {bubbles: true, relatedTarget: toggle}),
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    // A frame, so a release that happened in the gap has been committed and
+    // this check reports the gap rather than a later symptom of it.
+    await frame();
+    if (typableField() !== input) {
+      throw new Error(
+        'The latch released between focusout and focusin — the tree was swapped mid-interaction',
+      );
+    }
+
+    // And now the move for real: the browser dispatches its own focusout and
+    // focusin, with its own relatedTarget. Still held, and the click lands.
+    toggle.focus();
+    if (typableField() !== input) {
+      throw new Error('Moving focus to the toggle released the latch');
+    }
+    toggle.click();
+    await until(
+      'the calendar to open',
+      () => input.getAttribute('aria-expanded') === 'true',
+    );
+    if (typableField() !== input) {
+      throw new Error('Opening the calendar released the latch');
+    }
+
+    // Released: the calendar closes and focus leaves the field entirely, so the
+    // surface the policy has been asking for finally arrives.
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    (document.activeElement as HTMLElement | null)?.blur();
+    await until(
+      'the pending bottom sheet to arrive once the field is idle',
+      () =>
+        fixture.querySelector('input[inputmode="none"]') != null &&
+        typableField() == null,
     );
   },
 };

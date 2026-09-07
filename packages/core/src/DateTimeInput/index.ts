@@ -11,6 +11,7 @@
 
 export {DateTimeInput} from './DateTimeInput';
 export type {
+  DateTimeInputAdaptationValue,
   DateTimeInputProps,
   DateTimeInputSize,
   DateTimeInputHourFormat,

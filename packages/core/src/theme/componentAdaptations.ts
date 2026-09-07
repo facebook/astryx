@@ -30,6 +30,8 @@
  * - /packages/core/src/theme/index.ts (re-exports the authoring vocabulary
  *   only; the compiler stays package-internal)
  * - /packages/core/src/Selector/Selector.tsx (first public consumer)
+ * - /packages/core/src/DateInput/DateInput.tsx (public consumer)
+ * - /packages/core/src/DateTimeInput/DateTimeInput.tsx (public consumer)
  * - /packages/core/src/theme/componentAdaptations.test.ts
  */
 
@@ -122,6 +124,43 @@ export interface CompiledComponentAdaptations<T extends string> {
 
 const ADAPTATIONS_KEYS = new Set(['default', 'rules']);
 const RULE_KEYS = new Set(['when', 'value']);
+
+/**
+ * Visit every value a policy AUTHORS — `default` and each rule's — with the
+ * diagnostic path that names it.
+ *
+ * The point is EAGERNESS (spec:AST-031 IR3): a component whose value domain
+ * carries prop-compatibility rules of its own must check the whole policy
+ * before any of it is matched, so an unreachable-today rule fails on the
+ * author's machine rather than on the one device whose width and pointer
+ * select it.
+ *
+ * Deliberately tolerant of a malformed policy: a non-array `rules`, or a rule
+ * that is not an object, is skipped rather than crashing, because the shape
+ * diagnostics belong to `compileComponentAdaptations` and it names them better.
+ *
+ * @internal
+ */
+export function forEachAuthoredAdaptationValue<T extends string>(
+  adaptations: ComponentAdaptations<T>,
+  path: string,
+  visit: (value: T, valuePath: string) => void,
+): void {
+  visit(adaptations.default, `${path}.default`);
+  const rules: unknown = adaptations.rules;
+  if (!Array.isArray(rules)) {
+    return;
+  }
+  rules.forEach((rule: unknown, index) => {
+    if (typeof rule !== 'object' || rule === null) {
+      return;
+    }
+    visit(
+      (rule as ComponentAdaptationRule<T>).value,
+      `${path}.rules[${index}].value`,
+    );
+  });
+}
 
 function assertAdmittedValue<T extends string>(
   value: unknown,

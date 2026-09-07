@@ -56,6 +56,28 @@ const TARGETS = [
       'presentation="bottom-sheet"); what this adds is real-browser evidence ' +
       'for it, since jsdom stubs showModal and never runs the exit',
   },
+  {
+    component: 'DateInput',
+    story: 'core-dateinput--adaptations-fine-bottom-sheet',
+    guards:
+      'a policy-pinned bottom sheet on a fine pointer stays keyboard ' +
+      'operable: Enter opens a genuinely modal <dialog> (:modal, which only ' +
+      'showModal() can make true), focus moves into the sheet, and Escape ' +
+      'closes it through the real exit transition and returns focus to the ' +
+      'field. jsdom stubs showModal and never runs that exit, so the unit ' +
+      'suite can only assert against a simulation of this surface',
+  },
+  {
+    component: 'DateInput',
+    story: 'core-dateinput--adaptations-latched-while-in-use',
+    guards:
+      'the adaptations latch survives a REAL browser focus move: after the ' +
+      "policy flips under a focused field, the browser's own focusout/" +
+      'focusin pair between the input and its calendar toggle must not ' +
+      'release it — the tree stays mounted, the entry survives and the click ' +
+      'lands — and the pending surface arrives once the field goes idle. ' +
+      'jsdom can model that sequence but never dispatch one',
+  },
 ];
 
 const CONTENT_TYPES = {

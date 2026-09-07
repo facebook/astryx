@@ -160,8 +160,14 @@ export const docs = {
       name: 'nativePicker',
       type: "'touch' | 'always' | 'never'",
       description:
-        "Which surface draws the date picker. 'touch' (the default) hands a touch device to the browser/OS: the field becomes an input type=date and the platform draws the picker (the iOS wheel, the Android calendar dialog); 'always' does that wherever the browser supports input type=date; 'never' keeps Astryx's own pickers everywhere (the bottom-sheet picker on a finger, the calendar popover on a mouse). Use 'never' for a field that needs weekStartsOn, numberOfMonths or dateConstraints, none of which a native picker can express. format and placeholder still apply in native mode; min and max are forwarded, but a native picker may not show them (on iOS an out-of-range date can be selected and is refused on commit rather than greyed out).",
+        "Which surface draws the date picker. 'touch' (the default) hands a touch device to the browser/OS: the field becomes an input type=date and the platform draws the picker (the iOS wheel, the Android calendar dialog); 'always' does that wherever the browser supports input type=date; 'never' keeps Astryx's own pickers everywhere (the bottom-sheet picker on a finger, the calendar popover on a mouse). Use 'never' for a field that needs weekStartsOn, numberOfMonths or dateConstraints, none of which a native picker can express. format and placeholder still apply in native mode; min and max are forwarded, but a native picker may not show them (on iOS an out-of-range date can be selected and is refused on commit rather than greyed out). Mutually exclusive with adaptations.",
       default: "'touch'",
+    },
+    {
+      name: 'adaptations',
+      type: "{default: 'native' | 'popover' | 'bottom-sheet', rules: Array<{when: {width?: {from?: 'sm' | 'md' | 'lg' | 'xl' | '2xl', below?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'}, pointer?: 'coarse' | 'fine'}, value: 'native' | 'popover' | 'bottom-sheet'}>}",
+      description:
+        "Environment-conditioned surface policy, for the cases the pointer-driven nativePicker shorthand cannot express. default is the server-rendered, hydration, and no-match surface; rules are checked in order and the LAST match wins. Width names resolve against the nearest Theme's width points, from is inclusive, below is exclusive, and the fields of one when are ANDed. Each value is exact and holds on any pointer: 'native' is the platform control, 'popover' the typable field with the anchored calendar, 'bottom-sheet' the touch field with the month sheet. A policy naming 'native' anywhere — default or any rule, matched today or not — throws when numberOfMonths is 2 or weekStartsOn is set at all, because the platform picker cannot draw either; min, max and dateConstraints stay supported and are enforced on commit. Mutually exclusive with nativePicker; passing both throws. The resolved surface is held while the field has focus or an open picker, so a resize or rotation mid-entry applies only once the field is idle.",
     },
     {
       name: 'width',
@@ -178,9 +184,16 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-date-input',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
+      {
+        className: 'astryx-date-input-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
     ],
   },
   usage: {
@@ -211,6 +224,11 @@ export const docs = {
         guidance: true,
         description:
           'Use DateInput inside InputGroup when adding a short static prefix or suffix, such as a due-date hint.',
+      },
+      {
+        guidance: true,
+        description:
+          'Reach for adaptations only when the pointer alone is the wrong question — a width point, a policy the server must render, or a surface a rule should pin. nativePicker stays the short spelling, and the two are mutually exclusive.',
       },
       {
         guidance: false,
@@ -299,6 +317,11 @@ export const docsZh = {
         guidance: true,
         description:
           'Show a loading state with changeAction when the date triggers a server-side save.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use adaptations when the surface should follow a width point or a policy the server renders, and nativePicker when the pointer is the whole question. The two props are mutually exclusive.',
       },
       {
         guidance: false,
@@ -434,7 +457,8 @@ export const docsZh = {
     {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
-      description: '日历弹出层中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写。',
+      description:
+        '日历弹出层中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写。',
       default: '0',
     },
     {
@@ -448,8 +472,14 @@ export const docsZh = {
       name: 'nativePicker',
       type: "'touch' | 'always' | 'never'",
       description:
-        "由哪个界面绘制日期选择器。'touch'（默认）在触摸设备上交给浏览器/操作系统：字段变为 input type=date，由平台绘制选择器（iOS 滚轮、Android 日历对话框）；'always' 在所有支持 input type=date 的浏览器上都这样做；'never' 始终使用 Astryx 自带的选择器（触摸设备用底部弹出选择器，鼠标设备用日历弹出层）。需要 weekStartsOn、numberOfMonths 或 dateConstraints 的字段应使用 'never'，原生选择器无法表达这些。原生模式下 format 和 placeholder 仍然生效；min 和 max 会传递给原生控件，但原生选择器可能不会显示这些限制（在 iOS 上仍可选中超出范围的日期，会在提交时被拒绝，而不是变灰）。",
+        "由哪个界面绘制日期选择器。'touch'（默认）在触摸设备上交给浏览器/操作系统：字段变为 input type=date，由平台绘制选择器（iOS 滚轮、Android 日历对话框）；'always' 在所有支持 input type=date 的浏览器上都这样做；'never' 始终使用 Astryx 自带的选择器（触摸设备用底部弹出选择器，鼠标设备用日历弹出层）。需要 weekStartsOn、numberOfMonths 或 dateConstraints 的字段应使用 'never'，原生选择器无法表达这些。原生模式下 format 和 placeholder 仍然生效；min 和 max 会传递给原生控件，但原生选择器可能不会显示这些限制（在 iOS 上仍可选中超出范围的日期，会在提交时被拒绝，而不是变灰）。与 adaptations 互斥。",
       default: "'touch'",
+    },
+    {
+      name: 'adaptations',
+      type: "{default: 'native' | 'popover' | 'bottom-sheet', rules: Array<{when: {width?: {from?: 'sm' | 'md' | 'lg' | 'xl' | '2xl', below?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'}, pointer?: 'coarse' | 'fine'}, value: 'native' | 'popover' | 'bottom-sheet'}>}",
+      description:
+        "按环境决定界面的策略，用于 nativePicker 指针快捷方式无法表达的场景。default 是服务端渲染、注水以及无规则命中时的界面；rules 按顺序检查，最后一条命中的规则获胜。宽度名称按最近的 Theme 宽度断点解析，from 为闭区间、below 为开区间，同一个 when 内的各字段为“与”关系。每个值都是精确的，且与指针无关：'native' 为平台原生控件，'popover' 为可输入字段加锚定日历，'bottom-sheet' 为触摸字段加月份底部弹层。只要策略中任何位置（default 或任意规则，无论当前是否命中）出现 'native'，同时又设置了 numberOfMonths=2 或任何 weekStartsOn，就会抛出错误，因为原生选择器无法绘制这两者；min、max 和 dateConstraints 仍然支持，并在提交时校验。与 nativePicker 互斥，同时传入两者会抛出错误。字段处于焦点中或选择器打开时，已解析的界面会被锁定，窗口缩放或旋转要等到字段空闲后才生效。",
     },
     {
       name: 'xstyle',
@@ -466,7 +496,10 @@ export const docsZh = {
         states: ['disabled'],
       },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
+      {
+        className: 'astryx-date-input-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
     ],
   },
 };
@@ -502,6 +535,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use inside InputGroup for a short static prefix or suffix, such as a due-date hint.',
+      },
+      {
+        guidance: true,
+        description:
+          'nativePicker = pointer shorthand; adaptations={{default, rules}} = exact surface per width/pointer rule, SSR-safe via default. Mutually exclusive.',
       },
       {
         guidance: false,
@@ -544,15 +582,19 @@ export const docsDense = {
     placeholder: 'placeholder text in input',
     size: 'input control size',
     status: 'error/warning/success status w/ message',
-    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
+    statusVariant:
+      'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'tooltip text via info icon at label end',
     hasClear: 'Shows clear button when date is set. Clears value on click.',
     numberOfMonths: 'months shown simultaneously in calendar popover',
-    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
+    weekStartsOn:
+      'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     format:
       "committed-value display: 'date_long' (default, March 21, 2026), 'date' (Mar 21, 2026), 'date_weekday' (Wed, Mar 21, 2026), 'system_date' (2026-03-21), or (iso)=>string; reuses Timestamp vocabulary. Committed value only, not while typing.",
     nativePicker:
-      "which surface draws the picker: 'touch' (default) = browser/OS on a coarse pointer, 'always', 'never' = Astryx's own everywhere. use 'never' for weekStartsOn/numberOfMonths/dateConstraints. format+placeholder still apply; min/max forwarded but not necessarily shown by the OS picker, refused on commit instead.",
+      "which surface draws the picker: 'touch' (default) = browser/OS on a coarse pointer, 'always', 'never' = Astryx's own everywhere. use 'never' for weekStartsOn/numberOfMonths/dateConstraints. format+placeholder still apply; min/max forwarded but not necessarily shown by the OS picker, refused on commit instead. exclusive with adaptations.",
+    adaptations:
+      "{default, rules} surface policy over 'native' | 'popover' | 'bottom-sheet'; default is the SSR/hydration/no-match value, LAST matching rule wins, width names come from the nearest Theme (from inclusive, below exclusive), when fields ANDed. exact values, any pointer. a 'native' value anywhere throws with numberOfMonths=2 or any weekStartsOn; min/max/dateConstraints still fine. exclusive with nativePicker. held while focused or open.",
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },
 };

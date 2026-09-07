@@ -171,6 +171,81 @@ export const NativePickerModes: Story = {
   },
 };
 
+/**
+ * A caller-owned `adaptations` policy: the pair of surfaces follows rules you
+ * write rather than the pointer alone.
+ *
+ * This one defaults to the platform's own date and time controls — including on
+ * the server, which a pointer test cannot decide — and keeps Astryx's typed
+ * fields with their anchored calendar and time list on a touch device, where a
+ * tablet user cross-referencing dates is better served by a visible month grid
+ * than by an OS wheel. That is the opposite of what `nativePicker` can say,
+ * which is the point: a policy value is exact, and holds on whatever pointer is
+ * reading it.
+ *
+ * Note what authoring `native` costs the whole field: because the value is a
+ * promise that BOTH segments are platform controls, the props the OS picker
+ * cannot express — `hasSeconds`, a non-default `timeIncrement`,
+ * `timeOptionInterval`, `weekStartsOn`, `numberOfMonths` — cannot be set on
+ * this field at all, on any pointer. They throw at render, naming the policy
+ * path, rather than being quietly dropped on whichever device selects the
+ * native rule. A field that needs one of them wants a policy over `popover` and
+ * `bottom-sheet`, or the legacy `nativePicker`, whose per-segment fallback
+ * retains an Astryx time field instead.
+ *
+ * Rules are checked in author order and the LAST match wins.
+ */
+export const AdaptationsCoarsePopover: Story = {
+  name: 'Adaptations — Astryx popovers on a coarse pointer',
+  render: () => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T14:30' as ISODateTimeString,
+    );
+    return (
+      <DateTimeInput
+        label="Starts"
+        description="Typed fields with anchored calendar on a finger; platform controls on a mouse"
+        value={value}
+        onChange={setValue}
+        adaptations={{
+          default: 'native',
+          rules: [{when: {pointer: 'coarse'}, value: 'popover'}],
+        }}
+      />
+    );
+  },
+};
+
+/**
+ * The coordinated Date/Time sheet on a FINE pointer.
+ *
+ * `bottom-sheet` names the touch surface exactly, so it renders on the mouse
+ * you are reading this with: two read-only segments that open one sheet with a
+ * Date panel and a Time panel, rather than two independent popovers. Useful on
+ * a kiosk or a stylus-driven screen, where the pointer reports `fine` but the
+ * reach is a whole arm — and impossible to ask for with `nativePicker`.
+ *
+ * `default` with no rules is also the SSR-safe spelling: the server renders
+ * this surface, and hydration matches it.
+ */
+export const AdaptationsFineBottomSheet: Story = {
+  name: 'Adaptations — coordinated sheet on a fine pointer',
+  render: () => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T14:30' as ISODateTimeString,
+    );
+    return (
+      <DateTimeInput
+        label="Starts"
+        description="Policy-pinned Date/Time sheet, on any pointer"
+        value={value}
+        onChange={setValue}
+        adaptations={{default: 'bottom-sheet', rules: []}}
+      />
+    );
+  },
+};
+
 export const TwentyFourHourFormat: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
