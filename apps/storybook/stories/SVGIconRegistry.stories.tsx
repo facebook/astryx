@@ -17,6 +17,7 @@ import {
 } from '@astryxdesign/lab';
 import {Stack, Text} from '@astryxdesign/core';
 import {defaultIcons} from '../../../packages/core/src/Icon/defaultIcons';
+import {rtlAuditParameters} from '../rtl-audit/story-parameters';
 
 // =============================================================================
 // Bounding box utilities
@@ -225,8 +226,9 @@ function jsxSvgToIconDef(
 // Story
 // =============================================================================
 
-const meta: Meta = {
-  title: 'Lab/SVGIconRegistry',
+const meta: Meta<typeof SVGIcon> = {
+  title: 'Lab/SVGIcon',
+  component: SVGIcon,
 };
 export default meta;
 
@@ -239,6 +241,13 @@ const VARIATIONS: SVGIconVariation[] = [
 ];
 
 export const DefaultRegistryIcons: StoryObj = {
+  parameters: rtlAuditParameters({
+    D1: {
+      applicable: false,
+      reason:
+        'This reference fixture preserves caller-supplied left and right glyph geometry; the samples are data, not directional controls.',
+    },
+  }),
   render: () => {
     const converted: Array<{name: string; def: SVGIconDef}> = [];
     for (const [name, jsx] of Object.entries(defaultIcons)) {
@@ -250,9 +259,7 @@ export const DefaultRegistryIcons: StoryObj = {
 
     return (
       <Stack direction="vertical" gap={3}>
-        <Text type="large">
-          Default Registry Icons \u2192 SVGIcon System
-        </Text>
+        <Text type="large">Default Registry Icons \u2192 SVGIcon System</Text>
         <Text type="supporting">
           {converted.length} icons auto-converted. Heuristic: containment-based
           layer classification (only elements fully contained within a larger
