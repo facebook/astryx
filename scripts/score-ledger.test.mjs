@@ -22,10 +22,12 @@ import http from 'node:http';
 import {describe, it, expect} from 'vitest';
 
 import {
+  AUDIT_PROMPT,
   SCORES_PAGE_URL,
   SECTION_WEIGHTS,
   SECTION_IDS,
   applyScorecard,
+  auditModePolicy,
   blockLink,
   buildQueue,
   buildRoster,
@@ -667,6 +669,176 @@ describe('recording a scorecard', () => {
   });
 });
 
+describe('audit mode contract', () => {
+  const modeCard = {
+    score: 74.2,
+    lastAudited: '2026-09-07',
+    rubricVersion: '1.15.3',
+    mode: 'O',
+    commit: 'dccdabea0b',
+    blocks: {count: 0, open: []},
+  };
+
+  it('normalizes canonical and legacy mode spellings', () => {
+    expect(auditModePolicy('N')).toMatchObject({code: 'N', filesBlockIssues: false});
+    expect(auditModePolicy('nightly')).toMatchObject({code: 'N'});
+    expect(auditModePolicy('grading')).toMatchObject({code: 'O', filesBlockIssues: true});
+    expect(auditModePolicy('promotion')).toMatchObject({code: 'P', filesBlockIssues: true});
+    expect(auditModePolicy('review')).toMatchObject({code: 'R', filesBlockIssues: false});
+    expect(auditModePolicy('invented')).toBeNull();
+  });
+
+  it('rejects an unknown scorecard mode and stores aliases canonically', () => {
+    const legacy = applyScorecard(
+      null,
+      {...modeCard, mode: 'nightly'},
+      {component: 'B', pkg: 'core'},
+    );
+    expect(legacy.mode).toBe('N');
+    expect(() =>
+      applyScorecard(
+        null,
+        {...modeCard, mode: 'automatic'},
+        {component: 'B', pkg: 'core'},
+      ),
+    ).toThrow(/mode must be N .* O .* P .* R/);
+  });
+
+  it('starts local, follows linked authority, and applies rubric procedure last', () => {
+    const component = AUDIT_PROMPT.indexOf(
+      '1. start from the nearest current component contract',
+    );
+    const modules = AUDIT_PROMPT.indexOf('applicable current\n   public module contract');
+    const familyDesign = AUDIT_PROMPT.indexOf(
+      '2. follow their applicable links to current family and design requirements',
+    );
+    const architectureSystem = AUDIT_PROMPT.indexOf(
+      '3. follow referenced current architecture and system decisions',
+    );
+    const objective = AUDIT_PROMPT.indexOf('applicable objective standards');
+    const rubric = AUDIT_PROMPT.indexOf('4. apply the rubric procedure last');
+
+    for (const marker of [
+      component,
+      modules,
+      familyDesign,
+      architectureSystem,
+      objective,
+      rubric,
+    ]) {
+      expect(marker).toBeGreaterThan(-1);
+    }
+    expect(component).toBeLessThan(familyDesign);
+    expect(modules).toBeLessThan(familyDesign);
+    expect(familyDesign).toBeLessThan(architectureSystem);
+    expect(architectureSystem).toBeLessThan(objective);
+    expect(objective).toBeLessThan(rubric);
+    expect(AUDIT_PROMPT).toContain('do not scan global authority first');
+    expect(AUDIT_PROMPT).not.toContain(
+      'current global authority and objective standards',
+    );
+    expect(AUDIT_PROMPT).toContain('optional context, never\npolicy');
+  });
+
+  it('preserves all four mode lifecycles without cross-filing issues', () => {
+    expect(AUDIT_PROMPT).toContain('<AuditMode: N|O|P|R>');
+    expect(AUDIT_PROMPT).toContain('record only the post-fix ledger result');
+    expect(AUDIT_PROMPT).toContain('file no ordinary\n  per-finding issues');
+    expect(AUDIT_PROMPT).toContain('one issue per open BLOCK');
+    expect(AUDIT_PROMPT).toContain(
+      'R — review: put findings on the pull request or in its review',
+    );
+    expect(AUDIT_PROMPT).toContain(
+      'File no ordinary\n  per-BLOCK issues and do not apply the whole-component ledger lifecycle',
+    );
+  });
+
+  it('keeps backfills observational and routes unresolved judgment to the owner', () => {
+    expect(AUDIT_PROMPT).toContain('A backfill is observational\nonly');
+    expect(AUDIT_PROMPT).toContain(
+      'must not add, improve,\nremove, reinterpret, or otherwise change product meaning',
+    );
+    expect(AUDIT_PROMPT).toContain('A conflict between current records');
+    for (const boundary of [
+      'new API meaning or\nshape',
+      'defaults',
+      'compatibility or migration promises',
+      'ownership boundaries',
+      'subjective design judgment',
+      'stops remediation and routes to the owning human',
+    ]) {
+      expect(AUDIT_PROMPT).toContain(boundary);
+    }
+  });
+
+  it('keeps audit storage split and invalidates only linked affected scores', () => {
+    const ledger = AUDIT_PROMPT.indexOf(
+      'The wiki ledger stores current post-fix\nscores and unresolved findings',
+    );
+    const pullRequest = AUDIT_PROMPT.indexOf(
+      "The pull request stores the run's reviewable\nevidence",
+    );
+    const report = AUDIT_PROMPT.indexOf(
+      'The trusted exact-head report belongs in trusted PR/check metadata',
+    );
+    const specs = AUDIT_PROMPT.indexOf(
+      'Component and module specs store durable product behavior only',
+    );
+    expect(ledger).toBeGreaterThan(-1);
+    expect(ledger).toBeLessThan(pullRequest);
+    expect(pullRequest).toBeLessThan(report);
+    expect(report).toBeLessThan(specs);
+    expect(AUDIT_PROMPT).toContain(
+      'do not put audit\nscores, run inventories, screenshots, findings, or eligibility data in them',
+    );
+    expect(AUDIT_PROMPT).toContain(
+      'Authority changes invalidate linked affected scores on the existing scale',
+    );
+    expect(AUDIT_PROMPT).toContain(
+      'a\ncomponent or module change invalidates that component',
+    );
+    expect(AUDIT_PROMPT).toContain(
+      'an applicable family\nor global-authority change invalidates every linked component',
+    );
+    expect(AUDIT_PROMPT).toContain(
+      'Do not bump the\nrubric version unless scoring methodology, weights, severities, or evidence\ntreatment changes',
+    );
+  });
+
+  it('pins behavior remediation and emits the agreed fail-closed report fields', () => {
+    expect(AUDIT_PROMPT).toContain(
+      'mattpocock/skills/blob/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/engineering/tdd/SKILL.md',
+    );
+    expect(AUDIT_PROMPT).toContain('Prove red before production changes');
+    for (const field of [
+      '"schemaVersion"',
+      '"component"',
+      '"package"',
+      '"auditMode"',
+      '"rubricVersion"',
+      '"heads"',
+      '"repository"',
+      '"componentContract"',
+      '"inventory"',
+      '"unresolvedGaps"',
+      '"objective"',
+      '"manual"',
+      '"remediations"',
+      '"beforeEvidence"',
+      '"afterEvidence"',
+      '"approvals"',
+      '"checks"',
+      '"eligibility"',
+      '"reasons"',
+    ]) {
+      expect(AUDIT_PROMPT).toContain(field);
+    }
+    expect(AUDIT_PROMPT).toContain('manual-review-only');
+    expect(AUDIT_PROMPT).toContain('Do not enable auto-merge');
+    expect(AUDIT_PROMPT).toContain('does\nnot activate auto-merge');
+  });
+});
+
 describe('issue plumbing', () => {
   it('links a filed BLOCK and says so when one is not filed', () => {
     expect(blockLink({id: 'A8', summary: 'x', issue: 3885})).toContain(
@@ -931,6 +1103,79 @@ describe('--record', () => {
     const r = cli(['--record', 'Button', '--from', '-'], {input: JSON.stringify(scorecard())});
     expect(r.code).toBe(1);
     expect(r.out).toContain('--push');
+  });
+
+  it('keeps Night Watch BLOCKs on the ledger without a filing warning', () => {
+    const wiki = makeWiki(ledgerWith());
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger], {
+      input: JSON.stringify(
+        scorecard({
+          mode: 'N',
+          blocks: withBlocks({id: 'A8', summary: 'touch path is missing'}),
+        }),
+      ),
+    });
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('Night Watch mode keeps 1 unresolved BLOCK');
+    expect(r.out).not.toContain('::warning::');
+    expect(r.out).not.toContain('File them');
+  });
+
+  it.each(['O', 'P'])('warns mode %s to file each unlinked BLOCK', mode => {
+    const wiki = makeWiki(ledgerWith());
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger], {
+      input: JSON.stringify(
+        scorecard({
+          mode,
+          blocks: withBlocks({id: 'A8', summary: 'touch path is missing'}),
+        }),
+      ),
+    });
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('::warning::score-ledger');
+    expect(r.out).toContain('--file-issues Button --push');
+  });
+});
+
+describe('--file-issues audit modes', () => {
+  it.each([
+    ['N', 'Night Watch files no ordinary per-finding issues'],
+    ['R', 'Only grading (O) and promotion (P)'],
+  ])('refuses mode %s before filing or changing the ledger', (mode, reason) => {
+    const seeded = ledgerWith(
+      entry({mode, blocks: withBlocks({id: 'A8', summary: 'touch path is missing'})}),
+    );
+    const wiki = makeWiki(seeded);
+    const before = fs.readFileSync(wiki.ledger, 'utf8');
+    const r = cli([
+      '--file-issues',
+      'Button',
+      '--ledger',
+      wiki.ledger,
+      '--dry-run',
+    ]);
+    expect(r.code).toBe(1);
+    expect(r.out).toContain(reason);
+    expect(r.out).not.toContain('would file');
+    expect(fs.readFileSync(wiki.ledger, 'utf8')).toBe(before);
+  });
+
+  it.each(['O', 'P'])('allows mode %s to preview one issue per open BLOCK', mode => {
+    const wiki = makeWiki(
+      ledgerWith(
+        entry({mode, blocks: withBlocks({id: 'A8', summary: 'touch path is missing'})}),
+      ),
+    );
+    const r = cli([
+      '--file-issues',
+      'Button',
+      '--ledger',
+      wiki.ledger,
+      '--dry-run',
+    ]);
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('--- would file ---');
+    expect(r.out).toContain('[audit] Button: touch path is missing');
   });
 });
 
