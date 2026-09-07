@@ -196,6 +196,10 @@ function collapse(value: string): string {
 /**
  * The words of a label, as a speech-input user would say them.
  *
+ * Exported: a binding comparing its own state inventory against the page needs
+ * the same notion of "the label's words" this contract uses, or the two would
+ * disagree about a label the component renders with a decorative separator.
+ *
  * WCAG 2.5.3 is about words: its Understanding text asks that "the words which
  * visually label a component are also the words associated with the component
  * programmatically". Punctuation is not spoken, and Astryx renders a required
@@ -217,10 +221,8 @@ export function spokenWords(value: string): readonly string[] {
  * photos" but a speech-input user saying "Sync" is not saying the label. Words
  * are compared whole, and their order is kept.
  *
- * Exported because a binding's own inventory check needs the same rule: a
- * looser comparison there would let a stale inventory entry pass unnoticed.
  */
-export function saysInOrder(
+function saysInOrder(
   whole: readonly string[],
   part: readonly string[],
 ): boolean {

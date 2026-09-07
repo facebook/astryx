@@ -4,7 +4,9 @@
  * @file index.ts
  * @input Re-exports the browser-free surface of @astryxdesign/a11y-spec
  * @output Contract vocabulary, completeness checklist, harness seam, runner,
- *   report, the jsdom harness, and the authored pattern contracts.
+ *   report, the jsdom harness, and the authored pattern contracts. A pattern
+ *   exports a helper here only when a BINDING needs it — a helper the contract
+ *   uses internally stays module-private.
  * @position Package entry point. The Chromium harness is deliberately NOT here:
  *   it imports Playwright, and the jsdom lane must never drag a browser in. It
  *   is a separate entry, `@astryxdesign/a11y-spec/chromium`.
@@ -68,7 +70,6 @@ export {createJsdomHarness, type JsdomHarnessOptions} from './harness/jsdom';
 
 export {
   SWITCH_PATTERN,
-  saysInOrder,
   spokenWords,
   type SwitchStateFacts,
 } from './patterns/switch';

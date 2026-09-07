@@ -26,7 +26,6 @@ import {
   formatFailures,
   formatReport,
   runBinding,
-  saysInOrder,
   spokenWords,
   summarize,
   type BindingResult,
@@ -127,7 +126,10 @@ function namesTheSameLabel(rendered: string, claimed: string): boolean {
     words.pop();
   }
   const expected = spokenWords(claimed);
-  return words.length === expected.length && saysInOrder(words, expected);
+  return (
+    words.length === expected.length &&
+    words.every((word, index) => word === expected[index])
+  );
 }
 
 /**
