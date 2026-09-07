@@ -76,8 +76,9 @@ Subcommands
   --stats                 Distribution summary on the terminal.
   --record <Component>    Write one component's scorecard into the ledger.
   --file-issues <Component>
-                          File one GitHub issue per open BLOCK that has none,
-                          via gh, and write the numbers back into the ledger.
+                          Grading/promotion only: file one GitHub issue per open
+                          BLOCK that has none, via gh, and write the numbers back.
+                          Night Watch and review modes are refused.
 
 Options
   --ledger <path|url>       Ledger source. Default: the wiki raw URL.
@@ -158,6 +159,51 @@ export const SECTION_STATES = Object.freeze([
   'na',
   'unpublished',
 ]);
+
+/**
+ * Audit modes and the lifecycle each mode owns. Legacy word aliases remain
+ * readable because the wiki ledger already contains them; every new scorecard
+ * is normalized to the one-letter rubric code.
+ */
+export const AUDIT_MODES = Object.freeze({
+  N: Object.freeze({
+    code: 'N',
+    label: 'Night Watch',
+    aliases: Object.freeze(['n', 'nightly', 'night-watch', 'night watch']),
+    filesBlockIssues: false,
+  }),
+  O: Object.freeze({
+    code: 'O',
+    label: 'grading',
+    aliases: Object.freeze(['o', 'grading', 'on-demand', 'on demand']),
+    filesBlockIssues: true,
+  }),
+  P: Object.freeze({
+    code: 'P',
+    label: 'promotion',
+    aliases: Object.freeze(['p', 'promotion']),
+    filesBlockIssues: true,
+  }),
+  R: Object.freeze({
+    code: 'R',
+    label: 'review',
+    aliases: Object.freeze(['r', 'review']),
+    filesBlockIssues: false,
+  }),
+});
+
+const AUDIT_MODE_BY_ALIAS = new Map(
+  Object.values(AUDIT_MODES).flatMap(policy =>
+    policy.aliases.map(alias => [alias, policy]),
+  ),
+);
+
+/** Resolve a scorecard or legacy ledger mode to its lifecycle policy. */
+export function auditModePolicy(mode) {
+  return typeof mode === 'string'
+    ? AUDIT_MODE_BY_ALIAS.get(mode.trim().toLowerCase()) ?? null
+    : null;
+}
 
 /** Rubric §2 grade bands. */
 export const GRADE_BANDS = Object.freeze([
@@ -739,21 +785,108 @@ function fmtScore(n) {
  * The paste-to-an-agent request for an audit. One string, exported so the
  * sandbox page and the CLI cannot drift.
  */
-export const AUDIT_PROMPT = `Audit the Astryx component <Component> against the Component Audit Rubric:
+export const AUDIT_PROMPT = `Audit the Astryx component <Component> in <AuditMode: N|O|P|R> mode against the Component Audit Rubric:
 https://github.com/facebook/astryx/wiki/Component-Audit-Rubric
 
-Grade the whole component, not a diff — follow the rubric's "Grading a whole
-component" section. Work every section, cite the rule id for each finding
-(A8, T6, P2 …), and capture screenshots of every state in light and dark by
-driving a real browser against Storybook. If you skip the screenshots, report
-the rendered-design section as not_measured rather than scoring it — never
-guess, and never score it zero.
+Preserve the selected mode. Assemble the applicable authority before applying
+the rubric procedure, in this order:
 
-Then record the result, per the rubric's "Recording an audit" section. One
-command: it clones the wiki, applies the ratchet, commits and pushes.
+1. start from the nearest current component contract and every applicable current
+   public module contract;
+2. follow their applicable links to current family and design requirements;
+3. follow referenced current architecture and system decisions, and apply
+   applicable objective standards; then
+4. apply the rubric procedure last, mapping each applicable requirement to one
+   section and one evidence result.
+
+Follow only links needed for this component; do not scan global authority first.
+Only records with \`authority: current\` are policy. If a component or module
+contract is missing or incomplete, continue from the other applicable current
+authority and checkable evidence. You may prepare a draft observational contract
+using the existing template and approval flow, but it is optional context, never
+policy, and never clears a finding or blocks grading. A backfill is observational
+only: it may describe verified shipped behavior, but it must not add, improve,
+remove, reinterpret, or otherwise change product meaning.
+
+A conflict between current records, or any question requiring new API meaning or
+shape, defaults, compatibility or migration promises, ownership boundaries, or
+subjective design judgment, stops remediation and routes to the owning human.
+Do not use local implementation or a draft to settle it.
+
+In N, O, and P, grade the whole component, not a diff. Work every section, cite
+the rule id for each finding (A8, T6, P2 …), and build a closed inventory from
+public exports and types, documented concepts and variants, publicly reachable
+states and transitions, and reachable implementation branches. Map each row to
+source, existing tests, consumer docs, rendered evidence, applicable current
+authority or objective standards, and any conflict or gap. Capture every visible
+state in light and dark by driving a real browser against Storybook. If required
+evidence is unavailable, use the rubric's \`not_measured\` behavior; never guess
+or score it zero. In R, judge the pull-request change and report findings on that
+change rather than grading inherited component debt.
+
+Mode lifecycle:
+
+- N — Night Watch: record only the post-fix ledger result and file no ordinary
+  per-finding issues. You may batch only tests, stable visual coverage, doc-drift
+  fixes, and implementation fixes whose required outcome is already settled by
+  current authority or an objective standard. Before any behavior remediation,
+  load and follow Matt Pocock's pinned public TDD skill:
+  https://github.com/mattpocock/skills/blob/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/engineering/tdd/SKILL.md
+  Prove red before production changes and implement one minimal vertical slice
+  through an established public seam. Every Night Watch PR remains
+  manual-review-only until \`spec:AST-029\` is \`phase: shipped\` and a trusted
+  exact-head eligibility check is active. Do not enable auto-merge.
+- O — grading: record the audit, then file one issue per open BLOCK.
+- P — promotion: apply the promotion rider, record the audit, then file one issue
+  per open BLOCK.
+- R — review: put findings on the pull request or in its review. File no ordinary
+  per-BLOCK issues and do not apply the whole-component ledger lifecycle.
+
+Keep audit data with its existing owner. The wiki ledger stores current post-fix
+scores and unresolved findings. The pull request stores the run's reviewable
+evidence. The trusted exact-head report belongs in trusted PR/check metadata.
+Component and module specs store durable product behavior only; do not put audit
+scores, run inventories, screenshots, findings, or eligibility data in them.
+
+Authority changes invalidate linked affected scores on the existing scale: a
+component or module change invalidates that component, and an applicable family
+or global-authority change invalidates every linked component. Do not bump the
+rubric version unless scoring methodology, weights, severities, or evidence
+treatment changes.
+
+For N, O, and P, record the selected mode per the rubric's "Recording an audit"
+section:
 
   <your scorecard JSON> | node scripts/score-ledger.mjs --record <Component> \\
     --from - --push
+
+For O and P, follow that successful record with:
+
+  node scripts/score-ledger.mjs --file-issues <Component> --push
+
+For N, include this versioned machine-readable eligibility report in the audit
+output even though it is not yet a trusted status input:
+
+  {
+    "schemaVersion": 1,
+    "component": "<Component>",
+    "package": "<package>",
+    "auditMode": "N",
+    "rubricVersion": "<version>",
+    "heads": {"repository": "<sha>", "componentContract": "<sha-or-null>"},
+    "inventory": {"closed": false, "gaps": []},
+    "unresolvedGaps": {"objective": [], "manual": []},
+    "remediations": [
+      {"ruleId": "<id>", "beforeEvidence": [], "afterEvidence": []}
+    ],
+    "approvals": [{"name": "<approval>", "state": "<state>"}],
+    "checks": [{"name": "<check>", "state": "<state>"}],
+    "eligibility": {"eligible": false, "reasons": []}
+  }
+
+Fail closed: missing, stale, inconsistent, or unresolved evidence keeps
+\`eligibility.eligible\` false and the PR open for human review. This report does
+not activate auto-merge or create an \`audit-eligibility\` status.
 
 Only record what you actually measured.`;
 
@@ -1074,7 +1207,14 @@ export function applyScorecard(existing, scorecard, {component, pkg}) {
   }
   if (!next.rubricVersion) throw new Error(`${component}: rubricVersion is required`);
   if (!next.lastAudited) throw new Error(`${component}: lastAudited is required`);
-  if (!next.mode) throw new Error(`${component}: mode is required (N/P/O/R)`);
+  const mode = auditModePolicy(next.mode);
+  if (!mode) {
+    throw new Error(
+      `${component}: mode must be N (Night Watch), O (grading), P (promotion), ` +
+        'or R (review)',
+    );
+  }
+  next.mode = mode.code;
   for (const [id, section] of Object.entries(next.sections || {})) {
     if (!(id in SECTION_WEIGHTS)) {
       throw new Error(`${component}: unknown section id "${id}"`);
@@ -1600,14 +1740,21 @@ async function cmdRecord(args) {
  * is missing fixes it far more often than one whose write was rejected.
  */
 function warnOnRecord(component, {before, after}) {
-  // Every BLOCK is supposed to carry the issue it was filed as; that is where
-  // the page's links come from.
+  // Grading and promotion own per-BLOCK issues. Night Watch deliberately keeps
+  // ordinary findings on the post-fix ledger row, and review findings belong to
+  // the pull request, so neither mode receives a contradictory filing warning.
+  const mode = auditModePolicy(after.mode);
   const unfiled = blockList(after).filter(b => !b.issue);
-  if (unfiled.length) {
+  if (unfiled.length && mode?.filesBlockIssues) {
     console.log(
       `::warning::score-ledger: ${unfiled.length} BLOCK(s) on ${component} have no issue ` +
         `(${unfiled.map(b => b.id).join(', ')}). File them — ` +
         `node scripts/score-ledger.mjs --file-issues ${component} --push`,
+    );
+  } else if (unfiled.length && mode?.code === 'N') {
+    console.log(
+      `score-ledger: Night Watch mode keeps ${unfiled.length} unresolved BLOCK(s) on the ` +
+        'post-fix ledger row; no ordinary per-finding issues are filed.',
     );
   }
   const unattributed = openBlockCount(after) - blockList(after).length;
@@ -1740,6 +1887,15 @@ async function cmdFileIssues(args) {
   const entry = indexLedger(ledger).byId.get(`${pkg}/${component}`);
   if (!isAudited(entry)) {
     console.error(`score-ledger: ${component} has no audited row — record it first.`);
+    return 1;
+  }
+  const mode = auditModePolicy(entry.mode);
+  if (!mode?.filesBlockIssues) {
+    const detail =
+      mode?.code === 'N'
+        ? 'Night Watch files no ordinary per-finding issues; unresolved findings stay on the post-fix ledger row.'
+        : 'Only grading (O) and promotion (P) audits file ordinary per-BLOCK issues.';
+    console.error(`score-ledger --file-issues: ${detail}`);
     return 1;
   }
 
