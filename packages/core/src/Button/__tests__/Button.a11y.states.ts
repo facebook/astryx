@@ -69,8 +69,8 @@ export interface ButtonBindingState {
   readonly summary: string;
   /**
    * What the state declares itself to be. These select which expectations apply
-   * — declaring a state unavailable, busy, or described turns those
-   * expectations on. They do not assert the negative when false.
+   * — declaring a state unavailable or described turns those expectations on.
+   * They do not assert the negative when false.
    */
   readonly facts: ButtonStateFacts;
   /**
