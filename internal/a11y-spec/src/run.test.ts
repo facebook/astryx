@@ -187,6 +187,54 @@ describe('runBinding', () => {
     expect(result.results[0]?.status).toBe('pass');
   });
 
+  describe('an expectation that discovers mid-run that it does not apply', () => {
+    it('reports not-applicable with its reason, never a pass', async () => {
+      const contract = contractThat(() => {});
+      const withEscape = definePattern<Facts>({
+        ...contract,
+        expectations: [
+          {
+            ...contract.expectations[0]!,
+            run: async ({notApplicable}) =>
+              notApplicable('the page has nothing for this to be about'),
+          },
+        ],
+      });
+      const result = await run(withEscape);
+      expect(result.results[0]?.status).toBe('not-applicable');
+      expect(result.results[0]?.detail).toBe(
+        'the page has nothing for this to be about',
+      );
+      expect(blockingResults([result])).toEqual([]);
+    });
+
+    it('does not let a known-failure record turn it into recorded debt', async () => {
+      // An expectation that did not run has nothing to record a failure
+      // against, so the record must neither match nor go stale.
+      const contract = contractThat(() => {});
+      const withEscape = definePattern<Facts>({
+        ...contract,
+        expectations: [
+          {
+            ...contract.expectations[0]!,
+            run: async ({notApplicable}) => notApplicable('nothing to judge'),
+          },
+        ],
+      });
+      const result = await run(withEscape, {knownFailures: [knownFailure()]});
+      expect(result.results[0]?.status).toBe('not-applicable');
+      expect(result.results[0]?.knownFailure).toBeUndefined();
+      expect(blockingResults([result])).toEqual([]);
+    });
+
+    it('still fails when the expectation throws an ordinary error', async () => {
+      // The escape is the only thing that yields not-applicable: an expectation
+      // cannot reach it by failing in some other way.
+      const result = await run(contractThat(missing));
+      expect(result.results[0]?.status).toBe('fail');
+    });
+  });
+
   it('reports an advisory failure without blocking', async () => {
     const result = await run(contractThat(missing, {enforcement: 'advisory'}));
     expect(result.results[0]?.status).toBe('fail');
@@ -285,6 +333,45 @@ describe('the report keeps its facts apart', () => {
     expect(text).not.toMatch(/\d+\s*%/);
     expect(text).not.toMatch(/score/i);
     expect(text).toContain('known-failure 1');
+  });
+
+  it('tells a part-encoded dimension apart from a fully exempt one', async () => {
+    const base = contractThat(() => {});
+    const contract = definePattern<Facts>({
+      ...base,
+      exemptions: {
+        // Encoded by the stub expectation, remainder owned elsewhere.
+        '4.1.2-name-role-value': {
+          owner: 'the caller',
+          verifiedBy: 'integration review',
+          reason: 'One component cannot see the other half.',
+          coversRemainderOnly: true,
+        },
+        // Not owned here at all.
+        '2.4.7-focus-visible': {
+          owner: 'the theme',
+          verifiedBy: 'the visual gate',
+          reason: 'A focus ring is a painted result.',
+        },
+      },
+    });
+    const report = summarize(contract, [await run(contract)]);
+    const text = formatReport(report);
+
+    expect(text).toContain(
+      'part-encoded 4.1.2-name-role-value — remainder → the caller',
+    );
+    expect(text).toContain('exempt 2.4.7-focus-visible → the theme');
+    // The part-encoded one must not read as fully exempt.
+    expect(text).not.toContain('exempt 4.1.2-name-role-value →');
+    expect(
+      report.exemptions.find(e => e.dimension === '4.1.2-name-role-value')
+        ?.remainderOnly,
+    ).toBe(true);
+    expect(
+      report.exemptions.find(e => e.dimension === '2.4.7-focus-visible')
+        ?.remainderOnly,
+    ).toBe(false);
   });
 
   it('names the layers that were not run, so a green run is not read as full coverage', async () => {

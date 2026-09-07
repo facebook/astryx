@@ -29,6 +29,7 @@
  */
 
 import {
+  NotApplicableHere,
   describeExpectation,
   requiredLayers,
   type Enforcement,
@@ -174,6 +175,7 @@ export async function runBinding<Facts>(
 
     let harness: Harness | undefined;
     let failure: string | undefined;
+    let notApplicableReason: string | undefined;
     let ran = false;
 
     try {
@@ -194,9 +196,20 @@ export async function runBinding<Facts>(
       }
       ran = true;
       const subject = await harness.subject();
-      await expectation.run({harness, subject, facts});
+      await expectation.run({
+        harness,
+        subject,
+        facts,
+        notApplicable: reason => {
+          throw new NotApplicableHere(reason);
+        },
+      });
     } catch (error) {
-      failure = messageOf(error);
+      if (error instanceof NotApplicableHere) {
+        notApplicableReason = error.message;
+      } else {
+        failure = messageOf(error);
+      }
       if (!ran) {
         // The mount itself failed. That is a harness fault, not a contract
         // result, and it must not be absorbed by a known-failure record.
@@ -204,6 +217,19 @@ export async function runBinding<Facts>(
       }
     } finally {
       await unmount?.();
+    }
+
+    if (notApplicableReason !== undefined) {
+      // Discovered from the page rather than declared up front. It is reported
+      // exactly like a declared one, so neither reads as a pass, and a
+      // known-failure record is deliberately NOT consulted: an expectation that
+      // did not run has nothing to record a failure against.
+      results.push({
+        ...base,
+        status: 'not-applicable',
+        detail: notApplicableReason,
+      });
+      continue;
     }
 
     const record = findKnownFailure(knownFailures, expectation, binding, state);

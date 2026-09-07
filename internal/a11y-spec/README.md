@@ -66,7 +66,7 @@ so this package reports them as unrun instead and proves them in Chromium.
 | `fail`            | the outcome was absent                                | when the expectation is `required` |
 | `known-failure`   | the exact recorded historical failure, still failing  | no                                 |
 | `unexpected-pass` | a recorded failure that now passes; delete the record | yes                                |
-| `not-applicable`  | this state cannot change the outcome                  | —                                  |
+| `not-applicable`  | this state cannot exercise the outcome                | —                                  |
 | `unrun`           | a layer this expectation reads was out of reach here  | —                                  |
 
 No status is averaged into another, and there is no score. A pattern with one
@@ -83,9 +83,17 @@ required failure is not "mostly conformant" (AST-021 FR11).
    names it in `covers`, or the pattern exempts it with an owner, a verification
    method, and a real reason. A criterion the pattern owns only part of takes
    both: the expectation, plus an exemption marked `coversRemainderOnly` naming
-   who holds the rest, so the encoded half never implies the whole.
-   `unansweredDimensions` lists what is left, and the pattern's suite asserts
-   that list is empty.
+   who holds the rest, so the encoded half never implies the whole. Reports
+   print those as `part-encoded … — remainder → owner`, distinct from a plain
+   `exempt`. `unansweredDimensions` lists what is left, and the pattern's suite
+   asserts that list is empty.
+
+   Applicability is normally declared, in `appliesWhen`, where a reader can see
+   it. When it can only be discovered from the page — 2.5.3 has nothing to
+   compare when nothing is rendered visibly — call `notApplicable(reason)` from
+   the run. It reports `not-applicable` with that reason; returning early would
+   report a pass, which claims an outcome was observed.
+
 4. Write a conforming fixture per state and a violating fixture per expectation,
    then prove each expectation fails against its own violation. An expectation
    nobody has watched fail is a claim, not a check (AST-020 FR11).

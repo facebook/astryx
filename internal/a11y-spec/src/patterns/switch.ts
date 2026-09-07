@@ -42,6 +42,20 @@ const WCAG_1_3_1: WcagCriterion = {
   level: 'A',
   url: `${UNDERSTANDING}/info-and-relationships.html`,
 };
+const WCAG_1_4_1: WcagCriterion = {
+  standard: 'wcag',
+  id: '1.4.1',
+  name: 'Use of Color',
+  level: 'A',
+  url: `${UNDERSTANDING}/use-of-color.html`,
+};
+const WCAG_3_3_1: WcagCriterion = {
+  standard: 'wcag',
+  id: '3.3.1',
+  name: 'Error Identification',
+  level: 'A',
+  url: `${UNDERSTANDING}/error-identification.html`,
+};
 const WCAG_2_1_1: WcagCriterion = {
   standard: 'wcag',
   id: '2.1.1',
@@ -326,13 +340,19 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
         evidenceLayer: 'accessibility-tree',
         alsoNeeds: ['real-browser'],
         enforcement: 'required',
-        run: async ({subject}) => {
+        run: async ({subject, notApplicable}) => {
           const visible = await subject.visibleLabelText();
           if (visible == null) {
             // Nothing is presented visually, so there is nothing for a speech
             // user to say: 2.5.3 applies to "user interface components with
-            // labels that include text or images of text".
-            return;
+            // labels that include text or images of text". Reported as such
+            // rather than returning — a silent return would read as a pass, and
+            // this state never exercised the outcome.
+            // `return` so the compiler follows the control flow; the call
+            // itself never returns.
+            return notApplicable(
+              'this state renders no label where a person can read it, so there are no visible words for a speech-input user to say',
+            );
           }
           const {name} = await subject.computed();
           if (!saysInOrder(spokenWords(name), spokenWords(visible))) {
@@ -346,8 +366,13 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
         id: 'switch.state.exposed',
         outcome:
           'The on/off state is exposed and matches what is rendered, so what the user hears is what they see.',
-        sources: [WCAG_4_1_2, APG_STATE],
-        covers: ['4.1.2-name-role-value', 'apg-interaction'],
+        sources: [WCAG_4_1_2, WCAG_1_4_1, APG_STATE],
+        // 1.4.1 partly: see its entry in `exemptions` for the rendered half.
+        covers: [
+          '4.1.2-name-role-value',
+          '1.4.1-use-of-color',
+          'apg-interaction',
+        ],
         appliesWhen: ALWAYS,
         evidenceLayer: 'accessibility-tree',
         enforcement: 'required',
@@ -467,8 +492,9 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
         id: 'switch.invalid.exposed',
         outcome:
           'A switch in error is reported as being in error, so the user can find what needs fixing.',
-        sources: [WCAG_4_1_2],
-        covers: ['4.1.2-name-role-value'],
+        sources: [WCAG_4_1_2, WCAG_3_3_1],
+        // 3.3.1 partly: see its entry in `exemptions` for the described half.
+        covers: ['4.1.2-name-role-value', '3.3.1-error-identification'],
         appliesWhen: {
           condition: 'this state is in error',
           test: facts => facts.invalid,
@@ -742,9 +768,10 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
       '1.4.1-use-of-color': {
         owner: 'the binding component and the theme',
         verifiedBy:
-          "the component's forced-colors suite and the repository visual gate; the programmatic half of the outcome is carried here by switch.state.exposed",
+          "the component's forced-colors suite and the repository visual gate",
         reason:
-          'Whether the rendered difference between on and off survives without colour is a pixel fact, and no layer this contract observes can read pixels.',
+          'The programmatic half — the state is available without looking at anything — is encoded by switch.state.exposed. What remains is whether the RENDERED difference between on and off survives without colour, and that is a pixel fact no layer this contract observes can read.',
+        coversRemainderOnly: true,
       },
       '1.4.3-contrast-minimum': {
         owner: 'the binding component and the theme',
@@ -832,10 +859,10 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
       },
       '3.3.1-error-identification': {
         owner: 'the binding component',
-        verifiedBy:
-          "the component's own status-message tests; the programmatic half of the outcome — the control itself being identified as the item in error — is carried here by switch.invalid.exposed",
+        verifiedBy: "the component's own status-message tests",
         reason:
-          '3.3.1 also requires the error to be described to the user in text, and that text is composed around the switch rather than being part of the control, so one control cannot answer the whole criterion.',
+          "Identifying the control in error is encoded by switch.invalid.exposed. What remains is 3.3.1's other half — describing the error to the user in text — and that text is composed around the switch rather than being part of the control, so one control cannot answer it.",
+        coversRemainderOnly: true,
       },
       '4.1.3-status-messages': {
         owner:

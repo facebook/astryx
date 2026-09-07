@@ -42,6 +42,8 @@ export interface Report {
     readonly owner: string;
     readonly verifiedBy: string;
     readonly reason: string;
+    /** True when expectations here cover part of it and the owner holds the rest. */
+    readonly remainderOnly: boolean;
   }[];
 }
 
@@ -78,6 +80,7 @@ export function summarize<Facts>(
               owner: exemption.owner,
               verifiedBy: exemption.verifiedBy,
               reason: exemption.reason,
+              remainderOnly: exemption.coversRemainderOnly === true,
             },
           ],
     )
@@ -165,8 +168,12 @@ export function formatReport(report: Report): string {
       : `unrun evidence layers: ${report.unrunLayers.join(', ')}`,
   );
   for (const exemption of report.exemptions) {
+    // A dimension this pattern owns PART of reads differently from one it does
+    // not own at all, and collapsing the two would overstate the second.
     lines.push(
-      `exempt ${exemption.dimension} → ${exemption.owner} (${exemption.verifiedBy})`,
+      exemption.remainderOnly
+        ? `part-encoded ${exemption.dimension} — remainder → ${exemption.owner} (${exemption.verifiedBy})`
+        : `exempt ${exemption.dimension} → ${exemption.owner} (${exemption.verifiedBy})`,
     );
   }
   return lines.join('\n');

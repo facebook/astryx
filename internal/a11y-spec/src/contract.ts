@@ -99,6 +99,22 @@ export interface Applicability<Facts> {
   readonly test: (facts: Facts) => boolean;
 }
 
+/**
+ * Thrown by an expectation that can only discover it does not apply once it has
+ * looked at the page. Prefer `appliesWhen`, which is declared and readable; use
+ * this only when the condition is itself an observation.
+ *
+ * The runner turns it into `not-applicable`, never into a pass. That is the
+ * whole point: an expectation that returned early would report `pass`, and a
+ * pass is a claim that the outcome was observed.
+ */
+export class NotApplicableHere extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = 'NotApplicableHere';
+  }
+}
+
 /** What an expectation is handed when it runs. */
 export interface ExpectationContext<Facts> {
   readonly harness: Harness;
@@ -106,6 +122,15 @@ export interface ExpectationContext<Facts> {
   readonly subject: Awaited<ReturnType<Harness['subject']>>;
   /** What the binding declares this state is supposed to be. */
   readonly facts: Facts;
+  /**
+   * Declare, mid-run, that this state cannot exercise the outcome — the page
+   * turned out not to have what the expectation is about. The result is
+   * `not-applicable` with this reason, and the run is over.
+   *
+   * Every use is visible in the report, so an expectation cannot quietly
+   * excuse itself: a reader sees which states did not exercise it.
+   */
+  readonly notApplicable: (reason: string) => never;
 }
 
 export interface Expectation<Facts> {
