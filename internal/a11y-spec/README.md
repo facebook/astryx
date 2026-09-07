@@ -81,15 +81,21 @@ required failure is not "mostly conformant" (AST-021 FR11).
    `definePattern` refuses anything less.
 3. Answer every completeness dimension in `checklist.ts` — either an expectation
    names it in `covers`, or the pattern exempts it with an owner, a verification
-   method, and a real reason. `unansweredDimensions` lists what is left, and the
-   pattern's suite asserts that list is empty.
+   method, and a real reason. A criterion the pattern owns only part of takes
+   both: the expectation, plus an exemption marked `coversRemainderOnly` naming
+   who holds the rest, so the encoded half never implies the whole.
+   `unansweredDimensions` lists what is left, and the pattern's suite asserts
+   that list is empty.
 4. Write a conforming fixture per state and a violating fixture per expectation,
    then prove each expectation fails against its own violation. An expectation
    nobody has watched fail is a claim, not a check (AST-020 FR11).
 
 `required` is earned by a directly applicable WCAG 2.2 A/AA criterion, or by a
 current Astryx record adopting the outcome — never by how easy the check was to
-write. Everything else is `advisory` and has to say why.
+write. "Directly applicable" means the criterion is the expectation's PRIMARY
+source: a supporting citation further down the list is not adoption, or any
+expectation could buy a gate by appending a plausible criterion. Everything else
+is `advisory` and has to say why.
 
 ## Binding a component
 

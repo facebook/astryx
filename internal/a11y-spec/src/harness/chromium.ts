@@ -220,12 +220,22 @@ export function createChromiumHarness(
       locator.evaluate(element => {
         const shown = (node: Element): boolean => {
           const style = getComputedStyle(node);
-          if (style.visibility === 'hidden' || style.display === 'none') {
+          if (
+            style.visibility === 'hidden' ||
+            style.display === 'none' ||
+            style.opacity === '0' ||
+            // The other sr-only recipes: clipped away, or parked offscreen.
+            (style.clipPath !== 'none' && style.clipPath !== '') ||
+            (style.clip !== 'auto' && style.clip !== '')
+          ) {
             return false;
           }
-          // The sr-only recipe: clipped to nothing, still in the tree.
           const box = node.getBoundingClientRect();
-          return box.width > 1 && box.height > 1;
+          if (box.width <= 1 || box.height <= 1) {
+            return false;
+          }
+          // Parked outside the viewport on either axis.
+          return box.right > 0 && box.bottom > 0;
         };
         const textOf = (node: Element): string | null => {
           const text = (node.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -247,7 +257,10 @@ export function createChromiumHarness(
         const associated =
           id == null || id === ''
             ? null
-            : element.ownerDocument.querySelector(`label[for="${id}"]`);
+            : element.ownerDocument.querySelector(
+                // An id is author-supplied and need not be a bare identifier.
+                `label[for="${CSS.escape(id)}"]`,
+              );
         const wrapping = element.closest('label');
         for (const label of [associated, wrapping]) {
           if (label != null) {

@@ -140,6 +140,13 @@ const APG_SPACE: ApgRequirement = {
  */
 const TAB_BUDGET = 10;
 
+/**
+ * An interaction expectation's claim is a real-browser one — pressing this
+ * turns it on — but the answer is read out of the accessibility tree, so it
+ * cannot run without both.
+ */
+const READS_THE_TREE = ['accessibility-tree'] as const;
+
 /** Applies to every state; the outcome never stops mattering. */
 const ALWAYS = {
   condition: 'the binding renders the pattern at all',
@@ -198,10 +205,30 @@ function collapse(value: string): string {
  * Required" — the same words, one decorative separator apart. Comparing raw
  * strings would report that as a failure, which would be wrong.
  */
-function spokenWords(value: string): string {
+function spokenWords(value: string): readonly string[] {
   return collapse(value)
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .trim();
+    .split(' ')
+    .filter(word => word !== '');
+}
+
+/**
+ * Whether `whole` says `part`'s words, in order and unbroken.
+ *
+ * A substring test would be wrong here: "Sync" is a substring of "Syncing
+ * photos" but a speech-input user saying "Sync" is not saying the label. Words
+ * are compared whole, and their order is kept.
+ */
+function saysInOrder(
+  whole: readonly string[],
+  part: readonly string[],
+): boolean {
+  if (part.length === 0) {
+    return true;
+  }
+  return whole.some((_, index) =>
+    part.every((word, offset) => whole[index + offset] === word),
+  );
 }
 
 /**
@@ -217,9 +244,13 @@ async function roundTrip(
   how: string,
 ): Promise<void> {
   const from = start ? 'true' : 'false';
+  const to = start ? 'false' : 'true';
   await activate();
   const after = await read();
-  if (after === from) {
+  // The opposite value, not merely a different one: a switch that answers a
+  // press by reporting `mixed`, or by dropping its state entirely, has not
+  // been turned anywhere the user asked for.
+  if (after !== to) {
     throw new Error(
       `${how} left the switch ${onOff(after)}: it cannot be turned ${start ? 'off' : 'on'}`,
     );
@@ -310,13 +341,15 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
               `this state is declared to render the visible label "${facts.visibleLabel}", but nothing is rendered visibly`,
             );
           }
-          if (!spokenWords(visible).includes(spokenWords(facts.visibleLabel))) {
+          if (
+            !saysInOrder(spokenWords(visible), spokenWords(facts.visibleLabel))
+          ) {
             throw new Error(
               `this state declares the visible label "${facts.visibleLabel}", but the page renders "${visible}"`,
             );
           }
           const {name} = await subject.computed();
-          if (!spokenWords(name).includes(spokenWords(visible))) {
+          if (!saysInOrder(spokenWords(name), spokenWords(visible))) {
             throw new Error(
               `the visible label reads "${visible}" but the browser computes the accessible name as "${name}", so speaking the visible label does not reach this control`,
             );
@@ -476,9 +509,7 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           test: facts => facts.operable,
         },
         evidenceLayer: 'real-browser',
-        // The claim is a real-browser one, but the answer is read out of the
-        // accessibility tree, so this cannot run without both.
-        alsoNeeds: ['accessibility-tree'],
+        alsoNeeds: READS_THE_TREE,
         enforcement: 'required',
         run: async ({harness, subject, facts}) => {
           await roundTrip(
@@ -501,9 +532,7 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           test: facts => facts.operable && facts.focusable,
         },
         evidenceLayer: 'real-browser',
-        // The claim is a real-browser one, but the answer is read out of the
-        // accessibility tree, so this cannot run without both.
-        alsoNeeds: ['accessibility-tree'],
+        alsoNeeds: READS_THE_TREE,
         enforcement: 'required',
         run: async ({harness, subject, facts}) => {
           await subject.focus();
@@ -571,7 +600,7 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           test: facts => facts.operable,
         },
         evidenceLayer: 'real-browser',
-        alsoNeeds: ['accessibility-tree'],
+        alsoNeeds: READS_THE_TREE,
         enforcement: 'required',
         run: async ({harness, subject}) => {
           const before = (await subject.computed()).checked;
@@ -589,6 +618,8 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
         outcome:
           'Turning the switch on leaves focus on the switch, so a keyboard user is not thrown somewhere else mid-task.',
         sources: [WCAG_3_2_2],
+        // Partly: see the 3.2.2 entry in `exemptions` for the half of the
+        // criterion a component-level run cannot see.
         covers: ['3.2.2-on-input'],
         appliesWhen: {
           condition:
@@ -660,9 +691,7 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           test: facts => !facts.operable,
         },
         evidenceLayer: 'real-browser',
-        // The claim is a real-browser one, but the answer is read out of the
-        // accessibility tree, so this cannot run without both.
-        alsoNeeds: ['accessibility-tree'],
+        alsoNeeds: READS_THE_TREE,
         enforcement: 'required',
         run: async ({harness, subject, facts}) => {
           const before = (await subject.computed()).checked;
@@ -796,6 +825,14 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           'this shared contract itself: every component that adopts the pattern binds to the same expectations, so repeated switches are identified the same way',
         reason:
           'Consistency is a property of the whole set of adopters, which one binding cannot demonstrate.',
+      },
+      '3.2.2-on-input': {
+        owner: 'the caller, for its own onChange',
+        verifiedBy:
+          'integration and page-level review of what a caller does in response to the change; the component-owned half — activating the switch must not move focus — is carried here by switch.state.keeps-focus-on-change',
+        reason:
+          "A change of context is a change of user agent, viewport, focus, or content that changes the page's meaning. The switch owns exactly one of those: whether activating it moves focus. If a caller's onChange navigates, reloads, or rewrites the page around the control, that is the caller's context change to warn about before the user reaches the switch, and no run of one component can observe it.",
+        coversRemainderOnly: true,
       },
       '3.3.1-error-identification': {
         owner: 'the binding component',

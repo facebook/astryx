@@ -39,6 +39,13 @@ export interface ChecklistExemption {
   readonly verifiedBy: string;
   /** Why this pattern is not the owner. */
   readonly reason: string;
+  /**
+   * Set when an expectation encodes PART of this dimension and the owner named
+   * here holds the rest. Without it a dimension has exactly one answer; with
+   * it, the encoded part and the unowned part are both visible instead of the
+   * encoding quietly implying the whole criterion is covered.
+   */
+  readonly coversRemainderOnly?: boolean;
 }
 
 export interface ChecklistDimension {
@@ -168,17 +175,17 @@ export const CHECKLIST_DIMENSIONS = [
     usualOwnership: 'Page only',
   },
   {
-    id: '3.2.4-consistent-identification',
-    source: 'WCAG 2.2 3.2.4 Consistent Identification (AA)',
-    outcome: 'Repeated functions are identified consistently.',
-    usualOwnership: 'System, component, and caller content',
-  },
-  {
     id: '3.2.2-on-input',
     source: 'WCAG 2.2 3.2.2 On Input (A)',
     outcome:
       'Changing a control’s setting does not automatically change the context unless the user was told it would.',
     usualOwnership: 'Component and caller content',
+  },
+  {
+    id: '3.2.4-consistent-identification',
+    source: 'WCAG 2.2 3.2.4 Consistent Identification (AA)',
+    outcome: 'Repeated functions are identified consistently.',
+    usualOwnership: 'System, component, and caller content',
   },
   {
     id: '3.3.1-error-identification',

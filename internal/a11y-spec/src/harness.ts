@@ -71,6 +71,12 @@ export interface Subject {
    * Real-browser layer: the text of this control's label as a sighted person
    * actually sees it, or null when nothing is visibly rendered.
    *
+   * Bounded on purpose: it reads the label the platform ASSOCIATES with the
+   * control. WCAG 2.5.3's visible label need not be associated — an adjacent
+   * unlinked `<span>` can label a control to the eye — and no generic rule can
+   * tell that span from neighbouring prose. A pattern that needs that case
+   * covered gives the binding an explicit hidden-label state to verify.
+   *
    * Deciding what is *visible* takes layout, which is why this is a
    * real-browser observation and not a DOM one: markup alone cannot tell a
    * rendered label from a visually-hidden one. Resolution follows the platform's

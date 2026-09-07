@@ -71,6 +71,8 @@ function divSwitch(attributes: string, body = 'Notifications'): string {
 
 const TOGGLE_ON_CLICK = `onclick="this.setAttribute('aria-checked', this.getAttribute('aria-checked') === 'true' ? 'false' : 'true')"`;
 const TOGGLE_ON_SPACE = `onkeydown="if (event.key === ' ') { event.preventDefault(); this.setAttribute('aria-checked', this.getAttribute('aria-checked') === 'true' ? 'false' : 'true'); }"`;
+/** Changes on the way down, where a press can no longer be taken back. */
+const TOGGLE_ON_POINTER_DOWN = `onpointerdown="this.setAttribute('aria-checked', this.getAttribute('aria-checked') === 'true' ? 'false' : 'true')"`;
 
 export const SWITCH_FIXTURES: readonly SwitchFixture[] = [
   // ---- conforming, one per representative state ---------------------------
@@ -165,7 +167,7 @@ export const SWITCH_FIXTURES: readonly SwitchFixture[] = [
       'a switch that changes on the way down, so a slip cannot be taken back',
     facts: facts(),
     html: divSwitch(
-      `tabindex="0" aria-checked="false" onpointerdown="this.setAttribute('aria-checked', this.getAttribute('aria-checked') === 'true' ? 'false' : 'true')" onkeydown="if (event.key === ' ') { event.preventDefault(); this.setAttribute('aria-checked', this.getAttribute('aria-checked') === 'true' ? 'false' : 'true'); }"`,
+      `tabindex="0" aria-checked="false" ${TOGGLE_ON_POINTER_DOWN} ${TOGGLE_ON_SPACE}`,
     ),
   },
   {
@@ -210,6 +212,10 @@ export const SWITCH_FIXTURES: readonly SwitchFixture[] = [
   {
     id: 'violating-inert',
     summary: 'a switch that never changes state',
+    // Same markup as violating-state-mismatch, different declaration: there,
+    // the binding says the switch renders ON and the markup says off, which is
+    // an exposure failure. Here it says off and means off, so the failure is
+    // that pressing it does nothing. One inert control, two separate outcomes.
     facts: facts(),
     html: divSwitch('tabindex="0" aria-checked="false"'),
   },

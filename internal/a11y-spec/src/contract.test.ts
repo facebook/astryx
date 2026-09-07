@@ -97,17 +97,35 @@ describe('definePattern', () => {
     ).toThrow(/must name the WCAG 2.2 outcome it supports/);
   });
 
-  it('accepts an APG-primary expectation once it names the WCAG outcome', () => {
+  it('accepts an APG-primary expectation that names the WCAG outcome and reports', () => {
     expect(
       pattern({
         expectations: [
           expectation({
             sources: [APG_SOMETHING, WCAG_4_1_2],
             wcagOutcome: 'The probe state is programmatically available.',
+            enforcement: 'advisory',
+            advisoryBecause: 'Nothing current adopts the probe outcome.',
           }),
         ],
       }),
     ).not.toThrow();
+  });
+
+  it('refuses to gate on an APG requirement propped up by a supporting citation', () => {
+    // FR9 wants a DIRECTLY applicable criterion. Without this, any expectation
+    // could buy `required` by appending a plausible criterion to its list.
+    expect(
+      pattern({
+        expectations: [
+          expectation({
+            sources: [APG_SOMETHING, WCAG_4_1_2],
+            wcagOutcome: 'The probe state is programmatically available.',
+            enforcement: 'required',
+          }),
+        ],
+      }),
+    ).toThrow(/its primary source is neither/);
   });
 
   it('refuses an expectation with no applicability condition', () => {
@@ -161,7 +179,7 @@ describe('definePattern', () => {
           }),
         ],
       }),
-    ).toThrow(/cites no WCAG 2.2 A\/AA criterion and no current Astryx record/);
+    ).toThrow(/its primary source is neither/);
   });
 
   it('refuses an advisory expectation that does not say why it is advisory', () => {
@@ -188,6 +206,37 @@ describe('definePattern', () => {
         },
       }),
     ).toThrow(/both encoded by probe.outcome.observed and exempted/);
+  });
+
+  it('lets a dimension be part-encoded when the exemption owns the remainder', () => {
+    expect(
+      pattern({
+        exemptions: {
+          '4.1.2-name-role-value': {
+            owner: 'the caller',
+            verifiedBy: 'integration review',
+            reason: 'Half of this criterion is not visible to one component.',
+            coversRemainderOnly: true,
+          },
+        },
+      }),
+    ).not.toThrow();
+  });
+
+  it('refuses a remainder-only exemption when nothing encodes the rest', () => {
+    expect(
+      pattern({
+        expectations: [expectation({covers: ['2.1.1-keyboard']})],
+        exemptions: {
+          '4.1.2-name-role-value': {
+            owner: 'the caller',
+            verifiedBy: 'integration review',
+            reason: 'Half of this criterion is not visible to one component.',
+            coversRemainderOnly: true,
+          },
+        },
+      }),
+    ).toThrow(/no expectation encodes any of it/);
   });
 
   it('refuses an exemption with no owner', () => {

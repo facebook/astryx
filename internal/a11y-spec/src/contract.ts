@@ -270,9 +270,10 @@ export function definePattern<Facts>(
           `${id} claims unknown completeness dimension "${dimension}"`,
         );
       }
-      if (contract.exemptions[dimension] != null) {
+      const exemption = contract.exemptions[dimension];
+      if (exemption != null && exemption.coversRemainderOnly !== true) {
         problems.push(
-          `"${dimension}" is both encoded by ${id} and exempted; a dimension has one answer (AST-020 FR5)`,
+          `"${dimension}" is both encoded by ${id} and exempted; a dimension has one answer, unless the exemption sets coversRemainderOnly (AST-020 FR5)`,
         );
       }
     }
@@ -290,18 +291,25 @@ export function definePattern<Facts>(
       );
     }
 
-    // FR9: `required` is earned by a directly applicable WCAG A/AA criterion or
+    // FR9: `required` is earned by a DIRECTLY APPLICABLE WCAG A/AA criterion or
     // by a current Astryx record that adopts the outcome — never by how easy
     // the check is to automate.
-    const adopted = expectation.sources.some(
-      source =>
-        (source.standard === 'wcag' &&
-          (source.level === 'A' || source.level === 'AA')) ||
-        source.standard === 'astryx',
-    );
+    //
+    // "Directly applicable" is read here as: the criterion is the
+    // expectation's PRIMARY source, the one that names it. A supporting
+    // citation further down the list is not adoption — an APG-primary
+    // expectation that also mentions 4.1.2 for context is still an APG
+    // requirement, and gating on it would let any expectation buy `required`
+    // by adding a plausible criterion to the end of its list.
+    const primary = expectation.sources[0];
+    const adopted =
+      primary != null &&
+      ((primary.standard === 'wcag' &&
+        (primary.level === 'A' || primary.level === 'AA')) ||
+        primary.standard === 'astryx');
     if (expectation.enforcement === 'required' && !adopted) {
       problems.push(
-        `${id} is required but cites no WCAG 2.2 A/AA criterion and no current Astryx record (AST-020 FR9)`,
+        `${id} is required, but its primary source is neither a WCAG 2.2 A/AA criterion nor a current Astryx record (AST-020 FR9)`,
       );
     }
     if (
@@ -330,6 +338,16 @@ export function definePattern<Facts>(
     if (exemption.verifiedBy.trim() === '') {
       problems.push(
         `"${dimension}" is exempt but names no verification method (AST-020 FR5)`,
+      );
+    }
+    if (
+      exemption.coversRemainderOnly === true &&
+      !contract.expectations.some(expectation =>
+        expectation.covers.includes(dimension as ChecklistDimensionId),
+      )
+    ) {
+      problems.push(
+        `"${dimension}" claims to exempt only the remainder, but no expectation encodes any of it`,
       );
     }
     if (EMPTY_EXEMPTION.test(exemption.reason.trim())) {
