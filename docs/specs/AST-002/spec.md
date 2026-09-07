@@ -150,11 +150,11 @@ A public API proposal is admitted only when it passes both gates:
   admitted as durable caller-owned concepts.
 - **FR19 — Bug fixes do not smuggle API design.** A bug fix that can restore current
   behavior without changing public API or behavior beyond current authority MUST do
-  so. When restoration genuinely requires a new public primitive or changed public
-  behavior, authority is unsettled and follows `architecture:knowledge-contracts`;
-  the owner first decides and records the exact contract. Implementation
-  convenience, removal of an internal wrapper, or exposure of existing internal
-  fields is not evidence that the API should exist.
+  so. Any additional public delta follows `architecture:knowledge-contracts`
+  independently: existing current authority may already settle it, and only absent
+  authority requires a new owner decision. Implementation convenience, removal of
+  an internal wrapper, or exposure of existing internal fields is not evidence that
+  an API should exist.
 
 ### Platform support
 
@@ -392,8 +392,10 @@ and failure behavior without exposing implementation machinery. Record that
 contract as current before accepting the public surface.
 
 A bug fix does not create an exception. When it restores current authority, keep
-its API and behavior within that contract. When restoration genuinely needs a new
-public primitive or observable behavior, hold for the owner and specify it first.
+its API and behavior within that contract. Any additional public primitive or
+observable behavior follows `architecture:knowledge-contracts`: reuse an existing
+current decision when one settles the delta, and ask the owner only when authority
+is absent.
 
 Rejected: promoting internal focus targets, gesture memory, DOM slots, timers, or
 other existing fields merely because removing an internal wrapper or fixing one

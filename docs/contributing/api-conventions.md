@@ -317,10 +317,10 @@ redefine them.
 
 A defect fix is `preserves` only when it restores a current contract or standard
 without adding public API or public behavior beyond that authority. Supply focused
-regression evidence for the broken state and representative unchanged states. If
-the fix needs a new primitive or observable behavior, it follows the unsettled
-path in the knowledge contract rather than using the bug-fix label to bypass API
-design.
+regression evidence for the broken state and representative unchanged states. Any
+additional public delta is classified independently through the knowledge
+contract: existing current authority may settle it, and only absent authority uses
+the unsettled owner path. The bug-fix label never bypasses API design.
 
 For a claimed API addition or semantic behavior change, review has four stages:
 
