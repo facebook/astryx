@@ -1,5 +1,9 @@
 # @xds/theme-chocolate
 
+# 0.5.4
+
+---
+
 # 0.5.3
 
 #### Fixes

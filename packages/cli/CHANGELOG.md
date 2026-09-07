@@ -1,5 +1,19 @@
 # @xds/cli
 
+# 0.5.4
+
+#### New Features
+
+- Preserve block showcase metadata from CLI integrations so packages can ship their own docsite previews. Charts now includes its primary bar-chart showcase alongside the package.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
 # 0.5.3
 
 #### New Components
