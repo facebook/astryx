@@ -53,6 +53,10 @@ Every knowledge record declares `authority: draft | current | archived`.
   through GitHub review. When an approver is also the PR author, they comment
   `/approve-spec <full-head-sha>`. Any new commit invalidates that approval.
 - Only `current` documents guide implementation and review.
+- A specification describes durable ideal behavior independently of any one pull
+  request. Pull requests and issues may appear only as clearly non-authoritative
+  examples, historical evidence, or references. A specification never exists to
+  approve, reject, classify, designate, or authorize a particular pull request.
 - Current records rely only on other current records. `modules` and
   `parent_component` are structural ownership links, so they may connect active
   draft/current records without making draft behavior authoritative. Other draft

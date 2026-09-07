@@ -111,11 +111,14 @@ Every record is either:
   private release or automation systems.
 - **INV9 — Current records have no implicit precedence.** A newer, narrower, or
   more local current record does not silently override another current record.
-- **INV10 — Records govern behavior, not pull requests.** A current record states
-  durable requirements, prohibitions, compatibility, ownership, and evidence. It
-  never approves, classifies, designates, or authorizes a specific pull request.
-  Pull requests and issues may appear only as non-authoritative evidence. The
-  reviewer owns each change's disposition against current authority.
+- **INV10 — Records describe ideal behavior, not pull-request verdicts.** A current
+  record states durable requirements, prohibitions, compatibility, ownership, and
+  evidence independently of any one implementation change. It never exists to
+  approve a pull request and never approves, rejects, classifies, designates, or
+  authorizes a specific one. Pull requests and issues may appear only as clearly
+  non-authoritative examples, historical evidence, or references; the rule must
+  remain complete without them. The reviewer owns each change's disposition
+  against current authority.
 - **INV11 — Every public delta has an authority result.** Every public API update
   and every public behavior change is matched to current committed authority
   before acceptance. Package-export shape is not the only trigger: reachable
