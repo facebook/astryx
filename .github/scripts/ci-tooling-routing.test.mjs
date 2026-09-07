@@ -31,19 +31,28 @@ function step(job, name) {
 
 describe('Node-tooling CI routing', () => {
   it('publishes the tooling output from the trusted-base classifier', () => {
-    const source = read('.github/workflows/ci.yml');
     expect(ci.jobs['check-scope'].outputs.tooling_only).toContain(
       'steps.scope.outputs.tooling_only',
     );
-    expect(source).toContain(
-      'git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs"',
-    );
-    expect(source).toContain(
-      'git show "origin/${{ github.base_ref }}:.github/scripts/knowledge-paths.cjs"',
-    );
-    expect(source).toContain(
-      'git show "origin/${{ github.base_ref }}:scripts/component-packages.cjs"',
-    );
+    for (const workflow of [
+      '.github/workflows/ci.yml',
+      '.github/workflows/lint.yml',
+    ]) {
+      const source = read(workflow);
+      expect(source).toContain(
+        'git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs"',
+      );
+      expect(source).toContain(
+        'git show "origin/${{ github.base_ref }}:.github/scripts/knowledge-paths.cjs"',
+      );
+      expect(source).toContain(
+        'git show "origin/${{ github.base_ref }}:scripts/component-packages.cjs"',
+      );
+      expect(source).toContain('| node "$CLASSIFIER" --github-output');
+      expect(source).not.toContain(
+        '| node .github/scripts/change-scope.cjs --github-output',
+      );
+    }
   });
 
   it('grants no specialized lane without a merge base or trusted dependency', () => {
