@@ -76,3 +76,5 @@ export {
   spokenWords,
   type SwitchStateFacts,
 } from './patterns/switch';
+
+export {BUTTON_PATTERN, type ButtonStateFacts} from './patterns/button';
