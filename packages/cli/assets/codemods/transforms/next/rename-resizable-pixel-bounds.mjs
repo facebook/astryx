@@ -6,13 +6,16 @@
  * Numbers already mean pixels in minSize/maxSize. This rewrites inline single-
  * and multi-region configurations while preserving shorthand values and the
  * released conflict rule (the unified property wins when both are present).
+ * A spread or computed property can change precedence invisibly, so dynamic
+ * objects stay unchanged and receive a manual-migration TODO instead.
  */
 
 export const meta = {
   title: 'Rename useResizable pixel bounds',
   description:
     'Renames deprecated `minSizePx`/`maxSizePx` properties to `minSize`/' +
-    '`maxSize` in inline useResizable configurations.',
+    '`maxSize` in static inline useResizable configurations and marks ' +
+    'objects with spreads or computed properties for manual migration.',
 };
 
 const IMPORT_SOURCES = new Set([
@@ -25,6 +28,10 @@ const RENAMES = new Map([
   ['minSizePx', 'minSize'],
   ['maxSizePx', 'maxSize'],
 ]);
+const MANUAL_MIGRATION_COMMENT =
+  ' TODO(astryx upgrade): This useResizable configuration contains a spread ' +
+  'or computed property. Rename minSizePx/maxSizePx to minSize/maxSize ' +
+  'manually without changing property precedence. ';
 
 /** @param {any} property */
 function staticPropertyName(property) {
@@ -56,6 +63,31 @@ function renameKey(j, property, nextName) {
  * @param {any} object
  */
 function migrateObject(j, object) {
+  const firstOldProperty = object.properties.find(
+    (/** @type {any} */ property) => RENAMES.has(staticPropertyName(property)),
+  );
+  const hasDynamicProperty = object.properties.some(
+    (/** @type {any} */ property) =>
+      property.computed === true ||
+      property.type === 'SpreadElement' ||
+      property.type === 'ExperimentalSpreadProperty',
+  );
+  if (firstOldProperty && hasDynamicProperty) {
+    firstOldProperty.comments ??= [];
+    if (
+      !firstOldProperty.comments.some(
+        (/** @type {any} */ comment) =>
+          comment.value === MANUAL_MIGRATION_COMMENT,
+      )
+    ) {
+      firstOldProperty.comments.push(
+        j.commentBlock(MANUAL_MIGRATION_COMMENT, true, false),
+      );
+      return true;
+    }
+    return false;
+  }
+
   let changed = false;
   for (const [oldName, newName] of RENAMES) {
     const hasNew = object.properties.some(

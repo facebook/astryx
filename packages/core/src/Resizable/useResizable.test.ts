@@ -1639,6 +1639,22 @@ describe('Resizable size source compatibility (AST-010 API3/API4)', () => {
       // @ts-expect-error maxSizePx was removed in 0.6; use maxSize
       maxSizePx: 500,
     };
+    function useRemovedDynamicBoundsCompileChecks() {
+      const dynamicRemovedMin = {defaultSize: 260, minSizePx: 100};
+      // @ts-expect-error removed aliases must not compile through a variable
+      useResizable(dynamicRemovedMin);
+      const dynamicRemovedMax = {
+        regions: {sidebar: {defaultSize: 260, maxSizePx: 500}},
+      };
+      // @ts-expect-error removed aliases must not compile in dynamic regions
+      useResizable(dynamicRemovedMax);
+      const unionWithRemovedMin = null as unknown as
+        | UseResizableSingleConfig
+        | (UseResizableSingleConfig & {minSizePx: number});
+      // @ts-expect-error every union member must exclude removed aliases
+      useResizable(unionWithRemovedMin);
+    }
+    expect(useRemovedDynamicBoundsCompileChecks).toBeTypeOf('function');
     expect([rem, cssMath, removedMin, removedMax]).toHaveLength(4);
   });
 });

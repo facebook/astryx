@@ -4,7 +4,8 @@
 
 /**
  * @file useResizable.ts
- * @input Resize configuration (defaultSize, minSize, maxSize, snaps) and
+ * @input Resize configuration (defaultSize, minSize, maxSize, snaps), with
+ *   removed pixel-bound aliases rejected even through assembled objects, and
  *   collapse configuration (collapsible,
  *   defaultIsCollapsed, isCollapsed)
  * @output Hook return: size, isCollapsed, collapse/expand/resize methods, props for handle
@@ -1096,9 +1097,33 @@ function useMultiResizable(
 // Public API
 // =============================================================================
 
-export function useResizable(config: UseResizableSingleConfig): ResizableRegion;
-export function useResizable(
-  config: UseResizableMultiConfig,
+/** Removed keys must fail even when a variable bypasses excess-property checks. */
+type RejectRemovedPixelBounds<Config> = Config extends unknown
+  ? Config & {minSizePx?: never; maxSizePx?: never}
+  : never;
+
+type SingleResizableArgument<Config> = Config extends unknown
+  ? 'regions' extends keyof Config
+    ? never
+    : RejectRemovedPixelBounds<Config>
+  : never;
+
+type MultiResizableArgument<Config extends UseResizableMultiConfig> =
+  Config extends unknown
+    ? Config & {
+        regions: {
+          [Key in keyof Config['regions']]: RejectRemovedPixelBounds<
+            Config['regions'][Key]
+          >;
+        };
+      }
+    : never;
+
+export function useResizable<const Config extends UseResizableSingleConfig>(
+  config: SingleResizableArgument<Config>,
+): ResizableRegion;
+export function useResizable<const Config extends UseResizableMultiConfig>(
+  config: MultiResizableArgument<Config>,
 ): Record<string, ResizableRegion>;
 export function useResizable(
   config: UseResizableSingleConfig | UseResizableMultiConfig,
