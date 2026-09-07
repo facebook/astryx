@@ -7,8 +7,8 @@
  *   button pattern that can change what the pattern promises — and
  *   BUTTON_PATTERN_EXCLUSIONS, the parts deliberately left to another pattern.
  * @position The binding inventory required before any assertion moves
- *   (`docs/specs/AST-021/spec.md` FR2, FR4). Shared by the jsdom and Chromium
- *   bindings so both cover the same states and cannot drift apart.
+ *   (`docs/specs/AST-021/spec.md` FR2, FR4), and the single definition of what
+ *   each state IS.
  *
  * A state earns a row when it can change what the button pattern promises: a
  * different name source, a different operability, a different exposure of
@@ -16,7 +16,15 @@
  * appearance — variant, size, elevation, width, end content, theme — cannot, so
  * they stay in each component's own suite where that component owns them.
  *
- * SYNC: Every row's `storyId` must exist in
+ * This file is DATA ONLY — no JSX, no component imports. The Chromium lane runs
+ * under Playwright's plain Node runtime, which does not apply the StyleX
+ * transform, so importing a component here would break that lane before it
+ * started. How each state is rendered lives beside it in
+ * ./Button.a11y.renders.tsx, in a map TypeScript requires to be exhaustive: a
+ * new row here is a compile error until it has a rendering.
+ *
+ * SYNC: Every row needs a rendering in ./Button.a11y.renders.tsx and a named
+ *   export in
  * - /apps/storybook/stories/ButtonA11y.stories.tsx
  */
 
@@ -29,6 +37,16 @@ export type ButtonBinding =
   | 'ClickableCard'
   | 'SideNavCollapseButton'
   | 'ChatSendButton';
+
+/**
+ * Every state id, as a type. The render map is keyed by this, so adding a row
+ * without a rendering does not compile.
+ */
+export type ButtonStateId = (typeof BUTTON_BINDING_STATES)[number]['id'];
+
+/** Every excluded part's id, for the same reason. */
+export type ButtonExclusionId =
+  (typeof BUTTON_PATTERN_EXCLUSIONS)[number]['id'];
 
 export interface ButtonBindingState {
   /** Stable id, unique across bindings. Named by known-failure records. */
@@ -62,7 +80,6 @@ const OPERABLE: ButtonStateFacts = {
   operable: true,
   focusable: true,
   unavailable: false,
-  busy: false,
   described: false,
 };
 
@@ -119,7 +136,7 @@ export const BUTTON_BINDING_STATES: ReadonlyArray<ButtonBindingState> = [
     id: 'button-loading',
     binding: 'Button',
     summary: 'a button waiting on the action it started',
-    facts: facts({operable: false, busy: true}),
+    facts: facts({operable: false}),
     visibleLabel: null,
     storyId: 'a11y-button-pattern--button-loading',
   },
@@ -145,7 +162,7 @@ export const BUTTON_BINDING_STATES: ReadonlyArray<ButtonBindingState> = [
     id: 'icon-button-loading',
     binding: 'IconButton',
     summary: 'an icon button waiting on the action it started',
-    facts: facts({operable: false, busy: true}),
+    facts: facts({operable: false}),
     visibleLabel: null,
     storyId: 'a11y-button-pattern--icon-button-loading',
   },

@@ -2,40 +2,40 @@
 
 /**
  * @file ButtonA11y.stories.tsx
- * @input Uses Button, IconButton, ClickableCard, SideNavCollapseButton,
- *   ChatSendButton
- * @output One story per state in the shared button-pattern binding inventory,
- *   each counting its own activations.
+ * @input Uses BUTTON_BINDING_STATES and BUTTON_PATTERN_EXCLUSIONS from the
+ *   shared button-pattern binding inventory
+ * @output One story per state in that inventory, each counting its own
+ *   activations.
  * @position The reproduction path for the Chromium half of the button-pattern
  *   contract (`docs/specs/AST-009/spec.md` FR30: a browser claim is checked
  *   against a checked-in story, not a page a test builds and throws away).
  *
- * Every story renders through `Counted`, which shows how many times the
- * component's own handler has run and republishes it as `data-a11y-activations` on a
- * wrapper. A button's action leaves no trace on the button, so that counter is
- * the only honest way to ask "did pressing it actually do anything" — and
- * having it visible means a person opening the story sees the same fact the
- * test reads.
+ * Every story body is `storyFor('<state id>')`. What each state IS lives in the
+ * inventory beside its facts, not here — one definition, rendered identically
+ * by the jsdom lane and by this story, so the two lanes cannot drift into
+ * testing different things under the same name.
  *
- * SYNC: Story ids are named by
- * - /packages/core/src/Button/__tests__/Button.a11y.states.ts
+ * The activation count is both visible text and a `data-a11y-activations`
+ * attribute: a person reading the story and the test reading the DOM see the
+ * same number. A button's action leaves no trace on the button, so counting the
+ * handler is the only honest way to ask whether pressing it did anything.
+ *
+ * SYNC: A new row in Button.a11y.states.tsx needs a named export here, and the
+ *   binding's own inventory test fails until it has one.
  */
 
 import {useState, type ReactNode} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Button} from '@astryxdesign/core/Button';
-import {IconButton} from '@astryxdesign/core/IconButton';
-import {ClickableCard} from '@astryxdesign/core/ClickableCard';
-import {SideNavCollapseButton} from '@astryxdesign/core/SideNav';
-import {ChatSendButton} from '@astryxdesign/core/Chat';
-import {TrashIcon} from '@heroicons/react/24/outline';
+import {
+  BUTTON_BINDING_STATES,
+  BUTTON_PATTERN_EXCLUSIONS,
+} from '@astryxdesign/core/Button/__tests__/Button.a11y.states';
+import {
+  BUTTON_EXCLUSION_RENDERS,
+  BUTTON_STATE_RENDERS,
+} from '@astryxdesign/core/Button/__tests__/Button.a11y.renders';
 
-/**
- * Renders one control and counts how many times its action ran.
- *
- * The count is both visible text and a `data-a11y-activations` attribute: a person
- * reading the story and a test reading the DOM see the same number.
- */
+/** Render one control and count how many times its action ran. */
 function Counted({
   children,
 }: {
@@ -54,6 +54,37 @@ function Counted({
   );
 }
 
+function storyFor(id: string): StoryObj {
+  const state = BUTTON_BINDING_STATES.find(candidate => candidate.id === id);
+  if (state == null) {
+    throw new Error(`no binding state "${id}" — see Button.a11y.states.tsx`);
+  }
+  return {
+    name: `${state.binding} — ${state.id}`,
+    render: () => (
+      <Counted>{activate => BUTTON_STATE_RENDERS[state.id](activate)}</Counted>
+    ),
+  };
+}
+
+/** An excluded part, rendered so its exclusion can be checked in a browser. */
+function exclusionStory(id: string): StoryObj {
+  const exclusion = BUTTON_PATTERN_EXCLUSIONS.find(
+    candidate => candidate.id === id,
+  );
+  if (exclusion == null) {
+    throw new Error(`no exclusion "${id}" — see Button.a11y.states.tsx`);
+  }
+  return {
+    name: `excluded — ${exclusion.id}`,
+    render: () => (
+      <Counted>
+        {activate => BUTTON_EXCLUSION_RENDERS[exclusion.id](activate)}
+      </Counted>
+    ),
+  };
+}
+
 const meta: Meta = {
   title: 'a11y/Button pattern',
   parameters: {
@@ -67,247 +98,29 @@ const meta: Meta = {
 };
 
 export default meta;
-type Story = StoryObj;
 
-// ---- Button ---------------------------------------------------------------
+export const ButtonText = storyFor('button-text');
+export const ButtonIconOnly = storyFor('button-icon-only');
+export const ButtonComposedLabel = storyFor('button-composed-label');
+export const ButtonDisabled = storyFor('button-disabled');
+export const ButtonDisabledWithTooltip = storyFor(
+  'button-disabled-with-tooltip',
+);
+export const ButtonLoading = storyFor('button-loading');
 
-export const ButtonText: Story = {
-  render: () => (
-    <Counted>
-      {activate => <Button label="Save changes" onClick={activate} />}
-    </Counted>
-  ),
-};
+export const IconButtonDefault = storyFor('icon-button');
+export const IconButtonDisabled = storyFor('icon-button-disabled');
+export const IconButtonLoading = storyFor('icon-button-loading');
 
-export const ButtonIconOnly: Story = {
-  render: () => (
-    <Counted>
-      {activate => (
-        <Button
-          label="Delete conversation"
-          isIconOnly
-          icon={<TrashIcon />}
-          onClick={activate}
-        />
-      )}
-    </Counted>
-  ),
-};
+export const ClickableCardDefault = storyFor('clickable-card');
+export const ClickableCardDisabled = storyFor('clickable-card-disabled');
 
-export const ButtonComposedLabel: Story = {
-  render: () => (
-    <Counted>
-      {activate => (
-        <Button label="Save changes" onClick={activate}>
-          Save changes
-        </Button>
-      )}
-    </Counted>
-  ),
-};
+export const SidenavCollapseIcon = storyFor('sidenav-collapse-icon');
+export const SidenavCollapseLabelled = storyFor('sidenav-collapse-labelled');
 
-export const ButtonDisabled: Story = {
-  render: () => (
-    <Counted>
-      {activate => (
-        <Button label="Save changes" isDisabled onClick={activate} />
-      )}
-    </Counted>
-  ),
-};
+export const ChatSend = storyFor('chat-send');
+export const ChatSendDisabled = storyFor('chat-send-disabled');
+export const ChatSendStop = storyFor('chat-send-stop');
 
-export const ButtonDisabledWithTooltip: Story = {
-  render: () => (
-    <Counted>
-      {activate => (
-        <Button
-          label="Save changes"
-          isDisabled
-          tooltip="Fill in every required field first"
-          onClick={activate}
-        />
-      )}
-    </Counted>
-  ),
-};
-
-export const ButtonLoading: Story = {
-  render: () => (
-    <Counted>
-      {activate => <Button label="Save changes" isLoading onClick={activate} />}
-    </Counted>
-  ),
-};
-
-export const ButtonAsLink: Story = {
-  render: () => (
-    <Counted>
-      {activate => (
-        <Button label="Read the guide" href="#guide" onClick={activate} />
-      )}
-    </Counted>
-  ),
-};
-
-// ---- IconButton -----------------------------------------------------------
-
-export const IconButtonDefault: Story = {
-  name: 'Icon button',
-  render: () => (
-    <Counted>
-      {activate => (
-        <IconButton
-          label="Delete conversation"
-          icon={<TrashIcon />}
-          onClick={activate}
-        />
-      )}
-    </Counted>
-  ),
-};
-
-export const IconButtonDisabled: Story = {
-  render: () => (
-    <Counted>
-      {activate => (
-        <IconButton
-          label="Delete conversation"
-          icon={<TrashIcon />}
-          isDisabled
-          onClick={activate}
-        />
-      )}
-    </Counted>
-  ),
-};
-
-export const IconButtonLoading: Story = {
-  render: () => (
-    <Counted>
-      {activate => (
-        <IconButton
-          label="Delete conversation"
-          icon={<TrashIcon />}
-          isLoading
-          onClick={activate}
-        />
-      )}
-    </Counted>
-  ),
-};
-
-// ---- ClickableCard --------------------------------------------------------
-
-export const ClickableCardDefault: Story = {
-  name: 'Clickable card',
-  render: () => (
-    <Counted>
-      {activate => (
-        <ClickableCard label="Open billing settings" onClick={activate}>
-          <p>Billing</p>
-        </ClickableCard>
-      )}
-    </Counted>
-  ),
-};
-
-export const ClickableCardDisabled: Story = {
-  render: () => (
-    <Counted>
-      {activate => (
-        <ClickableCard
-          label="Open billing settings"
-          isDisabled
-          onClick={activate}>
-          <p>Billing</p>
-        </ClickableCard>
-      )}
-    </Counted>
-  ),
-};
-
-export const ClickableCardAsLink: Story = {
-  render: () => (
-    <Counted>
-      {activate => (
-        <ClickableCard
-          label="Open billing settings"
-          href="#billing"
-          onClick={activate}>
-          <p>Billing</p>
-        </ClickableCard>
-      )}
-    </Counted>
-  ),
-};
-
-// ---- SideNavCollapseButton ------------------------------------------------
-
-/**
- * Rendered outside a SideNav with its own controlled config, which is the
- * supported standalone usage — the contract is about the button, not about what
- * collapsing does to a sidebar.
- */
-function CollapseHarness({
-  label,
-  onActivate,
-}: {
-  label?: string;
-  onActivate: () => void;
-}): ReactNode {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  return (
-    <SideNavCollapseButton
-      label={label}
-      collapsible={{
-        isCollapsed,
-        onCollapsedChange: next => {
-          setIsCollapsed(next);
-          onActivate();
-        },
-      }}
-    />
-  );
-}
-
-export const SidenavCollapseIcon: Story = {
-  render: () => (
-    <Counted>{activate => <CollapseHarness onActivate={activate} />}</Counted>
-  ),
-};
-
-export const SidenavCollapseLabelled: Story = {
-  render: () => (
-    <Counted>
-      {activate => (
-        <CollapseHarness label="Collapse sidebar" onActivate={activate} />
-      )}
-    </Counted>
-  ),
-};
-
-// ---- ChatSendButton -------------------------------------------------------
-
-export const ChatSend: Story = {
-  render: () => (
-    <Counted>
-      {activate => <ChatSendButton isDisabled={false} onSend={activate} />}
-    </Counted>
-  ),
-};
-
-export const ChatSendDisabled: Story = {
-  render: () => (
-    <Counted>
-      {activate => <ChatSendButton isDisabled onSend={activate} />}
-    </Counted>
-  ),
-};
-
-export const ChatSendStop: Story = {
-  render: () => (
-    <Counted>
-      {activate => <ChatSendButton isStopShown onStop={activate} />}
-    </Counted>
-  ),
-};
+export const ButtonAsLink = exclusionStory('button-as-link');
+export const ClickableCardAsLink = exclusionStory('clickable-card-as-link');

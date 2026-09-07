@@ -151,8 +151,6 @@ export interface ButtonStateFacts {
   readonly focusable: boolean;
   /** Whether its action is meant to be exposed as unavailable. */
   readonly unavailable: boolean;
-  /** Whether it is meant to be exposed as waiting on the action it started. */
-  readonly busy: boolean;
   /** Whether supporting text is meant to be attached as a description. */
   readonly described: boolean;
 }
@@ -474,14 +472,23 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
               'the button is reported as unavailable, but clicking it ran the action anyway',
             );
           }
-          // A button kept focusable while unavailable — the usual way to keep a
-          // reason discoverable — still has to refuse the keyboard.
+          // The keyboard half exists only for a state a keyboard can reach. A
+          // natively disabled button is out of the tab sequence, so there is no
+          // "press Enter on it" to prove, and claiming one would report an
+          // observation nobody made.
           if (!facts.focusable) {
             return;
           }
+          // Past here the binding has DECLARED this state focusable — the usual
+          // way to keep the reason for unavailability discoverable. A state
+          // that then cannot take focus has broken its own declaration, and
+          // reporting a pass would hide that behind the very check meant to
+          // catch it.
           await subject.focus();
           if (!(await subject.isFocused())) {
-            return;
+            throw new Error(
+              'this state is declared focusable so its reason stays reachable, but it cannot take focus — so a keyboard user can neither read why it is unavailable nor reach it to confirm it refuses to act',
+            );
           }
           for (const key of ['Enter', 'Space'] as const) {
             await harness.press(key);

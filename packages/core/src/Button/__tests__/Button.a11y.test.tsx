@@ -22,7 +22,6 @@
  *   ./Button.a11y.known-failures.ts, both shared with the Chromium lane.
  */
 
-import {useState, type ReactNode} from 'react';
 import {describe, expect, it} from 'vitest';
 import {cleanup, render, screen} from '@testing-library/react';
 import {
@@ -34,154 +33,16 @@ import {
   runBinding,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
-import {TrashIcon} from '@heroicons/react/24/outline';
-import {Button} from '../Button';
-import {IconButton} from '../../IconButton/IconButton';
-import {ClickableCard} from '../../ClickableCard/ClickableCard';
-import {SideNavCollapseButton} from '../../SideNav/SideNavCollapseButton';
-import {ChatSendButton} from '../../Chat/ChatSendButton';
 import {BUTTON_KNOWN_FAILURES} from './Button.a11y.known-failures';
+import {
+  BUTTON_EXCLUSION_RENDERS,
+  BUTTON_STATE_RENDERS,
+} from './Button.a11y.renders';
 import {
   BUTTON_BINDING_STATES,
   BUTTON_PATTERN_EXCLUSIONS,
   type ButtonBindingState,
 } from './Button.a11y.states';
-
-/** The collapse control is controlled; this is the consumer's own wiring. */
-function CollapseHarness({
-  label,
-  onActivate,
-}: {
-  label?: string;
-  onActivate: () => void;
-}): ReactNode {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  return (
-    <SideNavCollapseButton
-      label={label}
-      collapsible={{
-        isCollapsed,
-        onCollapsedChange: next => {
-          setIsCollapsed(next);
-          onActivate();
-        },
-      }}
-    />
-  );
-}
-
-/**
- * Render one state, wired so its action increments `activate`.
- *
- * Mirrors ButtonA11y.stories.tsx state for state. Both lanes render the same
- * component with the same props, so a difference between the lanes is a
- * difference between jsdom and a real engine, never a difference in setup.
- */
-function renderState(state: ButtonBindingState, activate: () => void): void {
-  switch (state.id) {
-    case 'button-text':
-      render(<Button label="Save changes" onClick={activate} />);
-      return;
-    case 'button-icon-only':
-      render(
-        <Button
-          label="Delete conversation"
-          isIconOnly
-          icon={<TrashIcon />}
-          onClick={activate}
-        />,
-      );
-      return;
-    case 'button-composed-label':
-      render(
-        <Button label="Save changes" onClick={activate}>
-          Save changes
-        </Button>,
-      );
-      return;
-    case 'button-disabled':
-      render(<Button label="Save changes" isDisabled onClick={activate} />);
-      return;
-    case 'button-disabled-with-tooltip':
-      render(
-        <Button
-          label="Save changes"
-          isDisabled
-          tooltip="Fill in every required field first"
-          onClick={activate}
-        />,
-      );
-      return;
-    case 'button-loading':
-      render(<Button label="Save changes" isLoading onClick={activate} />);
-      return;
-    case 'icon-button':
-      render(
-        <IconButton
-          label="Delete conversation"
-          icon={<TrashIcon />}
-          onClick={activate}
-        />,
-      );
-      return;
-    case 'icon-button-disabled':
-      render(
-        <IconButton
-          label="Delete conversation"
-          icon={<TrashIcon />}
-          isDisabled
-          onClick={activate}
-        />,
-      );
-      return;
-    case 'icon-button-loading':
-      render(
-        <IconButton
-          label="Delete conversation"
-          icon={<TrashIcon />}
-          isLoading
-          onClick={activate}
-        />,
-      );
-      return;
-    case 'clickable-card':
-      render(
-        <ClickableCard label="Open billing settings" onClick={activate}>
-          <p>Billing</p>
-        </ClickableCard>,
-      );
-      return;
-    case 'clickable-card-disabled':
-      render(
-        <ClickableCard
-          label="Open billing settings"
-          isDisabled
-          onClick={activate}>
-          <p>Billing</p>
-        </ClickableCard>,
-      );
-      return;
-    case 'sidenav-collapse-icon':
-      render(<CollapseHarness onActivate={activate} />);
-      return;
-    case 'sidenav-collapse-labelled':
-      render(
-        <CollapseHarness label="Collapse sidebar" onActivate={activate} />,
-      );
-      return;
-    case 'chat-send':
-      render(<ChatSendButton isDisabled={false} onSend={activate} />);
-      return;
-    case 'chat-send-disabled':
-      render(<ChatSendButton isDisabled onSend={activate} />);
-      return;
-    case 'chat-send-stop':
-      render(<ChatSendButton isStopShown onStop={activate} />);
-      return;
-    default:
-      throw new Error(`no jsdom rendering for state "${state.id}"`);
-  }
-}
 
 /**
  * The control the pattern is about.
@@ -205,9 +66,11 @@ async function runState(state: ButtonBindingState): Promise<BindingResult> {
     knownFailures: BUTTON_KNOWN_FAILURES,
     mount: async () => {
       activations = 0;
-      renderState(state, () => {
-        activations += 1;
-      });
+      render(
+        BUTTON_STATE_RENDERS[state.id](() => {
+          activations += 1;
+        }),
+      );
       return createJsdomHarness({subject: subjectFor()});
     },
     unmount: cleanup,
@@ -243,7 +106,7 @@ describe('the shared button pattern, jsdom lane', () => {
 
 describe('parts this pattern deliberately does not cover', () => {
   it('a Button given href presents link semantics, not a button', () => {
-    render(<Button label="Read the guide" href="#guide" />);
+    render(BUTTON_EXCLUSION_RENDERS['button-as-link'](() => {}));
     // The exclusion is only honest while it stays true: if this ever renders a
     // button, the pattern owns it and the inventory is wrong.
     expect(screen.queryByRole('button')).toBeNull();
@@ -252,11 +115,7 @@ describe('parts this pattern deliberately does not cover', () => {
   });
 
   it('a ClickableCard given href presents link semantics, not a button', () => {
-    render(
-      <ClickableCard label="Open billing settings" href="#billing">
-        <p>Billing</p>
-      </ClickableCard>,
-    );
+    render(BUTTON_EXCLUSION_RENDERS['clickable-card-as-link'](() => {}));
     expect(screen.queryByRole('button')).toBeNull();
     expect(
       screen.getByRole('link', {name: 'Open billing settings'}),
@@ -292,14 +151,14 @@ describe('the state inventory', () => {
     ]);
   });
 
-  it('has a jsdom rendering for every state', () => {
+  it('renders in jsdom, and presents one button, for every state', () => {
     // The visible-label half of the inventory is checked in Chromium, not here:
     // whether a label is VISIBLE takes layout, and a loading Button keeps its
     // text in the DOM while hiding it, so textContent would answer the wrong
     // question.
     for (const state of BUTTON_BINDING_STATES) {
       expect(() => {
-        renderState(state, () => {});
+        render(BUTTON_STATE_RENDERS[state.id](() => {}));
       }, state.id).not.toThrow();
       expect(subjectFor(), state.id).toBeTruthy();
       cleanup();

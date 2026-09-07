@@ -44,7 +44,6 @@ const CONFORMING_FACTS: ButtonStateFacts = {
   operable: true,
   focusable: true,
   unavailable: false,
-  busy: false,
   described: false,
 };
 
@@ -131,7 +130,7 @@ export const BUTTON_FIXTURES: readonly ButtonFixture[] = [
     id: 'conforming-busy',
     summary:
       'a button waiting on the action it started: still focusable, reported busy, and refusing a second press',
-    facts: facts({operable: false, busy: true}),
+    facts: facts({operable: false}),
     html: nativeButton(
       `aria-busy="true" aria-disabled="true" onclick="event.preventDefault(); return false;" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); }"`,
       {counts: false},
@@ -257,10 +256,21 @@ export const BUTTON_FIXTURES: readonly ButtonFixture[] = [
     ),
   },
   {
+    id: 'violating-unavailable-unfocusable',
+    summary:
+      'a button declared focusable so its reason stays reachable, but natively disabled — so it cannot take focus at all, the reason is unreadable, and its refusal is unverifiable',
+    facts: facts({operable: false, unavailable: true}),
+    // `tabindex="-1"` would NOT do: it removes a control from the tab sequence
+    // while leaving it programmatically focusable, so `focus()` still succeeds.
+    // The native attribute is what actually refuses focus — and it is what the
+    // real components do, which is why this shape is worth a fixture.
+    html: nativeButton('disabled aria-disabled="true"', {counts: false}),
+  },
+  {
     id: 'violating-busy-unfocusable',
     summary:
       'a button that goes natively disabled while busy, so focus is dropped mid-task and Tab can no longer reach it',
-    facts: facts({operable: false, busy: true}),
+    facts: facts({operable: false}),
     html: nativeButton('aria-busy="true" disabled'),
   },
 ];
@@ -315,5 +325,6 @@ export const BUTTON_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   'button.unavailable.inert': [
     'violating-unavailable-still-acts',
     'violating-unavailable-acts-on-key',
+    'violating-unavailable-unfocusable',
   ],
 };

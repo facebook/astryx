@@ -27,6 +27,7 @@
  *   to ../harness/jsdom.ts — both implement Harness in ../harness.ts.
  */
 
+import {errors as playwrightErrors} from '@playwright/test';
 import type {CDPSession, Locator, Page} from '@playwright/test';
 import {
   type ComputedNode,
@@ -53,8 +54,13 @@ export const CHROMIUM_OBSERVES: readonly EvidenceLayer[] = [
  */
 const POINTER_REACH_BUDGET_MS = 2_000;
 
+/**
+ * Playwright's own timeout type, rather than a regex over the message: the
+ * message is prose that can be reworded in any release, and matching it would
+ * turn a wording change into a mystery failure.
+ */
 function isTimeout(error: unknown): boolean {
-  return error instanceof Error && /Timeout .*exceeded/.test(error.message);
+  return error instanceof playwrightErrors.TimeoutError;
 }
 
 const KEYS: Record<Key, string> = {
