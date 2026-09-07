@@ -22,6 +22,7 @@ export const docs = {
       {guidance: false, description: 'Rely on the status color or icon alone to carry meaning; say which status it is in the title text, because the icon is decorative to a screen reader.'},
     ],
     anatomy: [
+      {name: 'Header', required: true, description: 'The colored status surface that contains the icon, title, description, actions, and controls.'},
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
       {name: 'Title', required: true, description: 'The main message. Always required.'},
       {name: 'Description', required: false, description: 'Additional detail below the title.'},
@@ -157,6 +158,7 @@ export const docsZh = {
       {guidance: false, description: 'Stack multiple banners with the same status; combine related messages into one banner.'},
     ],
     anatomy: [
+      {name: 'Header', required: true, description: 'The colored status surface that contains the icon, title, description, actions, and controls.'},
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
       {name: 'Title', required: true, description: 'The main message. Always required.'},
       {name: 'Description', required: false, description: 'Additional detail below the title.'},
@@ -237,6 +239,7 @@ export const docsDense = {
       {guidance: false, description: 'Rely on status color or icon alone; state the status in the title text, since the icon is decorative to a screen reader.'},
     ],
     anatomy: [
+      {name: 'Header', required: true, description: 'Colored status surface containing the message and controls.'},
       {name: 'Icon', required: true, description: 'Set automatically from status.'},
       {name: 'Title', required: true, description: 'Main message text.'},
       {name: 'Description', required: false, description: 'Detail below title.'},
