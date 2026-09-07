@@ -7,9 +7,7 @@
  */
 
 import {findCoreDir} from '../../../../foundation/fs/paths.mjs';
-import {
-  resolveImportPath,
-} from '../../../../foundation/discovery/component-discovery.mjs';
+import {resolveImportPath} from '../../../../foundation/discovery/component-discovery.mjs';
 import {
   formatFull,
   formatCompact,
@@ -20,7 +18,15 @@ import {
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../../foundation/response/json.mjs';
-import {emit, section, text, list, record, records, code} from '../../formatters/index.mjs';
+import {
+  emit,
+  section,
+  text,
+  list,
+  record,
+  records,
+  code,
+} from '../../formatters/index.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {defineCommand} from '../../lib/define-command.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
@@ -52,7 +58,10 @@ import {doc as componentFn} from '../../../../api/component/component.doc.mjs';
 export function registerComponent(program) {
   defineCommand(program, componentCommand, {
     fn: componentFn,
-    action: async (/** @type {string | undefined} */ name, /** @type {{list?: boolean, category?: string, props?: boolean, source?: boolean, showcase?: boolean, blocks?: boolean, package?: string}} */ options) => {
+    action: async (
+      /** @type {string | undefined} */ name,
+      /** @type {{list?: boolean, category?: string, props?: boolean, source?: boolean, showcase?: boolean, blocks?: boolean, package?: string}} */ options,
+    ) => {
       const run = getCliInvocation();
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
@@ -67,7 +76,10 @@ export function registerComponent(program) {
 
       const validDetails = ['full', 'compact', 'brief'];
       if (!validDetails.includes(detail)) {
-        cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`, {code: ERROR_CODES.ERR_INVALID_DETAIL});
+        cliError(
+          `Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`,
+          {code: ERROR_CODES.ERR_INVALID_DETAIL},
+        );
         return;
       }
 
@@ -84,20 +96,25 @@ export function registerComponent(program) {
       /** @type {ComponentResult} */
       let result;
       try {
-        result = /** @type {ComponentResult} */ (await componentApi(name, {
-          cwd: process.cwd(),
-          list: options.list,
-          category: options.category,
-          package: options.package,
-          props: options.props,
-          source: options.source,
-          showcase: options.showcase,
-          blocks: options.blocks,
-          detail,
-          lang, zh, dense,
-        }));
+        result = /** @type {ComponentResult} */ (
+          await componentApi(name, {
+            cwd: process.cwd(),
+            list: options.list,
+            category: options.category,
+            package: options.package,
+            props: options.props,
+            source: options.source,
+            showcase: options.showcase,
+            blocks: options.blocks,
+            detail,
+            lang,
+            zh,
+            dense,
+          })
+        );
       } catch (e) {
-        const err = /** @type {import('../../../../api/error.mjs').AstryxError} */ (e);
+        const err =
+          /** @type {import('../../../../api/error.mjs').AstryxError} */ (e);
         cliError(err.message, {suggestions: err.suggestions, code: err.code});
         return;
       }
@@ -108,7 +125,7 @@ export function registerComponent(program) {
       // The api layer already resolved against core (result exists), so core is
       // present on this path; narrow away the null branch findCoreDir allows.
       const coreDir = /** @type {string} */ (findCoreDir(process.cwd()));
-      const themeData = resolveTheme(process.cwd());
+      const themeData = await resolveTheme(process.cwd());
 
       // Footer shared by the compact + names list views (prose → text()).
       const listFooter = text(
@@ -139,9 +156,13 @@ export function registerComponent(program) {
             for (const [cat, items] of entries) {
               // Skip the synthetic group header when there's only one ungrouped category
               const isUngrouped =
-                entries.length === 1 && items.length === 1 && items[0]?.name === cat;
+                entries.length === 1 &&
+                items.length === 1 &&
+                items[0]?.name === cat;
               if (!isUngrouped) out.push(section(cat));
-              out.push(records(items, {fields: ['name', 'import', 'description']}));
+              out.push(
+                records(items, {fields: ['name', 'import', 'description']}),
+              );
             }
             out.push(listFooter);
             emit(...out);
@@ -168,14 +189,19 @@ export function registerComponent(program) {
           const importCell = item => {
             const importPath = resolveImportPath(coreDir, item.name);
             const qualify =
-              item.package !== CORE_PKG || (nameCounts.get(item.name)?.size ?? 0) > 1;
+              item.package !== CORE_PKG ||
+              (nameCounts.get(item.name)?.size ?? 0) > 1;
             return qualify ? `${importPath}  [${item.package}]` : importPath;
           };
 
           const firstGroup = Object.entries(groups)[0];
           const entries =
-            options.category && firstGroup ? firstGroup[1] : Object.values(groups).flat();
-          const sorted = [...entries].sort((a, b) => a.name.localeCompare(b.name));
+            options.category && firstGroup
+              ? firstGroup[1]
+              : Object.values(groups).flat();
+          const sorted = [...entries].sort((a, b) =>
+            a.name.localeCompare(b.name),
+          );
 
           emit(
             options.category && firstGroup
@@ -195,7 +221,11 @@ export function registerComponent(program) {
           const importHint = resolveImportPath(coreDir, resolvedName);
           const doc =
             detail === 'brief'
-              ? code(formatBrief(result.data, resolvedName, importHint, {themeData}))
+              ? code(
+                  formatBrief(result.data, resolvedName, importHint, {
+                    themeData,
+                  }),
+                )
               : detail === 'compact'
                 ? code(formatCompact(result.data, resolvedName, importHint))
                 : code(formatFull(result.data, {themeData, importHint}));
@@ -203,7 +233,8 @@ export function registerComponent(program) {
           emit(
             doc,
             related.length > 0 && section('Related block templates'),
-            related.length > 0 && records(related, {fields: ['dirName', 'description']}),
+            related.length > 0 &&
+              records(related, {fields: ['dirName', 'description']}),
           );
           break;
         }
@@ -242,7 +273,9 @@ export function registerComponent(program) {
           }
           if (related.length > 0) {
             out.push(
-              section(`Related: ${related.length} blocks that use ${result.data.component}`),
+              section(
+                `Related: ${related.length} blocks that use ${result.data.component}`,
+              ),
               list(related.map(b => b.name)),
             );
           }
@@ -257,11 +290,27 @@ export function registerComponent(program) {
   });
 }
 
-
 // Re-export lib functions for backward compatibility
 // (agent-docs.mjs, tests, and generate-skill-doc.sh import from here)
-export {discoverComponents, discoverExternalComponentsGrouped, findComponentReadme, findComponentSource, findExternalComponentDoc, resolveImportPath} from '../../../../foundation/discovery/component-discovery.mjs';
+export {
+  discoverComponents,
+  discoverExternalComponentsGrouped,
+  findComponentReadme,
+  findComponentSource,
+  findExternalComponentDoc,
+  resolveImportPath,
+} from '../../../../foundation/discovery/component-discovery.mjs';
 export {discoverExternalPackages} from '../../../../foundation/fs/paths.mjs';
 export {loadDocs} from '../../../../foundation/discovery/component-loader.mjs';
-export {formatFull, formatCompact, formatBrief, formatProps, formatBriefAll} from '../../lib/component-format.mjs';
-export {levenshteinDistance, findClosestComponents, searchComponents} from '../../../../foundation/text/string-utils.mjs';
+export {
+  formatFull,
+  formatCompact,
+  formatBrief,
+  formatProps,
+  formatBriefAll,
+} from '../../lib/component-format.mjs';
+export {
+  levenshteinDistance,
+  findClosestComponents,
+  searchComponents,
+} from '../../../../foundation/text/string-utils.mjs';

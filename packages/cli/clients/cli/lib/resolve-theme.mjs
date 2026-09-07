@@ -5,12 +5,21 @@
  *
  * Resolution sources (in priority order):
  * 1. ASTRYX_THEME environment variable
- * 2. xds.theme field in package.json
+ * 2. astryx.theme field in package.json
  *
  * Resolution strategy for the value:
- * - Starts with `.` or `/` → file path relative to cwd
- * - Starts with `@` → npm package (require/import)
+ * - Starts with `.` or `/` → file module relative to cwd (the documented
+ *   `{"astryx": {"theme": "./src/theme.ts"}}` setup — see the theme guide)
+ * - Starts with `@` → npm package, resolved from the project's node_modules
  * - Otherwise → try `@astryxdesign/theme-{name}`, then try as bare package name
+ *
+ * Loading a theme executes it — a file from the checkout directly, a package
+ * via whatever the checkout installed. Both are project code, so both sit
+ * behind the safe-mode gate: under ASTRYX_NO_PROJECT_CODE=1 no theme module
+ * loads at all and the CLI renders theme-less, the same "built-in data only"
+ * contract the rest of the CLI honors. (The variable is read inline here so
+ * this change stands alone; module-loader's projectCodeAllowed reads the same
+ * switch.)
  *
  * Returns the theme object's `variants` and `fonts` if available,
  * or null if no theme is configured or found.
@@ -19,30 +28,33 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
-
-const _require = createRequire(import.meta.url);
+import {importUserModule} from '../../../foundation/fs/module-loader.mjs';
 
 /**
- * Try to load a module, returning the default export or the module itself.
+ * Try to load a module, returning its namespace. File specifiers go through
+ * the shared user-module loader (which also gives the documented `.ts` setup
+ * the same jiti path configs use); package specifiers resolve with a require
+ * bound to the PROJECT, not to the CLI's own install location, so
+ * `astryx.theme` names packages out of the project's node_modules.
  * Returns null if the module cannot be found.
  * @param {string} specifier
  * @param {string} cwd
- * @returns {unknown}
+ * @returns {Promise<unknown>}
  */
-function tryLoadModule(specifier, cwd) {
+async function tryLoadModule(specifier, cwd) {
   // For relative/absolute paths, resolve against cwd
   if (specifier.startsWith('.') || specifier.startsWith('/')) {
-    const resolved = path.resolve(cwd, specifier);
     try {
-      return _require(resolved);
+      return await importUserModule(path.resolve(cwd, specifier));
     } catch {
       return null;
     }
   }
 
-  // For package specifiers, try require
+  // For package specifiers, require from the project
   try {
-    return _require(specifier);
+    const projectRequire = createRequire(path.join(cwd, 'package.json'));
+    return projectRequire(specifier);
   } catch {
     return null;
   }
@@ -73,7 +85,11 @@ function extractTheme(mod) {
 
   // Check for any export ending in 'Theme'
   for (const key of Object.keys(mod)) {
-    if (key.endsWith('Theme') && typeof mod[key] === 'object' && mod[key]?.name) {
+    if (
+      key.endsWith('Theme') &&
+      typeof mod[key] === 'object' &&
+      mod[key]?.name
+    ) {
       return mod[key];
     }
   }
@@ -82,12 +98,33 @@ function extractTheme(mod) {
 }
 
 /**
+ * A specifier comes from the environment or the checkout's package.json, so
+ * it goes to the terminal with control characters replaced — a newline or an
+ * escape sequence in `astryx.theme` must not write to the operator's TTY.
+ * @param {string} specifier
+ */
+function printable(specifier) {
+  return specifier.replace(/\p{Cc}/gu, '�');
+}
+
+/** Say once per process why a configured theme is not being loaded. */
+let gateNoted = false;
+/** @param {string} specifier */
+function noteThemeSkipped(specifier) {
+  if (gateNoted) return;
+  gateNoted = true;
+  console.warn(
+    `⚠ theme: ASTRYX_NO_PROJECT_CODE=1 — not loading theme "${printable(specifier)}"; rendering without theme data`,
+  );
+}
+
+/**
  * Resolve the active Astryx theme from config and environment.
  *
  * @param {string} [cwd] - Working directory (defaults to process.cwd())
- * @returns {{ variants?: Record<string, string[]>, fonts?: Record<string, string>, name?: string } | null}
+ * @returns {Promise<{ variants?: Record<string, string[]>, fonts?: Record<string, string>, name?: string } | null>}
  */
-export function resolveTheme(cwd = process.cwd()) {
+export async function resolveTheme(cwd = process.cwd()) {
   // 1. Determine theme specifier
   let specifier = process.env.ASTRYX_THEME || null;
 
@@ -112,31 +149,44 @@ export function resolveTheme(cwd = process.cwd()) {
     return null;
   }
 
+  // Any theme module is project code — a checkout file or a package the
+  // checkout installed. One safe-mode gate covers both (see file header).
+  if (process.env.ASTRYX_NO_PROJECT_CODE === '1') {
+    noteThemeSkipped(specifier);
+    return null;
+  }
+
   // 2. Resolve the specifier to a module
   let mod;
 
   if (specifier.startsWith('.') || specifier.startsWith('/')) {
     // File path
-    mod = tryLoadModule(specifier, cwd);
+    mod = await tryLoadModule(specifier, cwd);
     if (!mod) {
-      console.warn(`⚠ theme: could not resolve file "${specifier}" from ${cwd}`);
+      console.warn(
+        `⚠ theme: could not resolve file "${printable(specifier)}" from ${cwd}`,
+      );
       return null;
     }
   } else if (specifier.startsWith('@')) {
     // Scoped package
-    mod = tryLoadModule(specifier, cwd);
+    mod = await tryLoadModule(specifier, cwd);
     if (!mod) {
-      console.warn(`⚠ theme: could not resolve package "${specifier}"`);
+      console.warn(
+        `⚠ theme: could not resolve package "${printable(specifier)}"`,
+      );
       return null;
     }
   } else {
     // Convention: try @astryxdesign/theme-{name} first, then bare package
-    mod = tryLoadModule(`@astryxdesign/theme-${specifier}`, cwd);
+    mod = await tryLoadModule(`@astryxdesign/theme-${specifier}`, cwd);
     if (!mod) {
-      mod = tryLoadModule(specifier, cwd);
+      mod = await tryLoadModule(specifier, cwd);
     }
     if (!mod) {
-      console.warn(`⚠ theme: could not resolve "${specifier}" (tried @astryxdesign/theme-${specifier} and ${specifier})`);
+      console.warn(
+        `⚠ theme: could not resolve "${printable(specifier)}" (tried @astryxdesign/theme-${printable(specifier)} and ${printable(specifier)})`,
+      );
       return null;
     }
   }
@@ -144,7 +194,9 @@ export function resolveTheme(cwd = process.cwd()) {
   // 3. Extract theme data
   const theme = extractTheme(mod);
   if (!theme) {
-    console.warn(`⚠ theme: loaded "${specifier}" but could not find a theme object`);
+    console.warn(
+      `⚠ theme: loaded "${printable(specifier)}" but could not find a theme object`,
+    );
     return null;
   }
 
