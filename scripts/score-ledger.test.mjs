@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+// Temporary CI routing canary; this branch will be closed without landing.
+
 /**
  * @file score-ledger.test.mjs
  * Unit tests for the component score ledger — chiefly the ratchet, whose whole
