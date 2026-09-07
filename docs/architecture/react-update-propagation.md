@@ -11,7 +11,11 @@ approved_at: 2026-09-06
 owners: [cixzhang]
 applies_to: [packages/core/src/, packages/lab/src/]
 verified_by:
-  [packages/core/src/Stepper/Stepper.test.tsx, scripts/check-knowledge.mjs]
+  [
+    packages/core/src/MobileNav/MobileNavCloseVisibility.test.tsx,
+    packages/core/src/MobileNav/MobileNavCloseEdgeCases.test.tsx,
+    scripts/check-knowledge.mjs,
+  ]
 deciding_specs: []
 ---
 
@@ -62,12 +66,6 @@ motion may use its documented immediate or minimally moving completion path.
 Components must coordinate lifecycle ownership instead of trying to win CSS
 specificity against framework visibility.
 
-Current Stepper source is an adoption gap: changing one mounted Step's
-`isDisabled` value currently reruns registration, writes parent membership and
-metadata state, and replaces the context value consumed by every Step. The
-component contract defines the required bounded outcome; this architecture does
-not authorize or classify any pull request that changes it.
-
 Current AppShell/MobileNav composition is another adoption gap: AppShell switches
 its Activity boundary to hidden in the same commit as close intent, so React may
 apply inline `display: none !important` before MobileNav can paint its owned exit.
@@ -110,9 +108,10 @@ specificity.
 - **INV7 — Ancestors preserve child-owned exits.** After close intent, an ancestor
   MUST keep a child subtree mounted and paint-eligible until the child-owned exit
   reaches its completion boundary. It MUST NOT preempt that exit through
-  Activity/Offscreen hidden mode, conditional unmounting, `hidden`, inertness,
-  inline `display: none !important`, or equivalent suppression. Only after normal
-  or reduced-motion completion may the ancestor deactivate the subtree.
+  Activity/Offscreen hidden mode, conditional unmounting, `hidden`, inline
+  `display: none !important`, or equivalent paint suppression. Interaction may be
+  disabled during exit without suppressing paint. Only after normal or
+  reduced-motion completion may the ancestor deactivate the subtree.
 
 ## Change coupling
 
@@ -146,8 +145,6 @@ specificity.
   metadata updates, subscriptions, and cleanup.
 - Component contracts — own the observable outputs that may react to an update
   and representative unchanged siblings.
-- `packages/core/src/Stepper/` — current representative adoption gap and focused
-  verification surface for lifecycle-stable membership.
 - `packages/core/src/AppShell/AppShell.tsx` — owns when its visibility boundary
   deactivates the MobileNav subtree.
 - `packages/core/src/MobileNav/` — owns the drawer's exit transition and reports
