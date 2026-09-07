@@ -10,7 +10,8 @@ approved_by: cixzhang
 approved_at: 2026-09-02
 phase: accepted
 owners: [cixzhang, josephfarina]
-affects_architecture: [architecture:public-component-api]
+affects_architecture:
+  [architecture:public-component-api, architecture:cli-response-schema]
 affects_families: []
 affects_contributing: [contributing:release-process, contributing:templates]
 affects_consumer_docs: [release-process, templates]
@@ -215,6 +216,23 @@ describes the new range and its FR8 migration tells consumers how to move.
 Rejected: marking every dependency bump breaking, which would freeze compatible
 maintenance, or calling an update nonbreaking merely because a coordinated upgrade
 works, which would break supported independent consumers.
+
+### DEC-4 — Stable CLI response fields receive complete projections
+
+**Reference:** `spec:AST-017/DEC-4`
+**Decider:** `cixzhang`, `2026-09-06`
+
+Treat every field in a stable machine-readable CLI response—including nested
+entry fields—as public schema. Keep its canonical type, contract tests, applicable
+text output, and complete consumer documentation aligned in the same change.
+
+An optional field addition may remain nonbreaking when old consumers continue
+unchanged. That compatibility result does not make the field private or waive
+current-authority and documentation requirements.
+
+Rejected: documenting only the outer envelope, relying on implementation typedefs
+as consumer documentation, or treating a response-entry field as mutable catalog
+data merely because the value it carries may evolve.
 
 ## Open questions
 

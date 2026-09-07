@@ -20,7 +20,7 @@ verified_by:
     foundation/response/error-codes.test.mjs,
     clients/cli/formatters/index.test.mjs,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-017/DEC-4]
 ---
 
 # CLI surface architecture
