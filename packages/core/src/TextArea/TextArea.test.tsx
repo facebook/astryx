@@ -1166,3 +1166,45 @@ describe('TextArea theme target names', () => {
     expect(root).toHaveClass('astryx-textarea');
   });
 });
+
+describe('TextArea size typography (#6014)', () => {
+  it('scales the control type scale with size', () => {
+    const {container} = render(
+      <div>
+        <TextArea label="a" value="" onChange={() => {}} size="sm" />
+        <TextArea label="b" value="" onChange={() => {}} size="md" />
+        <TextArea label="c" value="" onChange={() => {}} size="lg" />
+      </div>,
+    );
+    const [sm, md, lg] = container.querySelectorAll('textarea');
+
+    // sm steps one token down the type scale, lg one up; md keeps the body
+    // size the base textarea styles always carried.
+    expect(sm).toHaveStyle({fontSize: 'var(--text-supporting-size)'});
+    expect(sm).toHaveStyle({lineHeight: 'var(--text-supporting-leading)'});
+    expect(md).toHaveStyle({fontSize: 'var(--text-body-size)'});
+    expect(md).toHaveStyle({lineHeight: 'var(--text-body-leading)'});
+    expect(lg).toHaveStyle({fontSize: 'var(--text-large-size)'});
+    expect(lg).toHaveStyle({lineHeight: 'var(--text-large-leading)'});
+  });
+
+  it('keeps the lg padding step alongside the large type', () => {
+    const {container} = render(
+      <div>
+        <TextArea label="a" value="" onChange={() => {}} size="md" />
+        <TextArea label="b" value="" onChange={() => {}} size="lg" />
+      </div>,
+    );
+    const [md, lg] = container.querySelectorAll('textarea');
+    expect(md).toHaveStyle({paddingBlock: 'var(--spacing-1)'});
+    expect(lg).toHaveStyle({paddingBlock: 'var(--spacing-2)'});
+  });
+
+  it('defaults to body type when no size is given', () => {
+    const {container} = render(
+      <TextArea label="Notes" value="" onChange={() => {}} />,
+    );
+    const textarea = container.querySelector('textarea')!;
+    expect(textarea).toHaveStyle({fontSize: 'var(--text-body-size)'});
+  });
+});

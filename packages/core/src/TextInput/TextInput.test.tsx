@@ -998,3 +998,56 @@ describe('TextInput readonly theme state', () => {
     expect(root).not.toHaveAttribute('data-readonly');
   });
 });
+
+describe('TextInput text-input-control theme target (#6014)', () => {
+  it('renders the inner input as its own theme target', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} />,
+    );
+    // The wrapper keeps the component target (and the reflected size); the
+    // <input> itself is reachable as astryx-text-input-control, mirroring
+    // text-area-control for TextArea.
+    const control = container.querySelector('.astryx-text-input-control');
+    expect(control).toBeInstanceOf(HTMLInputElement);
+    expect(control).toBe(screen.getByRole('textbox'));
+  });
+
+  it('keeps the size reflection on the wrapper target, not the control', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} size="lg" />,
+    );
+    const wrapper = container.querySelector('.astryx-text-input');
+    const control = container.querySelector('.astryx-text-input-control');
+    expect(wrapper).toHaveAttribute('data-size', 'lg');
+    expect(control).not.toHaveAttribute('data-size');
+  });
+});
+
+describe('TextInput size typography (#6014)', () => {
+  it('scales the control type scale with size', () => {
+    const {container} = render(
+      <div>
+        <TextInput label="a" value="" onChange={() => {}} size="sm" />
+        <TextInput label="b" value="" onChange={() => {}} size="md" />
+        <TextInput label="c" value="" onChange={() => {}} size="lg" />
+      </div>,
+    );
+    const [sm, md, lg] = container.querySelectorAll('input');
+
+    // sm steps one token down the type scale, lg one up; md keeps the body
+    // size the base input styles always carried.
+    expect(sm).toHaveStyle({fontSize: 'var(--text-supporting-size)'});
+    expect(sm).toHaveStyle({lineHeight: 'var(--text-supporting-leading)'});
+    expect(md).toHaveStyle({fontSize: 'var(--text-body-size)'});
+    expect(md).toHaveStyle({lineHeight: 'var(--text-body-leading)'});
+    expect(lg).toHaveStyle({fontSize: 'var(--text-large-size)'});
+    expect(lg).toHaveStyle({lineHeight: 'var(--text-large-leading)'});
+  });
+
+  it('defaults to body type when no size is given', () => {
+    render(<TextInput label="Name" value="" onChange={() => {}} />);
+    expect(screen.getByRole('textbox')).toHaveStyle({
+      fontSize: 'var(--text-body-size)',
+    });
+  });
+});

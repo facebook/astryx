@@ -225,7 +225,7 @@ export const docs = {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
       description:
-        'Size of the textarea, affecting internal padding. Height is controlled by rows, not size.',
+        'Size of the textarea: scales the type (sm supporting, md body, lg large) and lg\u2019s internal padding. Height is controlled by rows, not size.',
       default: "'md'",
     },
     {
@@ -483,7 +483,8 @@ export const docsZh = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: '文本域的尺寸，影响内部填充。高度由 rows 控制，而非 size。',
+      description:
+        '文本域的尺寸：缩放字号（sm 辅助文本、md 正文、lg 大号文本）及 lg 的内部填充。高度由 rows 控制，而非 size。',
       default: "'md'",
     },
     {
@@ -673,7 +674,7 @@ export const docsDense = {
     startIcon: 'Icon inside leading edge of textarea wrapper.',
     hasSpellCheck: 'Enables/disables browser spell checking.',
     hasAutoFocus: 'Auto-focus textarea on mount.',
-    size: 'Textarea size; affects internal padding. Height controlled by rows.',
+    size: 'Textarea size; scales type (sm/md/lg) + lg padding. Height controlled by rows.',
     onPaste: 'Fired on paste into textarea.',
     htmlName: 'HTML name attr for form submissions.',
     onFocus: 'Callback on focus.',

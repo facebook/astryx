@@ -42,7 +42,8 @@ export const docs = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: 'Size variant of the input.',
+      description:
+        'Size variant of the input. Scales the control height and type scale: sm uses supporting type, md body, lg large.',
       default: "'md'",
     },
     {
@@ -167,6 +168,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-text-input', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
+      {className: 'astryx-text-input-control'},
     ],
   },
   usage: {
@@ -232,7 +234,8 @@ export const docsZh = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: '输入框的尺寸变体。',
+      description:
+        '输入框的尺寸变体。同时缩放控件高度与字号：sm 使用辅助文本、md 正文、lg 大号文本。',
       default: "'md'",
     },
     {
@@ -340,6 +343,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-text-input', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
+      {className: 'astryx-text-input-control'},
     ],
   },
   usage: {
@@ -399,7 +403,7 @@ export const docsDense = {
     value: 'Current input value.',
     onChange: 'Fired on input value change.',
     changeAction: 'Async action after onChange (if not prevented). Triggers optimistic update+spinner while pending.',
-    size: 'Size variant of input.',
+    size: 'Size variant; scales control height + type scale (sm/md/lg).',
     isLabelHidden: 'Visually hides label; keeps screen reader access.',
     description: 'Description text between label+input.',
     isOptional: 'Shows "Optional" indicator. Mutually exclusive w/ isRequired.',

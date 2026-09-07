@@ -87,6 +87,30 @@ const sizeStyles = stylex.create({
   },
 });
 
+// The control's type follows its size (#6014): sm steps down to supporting,
+// lg up to large, so a compact toolbar search and a hero form field don't
+// share the same type. md is the base input styles (body size) and needs no
+// override. The coarse-pointer minimum from the base styles is repeated per
+// size so touch devices never get sub-16px text — and never zoom on focus —
+// at any size.
+const inputSizeStyles = stylex.create({
+  sm: {
+    fontSize: {
+      default: typeScaleVars['--text-supporting-size'],
+      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-supporting-size']})`,
+    },
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+  },
+  md: {},
+  lg: {
+    fontSize: {
+      default: typeScaleVars['--text-large-size'],
+      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-large-size']})`,
+    },
+    lineHeight: typeScaleVars['--text-large-leading'],
+  },
+});
+
 export type TextInputSize = keyof typeof sizeStyles;
 
 import {groupStyles} from '../InputGroup/groupStyles';
@@ -200,9 +224,11 @@ export interface TextInputProps extends Omit<
    */
   statusVariant?: FieldStatusVariant;
   /**
-   * The size of the input.
-   * - 'sm': Compact size (18px height)
-   * - 'md': Default size (26px height)
+   * The size of the input: sets the control height and its type scale
+   * (sm → supporting, md → body, lg → large).
+   * - 'sm': Compact size (28px height, supporting type)
+   * - 'md': Default size (32px height, body type)
+   * - 'lg': Large size (36px height, large type)
    * @default 'md'
    */
   size?: TextInputSize;
@@ -452,7 +478,19 @@ export function TextInput({
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
         aria-busy={isBusy || undefined}
         aria-labelledby={ariaLabelledBy}
-        {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
+        {...mergeProps(
+          // The inner <input> is its own theme target, like `text-area-control`
+          // for TextArea: the wrapper's font size never reaches the control
+          // (the control sets its own), so themes need a sanctioned hook to
+          // adjust the per-size type scale (#6014). The size itself stays
+          // reflected on the wrapper target (data-size).
+          themeProps('text-input-control'),
+          stylex.props(
+            styles.input,
+            inputSizeStyles[size],
+            isDisabled && styles.inputDisabled,
+          ),
+        )}
       />
       {hasClear && value !== '' && !isDisabled && !isReadOnly && (
         <InputClearButton

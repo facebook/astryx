@@ -166,11 +166,27 @@ const styles = stylex.create({
   },
 });
 
+// The control's type follows its size, like TextInput (#6014): sm steps down
+// to supporting, lg up to large (plus its vertical padding). md is the base
+// textarea styles (body size) and needs no override. The coarse-pointer
+// minimum from the base styles is repeated per size so touch devices never
+// get sub-16px text — and never zoom on focus — at any size.
 const textareaSizeStyles = stylex.create({
-  sm: {},
+  sm: {
+    fontSize: {
+      default: typeScaleVars['--text-supporting-size'],
+      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-supporting-size']})`,
+    },
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+  },
   md: {},
   lg: {
     paddingBlock: spacingVars['--spacing-2'],
+    fontSize: {
+      default: typeScaleVars['--text-large-size'],
+      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-large-size']})`,
+    },
+    lineHeight: typeScaleVars['--text-large-leading'],
   },
 });
 
@@ -331,7 +347,8 @@ export interface TextAreaProps extends Omit<
    */
   hasAutoFocus?: boolean;
   /**
-   * The size of the textarea, affecting internal padding.
+   * The size of the textarea: scales the type (sm → supporting, md → body,
+   * lg → large) and lg's internal padding.
    * Height is controlled by `rows`, not size.
    * @default 'md'
    */
