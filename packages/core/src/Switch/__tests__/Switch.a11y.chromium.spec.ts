@@ -25,6 +25,7 @@ import {
   blockingResults,
   formatFailures,
   formatReport,
+  neverExercised,
   runBinding,
   spokenWords,
   summarize,
@@ -162,6 +163,24 @@ test('the state inventory describes the labels the page actually renders', async
     }
   }
   expect(wrong).toEqual([]);
+});
+
+test('every expectation is exercised by at least one bound state', async ({
+  page,
+}) => {
+  // A whole-binding sweep: every state, every expectation, a fresh mount each
+  // time. That is minutes of real browser work, not the seconds a single-state
+  // test takes.
+  test.setTimeout(5 * 60 * 1000);
+  const cdp = await page.context().newCDPSession(page);
+  const results: BindingResult[] = [];
+  for (const state of SWITCH_BINDING_STATES) {
+    results.push(await runState(page, cdp, state));
+  }
+  // An expectation that applies to nothing is not coverage, however green it
+  // looks. This is the only place that can notice: the contract never sees the
+  // states, so whether a condition matches a real one is a binding-side fact.
+  expect(neverExercised(results)).toEqual([]);
 });
 
 for (const state of SWITCH_BINDING_STATES) {

@@ -61,6 +61,7 @@ export {
 export {
   blockingResults,
   formatFailures,
+  neverExercised,
   formatReport,
   summarize,
   type Report,

@@ -17,7 +17,12 @@
 import {describe, expect, it, vi} from 'vitest';
 import {definePattern, type PatternContract} from './contract';
 import type {EvidenceLayer, Harness, Subject} from './harness';
-import {blockingResults, formatReport, summarize} from './report';
+import {
+  blockingResults,
+  formatReport,
+  neverExercised,
+  summarize,
+} from './report';
 import {runBinding, type KnownFailure} from './run';
 
 interface Facts {
@@ -335,6 +340,40 @@ describe('the report keeps its facts apart', () => {
     expect(text).toContain('known-failure 1');
   });
 
+  it('names an expectation no state ever exercised', async () => {
+    // A gate nothing runs is not a gate, however green the report looks.
+    const base = contractThat(() => {});
+    const skipped = definePattern<Facts>({
+      ...base,
+      expectations: [
+        {
+          ...base.expectations[0]!,
+          appliesWhen: {condition: 'never, as it happens', test: () => false},
+        },
+      ],
+    });
+    const results = [
+      await run(skipped, {state: 'one'}),
+      await run(skipped, {state: 'two'}),
+    ];
+    expect(neverExercised(results)).toEqual(['probe.outcome.observed']);
+  });
+
+  it('says nothing when every expectation ran somewhere', async () => {
+    const contract = contractThat(() => {});
+    const results = [
+      await run(contract, {state: 'one', facts: {applicable: false}}),
+      await run(contract, {state: 'two'}),
+    ];
+    expect(neverExercised(results)).toEqual([]);
+  });
+
+  it('counts an unrun layer as not exercised', async () => {
+    const contract = contractThat(() => {}, {layer: 'real-browser'});
+    const results = [await run(contract, {observes: ['unit', 'dom']})];
+    expect(neverExercised(results)).toEqual(['probe.outcome.observed']);
+  });
+
   it('tells a part-encoded dimension apart from a fully exempt one', async () => {
     const base = contractThat(() => {});
     const contract = definePattern<Facts>({
@@ -359,8 +398,13 @@ describe('the report keeps its facts apart', () => {
     const text = formatReport(report);
 
     expect(text).toContain(
-      'part-encoded 4.1.2-name-role-value — remainder → the caller',
+      'part-encoded 4.1.2-name-role-value — encoded by probe.outcome.observed; remainder → the caller',
     );
+    // A reader of the report alone can see WHICH half is covered.
+    expect(
+      report.exemptions.find(e => e.dimension === '4.1.2-name-role-value')
+        ?.encodedBy,
+    ).toEqual(['probe.outcome.observed']);
     expect(text).toContain('exempt 2.4.7-focus-visible → the theme');
     // The part-encoded one must not read as fully exempt.
     expect(text).not.toContain('exempt 4.1.2-name-role-value →');

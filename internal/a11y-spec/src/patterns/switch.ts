@@ -42,20 +42,6 @@ const WCAG_1_3_1: WcagCriterion = {
   level: 'A',
   url: `${UNDERSTANDING}/info-and-relationships.html`,
 };
-const WCAG_1_4_1: WcagCriterion = {
-  standard: 'wcag',
-  id: '1.4.1',
-  name: 'Use of Color',
-  level: 'A',
-  url: `${UNDERSTANDING}/use-of-color.html`,
-};
-const WCAG_3_3_1: WcagCriterion = {
-  standard: 'wcag',
-  id: '3.3.1',
-  name: 'Error Identification',
-  level: 'A',
-  url: `${UNDERSTANDING}/error-identification.html`,
-};
 const WCAG_2_1_1: WcagCriterion = {
   standard: 'wcag',
   id: '2.1.1',
@@ -366,13 +352,8 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
         id: 'switch.state.exposed',
         outcome:
           'The on/off state is exposed and matches what is rendered, so what the user hears is what they see.',
-        sources: [WCAG_4_1_2, WCAG_1_4_1, APG_STATE],
-        // 1.4.1 partly: see its entry in `exemptions` for the rendered half.
-        covers: [
-          '4.1.2-name-role-value',
-          '1.4.1-use-of-color',
-          'apg-interaction',
-        ],
+        sources: [WCAG_4_1_2, APG_STATE],
+        covers: ['4.1.2-name-role-value', 'apg-interaction'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'accessibility-tree',
         enforcement: 'required',
@@ -492,9 +473,8 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
         id: 'switch.invalid.exposed',
         outcome:
           'A switch in error is reported as being in error, so the user can find what needs fixing.',
-        sources: [WCAG_4_1_2, WCAG_3_3_1],
-        // 3.3.1 partly: see its entry in `exemptions` for the described half.
-        covers: ['4.1.2-name-role-value', '3.3.1-error-identification'],
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
         appliesWhen: {
           condition: 'this state is in error',
           test: facts => facts.invalid,
@@ -770,8 +750,7 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
         verifiedBy:
           "the component's forced-colors suite and the repository visual gate",
         reason:
-          'The programmatic half — the state is available without looking at anything — is encoded by switch.state.exposed. What remains is whether the RENDERED difference between on and off survives without colour, and that is a pixel fact no layer this contract observes can read.',
-        coversRemainderOnly: true,
+          'Not part-encoded, and deliberately so. WCAG is explicit that exposure to assistive technology contributes nothing here: "even if information that is conveyed by color differences is appropriately conveyed to assistive technologies, it does not necessarily pass this criterion". 1.4.1 is entirely about what a sighted person who cannot distinguish two colours can see, which is a pixel fact no layer this contract observes can read.',
       },
       '1.4.3-contrast-minimum': {
         owner: 'the binding component and the theme',
@@ -852,7 +831,7 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
       '3.2.2-on-input': {
         owner: 'the caller, for its own onChange',
         verifiedBy:
-          'integration and page-level review of what a caller does in response to the change; the component-owned half — activating the switch must not move focus — is carried here by switch.state.keeps-focus-on-change',
+          'integration and page-level review of what a caller does in response to the change',
         reason:
           "A change of context is a change of user agent, viewport, focus, or content that changes the page's meaning. The switch owns exactly one of those: whether activating it moves focus. If a caller's onChange navigates, reloads, or rewrites the page around the control, that is the caller's context change to warn about before the user reaches the switch, and no run of one component can observe it.",
         coversRemainderOnly: true,
@@ -861,8 +840,7 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
         owner: 'the binding component',
         verifiedBy: "the component's own status-message tests",
         reason:
-          "Identifying the control in error is encoded by switch.invalid.exposed. What remains is 3.3.1's other half — describing the error to the user in text — and that text is composed around the switch rather than being part of the control, so one control cannot answer it.",
-        coversRemainderOnly: true,
+          'Not part-encoded, and deliberately so. 3.3.1 is satisfied in TEXT — "the error must be indicated in text" — and WCAG says the programmatic half "is not required for this success criterion, but may be covered by other criteria such as 4.1.2". switch.invalid.exposed is that 4.1.2 outcome, so it contributes nothing here. The text itself is composed around the switch rather than being part of the control.',
       },
       '4.1.3-status-messages': {
         owner:

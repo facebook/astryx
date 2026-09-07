@@ -44,6 +44,8 @@ export interface Report {
     readonly reason: string;
     /** True when expectations here cover part of it and the owner holds the rest. */
     readonly remainderOnly: boolean;
+    /** For a part-encoded dimension: the expectations that carry the encoded half. */
+    readonly encodedBy: readonly string[];
   }[];
 }
 
@@ -81,6 +83,11 @@ export function summarize<Facts>(
               verifiedBy: exemption.verifiedBy,
               reason: exemption.reason,
               remainderOnly: exemption.coversRemainderOnly === true,
+              encodedBy: contract.expectations
+                .filter(expectation =>
+                  (expectation.covers as readonly string[]).includes(dimension),
+                )
+                .map(expectation => expectation.id),
             },
           ],
     )
@@ -100,6 +107,37 @@ export function summarize<Facts>(
     unrunLayers,
     exemptions,
   };
+}
+
+/**
+ * Expectations that never actually ran across a whole binding — every state
+ * reported `not-applicable` or `unrun`.
+ *
+ * A gate nothing exercises is not a gate. `definePattern` cannot catch this: it
+ * sees the contract, never the bindings, so whether an applicability condition
+ * matches any real state is only knowable once a binding has run. A binding
+ * asserts on this, so an expectation that quietly applies to nothing — through
+ * a condition no state meets, or an escape it always takes — is visible instead
+ * of counting as coverage.
+ */
+export function neverExercised(
+  bindings: readonly BindingResult[],
+): readonly string[] {
+  const seen = new Map<string, boolean>();
+  for (const binding of bindings) {
+    for (const result of binding.results) {
+      const ran =
+        result.status !== 'not-applicable' && result.status !== 'unrun';
+      seen.set(
+        result.expectation,
+        (seen.get(result.expectation) ?? false) || ran,
+      );
+    }
+  }
+  return [...seen.entries()]
+    .filter(([, ran]) => !ran)
+    .map(([expectation]) => expectation)
+    .sort();
 }
 
 /**
@@ -172,7 +210,7 @@ export function formatReport(report: Report): string {
     // not own at all, and collapsing the two would overstate the second.
     lines.push(
       exemption.remainderOnly
-        ? `part-encoded ${exemption.dimension} — remainder → ${exemption.owner} (${exemption.verifiedBy})`
+        ? `part-encoded ${exemption.dimension} — encoded by ${exemption.encodedBy.join(', ')}; remainder → ${exemption.owner} (${exemption.verifiedBy})`
         : `exempt ${exemption.dimension} → ${exemption.owner} (${exemption.verifiedBy})`,
     );
   }
