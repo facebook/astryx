@@ -84,7 +84,10 @@ import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTranslator} from '../i18n';
-import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
+import {
+  useAdaptivePresentation,
+  type AdaptivePresentation,
+} from '../hooks/useAdaptivePresentation';
 import {SelectorBottomSheet} from '../Selector/SelectorBottomSheet';
 import {useSelectorPresentation} from '../Selector/useSelectorPresentation';
 import {selectorPresentationStyles} from '../Selector/selectorPresentation.stylex';
@@ -992,8 +995,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }
   }, [hasSearch, optimisticValue]);
 
+  // The legacy `(max-width: 768px) and (pointer: coarse)` policy, resolved
+  // HERE rather than inside the shared controller. MultiSelector is explicitly
+  // out of scope for spec:AST-031's first migration, so it keeps its released
+  // query — including the inclusive 768px edge — while Selector moves to the
+  // theme's named `md` point. Called immediately before the controller, where
+  // the controller used to call it, so hook order is unchanged.
+  const resolvedPresentation = useAdaptivePresentation(presentation);
+
   const surface = useSelectorPresentation({
-    presentation,
+    presentation: resolvedPresentation,
     onHide: handleLayerHide,
     onShow: handleLayerShow,
     triggerRef,

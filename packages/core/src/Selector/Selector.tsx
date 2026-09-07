@@ -11,8 +11,12 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Selector/Selector.doc.mjs
+ * - /packages/core/src/Selector/Selector.spec.md
  * - /packages/core/src/Selector/Selector.test.tsx
+ * - /packages/core/src/Selector/SelectorAdaptations.test.tsx
+ * - /packages/core/src/Selector/useSelectorPresentation.ts
  * - /packages/core/src/Selector/index.ts
+ * - /packages/core/src/theme/componentAdaptations.ts
  * - /apps/storybook/stories/InputGroup.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Selector/ (showcase blocks)
  */
@@ -85,7 +89,8 @@ import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTranslator} from '../i18n';
-import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
+import type {ComponentAdaptations} from '../theme/componentAdaptations';
+import {useComponentAdaptations} from '../theme/useComponentAdaptations';
 import {SelectorBottomSheet} from './SelectorBottomSheet';
 import {useSelectorPresentation} from './useSelectorPresentation';
 import {selectorPresentationStyles} from './selectorPresentation.stylex';
@@ -464,7 +469,107 @@ export type SelectorSize = 'sm' | 'md' | 'lg';
 
 export type SelectorVariant = 'input' | 'ghost';
 
-export type SelectorPresentation = AdaptivePresentation;
+/**
+ * The surfaces a resolved Selector presentation policy can name.
+ *
+ * The whole domain of `adaptations`: an anchored popover or a modal bottom
+ * sheet. `adaptive` is not a member — it is legacy shorthand for a policy that
+ * resolves to one of these (spec:AST-031 FR7).
+ *
+ * Spelled as literals rather than aliased to the internal
+ * `ResolvedAdaptivePresentation`, so a consumer's hover, error, and `.d.ts`
+ * read `'popover' | 'bottom-sheet'` instead of naming a type they cannot
+ * import. The reverse alias — the internal type pointing here — would put the
+ * shared adaptive hook, which DropdownMenu and ContextMenu also use, behind
+ * one component's public API. `SelectorAdaptations.test.tsx` asserts at
+ * compile time that the two unions stay identical.
+ */
+export type SelectorAdaptationValue = 'popover' | 'bottom-sheet';
+
+export type SelectorPresentation = SelectorAdaptationValue | 'adaptive';
+
+/** Runtime domain for `adaptations`, so an untyped caller is rejected too. */
+const SELECTOR_ADAPTATION_VALUES = [
+  'popover',
+  'bottom-sheet',
+] as const satisfies ReadonlyArray<SelectorAdaptationValue>;
+
+/**
+ * `presentation="adaptive"`, expressed in the shared grammar.
+ *
+ * The width point is the nearest Theme's `md`, and `below` is EXCLUSIVE — the
+ * one behavior difference from the legacy `(max-width: 768px)` query, which
+ * included equality. At the default 768px point a coarse-pointer Selector now
+ * anchors instead of presenting a sheet (spec:AST-031 FR7/DEC-6).
+ */
+const ADAPTIVE_PRESENTATION_POLICY: ComponentAdaptations<SelectorAdaptationValue> =
+  {
+    default: 'popover',
+    rules: [
+      {when: {width: {below: 'md'}, pointer: 'coarse'}, value: 'bottom-sheet'},
+    ],
+  };
+
+/**
+ * Every legacy `presentation` value as a policy.
+ *
+ * A constant presentation is a policy with no rules: it resolves to `default`
+ * everywhere and subscribes to nothing, so the two spellings run through one
+ * resolver instead of a branch that only the shorthand path exercises. Module
+ * scope keeps the objects referentially stable across renders.
+ *
+ * Also the runtime domain of `presentation`: the keys are what a value is
+ * checked against before it is used as one.
+ */
+const PRESENTATION_POLICIES: Readonly<
+  Record<SelectorPresentation, ComponentAdaptations<SelectorAdaptationValue>>
+> = {
+  popover: {default: 'popover', rules: []},
+  'bottom-sheet': {default: 'bottom-sheet', rules: []},
+  adaptive: ADAPTIVE_PRESENTATION_POLICY,
+};
+
+/**
+ * The policy one call site's props select, with both props validated first.
+ *
+ * `presentation` is validated rather than trusted: TypeScript covers a typed
+ * caller, but a value arriving from JavaScript, an untyped props bag, or a
+ * stale `presentation="modal"` would otherwise index the policy map to
+ * `undefined` and resolve to an anchored popover — a wrong surface reported as
+ * a correct one. The failure a caller gets should name the prop, not appear as
+ * a silently different surface (spec:AST-031 IR3).
+ */
+function resolvePresentationPolicy(
+  presentation: SelectorPresentation | undefined,
+  adaptations: ComponentAdaptations<SelectorAdaptationValue> | undefined,
+): ComponentAdaptations<SelectorAdaptationValue> {
+  // Checked on `undefined`, not on presence: spreading a props bag that
+  // carries an explicit `adaptations: undefined` beside a real `presentation`
+  // is an ordinary call, not a conflict (spec:AST-031 FR6).
+  if (presentation !== undefined && adaptations !== undefined) {
+    throw new Error(
+      '<Selector> received both `presentation` and `adaptations`, which select the same surface. Pass `adaptations` for an environment-conditioned policy, or `presentation` for a constant surface or the legacy `adaptive` shorthand.',
+    );
+  }
+  if (adaptations !== undefined) {
+    return adaptations;
+  }
+  if (presentation === undefined) {
+    return PRESENTATION_POLICIES.popover;
+  }
+  // `hasOwnProperty`, not `in`: `presentation="toString"` must not resolve
+  // through Object.prototype to a policy-shaped function.
+  if (
+    !Object.prototype.hasOwnProperty.call(PRESENTATION_POLICIES, presentation)
+  ) {
+    throw new Error(
+      `<Selector presentation> must be one of ${Object.keys(
+        PRESENTATION_POLICIES,
+      ).join(', ')}; received ${JSON.stringify(presentation)}.`,
+    );
+  }
+  return PRESENTATION_POLICIES[presentation];
+}
 
 export type SelectorStatusType = 'warning' | 'error' | 'success';
 
@@ -699,18 +804,22 @@ interface SelectorPropsBase<
    */
   placement?: LayerPlacement;
 
-  /**
-   * How the option list is presented.
-   * - 'popover': anchored to the trigger
-   * - 'bottom-sheet': modal sheet suited to compact touch screens
-   * - 'adaptive': bottom sheet on compact coarse-pointer screens, otherwise popover
-   * @default 'popover'
-   */
-  presentation?: SelectorPresentation;
+  // presentation and adaptations are in the exclusive policy union below
 
   /**
    * Whether the dropdown starts open on mount.
    * Useful for showcases and previews.
+   *
+   * Known limitation, unchanged by `adaptations` and shared with
+   * MultiSelector: under SERVER RENDERING, a policy whose value differs
+   * between server and client — `presentation="adaptive"` on a compact touch
+   * client, or any rule that matches there — comes up CLOSED. The open runs
+   * from a mount effect, which sees the hydration render's value (the server
+   * one), while the render after hydration has already published the
+   * browser's. Client-only rendering is unaffected. A policy that does not
+   * change across hydration opens correctly, which is the workaround:
+   * `adaptations={{default: 'bottom-sheet', rules: []}}`.
+   *
    * @default false
    */
   isDefaultOpen?: boolean;
@@ -727,6 +836,69 @@ interface SelectorPropsBase<
    */
   'data-testid'?: string;
 }
+
+/**
+ * How the option list is presented — exactly one spelling per call site.
+ *
+ * A separate two-arm union, INTERSECTED with the `hasClear` union rather than
+ * folded into it: exclusivity is orthogonal to the value contract, and
+ * spelling it inside `hasClear` would turn two arms into four that each have
+ * to restate `value`/`onChange`/`changeAction`. `?: never` is what makes the
+ * pair exclusive to the compiler while both members stay optional, so an
+ * explicitly spread `undefined` still type-checks (spec:AST-031 FR6).
+ */
+type SelectorPresentationPolicy =
+  | {
+      /**
+       * How the option list is presented.
+       * - 'popover': anchored to the trigger
+       * - 'bottom-sheet': modal sheet suited to compact touch screens
+       * - 'adaptive': bottom sheet on compact coarse-pointer screens,
+       *   otherwise popover. Equivalent to
+       *   `adaptations={{default: 'popover', rules: [{when: {width: {below:
+       *   'md'}, pointer: 'coarse'}, value: 'bottom-sheet'}]}}`, resolved
+       *   against the nearest Theme's `md` point.
+       *
+       * Those three are the whole set; any other value throws rather than
+       * falling back to a popover.
+       *
+       * Mutually exclusive with `adaptations`.
+       * @default 'popover'
+       */
+      presentation?: SelectorPresentation;
+      adaptations?: never;
+    }
+  | {
+      presentation?: never;
+      /**
+       * Environment-conditioned presentation policy.
+       *
+       * `default` is the server-rendered, hydration, and no-match value;
+       * ordered `rules` map conditions to the same two values, and the LAST
+       * matching rule wins. Width points come from the nearest Theme, `from`
+       * is inclusive, `below` is exclusive, and condition fields are ANDed.
+       *
+       * Mutually exclusive with `presentation`.
+       *
+       * @example
+       * ```
+       * <Selector
+       *   label="Fruit"
+       *   options={options}
+       *   adaptations={{
+       *     default: 'popover',
+       *     rules: [
+       *       {
+       *         when: {width: {below: 'md'}, pointer: 'coarse'},
+       *         value: 'bottom-sheet',
+       *       },
+       *     ],
+       *   }}
+       * />
+       * ```
+       */
+      adaptations?: ComponentAdaptations<SelectorAdaptationValue>;
+    };
 
 /**
  * Without `hasClear`, the selector always has a string value (or undefined for placeholder).
@@ -755,8 +927,10 @@ type SelectorPropsClearable<T extends SelectorOptionType = SelectorOptionType> =
     changeAction?: (value: string | null) => void | Promise<void>;
   };
 
-export type SelectorProps<T extends SelectorOptionType = SelectorOptionType> =
-  SelectorPropsNonClearable<T> | SelectorPropsClearable<T>;
+export type SelectorProps<T extends SelectorOptionType = SelectorOptionType> = (
+  SelectorPropsNonClearable<T> | SelectorPropsClearable<T>
+) &
+  SelectorPresentationPolicy;
 
 /**
  * Default option renderer
@@ -848,7 +1022,8 @@ export function Selector<T extends SelectorOptionType>(
     emptyText: emptyTextFromProps,
     emptySearchText: emptySearchTextFromProps,
     placement,
-    presentation = 'popover',
+    presentation: presentationProp,
+    adaptations,
     isDefaultOpen = false,
     'data-testid': testId,
     width,
@@ -859,7 +1034,7 @@ export function Selector<T extends SelectorOptionType>(
     hasClear: hasClearProp,
     id,
     ...rest
-  } = props as SelectorPropsClearable<T>;
+  } = props as SelectorPropsClearable<T> & SelectorPresentationPolicy;
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
   const searchPlaceholder =
@@ -1007,8 +1182,20 @@ export function Selector<T extends SelectorOptionType>(
     }
   }, [hasSearch]);
 
+  // One effective policy per call site, both props validated before use.
+  // `presentation` and `adaptations` name the same choice, so accepting both
+  // would make precedence — not the caller — decide the surface.
+  const presentationPolicy = resolvePresentationPolicy(
+    presentationProp,
+    adaptations,
+  );
+  const {value: resolvedPresentation} = useComponentAdaptations(
+    presentationPolicy,
+    {path: '<Selector adaptations>', values: SELECTOR_ADAPTATION_VALUES},
+  );
+
   const surface = useSelectorPresentation({
-    presentation,
+    presentation: resolvedPresentation,
     onHide: handleLayerHide,
     onShow: handleLayerShow,
     triggerRef,
@@ -1030,6 +1217,16 @@ export function Selector<T extends SelectorOptionType>(
   const keepOpenProps = useKeepLayerOpenProps(popover.id, popover.isOpen);
 
   // Open dropdown on mount when isDefaultOpen is true and interaction is allowed.
+  //
+  // Mount-only, so it runs with the HYDRATION render's resolved value — the
+  // server one by spec:AST-031 FR3. A policy that changes across hydration
+  // (`adaptive` on a compact touch client) therefore opens against a value the
+  // next render has already replaced, and the field comes up closed. That
+  // predates this policy — MultiSelector, still on the released adaptive hook,
+  // does the same — and the fix belongs to `isDefaultOpen`'s own contract:
+  // deferring the open past hydration changes when EVERY default-open surface
+  // appears, which is not this migration's call to make. Documented on the
+  // prop, characterized in SelectorAdaptations.test.tsx.
   useEffect(() => {
     if (isDefaultOpen && !isEffectivelyReadOnly) {
       surface.show();

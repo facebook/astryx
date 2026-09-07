@@ -45,6 +45,17 @@ const TARGETS = [
       'isFullBleed strip/label geometry incl. clamp far side, and the real ' +
       'LayoutHeader paddingBlockEnd -> TabList isFullBleed dock (#2622)',
   },
+  {
+    component: 'Selector',
+    story: 'core-selector--keyboard-bottom-sheet-policy',
+    guards:
+      'fine-pointer bottom sheet stays keyboard operable: Enter opens the ' +
+      'real modal dialog, focus enters the listbox, arrows move the active ' +
+      'option, Escape closes through the real exit transition and returns ' +
+      'focus to the trigger. The combination is long-standing (plain ' +
+      'presentation="bottom-sheet"); what this adds is real-browser evidence ' +
+      'for it, since jsdom stubs showModal and never runs the exit',
+  },
 ];
 
 const CONTENT_TYPES = {

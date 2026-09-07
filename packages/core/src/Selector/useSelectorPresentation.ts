@@ -4,9 +4,18 @@
 
 /**
  * @file useSelectorPresentation.ts
- * @input Uses the shared adaptive presentation policy and usePopover
+ * @input An already-resolved presentation value and usePopover
  * @output Coordinates popover and bottom-sheet disclosure state
- * @position Internal presentation controller shared by Selector and MultiSelector
+ * @position Internal presentation controller shared by Selector and
+ *   MultiSelector. Policy resolution is the CALLER's: Selector resolves its
+ *   public `adaptations`/`presentation` policy and MultiSelector runs the
+ *   legacy adaptive hook, so migrating one cannot move the other
+ *   (spec:AST-031 IR5).
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/Selector/Selector.tsx (resolves the AST-031 policy)
+ * - /packages/core/src/MultiSelector/MultiSelector.tsx (resolves the legacy
+ *   adaptive policy)
  */
 
 import {
@@ -21,15 +30,16 @@ import {
   type UsePopoverOptions,
   type UsePopoverReturn,
 } from '../Popover/usePopover';
-import {
-  useAdaptivePresentation,
-  type AdaptivePresentation,
-  type ResolvedAdaptivePresentation,
-} from '../hooks/useAdaptivePresentation';
+import type {ResolvedAdaptivePresentation} from '../hooks/useAdaptivePresentation';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 
 interface UseSelectorPresentationOptions {
-  presentation: AdaptivePresentation;
+  /**
+   * The surface to open, already resolved to an exact value. This controller
+   * never reads the environment: it owns disclosure state, latching, and the
+   * focus handoff, not which surface a caller's policy selects.
+   */
+  presentation: ResolvedAdaptivePresentation;
   onHide: () => void;
   onShow: () => void;
   popoverOptions: Omit<UsePopoverOptions, 'onHide' | 'onShow'>;
@@ -50,13 +60,12 @@ interface SelectorPresentationController {
 }
 
 export function useSelectorPresentation({
-  presentation,
+  presentation: resolvedPresentation,
   onHide,
   onShow,
   popoverOptions,
   triggerRef,
 }: UseSelectorPresentationOptions): SelectorPresentationController {
-  const resolvedPresentation = useAdaptivePresentation(presentation);
   const activePresentationRef =
     useRef<ResolvedAdaptivePresentation>(resolvedPresentation);
   const [isSheetOpen, setIsSheetOpen] = useState(false);

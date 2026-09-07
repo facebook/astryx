@@ -11,6 +11,7 @@
 export {
   Selector,
   type SelectorProps,
+  type SelectorAdaptationValue,
   type SelectorPresentation,
   type SelectorSize,
   type SelectorStatus,

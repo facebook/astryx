@@ -74,7 +74,8 @@ const meta: Meta<typeof Selector> = {
     presentation: {
       control: 'radio',
       options: ['popover', 'bottom-sheet', 'adaptive'],
-      description: 'Popover, bottom sheet, or responsive presentation.',
+      description:
+        "Popover, bottom sheet, or responsive presentation. adaptive presents the sheet below the theme's md width point on coarse-pointer devices; the boundary is exclusive, so exactly md stays anchored. For any other rule, pass an adaptations policy instead — the two props are mutually exclusive.",
     },
     isDisabled: {
       control: 'boolean',
@@ -167,6 +168,165 @@ export const BottomSheetPresentation: Story = {
         presentation="bottom-sheet"
       />
     );
+  },
+};
+
+/**
+ * A caller-owned `adaptations` policy — the non-legacy case the `adaptive`
+ * shorthand cannot express.
+ *
+ * The rule here is pointer-only: a touch device gets the modal sheet at ANY
+ * width, which is right for a workflow whose users are on tablets held in
+ * landscape, where the shorthand's `below: 'md'` width test would keep the
+ * anchored popover. `default` is what the server renders and what a
+ * fine-pointer client keeps.
+ *
+ * Rules are checked in author order and the last match wins; width names,
+ * when a policy uses them, resolve against the nearest Theme.
+ */
+export const AdaptationsPointerPolicy: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>();
+    return (
+      <Selector
+        label="Assignee"
+        options={['Ada Lovelace', 'Grace Hopper', 'Katherine Johnson']}
+        value={value}
+        onChange={setValue}
+        adaptations={{
+          default: 'popover',
+          rules: [{when: {pointer: 'coarse'}, value: 'bottom-sheet'}],
+        }}
+      />
+    );
+  },
+};
+
+/**
+ * A bottom sheet on a FINE pointer, kept keyboard operable.
+ *
+ * This combination is NOT new: `presentation="bottom-sheet"` has always
+ * rendered the modal sheet whatever the pointer, and `adaptations` only adds
+ * another way to ask for it. What is new is the coverage — a sheet is a modal
+ * dialog, and its keyboard contract had no real-browser evidence.
+ *
+ * That gap matters because jsdom fakes exactly the two things that decide it:
+ * `showModal` is a stub, and the exit transition never runs, so the unit
+ * suite's focus assertions are made against a simulation of the surface
+ * rather than the surface. Here a real `<dialog>`, a real focus trap, and a
+ * real transition are exercised: Enter opens it, focus enters the listbox,
+ * arrows move the active option, and Escape closes it and hands focus back to
+ * the trigger. These play assertions run in Chromium under the story play
+ * guard, which is what makes them a required check rather than a demo.
+ */
+export const KeyboardBottomSheetPolicy: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>();
+    return (
+      <div data-sheet-keyboard-fixture>
+        <Selector
+          label="Team"
+          options={['Design', 'Engineering', 'Marketing', 'Operations']}
+          value={value}
+          onChange={setValue}
+          adaptations={{default: 'bottom-sheet', rules: []}}
+        />
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const frame = () =>
+      new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+    /** Poll until `check` is true, or fail loudly. Play has no test lib. */
+    const until = async (what: string, check: () => boolean) => {
+      for (let attempt = 0; attempt < 120; attempt++) {
+        if (check()) {
+          return;
+        }
+        await frame();
+      }
+      throw new Error(`Timed out waiting for ${what}`);
+    };
+
+    const press = (target: Element, key: string) => {
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', {key, bubbles: true, cancelable: true}),
+      );
+      target.dispatchEvent(
+        new KeyboardEvent('keyup', {key, bubbles: true, cancelable: true}),
+      );
+    };
+
+    const fixture = canvasElement.querySelector<HTMLElement>(
+      '[data-sheet-keyboard-fixture]',
+    );
+    const trigger = fixture?.querySelector<HTMLElement>('[role="combobox"]');
+    if (!trigger) {
+      throw new Error('Sheet keyboard fixture did not render a trigger');
+    }
+
+    // A fine pointer must still be offered the modal sheet when the policy
+    // asks for it — the trigger says so before anything opens.
+    if (trigger.getAttribute('aria-haspopup') !== 'dialog') {
+      throw new Error(
+        `Expected a dialog trigger, got aria-haspopup="${trigger.getAttribute('aria-haspopup')}"`,
+      );
+    }
+
+    trigger.focus();
+    if (document.activeElement !== trigger) {
+      throw new Error('Trigger did not take focus');
+    }
+
+    press(trigger, 'Enter');
+
+    await until(
+      'the modal sheet to open',
+      () => document.querySelector('dialog[open]') != null,
+    );
+    const dialog = document.querySelector('dialog[open]') as HTMLDialogElement;
+
+    // Focus entry: the listbox inside the sheet, not the trigger behind it.
+    // `showModal` first parks focus on the dialog itself and the component
+    // moves it a frame later, so the WAIT has to be for the listbox — waiting
+    // for "anything inside the dialog" resolves on that intermediate state.
+    const sheetListbox = () => dialog.querySelector('[role="listbox"]');
+    await until('focus to reach the sheet listbox', () => {
+      const listbox = sheetListbox();
+      return listbox != null && document.activeElement === listbox;
+    });
+    const listbox = sheetListbox();
+    if (!listbox) {
+      throw new Error('Sheet opened without a listbox');
+    }
+    if (trigger.getAttribute('aria-expanded') !== 'true') {
+      throw new Error('Trigger did not report the sheet as expanded');
+    }
+
+    // Arrow keys move the active option inside the modal surface.
+    const activeOption = () => listbox.getAttribute('aria-activedescendant');
+    const firstActive = activeOption();
+    press(listbox, 'ArrowDown');
+    await until(
+      'the active option to move',
+      () => activeOption() !== firstActive,
+    );
+
+    // Dismissal returns focus to the trigger — through the sheet's real exit
+    // transition, which is the part jsdom cannot run.
+    press(document.activeElement ?? listbox, 'Escape');
+
+    await until(
+      'the sheet to close',
+      () => document.querySelector('dialog[open]') == null,
+    );
+    await until('focus to return to the trigger', () => {
+      return document.activeElement === trigger;
+    });
+    if (trigger.getAttribute('aria-expanded') !== 'false') {
+      throw new Error('Trigger still reports the sheet as expanded');
+    }
   },
 };
 

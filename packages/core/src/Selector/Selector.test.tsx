@@ -39,6 +39,17 @@ import {generateThemeCSS} from '../theme/generateThemeRules';
 import {spacingVars} from '../theme/tokens.stylex';
 import {selectorPresentationStyles} from './selectorPresentation.stylex';
 
+/**
+ * What `presentation="adaptive"` compiles to at the default `md` point.
+ *
+ * Selector resolves through the AST-031 grammar now, so its compact-touch
+ * query is `width < 768px` — EXCLUSIVE — where the legacy shared hook (which
+ * MultiSelector and the menus still use) asks for `max-width: 768px`. The
+ * literal is spelled here rather than imported so a silent change to the
+ * compiled query fails these tests instead of following them.
+ */
+const COMPACT_TOUCH_ADAPTATION_QUERY = '(width < 768px) and (pointer: coarse)';
+
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
   return [prose, component].filter(Boolean).join('\n\n');
@@ -330,7 +341,7 @@ describe('Selector', () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn().mockImplementation((query: string) => ({
-        matches: query === '(max-width: 768px) and (pointer: coarse)',
+        matches: query === COMPACT_TOUCH_ADAPTATION_QUERY,
         media: query,
         onchange: null,
         addEventListener: vi.fn(),
@@ -2475,7 +2486,7 @@ describe('Selector', () => {
       vi.mocked(matchMedia).mockImplementation(
         (query: string) =>
           ({
-            matches: query === '(max-width: 768px) and (pointer: coarse)',
+            matches: query === COMPACT_TOUCH_ADAPTATION_QUERY,
             media: query,
             onchange: null,
             addEventListener: vi.fn(),
