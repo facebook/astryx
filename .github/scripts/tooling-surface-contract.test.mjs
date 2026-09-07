@@ -73,7 +73,8 @@ describe('score-ledger tooling surface', () => {
   it('keeps every serialized value in the exact generated-module shape', () => {
     expect(typeof scoreLedger.AUDIT_PROMPT).toBe('string');
     expect(scoreLedger.AUDIT_PROMPT.length).toBeGreaterThan(0);
-    expect(() => new URL(scoreLedger.DEFAULT_LEDGER_URL)).not.toThrow();
+    const ledgerUrl = new URL(scoreLedger.DEFAULT_LEDGER_URL);
+    expect(ledgerUrl.protocol).toBe('https:');
     expect(scoreLedger.DEFAULT_REPO).toMatch(/^[^/]+\/[^/]+$/);
     expect(Number.isInteger(scoreLedger.LEDGER_FETCH_TIMEOUT_MS)).toBe(true);
     expect(scoreLedger.LEDGER_FETCH_TIMEOUT_MS).toBeGreaterThan(0);
