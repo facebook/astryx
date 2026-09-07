@@ -44,9 +44,12 @@ only when a stable public API, theme contract, ownership boundary, compatibility
 policy, or genuinely subjective visual direction remains undecided. Ask one
 question at a time.
 
-Before reviewing or implementing a proposed outcome, check current `main` and
-newer overlapping pull requests. Do not create new policy for work that is
-already complete or superseded.
+Before drafting, reviewing, or implementing a proposed outcome, search current
+records and open pull requests using the proposed canonical owner/id, affected
+paths and exported symbols, and the behavior's semantic terms. Extend or project
+the existing canonical owner by default. Create a new record only for a distinct
+fact boundary, and state why the existing owner cannot contain it. Do not create
+new policy for work that is already complete, owned, or superseded.
 
 ## Validation
 

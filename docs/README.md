@@ -65,6 +65,10 @@ Every knowledge record declares `authority: draft | current | archived`.
   request. Pull requests and issues may appear only as clearly non-authoritative
   examples, historical evidence, or references. A specification never exists to
   approve, reject, classify, designate, or authorize a particular pull request.
+- Before creating or materially expanding a record, search current records and
+  open pull requests by canonical owner/id, affected paths and exported symbols,
+  and semantic behavior terms. Extend or project the existing canonical owner by
+  default; create a new record only for a distinct fact boundary and explain why.
 - Current records rely only on other current records. `modules` and
   `parent_component` are structural ownership links, so they may connect active
   draft/current records without making draft behavior authoritative. Other draft
