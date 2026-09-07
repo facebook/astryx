@@ -44,9 +44,12 @@ import {IconButton} from '../IconButton';
 import {useTranslator} from '../i18n';
 import {
   StepperContext,
+  StepperInternalContext,
+  type StepperContextValue,
   type StepperOrientation,
   type StepperIndicatorPosition,
-  type StepperContextValue,
+  type StepperInternalContextValue,
+  type StepperRegistrationOptions,
 } from './StepperContext';
 
 /**
@@ -69,12 +72,11 @@ export type StepperCollapsedVariant =
 
 export interface StepperHorizontalOptions {
   /**
-   * Minimum width allocated to each step before a horizontal Stepper collapses.
-   * Numbers are interpreted as pixels. Strings accept CSS length values such
-   * as `'7rem'`, `'calc(6rem + 8px)'`, or `'var(--step-width)'`.
+   * Minimum width in pixels allocated to each step before a horizontal Stepper
+   * collapses.
    * @default 112
    */
-  minimumStepWidth: number | string;
+  minimumStepWidth: number;
   /**
    * Presentation used when the horizontal Stepper collapses.
    * - `withLabelAndControls`: current-step label and navigation controls.
@@ -255,55 +257,65 @@ export function Stepper({
   // deregister on unmount; a Map tracks count per index so we can warn when
   // two Steps share the same `step` value (which breaks aria-current).
   const stepCountsRef = useRef<Map<number, number>>(new Map());
-  // Disabled registrations are tracked separately so compact previous/next
-  // controls can move to the nearest enabled step without inspecting children.
-  // Counts keep cleanup correct even for the invalid duplicate-index case.
-  const disabledStepCountsRef = useRef<Map<number, number>>(new Map());
-  const [disabledSteps, setDisabledSteps] = useState<ReadonlySet<number>>(
-    () => new Set(),
-  );
+  // Compact navigation reads each Step's disabled state through the getter it
+  // registered, so the registry does not copy state that belongs to the Step.
+  // A Set keeps cleanup correct even for the invalid duplicate-index case.
+  const disabledGettersRef = useRef<
+    Map<number, Set<NonNullable<StepperRegistrationOptions['getIsDisabled']>>>
+  >(new Map());
+  // Registration changes can leave the total step count unchanged (for example
+  // when a Step's disabled state changes), so this revision still prompts the
+  // parent to refresh compact control availability.
+  const [, setRegistrationRevision] = useState(0);
   // How many steps there are, which the stepper needs for real and not only
   // for the warning: the width each step is getting is this divided into the
   // width the stepper got. Counted from what registers rather than from the
   // children, so grouping steps in a fragment or an array cannot change the
   // answer.
   const [stepCount, setStepCount] = useState(0);
-  const registerStep = useCallback((index: number, isDisabled: boolean) => {
-    const counts = stepCountsRef.current;
-    const prev = counts.get(index) ?? 0;
-    counts.set(index, prev + 1);
-    if (process.env.NODE_ENV !== 'production' && prev + 1 > 1) {
-      console.warn(
-        `[Stepper] Duplicate step index ${index}: two <Step> elements share the same \`step\` value. ` +
-          `This breaks \`aria-current="step"\` and causes both to show as active simultaneously.`,
-      );
-    }
-    if (isDisabled) {
-      const disabledCounts = disabledStepCountsRef.current;
-      disabledCounts.set(index, (disabledCounts.get(index) ?? 0) + 1);
-      setDisabledSteps(new Set(disabledCounts.keys()));
-    }
-    setStepCount(c => c + 1);
-    return () => {
-      const cur = counts.get(index) ?? 1;
-      if (cur <= 1) {
-        counts.delete(index);
-      } else {
-        counts.set(index, cur - 1);
+  const registerStep = useCallback(
+    (index: number, options?: StepperRegistrationOptions) => {
+      const counts = stepCountsRef.current;
+      const prev = counts.get(index) ?? 0;
+      counts.set(index, prev + 1);
+      if (process.env.NODE_ENV !== 'production' && prev + 1 > 1) {
+        console.warn(
+          `[Stepper] Duplicate step index ${index}: two <Step> elements share the same \`step\` value. ` +
+            `This breaks \`aria-current="step"\` and causes both to show as active simultaneously.`,
+        );
       }
-      if (isDisabled) {
-        const disabledCounts = disabledStepCountsRef.current;
-        const disabledCount = disabledCounts.get(index) ?? 1;
-        if (disabledCount <= 1) {
-          disabledCounts.delete(index);
+
+      const getIsDisabled = options?.getIsDisabled;
+      if (getIsDisabled) {
+        const getters = disabledGettersRef.current.get(index) ?? new Set();
+        getters.add(getIsDisabled);
+        disabledGettersRef.current.set(index, getters);
+      }
+
+      setStepCount(c => c + 1);
+      setRegistrationRevision(revision => revision + 1);
+      return () => {
+        const cur = counts.get(index) ?? 1;
+        if (cur <= 1) {
+          counts.delete(index);
         } else {
-          disabledCounts.set(index, disabledCount - 1);
+          counts.set(index, cur - 1);
         }
-        setDisabledSteps(new Set(disabledCounts.keys()));
-      }
-      setStepCount(c => c - 1);
-    };
-  }, []);
+
+        if (getIsDisabled) {
+          const getters = disabledGettersRef.current.get(index);
+          getters?.delete(getIsDisabled);
+          if (getters?.size === 0) {
+            disabledGettersRef.current.delete(index);
+          }
+        }
+
+        setStepCount(c => c - 1);
+        setRegistrationRevision(revision => revision + 1);
+      };
+    },
+    [],
+  );
 
   // The step we came *from*. Steps need it to stagger their connector fill:
   // the distance and direction of the change decide which segment moves first
@@ -342,11 +354,7 @@ export function Stepper({
   // still owns the ref and DOM pass-throughs and fills that frame, so its width
   // is the effective component width to observe.
   const [rootWidth, setRootWidth] = useState(0);
-  const [resolvedMinStepWidth, setResolvedMinStepWidth] = useState(
-    DEFAULT_MIN_STEP_WIDTH,
-  );
   const stopObservingRootRef = useRef<(() => void) | null>(null);
-  const stopObservingMinStepWidthRef = useRef<(() => void) | null>(null);
   const attachRoot = useCallback(
     (el: HTMLOListElement | null) => {
       stopObservingRootRef.current?.();
@@ -365,25 +373,10 @@ export function Stepper({
     [isHorizontal],
   );
   const rootRef = useMergedRefs(ref, attachRoot);
-  const attachMinStepWidthMeasure = useCallback((el: HTMLDivElement | null) => {
-    stopObservingMinStepWidthRef.current?.();
-    stopObservingMinStepWidthRef.current = null;
-    if (el) {
-      // The browser resolves px, rem, calc(), var(), and the other supported
-      // CSS length forms before clientWidth is read. Observing the probe as
-      // well as the Stepper means a root-font-size or custom-property change
-      // can move the breakpoint without the Stepper itself resizing.
-      stopObservingMinStepWidthRef.current = observeResize(el, entry =>
-        setResolvedMinStepWidth(entry.target.clientWidth),
-      );
-    }
-  }, []);
   useEffect(
     () => () => {
       stopObservingRootRef.current?.();
       stopObservingRootRef.current = null;
-      stopObservingMinStepWidthRef.current?.();
-      stopObservingMinStepWidthRef.current = null;
     },
     [],
   );
@@ -403,11 +396,11 @@ export function Stepper({
     isHorizontal &&
     rootWidth > 0 &&
     stepCount > 0 &&
-    rootWidth / stepCount < resolvedMinStepWidth;
+    rootWidth / stepCount < minimumStepWidth;
 
   const [summarySlot, setSummarySlot] = useState<HTMLElement | null>(null);
 
-  const ctxValue = useMemo<StepperContextValue>(
+  const publicCtxValue = useMemo<StepperContextValue>(
     () => ({
       activeStep,
       previousActiveStep,
@@ -417,11 +410,6 @@ export function Stepper({
       density,
       indicatorPosition,
       registerStep,
-      stepCount,
-      isCompact,
-      summarySlot,
-      minimumStepWidth,
-      minStepWidthMeasureRef: attachMinStepWidthMeasure,
     }),
     [
       activeStep,
@@ -431,12 +419,16 @@ export function Stepper({
       density,
       indicatorPosition,
       registerStep,
+    ],
+  );
+  const internalCtxValue = useMemo<StepperInternalContextValue>(
+    () => ({
+      ...publicCtxValue,
       stepCount,
       isCompact,
       summarySlot,
-      minimumStepWidth,
-      attachMinStepWidthMeasure,
-    ],
+    }),
+    [publicCtxValue, stepCount, isCompact, summarySlot],
   );
 
   const isOnTrack = indicatorPosition === 'on-track';
@@ -474,7 +466,13 @@ export function Stepper({
   );
 
   if (!isHorizontal) {
-    return <StepperContext value={ctxValue}>{list}</StepperContext>;
+    return (
+      <StepperContext value={publicCtxValue}>
+        <StepperInternalContext value={internalCtxValue}>
+          {list}
+        </StepperInternalContext>
+      </StepperContext>
+    );
   }
 
   // Controls appear only in the variant that asks for them and where there is
@@ -500,7 +498,11 @@ export function Stepper({
   const adjacentEnabledStep = (delta: -1 | 1): number | null => {
     let target: number | null = null;
     for (const index of stepCountsRef.current.keys()) {
-      if (disabledSteps.has(index)) {
+      if (
+        [...(disabledGettersRef.current.get(index) ?? [])].some(getIsDisabled =>
+          getIsDisabled(),
+        )
+      ) {
         continue;
       }
       if (
@@ -518,7 +520,7 @@ export function Stepper({
     if (!showsControls || onStepClick == null) {
       return null;
     }
-    const target = adjacentEnabledStep(delta);
+    const targetAtRender = adjacentEnabledStep(delta);
     const name =
       delta === -1
         ? t('@astryx.stepper.previousStep')
@@ -534,10 +536,14 @@ export function Stepper({
             xstyle={rtlStyles.mirror}
           />
         }
-        isDisabled={target == null}
+        isDisabled={targetAtRender == null}
         onClick={() => {
-          if (target != null) {
-            onStepClick(target);
+          // A custom registration may read state that changed without causing
+          // Stepper to render. Resolve again at activation so a target that
+          // became disabled cannot be selected from the render-time snapshot.
+          const currentTarget = adjacentEnabledStep(delta);
+          if (currentTarget != null) {
+            onStepClick(currentTarget);
           }
         }}
       />
@@ -545,35 +551,37 @@ export function Stepper({
   };
 
   return (
-    <StepperContext value={ctxValue}>
-      <div
-        {...mergeProps(
-          themeProps('stepper-frame'),
-          stylex.props(styles.frame, xstyle),
-          className,
-          style,
-        )}>
-        {list}
-        {showsSummary && (
-          <div
-            {...mergeProps(
-              themeProps('stepper-summary'),
-              stylex.props(styles.summary),
-            )}>
-            {control(-1)}
-            {/* The list above still carries every step's name and status, so
+    <StepperContext value={publicCtxValue}>
+      <StepperInternalContext value={internalCtxValue}>
+        <div
+          {...mergeProps(
+            themeProps('stepper-frame'),
+            stylex.props(styles.frame, xstyle),
+            className,
+            style,
+          )}>
+          {list}
+          {showsSummary && (
+            <div
+              {...mergeProps(
+                themeProps('stepper-summary'),
+                stylex.props(styles.summary),
+              )}>
+              {control(-1)}
+              {/* The list above still carries every step's name and status, so
                 this visual row is hidden from assistive technology to avoid
                 announcing the current step twice. hiddenLabel withholds the
                 entire row above, leaving the accessible list as a bare track. */}
-            <div
-              ref={setSummarySlot}
-              aria-hidden="true"
-              {...stylex.props(styles.summaryBody)}
-            />
-            {control(1)}
-          </div>
-        )}
-      </div>
+              <div
+                ref={setSummarySlot}
+                aria-hidden="true"
+                {...stylex.props(styles.summaryBody)}
+              />
+              {control(1)}
+            </div>
+          )}
+        </div>
+      </StepperInternalContext>
     </StepperContext>
   );
 }
