@@ -101,8 +101,8 @@
   "dependencies": {
     "commander": "^12.1.0",
     "jiti": "^2.7.0",
-    "jscodeshift": "^17.3.0",
-    "zod": "^4.4.3"
+    "jscodeshift": "^17.4.0",
+    "zod": "^4.5.4"
   },
   "peerDependencies": {
     "@astryxdesign/charts": "*",
