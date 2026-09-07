@@ -21,6 +21,7 @@ const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 const load = relative => yaml.parse(read(relative));
 const ci = load('.github/workflows/ci.yml');
 const lint = load('.github/workflows/lint.yml');
+const prComment = load('.github/workflows/pr-comment.yml');
 const TOOLING_FALSE = "needs.check-scope.outputs.tooling_only != 'true'";
 const TOOLING_TRUE = "needs.check-scope.outputs.tooling_only == 'true'";
 
@@ -124,5 +125,21 @@ describe('Node-tooling CI routing', () => {
     ).run;
     expect(buildJoin).toContain('needs.build-storybook.result');
     expect(buildJoin).toContain('needs.build-sandbox.result');
+  });
+
+  it('keeps privileged preview publication off the tooling lane', () => {
+    expect(prComment.jobs.resolve.outputs.tooling_only).toContain(
+      'steps.identity.outputs.tooling_only',
+    );
+    for (const name of ['invalidate', 'deploy-preview', 'comment']) {
+      expect(prComment.jobs[name].if, name).toContain(
+        "needs.resolve.outputs.tooling_only != 'true'",
+      );
+    }
+    for (const name of ['spec-only-visual', 'spec-only-reconcile']) {
+      expect(prComment.jobs[name].if, name).toContain(
+        "needs.resolve.outputs.tooling_only == 'true'",
+      );
+    }
   });
 });
