@@ -4,8 +4,8 @@
 
 /**
  * @file useResizable.ts
- * @input Resize configuration (defaultSize, minSize, maxSize, legacy pixel
- *   aliases, snaps) and collapse configuration (collapsible,
+ * @input Resize configuration (defaultSize, minSize, maxSize, snaps) and
+ *   collapse configuration (collapsible,
  *   defaultIsCollapsed, isCollapsed)
  * @output Hook return: size, isCollapsed, collapse/expand/resize methods, props for handle
  * @position Public hook; consumed by layout components via `resizable` prop
@@ -29,19 +29,11 @@ import type {ResizableSize} from './utils';
 // Types
 // =============================================================================
 
-/**
- * The minimum, in one of two spellings. Exactly one may be supplied: the union
- * makes passing both a type error, so a migration cannot leave a stale
- * deprecated value shadowing the new one (AST-010 API4).
- */
-export type ResizableMinConfig =
-  | {minSize?: ResizableSize; minSizePx?: never}
-  | {minSize?: never; minSizePx?: number};
+/** Minimum size configuration. */
+export type ResizableMinConfig = {minSize?: ResizableSize};
 
-/** The maximum, in one of two spellings. See {@link ResizableMinConfig}. */
-export type ResizableMaxConfig =
-  | {maxSize?: ResizableSize; maxSizePx?: never}
-  | {maxSize?: never; maxSizePx?: number};
+/** Maximum size configuration. */
+export type ResizableMaxConfig = {maxSize?: ResizableSize};
 
 export type ResizableDirection = 'horizontal' | 'vertical';
 
@@ -315,9 +307,6 @@ const RESIZABLE_SIZE_GUIDANCE =
   'Use a non-negative number of pixels, an exact "Npx" string, an exact ' +
   '"N%" string from 0% to 100%, pixel(value), or ' +
   'percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}).';
-const LEGACY_PIXEL_GUIDANCE = 'Use a non-negative number of pixels.';
-const LEGACY_MAX_PIXEL_GUIDANCE =
-  'Use a non-negative number of pixels or explicit Infinity.';
 
 /** Parsed, validated input. */
 type ParsedSize =
@@ -406,22 +395,6 @@ function parseSize(value: unknown): ParsedSize | null {
       : {kind: 'px', value: pixelValue};
   }
   return null;
-}
-
-function parseLegacyPixel(
-  value: unknown,
-  allowInfinity: boolean,
-): ParsedSize | null {
-  if (allowInfinity && value === Infinity) {
-    return {kind: 'px', value};
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value) && value >= 0 ? {kind: 'px', value} : null;
-  }
-  // Preserve the released runtime compatibility for untyped callers. The
-  // public aliases remain number-only, but exact atomic strings worked before
-  // they were deprecated and continue to resolve through the same fast path.
-  return typeof value === 'string' ? parseSizeString(value) : null;
 }
 
 /** Whether this parsed value must be recomputed when its basis changes. */
@@ -513,8 +486,8 @@ function resolveBound(
   if (raw === undefined) {
     return fallback;
   }
-  // Preserve the released explicit unbounded maximum on both the unified and
-  // deprecated spellings. Other roles still reject non-finite numbers.
+  // Preserve the released explicit unbounded maximum. Other roles still
+  // reject non-finite numbers.
   if (raw === Infinity && fallback === Infinity) {
     return Infinity;
   }
@@ -576,8 +549,6 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     defaultSize,
     minSize,
     maxSize,
-    minSizePx,
-    maxSizePx,
     containerRef,
     direction = 'horizontal',
     collapsible = false,
@@ -592,24 +563,12 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   const emptySnapsRef = useRef<number[]>([]);
   const snaps = configuredSnaps ?? emptySnapsRef.current;
 
-  // The unified prop wins over its deprecated alias. The types make supplying
-  // both an error, so reaching here means untyped JavaScript, an `any`, or a
-  // spread — exactly the case where a stale alias hidden in an object would
-  // otherwise silently beat the explicit migration target.
-  const hasUnifiedMin = minSize !== undefined;
-  const hasUnifiedMax = maxSize !== undefined;
-  const minConflict = hasUnifiedMin && minSizePx !== undefined;
-  const maxConflict = hasUnifiedMax && maxSizePx !== undefined;
-  const rawMin = hasUnifiedMin ? minSize : minSizePx;
-  const rawMax = hasUnifiedMax ? maxSize : maxSizePx;
+  const rawMin = minSize;
+  const rawMax = maxSize;
 
   const parsedDefault = parseSize(defaultSize);
-  const parsedMin = hasUnifiedMin
-    ? parseSize(minSize)
-    : parseLegacyPixel(minSizePx, false);
-  const parsedMax = hasUnifiedMax
-    ? parseSize(maxSize)
-    : parseLegacyPixel(maxSizePx, true);
+  const parsedMin = parseSize(minSize);
+  const parsedMax = parseSize(maxSize);
   const hasContainer = containerRef != null;
   const persisted = autoSaveId ? loadPersistedState(autoSaveId) : null;
   const initialDefaultRef = useRef<{px: number; isFinal: boolean} | null>(null);
@@ -771,8 +730,6 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   const didWarnMaxRef = useRef(false);
   const didWarnDefaultRef = useRef(false);
   const didWarnInvertedRef = useRef(false);
-  const didWarnMinAliasRef = useRef(false);
-  const didWarnMaxAliasRef = useRef(false);
 
   // Bounds re-resolve from the live basis on every render — that is the whole
   // point of a percentage bound — and clamp the pixel selection below.
@@ -781,8 +738,8 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     parsedMin,
     basis,
     DEFAULT_MIN,
-    hasUnifiedMin ? 'minSize' : 'minSizePx',
-    hasUnifiedMin ? RESIZABLE_SIZE_GUIDANCE : LEGACY_PIXEL_GUIDANCE,
+    'minSize',
+    RESIZABLE_SIZE_GUIDANCE,
     didWarnMinRef,
   );
   const resolvedMax = resolveBound(
@@ -790,8 +747,8 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     parsedMax,
     basis,
     Infinity,
-    hasUnifiedMax ? 'maxSize' : 'maxSizePx',
-    hasUnifiedMax ? RESIZABLE_SIZE_GUIDANCE : LEGACY_MAX_PIXEL_GUIDANCE,
+    'maxSize',
+    RESIZABLE_SIZE_GUIDANCE,
     didWarnMaxRef,
   );
 
@@ -932,27 +889,6 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     },
     [isControlled],
   );
-
-  // Configuration warnings live in an effect, not in render: render runs twice
-  // under StrictMode and must stay free of side effects.
-  useEffect(() => {
-    if (minConflict && !didWarnMinAliasRef.current) {
-      didWarnMinAliasRef.current = true;
-      devWarn(
-        'useResizable',
-        'both `minSize` and `minSizePx` were supplied. `minSize` wins; the ' +
-          'deprecated `minSizePx` is ignored.',
-      );
-    }
-    if (maxConflict && !didWarnMaxAliasRef.current) {
-      didWarnMaxAliasRef.current = true;
-      devWarn(
-        'useResizable',
-        'both `maxSize` and `maxSizePx` were supplied. `maxSize` wins; the ' +
-          'deprecated `maxSizePx` is ignored.',
-      );
-    }
-  }, [minConflict, maxConflict]);
 
   useEffect(() => {
     if (resolvedMin > resolvedMax && !didWarnInvertedRef.current) {
