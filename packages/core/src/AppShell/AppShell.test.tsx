@@ -437,6 +437,54 @@ describe('AppShell', () => {
     expect(window.matchMedia).toHaveBeenCalledWith('(width < 1280px)');
   });
 
+  it('resolves the point of the NEAREST Theme when providers nest', () => {
+    const outer = {
+      ...defineTheme({
+        name: 'app-shell-nested-outer',
+        adaptations: {widthBreakpoints: {md: 700}},
+      }),
+      __built: true as const,
+    };
+    const inner = {
+      ...defineTheme({
+        name: 'app-shell-nested-inner',
+        adaptations: {widthBreakpoints: {md: 900}},
+      }),
+      __built: true as const,
+    };
+
+    render(
+      <Theme theme={outer}>
+        <Theme theme={inner}>
+          <AppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'md'}}>
+            <div>Content</div>
+          </AppShell>
+        </Theme>
+      </Theme>,
+    );
+
+    expect(window.matchMedia).toHaveBeenCalledWith('(width < 900px)');
+    expect(window.matchMedia).not.toHaveBeenCalledWith('(width < 700px)');
+  });
+
+  it('uses the default points for a theme carrying no adaptation metadata', () => {
+    const legacy = {
+      name: 'app-shell-legacy-theme',
+      tokens: {},
+      __built: true as const,
+    } as unknown as ReturnType<typeof defineTheme>;
+
+    render(
+      <Theme theme={legacy}>
+        <AppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'lg'}}>
+          <div>Content</div>
+        </AppShell>
+      </Theme>,
+    );
+
+    expect(window.matchMedia).toHaveBeenCalledWith('(width < 1024px)');
+  });
+
   it('does not enter mobile mode when mobileNav breakpoint is none', () => {
     render(
       <AppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'none'}}>
