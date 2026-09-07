@@ -86,38 +86,38 @@ export const docs = {
     targets: [{className: 'astryx-bottom-sheet', visualProps: []}],
   },
   description:
-    "A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, optional drag-to-resize snap points, and purpose-controlled dismissal. A standalone sheet owns a native <dialog>; inside BottomSheetSwitcher it renders a panel in the switcher's shared dialog. In both modes, ref and shared DOM props target the visual panel <div>.",
+    "A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, optional drag-to-resize snap points, and purpose-controlled dismissal. A standalone sheet owns a native <dialog>; inside BottomSheetSwitcher or BottomSheetStack it renders a panel in the controller's shared dialog. In all modes, ref and shared DOM props target the visual panel <div>.",
   props: [
     {
       name: 'isOpen',
       type: 'boolean',
       description:
-        'Whether a standalone sheet is open. Fully controlled; pair with onOpenChange. Omit inside BottomSheetSwitcher.',
+        'Whether a standalone sheet is open. Fully controlled; pair with onOpenChange. Omit inside BottomSheetSwitcher or BottomSheetStack.',
     },
     {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description:
-        'For a standalone sheet, called when it requests an open-state change. Automatic calls follow purpose: info dismisses on Escape, scrim click, or swipe; form dismisses on Escape only; required never dismisses implicitly. Omit inside BottomSheetSwitcher.',
+        'For a standalone sheet, called when it requests an open-state change. Automatic calls follow purpose: info dismisses on Escape, scrim click, or swipe; form dismisses on Escape only; required never dismisses implicitly. Omit inside BottomSheetSwitcher or BottomSheetStack.',
     },
     {
       name: 'finalFocusRef',
       type: 'RefObject<HTMLElement | null>',
       description:
-        'Optional explicit focus-return target for a standalone sheet. Use when the opener can remount or the active element is not a reliable trigger, such as an adaptive presentation switch. Omit inside BottomSheetSwitcher.',
+        'Optional explicit focus-return target for a standalone sheet. Use when the opener can remount or the active element is not a reliable trigger, such as an adaptive presentation switch. Omit inside BottomSheetSwitcher or BottomSheetStack.',
     },
     {
       name: 'purpose',
       type: "'required' | 'form' | 'info'",
       description:
-        "Controls implicit dismissal behavior, matching Dialog. info allows Escape, scrim click, and swipe-to-dismiss. form protects entered data by blocking scrim click and swipe while allowing Escape. required blocks every implicit dismissal path and uses role='alertdialog'. Explicit controls may still update the controlled state. Works for standalone and BottomSheetSwitcher-managed sheets.",
+        "Controls implicit dismissal behavior, matching Dialog. info allows Escape, scrim click, and swipe-to-dismiss. form protects entered data by blocking scrim click and swipe while allowing Escape. required blocks every implicit dismissal path and uses role='alertdialog'. Explicit controls may still update the controlled state. Works for standalone, BottomSheetSwitcher-managed, and BottomSheetStack-managed sheets.",
       default: "'info'",
     },
     {
       name: 'sheetId',
       type: 'string',
       description:
-        'Unique ID for this sheet inside BottomSheetSwitcher. The switcher opens it when activeSheet matches. Omit isOpen and onOpenChange when sheetId is used.',
+        'Unique ID for this sheet inside BottomSheetSwitcher or BottomSheetStack. A switcher opens it when activeSheet matches; a stack presents it at its position in openSheetIds. Omit isOpen and onOpenChange when sheetId is used.',
     },
     {
       name: 'label',
@@ -150,14 +150,14 @@ export const docs = {
       name: 'hasScrim',
       type: 'boolean',
       description:
-        "For a standalone BottomSheet, whether to render a scrim, the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss when purpose='info', with the background inert. false uses show() with no scrim, leaving the page behind interactive and scrollable. For a multi-step flow, configure hasScrim on BottomSheetSwitcher instead; it owns one shared dialog across every child.",
+        "For a standalone BottomSheet, whether to render a scrim, the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss when purpose='info', with the background inert. false uses show() with no scrim, leaving the page behind interactive and scrollable. For a controlled flow, configure hasScrim on BottomSheetSwitcher or BottomSheetStack instead; the controller owns one shared dialog across every child.",
       default: 'true',
     },
   ],
   usage: {
     anatomy,
     description:
-      'A mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; use BottomSheetSwitcher for multi-step flows.',
+      'A mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; use BottomSheetSwitcher for replacing steps and BottomSheetStack for visible drill-down layers.',
     bestPractices: [
       {
         guidance: true,
@@ -177,7 +177,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          "Don't make the sheet content overly long. Consider breaking it into steps and using Bottom Sheet Switcher.",
+          "Don't make the sheet content overly long. Use Bottom Sheet Switcher when steps replace one another, or Bottom Sheet Stack when a detail sheet should preserve visible context beneath it.",
       },
     ],
   },
@@ -309,7 +309,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      'Mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; use BottomSheetSwitcher for multi-step flows.',
+      'Mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; use BottomSheetSwitcher for replacing steps and BottomSheetStack for visible drill-down layers.',
     bestPractices: [
       {
         guidance: true,
@@ -329,7 +329,7 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          "Don't make the sheet content overly long. Consider breaking it into steps and using Bottom Sheet Switcher.",
+          "Don't make the sheet content overly long. Use Bottom Sheet Switcher when steps replace one another, or Bottom Sheet Stack when a detail sheet should preserve visible context beneath it.",
       },
     ],
   },

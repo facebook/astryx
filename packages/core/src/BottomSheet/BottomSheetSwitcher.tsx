@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheetSwitcher.tsx
- * @input Uses React context, StyleX, theme tokens, focus/scroll-lock hooks, BottomSheetSwitcherContext
+ * @input Uses React context, StyleX, theme tokens, focus/scroll-lock hooks, sheet controller contexts
  * @output Exports BottomSheetSwitcher and BottomSheetSwitcherProps
  * @position Core switcher for mutually exclusive BottomSheet flows
  *
@@ -22,6 +22,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetStackContext.ts
  * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.doc.mjs
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx
@@ -53,6 +54,7 @@ import {
 } from '../hooks';
 import {composeEventHandlers, mergeProps} from '../utils';
 import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
+import {BottomSheetStackContext} from './BottomSheetStackContext';
 import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
@@ -618,23 +620,25 @@ export function BottomSheetSwitcher({
     (props['aria-labelledby'] == null ? activeLabel : undefined);
 
   return (
-    <BottomSheetSwitcherContext value={contextValue}>
-      <dialog
-        {...props}
-        {...dialogPresentationProps}
-        ref={useMergedRefs(ref, dialogRef, containerRef)}
-        aria-label={ariaLabel}
-        aria-modal={isModal ? 'true' : undefined}
-        onCancel={composeEventHandlers(onCancel, handleCancel)}
-        onClick={composeEventHandlers(onClick, handleClick)}
-        onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}
-        {...(activeSheetPurpose === 'required'
-          ? {role: 'alertdialog'}
-          : undefined)}>
-        {children}
-        <BottomSheetEdgeTint />
-      </dialog>
-    </BottomSheetSwitcherContext>
+    <BottomSheetStackContext value={null}>
+      <BottomSheetSwitcherContext value={contextValue}>
+        <dialog
+          {...props}
+          {...dialogPresentationProps}
+          ref={useMergedRefs(ref, dialogRef, containerRef)}
+          aria-label={ariaLabel}
+          aria-modal={isModal ? 'true' : undefined}
+          onCancel={composeEventHandlers(onCancel, handleCancel)}
+          onClick={composeEventHandlers(onClick, handleClick)}
+          onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}
+          {...(activeSheetPurpose === 'required'
+            ? {role: 'alertdialog'}
+            : undefined)}>
+          {children}
+          <BottomSheetEdgeTint />
+        </dialog>
+      </BottomSheetSwitcherContext>
+    </BottomSheetStackContext>
   );
 }
 
