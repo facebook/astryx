@@ -1126,7 +1126,6 @@ describe('TextArea disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-textarea');
     expect(root).toHaveAttribute('data-disabled', 'disabled');
-    expect(root).toHaveClass('disabled');
   });
 
   it('omits data-disabled when enabled, like status does', () => {

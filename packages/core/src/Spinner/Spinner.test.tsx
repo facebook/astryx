@@ -200,7 +200,9 @@ describe('Spinner', () => {
       // the bug a size-variant key exists to avoid.
       expect(
         cssFor({spinner: {'size:xl': {'--spinner-diameter': '2.5rem'}}}),
-      ).toContain('.astryx-spinner.xl {\n    --spinner-diameter: 2.5rem;');
+      ).toContain(
+        '.astryx-spinner[data-size="xl"] {\n    --spinner-diameter: 2.5rem;',
+      );
     });
 
     it('scopes a themed color to that shade variant', () => {
@@ -209,7 +211,7 @@ describe('Spinner', () => {
           spinner: {'shade:subtle': {'--spinner-track-color': 'transparent'}},
         }),
       ).toContain(
-        '.astryx-spinner.subtle {\n    --spinner-track-color: transparent;',
+        '.astryx-spinner[data-shade="subtle"] {\n    --spinner-track-color: transparent;',
       );
     });
 

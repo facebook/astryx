@@ -2204,9 +2204,7 @@ describe('DateTimeInput', () => {
         .closest('.astryx-date-time-input-time-segment');
 
       expect(date).toHaveAttribute('data-size', 'lg');
-      expect(date).toHaveClass('lg');
       expect(time).toHaveAttribute('data-size', 'lg');
-      expect(time).toHaveClass('lg');
     });
 
     it('reflects status on both segments, mirroring the root', () => {
@@ -2255,7 +2253,7 @@ describe('DateTimeInput', () => {
         components: {
           'date-time-input-date-segment': {
             base: {blockSize: 'var(--size-element-lg)'},
-            lg: {paddingInline: 'var(--spacing-4)'},
+            'size:lg': {paddingInline: 'var(--spacing-4)'},
           },
           'date-time-input-time-segment': {
             base: {blockSize: 'var(--size-element-lg)'},
@@ -2265,7 +2263,9 @@ describe('DateTimeInput', () => {
       const css = generateThemeTestCSS(theme);
 
       expect(css).toContain('.astryx-date-time-input-date-segment {');
-      expect(css).toContain('.astryx-date-time-input-date-segment.lg');
+      expect(css).toContain(
+        '.astryx-date-time-input-date-segment[data-size="lg"]',
+      );
       expect(css).toContain('.astryx-date-time-input-time-segment {');
       expect(css).toContain('block-size: var(--size-element-lg)');
       expect(css).toContain('padding-inline: var(--spacing-4)');
@@ -2327,7 +2327,6 @@ describe('DateTimeInput', () => {
       const themeTargetClasses = new Set([
         'astryx-date-time-input-toggle-icon',
         'astryx-date-time-input-clock-icon',
-        'collapsed',
         'expanded',
       ]);
       const styleClasses = (el: HTMLElement) =>
@@ -2359,7 +2358,9 @@ describe('DateTimeInput', () => {
       const css = generateThemeTestCSS(theme);
 
       expect(css).toContain('.astryx-date-time-input-toggle-icon {');
-      expect(css).toContain('.astryx-date-time-input-toggle-icon.expanded');
+      expect(css).toContain(
+        '.astryx-date-time-input-toggle-icon[data-state="expanded"]',
+      );
       expect(css).toContain('.astryx-date-time-input-clock-icon {');
       expect(css).toContain('width: 14px');
       expect(css).toContain('color: var(--color-icon-primary)');
@@ -2374,7 +2375,6 @@ describe('DateTimeInput disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-date-time-input');
     expect(root).toHaveAttribute('data-disabled', 'disabled');
-    expect(root).toHaveClass('disabled');
   });
 
   it('omits data-disabled when enabled, like status does', () => {

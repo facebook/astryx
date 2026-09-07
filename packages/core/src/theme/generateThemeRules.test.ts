@@ -152,10 +152,10 @@ describe('generateThemeRules', () => {
 
   // --- Component overrides ---
 
-  it('includes .astryx-heading.level-* rules for all 6 levels', () => {
+  it('includes data-level rules on the stable heading target for all 6 levels', () => {
     for (let level = 1; level <= 6; level++) {
       const rule = rules.find(r =>
-        r.includes(`.astryx-heading.level-${level}`),
+        r.includes(`.astryx-heading[data-level="${level}"]`),
       );
       expect(rule).toBeDefined();
       expect(rule).toContain('font-family');
@@ -167,14 +167,18 @@ describe('generateThemeRules', () => {
 
   it('includes .astryx-text.* rules for all 5 types', () => {
     for (const type of ['body', 'large', 'label', 'code', 'supporting']) {
-      const rule = rules.find(r => r.includes(`.astryx-text.${type}`));
+      const rule = rules.find(r =>
+        r.includes(`.astryx-text[data-type="${type}"]`),
+      );
       expect(rule).toBeDefined();
       expect(rule).toContain(`var(--text-${type}-size)`);
     }
   });
 
   it('includes explicit component overrides', () => {
-    const buttonRule = rules.find(r => r.includes('.astryx-button.secondary'));
+    const buttonRule = rules.find(r =>
+      r.includes('.astryx-button[data-variant="secondary"]'),
+    );
     expect(buttonRule).toBeDefined();
     expect(buttonRule).toContain('light-dark(rgba(5, 54, 89, 0.1)');
   });
@@ -275,12 +279,24 @@ describe('generateThemeRules', () => {
   // --- Prop-level color overrides ---
 
   it('includes color prop overrides for text and heading', () => {
-    expect(rules.some(r => r.includes('.astryx-text.primary'))).toBe(true);
-    expect(rules.some(r => r.includes('.astryx-text.secondary'))).toBe(true);
-    expect(rules.some(r => r.includes('.astryx-heading.primary'))).toBe(true);
-    expect(rules.some(r => r.includes('.astryx-heading.disabled'))).toBe(true);
-    expect(rules.some(r => r.includes('.astryx-text.active'))).toBe(false);
-    expect(rules.some(r => r.includes('.astryx-text.accent'))).toBe(true);
+    expect(
+      rules.some(r => r.includes('.astryx-text[data-color="primary"]')),
+    ).toBe(true);
+    expect(
+      rules.some(r => r.includes('.astryx-text[data-color="secondary"]')),
+    ).toBe(true);
+    expect(
+      rules.some(r => r.includes('.astryx-heading[data-color="primary"]')),
+    ).toBe(true);
+    expect(
+      rules.some(r => r.includes('.astryx-heading[data-color="disabled"]')),
+    ).toBe(true);
+    expect(
+      rules.some(r => r.includes('.astryx-text[data-color="active"]')),
+    ).toBe(false);
+    expect(
+      rules.some(r => r.includes('.astryx-text[data-color="accent"]')),
+    ).toBe(true);
   });
 
   // --- Size-prop overrides (so `size` beats a themed `type`) ---
@@ -288,13 +304,16 @@ describe('generateThemeRules', () => {
   it('emits Text size-prop font-size overrides in the same layer as type rules', () => {
     // Digit-leading sizes are prefixed (size-2xs); word sizes stay bare.
     const sizeRule = rules.find(
-      r => r.includes('.astryx-text.size-2xs') && r.includes('font-size'),
+      r =>
+        r.includes('.astryx-text[data-size="2xs"]') && r.includes('font-size'),
     );
     expect(sizeRule).toBeDefined();
     expect(sizeRule).toContain('var(--font-size-2xs)');
 
     // `xsm` maps to the --font-size-xs token (matches sizeStyles).
-    const xsmRule = rules.find(r => r.includes('.astryx-text.xsm'));
+    const xsmRule = rules.find(r =>
+      r.includes('.astryx-text[data-size="xsm"]'),
+    );
     expect(xsmRule).toBeDefined();
     expect(xsmRule).toContain('var(--font-size-xs)');
 
@@ -319,7 +338,10 @@ describe('generateThemeRules', () => {
     for (const cls of sizes) {
       expect(
         rules.some(
-          r => r.includes(`.astryx-text.${cls}`) && r.includes('font-size'),
+          r =>
+            r.includes(
+              `.astryx-text[data-size="${cls.replace(/^size-/, '')}"]`,
+            ) && r.includes('font-size'),
         ),
       ).toBe(true);
     }
@@ -329,10 +351,13 @@ describe('generateThemeRules', () => {
     // Source order breaks specificity ties within a layer, so the size
     // override must come after the `.astryx-text.<type>` type rule.
     const typeIdx = rules.findIndex(
-      r => r.includes('.astryx-text.supporting') && r.includes('font-size'),
+      r =>
+        r.includes('.astryx-text[data-type="supporting"]') &&
+        r.includes('font-size'),
     );
     const sizeIdx = rules.findIndex(
-      r => r.includes('.astryx-text.size-2xs') && r.includes('font-size'),
+      r =>
+        r.includes('.astryx-text[data-size="2xs"]') && r.includes('font-size'),
     );
     expect(typeIdx).toBeGreaterThanOrEqual(0);
     expect(sizeIdx).toBeGreaterThan(typeIdx);
@@ -356,9 +381,9 @@ describe('generateThemeRules', () => {
     // layer as the type rules (astryx-theme / component block), not the
     // reset-tier prose block.
     const {prose, component} = generateThemeCSS(theme);
-    expect(component).toContain('.astryx-text.size-2xs');
-    expect(component).toContain('.astryx-text.xsm');
-    expect(prose).not.toContain('.astryx-text.size-2xs');
+    expect(component).toContain('.astryx-text[data-size="2xs"]');
+    expect(component).toContain('.astryx-text[data-size="xsm"]');
+    expect(prose).not.toContain('.astryx-text[data-size="2xs"]');
   });
 });
 
@@ -410,10 +435,10 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
 
   it('emits named weight rules after the custom type default', () => {
     const typeIndex = rules.findIndex(rule =>
-      rule.includes('.astryx-heading.hero'),
+      rule.includes('.astryx-heading[data-type="hero"]'),
     );
     const boldIndex = rules.findIndex(rule =>
-      rule.includes('.astryx-heading.bold'),
+      rule.includes('.astryx-heading[data-weight="bold"]'),
     );
 
     expect(typeIndex).toBeGreaterThanOrEqual(0);
@@ -423,8 +448,8 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
 
   it('keeps explicit weight rules in the component theme layer', () => {
     const {component, prose} = generateThemeCSS(theme);
-    expect(component).toContain('.astryx-heading.bold');
-    expect(prose).not.toContain('.astryx-heading.bold');
+    expect(component).toContain('.astryx-heading[data-weight="bold"]');
+    expect(prose).not.toContain('.astryx-heading[data-weight="bold"]');
   });
 
   it('keeps a targeted theme weight rule authoritative', () => {
@@ -439,10 +464,10 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
     });
     const rules = generateThemeRules(authored);
     const typeIndex = rules.findIndex(rule =>
-      rule.includes('.astryx-heading.hero'),
+      rule.includes('.astryx-heading[data-type="hero"]'),
     );
     const boldRules = rules.filter(rule =>
-      rule.includes('.astryx-heading.bold'),
+      rule.includes('.astryx-heading[data-weight="bold"]'),
     );
     const lastBoldIndex = rules.lastIndexOf(boldRules.at(-1) ?? '');
 
@@ -466,7 +491,7 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
     expect(
       rules.some(
         rule =>
-          rule.includes('.astryx-heading.bold') &&
+          rule.includes('.astryx-heading[data-weight="bold"]') &&
           rule.includes('font-weight: var(--font-weight-bold)'),
       ),
     ).toBe(true);
@@ -487,7 +512,7 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
     expect(
       rules.some(
         rule =>
-          rule.includes('.astryx-heading.bold') &&
+          rule.includes('.astryx-heading[data-weight="bold"]') &&
           rule.includes('font-weight: var(--font-weight-bold)'),
       ),
     ).toBe(true);
@@ -511,8 +536,8 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
       },
     });
     const css = generateOnMediaCSS(themed);
-    const typeIndex = css.indexOf('.astryx-heading.hero');
-    const boldIndex = css.lastIndexOf('.astryx-heading.bold');
+    const typeIndex = css.indexOf('.astryx-heading[data-type="hero"]');
+    const boldIndex = css.lastIndexOf('.astryx-heading[data-weight="bold"]');
 
     expect(typeIndex).toBeGreaterThanOrEqual(0);
     expect(boldIndex).toBeGreaterThan(typeIndex);
@@ -536,8 +561,8 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
       },
     });
     const css = generateOnMediaCSS(themed);
-    const typeIndex = css.indexOf('.astryx-heading.hero');
-    const boldIndex = css.lastIndexOf('.astryx-heading.bold');
+    const typeIndex = css.indexOf('.astryx-heading[data-type="hero"]');
+    const boldIndex = css.lastIndexOf('.astryx-heading[data-weight="bold"]');
 
     expect(typeIndex).toBeGreaterThanOrEqual(0);
     expect(boldIndex).toBeGreaterThan(typeIndex);
@@ -565,9 +590,9 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
       ['light', 'body'],
     ] as const) {
       const surfacePrefix = `:is([data-astryx-media="${surface}"])`;
-      const typeSelector = `${surfacePrefix} :is(.astryx-text.${type})`;
-      const colorSelector = `${surfacePrefix} :is(.astryx-text.primary)`;
-      const sizeSelector = `${surfacePrefix} :is(.astryx-text.sm)`;
+      const typeSelector = `${surfacePrefix} :is(.astryx-text[data-type="${type}"])`;
+      const colorSelector = `${surfacePrefix} :is(.astryx-text[data-color="primary"])`;
+      const sizeSelector = `${surfacePrefix} :is(.astryx-text[data-size="sm"])`;
       const typeIndex = css.indexOf(typeSelector);
 
       expect(typeIndex).toBeGreaterThanOrEqual(0);
@@ -612,19 +637,19 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
     );
     const rootGuard = blocks.find(block => block.startsWith('@scope '));
 
-    expect(fineBlock).toContain('.astryx-heading.level-2');
+    expect(fineBlock).toContain('.astryx-heading[data-level="2"]');
     expect(fineBlock).not.toContain('font-weight: 800');
     expect(rootGuard).toContain(
-      '.astryx-heading.normal { font-weight: var(--font-weight-normal); }',
+      '.astryx-heading[data-weight="normal"] { font-weight: var(--font-weight-normal); }',
     );
     expect(rootGuard).toContain(
-      '.astryx-heading.medium { font-weight: var(--font-weight-medium); }',
+      '.astryx-heading[data-weight="medium"] { font-weight: var(--font-weight-medium); }',
     );
     expect(rootGuard).toContain(
-      '.astryx-heading.semibold { font-weight: var(--font-weight-semibold); }',
+      '.astryx-heading[data-weight="semibold"] { font-weight: var(--font-weight-semibold); }',
     );
     expect(rootGuard).toContain(
-      '.astryx-heading.bold { font-weight: var(--font-weight-bold); }',
+      '.astryx-heading[data-weight="bold"] { font-weight: var(--font-weight-bold); }',
     );
     expect(blocks.indexOf(rootGuard!)).toBeGreaterThan(
       blocks.indexOf(fineBlock!),
@@ -669,7 +694,7 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
     const broadLevelBlock = blocks.find(
       block =>
         block.startsWith('@media (prefers-contrast: more)') &&
-        block.includes('.astryx-heading.level-2'),
+        block.includes('.astryx-heading[data-level="2"]'),
     );
     const rootGuard = blocks.find(block => block.startsWith('@scope '));
     const coarseGuard = blocks
@@ -678,9 +703,11 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
 
     expect(broadLevelBlock).not.toContain('font-weight: 800');
     expect(rootGuard).toContain(
-      '.astryx-heading.bold { font-weight: var(--font-weight-bold); }',
+      '.astryx-heading[data-weight="bold"] { font-weight: var(--font-weight-bold); }',
     );
-    expect(coarseGuard).toContain('.astryx-heading.bold { font-weight: 800; }');
+    expect(coarseGuard).toContain(
+      '.astryx-heading[data-weight="bold"] { font-weight: 800; }',
+    );
     expect(blocks.indexOf(rootGuard!)).toBeGreaterThan(
       blocks.indexOf(broadLevelBlock!),
     );
@@ -757,8 +784,10 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
     );
     const rootGuard = blocks.find(block => block.startsWith('@scope '));
 
-    expect(fineBlock).toContain('.astryx-heading.level-2');
-    expect(rootGuard).toContain('.astryx-heading.bold { font-weight: 900; }');
+    expect(fineBlock).toContain('.astryx-heading[data-level="2"]');
+    expect(rootGuard).toContain(
+      '.astryx-heading[data-weight="bold"] { font-weight: 900; }',
+    );
     expect(blocks.indexOf(rootGuard!)).toBeGreaterThan(
       blocks.indexOf(fineBlock!),
     );
@@ -790,12 +819,12 @@ describe('generateThemeRules with an explicit Heading weight prop', () => {
     const rootGuard = blocks.find(block => block.startsWith('@scope '));
 
     expect(coarseBlocks).toHaveLength(2);
-    expect(coarseBlocks[0]).toContain('.astryx-heading.hero');
+    expect(coarseBlocks[0]).toContain('.astryx-heading[data-type="hero"]');
     expect(rootGuard).toContain(
-      '.astryx-heading.bold { font-weight: var(--font-weight-bold); }',
+      '.astryx-heading[data-weight="bold"] { font-weight: var(--font-weight-bold); }',
     );
     expect(coarseBlocks[1]).toContain(
-      '.astryx-heading.bold { font-weight: 800; }',
+      '.astryx-heading[data-weight="bold"] { font-weight: 800; }',
     );
     expect(blocks.at(-1)).toBe(coarseBlocks[1]);
   });
@@ -962,7 +991,9 @@ describe('derived var expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.astryx-avatar-fallback.sm'));
+    const rule = rules.find(r =>
+      r.includes('.astryx-avatar-fallback[data-size="sm"]'),
+    );
     expect(rule).toBeDefined();
     expect(rule).toContain('font-size: 9px');
     // Direct class target now — no internal derived var.
@@ -1012,7 +1043,9 @@ describe('derived var expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.astryx-card.muted'));
+    const rule = rules.find(r =>
+      r.includes('.astryx-card[data-variant="muted"]'),
+    );
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 16px');
     expect(rule).toContain('--_card-radius: 16px');

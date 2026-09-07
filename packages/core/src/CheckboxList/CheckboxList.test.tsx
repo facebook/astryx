@@ -420,7 +420,10 @@ describe('CheckboxList', () => {
         <CheckboxListItem label="Option A" value="a" />
       </CheckboxList>,
     );
-    expect(screen.getByRole('listitem').className).toContain('spacious');
+    expect(screen.getByRole('listitem')).toHaveAttribute(
+      'data-density',
+      'spacious',
+    );
   });
 
   it('supports data-testid on CheckboxListItem', () => {

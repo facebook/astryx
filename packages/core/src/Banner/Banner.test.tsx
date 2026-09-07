@@ -430,7 +430,7 @@ describe('Banner', () => {
 
   it("carries the 'banner-icon' theme target on the default status icon glyph", () => {
     // Theme overrides for 'banner-icon' + 'status:X' compile to
-    // '.astryx-banner-icon.<status>' (parseStyleKey). The target must sit on
+    // '.astryx-banner-icon[data-status="<status>"]' (parseStyleKey). The target must sit on
     // the <Icon> span itself so those same-element rules in
     // @layer astryx-theme beat the Icon's own color variant.
     const statuses = ['info', 'warning', 'error', 'success'] as const;
@@ -439,7 +439,7 @@ describe('Banner', () => {
         <Banner status={status} title={`${status} banner`} />,
       );
       const glyph = container.querySelector(
-        `.astryx-icon.astryx-banner-icon.${status}`,
+        `.astryx-icon.astryx-banner-icon[data-status="${status}"]`,
       );
       expect(glyph).not.toBeNull();
       expect(glyph).toHaveAttribute('data-status', status);
@@ -451,12 +451,14 @@ describe('Banner', () => {
   });
 
   it('keeps the color variant on the theme-target element (regression pin for #4166)', () => {
-    // Pre-fix, '.astryx-banner-icon.info' matched the layout wrapper while
+    // Pre-fix, '.astryx-banner-icon[data-status="info"]' matched the layout wrapper while
     // the color variant (data-color="accent") sat on an inner span that a
     // theme override could never reach. Target and paint now share one
     // element.
     const {container} = render(<Banner status="info" title="Info" />);
-    const target = container.querySelector('.astryx-banner-icon.info');
+    const target = container.querySelector(
+      '.astryx-banner-icon[data-status="info"]',
+    );
     expect(target).toHaveAttribute('data-color', 'accent');
   });
 
@@ -528,11 +530,8 @@ describe('Banner', () => {
             />,
           );
           const frame = container.firstElementChild;
-          expect(frame).toHaveClass(
-            'astryx-banner-frame',
-            containerType,
-            elevation,
-          );
+          expect(frame).toHaveClass('astryx-banner-frame');
+          expect(frame).not.toHaveClass(containerType, elevation);
           expect(frame).toHaveAttribute('data-container', containerType);
           expect(frame).toHaveAttribute('data-elevation', elevation);
           expect(frame?.firstElementChild).toHaveClass('astryx-banner');
@@ -558,7 +557,9 @@ describe('Banner', () => {
       });
       const {component: css} = generateThemeCSS(theme);
 
-      expect(css).toContain('.astryx-banner-frame.card.high');
+      expect(css).toContain(
+        '.astryx-banner-frame[data-container="card"][data-elevation="high"]',
+      );
       expect(css).toContain('box-shadow: var(--shadow-high)');
       expect(css).toContain('border-radius: var(--radius-element)');
       expect(css).not.toContain(':has(');

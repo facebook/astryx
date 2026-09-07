@@ -3185,7 +3185,9 @@ describe('Selector indicator (chevron) icon theme target', () => {
     expect(css).toContain('.astryx-selector-indicator-icon {');
     expect(css).toContain('width: 14px');
     expect(css).toContain('height: 14px');
-    expect(css).toContain('.astryx-selector-indicator-icon.expanded');
+    expect(css).toContain(
+      '.astryx-selector-indicator-icon[data-state="expanded"]',
+    );
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -3599,7 +3601,7 @@ describe('Selector disabled state theme target', () => {
     );
     const root = getSelectorRoot(container);
     expect(root).not.toHaveAttribute('data-disabled');
-    expect(root).not.toHaveClass('disabled');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 
   it('exposes the disabled state so a theme can key on it', () => {
@@ -3612,7 +3614,7 @@ describe('Selector disabled state theme target', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-selector.disabled');
+    expect(css).toContain('.astryx-selector[data-disabled="disabled"]');
     expect(css).toContain('opacity: 0.4');
   });
 });
@@ -3816,7 +3818,7 @@ describe('Selector option-row theme target', () => {
     expect(options).toHaveLength(3);
     for (const option of options) {
       expect(option).toHaveClass('astryx-selector-option-row');
-      expect(option).toHaveClass('lg');
+      expect(option).toHaveAttribute('data-size', 'lg');
       expect(option).toHaveAttribute('data-size', 'lg');
     }
   });
@@ -3909,9 +3911,13 @@ describe('Selector option-row theme target', () => {
     });
     const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-selector-option-row {');
-    expect(css).toContain('.astryx-selector-option-row.selected');
-    expect(css).toContain('.astryx-selector-option-row.disabled');
-    expect(css).toContain('.astryx-selector-option-row.md');
+    expect(css).toContain(
+      '.astryx-selector-option-row[data-selected="selected"]',
+    );
+    expect(css).toContain(
+      '.astryx-selector-option-row[data-disabled="disabled"]',
+    );
+    expect(css).toContain('.astryx-selector-option-row[data-size="md"]');
   });
 });
 

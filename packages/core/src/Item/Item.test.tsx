@@ -442,7 +442,10 @@ describe('Item', () => {
   it('renders with balanced density by default', () => {
     render(<Item label="Item" data-testid="item" />);
     expect(screen.getByTestId('item')).toBeInTheDocument();
-    expect(screen.getByTestId('item').className).toContain('balanced');
+    expect(screen.getByTestId('item')).toHaveAttribute(
+      'data-density',
+      'balanced',
+    );
   });
 
   it('renders with compact density', () => {
@@ -453,7 +456,10 @@ describe('Item', () => {
   it('renders with spacious density', () => {
     render(<Item label="Item" density="spacious" data-testid="item" />);
     expect(screen.getByTestId('item')).toBeInTheDocument();
-    expect(screen.getByTestId('item').className).toContain('spacious');
+    expect(screen.getByTestId('item')).toHaveAttribute(
+      'data-density',
+      'spacious',
+    );
   });
 
   // ===========================================================================

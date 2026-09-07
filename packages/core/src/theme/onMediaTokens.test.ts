@@ -140,9 +140,7 @@ describe('generateOnMediaCSS', () => {
   it('emits @scope with [data-astryx-media] token rules', () => {
     const theme = defineTheme({name: 'test'});
     const css = generateOnMediaCSS(theme);
-    expect(css).toContain(
-      '@scope ([data-astryx-theme="test"])',
-    );
+    expect(css).toContain('@scope ([data-astryx-theme="test"])');
     // Same scope boundary as main theme
     expect(css).toContain('to ([data-astryx-theme])');
     expect(css).toContain('[data-astryx-media="dark"]');
@@ -172,7 +170,7 @@ describe('generateOnMediaCSS', () => {
     });
     const css = generateOnMediaCSS(theme);
     expect(css).toContain(
-      ':is([data-astryx-media="dark"]) :is(.astryx-button.secondary)',
+      ':is([data-astryx-media="dark"]) :is(.astryx-button[data-variant="secondary"])',
     );
     expect(css).toContain(
       'background-color: color-mix(in srgb, white 20%, transparent)',

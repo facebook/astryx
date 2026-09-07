@@ -523,6 +523,10 @@ const brandTheme = defineTheme({
           text: 'The `__built: true` flag tells Theme to skip runtime `<style>` injection; the CSS file handles it.',
         },
         {
+          type: 'prose',
+          text: 'After upgrading Astryx across a selector-contract change, rerun `astryx theme build <theme-file>` for every custom prebuilt theme. Deploy the regenerated `.css`, `.js`, `.d.ts`, and optional `.variants.d.ts` together. The runtime intentionally trusts `__built: true` and will not repair stale CSS from an older build.',
+        },
+        {
           type: 'code',
           lang: 'tsx',
           label: 'Using a custom built theme',

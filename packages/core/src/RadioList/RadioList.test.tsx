@@ -15,29 +15,6 @@ import userEvent from '@testing-library/user-event';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
-interface InjectedRule {
-  selector: string;
-  text: string;
-  media: string | null;
-}
-
-function injectedRules(): InjectedRule[] {
-  const walk = (rules: CSSRuleList, condition: string | null): InjectedRule[] =>
-    [...rules].flatMap((rule): InjectedRule[] => {
-      const {selectorText} = rule as CSSStyleRule;
-      if (typeof selectorText === 'string') {
-        return [{selector: selectorText, text: rule.cssText, media: condition}];
-      }
-      const nested = (rule as CSSGroupingRule).cssRules;
-      if (nested == null) {
-        return [];
-      }
-      const own = (rule as CSSMediaRule).media?.mediaText;
-      return walk(nested, own != null && own !== '' ? own : condition);
-    });
-
-  return [...document.styleSheets].flatMap(sheet => walk(sheet.cssRules, null));
-}
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -844,7 +821,7 @@ describe('RadioList', () => {
       for (const testid of ['row-a', 'row-b']) {
         const row = screen.getByTestId(testid);
         expect(row).toHaveClass('astryx-radio-list-item');
-        expect(row).toHaveClass('sm');
+        expect(row).toHaveAttribute('data-size', 'sm');
         expect(row).toHaveAttribute('data-size', 'sm');
       }
     });
@@ -866,12 +843,12 @@ describe('RadioList', () => {
       const plain = screen.getByTestId('plain');
       const disabled = screen.getByTestId('disabled');
 
-      expect(selected).toHaveClass('selected');
       expect(selected).toHaveAttribute('data-selected', 'selected');
-      expect(plain).not.toHaveClass('selected');
+      expect(selected).toHaveAttribute('data-selected', 'selected');
+      expect(plain).not.toHaveAttribute('data-selected');
       expect(plain).not.toHaveAttribute('data-selected');
 
-      expect(disabled).toHaveClass('disabled');
+      expect(disabled).toHaveAttribute('data-disabled', 'disabled');
       expect(disabled).toHaveAttribute('data-disabled', 'disabled');
       expect(plain).not.toHaveAttribute('data-disabled');
     });
