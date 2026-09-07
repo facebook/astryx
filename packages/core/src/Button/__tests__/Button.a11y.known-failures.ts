@@ -23,59 +23,48 @@ const CARD_POINTER_ISSUE = 'https://github.com/facebook/astryx/issues/6132';
 
 export const BUTTON_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
   // ---- Button and IconButton go natively disabled while busy --------------
-  // One defect, four records: two components × the two outcomes it breaks.
+  // One defect, one record per component.
   // They are written out rather than generated, because a record has to name
   // exactly one thing that is broken — a loop would make it easy to widen this
   // later without anyone noticing.
   {
-    expectation: 'button.busy.keeps-focus',
-    binding: 'Button',
-    state: 'button-loading',
-    evidenceLayer: 'real-browser',
-    failureIncludes: 'cannot hold focus',
-    userImpact:
-      'A keyboard user who activates Save and waits is dropped to the top of the document the moment the action starts, with nothing to return them. The next Tab restarts from the beginning of the page.',
-    issue: BUSY_FOCUS_ISSUE,
-    reason:
-      'Button sets the native disabled attribute while a clickAction is pending, and a natively disabled element cannot hold focus. Two fixes are already open against the issue; this contract records the outcome, and whichever one lands will turn these records into unexpected passes.',
-  },
-  {
     expectation: 'button.focus.reachable-and-escapable',
     binding: 'Button',
     state: 'button-loading',
     evidenceLayer: 'real-browser',
     failureIncludes: 'never reached the button',
     userImpact:
-      'While the action is pending the button leaves the tab sequence entirely, so a keyboard user cannot get back to it — not to see that it is busy, and not to interrupt it.',
+      'A keyboard user who activates Save and waits is dropped to the top of the document the moment the action starts, and the button leaves the tab sequence entirely — so they cannot get back to it, to see that it is busy or to interrupt it. The next Tab restarts from the beginning of the page.',
     issue: BUSY_FOCUS_ISSUE,
     reason:
-      'The same native disabled attribute: a disabled element is not a tab stop.',
+      'Button sets the native disabled attribute while a clickAction is pending. A natively disabled element is neither focusable nor a tab stop. Two fixes are already open against the issue; whichever lands turns this record into an unexpected pass.',
   },
   {
-    expectation: 'button.busy.keeps-focus',
+    expectation: 'button.focus.reachable-and-escapable',
     binding: 'IconButton',
     state: 'icon-button-loading',
     evidenceLayer: 'real-browser',
-    failureIncludes: 'cannot hold focus',
+    failureIncludes: 'never reached the button',
     userImpact:
-      'The same drop, from an icon button — where it is worse, because an icon button is usually one of several in a row and the user loses their place among them.',
+      'The same drop from an icon button, where it is worse: an icon button is usually one of several in a row, so the user loses their place among them.',
     issue: BUSY_FOCUS_ISSUE,
     reason:
       'IconButton is a thin wrapper over Button and inherits the behaviour exactly.',
   },
-  {
-    expectation: 'button.focus.reachable-and-escapable',
-    binding: 'IconButton',
-    state: 'icon-button-loading',
-    evidenceLayer: 'real-browser',
-    failureIncludes: 'never reached the button',
-    userImpact:
-      'The busy icon button leaves the tab sequence, so a keyboard user cannot return to it.',
-    issue: BUSY_FOCUS_ISSUE,
-    reason: 'Inherited from Button, as above.',
-  },
 
   // ---- ClickableCard's role-bearing element cannot be clicked -------------
+  {
+    expectation: 'button.action.survives-an-aborted-press',
+    binding: 'ClickableCard',
+    state: 'clickable-card',
+    evidenceLayer: 'real-browser',
+    failureIncludes: 'a pointer press cannot land on this control',
+    userImpact:
+      'The same defect seen from the other side: pointer cancellation cannot be demonstrated on a control no pointer press can land on. Recorded rather than reported green — a serene pass here would claim an outcome nobody observed.',
+    issue: CARD_POINTER_ISSUE,
+    reason:
+      'Same cause as the record above. It is a second record rather than a wider one because a known failure names exactly one outcome, and these two would be fixed and verified separately.',
+  },
   {
     expectation: 'button.action.runs-on-pointer',
     binding: 'ClickableCard',

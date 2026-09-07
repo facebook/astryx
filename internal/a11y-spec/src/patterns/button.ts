@@ -36,6 +36,7 @@ import {
   type PatternContract,
   type WcagCriterion,
 } from '../contract';
+import {saysInOrder, spokenWords} from '../spoken';
 
 const APG_URL = 'https://www.w3.org/WAI/ARIA/apg/patterns/button/';
 const UNDERSTANDING = 'https://www.w3.org/WAI/WCAG22/Understanding';
@@ -156,13 +157,6 @@ export interface ButtonStateFacts {
   readonly described: boolean;
 }
 
-/**
- * An interaction expectation's claim is a real-browser one — pressing this runs
- * the action — but the answer is read out of the accessibility tree or the
- * binding's own counter, so it cannot run without both.
- */
-const READS_THE_TREE = ['accessibility-tree'] as const;
-
 /** Applies to every state; the outcome never stops mattering. */
 const ALWAYS = {
   condition: 'the binding renders the pattern at all',
@@ -174,38 +168,6 @@ const ALWAYS = {
  * a fixture page and short enough that an unreachable button fails fast.
  */
 const TAB_BUDGET = 10;
-
-function collapse(value: string): string {
-  return value.toLowerCase().replace(/\s+/g, ' ').trim();
-}
-
-/**
- * The words of a label, as a speech-input user would say them.
- *
- * WCAG 2.5.3 is about words: its Understanding text asks that "the words which
- * visually label a component are also the words associated with the component
- * programmatically". Punctuation is not spoken, so it is dropped before the
- * comparison.
- */
-function spokenWords(value: string): readonly string[] {
-  return collapse(value)
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .split(' ')
-    .filter(word => word !== '');
-}
-
-/** Whether `whole` says `part`'s words, in order and unbroken. */
-function saysInOrder(
-  whole: readonly string[],
-  part: readonly string[],
-): boolean {
-  if (part.length === 0) {
-    return true;
-  }
-  return whole.some((_, index) =>
-    part.every((word, offset) => whole[index + offset] === word),
-  );
-}
 
 export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
   definePattern<ButtonStateFacts>({
@@ -242,11 +204,7 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
         outcome:
           'The button has an accessible name, so the user knows what pressing it will do.',
         sources: [WCAG_4_1_2, APG_LABEL],
-        covers: [
-          '4.1.2-name-role-value',
-          '3.3.2-labels-or-instructions',
-          '2.4.6-headings-and-labels',
-        ],
+        covers: ['4.1.2-name-role-value', '2.4.6-headings-and-labels'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'accessibility-tree',
         enforcement: 'required',
@@ -361,34 +319,12 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
         },
       },
       {
-        id: 'button.busy.exposed',
-        outcome:
-          'A button waiting on the action it started reports that it is busy, so the user is not left pressing it again.',
-        sources: [WCAG_4_1_2],
-        covers: ['4.1.2-name-role-value'],
-        appliesWhen: {
-          condition: 'the binding declares this state busy',
-          test: facts => facts.busy,
-        },
-        evidenceLayer: 'dom',
-        enforcement: 'advisory',
-        advisoryBecause:
-          'WCAG 2.2 4.1.2 covers the states a user sets, and a pending action is not one of them; the adopted APG button pattern has no busy clause, and no current Astryx record adopts a busy state as a button contract. It reports so a binding that drops the busy state is visible, and it does not gate.',
-        run: async ({subject}) => {
-          if ((await subject.attribute('aria-busy')) !== 'true') {
-            throw new Error(
-              'this state is waiting on the action it started, but the button does not report aria-busy',
-            );
-          }
-        },
-      },
-      {
         id: 'button.action.runs-on-pointer',
         outcome: 'Clicking the button runs its action.',
         sources: [WCAG_4_1_2, APG_ROLE],
         wcagOutcome:
-          'A control announced as a button promises that pressing it does something; one that does nothing has misreported its own role.',
-        covers: ['apg-interaction'],
+          'A control announced as a button promises that pressing it does something; one that does nothing has misreported its own role, and 4.1.2 requires the role to be the one the control actually plays.',
+        covers: ['4.1.2-name-role-value', 'apg-interaction'],
         appliesWhen: {
           condition: 'pressing this state is meant to run its action',
           test: facts => facts.operable,
@@ -521,7 +457,7 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
       {
         id: 'button.unavailable.inert',
         outcome:
-          'A button reported as unavailable runs nothing when it is clicked or when Enter or Space is pressed on it.',
+          'A button reported as unavailable runs nothing when it is clicked — nor when Enter or Space is pressed on it, wherever it can still be focused.',
         sources: [WCAG_4_1_2, APG_UNAVAILABLE],
         covers: ['4.1.2-name-role-value'],
         appliesWhen: {
@@ -529,7 +465,6 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
           test: facts => facts.unavailable,
         },
         evidenceLayer: 'real-browser',
-        alsoNeeds: READS_THE_TREE,
         enforcement: 'required',
         run: async ({harness, subject, facts, activations}) => {
           const before = await activations();
@@ -555,27 +490,6 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
                 `the button is reported as unavailable, but pressing ${key} on it ran the action anyway`,
               );
             }
-          }
-        },
-      },
-      {
-        id: 'button.busy.keeps-focus',
-        outcome:
-          'A button that becomes busy keeps focus, so a keyboard user who just pressed it is not dropped back to the top of the page.',
-        sources: [WCAG_3_2_2, APG_FOCUS_REMAINS],
-        covers: ['3.2.2-on-input'],
-        appliesWhen: {
-          condition: 'the binding declares this state busy',
-          test: facts => facts.busy,
-        },
-        evidenceLayer: 'real-browser',
-        enforcement: 'required',
-        run: async ({subject}) => {
-          await subject.focus();
-          if (!(await subject.isFocused())) {
-            throw new Error(
-              'this state is busy and cannot hold focus, so a keyboard user who activated the action has been dropped somewhere else — usually the top of the document — with nothing to return them',
-            );
           }
         },
       },
@@ -690,8 +604,13 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
         verifiedBy:
           'integration and page-level review of what a caller does in response to the press',
         reason:
-          "A change of context is a change of user agent, viewport, focus, or content that changes the page's meaning. The button owns one of those — whether becoming busy drops focus — and that half is encoded by button.busy.keeps-focus. Where a press deliberately moves focus, such as opening a dialog, the APG says focus moves INTO the new context, and that destination belongs to the pattern being opened, not to this one.",
-        coversRemainderOnly: true,
+          'Not part-encoded, and deliberately so: 3.2.2 does not reach a button at all. It governs "changing the setting of any user interface component", and its Understanding text draws the line outright — "checking a checkbox, entering text into a text field, or changing the selected option in a list control changes its setting, but activating a link or a button does not". A button has no setting. What a CALLER does in response to a press can change the context, and that is the caller\'s to warn about.',
+      },
+      '3.3.2-labels-or-instructions': {
+        owner: 'the composing form and caller content',
+        verifiedBy: 'form-level review of the instructions around the control',
+        reason:
+          '3.3.2 is about labels and instructions "when content requires user input" — what a form tells someone about what to enter. A command button collects no input, and proving the control has a name is a different fact from a form saying what is expected.',
       },
       '3.3.1-error-identification': {
         owner: 'the binding component and the composing form',

@@ -267,14 +267,22 @@ export function createChromiumHarness(
           }
           const box = node.getBoundingClientRect();
           // The sr-only recipe: clipped to a 1px box, still in the tree.
-          if (box.width <= 1 || box.height <= 1) {
-            return false;
-          }
-          // Fully transparent text is laid out and painted and still cannot be
-          // read. Astryx does exactly this to a button's label while it waits
-          // on an action, so this is a real case, not a hypothetical one.
-          return !/^rgba\(.*,\s*0\)$/.test(getComputedStyle(node).color);
+          return box.width > 1 && box.height > 1;
         };
+
+        /**
+         * Whether text sitting directly in this node can be read.
+         *
+         * Separate from `rendered` because `color` inherits but is overridable:
+         * a transparent wrapper whose child re-colours its own text is showing
+         * that child's words, and judging the wrapper would erase them. So this
+         * asks only about the node the text is actually in.
+         *
+         * Astryx dims a button's label with `color: transparent` while it waits
+         * on an action, so this is a real case, not a hypothetical one.
+         */
+        const textIsReadable = (node: Element): boolean =>
+          !/^rgba\(.*,\s*0\)$/.test(getComputedStyle(node).color);
 
         /**
          * Whether the label element as a whole paints anywhere.
@@ -328,7 +336,9 @@ export function createChromiumHarness(
           let text = '';
           for (const child of node.childNodes) {
             if (child.nodeType === Node.TEXT_NODE) {
-              text += child.nodeValue ?? '';
+              if (textIsReadable(node)) {
+                text += child.nodeValue ?? '';
+              }
             } else if (
               child.nodeType === Node.ELEMENT_NODE &&
               rendered(child as Element)
@@ -418,6 +428,23 @@ export function createChromiumHarness(
       const box = await locator.boundingBox();
       if (box == null) {
         throw new Error('the subject has no box to press on');
+      }
+      // A press that never lands on the control proves nothing about what
+      // releasing it elsewhere does. Without this, a control a pointer cannot
+      // reach reports a serene pass for pointer cancellation — the exact
+      // vacuous green the evidence-layer rules exist to prevent.
+      const reachable = await locator.evaluate(element => {
+        const rect = element.getBoundingClientRect();
+        const at = element.ownerDocument.elementFromPoint(
+          rect.x + rect.width / 2,
+          rect.y + rect.height / 2,
+        );
+        return at != null && (at === element || element.contains(at));
+      });
+      if (!reachable) {
+        throw new Error(
+          'a pointer press cannot land on this control: something else is on top of it at its own centre, so there is no press here to abort',
+        );
       }
       const viewport = await page.evaluate(() => ({
         width: window.innerWidth,

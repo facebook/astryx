@@ -31,6 +31,7 @@ import {
   type PatternContract,
   type WcagCriterion,
 } from '../contract';
+import {saysInOrder, spokenWords} from '../spoken';
 
 const APG_URL = 'https://www.w3.org/WAI/ARIA/apg/patterns/switch/';
 const UNDERSTANDING = 'https://www.w3.org/WAI/WCAG22/Understanding';
@@ -191,47 +192,6 @@ function onOff(checked: 'true' | 'false' | 'mixed' | null): string {
 
 function collapse(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
-}
-
-/**
- * The words of a label, as a speech-input user would say them.
- *
- * Exported: a binding comparing its own state inventory against the page needs
- * the same notion of "the label's words" this contract uses, or the two would
- * disagree about a label the component renders with a decorative separator.
- *
- * WCAG 2.5.3 is about words: its Understanding text asks that "the words which
- * visually label a component are also the words associated with the component
- * programmatically". Punctuation is not spoken, and Astryx renders a required
- * marker as "Label ∙ Required" visually while the name computes as "Label
- * Required" — the same words, one decorative separator apart. Comparing raw
- * strings would report that as a failure, which would be wrong.
- */
-export function spokenWords(value: string): readonly string[] {
-  return collapse(value)
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .split(' ')
-    .filter(word => word !== '');
-}
-
-/**
- * Whether `whole` says `part`'s words, in order and unbroken.
- *
- * A substring test would be wrong here: "Sync" is a substring of "Syncing
- * photos" but a speech-input user saying "Sync" is not saying the label. Words
- * are compared whole, and their order is kept.
- *
- */
-function saysInOrder(
-  whole: readonly string[],
-  part: readonly string[],
-): boolean {
-  if (part.length === 0) {
-    return true;
-  }
-  return whole.some((_, index) =>
-    part.every((word, offset) => whole[index + offset] === word),
-  );
 }
 
 /**

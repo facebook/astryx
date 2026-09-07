@@ -11,7 +11,7 @@
  *   against a checked-in story, not a page a test builds and throws away).
  *
  * Every story renders through `Counted`, which shows how many times the
- * component's own handler has run and republishes it as `data-activations` on a
+ * component's own handler has run and republishes it as `data-a11y-activations` on a
  * wrapper. A button's action leaves no trace on the button, so that counter is
  * the only honest way to ask "did pressing it actually do anything" — and
  * having it visible means a person opening the story sees the same fact the
@@ -33,7 +33,7 @@ import {TrashIcon} from '@heroicons/react/24/outline';
 /**
  * Renders one control and counts how many times its action ran.
  *
- * The count is both visible text and a `data-activations` attribute: a person
+ * The count is both visible text and a `data-a11y-activations` attribute: a person
  * reading the story and a test reading the DOM see the same number.
  */
 function Counted({

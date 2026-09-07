@@ -71,10 +71,8 @@ export {
 
 export {createJsdomHarness, type JsdomHarnessOptions} from './harness/jsdom';
 
-export {
-  SWITCH_PATTERN,
-  spokenWords,
-  type SwitchStateFacts,
-} from './patterns/switch';
+export {SWITCH_PATTERN, type SwitchStateFacts} from './patterns/switch';
+
+export {saysInOrder, spokenWords} from './spoken';
 
 export {BUTTON_PATTERN, type ButtonStateFacts} from './patterns/button';

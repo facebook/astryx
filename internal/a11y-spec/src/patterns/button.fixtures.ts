@@ -247,18 +247,19 @@ export const BUTTON_FIXTURES: readonly ButtonFixture[] = [
     html: nativeButton(`aria-disabled="true"`),
   },
   {
-    id: 'violating-busy-unexposed',
-    summary: 'a button waiting on its action that never says it is busy',
-    facts: facts({operable: false, busy: true}),
+    id: 'violating-unavailable-acts-on-key',
+    summary:
+      'a button marked unavailable that refuses a click but still runs on Enter or Space — the half a pointer-only check would miss',
+    facts: facts({operable: false, unavailable: true}),
     html: nativeButton(
-      `aria-disabled="true" onclick="event.preventDefault(); return false;"`,
+      `aria-disabled="true" onclick="event.preventDefault(); return false;" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); ${COUNT}; }"`,
       {counts: false},
     ),
   },
   {
     id: 'violating-busy-unfocusable',
     summary:
-      'a button that goes natively disabled while busy, so focus is dropped mid-task',
+      'a button that goes natively disabled while busy, so focus is dropped mid-task and Tab can no longer reach it',
     facts: facts({operable: false, busy: true}),
     html: nativeButton('aria-busy="true" disabled'),
   },
@@ -305,9 +306,14 @@ export const BUTTON_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   'button.focus.reachable-and-escapable': [
     'violating-unreachable',
     'violating-keyboard-trap',
+    // Natively disabled while busy: out of the tab sequence exactly when the
+    // user most needs to get back to it. This is the shape of a real defect in
+    // two shipped components, recorded in Button.a11y.known-failures.ts.
+    'violating-busy-unfocusable',
   ],
   'button.unavailable.exposed': ['violating-unavailable-unexposed'],
-  'button.unavailable.inert': ['violating-unavailable-still-acts'],
-  'button.busy.exposed': ['violating-busy-unexposed'],
-  'button.busy.keeps-focus': ['violating-busy-unfocusable'],
+  'button.unavailable.inert': [
+    'violating-unavailable-still-acts',
+    'violating-unavailable-acts-on-key',
+  ],
 };

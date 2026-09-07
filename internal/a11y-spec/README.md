@@ -12,7 +12,7 @@ explains the code that implements them.
 
 ## Why a contract instead of more component tests
 
-Every component that adopts the APG switch pattern owes the same things: the
+Take the switch pattern. Every component that adopts it owes the same things: the
 control is reported as a switch, it has a name that does not change when the
 state does, its on/off state is exposed and matches what is rendered, pointer
 and keyboard both turn it on and back off, a press slid off and released
@@ -36,13 +36,34 @@ src/
 ├── harness/
 │   ├── jsdom.ts       observes unit + DOM. Refuses everything above.
 │   └── chromium.ts    observes DOM + accessibility tree + real browser.
+├── spoken.ts      how a visible label is compared against a computed name
 ├── storybook.ts   a static server over a built Storybook, for the browser lane
 └── patterns/
     ├── switch.ts             the switch pattern
     ├── switch.fixtures.ts    conforming + deliberately violating fixtures
     ├── switch.jsdom.test.ts  the contract's own proof, DOM layer
-    └── switch.chromium.spec.ts  the same proof in a real engine
+    ├── switch.chromium.spec.ts  the same proof in a real engine
+    └── button.*              the button pattern, same four files
 ```
+
+## The patterns
+
+| Pattern  | Adopted from                                                   | Bound by                                                                 |
+| -------- | -------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `switch` | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/) | Switch                                                                   |
+| `button` | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/) | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton |
+
+The button pattern covers the ordinary command button. A toggle button carries
+`aria-pressed` and is its own pattern; anything that adopts link semantics — an
+Astryx button given `href` renders an anchor — belongs to the link pattern,
+because the APG is explicit that the two functions are distinct.
+
+Some patterns need something the control itself cannot show. A switch says
+whether it is on, so "pressing it worked" is readable from the control; a
+button's action leaves no trace on the button at all. A pattern like that reads
+`activations()` from the run context, and the BINDING supplies the count — a
+binding that does not makes every expectation reading it fail loudly, never
+pass quietly.
 
 ## Evidence layers are the load-bearing idea
 
