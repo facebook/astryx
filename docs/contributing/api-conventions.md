@@ -309,73 +309,44 @@ hatch, parent layout, or existing context already owns the distinction.
 
 ## API proposal gate
 
-Classify the change before asking for a new API decision. Use the current contract
-review results from the [knowledge contract](../architecture/knowledge-contracts.md#change-coupling):
-`preserves`, `settled`, `novel-human`, or `out-of-scope`.
+Classify the change after identifying current authority. The
+[knowledge contract](../architecture/knowledge-contracts.md#change-coupling) owns
+the five results and their disposition: `preserves`, `settled`, `violates`,
+`novel-human`, and `out-of-scope`. This guide applies those results; it does not
+redefine them.
 
-A defect fix that restores a current contract or standard is `preserves`. Supply
-focused regression evidence for the broken state and representative unchanged
-states. Do not invent a semantic delta or new API decision. Change consumer docs
-only when usage or a documented promise changes, or when the existing docs would
-otherwise become false.
+A defect fix is `preserves` only when it restores a current contract or standard
+without adding public API or public behavior beyond that authority. Supply focused
+regression evidence for the broken state and representative unchanged states. If
+the fix needs a new primitive or observable behavior, it follows the unsettled
+path in the knowledge contract rather than using the bug-fix label to bypass API
+design.
 
-For a claimed API addition or semantic change, review has two stages:
+For a claimed API addition or semantic behavior change, review has four stages:
 
-1. **Mechanical pre-review.** Reject the change now when the pull request lacks a
-   readable semantic before → after or does not update or add the canonical
-   owning record. Component-local semantics update the component spec;
-   family-, architecture-, or system-owned semantics update that owner instead.
-   Also reject a public choice the component can derive, a public input whose
-   controlled axis changes by value or input shape, hidden conditional precedence
-   between parallel inputs, or a parallel public/package-internal operation for
-   the same semantic action. A cohesive semantic status or variant may derive
-   several visual details; it is rejected only when its public meaning is unstable
-   or undisclosed. Within one module, keep one canonical operation name; the
-   package-internal form may accept wider semantic options than the public
-   contract. Another operation requires a genuinely distinct caller-owned intent
-   and contract. These current AST-002 rules apply even when the canonical owner
-   is draft or missing; only rejection because that owner lacks `current`
-   authority remains deferred under staged coverage.
-2. **Owner judgment.** For a surviving `novel-human` change, present the semantic
-   delta to the linked owner. The gate does not choose the API. The owner accepts,
-   rejects, or refines the meaning and the ruling is recorded in the canonical
-   spec.
+1. **Inventory the public delta.** State the exact semantic before → after,
+   identify the canonical owner by scope, and include supporting declarations,
+   types, context fields, hook returns, defaults, and observable behavior reachable
+   from supported package paths.
+2. **Apply API admission.** Reject a public choice the component can derive, a
+   public input whose controlled axis changes by value or input shape, hidden
+   conditional precedence between parallel inputs, or a parallel public/package-
+   internal operation for the same semantic action. A cohesive semantic status or
+   variant may derive several visual details when its public meaning stays stable
+   and disclosed. Within one module, keep one canonical operation name; another
+   requires genuinely distinct caller-owned intent and contract.
+3. **Apply current authority.** Follow the result and disposition owned by the
+   knowledge contract. A draft is useful review context but is not policy and
+   cannot clear the gate. Exact-head owner discussion or approval is decision
+   evidence; an accepted decision must be committed in the canonical record as
+   `current` before implementation acceptance.
+4. **Review implementation correctness.** Once current authority settles the
+   public contract, verify the exact implementation head, regression evidence,
+   compatibility, migration, docs, and representative unchanged states.
 
-### Staged contract coverage
-
-Semantic contract coverage is still incomplete, so the review path must not turn
-missing `current` authority on the canonical owner into a dead end. This staged
-exception applies only to authority coverage; it does not defer rejection under
-current cross-component rules, including the overloaded-input and hidden-
-precedence rule above:
-
-1. The contributor or maintainer puts the one-sentence semantic delta in the pull
-   request, identifies the canonical owner by scope, and updates or adds that
-   record. Component-local semantics use the component spec; shared family,
-   architecture, or system semantics use that owner. A draft record is valid
-   context and must identify its intended owner.
-2. Review applies only current component, family, architecture, and system rules.
-   A draft cannot clear the gate or be cited as settled policy; it routes the
-   remaining `novel-human` delta to the owner.
-3. The owner decides in the pull request. Exact-head owner approval settles that
-   pull request only. The accepted contract and evidence remain in the canonical
-   owning record; rejected direction is removed unless it protects a durable
-   boundary.
-4. Promote an owning record to `current` only after its local requirements,
-   verification, relationships, approval, and every applicable acceptance
-   prerequisite in current architecture are complete. For component specs, this
-   includes the historical benchmark and pull-request enforcement required by the
-   current knowledge contract. Only then may later reviews reuse it as `settled`
-   policy.
-
-A follow-up gate may mechanically reject missing `current` authority on a
-canonical owning record only after a current policy change explicitly activates
-enforcement for a named scope, that scope has current contract coverage, and the
-historical benchmark has passed. Until then, missing current authority routes to
-the staged owner path; it does not reject the API by itself.
-
-Mechanical enforcement of this gate is follow-up work; this guide defines the
-review contract, not gate implementation.
+Mechanical manifests and receipts may inventory the delta and prove which
+current record was read. They are evidence only; they do not choose semantics or
+assign pull-request disposition.
 
 ## API proposal checklist
 
@@ -387,8 +358,8 @@ Every public-facing API pull request has this minimum readable summary:
   missing before this pull request, name the intended owner.
 - **Semantic before → after:** state the caller-visible meaning and guarantee in
   one sentence.
-- **Classification:** name `preserves`, `settled`, `novel-human`, or
-  `out-of-scope`.
+- **Classification:** name `preserves`, `settled`, `violates`, `novel-human`, or
+  `out-of-scope` as defined by the knowledge contract.
 - **Representative syntax:** include it only when public syntax changes; the
   component `.doc.mjs` remains the complete syntax/reference authority.
 
