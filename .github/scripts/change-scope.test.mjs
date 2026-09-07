@@ -20,6 +20,9 @@ describe('spec-only change scope', () => {
           'packages/core/src/Table/plugins/rowStatus/useTableRowStatus.spec.md',
       },
       {filename: 'packages/lab/src/FutureInput/FutureInput.spec.md'},
+      {filename: 'packages/charts/src/Chart.spec.md'},
+      {filename: 'packages/richtext/src/RichTextView.spec.md'},
+      {filename: 'packages/vega/src/VegaChart.spec.md'},
     ]);
     expect(result.specOnly).toBe(true);
   });

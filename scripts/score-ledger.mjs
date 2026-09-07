@@ -33,8 +33,15 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
+import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 
+const require = createRequire(import.meta.url);
+const {
+  COMPONENT_PACKAGES,
+  flatPackageComponentNames,
+  nestedPackageComponentNames,
+} = require('./component-packages.cjs');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** The one stored form of the ledger, at the root of the wiki repo. */
@@ -192,9 +199,6 @@ export const NON_COMPONENT_DIRS = Object.freeze(
 /** A file that renders: PascalCase `.tsx`, not a test, story, doc or perf file. */
 const RENDERING_FILE = /^[A-Z][A-Za-z0-9]*\.tsx$/;
 
-/** A documented component in a flat package: PascalCase `<Name>.doc.mjs`. */
-const FLAT_DOC_FILE = /^([A-Z][A-Za-z0-9]*)\.doc\.mjs$/;
-
 /**
  * Packages the ledger covers, with the src dir the predicate sweeps and how
  * that src is laid out.
@@ -202,20 +206,13 @@ const FLAT_DOC_FILE = /^([A-Z][A-Za-z0-9]*)\.doc\.mjs$/;
  *   - `nested` (core, lab): one directory per component, `<Name>/<Name>.tsx`.
  *     The directory is the unit; `isComponentDirectory` filters out the
  *     styles-only and context-only ones.
- *   - `flat` (richtext, promoted out of lab so it can be canaried on its own):
- *     `<Name>.tsx` files at the src root alongside internal helpers, so there
- *     is no directory to key on and the `.doc.mjs` is the component boundary.
+ *   - `flat` (charts, richtext, vega): public component modules live directly
+ *     under `src/` and are identified from matching named exports in `src/index.ts`.
  *
- * A component graduating from lab into its own package (richtext did) must be
- * registered here or it silently drops out of the ledger's denominator — the
- * roster reads only these packages, and a score recorded for it in the wiki
- * has no row to attach to.
+ * Add a component-bearing package to `scripts/component-packages.cjs`; the audit
+ * roster and component-spec path validation consume that one registry.
  */
-export const LEDGER_PACKAGES = Object.freeze([
-  {name: 'core', src: 'packages/core/src', layout: 'nested'},
-  {name: 'lab', src: 'packages/lab/src', layout: 'nested'},
-  {name: 'richtext', src: 'packages/richtext/src', layout: 'flat'},
-]);
+export const LEDGER_PACKAGES = COMPONENT_PACKAGES;
 
 /** The covered package names, for human-facing CLI messages. */
 const LEDGER_PACKAGE_NAMES = LEDGER_PACKAGES.map(p => p.name);
@@ -258,35 +255,19 @@ export function isComponentDirectory(srcDir, dirName) {
 }
 
 /**
- * The component names in a flat package src (richtext), where `<Name>.tsx`
- * files sit at the root alongside internal helpers rather than in a directory
- * each. A `.doc.mjs` is the boundary here: the root also holds sub-parts and
- * plugins (`RichTextEditorToolbar.tsx`, `RichTextEditorAutoLinkPlugin.tsx`)
- * that render but are not audited as components on their own, and the doc file
- * is what distinguishes the public component from them — the same unit the
- * docsite and the wiki ledger already record.
+ * Public component names in a flat package. Matching named exports from
+ * `src/index.ts` define the boundary; private rendering helpers and TSX context
+ * modules that export only hooks stay out.
  *
  * @param {string} srcDir absolute path to `packages/<pkg>/src`
- * @returns {string[]} component names, e.g. `['RichTextEditor']`
+ * @param {string} [repoRoot]
+ * @returns {string[]} public component names
  */
-export function flatPackageComponents(srcDir) {
-  let entries;
-  try {
-    entries = fs.readdirSync(srcDir, {withFileTypes: true});
-  } catch {
-    return [];
-  }
-  const names = [];
-  for (const entry of entries) {
-    if (!entry.isFile()) continue;
-    const match = FLAT_DOC_FILE.exec(entry.name);
-    if (!match) continue;
-    // A doc without the component it documents is a dangling file, not a row.
-    if (fs.existsSync(path.join(srcDir, `${match[1]}.tsx`))) {
-      names.push(match[1]);
-    }
-  }
-  return names;
+export function flatPackageComponents(srcDir, repoRoot = ROOT) {
+  const packageConfig = COMPONENT_PACKAGES.find(
+    pkg => path.resolve(repoRoot, pkg.src) === path.resolve(srcDir),
+  );
+  return packageConfig ? flatPackageComponentNames(repoRoot, packageConfig) : [];
 }
 
 /**
@@ -299,25 +280,19 @@ export function listComponents(repoRoot = ROOT) {
   const out = [];
   for (const pkg of LEDGER_PACKAGES) {
     const srcDir = path.join(repoRoot, pkg.src);
-    if (pkg.layout === 'flat') {
-      for (const component of flatPackageComponents(srcDir)) {
-        out.push({component, package: pkg.name});
-      }
-      continue;
-    }
-    let entries;
-    try {
-      entries = fs.readdirSync(srcDir, {withFileTypes: true});
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      if (!isComponentDirectory(srcDir, entry.name)) continue;
-      out.push({component: entry.name, package: pkg.name});
+    const components =
+      pkg.layout === 'flat'
+        ? flatPackageComponents(srcDir, repoRoot)
+        : nestedPackageComponentNames(repoRoot, pkg);
+    for (const component of components) {
+      out.push({component, package: pkg.name});
     }
   }
-  return out.sort((a, b) => a.component.localeCompare(b.component));
+  return out.sort(
+    (a, b) =>
+      a.component.localeCompare(b.component) ||
+      a.package.localeCompare(b.package),
+  );
 }
 
 // ---------------------------------------------------------------------------

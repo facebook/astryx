@@ -195,30 +195,33 @@ describe('the ratchet', () => {
 });
 
 describe('a component is a package AND a name', () => {
-  // `Chat` ships in both core and lab. A name-keyed ledger would ratchet one
-  // against the other, which is worse than not measuring either.
+  const duplicateRoster = [
+    {component: 'Shared', package: 'core'},
+    {component: 'Shared', package: 'lab'},
+  ];
+
   it('resolves a name that exists in two packages to both components', () => {
-    const matches = resolveName('Chat', listComponents(REPO_ROOT));
+    const matches = resolveName('Shared', duplicateRoster);
     expect(matches.map(m => m.package).sort()).toEqual(['core', 'lab']);
   });
 
   it('keeps the two apart in the ratchet — a lab score cannot fail a core PR', () => {
     const base = {
       components: [
-        entry({component: 'Chat', package: 'core', score: 80, grade: 'B'}),
-        entry({component: 'Chat', package: 'lab', score: 80, grade: 'B'}),
+        entry({component: 'Shared', package: 'core', score: 80, grade: 'B'}),
+        entry({component: 'Shared', package: 'lab', score: 80, grade: 'B'}),
       ],
     };
     const head = {
       components: [
-        entry({component: 'Chat', package: 'core', score: 80, grade: 'B'}),
-        entry({component: 'Chat', package: 'lab', score: 40, grade: 'F'}),
+        entry({component: 'Shared', package: 'core', score: 80, grade: 'B'}),
+        entry({component: 'Shared', package: 'lab', score: 40, grade: 'F'}),
       ],
     };
-    const {results} = runRatchet(['Chat'], base, head);
-    expect(results.map(r => r.component).sort()).toEqual(['core/Chat', 'lab/Chat']);
-    expect(results.find(r => r.component === 'core/Chat').verdict).toBe('pass');
-    expect(results.find(r => r.component === 'lab/Chat').verdict).toBe('fail');
+    const {results} = runRatchet(['Shared'], base, head, duplicateRoster);
+    expect(results.map(r => r.component).sort()).toEqual(['core/Shared', 'lab/Shared']);
+    expect(results.find(r => r.component === 'core/Shared').verdict).toBe('pass');
+    expect(results.find(r => r.component === 'lab/Shared').verdict).toBe('fail');
   });
 
   it('gives each roster row a package-qualified id', () => {
@@ -327,37 +330,61 @@ describe('the canonical component predicate', () => {
     const names = all.map(c => c.component);
     expect(names).toContain('Button');
     expect(names).toContain('Stepper');
+    expect(names).toContain('ChatComposerTokenElement');
+    expect(names).toContain('ContextMenuItem');
+    expect(names).toContain('TransferListSelector');
+    expect(names).toContain('TourStep');
     expect(names).not.toContain('hooks');
     expect(names).not.toContain('NavItem');
+    expect(names).not.toContain('Chat');
+    expect(names).not.toContain('Indicator');
+    expect(names).not.toContain('Layer');
+    expect(names).not.toContain('NavMenu');
+    expect(names).not.toContain('Resizable');
+    expect(names).not.toContain('ContextMenuItemProps');
     expect([...names].sort((a, b) => a.localeCompare(b))).toEqual(names);
     expect(new Set(all.map(c => c.package))).toEqual(
-      new Set(['core', 'lab', 'richtext']),
+      new Set(['charts', 'core', 'lab', 'richtext', 'vega']),
     );
   });
 
-  it('covers flat packages by their .doc.mjs, not a per-component dir', () => {
-    // richtext was promoted out of lab into its own package with a flat src
-    // (`RichTextEditor.tsx` at the root, no directory per component). It must
-    // still land in the roster or a score recorded for it has no row.
-    const all = listComponents(REPO_ROOT);
-    const richtext = all.filter(c => c.package === 'richtext');
-    expect(richtext).toEqual([{component: 'RichTextEditor', package: 'richtext'}]);
+  it('covers every public component in flat component packages', () => {
+    const byPackage = new Map();
+    for (const item of listComponents(REPO_ROOT)) {
+      const names = byPackage.get(item.package) ?? [];
+      names.push(item.component);
+      byPackage.set(item.package, names);
+    }
+    expect(byPackage.get('charts')).toEqual([
+      'Chart',
+      'ChartAxis',
+      'ChartGrid',
+      'ChartLegend',
+      'ChartSwatch',
+      'ChartTooltip',
+    ]);
+    expect(byPackage.get('richtext')).toEqual([
+      'RichTextEditor',
+      'RichTextEditorAutoLinkPlugin',
+      'RichTextEditorToolbar',
+      'RichTextView',
+    ]);
+    expect(byPackage.get('vega')).toEqual(['VegaChart']);
   });
 });
 
 describe('the flat-package component predicate', () => {
   const richtextSrc = path.join(REPO_ROOT, 'packages/richtext/src');
 
-  it('keeps the documented component', () => {
-    expect(flatPackageComponents(richtextSrc)).toContain('RichTextEditor');
-  });
-
-  it('drops undocumented sub-parts and helpers that still render', () => {
-    // These render but carry no `.doc.mjs`, so they are not audited rows.
+  it('keeps public exported components and drops private helpers', () => {
     const names = flatPackageComponents(richtextSrc);
-    expect(names).not.toContain('RichTextView');
-    expect(names).not.toContain('RichTextEditorToolbar');
-    expect(names).not.toContain('RichTextEditorAutoLinkPlugin');
+    expect(names).toEqual([
+      'RichTextEditor',
+      'RichTextEditorAutoLinkPlugin',
+      'RichTextEditorToolbar',
+      'RichTextView',
+    ]);
+    expect(names).not.toContain('LexicalErrorBoundary');
   });
 
   it('returns nothing for a src dir that does not exist', () => {
