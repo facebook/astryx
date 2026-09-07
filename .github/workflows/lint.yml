@@ -26,7 +26,7 @@ jobs:
           git fetch origin ${{ github.base_ref }} --depth=50
           MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }} 2>/dev/null || echo "")
           if [ -z "$MERGE_BASE" ]; then
-            printf 'docsite_only=false\nspec_only=false\n' >> "$GITHUB_OUTPUT"
+            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           CLASSIFIER_ROOT="$RUNNER_TEMP/change-scope"
@@ -42,12 +42,9 @@ jobs:
             git diff --name-status "$MERGE_BASE"...HEAD \
               | node "$CLASSIFIER" --github-output
           else
-            # Bootstrap fallback: before the trusted classifier exists on main,
-            # no PR can receive the spec-only fast path.
-            CHANGED=$(git diff --name-only "$MERGE_BASE"...HEAD)
-            NON_DOCSITE=$(printf '%s\n' "$CHANGED" | grep -v '^apps/docsite/' | head -1)
-            printf 'docsite_only=%s\nspec_only=false\n' \
-              "$( [ -z "$NON_DOCSITE" ] && echo true || echo false )" \
+            # Missing trusted policy or dependencies cannot grant a specialized
+            # lane. Run full lint until the base branch supplies the classifier.
+            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\n' \
               >> "$GITHUB_OUTPUT"
           fi
 

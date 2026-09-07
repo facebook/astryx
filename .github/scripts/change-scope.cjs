@@ -23,6 +23,43 @@ const SPEC_RECORD_PATTERNS = [
 
 const CHANGESET_PATTERN = /^\.changeset\/(?!README\.md$)[^/]+\.md$/;
 
+const SURFACES = Object.freeze({
+  KNOWLEDGE: 'knowledge',
+  DOCSITE: 'docsite',
+  NODE_TOOLING: 'node-tooling',
+  SHARED_OR_UNKNOWN: 'shared-or-unknown',
+});
+
+const RUNTIME_PACKAGE_SURFACES = Object.freeze([
+  ['packages/core/', 'runtime:core'],
+  ['packages/lab/', 'runtime:lab'],
+  ['packages/charts/', 'runtime:charts'],
+  ['packages/richtext/', 'runtime:richtext'],
+  ['packages/vega/', 'runtime:vega'],
+  ['packages/cli/', 'runtime:cli'],
+  ['packages/build/', 'runtime:build'],
+]);
+
+const STORYBOOK_VISUAL_PATTERNS = [
+  /^apps\/storybook\//,
+  /^\.github\/scripts\/(?:accessibility-audit|story-play-guard|visual-scope)\./,
+  /^\.github\/scripts\/visual-gate\//,
+];
+
+const THEME_BUILD_PATTERNS = [
+  /^packages\/themes\//,
+  /^packages\/build\//,
+  /^packages\/core\/src\/theme\//,
+];
+
+// Tooling admission is exact and dependency-reviewed. Do not widen this to all
+// of scripts/: that directory also owns generated public artifacts, package
+// builds, releases, and other shared infrastructure.
+const NODE_TOOLING_PATHS = new Set([
+  'scripts/score-ledger.mjs',
+  'scripts/score-ledger.test.mjs',
+]);
+
 const THEME_DOC_CANDIDATE = /^docs\/themes\/(?!README\.md$)[^/]+\.md$/;
 const THEME_PACKAGE_CANDIDATE =
   /^packages\/themes\/[^/]+\/(?:.*\/)?[^/]+\.spec\.md$/;
@@ -65,6 +102,29 @@ function isKnowledgeRecordPath(filePath) {
   );
 }
 
+function isNodeToolingPath(filePath) {
+  return NODE_TOOLING_PATHS.has(filePath);
+}
+
+function surfacesForPath(filePath) {
+  if (isSpecRecordPath(filePath)) return [SURFACES.KNOWLEDGE];
+  if (filePath.startsWith('apps/docsite/')) return [SURFACES.DOCSITE];
+  if (isNodeToolingPath(filePath)) return [SURFACES.NODE_TOOLING];
+
+  const surfaces = [];
+  const runtimePackage = RUNTIME_PACKAGE_SURFACES.find(([root]) =>
+    filePath.startsWith(root),
+  );
+  if (runtimePackage) surfaces.push(runtimePackage[1]);
+  if (THEME_BUILD_PATTERNS.some(pattern => pattern.test(filePath))) {
+    surfaces.push('theme-build');
+  }
+  if (STORYBOOK_VISUAL_PATTERNS.some(pattern => pattern.test(filePath))) {
+    surfaces.push('storybook-visual');
+  }
+  return surfaces.length > 0 ? surfaces : [SURFACES.SHARED_OR_UNKNOWN];
+}
+
 function normalizeChange(change) {
   if (typeof change === 'string') {
     return {filename: change, previous_filename: null};
@@ -83,10 +143,12 @@ function classifyChanges(changes, {expectedCount} = {}) {
     const complete = expectedCount == null || expectedCount === 0;
     return {
       specOnly: false,
+      toolingOnly: false,
       touchesKnowledgeRecords: !complete,
       touchesDesignAssets: false,
       specChangesetConflict: false,
       docsiteOnly: false,
+      surfaces: complete ? [] : [SURFACES.SHARED_OR_UNKNOWN],
       complete,
       reason: complete ? 'no changed files' : 'changed-file list is incomplete',
     };
@@ -98,6 +160,10 @@ function classifyChanges(changes, {expectedCount} = {}) {
       ? [change.filename, change.previous_filename]
       : [change.filename],
   );
+  const surfaces = [
+    ...new Set(allPaths.flatMap(surfacesForPath)),
+    ...(!complete ? [SURFACES.SHARED_OR_UNKNOWN] : []),
+  ].sort();
   const touchesKnowledgeRecords =
     !complete || allPaths.some(isKnowledgeRecordPath);
   const touchesDesignAssets = allPaths.some(filePath =>
@@ -110,16 +176,19 @@ function classifyChanges(changes, {expectedCount} = {}) {
   const hasPackageReleaseChange = allPaths.some(isPackageReleasePath);
   const specChangesetConflict =
     complete && hasSpecRecord && hasChangeset && !hasPackageReleaseChange;
-  const specOnly = complete && allPaths.every(isSpecRecordPath);
-  const docsiteOnly = allPaths.every(filePath =>
-    filePath.startsWith('apps/docsite/'),
-  );
+  const exactSurface = surface =>
+    complete && surfaces.length === 1 && surfaces[0] === surface;
+  const specOnly = exactSurface(SURFACES.KNOWLEDGE);
+  const docsiteOnly = exactSurface(SURFACES.DOCSITE);
+  const toolingOnly = exactSurface(SURFACES.NODE_TOOLING);
   return {
     specOnly,
+    toolingOnly,
     touchesKnowledgeRecords,
     touchesDesignAssets,
     specChangesetConflict,
     docsiteOnly,
+    surfaces,
     complete,
     reason: !complete
       ? 'changed-file list is incomplete'
@@ -127,7 +196,9 @@ function classifyChanges(changes, {expectedCount} = {}) {
         ? 'only spec records changed'
         : docsiteOnly
           ? 'only docsite files changed'
-          : 'changes include another surface',
+          : toolingOnly
+            ? 'only admitted Node tooling changed'
+            : 'changes include another surface',
   };
 }
 
@@ -163,7 +234,7 @@ if (require.main === module) {
       throw new Error('GITHUB_OUTPUT is required with --github-output.');
     fs.appendFileSync(
       outputPath,
-      `spec_only=${result.specOnly}\ndocsite_only=${result.docsiteOnly}\n`,
+      `spec_only=${result.specOnly}\ndocsite_only=${result.docsiteOnly}\ntooling_only=${result.toolingOnly}\n`,
     );
   } else {
     process.stdout.write(`${JSON.stringify(result)}\n`);
@@ -171,8 +242,11 @@ if (require.main === module) {
 }
 
 module.exports = {
+  NODE_TOOLING_PATHS,
+  SURFACES,
   classifyChanges,
   isKnowledgeRecordPath,
+  isNodeToolingPath,
   isSpecRecordPath,
   parseNameStatus,
 };
