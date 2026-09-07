@@ -182,9 +182,10 @@ export const BUTTON_BINDING_STATES: ReadonlyArray<ButtonBindingState> = [
   {
     id: 'sidenav-collapse-labelled',
     binding: 'SideNavCollapseButton',
-    summary: 'the collapse control given a visible label of its own',
+    summary:
+      'the collapse control given a label of its own, which reaches the accessible name only — the component hardcodes icon-only, so no visible text is rendered (see the adjacent-findings note in the PR)',
     facts: facts(),
-    visibleLabel: 'Collapse sidebar',
+    visibleLabel: null,
     storyId: 'a11y-button-pattern--sidenav-collapse-labelled',
   },
 
