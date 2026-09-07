@@ -56,6 +56,8 @@ function createSubject(element: Element): Subject {
     },
     computed: async () =>
       unobservable('accessibility-tree', 'a computed accessibility node'),
+    visibleLabelText: async () =>
+      unobservable('real-browser', 'what a label actually renders as'),
     isFocused: async () => unobservable('real-browser', 'real focus'),
     focus: async () => unobservable('real-browser', 'real focus'),
   };
@@ -79,6 +81,8 @@ export function createJsdomHarness(options: JsdomHarnessOptions): Harness {
     subject: async () => subject,
     click: async () =>
       unobservable('real-browser', 'a real pointer activation'),
+    abortedPress: async () =>
+      unobservable('real-browser', 'a real pointer press'),
     press: async () => unobservable('real-browser', 'a real key press'),
     resetFocus: async () => unobservable('real-browser', 'real focus'),
   };

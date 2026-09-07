@@ -56,6 +56,20 @@ const WCAG_2_1_2: WcagCriterion = {
   level: 'A',
   url: `${UNDERSTANDING}/no-keyboard-trap.html`,
 };
+const WCAG_2_5_2: WcagCriterion = {
+  standard: 'wcag',
+  id: '2.5.2',
+  name: 'Pointer Cancellation',
+  level: 'A',
+  url: `${UNDERSTANDING}/pointer-cancellation.html`,
+};
+const WCAG_3_2_2: WcagCriterion = {
+  standard: 'wcag',
+  id: '3.2.2',
+  name: 'On Input',
+  level: 'A',
+  url: `${UNDERSTANDING}/on-input.html`,
+};
 const WCAG_2_5_3: WcagCriterion = {
   standard: 'wcag',
   id: '2.5.3',
@@ -104,6 +118,13 @@ const APG_DESCRIBEDBY: ApgRequirement = {
   requirement:
     'If the presentation includes additional descriptive static text relevant to a switch, the switch has aria-describedby set to the id of the element containing the description.',
   url: `${APG_URL}#wai-ariaroles,states,andproperties`,
+};
+const APG_STABLE_LABEL: ApgRequirement = {
+  standard: 'apg',
+  pattern: 'switch',
+  requirement:
+    'It is critical the label on a switch does not change when its state changes.',
+  url: `${APG_URL}#aboutthispattern`,
 };
 const APG_SPACE: ApgRequirement = {
   standard: 'apg',
@@ -165,6 +186,22 @@ function onOff(checked: 'true' | 'false' | 'mixed' | null): string {
 
 function collapse(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * The words of a label, as a speech-input user would say them.
+ *
+ * WCAG 2.5.3 is about words: its Understanding text asks that "the words which
+ * visually label a component are also the words associated with the component
+ * programmatically". Punctuation is not spoken, and Astryx renders a required
+ * marker as "Label ∙ Required" visually while the name computes as "Label
+ * Required" — the same words, one decorative separator apart. Comparing raw
+ * strings would report that as a failure, which would be wrong.
+ */
+function spokenWords(value: string): string {
+  return collapse(value)
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
 }
 
 /**
@@ -248,18 +285,40 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           'The accessible name contains the visible label, so someone using speech input can say what they can read.',
         sources: [WCAG_2_5_3, APG_LABEL],
         covers: ['2.5.3-label-in-name'],
-        appliesWhen: {
-          condition: 'this state renders a visible label',
-          test: facts => facts.visibleLabel != null,
-        },
+        // Applies to every state. Whether there IS a visible label is read from
+        // the rendered page, not taken from the binding: a binding that could
+        // switch this criterion off by declaring `visibleLabel: null` would be
+        // grading its own homework.
+        appliesWhen: ALWAYS,
         evidenceLayer: 'accessibility-tree',
+        alsoNeeds: ['real-browser'],
         enforcement: 'required',
         run: async ({subject, facts}) => {
-          const label = facts.visibleLabel ?? '';
-          const {name} = await subject.computed();
-          if (!collapse(name).includes(collapse(label))) {
+          const visible = await subject.visibleLabelText();
+          if (facts.visibleLabel == null) {
+            if (visible != null) {
+              throw new Error(
+                `this state is declared to render no visible label, but "${visible}" is rendered — so either the declaration is wrong, or a visible label is not reaching the accessible name`,
+              );
+            }
+            // Nothing is presented visually, so 2.5.3 has nothing to compare
+            // against: it applies to "components with labels that include text".
+            return;
+          }
+          if (visible == null) {
             throw new Error(
-              `the visible label reads "${label}" but the browser computes the accessible name as "${name}", so speaking the visible label does not reach this control`,
+              `this state is declared to render the visible label "${facts.visibleLabel}", but nothing is rendered visibly`,
+            );
+          }
+          if (!spokenWords(visible).includes(spokenWords(facts.visibleLabel))) {
+            throw new Error(
+              `this state declares the visible label "${facts.visibleLabel}", but the page renders "${visible}"`,
+            );
+          }
+          const {name} = await subject.computed();
+          if (!spokenWords(name).includes(spokenWords(visible))) {
+            throw new Error(
+              `the visible label reads "${visible}" but the browser computes the accessible name as "${name}", so speaking the visible label does not reach this control`,
             );
           }
         },
@@ -459,6 +518,98 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
             async () => (await subject.computed()).checked,
             'pressing Space on the focused switch',
           );
+        },
+      },
+      {
+        id: 'switch.name.stable-across-change',
+        outcome:
+          'The name stays the same when the switch is turned on and off, so it keeps identifying the setting instead of describing the next action.',
+        sources: [APG_STABLE_LABEL, WCAG_4_1_2],
+        wcagOutcome:
+          'The name in 4.1.2 identifies which setting this is; a name that flips with the state describes an action instead, and a screen-reader user hears the new name announced together with the state it contradicts.',
+        covers: ['apg-interaction'],
+        appliesWhen: {
+          condition: 'the user is meant to be able to change this state',
+          test: facts => facts.operable,
+        },
+        evidenceLayer: 'accessibility-tree',
+        alsoNeeds: ['real-browser'],
+        // The APG is emphatic about this ("it is critical"), but it is an APG
+        // requirement with no WCAG success criterion behind it, and no current
+        // Astryx record adopts label stability as a contract. Under AST-020 FR9
+        // that makes it advisory: it reports, and the day a record adopts it,
+        // this line and the enforcement change together.
+        enforcement: 'advisory',
+        advisoryBecause:
+          'The requirement is APG-only. No WCAG 2.2 A/AA criterion states it, and no current Astryx record adopts it, so it reports rather than gating.',
+        run: async ({harness, subject}) => {
+          const before = (await subject.computed()).name;
+          await harness.click(subject);
+          const changed = (await subject.computed()).name;
+          if (collapse(changed) !== collapse(before)) {
+            throw new Error(
+              `turning the switch on renamed it from "${before}" to "${changed}", so its name describes the action rather than the setting`,
+            );
+          }
+          await harness.click(subject);
+          const back = (await subject.computed()).name;
+          if (collapse(back) !== collapse(before)) {
+            throw new Error(
+              `turning the switch back off renamed it from "${before}" to "${back}"`,
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.state.survives-an-aborted-press',
+        outcome:
+          'A press the user slides off and releases elsewhere leaves the switch alone, so a misplaced touch can be taken back.',
+        sources: [WCAG_2_5_2],
+        covers: ['2.5.2-pointer-cancellation'],
+        appliesWhen: {
+          condition: 'the user is meant to be able to change this state',
+          test: facts => facts.operable,
+        },
+        evidenceLayer: 'real-browser',
+        alsoNeeds: ['accessibility-tree'],
+        enforcement: 'required',
+        run: async ({harness, subject}) => {
+          const before = (await subject.computed()).checked;
+          await harness.abortedPress(subject);
+          const after = (await subject.computed()).checked;
+          if (after !== before) {
+            throw new Error(
+              `pressing the switch and releasing away from it still turned it ${onOff(after)}: the change happens on the way down, so a press cannot be taken back`,
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.state.keeps-focus-on-change',
+        outcome:
+          'Turning the switch on leaves focus on the switch, so a keyboard user is not thrown somewhere else mid-task.',
+        sources: [WCAG_3_2_2],
+        covers: ['3.2.2-on-input'],
+        appliesWhen: {
+          condition:
+            'the user is meant to be able to change this state and to focus it',
+          test: facts => facts.operable && facts.focusable,
+        },
+        evidenceLayer: 'real-browser',
+        enforcement: 'required',
+        run: async ({harness, subject}) => {
+          await subject.focus();
+          if (!(await subject.isFocused())) {
+            throw new Error(
+              'the switch did not take focus, so this state cannot be changed from the keyboard at all',
+            );
+          }
+          await harness.press('Space');
+          if (!(await subject.isFocused())) {
+            throw new Error(
+              'changing the switch moved focus off it, so the user is somewhere else without having asked to be',
+            );
+          }
         },
       },
       {

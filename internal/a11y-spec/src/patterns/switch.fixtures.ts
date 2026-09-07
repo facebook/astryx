@@ -95,6 +95,13 @@ export const SWITCH_FIXTURES: readonly SwitchFixture[] = [
       nativeSwitch('aria-describedby="hint"'),
   },
   {
+    id: 'conforming-label-hidden',
+    summary:
+      'a switch named for assistive technology with nothing rendered visibly',
+    facts: facts({visibleLabel: null}),
+    html: `<input ${SUBJECT_ATTRIBUTE} type="checkbox" role="switch" aria-label="Notifications">`,
+  },
+  {
     id: 'conforming-disabled',
     summary: 'a natively disabled switch',
     facts: facts({disabled: true, operable: false, focusable: false}),
@@ -134,6 +141,39 @@ export const SWITCH_FIXTURES: readonly SwitchFixture[] = [
     summary: 'a switch whose aria-label replaces the visible label',
     facts: facts(),
     html: nativeSwitch('aria-label="Toggle"'),
+  },
+  {
+    id: 'violating-label-changes',
+    summary:
+      'a switch whose label reads as the action, so it flips when the state does',
+    facts: facts(),
+    html: divSwitch(
+      `tabindex="0" aria-checked="false" onclick="const on = this.getAttribute('aria-checked') !== 'true'; this.setAttribute('aria-checked', String(on)); this.textContent = on ? 'Turn off notifications' : 'Turn on notifications';" onkeydown="if (event.key === ' ') { event.preventDefault(); this.click(); }"`,
+      'Turn on notifications',
+    ),
+  },
+  {
+    id: 'violating-claims-hidden-label',
+    summary:
+      'a switch that renders a visible label while the binding claims it renders none',
+    facts: facts({visibleLabel: null}),
+    html: nativeSwitch(),
+  },
+  {
+    id: 'violating-down-event-toggle',
+    summary:
+      'a switch that changes on the way down, so a slip cannot be taken back',
+    facts: facts(),
+    html: divSwitch(
+      `tabindex="0" aria-checked="false" onpointerdown="this.setAttribute('aria-checked', this.getAttribute('aria-checked') === 'true' ? 'false' : 'true')" onkeydown="if (event.key === ' ') { event.preventDefault(); this.setAttribute('aria-checked', this.getAttribute('aria-checked') === 'true' ? 'false' : 'true'); }"`,
+    ),
+  },
+  {
+    id: 'violating-focus-moves-on-change',
+    summary:
+      'a switch that throws focus somewhere else the moment it is changed',
+    facts: facts(),
+    html: nativeSwitch(`onchange="document.getElementById('after').focus()"`),
   },
   {
     id: 'violating-checkbox-role',
@@ -255,7 +295,6 @@ export const SWITCH_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
     'violating-generic-element',
   ],
   'switch.name.exposed': ['violating-unnamed'],
-  'switch.name.matches-visible-label': ['violating-name-mismatch'],
   'switch.state.exposed': [
     'violating-state-mismatch',
     'violating-generic-element',
@@ -264,6 +303,13 @@ export const SWITCH_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   'switch.disabled.exposed': ['violating-disabled-unexposed'],
   'switch.required.declared': ['violating-required-unexposed'],
   'switch.invalid.exposed': ['violating-invalid-unexposed'],
+  'switch.name.stable-across-change': ['violating-label-changes'],
+  'switch.name.matches-visible-label': [
+    'violating-name-mismatch',
+    'violating-claims-hidden-label',
+  ],
+  'switch.state.survives-an-aborted-press': ['violating-down-event-toggle'],
+  'switch.state.keeps-focus-on-change': ['violating-focus-moves-on-change'],
   'switch.state.pointer-round-trip': ['violating-inert', 'violating-one-way'],
   'switch.state.space-round-trip': [
     'violating-pointer-only',

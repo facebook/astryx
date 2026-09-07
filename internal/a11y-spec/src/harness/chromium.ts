@@ -216,6 +216,50 @@ export function createChromiumHarness(
         attribute,
       ),
     computed: () => computedNode(cdp, locator),
+    visibleLabelText: () =>
+      locator.evaluate(element => {
+        const shown = (node: Element): boolean => {
+          const style = getComputedStyle(node);
+          if (style.visibility === 'hidden' || style.display === 'none') {
+            return false;
+          }
+          // The sr-only recipe: clipped to nothing, still in the tree.
+          const box = node.getBoundingClientRect();
+          return box.width > 1 && box.height > 1;
+        };
+        const textOf = (node: Element): string | null => {
+          const text = (node.textContent ?? '').replace(/\s+/g, ' ').trim();
+          return text !== '' && shown(node) ? text : null;
+        };
+
+        // The platform's own labelling order, not any design system's.
+        const labelledBy = element.getAttribute('aria-labelledby');
+        if (labelledBy != null && labelledBy.trim() !== '') {
+          const parts = labelledBy
+            .split(/\s+/)
+            .filter(Boolean)
+            .map(id => element.ownerDocument.getElementById(id))
+            .flatMap(target => (target == null ? [] : [textOf(target)]))
+            .filter((text): text is string => text != null);
+          return parts.length === 0 ? null : parts.join(' ');
+        }
+        const id = element.getAttribute('id');
+        const associated =
+          id == null || id === ''
+            ? null
+            : element.ownerDocument.querySelector(`label[for="${id}"]`);
+        const wrapping = element.closest('label');
+        for (const label of [associated, wrapping]) {
+          if (label != null) {
+            const text = textOf(label);
+            if (text != null) {
+              return text;
+            }
+          }
+        }
+        // A control that labels itself, e.g. a div with role=switch.
+        return textOf(element);
+      }),
     isFocused: () =>
       locator.evaluate(
         element => element.ownerDocument.activeElement === element,
@@ -235,6 +279,17 @@ export function createChromiumHarness(
       // a control the browser calls unavailable what it does when clicked
       // anyway.
       await locator.click({force: options?.ignoreAvailability === true});
+    },
+    abortedPress: async () => {
+      const box = await locator.boundingBox();
+      if (box == null) {
+        throw new Error('the subject has no box to press on');
+      }
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      // Well clear of the control, so the release lands on nothing.
+      await page.mouse.move(box.x + box.width + 200, box.y + box.height + 200);
+      await page.mouse.up();
     },
     press: async key => {
       await page.keyboard.press(KEYS[key]);

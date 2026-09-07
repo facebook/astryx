@@ -13,9 +13,11 @@ explains the code that implements them.
 ## Why a contract instead of more component tests
 
 Every component that adopts the APG switch pattern owes the same things: the
-control is reported as a switch, it has a name, its on/off state is exposed and
-matches what is rendered, pointer and keyboard both turn it on and back off,
-focus can reach it and leave it. Writing that per component means reinterpreting
+control is reported as a switch, it has a name that does not change when the
+state does, its on/off state is exposed and matches what is rendered, pointer
+and keyboard both turn it on and back off, a press slid off and released
+elsewhere is taken back, focus stays put when the state changes, and focus can
+reach the control and leave it. Writing that per component means reinterpreting
 WCAG and the APG each time, and the interpretations drift.
 
 So the pattern is written once, as data, and components bind to it. A binding

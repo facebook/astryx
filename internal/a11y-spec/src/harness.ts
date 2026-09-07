@@ -67,6 +67,17 @@ export interface Subject {
   idReferences(attribute: string): Promise<readonly (string | null)[]>;
   /** Accessibility-tree layer: what the engine computes for this node. */
   computed(): Promise<ComputedNode>;
+  /**
+   * Real-browser layer: the text of this control's label as a sighted person
+   * actually sees it, or null when nothing is visibly rendered.
+   *
+   * Deciding what is *visible* takes layout, which is why this is a
+   * real-browser observation and not a DOM one: markup alone cannot tell a
+   * rendered label from a visually-hidden one. Resolution follows the platform's
+   * own labelling — `aria-labelledby`, then a `for=`/wrapping `<label>` — never
+   * a design system's private structure.
+   */
+  visibleLabelText(): Promise<string | null>;
   /** Real-browser layer: whether this node currently holds focus. */
   isFocused(): Promise<boolean>;
   /** Real-browser layer: move focus here the way a user's Tab would leave it. */
@@ -97,6 +108,12 @@ export interface Harness {
     subject: Subject,
     options?: {ignoreAvailability?: boolean},
   ): Promise<void>;
+  /**
+   * Real-browser layer: begin a pointer press on the subject and release it
+   * somewhere else, the way a person takes back a press they did not mean —
+   * press, slide off, let go.
+   */
+  abortedPress(subject: Subject): Promise<void>;
   /** Real-browser layer: send a key to whatever currently holds focus. */
   press(key: Key): Promise<void>;
   /** Real-browser layer: park focus at the document body, before the content. */

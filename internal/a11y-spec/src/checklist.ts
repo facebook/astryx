@@ -142,6 +142,13 @@ export const CHECKLIST_DIMENSIONS = [
     usualOwnership: 'Component or composition',
   },
   {
+    id: '2.5.2-pointer-cancellation',
+    source: 'WCAG 2.2 2.5.2 Pointer Cancellation (A)',
+    outcome:
+      'A single-pointer function does not complete on the down-event, or the press can be aborted or undone.',
+    usualOwnership: 'Component',
+  },
+  {
     id: '2.5.3-label-in-name',
     source: 'WCAG 2.2 2.5.3 Label in Name (A)',
     outcome:
@@ -165,6 +172,13 @@ export const CHECKLIST_DIMENSIONS = [
     source: 'WCAG 2.2 3.2.4 Consistent Identification (AA)',
     outcome: 'Repeated functions are identified consistently.',
     usualOwnership: 'System, component, and caller content',
+  },
+  {
+    id: '3.2.2-on-input',
+    source: 'WCAG 2.2 3.2.2 On Input (A)',
+    outcome:
+      'Changing a control’s setting does not automatically change the context unless the user was told it would.',
+    usualOwnership: 'Component and caller content',
   },
   {
     id: '3.3.1-error-identification',

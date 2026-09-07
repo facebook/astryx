@@ -104,8 +104,9 @@ Switch binds to the shared switch-pattern accessibility contract
 [AST-020](../../../../docs/specs/AST-020/spec.md) and migrated under
 [AST-021](../../../../docs/specs/AST-021/spec.md)). The binding owns the
 standards-derived outcomes — role, accessible name, exposed on/off state,
-description, disabled exposure and inoperability, and pointer and keyboard
-activation — across the representative states listed in
+description, disabled exposure and inoperability, pointer and keyboard
+activation, pointer cancellation, and focus staying put on change — across the
+representative states listed in
 `__tests__/Switch.a11y.states.ts`. Callback payloads, form participation,
 disabled-reason tooltip composition, and styling remain Switch-owned and stay in
 `Switch.test.tsx`.
