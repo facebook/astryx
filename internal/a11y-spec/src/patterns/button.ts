@@ -113,7 +113,9 @@ const FAMILY_BUTTONS_FR2: AstryxRecord = {
   clause: 'FR2',
   requirement:
     'A momentary or persistent action renders an operable button with keyboard activation, focus-visible feedback, and `type="button"` unless the component\'s documented form mode says otherwise.',
-  // L108-L111 is the quoted sentence itself, not the whole bullet.
+  // The lines the quoted sentence spans. A line anchor cannot stop mid-line, so
+  // the range also shows the start of the sentence that follows it; the
+  // `requirement` above is the exact text this expectation rests on.
   url: `${FAMILY_BUTTONS}#L108-L111`,
 };
 
@@ -127,8 +129,9 @@ const FAMILY_BUTTONS_FR3: AstryxRecord = {
   id: 'family:buttons',
   clause: 'FR3',
   requirement: 'A disabled member MUST NOT invoke its callback or Action.',
-  // L113-L114 only: the range stops where the quote does, so it does not
-  // highlight the MAY sentence this citation deliberately excludes.
+  // The lines the MUST sentence spans. It ends mid-L114, so the range also
+  // shows the start of the MAY that follows — which is a limit of line anchors,
+  // not a widening of the citation: `requirement` above is the MUST alone.
   url: `${FAMILY_BUTTONS}#L113-L114`,
 };
 
