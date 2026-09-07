@@ -231,7 +231,8 @@ export const docs = {
     {
       name: 'onClick',
       type: '() => void',
-      description: 'Callback fired when the trigger button is clicked.',
+      description:
+        'Callback fired for accepted trigger activation. The trailing click from the same press that light-dismissed the menu is ignored.',
     },
     {
       name: 'hasChevron',

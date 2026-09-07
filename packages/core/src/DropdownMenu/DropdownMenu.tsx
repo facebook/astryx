@@ -39,7 +39,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {usePopoverInternal} from '../Popover/usePopover';
+import {usePopover} from '../Popover/usePopover';
 import {Button, type ButtonProps} from '../Button';
 import {Heading} from '../Heading';
 import {Icon} from '../Icon';
@@ -55,6 +55,7 @@ import {
   DropdownMenuContext,
   type DropdownMenuContextValue,
 } from './DropdownMenuContext';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
@@ -604,6 +605,10 @@ function DropdownMenuPopover({
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+  const acceptedOpenRef = useRef(false);
+  const notifyClickOnShowRef = useRef(false);
+  const pendingControlledOpenRef = useRef(false);
+  const suppressControlledRollbackHideRef = useRef(false);
 
   useInteractionModalityTracking();
 
@@ -612,6 +617,11 @@ function DropdownMenuPopover({
   // ring on the trigger after a touch selection. Native popover restoration
   // can happen before `toggle`, so explicitly blur that pointer-restored case.
   const handleLayerHide = useCallback(() => {
+    if (suppressControlledRollbackHideRef.current) {
+      suppressControlledRollbackHideRef.current = false;
+      return;
+    }
+    pendingControlledOpenRef.current = false;
     onOpenChange?.(false);
     if (!isControlled) {
       setInternalIsOpen(false);
@@ -636,13 +646,18 @@ function DropdownMenuPopover({
   const openModalityRef = useRef<'keyboard' | 'pointer'>('keyboard');
 
   const handleLayerShow = useCallback(() => {
+    acceptedOpenRef.current = true;
+    if (notifyClickOnShowRef.current) {
+      notifyClickOnShowRef.current = false;
+      onClick?.();
+    }
     onOpenChange?.(true);
     if (!isControlled) {
       setInternalIsOpen(true);
     }
-  }, [isControlled, onOpenChange]);
+  }, [isControlled, onClick, onOpenChange]);
 
-  const popover = usePopoverInternal({
+  const popover = usePopover({
     onHide: handleLayerHide,
     onShow: handleLayerShow,
     hasLightDismiss: true,
@@ -696,17 +711,27 @@ function DropdownMenuPopover({
   // menu, so every later open follows the modality rules above.
   const isMountedOpenRef = useRef(isControlled && controlledIsOpen === true);
 
-  // Sync controlled open state → popover.
-  useEffect(() => {
-    if (isControlled) {
-      if (controlledIsOpen && !popover.isOpen) {
+  // Sync controlled open state → popover. A trigger open is committed first so
+  // Popover can reject the dismissing gesture before notifying the controller.
+  // If the controller has not accepted by the next layout pass, roll the DOM
+  // state back before paint without emitting a second change request.
+  useIsomorphicLayoutEffect(() => {
+    if (!isControlled) {
+      return;
+    }
+    if (controlledIsOpen) {
+      pendingControlledOpenRef.current = false;
+      if (!popover.isOpen) {
         shouldFocusOnOpenRef.current = !isMountedOpenRef.current;
         popover.show();
-      } else if (!controlledIsOpen) {
-        isMountedOpenRef.current = false;
-        if (popover.isOpen) {
-          popover.hide();
-        }
+      }
+    } else {
+      isMountedOpenRef.current = false;
+      if (popover.isOpen) {
+        suppressControlledRollbackHideRef.current =
+          pendingControlledOpenRef.current;
+        pendingControlledOpenRef.current = false;
+        popover.hide();
       }
     }
   }, [controlledIsOpen, isControlled, popover]);
@@ -771,36 +796,46 @@ function DropdownMenuPopover({
   );
 
   const openAndFocus = useCallback(
-    (modality: 'keyboard' | 'pointer' = 'keyboard') => {
+    (
+      modality: 'keyboard' | 'pointer' = 'keyboard',
+      notifyClick = false,
+    ): boolean => {
+      acceptedOpenRef.current = false;
+      notifyClickOnShowRef.current = notifyClick;
+      pendingControlledOpenRef.current = isControlled;
       openModalityRef.current = modality;
       shouldFocusOnOpenRef.current = true;
       popover.show();
+      if (!acceptedOpenRef.current) {
+        notifyClickOnShowRef.current = false;
+        pendingControlledOpenRef.current = false;
+        openModalityRef.current = 'keyboard';
+        shouldFocusOnOpenRef.current = false;
+        return false;
+      }
+      return true;
     },
-    [popover],
+    [isControlled, popover],
   );
 
   const handleButtonClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
-      // The click that light-dismissed the menu is not a request to reopen it.
-      if (popover.wasJustDismissed()) {
-        return;
-      }
-      onClick?.();
       // detail === 0 marks a synthesized click (screen reader / AT
       // activation): treat it as keyboard so those users still land on the
       // first item. Real pointer clicks report detail >= 1.
       const modality = e.detail === 0 ? 'keyboard' : 'pointer';
       if (isControlled) {
-        if (!controlledIsOpen) {
-          openModalityRef.current = modality;
-        }
-        onOpenChange?.(!controlledIsOpen);
-      } else {
-        if (popover.isOpen) {
-          popover.hide();
+        if (controlledIsOpen) {
+          onClick?.();
+          onOpenChange?.(false);
         } else {
-          openAndFocus(modality);
+          openAndFocus(modality, true);
         }
+      } else if (popover.isOpen) {
+        onClick?.();
+        popover.hide();
+      } else {
+        openAndFocus(modality, true);
       }
     },
     [

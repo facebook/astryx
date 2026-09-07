@@ -825,12 +825,13 @@ describe('DropdownMenu', () => {
 });
 
 describe('DropdownMenu light-dismiss race', () => {
-  function openMenu() {
+  function openMenu(onClick?: () => void) {
     render(
       <DropdownMenu
         button={{label: 'Actions'}}
         items={[{label: 'Edit'}]}
         data-testid="astryx-dropdown-menu"
+        onClick={onClick}
       />,
     );
     const trigger = screen.getByTestId('astryx-dropdown-menu');
@@ -857,14 +858,17 @@ describe('DropdownMenu light-dismiss race', () => {
     });
   }
 
-  it('does not re-open when the trigger click follows its own light dismiss', () => {
-    const trigger = openMenu();
+  it('does not re-open or notify on the click from its own light dismiss', () => {
+    const onClick = vi.fn();
+    const trigger = openMenu(onClick);
+    expect(onClick).toHaveBeenCalledTimes(1);
 
     fireEvent.pointerDown(trigger);
     lightDismiss();
     fireEvent.click(trigger);
 
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 
   it('re-opens on a press of its own after a light dismiss', () => {
@@ -1058,7 +1062,11 @@ describe('DropdownMenu controlled mode', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /Actions/}));
-    expect(handleToggle).toHaveBeenCalledWith(true);
+    expect(handleToggle.mock.calls).toEqual([[true]]);
+    expect(screen.getByRole('button', {name: /Actions/})).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 });
 

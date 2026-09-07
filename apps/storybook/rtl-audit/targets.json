@@ -351,6 +351,34 @@
     }
   },
   {
+    "component": "Selector",
+    "storyId": "core-selector--default",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": "[role=\"combobox\"]"
+    },
+    "selectors": {
+      "overlay": ".astryx-selector-popup",
+      "overlayRoot": "[role=\"combobox\"]"
+    }
+  },
+  {
+    "component": "MultiSelector",
+    "storyId": "core-multiselector--default",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": "[role=\"combobox\"]"
+    },
+    "selectors": {
+      "overlay": ".astryx-multi-selector-popup",
+      "overlayRoot": "[role=\"combobox\"]"
+    }
+  },
+  {
     "component": "SideNav",
     "storyId": "core-sidenav--default",
     "dims": [
