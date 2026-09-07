@@ -188,6 +188,31 @@ function sourceEntryAliases(packages, context) {
 }
 
 /**
+ * Whether the resolved alias map claims any astryx request at all. Both alias
+ * shapes are ordered first-match-wins, so a caller entry that covers a package
+ * is as effective as a generated one — where it points is the caller's business,
+ * not this helper's. The question is only whether resolution has been directed
+ * somewhere, because an alias map that names none of the packages is the
+ * pre-0.5.3 config: the app falls through `default` to dist while PostCSS
+ * compiles the library from source.
+ */
+function aliasCoversAstryx(alias, packages) {
+  const claims = request =>
+    packages.some(name => request === name || request.startsWith(`${name}/`));
+  if (Array.isArray(alias)) {
+    return alias.some(
+      entry => entry && typeof entry.name === 'string' && claims(entry.name),
+    );
+  }
+  if (alias == null || typeof alias !== 'object') {
+    return false;
+  }
+  return Object.keys(alias).some(key =>
+    claims(key.endsWith('$') ? key.slice(0, -1) : key),
+  );
+}
+
+/**
  * Wraps a Next.js config to enable Astryx source builds.
  * - Adds transpilePackages for @astryxdesign/* packages
  * - Sets conditionNames to resolve source exports
@@ -258,26 +283,31 @@ function withAstryx(nextConfig = {}) {
       // where the resolver, taking the first match, loads astryx source
       // instead. Only a byte-identical `$` key would have replaced ours.
       merged.resolve = merged.resolve || {};
-      const generated = sourceEntryAliases(astryxPackages, context);
+      merged.resolve.alias = mergeAliases(
+        sourceEntryAliases(astryxPackages, context),
+        merged.resolve.alias,
+      );
 
-      // Skipping a package that is not installed is correct on its own — an app
-      // need not depend on all three. Skipping every one of them is not: the
-      // result is zero aliases, which is the pre-0.5.3 config, and the app goes
-      // back to resolving dist against source-compiled CSS. That reads as
-      // working right up to the unstyled page, so say it instead. A warning
-      // rather than a throw because an install layout this helper cannot walk
-      // is not proof the build is wrong.
-      if (Object.keys(generated).length === 0) {
+      // Generating no entries is not itself a fault: a package may simply not be
+      // installed, and a caller alias that already routes the packages is a
+      // working config this helper has nothing to add to. What is a fault is
+      // ending up with an alias map that claims none of them — that is the
+      // pre-0.5.3 config, where the app resolves dist while PostCSS compiles the
+      // library from source and the page renders unstyled with nothing logged.
+      // So the check is on the merged result, not on what we generated, and it
+      // warns rather than throws: an install layout this helper cannot walk is
+      // not proof the build is wrong.
+      if (!aliasCoversAstryx(merged.resolve.alias, astryxPackages)) {
         console.warn(
-          '[@astryxdesign/build] withAstryx() resolved no `source` entries for ' +
-            `${astryxPackages.join(', ')}. Either none is installed where the ` +
-            'app can see it, or their export maps ship no `source` condition. ' +
-            'The app will resolve them to dist while the PostCSS pass compiles ' +
-            'the library from source, and render unstyled.',
+          '[@astryxdesign/build] withAstryx() produced no alias for ' +
+            `${astryxPackages.join(', ')}, and none was configured. Either they ` +
+            'are not installed where the app can see them, or their export maps ' +
+            'ship no `source` condition. Source resolution is not in effect, so ' +
+            'the app will load dist while the PostCSS pass compiles the library ' +
+            'from source.',
         );
       }
 
-      merged.resolve.alias = mergeAliases(generated, merged.resolve.alias);
       return merged;
     },
   };

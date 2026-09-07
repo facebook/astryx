@@ -401,18 +401,17 @@ describe('withAstryx alias coverage', () => {
     vi.restoreAllMocks();
   });
 
-  it('warns when no package yields a source entry', () => {
+  it('warns when nothing routes the packages at all', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    // An app directory with no astryx packages installed: every lookup is
-    // skipped, the alias map comes out empty, and that is the pre-0.5.3 config
-    // rather than a partial one.
+    // Nothing installed and no caller alias, so the merged map claims none of
+    // the packages — the pre-0.5.3 config, rather than a partial one.
     const empty = fs.realpathSync(
       fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-none-')),
     );
     try {
       withAstryx().webpack({resolve: {}}, {dir: empty});
       expect(warn).toHaveBeenCalledOnce();
-      expect(warn.mock.calls[0][0]).toMatch(/resolved no `source` entries/);
+      expect(warn.mock.calls[0][0]).toMatch(/produced no alias for/);
     } finally {
       fs.rmSync(empty, {recursive: true, force: true});
     }
@@ -424,5 +423,76 @@ describe('withAstryx alias coverage', () => {
     // lab are absent and skipped. A partial map is the normal case, not a fault.
     resolveConfig();
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('stays quiet when a caller alias already routes the packages', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Nothing installed, so this helper generates nothing — but the caller has
+    // routed the packages itself, which is a working config with nothing to
+    // warn about. The check is on the merged alias map, not on what we
+    // generated.
+    const empty = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-caller-')),
+    );
+    try {
+      withAstryx().webpack(
+        {
+          resolve: {
+            alias: {'@astryxdesign/core': path.join(empty, 'vendored')},
+          },
+        },
+        {dir: empty},
+      );
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      fs.rmSync(empty, {recursive: true, force: true});
+    }
+  });
+
+  it('stays quiet for an array-shaped caller alias too', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const empty = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-caller-arr-')),
+    );
+    try {
+      withAstryx().webpack(
+        {
+          resolve: {
+            alias: [
+              {
+                name: '@astryxdesign/core',
+                onlyModule: false,
+                alias: path.join(empty, 'vendored'),
+              },
+            ],
+          },
+        },
+        {dir: empty},
+      );
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      fs.rmSync(empty, {recursive: true, force: true});
+    }
+  });
+
+  it('stays quiet when the caller routes them from its webpack hook', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const empty = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-caller-hook-')),
+    );
+    try {
+      withAstryx({
+        webpack: cfg => {
+          cfg.resolve.alias['@astryxdesign/core'] = path.join(
+            empty,
+            'vendored',
+          );
+          return cfg;
+        },
+      }).webpack({resolve: {alias: {}}}, {dir: empty});
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      fs.rmSync(empty, {recursive: true, force: true});
+    }
   });
 });
