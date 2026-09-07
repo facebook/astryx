@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 import type {Meta, StoryObj} from '@storybook/react';
+import {fn} from 'storybook/test';
 import * as stylex from '@stylexjs/stylex';
 import {AvatarGroup, AvatarGroupOverflow} from '@astryxdesign/core/AvatarGroup';
 import {Avatar} from '@astryxdesign/core/Avatar';
@@ -40,11 +41,15 @@ const meta: Meta<typeof AvatarGroupOverflow> = {
   tags: ['autodocs'],
   args: {
     count: 2,
+    onClick: undefined,
   },
   argTypes: {
     count: {control: 'number'},
     children: {control: 'text'},
-    onClick: {action: 'click'},
+    onClick: {
+      control: false,
+      description: 'Callback for intentionally clickable overflow indicators.',
+    },
     ref: {control: false},
     xstyle: {
       control: false,
@@ -67,7 +72,7 @@ export const Default: Story = {};
 
 export const Clickable: Story = {
   args: {
-    onClick: () => {},
+    onClick: fn(),
   },
 };
 
