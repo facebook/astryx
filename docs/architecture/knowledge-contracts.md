@@ -46,7 +46,11 @@ Astryx keeps different facts in different places:
   measured receipts, known gaps, compatibility, and artifacts.
 - System specs record decisions that cross components or themes or change architecture.
 - Consumer docs explain props, examples, and usage.
-- Audit records hold current evidence and findings.
+- Audit records hold current evidence and findings. The operational store is the
+  automated wiki `component-scores.json`, which supplies the current post-fix score
+  and unresolved findings to the sandbox. The bootstrap reserved colocated
+  `<PublicName>.audit.json` files, but no schema or records activated that path; it is
+  not an audit datastore or current migration target.
 
 The reviewer starts with the changed code and the nearest current component or
 module contract. They follow only the links needed for the question:
@@ -124,12 +128,37 @@ Every record is either:
   before acceptance. Package-export shape is not the only trigger: reachable
   supporting types, context members, hook returns, defaults, and observable
   behavior participate too.
+- **INV12 — Audit state has one automated datastore.** Wiki
+  `component-scores.json` is the operational source for current scores and
+  unresolved findings. The unactivated `<PublicName>.audit.json` convention is
+  retired. A future storage change requires an explicit system decision, versioned
+  data contract, automated migration and reconciliation, sandbox-reader cutover,
+  and rollback evidence; it MUST NOT create per-component shadow ledgers by
+  convention.
+- **INV13 — Authors search before creating authority.** Before creating or
+  materially expanding a record, search current records and open pull requests by
+  proposed canonical owner/id, affected paths and exported symbols, and semantic
+  behavior terms. Extend or project the existing canonical owner by default. A new
+  record requires a distinct fact boundary and an explicit explanation of why no
+  existing owner can contain it. Open pull requests coordinate overlapping work;
+  they remain non-authoritative evidence.
 
 ## Writing specifications and contracts
 
 These rules guide writing. They do not permit semantic compaction. They come from
 directional evidence and project-owner judgment; the agent benchmark did not
 measure human readability, so this is not a quantified readability claim.
+
+Before writing:
+
+1. Search current records for the behavior, public symbols, affected paths, and
+   proposed canonical owner/id.
+2. Search open pull requests for the same owner path, symbols, and semantic terms.
+3. Update the canonical owner or coordinate with the overlapping work. Create a
+   new record only when the fact has a distinct owner and explain that boundary in
+   the pull-request summary.
+
+Then write the contract:
 
 - Use familiar words and short, direct sentences.
 - State each rule once, beside the conditions and exceptions that control it.
@@ -234,6 +263,12 @@ Before any component, module, family, design, theme, or architecture record beco
 8. Audit freshness is computed from the same code and test relationship, so a
    relevant code change cannot leave an audit looking current.
 
+Audit-storage migration is a separate contract change. It requires a versioned
+data contract, automated conversion and reconciliation of existing wiki rows, a
+named source of truth during transition, sandbox-reader cutover, and rollback
+evidence. Repository-local per-component files are not a migration plan by
+themselves.
+
 ### Recording a new human decision
 
 1. A contributor explains the intended behavior in normal pull-request language
@@ -311,6 +346,9 @@ this flow passes the historical review benchmark and is enforced on pull request
   fixture, test, generated, build-output, coverage, dependency, and
   `*.generated.spec.md` paths are ignored consistently by discovery and PR
   routing.
+- Wiki `component-scores.json` is the current operational audit datastore. The
+  historical `<PublicName>.audit.json` reservation never received a schema or active
+  records and is retired by INV12.
 - `packages/themes/<theme>/<theme>.spec.md` contains that package theme's
   canonical record; `docs/themes/README.md` is guidance and an index only.
 - `docs/schemas/knowledge/` defines required structure.
@@ -355,12 +393,33 @@ Rejected: requiring the owner to open a second pull request for every ruling,
 because it separates the answer from the change and adds unnecessary review
 work.
 
+### DEC-3 — Search overlapping authority before writing
+
+**Reference:** `architecture:knowledge-contracts/DEC-3`
+**Decider:** `cixzhang`, `2026-09-07`
+
+Before drafting a new record or materially expanding one, search current records
+and open pull requests using more than the proposed title: canonical owner/id,
+affected paths, exported symbols, and semantic behavior terms. Extend or project
+the canonical owner when the fact already belongs there. Create a new record only
+for a distinct fact boundary and explain why the existing owner cannot contain it.
+
+Rejected: searching only filenames or landed records. Semantic overlap may use a
+different title, and open work may already be changing the same owner before it
+lands. Open pull requests coordinate work and provide evidence; they do not become
+authority.
+
 ## Verification
 
-| Invariant                         | Evidence                                       | Failure signal                                                                                                                                      |
-| --------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV6                        | `scripts/check-knowledge.test.mjs`             | An unapproved current record or unmigrated active record passes                                                                                     |
-| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`        | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                    |
-| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs` | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current theme record |
-| INV3, INV4, INV11                 | Blinded historical review benchmark            | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                  |
-| INV10                             | Record-content and review-disposition fixtures | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                            |
+| Invariant                         | Evidence                                                    | Failure signal                                                                                                                                              |
+| --------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV6                        | `scripts/check-knowledge.test.mjs`                          | An unapproved current record or unmigrated active record passes                                                                                             |
+| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`                     | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                            |
+| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs`              | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current theme record         |
+| INV3, INV4, INV11                 | Blinded historical review benchmark                         | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                          |
+| INV10                             | Record-content and review-disposition fixtures              | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                                    |
+| INV13                             | Blinded spec-authorship fixture plus overlap-search receipt | An author creates parallel authority, searches only landed records or filenames, misses open work on the canonical owner, or treats an open PR as authority |
+
+Current enforcement gap: no checked-in gate yet proves the open-pull-request
+search. Until one exists, the pull-request summary records the search terms,
+canonical owner/path, and overlapping open work inspected.

@@ -44,9 +44,12 @@ only when a stable public API, theme contract, ownership boundary, compatibility
 policy, or genuinely subjective visual direction remains undecided. Ask one
 question at a time.
 
-Before reviewing or implementing a proposed outcome, check current `main` and
-newer overlapping pull requests. Do not create new policy for work that is
-already complete or superseded.
+Before drafting, reviewing, or implementing a proposed outcome, search current
+records and open pull requests using the proposed canonical owner/id, affected
+paths and exported symbols, and the behavior's semantic terms. Extend or project
+the existing canonical owner by default. Create a new record only for a distinct
+fact boundary, and state why the existing owner cannot contain it. Do not create
+new policy for work that is already complete, owned, or superseded.
 
 ## Validation
 
@@ -178,24 +181,24 @@ Documentation lives in two places:
 <!-- ASTRYX-CLI:START -->
 
 Astryx CLI|Run from repo root. Load agent docs before any component work.
-ASTRYX="node packages/cli/clients/cli/bin/astryx.mjs"
+astryx() { node packages/cli/clients/cli/bin/astryx.mjs "$@"; }
 BOOTSTRAP (run every branch, <500ms):
-$ASTRYX help # discover all commands and options
-$ASTRYX docs # list available doc topics
-$ASTRYX docs principles --dense # design rules, anti-patterns, xstyle, tokens
-$ASTRYX docs tokens --dense # spacing, color, radius, typography, shadow
-$ASTRYX docs theme --dense # theme provider, light/dark, overrides
-$ASTRYX component --list # all components grouped by category
-$ASTRYX template --list # available page templates
+astryx help # discover all commands and options
+astryx docs # list available doc topics
+astryx docs principles --dense # design rules, anti-patterns, xstyle, tokens
+astryx docs tokens --dense # spacing, color, radius, typography, shadow
+astryx docs theme --dense # theme provider, light/dark, overrides
+astryx component --list # all components grouped by category
+astryx template --list # available page templates
 ON DEMAND:
-$ASTRYX component <Name> --dense # props, variants, usage, anatomy for one component
-$ASTRYX template <name> # emit full page source
-$ASTRYX template <name> --skeleton # layout skeleton with spatial annotations
-$ASTRYX swizzle <Name> # eject component source for deep customization
-$ASTRYX upgrade --apply # run version migration codemods
+astryx component <Name> --dense # props, variants, usage, anatomy for one component
+astryx template <name> # emit full page source
+astryx template <name> --skeleton # layout skeleton with spatial annotations
+astryx swizzle <Name> # eject component source for deep customization
+astryx upgrade --apply # run version migration codemods
 OPTIONS: --detail compact|brief less output | --dense token-efficient | --zh Chinese
 RULE: always run bootstrap on each branch — docs reflect the branch's actual API
-RULE: always run $ASTRYX component <Name> --dense before modifying a component
-RULE: after @astryxdesign/core bump, always run $ASTRYX upgrade --apply
+RULE: always run astryx component <Name> --dense before modifying a component
+RULE: after @astryxdesign/core bump, always run astryx upgrade --apply
 
 <!-- ASTRYX-CLI:END -->

@@ -325,8 +325,8 @@ export function PlaygroundClient() {
 
   const editorPanel = useResizable({
     defaultSize: 440,
-    minSizePx: 340,
-    maxSizePx: 760,
+    minSize: 340,
+    maxSize: 760,
     autoSaveId: 'astryx-playground-left-width',
   });
 

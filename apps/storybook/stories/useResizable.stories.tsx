@@ -200,8 +200,8 @@ export const Horizontal: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 200,
-      minSizePx: 100,
-      maxSizePx: 500,
+      minSize: 100,
+      maxSize: 500,
     });
     return (
       <div {...stylex.props(s.shell)}>
@@ -231,8 +231,8 @@ export const Vertical: Story = {
   render: () => {
     const top = useResizable({
       defaultSize: 150,
-      minSizePx: 60,
-      maxSizePx: 250,
+      minSize: 60,
+      maxSize: 250,
       direction: 'vertical',
     });
     return (
@@ -263,13 +263,13 @@ export const ThreePanel: Story = {
   render: () => {
     const left = useResizable({
       defaultSize: 180,
-      minSizePx: 120,
-      maxSizePx: 300,
+      minSize: 120,
+      maxSize: 300,
     });
     const right = useResizable({
       defaultSize: 220,
-      minSizePx: 150,
-      maxSizePx: 400,
+      minSize: 150,
+      maxSize: 400,
     });
     return (
       <div {...stylex.props(s.shell)}>
@@ -312,13 +312,13 @@ export const Nested: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 200,
-      minSizePx: 120,
-      maxSizePx: 350,
+      minSize: 120,
+      maxSize: 350,
     });
     const editor = useResizable({
       defaultSize: 200,
-      minSizePx: 80,
-      maxSizePx: 250,
+      minSize: 80,
+      maxSize: 250,
       direction: 'vertical',
     });
     return (
@@ -383,8 +383,8 @@ export const AlwaysVisible: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 250,
-      minSizePx: 100,
-      maxSizePx: 500,
+      minSize: 100,
+      maxSize: 500,
     });
     return (
       <div {...stylex.props(s.shell)}>
@@ -414,13 +414,13 @@ export const MixedContainers: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 200,
-      minSizePx: 120,
-      maxSizePx: 350,
+      minSize: 120,
+      maxSize: 350,
     });
     const editor = useResizable({
       defaultSize: 200,
-      minSizePx: 80,
-      maxSizePx: 250,
+      minSize: 80,
+      maxSize: 250,
       direction: 'vertical',
     });
     return (

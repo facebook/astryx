@@ -440,8 +440,8 @@ export function SideNav({
   // owner mounted when resize is toggled preserves the current collapse state.
   const resizableHook = useResizable({
     defaultSize: resizableConfig.defaultWidth ?? 260,
-    minSizePx: resizableConfig.minWidth ?? 180,
-    maxSizePx: resizableConfig.maxWidth ?? 480,
+    minSize: resizableConfig.minWidth ?? 180,
+    maxSize: resizableConfig.maxWidth ?? 480,
     collapsible: isCollapsible,
     collapsedSize: COLLAPSE_THRESHOLD,
     autoSaveId: resizableConfig.autoSaveId,
