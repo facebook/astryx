@@ -1,0 +1,1484 @@
+[
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--default",
+    "screenshot": "AvatarGroupOverflow__static-rest__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(82, 82, 82) none 0px",
+      "outlineColor": "rgb(82, 82, 82)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "light",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--clickable",
+    "screenshot": "AvatarGroupOverflow__button-rest__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(82, 82, 82) none 0px",
+      "outlineColor": "rgb(82, 82, 82)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "light",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--clickable",
+    "screenshot": "AvatarGroupOverflow__button-hover__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "hover",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": true,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05)), linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(82, 82, 82) none 0px",
+      "outlineColor": "rgb(82, 82, 82)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "light",
+        "state": "hover",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--clickable",
+    "screenshot": "AvatarGroupOverflow__button-focus__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "focus",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": true,
+      "focusVisible": true,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(38, 38, 38) solid 2px",
+      "outlineColor": "rgb(38, 38, 38)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "light",
+        "state": "focus",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--clickable",
+    "screenshot": "AvatarGroupOverflow__button-active__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "active",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": true,
+      "focusVisible": false,
+      "hovered": true,
+      "active": true,
+      "direction": "ltr",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(82, 82, 82) none 0px",
+      "outlineColor": "rgb(82, 82, 82)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "light",
+        "state": "active",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--custom-content",
+    "screenshot": "AvatarGroupOverflow__custom-content__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "12 more",
+      "text": "12+",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(82, 82, 82) none 0px",
+      "outlineColor": "rgb(82, 82, 82)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "light",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--all-sizes",
+    "screenshot": "AvatarGroupOverflow__all-sizes__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "SPAN",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(82, 82, 82) none 3px",
+      "outlineColor": "rgb(82, 82, 82)",
+      "fontSize": "12px",
+      "borderRadius": "9999px",
+      "width": 35.125,
+      "height": 24,
+      "x": 35,
+      "y": 44,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "light",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--all-shapes",
+    "screenshot": "AvatarGroupOverflow__all-shapes__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "SPAN",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(82, 82, 82) none 3px",
+      "outlineColor": "rgb(82, 82, 82)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 56,
+      "y": 44,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "light",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--large-count",
+    "screenshot": "AvatarGroupOverflow__long-count__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "4,912 more",
+      "text": "+4912",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(82, 82, 82) none 0px",
+      "outlineColor": "rgb(82, 82, 82)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 69.203125,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "light",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--zero-count",
+    "screenshot": "AvatarGroupOverflow__zero-count__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "0 more",
+      "text": "+0",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(82, 82, 82) none 0px",
+      "outlineColor": "rgb(82, 82, 82)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "light",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--standalone",
+    "screenshot": "AvatarGroupOverflow__standalone__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(82, 82, 82) none 0px",
+      "outlineColor": "rgb(82, 82, 82)",
+      "fontSize": "12.6px",
+      "borderRadius": "9999px",
+      "width": 40,
+      "height": 40,
+      "x": 16,
+      "y": 16,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "light",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--right-to-left",
+    "screenshot": "AvatarGroupOverflow__rtl__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "rtl",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "rtl",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(82, 82, 82) none 0px",
+      "outlineColor": "rgb(82, 82, 82)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 652,
+      "y": 16,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "light",
+        "state": "rest",
+        "direction": "rtl"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--narrow-container",
+    "screenshot": "AvatarGroupOverflow__narrow-320__light.png",
+    "mode": "light",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 320,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "light",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(82, 82, 82)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06))",
+      "borderColor": "rgb(255, 255, 255)",
+      "outline": "rgb(82, 82, 82) none 0px",
+      "outlineColor": "rgb(82, 82, 82)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "light",
+      "viewport": {
+        "width": 320,
+        "height": 500
+      },
+      "documentScrollWidth": 320,
+      "documentClientWidth": 320,
+      "expected": {
+        "mode": "light",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--default",
+    "screenshot": "AvatarGroupOverflow__static-rest__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(158, 158, 158) none 0px",
+      "outlineColor": "rgb(158, 158, 158)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "dark",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--clickable",
+    "screenshot": "AvatarGroupOverflow__button-rest__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(158, 158, 158) none 0px",
+      "outlineColor": "rgb(158, 158, 158)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "dark",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--clickable",
+    "screenshot": "AvatarGroupOverflow__button-hover__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "hover",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": true,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)), linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(158, 158, 158) none 0px",
+      "outlineColor": "rgb(158, 158, 158)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "dark",
+        "state": "hover",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--clickable",
+    "screenshot": "AvatarGroupOverflow__button-focus__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "focus",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": true,
+      "focusVisible": true,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(241, 241, 241) solid 2px",
+      "outlineColor": "rgb(241, 241, 241)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "dark",
+        "state": "focus",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--clickable",
+    "screenshot": "AvatarGroupOverflow__button-active__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "active",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": true,
+      "focusVisible": false,
+      "hovered": true,
+      "active": true,
+      "direction": "ltr",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(158, 158, 158) none 0px",
+      "outlineColor": "rgb(158, 158, 158)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "dark",
+        "state": "active",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--custom-content",
+    "screenshot": "AvatarGroupOverflow__custom-content__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "12 more",
+      "text": "12+",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(158, 158, 158) none 0px",
+      "outlineColor": "rgb(158, 158, 158)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "dark",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--all-sizes",
+    "screenshot": "AvatarGroupOverflow__all-sizes__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "SPAN",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(158, 158, 158) none 3px",
+      "outlineColor": "rgb(158, 158, 158)",
+      "fontSize": "12px",
+      "borderRadius": "9999px",
+      "width": 35.125,
+      "height": 24,
+      "x": 35,
+      "y": 44,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "dark",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--all-shapes",
+    "screenshot": "AvatarGroupOverflow__all-shapes__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "SPAN",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(158, 158, 158) none 3px",
+      "outlineColor": "rgb(158, 158, 158)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 56,
+      "y": 44,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "dark",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--large-count",
+    "screenshot": "AvatarGroupOverflow__long-count__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "4,912 more",
+      "text": "+4912",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(158, 158, 158) none 0px",
+      "outlineColor": "rgb(158, 158, 158)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 69.203125,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "dark",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--zero-count",
+    "screenshot": "AvatarGroupOverflow__zero-count__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "0 more",
+      "text": "+0",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(158, 158, 158) none 0px",
+      "outlineColor": "rgb(158, 158, 158)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "dark",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--standalone",
+    "screenshot": "AvatarGroupOverflow__standalone__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(158, 158, 158) none 0px",
+      "outlineColor": "rgb(158, 158, 158)",
+      "fontSize": "12.6px",
+      "borderRadius": "9999px",
+      "width": 40,
+      "height": 40,
+      "x": 16,
+      "y": 16,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "dark",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--right-to-left",
+    "screenshot": "AvatarGroupOverflow__rtl__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "rtl",
+    "viewport": {
+      "width": 800,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "rtl",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(158, 158, 158) none 0px",
+      "outlineColor": "rgb(158, 158, 158)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 652,
+      "y": 16,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 800,
+        "height": 500
+      },
+      "documentScrollWidth": 800,
+      "documentClientWidth": 800,
+      "expected": {
+        "mode": "dark",
+        "state": "rest",
+        "direction": "rtl"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  },
+  {
+    "schemaVersion": 1,
+    "build": "ab8771c04d65",
+    "storyId": "core-avatargroupoverflow--narrow-container",
+    "screenshot": "AvatarGroupOverflow__narrow-320__dark.png",
+    "mode": "dark",
+    "theme": "neutral",
+    "direction": "ltr",
+    "viewport": {
+      "width": 320,
+      "height": 500
+    },
+    "deviceScaleFactor": 1,
+    "media": {
+      "colorScheme": "dark",
+      "pointer": "fine"
+    },
+    "semanticState": "rest",
+    "subject": {
+      "tag": "BUTTON",
+      "role": null,
+      "ariaLabel": "2 more",
+      "text": "+2",
+      "focused": false,
+      "focusVisible": false,
+      "hovered": false,
+      "active": false,
+      "direction": "ltr",
+      "color": "rgb(158, 158, 158)",
+      "backgroundColor": "rgb(38, 38, 38)",
+      "backgroundImage": "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1))",
+      "borderColor": "rgb(38, 38, 38)",
+      "outline": "rgb(158, 158, 158) none 0px",
+      "outlineColor": "rgb(158, 158, 158)",
+      "fontSize": "16.8px",
+      "borderRadius": "9999px",
+      "width": 52,
+      "height": 52,
+      "x": 96,
+      "y": 16,
+      "rootColorScheme": "dark",
+      "viewport": {
+        "width": 320,
+        "height": 500
+      },
+      "documentScrollWidth": 320,
+      "documentClientWidth": 320,
+      "expected": {
+        "mode": "dark",
+        "state": "rest",
+        "direction": "ltr"
+      }
+    },
+    "fonts": "ready",
+    "errors": [],
+    "settled": true
+  }
+]
