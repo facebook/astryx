@@ -6,7 +6,7 @@
  *   Chrome DevTools Protocol accessibility domain behind them
  * @output `createChromiumHarness` — a harness that observes the DOM,
  *   accessibility-tree, and real-browser layers of a page rendered by a real
- *   shipping engine.
+ *   shipping engine — plus `holdMotionStill`, the page setup its specs share.
  * @position The high-fidelity lane. Imported only from the Playwright specs, so
  *   the jsdom lane never loads Playwright: this file is the package's separate
  *   `@astryxdesign/a11y-spec/chromium` entry point, never re-exported from
@@ -163,6 +163,21 @@ async function computedNode(
       AX_TARGET_ATTRIBUTE,
     );
   }
+}
+
+/**
+ * Stop transitions before an expectation reads state, so nothing measures a
+ * frame the animation happens to be showing.
+ *
+ * This is a page call rather than configuration on purpose. Playwright's
+ * `use: {reducedMotion: 'reduce'}` and Chromium's own
+ * `--force-prefers-reduced-motion` flag both leave
+ * `matchMedia('(prefers-reduced-motion: reduce)')` FALSE in this version —
+ * measured, not assumed — so either one would read like a safeguard while doing
+ * nothing. `emulateMedia` takes effect immediately and can be checked.
+ */
+export async function holdMotionStill(page: Page): Promise<void> {
+  await page.emulateMedia({reducedMotion: 'reduce'});
 }
 
 export interface ChromiumHarnessOptions {

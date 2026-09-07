@@ -29,7 +29,10 @@ import {
   summarize,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
-import {createChromiumHarness} from '@astryxdesign/a11y-spec/chromium';
+import {
+  createChromiumHarness,
+  holdMotionStill,
+} from '@astryxdesign/a11y-spec/chromium';
 import {
   DEFAULT_STORYBOOK_DIR,
   serveStorybook,
@@ -70,6 +73,7 @@ async function runState(
     // renders, not from whatever the previous expectation toggled it to.
     mount: async () => {
       await page.goto(url, {waitUntil: 'load'});
+      await holdMotionStill(page);
       const root = page.locator('#storybook-root');
       const subject = root.getByRole('switch');
       await subject.waitFor({state: 'attached'});

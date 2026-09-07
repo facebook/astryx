@@ -30,6 +30,7 @@
 
 import {
   describeExpectation,
+  requiredLayers,
   type Enforcement,
   type Expectation,
   type PatternContract,
@@ -81,6 +82,12 @@ export interface ExpectationResult {
   readonly status: ResultStatus;
   /** Present for `fail`, `known-failure`, `not-applicable`, and `unrun`. */
   readonly detail?: string;
+  /**
+   * For an `unrun` result: exactly which layers this run could not observe.
+   * Not always the expectation's own layer — an interaction expectation can be
+   * unrun because the tree it reads the result from is out of reach.
+   */
+  readonly missingLayers?: readonly EvidenceLayer[];
   /** Present when a known-failure record was consulted. */
   readonly knownFailure?: KnownFailure;
 }
@@ -170,13 +177,18 @@ export async function runBinding<Facts>(
     let ran = false;
 
     try {
-      harness = await mount();
-      harnessName = harness.name;
-      if (!harness.observes.includes(expectation.evidenceLayer)) {
+      const mounted = await mount();
+      harness = mounted;
+      harnessName = mounted.name;
+      const unobservable = requiredLayers(expectation).filter(
+        layer => !mounted.observes.includes(layer),
+      );
+      if (unobservable.length > 0) {
         results.push({
           ...base,
           status: 'unrun',
-          detail: `the ${harness.name} harness cannot observe the ${expectation.evidenceLayer} layer`,
+          missingLayers: unobservable,
+          detail: `the ${mounted.name} harness cannot observe the ${unobservable.join(' or ')} layer${unobservable.length === 1 ? '' : 's'} this expectation reads`,
         });
         continue;
       }

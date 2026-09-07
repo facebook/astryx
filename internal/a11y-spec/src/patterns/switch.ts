@@ -417,6 +417,9 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           test: facts => facts.operable,
         },
         evidenceLayer: 'real-browser',
+        // The claim is a real-browser one, but the answer is read out of the
+        // accessibility tree, so this cannot run without both.
+        alsoNeeds: ['accessibility-tree'],
         enforcement: 'required',
         run: async ({harness, subject, facts}) => {
           await roundTrip(
@@ -439,6 +442,9 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           test: facts => facts.operable && facts.focusable,
         },
         evidenceLayer: 'real-browser',
+        // The claim is a real-browser one, but the answer is read out of the
+        // accessibility tree, so this cannot run without both.
+        alsoNeeds: ['accessibility-tree'],
         enforcement: 'required',
         run: async ({harness, subject, facts}) => {
           await subject.focus();
@@ -466,6 +472,8 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           test: facts => facts.focusable,
         },
         evidenceLayer: 'real-browser',
+        // No `alsoNeeds`: this one reads only where focus is, which is a real
+        // browser's own answer.
         enforcement: 'required',
         run: async ({harness, subject}) => {
           await harness.resetFocus();
@@ -501,6 +509,9 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           test: facts => !facts.operable,
         },
         evidenceLayer: 'real-browser',
+        // The claim is a real-browser one, but the answer is read out of the
+        // accessibility tree, so this cannot run without both.
+        alsoNeeds: ['accessibility-tree'],
         enforcement: 'required',
         run: async ({harness, subject, facts}) => {
           const before = (await subject.computed()).checked;

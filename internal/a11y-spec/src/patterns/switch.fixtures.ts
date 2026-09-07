@@ -27,7 +27,9 @@
 import type {SwitchStateFacts} from './switch';
 
 /** The attribute a fixture marks its control with. */
-export const SUBJECT_ATTRIBUTE = 'data-a11y-subject';
+const SUBJECT_ATTRIBUTE = 'data-a11y-subject';
+
+/** How a lane finds the control a fixture designates. */
 export const SUBJECT_SELECTOR = `[${SUBJECT_ATTRIBUTE}]`;
 
 export interface SwitchFixture {

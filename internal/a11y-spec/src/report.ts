@@ -57,11 +57,14 @@ export function summarize<Facts>(
   bindings: readonly BindingResult[],
 ): Report {
   const results = bindings.flatMap(binding => binding.results);
+  // The layers that were actually out of reach, not the layers the unrun
+  // expectations are filed under: an interaction expectation is unrun in jsdom
+  // because of BOTH the browser it needs and the tree it reads the result from.
   const unrunLayers = [
     ...new Set(
       results
         .filter(result => result.status === 'unrun')
-        .map(result => result.evidenceLayer),
+        .flatMap(result => result.missingLayers ?? [result.evidenceLayer]),
     ),
   ].sort();
 

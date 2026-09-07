@@ -44,15 +44,21 @@ export interface SwitchBindingState {
    * on; it does not assert the negative when they are false.
    */
   readonly facts: SwitchStateFacts;
-  /** Props the jsdom lane renders. The value seeds the controlled state. */
+  /**
+   * The props the jsdom lane renders the switch with. `value` is always the
+   * value it is FIRST rendered with — for a state the owner updates into, that
+   * is the value before the update, and `facts.checked` is where the update
+   * takes it.
+   */
   readonly props: Omit<SwitchProps, 'onChange'>;
   /** The checked-in Storybook story the Chromium lane drives. */
   readonly storyId: string;
   /**
    * How this state comes to be, when it is not simply how the binding first
-   * renders. `controlled-update` means the owner changed the value through a
-   * second control — nobody touched the switch — so both lanes use that control
-   * during mount rather than asserting anything about it.
+   * renders. `controlled-update` means the switch renders with `props.value`
+   * and the owner then moves it to `facts.checked` through a second control —
+   * nobody touched the switch — so both lanes press that control during mount
+   * rather than asserting anything about it.
    */
   readonly arrivesBy?: 'controlled-update';
 }
@@ -226,7 +232,7 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       'a switch the owner turned on through another control — the value changed, nobody touched the switch',
     storyId: 'core-switch--controlled-update',
     arrivesBy: 'controlled-update',
-    props: {label: 'Sync photos', value: true},
+    props: {label: 'Sync photos', value: false},
     facts: {
       checked: true,
       operable: true,

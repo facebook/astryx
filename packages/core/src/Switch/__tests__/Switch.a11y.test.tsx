@@ -55,18 +55,17 @@ function ControlledSwitch({value, ...props}: Omit<SwitchProps, 'onChange'>) {
  * operable afterwards. Mirrors the ControlledUpdate story the Chromium lane
  * drives, including the order, so Tab still reaches the switch first.
  */
-const REMOTE_LABEL = 'Turn on remotely';
-
 function RemotelyToggledSwitch({
   value,
+  movesTo,
   ...props
-}: Omit<SwitchProps, 'onChange'>) {
-  const [checked, setChecked] = useState(!value);
+}: Omit<SwitchProps, 'onChange'> & {movesTo: boolean}) {
+  const [checked, setChecked] = useState(value);
   return (
     <>
       <Switch {...props} value={checked} onChange={setChecked} />
-      <button type="button" onClick={() => setChecked(value)}>
-        {REMOTE_LABEL}
+      <button type="button" onClick={() => setChecked(movesTo)}>
+        {REMOTE_CONTROL_LABEL}
       </button>
     </>
   );
@@ -81,7 +80,12 @@ async function runState(state: SwitchBindingState): Promise<BindingResult> {
     knownFailures: SWITCH_KNOWN_FAILURES,
     mount: async () => {
       if (state.arrivesBy === 'controlled-update') {
-        render(<RemotelyToggledSwitch {...state.props} />);
+        render(
+          <RemotelyToggledSwitch
+            {...state.props}
+            movesTo={state.facts.checked}
+          />,
+        );
         fireEvent.click(
           screen.getByRole('button', {name: REMOTE_CONTROL_LABEL}),
         );

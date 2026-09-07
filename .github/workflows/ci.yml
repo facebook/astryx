@@ -164,8 +164,10 @@ jobs:
           # and their component bindings live under `__tests__/` — which the
           # filter above deliberately excludes. Without this the contract could
           # be changed, or a binding broken, with the only job that runs it
-          # skipped.
-          A11Y=$(printf '%s\n' "$FILES" | grep -E '^internal/a11y-spec/|^packages/[^/]+/src/.*\.a11y\.|^playwright\.config\.ts$' | head -1 || true)
+          # skipped. Stories are in scope too: the Chromium bindings drive
+          # checked-in stories by id, so renaming or deleting one breaks the
+          # contract run and nothing else would notice.
+          A11Y=$(printf '%s\n' "$FILES" | grep -E '^internal/a11y-spec/|^packages/[^/]+/src/.*\.a11y\.|^apps/storybook/stories/|^playwright\.config\.ts$' | head -1 || true)
           echo "has_components=$( { [ -n "$CHANGED" ] || [ -n "$A11Y" ]; } && echo true || echo false )" >> "$GITHUB_OUTPUT"
 
           # One classifier owns the release-channel rule. It reads each

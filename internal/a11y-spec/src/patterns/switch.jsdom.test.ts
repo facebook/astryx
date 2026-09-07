@@ -24,6 +24,7 @@ import {afterEach, describe, expect, it} from 'vitest';
 import {
   citeSource,
   describeExpectation,
+  requiredLayers,
   unansweredDimensions,
 } from '../contract';
 import {JSDOM_OBSERVES, createJsdomHarness} from '../harness/jsdom';
@@ -38,7 +39,7 @@ import {
 } from './switch.fixtures';
 
 const observableHere = SWITCH_PATTERN.expectations.filter(expectation =>
-  JSDOM_OBSERVES.includes(expectation.evidenceLayer),
+  requiredLayers(expectation).every(layer => JSDOM_OBSERVES.includes(layer)),
 );
 
 afterEach(() => {
@@ -113,9 +114,7 @@ describe('switch contract — completeness', () => {
 describe('switch contract — the jsdom harness reports what it cannot see', () => {
   it('reports an expectation above the DOM layer as unrun, never as a pass', async () => {
     const results = await resultsFor(fixture('conforming-off'));
-    const above = results.filter(
-      result => !JSDOM_OBSERVES.includes(result.evidenceLayer),
-    );
+    const above = results.filter(result => result.status === 'unrun');
     // There is at least one, or the contract would be provable without a browser.
     expect(above.length).toBeGreaterThan(0);
     for (const result of above) {

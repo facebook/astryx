@@ -21,8 +21,12 @@
  */
 
 import {expect, test, type CDPSession, type Page} from '@playwright/test';
-import {describeExpectation} from '../contract';
-import {CHROMIUM_OBSERVES, createChromiumHarness} from '../harness/chromium';
+import {describeExpectation, requiredLayers} from '../contract';
+import {
+  CHROMIUM_OBSERVES,
+  createChromiumHarness,
+  holdMotionStill,
+} from '../harness/chromium';
 import {runBinding, type ExpectationResult} from '../run';
 import {SWITCH_PATTERN} from './switch';
 import {
@@ -56,6 +60,7 @@ async function results(
     only,
     mount: async () => {
       await page.setContent(fixturePage(target.html));
+      await holdMotionStill(page);
       return createChromiumHarness({
         page,
         subject: page.locator(SUBJECT_SELECTOR),
@@ -73,9 +78,7 @@ test.describe('switch contract — conforming fixtures', () => {
       const observed = await results(page, cdp, fixture(id));
       const notPassing = observed.filter(
         result =>
-          CHROMIUM_OBSERVES.includes(result.evidenceLayer) &&
-          result.status !== 'pass' &&
-          result.status !== 'not-applicable',
+          result.status !== 'pass' && result.status !== 'not-applicable',
       );
       expect(
         notPassing.map(
@@ -88,7 +91,11 @@ test.describe('switch contract — conforming fixtures', () => {
 
 test.describe('switch contract — deliberately violating fixtures', () => {
   for (const expectation of SWITCH_PATTERN.expectations) {
-    if (!CHROMIUM_OBSERVES.includes(expectation.evidenceLayer)) {
+    if (
+      !requiredLayers(expectation).every(layer =>
+        CHROMIUM_OBSERVES.includes(layer),
+      )
+    ) {
       continue;
     }
     for (const fixtureId of SWITCH_MUTATIONS[expectation.id] ?? []) {

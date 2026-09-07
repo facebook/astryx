@@ -26,6 +26,10 @@
 
 import {defineConfig, devices} from '@playwright/test';
 
+// GitHub Actions sets CI=true; some runners set it to an empty string. One
+// definition, so `forbidOnly` and the reporter choice cannot disagree.
+const isCI = (process.env.CI ?? '') !== '';
+
 export default defineConfig({
   testDir: '.',
   testMatch: [
@@ -38,13 +42,11 @@ export default defineConfig({
   // workers would race over real keyboard focus.
   workers: 1,
   fullyParallel: false,
-  forbidOnly: Boolean(process.env.CI),
-  reporter: process.env.CI == null ? [['list']] : [['list'], ['github']],
-  use: {
-    ...devices['Desktop Chrome'],
-    // Motion is held at its end state: an expectation that reads state must not
-    // read a frame the transition happens to be showing.
-    launchOptions: {args: ['--force-prefers-reduced-motion']},
-  },
+  forbidOnly: isCI,
+  reporter: isCI ? [['list'], ['github']] : [['list']],
+  // One `use` block, on the project. Motion is NOT held here: neither
+  // `use.reducedMotion` nor Chromium's `--force-prefers-reduced-motion` reaches
+  // `matchMedia` in this Playwright version — both were measured returning
+  // false. The specs call `holdMotionStill(page)` instead, which does work.
   projects: [{name: 'chromium', use: {...devices['Desktop Chrome']}}],
 });

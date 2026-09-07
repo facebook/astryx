@@ -128,7 +128,20 @@ export interface Expectation<Facts> {
   /** The completeness dimensions this expectation carries (AST-020 FR5, FR10). */
   readonly covers: readonly ChecklistDimensionId[];
   readonly appliesWhen: Applicability<Facts>;
+  /**
+   * The layer that characterizes this expectation's claim. It names the
+   * expectation in reports, and a known-failure record must match it.
+   */
   readonly evidenceLayer: EvidenceLayer;
+  /**
+   * Any further layer the expectation's own body reads. An interaction
+   * expectation is the usual case: the claim is a real-browser one — clicking
+   * turns the switch on — but reading the resulting state is an
+   * accessibility-tree observation, so the expectation cannot run without both.
+   * A harness missing any of these reports `unrun`; it must not fail as though
+   * the outcome were absent (AST-020 platform support).
+   */
+  readonly alsoNeeds?: readonly EvidenceLayer[];
   readonly enforcement: Enforcement;
   /**
    * Why an `advisory` expectation does not gate. Required for every advisory
@@ -154,6 +167,16 @@ export interface PatternContract<Facts> {
   >;
 }
 
+/**
+ * Every layer an expectation needs before it can run: the one that
+ * characterizes its claim, plus any further layer its body reads.
+ */
+export function requiredLayers<Facts>(
+  expectation: Expectation<Facts>,
+): readonly EvidenceLayer[] {
+  return [expectation.evidenceLayer, ...(expectation.alsoNeeds ?? [])];
+}
+
 /** Test name and failure prefix. Carries the id and the source (AST-020 FR4). */
 export function describeExpectation<Facts>(
   expectation: Expectation<Facts>,
@@ -162,7 +185,7 @@ export function describeExpectation<Facts>(
 }
 
 /** The dimensions at least one expectation carries. */
-export function coveredDimensions<Facts>(
+function coveredDimensions<Facts>(
   contract: PatternContract<Facts>,
 ): readonly ChecklistDimensionId[] {
   return [
@@ -256,8 +279,15 @@ export function definePattern<Facts>(
     if (expectation.appliesWhen.condition.trim() === '') {
       problems.push(`${id} states no applicability condition`);
     }
-    if (!EVIDENCE_LAYERS.includes(expectation.evidenceLayer)) {
-      problems.push(`${id} has an unknown evidence layer`);
+    for (const layer of requiredLayers(expectation)) {
+      if (!EVIDENCE_LAYERS.includes(layer)) {
+        problems.push(`${id} names an unknown evidence layer "${layer}"`);
+      }
+    }
+    if ((expectation.alsoNeeds ?? []).includes(expectation.evidenceLayer)) {
+      problems.push(
+        `${id} repeats its own evidence layer in alsoNeeds; list only the further layers it reads`,
+      );
     }
 
     // FR9: `required` is earned by a directly applicable WCAG A/AA criterion or

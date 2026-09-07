@@ -14,9 +14,9 @@
 
 export {
   citeSource,
-  coveredDimensions,
   definePattern,
   describeExpectation,
+  requiredLayers,
   unansweredDimensions,
   type ApgRequirement,
   type Applicability,

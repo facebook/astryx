@@ -21,6 +21,7 @@ import {
   type PatternContract,
 } from './contract';
 import {CHECKLIST_DIMENSIONS} from './checklist';
+import type {EvidenceLayer} from './harness';
 
 const WCAG_4_1_2 = {
   standard: 'wcag',
@@ -129,6 +130,24 @@ describe('definePattern', () => {
         ],
       }),
     ).toThrow(/unknown evidence layer/);
+  });
+
+  it('refuses an unknown layer in alsoNeeds', () => {
+    expect(
+      pattern({
+        expectations: [
+          expectation({
+            alsoNeeds: ['vibes'] as unknown as readonly EvidenceLayer[],
+          }),
+        ],
+      }),
+    ).toThrow(/names an unknown evidence layer "vibes"/);
+  });
+
+  it("refuses alsoNeeds that repeats the expectation's own layer", () => {
+    expect(
+      pattern({expectations: [expectation({alsoNeeds: ['dom']})]}),
+    ).toThrow(/repeats its own evidence layer/);
   });
 
   it('refuses a required expectation nothing has adopted', () => {

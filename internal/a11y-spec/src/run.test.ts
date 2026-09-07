@@ -41,6 +41,7 @@ function contractThat(
   behaviour: () => void,
   overrides: {
     layer?: EvidenceLayer;
+    alsoNeeds?: readonly EvidenceLayer[];
     enforcement?: 'required' | 'advisory';
   } = {},
 ): PatternContract<Facts> {
@@ -68,6 +69,7 @@ function contractThat(
           test: facts => facts.applicable,
         },
         evidenceLayer: overrides.layer ?? 'dom',
+        alsoNeeds: overrides.alsoNeeds,
         enforcement: overrides.enforcement ?? 'required',
         advisoryBecause:
           overrides.enforcement === 'advisory'
@@ -150,6 +152,38 @@ describe('runBinding', () => {
     expect(result.results[0]?.status).toBe('unrun');
     expect(result.results[0]?.detail).toContain('cannot observe');
     expect(blockingResults([result])).toEqual([]);
+  });
+
+  it('reports unrun when a FURTHER layer the expectation reads is out of reach', async () => {
+    const behaviour = vi.fn();
+    // The shape of every interaction expectation: the claim is a real-browser
+    // one, but the answer is read out of the accessibility tree. A harness with
+    // the browser and no tree cannot run it, and must not fail it either.
+    const result = await run(
+      contractThat(behaviour, {
+        layer: 'real-browser',
+        alsoNeeds: ['accessibility-tree'],
+      }),
+      {observes: ['unit', 'dom', 'real-browser']},
+    );
+    expect(behaviour).not.toHaveBeenCalled();
+    expect(result.results[0]?.status).toBe('unrun');
+    expect(result.results[0]?.missingLayers).toEqual(['accessibility-tree']);
+    expect(result.results[0]?.detail).toContain('accessibility-tree');
+    expect(blockingResults([result])).toEqual([]);
+  });
+
+  it('runs once every layer it reads is observable', async () => {
+    const behaviour = vi.fn();
+    const result = await run(
+      contractThat(behaviour, {
+        layer: 'real-browser',
+        alsoNeeds: ['accessibility-tree'],
+      }),
+      {observes: ['unit', 'dom', 'accessibility-tree', 'real-browser']},
+    );
+    expect(behaviour).toHaveBeenCalled();
+    expect(result.results[0]?.status).toBe('pass');
   });
 
   it('reports an advisory failure without blocking', async () => {
@@ -259,5 +293,14 @@ describe('the report keeps its facts apart', () => {
     expect(formatReport(report)).toContain(
       'unrun evidence layers: real-browser',
     );
+  });
+
+  it('names every layer that was out of reach, not just the one the expectation is filed under', async () => {
+    const contract = contractThat(() => {}, {
+      layer: 'real-browser',
+      alsoNeeds: ['accessibility-tree'],
+    });
+    const report = summarize(contract, [await run(contract)]);
+    expect(report.unrunLayers).toEqual(['accessibility-tree', 'real-browser']);
   });
 });

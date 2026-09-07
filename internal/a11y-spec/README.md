@@ -44,9 +44,13 @@ src/
 
 ## Evidence layers are the load-bearing idea
 
-An expectation names the one layer that can honestly observe its outcome. A
-harness declares which layers it can observe. The runner will not run an
-expectation a harness cannot see — it reports `unrun`.
+An expectation names the layer that characterizes its claim, plus — in
+`alsoNeeds` — any further layer its own body reads. An interaction expectation
+is the usual case: "clicking turns it on" is a real-browser claim, but reading
+the resulting state is an accessibility-tree observation, so it needs both. A
+harness declares which layers it can observe, and the runner will not run an
+expectation whose layers a harness cannot all see — it reports `unrun`, naming
+the ones that were out of reach.
 
 That is why the jsdom lane is small. jsdom renders markup; it does not compute
 an accessibility tree, resolve a real tab sequence, or turn a key press into an
@@ -61,7 +65,7 @@ so this package reports them as unrun instead and proves them in Chromium.
 | `known-failure`   | the exact recorded historical failure, still failing  | no                                 |
 | `unexpected-pass` | a recorded failure that now passes; delete the record | yes                                |
 | `not-applicable`  | this state cannot change the outcome                  | —                                  |
-| `unrun`           | no harness in this run can observe the assigned layer | —                                  |
+| `unrun`           | a layer this expectation reads was out of reach here  | —                                  |
 
 No status is averaged into another, and there is no score. A pattern with one
 required failure is not "mostly conformant" (AST-021 FR11).
@@ -70,8 +74,9 @@ required failure is not "mostly conformant" (AST-021 FR11).
 
 1. Read the APG pattern and the WCAG success criteria it supports.
 2. Write the expectations. Each needs a stable id, a user outcome in plain
-   language, exact sources, an applicability condition, an evidence layer, and
-   an enforcement class. `definePattern` refuses anything less.
+   language, exact sources, an applicability condition, an evidence layer (plus
+   `alsoNeeds` for any further layer its body reads), and an enforcement class.
+   `definePattern` refuses anything less.
 3. Answer every completeness dimension in `checklist.ts` — either an expectation
    names it in `covers`, or the pattern exempts it with an owner, a verification
    method, and a real reason. `unansweredDimensions` lists what is left, and the
