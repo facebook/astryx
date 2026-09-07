@@ -1,0 +1,687 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file switch.ts
+ * @input Uses ../contract (definePattern and the expectation vocabulary)
+ * @output SWITCH_PATTERN — the adopted WAI-ARIA APG "switch" pattern as a
+ *   reusable contract — and SwitchStateFacts, what a binding declares each of
+ *   its states is supposed to be.
+ * @position The first authored pattern. Every later pattern is modelled on it.
+ *
+ * Adopted pattern: https://www.w3.org/WAI/ARIA/apg/patterns/switch/
+ *
+ * What this contract owns is the part of "is it a switch" that is the same for
+ * every component that adopts the pattern: the control is reported as a switch,
+ * it is named, its on/off state is exposed and matches what is rendered, the
+ * user can turn it on and back off with pointer and keyboard, focus can reach
+ * it and leave it, and a switch that cannot be operated says so. Everything
+ * that varies per component — callbacks, form participation, tooltip
+ * composition, styling — stays with the component (`docs/specs/AST-021/spec.md`
+ * FR5).
+ *
+ * SYNC: When an expectation changes, update
+ * - /internal/a11y-spec/README.md
+ * - /packages/core/src/Switch/Switch.a11y.test.tsx (the jsdom binding)
+ * - /packages/core/src/Switch/Switch.a11y.chromium.spec.ts (the Chromium binding)
+ */
+
+import {
+  definePattern,
+  type ApgRequirement,
+  type PatternContract,
+  type WcagCriterion,
+} from '../contract';
+
+const APG_URL = 'https://www.w3.org/WAI/ARIA/apg/patterns/switch/';
+const UNDERSTANDING = 'https://www.w3.org/WAI/WCAG22/Understanding';
+
+const WCAG_1_3_1: WcagCriterion = {
+  standard: 'wcag',
+  id: '1.3.1',
+  name: 'Info and Relationships',
+  level: 'A',
+  url: `${UNDERSTANDING}/info-and-relationships.html`,
+};
+const WCAG_2_1_1: WcagCriterion = {
+  standard: 'wcag',
+  id: '2.1.1',
+  name: 'Keyboard',
+  level: 'A',
+  url: `${UNDERSTANDING}/keyboard.html`,
+};
+const WCAG_2_1_2: WcagCriterion = {
+  standard: 'wcag',
+  id: '2.1.2',
+  name: 'No Keyboard Trap',
+  level: 'A',
+  url: `${UNDERSTANDING}/no-keyboard-trap.html`,
+};
+const WCAG_2_5_3: WcagCriterion = {
+  standard: 'wcag',
+  id: '2.5.3',
+  name: 'Label in Name',
+  level: 'A',
+  url: `${UNDERSTANDING}/label-in-name.html`,
+};
+const WCAG_3_3_2: WcagCriterion = {
+  standard: 'wcag',
+  id: '3.3.2',
+  name: 'Labels or Instructions',
+  level: 'A',
+  url: `${UNDERSTANDING}/labels-or-instructions.html`,
+};
+const WCAG_4_1_2: WcagCriterion = {
+  standard: 'wcag',
+  id: '4.1.2',
+  name: 'Name, Role, Value',
+  level: 'A',
+  url: `${UNDERSTANDING}/name-role-value.html`,
+};
+
+const APG_ROLE: ApgRequirement = {
+  standard: 'apg',
+  pattern: 'switch',
+  requirement: 'The switch has role switch.',
+  url: `${APG_URL}#wai-ariaroles,states,andproperties`,
+};
+const APG_LABEL: ApgRequirement = {
+  standard: 'apg',
+  pattern: 'switch',
+  requirement:
+    'The switch has an accessible label provided by visible text content, aria-labelledby, or aria-label.',
+  url: `${APG_URL}#wai-ariaroles,states,andproperties`,
+};
+const APG_STATE: ApgRequirement = {
+  standard: 'apg',
+  pattern: 'switch',
+  requirement:
+    'When on, the switch has state aria-checked set to true; when off, false. An HTML input[type="checkbox"] uses the HTML checked attribute instead.',
+  url: `${APG_URL}#wai-ariaroles,states,andproperties`,
+};
+const APG_DESCRIBEDBY: ApgRequirement = {
+  standard: 'apg',
+  pattern: 'switch',
+  requirement:
+    'If the presentation includes additional descriptive static text relevant to a switch, the switch has aria-describedby set to the id of the element containing the description.',
+  url: `${APG_URL}#wai-ariaroles,states,andproperties`,
+};
+const APG_SPACE: ApgRequirement = {
+  standard: 'apg',
+  pattern: 'switch',
+  requirement: 'Space: when focus is on the switch, changes its state.',
+  url: `${APG_URL}#keyboardinteraction`,
+};
+
+/**
+ * How many Tab presses count as "reachable". Ten is generous for one control
+ * on a fixture page and short enough that an unreachable switch fails fast
+ * instead of hanging the run.
+ */
+const TAB_BUDGET = 10;
+
+/** Applies to every state; the outcome never stops mattering. */
+const ALWAYS = {
+  condition: 'the binding renders the pattern at all',
+  test: () => true,
+};
+
+/**
+ * What a binding declares one of its states is supposed to be. The contract
+ * asks the browser what it actually exposes and compares it against this — so a
+ * binding cannot pass by being consistently wrong, and an expectation knows
+ * which states it applies to (AST-020 FR5, AST-021 FR4).
+ */
+export interface SwitchStateFacts {
+  /** Whether this state renders as on. */
+  readonly checked: boolean;
+  /** Whether the user is meant to be able to change it. */
+  readonly operable: boolean;
+  /** Whether it is meant to be reachable in the tab sequence. */
+  readonly focusable: boolean;
+  /** Whether it is meant to be exposed as unavailable. */
+  readonly disabled: boolean;
+  /** The visible label text, or null when the label is not rendered visibly. */
+  readonly visibleLabel: string | null;
+  /** Whether supporting text is meant to be attached as a description. */
+  readonly described: boolean;
+  /** Whether it is meant to be exposed as required. */
+  readonly required: boolean;
+  /** Whether it is meant to be exposed as being in error. */
+  readonly invalid: boolean;
+  /** Whether it is meant to be exposed as waiting on its own change. */
+  readonly busy: boolean;
+}
+
+function onOff(checked: 'true' | 'false' | 'mixed' | null): string {
+  switch (checked) {
+    case 'true':
+      return 'on';
+    case 'false':
+      return 'off';
+    case 'mixed':
+      return 'partly on';
+    default:
+      return 'neither on nor off';
+  }
+}
+
+function collapse(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Turn the switch and turn it back, checking the exposed state after each move.
+ * Half a round trip is not the outcome: a control that turns on and cannot turn
+ * off has failed the person using it just as completely as one that never
+ * turned on (AST-020 FR8).
+ */
+async function roundTrip(
+  start: boolean,
+  activate: () => Promise<void>,
+  read: () => Promise<'true' | 'false' | 'mixed' | null>,
+  how: string,
+): Promise<void> {
+  const from = start ? 'true' : 'false';
+  await activate();
+  const after = await read();
+  if (after === from) {
+    throw new Error(
+      `${how} left the switch ${onOff(after)}: it cannot be turned ${start ? 'off' : 'on'}`,
+    );
+  }
+  await activate();
+  const back = await read();
+  if (back !== from) {
+    throw new Error(
+      `${how} turned the switch ${onOff(after)}, but doing it again left it ${onOff(back)} instead of returning it to ${onOff(from)}: the change only goes one way`,
+    );
+  }
+}
+
+export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
+  definePattern<SwitchStateFacts>({
+    pattern: 'switch',
+    url: 'https://www.w3.org/WAI/ARIA/apg/patterns/switch/',
+    scope:
+      'One binary control that is reported as a switch, named, state-exposed, and operable by pointer and keyboard in both directions.',
+
+    expectations: [
+      {
+        id: 'switch.role.exposed',
+        outcome:
+          'Assistive technology reports the control as a switch, so the user hears "on" and "off" rather than "checked" or nothing at all.',
+        sources: [WCAG_4_1_2, APG_ROLE],
+        covers: ['4.1.2-name-role-value', 'apg-interaction'],
+        appliesWhen: ALWAYS,
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {role} = await subject.computed();
+          if (role !== 'switch') {
+            throw new Error(
+              role == null
+                ? 'the browser exposes no role for this control — it is not in the accessibility tree at all, so assistive technology cannot announce it'
+                : `the browser reports this control as "${role}", not as a switch`,
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.name.exposed',
+        outcome:
+          'The switch has an accessible name, so the user knows which setting they are turning on or off.',
+        sources: [WCAG_4_1_2, WCAG_3_3_2, APG_LABEL],
+        covers: ['4.1.2-name-role-value', '3.3.2-labels-or-instructions'],
+        appliesWhen: ALWAYS,
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {name} = await subject.computed();
+          if (name.trim() === '') {
+            throw new Error(
+              'the browser computes no accessible name for this switch, so it is announced as an unlabelled control',
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.name.matches-visible-label',
+        outcome:
+          'The accessible name contains the visible label, so someone using speech input can say what they can read.',
+        sources: [WCAG_2_5_3, APG_LABEL],
+        covers: ['2.5.3-label-in-name'],
+        appliesWhen: {
+          condition: 'this state renders a visible label',
+          test: facts => facts.visibleLabel != null,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject, facts}) => {
+          const label = facts.visibleLabel ?? '';
+          const {name} = await subject.computed();
+          if (!collapse(name).includes(collapse(label))) {
+            throw new Error(
+              `the visible label reads "${label}" but the browser computes the accessible name as "${name}", so speaking the visible label does not reach this control`,
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.state.exposed',
+        outcome:
+          'The on/off state is exposed and matches what is rendered, so what the user hears is what they see.',
+        sources: [WCAG_4_1_2, APG_STATE],
+        covers: ['4.1.2-name-role-value', 'apg-interaction'],
+        appliesWhen: ALWAYS,
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject, facts}) => {
+          const {checked} = await subject.computed();
+          if (checked == null) {
+            throw new Error(
+              'the browser exposes no on/off state for this switch, so assistive technology cannot say whether the setting is on',
+            );
+          }
+          const expected = facts.checked ? 'true' : 'false';
+          if (checked !== expected) {
+            throw new Error(
+              `this state renders ${onOff(expected)} but the browser reports it as ${onOff(checked)}`,
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.description.resolvable',
+        outcome:
+          'Every piece of supporting text the switch points at exists, so none of the explanation is silently dropped.',
+        sources: [WCAG_1_3_1, APG_DESCRIBEDBY],
+        covers: ['1.3.1-info-and-relationships'],
+        appliesWhen: {
+          condition: 'the binding renders supporting text for this state',
+          test: facts => facts.described,
+        },
+        evidenceLayer: 'dom',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const attribute = await subject.attribute('aria-describedby');
+          const ids = (attribute ?? '').split(/\s+/).filter(Boolean);
+          if (ids.length === 0) {
+            throw new Error(
+              'the binding renders supporting text for this state, but the switch has no aria-describedby, so the text is never attached to the control',
+            );
+          }
+          const targets = await subject.idReferences('aria-describedby');
+          const dangling = ids.filter((_, index) => targets[index] == null);
+          if (dangling.length > 0) {
+            throw new Error(
+              `aria-describedby points at ${dangling.map(id => `"${id}"`).join(', ')}, which ${dangling.length === 1 ? 'resolves' : 'resolve'} to nothing; that description never reaches anyone`,
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.description.exposed',
+        outcome:
+          'The supporting text reaches the user as the control’s description, not just as nearby markup.',
+        sources: [WCAG_4_1_2, APG_DESCRIBEDBY],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'the binding renders supporting text for this state',
+          test: facts => facts.described,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {description} = await subject.computed();
+          if (description.trim() === '') {
+            throw new Error(
+              'the binding renders supporting text for this state, but the browser computes no accessible description, so the explanation is never announced with the control',
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.disabled.exposed',
+        outcome:
+          'A switch the user cannot operate says so, instead of looking available and doing nothing.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state cannot be operated',
+          test: facts => facts.disabled,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {disabled} = await subject.computed();
+          if (!disabled) {
+            throw new Error(
+              'this state cannot be operated, but the browser reports the switch as available, so the user is invited to change something that will not change',
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.required.declared',
+        outcome:
+          'A switch that has to be on declares it, so the obligation reaches assistive technology before the user submits.',
+        sources: [WCAG_3_3_2, WCAG_4_1_2],
+        covers: ['3.3.2-labels-or-instructions'],
+        appliesWhen: {
+          condition: 'this state is required',
+          test: facts => facts.required,
+        },
+        // The accessibility-tree layer would be the stronger place for this, but
+        // Chromium's protocol does not emit a `required` property for a checkbox
+        // (it reports the resulting constraint-validation `invalid` instead), so
+        // the honest layer for the claim is the declaration itself.
+        evidenceLayer: 'dom',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const native = await subject.attribute('required');
+          const aria = await subject.attribute('aria-required');
+          if (native == null && aria !== 'true') {
+            throw new Error(
+              'this state is required, but the switch declares neither the native required attribute nor aria-required="true", so nothing tells assistive technology the setting must be on',
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.invalid.exposed',
+        outcome:
+          'A switch in error is reported as being in error, so the user can find what needs fixing.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is in error',
+          test: facts => facts.invalid,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {invalid} = await subject.computed();
+          if (!invalid) {
+            throw new Error(
+              'this state is in error, but the browser does not report the switch as invalid, so the error is only visible to people who can see the message',
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.busy.exposed',
+        outcome:
+          'A switch waiting on its own change reports that it is busy, so the user is not told the setting already applied.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is waiting on its own change',
+          test: facts => facts.busy,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'advisory',
+        advisoryBecause:
+          'WCAG 2.2 4.1.2 covers the states a user sets, and a pending change is not one of them; the adopted APG switch pattern has no busy clause, and no current Astryx record adopts a busy state as a switch contract. It reports so a binding that drops the busy state is visible, and it does not gate.',
+        run: async ({subject}) => {
+          const {busy} = await subject.computed();
+          if (!busy) {
+            throw new Error(
+              'this state is waiting on its own change, but the browser does not report the switch as busy',
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.state.pointer-round-trip',
+        outcome:
+          'A pointer turns the switch on and back off, and the exposed state follows both ways.',
+        sources: [WCAG_4_1_2, APG_STATE],
+        covers: ['4.1.2-name-role-value', 'apg-interaction'],
+        appliesWhen: {
+          condition: 'the user is meant to be able to change this state',
+          test: facts => facts.operable,
+        },
+        evidenceLayer: 'real-browser',
+        enforcement: 'required',
+        run: async ({harness, subject, facts}) => {
+          await roundTrip(
+            facts.checked,
+            () => harness.click(subject),
+            async () => (await subject.computed()).checked,
+            'clicking the switch',
+          );
+        },
+      },
+      {
+        id: 'switch.state.space-round-trip',
+        outcome:
+          'With focus on the switch, Space turns it on and back off — the keyboard reaches the same function the pointer does.',
+        sources: [WCAG_2_1_1, APG_SPACE],
+        covers: ['2.1.1-keyboard', 'apg-interaction'],
+        appliesWhen: {
+          condition:
+            'the user is meant to be able to change this state and to focus it',
+          test: facts => facts.operable && facts.focusable,
+        },
+        evidenceLayer: 'real-browser',
+        enforcement: 'required',
+        run: async ({harness, subject, facts}) => {
+          await subject.focus();
+          if (!(await subject.isFocused())) {
+            throw new Error(
+              'the switch did not take focus, so Space never reaches it',
+            );
+          }
+          await roundTrip(
+            facts.checked,
+            () => harness.press('Space'),
+            async () => (await subject.computed()).checked,
+            'pressing Space on the focused switch',
+          );
+        },
+      },
+      {
+        id: 'switch.focus.reachable-and-escapable',
+        outcome:
+          'Tab reaches the switch, and Tab again leaves it, so a keyboard user can get to the setting and carry on past it.',
+        sources: [WCAG_2_1_1, WCAG_2_1_2],
+        covers: ['2.1.1-keyboard', '2.1.2-no-keyboard-trap'],
+        appliesWhen: {
+          condition: 'this state is meant to be in the tab sequence',
+          test: facts => facts.focusable,
+        },
+        evidenceLayer: 'real-browser',
+        enforcement: 'required',
+        run: async ({harness, subject}) => {
+          await harness.resetFocus();
+          let reached = false;
+          for (let step = 0; step < TAB_BUDGET && !reached; step += 1) {
+            await harness.press('Tab');
+            reached = await subject.isFocused();
+          }
+          if (!reached) {
+            throw new Error(
+              `${TAB_BUDGET} presses of Tab from the start of the document never reached the switch, so a keyboard user cannot get to this setting`,
+            );
+          }
+          await harness.press('Tab');
+          if (await subject.isFocused()) {
+            throw new Error(
+              'Tab did not move focus off the switch, so a keyboard user is stuck on it',
+            );
+          }
+        },
+      },
+      {
+        id: 'switch.disabled.inoperable',
+        outcome:
+          'A switch reported as unavailable does not change when it is clicked or when Space is pressed on it.',
+        sources: [WCAG_4_1_2, APG_STATE],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state cannot be operated',
+          test: facts => facts.disabled,
+        },
+        evidenceLayer: 'real-browser',
+        enforcement: 'required',
+        run: async ({harness, subject, facts}) => {
+          const before = (await subject.computed()).checked;
+          await harness.click(subject);
+          const afterClick = (await subject.computed()).checked;
+          if (afterClick !== before) {
+            throw new Error(
+              `the switch is reported as unavailable, but clicking it turned it ${onOff(afterClick)}`,
+            );
+          }
+          // A switch kept focusable while unavailable — the usual way to keep a
+          // reason discoverable — still has to refuse the keyboard.
+          if (!facts.focusable) {
+            return;
+          }
+          await subject.focus();
+          if (!(await subject.isFocused())) {
+            return;
+          }
+          await harness.press('Space');
+          const afterSpace = (await subject.computed()).checked;
+          if (afterSpace !== before) {
+            throw new Error(
+              `the switch is reported as unavailable, but pressing Space on it turned it ${onOff(afterSpace)}`,
+            );
+          }
+        },
+      },
+    ],
+
+    // Every completeness dimension this pattern does not own, and who does.
+    // A dimension answered neither here nor by an expectation's `covers` list is
+    // reported by `unansweredDimensions` and asserted empty by this pattern's
+    // suite (AST-020 FR5).
+    exemptions: {
+      '1.1.1-non-text-content': {
+        owner: 'the binding component',
+        verifiedBy:
+          "the component's own suite (Switch hides its track and thumb from assistive technology and renders its busy state as text) and the repository axe audit, `pnpm a11y:audit`",
+        reason:
+          'The pattern owns one control node. Which decorative graphics a binding paints around that node, and whether each is hidden, is a per-component composition fact this contract never sees.',
+      },
+      '1.3.2-meaningful-sequence': {
+        owner: 'the composing page',
+        verifiedBy: "the component's DOM-order tests and page-level review",
+        reason:
+          'A switch is a single control; the order it is read in relative to other content is decided by whatever composes it.',
+      },
+      '1.4.1-use-of-color': {
+        owner: 'the binding component and the theme',
+        verifiedBy:
+          "the component's forced-colors suite and the repository visual gate; the programmatic half of the outcome is carried here by switch.state.exposed",
+        reason:
+          'Whether the rendered difference between on and off survives without colour is a pixel fact, and no layer this contract observes can read pixels.',
+      },
+      '1.4.3-contrast-minimum': {
+        owner: 'the binding component and the theme',
+        verifiedBy:
+          'the repository axe audit, `pnpm a11y:audit`, over the component stories, plus the visual gate',
+        reason:
+          'Contrast is measured from resolved rendered colours over a real backdrop, which is the axe and visual layer rather than the accessibility tree.',
+      },
+      '1.4.11-non-text-contrast': {
+        owner: 'the binding component and the theme',
+        verifiedBy:
+          'the repository axe audit, `pnpm a11y:audit`, plus the visual gate',
+        reason:
+          'The track, thumb, and focus indicator are painted surfaces; their contrast is a rendered-colour measurement this contract cannot make.',
+      },
+      '2.4.2-page-titled': {
+        owner: 'the page',
+        verifiedBy:
+          'page-level review and the application that hosts the control',
+        reason:
+          'A component rendered in isolation owns no document title and cannot supply one.',
+      },
+      '2.4.3-focus-order': {
+        owner: 'the composing page',
+        verifiedBy:
+          'page-level review; this contract proves only that the switch is one reachable stop that focus can also leave',
+        reason:
+          'Order is a property of the sequence a page builds, not of a single focus stop.',
+      },
+      '2.4.4-link-purpose': {
+        owner: 'caller content',
+        verifiedBy: 'review of any link a caller places near the control',
+        reason: 'The adopted switch pattern has no link part.',
+      },
+      '2.4.6-headings-and-labels': {
+        owner: 'caller content and component review',
+        verifiedBy:
+          'review of the label text against the setting it controls; this contract proves that a name exists and matches the visible label, not that the wording describes the purpose well',
+        reason:
+          'Whether a label is descriptive is a judgement about wording that no runtime layer can make.',
+      },
+      '2.4.7-focus-visible': {
+        owner:
+          'the interaction-modality architecture record and the binding component',
+        verifiedBy:
+          "the repository visual gate and the component's own focus-ring styling",
+        reason:
+          'A focus indicator is a painted result. Astryx switches draw theirs on the track through an ancestor `:has(:focus-visible)` condition, so proving it means comparing pixels, which is the visual layer.',
+      },
+      '2.4.11-focus-not-obscured': {
+        owner: 'the composing page',
+        verifiedBy:
+          'page-level and overlay review, plus the repository modal-close visibility guard',
+        reason:
+          'Whether something covers a focused control depends on what else the page renders over it.',
+      },
+      '2.5.8-target-size': {
+        owner: 'the binding component and the composing page',
+        verifiedBy:
+          "the repository axe audit's `target-size` rule, which applies WCAG 2.2's spacing exception across neighbouring targets",
+        reason:
+          'The exception that decides most real switches depends on the clearance between a target and its neighbours, which a binding rendered on its own cannot see.',
+      },
+      '3.1.1-language-of-page': {
+        owner: 'the page',
+        verifiedBy:
+          'page-level review and the application that hosts the control',
+        reason:
+          'A component rendered in isolation owns no document language and cannot supply one.',
+      },
+      '3.2.4-consistent-identification': {
+        owner: 'the design system',
+        verifiedBy:
+          'this shared contract itself: every component that adopts the pattern binds to the same expectations, so repeated switches are identified the same way',
+        reason:
+          'Consistency is a property of the whole set of adopters, which one binding cannot demonstrate.',
+      },
+      '4.1.3-status-messages': {
+        owner:
+          'the binding component, and the assistive-technology verification record for the announcement itself',
+        verifiedBy:
+          "the component's own live-region regression test, plus real-AT evidence under `docs/specs/AST-009/spec.md` whenever a change claims what is announced",
+        reason:
+          'A status message is composed around the switch rather than being part of the control, and whether it is announced is a real-AT claim no automated layer here can settle.',
+      },
+      'forced-colors': {
+        owner: 'the binding component and the theme',
+        verifiedBy:
+          "the component's forced-colors suite over the compiled CSS, plus manual review under Windows High Contrast",
+        reason:
+          'Forced-colors output is a paint result; this contract observes semantics and behaviour, not paint.',
+      },
+      'reduced-motion': {
+        owner: 'the binding component and the theme',
+        verifiedBy:
+          "the component's `prefers-reduced-motion` transition guard and the repository visual gate",
+        reason:
+          'Motion is a rendered result over time, and no layer this contract observes can watch it.',
+      },
+      'at-facing-strings': {
+        owner: 'the binding component',
+        verifiedBy:
+          'the repository i18n catalog check and review of the strings a component renders for assistive technology',
+        reason:
+          'Translation is a source-level concern: the rendered result this contract observes looks the same whichever language the string is in, so a lint-layer check is the only one that can see an untranslated string.',
+      },
+    },
+  });

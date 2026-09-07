@@ -1,0 +1,244 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file chromium.ts
+ * @input Uses a Playwright `Page` and a `Locator` for the subject, and the
+ *   Chrome DevTools Protocol accessibility domain behind them
+ * @output `createChromiumHarness` — a harness that observes the DOM,
+ *   accessibility-tree, and real-browser layers of a page rendered by a real
+ *   shipping engine.
+ * @position The high-fidelity lane. Imported only from the Playwright specs, so
+ *   the jsdom lane never loads Playwright: this file is the package's separate
+ *   `@astryxdesign/a11y-spec/chromium` entry point, never re-exported from
+ *   ../index.ts.
+ *
+ * The accessibility tree here is the ENGINE's, read through
+ * `Accessibility.getPartialAXTree`, not a DOM approximation. That is the whole
+ * reason this harness exists: `docs/specs/AST-009/spec.md` bounds the DOM layer
+ * to "author-supplied ARIA relationships" and reserves computed role, name,
+ * description, and state for the accessibility-tree layer. Chromium is where
+ * Astryx can actually observe them.
+ *
+ * What it still does NOT prove is what an assistive technology says. Speech,
+ * braille, announcement timing, and virtual-cursor entry are the real-AT layer,
+ * and no harness in this package reports them.
+ *
+ * SYNC: Keep the observed-layer list honest, and keep the method surface equal
+ *   to ../harness/jsdom.ts — both implement Harness in ../harness.ts.
+ */
+
+import type {CDPSession, Locator, Page} from '@playwright/test';
+import {
+  type ComputedNode,
+  type EvidenceLayer,
+  type Harness,
+  type Key,
+  type Subject,
+} from '../harness';
+
+const OBSERVES: readonly EvidenceLayer[] = [
+  'unit',
+  'dom',
+  'accessibility-tree',
+  'real-browser',
+];
+
+const KEYS: Record<Key, string> = {
+  Space: ' ',
+  Enter: 'Enter',
+  Tab: 'Tab',
+  ShiftTab: 'Shift+Tab',
+  Escape: 'Escape',
+};
+
+interface AxValue {
+  readonly value?: unknown;
+}
+
+interface AxProperty {
+  readonly name: string;
+  readonly value?: AxValue;
+}
+
+interface AxNode {
+  readonly ignored?: boolean;
+  readonly role?: AxValue;
+  readonly name?: AxValue;
+  readonly description?: AxValue;
+  readonly backendDOMNodeId?: number;
+  readonly properties?: readonly AxProperty[];
+}
+
+function text(value: AxValue | undefined): string {
+  return typeof value?.value === 'string' ? value.value : '';
+}
+
+function property(node: AxNode, name: string): unknown {
+  return node.properties?.find(candidate => candidate.name === name)?.value
+    ?.value;
+}
+
+function flag(node: AxNode, name: string): boolean {
+  const value = property(node, name);
+  // The protocol is not consistent about booleans: `disabled` arrives as a
+  // boolean, `busy` as 1, and `invalid` as a string. Accept all three spellings
+  // of true rather than silently reading a set flag as unset.
+  return value === true || value === 'true' || value === 1;
+}
+
+const AX_TARGET_ATTRIBUTE = 'data-a11y-spec-ax-target';
+
+/**
+ * The engine's own accessibility node for the subject.
+ *
+ * Playwright's `ariaSnapshot` renders role and name but not the required,
+ * invalid, or busy state a field contract needs, so this reads the protocol
+ * directly. The protocol addresses DOM nodes by id, and the page is on the far
+ * side of the bridge, so the subject is marked with a data attribute for the
+ * length of the query and unmarked afterwards. A data attribute takes no part
+ * in accessibility computation, so marking it cannot change the answer.
+ *
+ * An element the engine leaves out of the tree comes back `ignored`, and is
+ * reported as exposing nothing rather than as absent state.
+ */
+async function computedNode(
+  cdp: CDPSession,
+  locator: Locator,
+): Promise<ComputedNode> {
+  await locator.evaluate(
+    (element, attribute) => element.setAttribute(attribute, ''),
+    AX_TARGET_ATTRIBUTE,
+  );
+  try {
+    const {root} = (await cdp.send('DOM.getDocument', {
+      depth: 0,
+    })) as unknown as {
+      root: {nodeId: number};
+    };
+    const {nodeId} = (await cdp.send('DOM.querySelector', {
+      nodeId: root.nodeId,
+      selector: `[${AX_TARGET_ATTRIBUTE}]`,
+    })) as unknown as {nodeId: number};
+
+    if (nodeId === 0) {
+      throw new Error('the subject is not in the document');
+    }
+
+    const {nodes} = (await cdp.send('Accessibility.getPartialAXTree', {
+      nodeId,
+      fetchRelatives: false,
+    })) as unknown as {nodes: readonly AxNode[]};
+
+    const node = nodes[0];
+
+    if (node == null || node.ignored === true) {
+      return {
+        role: null,
+        name: '',
+        description: '',
+        checked: null,
+        disabled: false,
+        invalid: false,
+        busy: false,
+      };
+    }
+
+    const checked = property(node, 'checked');
+    const invalid = property(node, 'invalid');
+
+    return {
+      role: text(node.role) === '' ? null : text(node.role),
+      name: text(node.name),
+      description: text(node.description),
+      checked:
+        checked === 'true' || checked === true
+          ? 'true'
+          : checked === 'false' || checked === false
+            ? 'false'
+            : checked === 'mixed'
+              ? 'mixed'
+              : null,
+      disabled: flag(node, 'disabled'),
+      invalid: invalid != null && invalid !== 'false' && invalid !== false,
+      busy: flag(node, 'busy'),
+    };
+  } finally {
+    await locator.evaluate(
+      (element, attribute) => element.removeAttribute(attribute),
+      AX_TARGET_ATTRIBUTE,
+    );
+  }
+}
+
+export interface ChromiumHarnessOptions {
+  readonly page: Page;
+  /**
+   * The element the binding designates as the pattern's control. The binding
+   * resolves it — by role for a conforming component, or by a fixture-owned
+   * hook for a deliberately violating fixture, so a mutation flips exactly the
+   * expectation under test.
+   */
+  readonly subject: Locator;
+  /** A CDP session on `page`, reused across expectations. */
+  readonly cdp: CDPSession;
+}
+
+export function createChromiumHarness(
+  options: ChromiumHarnessOptions,
+): Harness {
+  const {page, subject: locator, cdp} = options;
+
+  const subject: Subject = {
+    attribute: name => locator.getAttribute(name),
+    idReferences: attribute =>
+      locator.evaluate(
+        (element, name) =>
+          (element.getAttribute(name) ?? '')
+            .split(/\s+/)
+            .filter(Boolean)
+            .map(id => {
+              const target = element.ownerDocument.getElementById(id);
+              return target == null ? null : (target.textContent ?? '').trim();
+            }),
+        attribute,
+      ),
+    computed: () => computedNode(cdp, locator),
+    isFocused: () =>
+      locator.evaluate(
+        element => element.ownerDocument.activeElement === element,
+      ),
+    focus: () => locator.focus(),
+  };
+
+  return {
+    name: 'chromium',
+    observes: OBSERVES,
+    subject: async () => subject,
+    click: async () => {
+      await locator.click({force: true});
+    },
+    press: async key => {
+      await page.keyboard.press(KEYS[key]);
+    },
+    resetFocus: async () => {
+      await page.evaluate(() => {
+        const active = document.activeElement;
+        if (active instanceof HTMLElement) {
+          active.blur();
+        }
+      });
+    },
+    activeElementDescription: () =>
+      page.evaluate(() => {
+        const active = document.activeElement;
+        if (active == null || active === document.body) {
+          return 'the document body';
+        }
+        const label =
+          active.getAttribute('aria-label') ??
+          (active.textContent ?? '').trim().slice(0, 40);
+        const id = active.id === '' ? '' : `#${active.id}`;
+        return `<${active.tagName.toLowerCase()}${id}>${label === '' ? '' : ` "${label}"`}`;
+      }),
+  };
+}

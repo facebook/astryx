@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
+    "test:a11y-contract": "playwright test --config playwright.config.ts",
     "check:package-boundaries": "node scripts/check-package-boundaries.js",
     "check:repo": "pnpm check:sync && pnpm check:knowledge && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits && pnpm check:cli-structure && pnpm check:use-client && pnpm check:portable-scripts && pnpm check:i18n-catalog && pnpm check:cldr-weekdays && pnpm check:fixtures && pnpm check:setup-contract",
     "check:fixtures": "node internal/vibe-tests/scripts/fixture-suite.mjs verify",

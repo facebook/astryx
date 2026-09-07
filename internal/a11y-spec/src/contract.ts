@@ -1,0 +1,319 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file contract.ts
+ * @input Uses ./checklist (completeness dimensions) and ./harness (evidence layers)
+ * @output The accessibility spec-test contract vocabulary — NormativeSource,
+ *   Expectation, PatternContract — plus `definePattern`, the constructor that
+ *   refuses a contract which is not traceable, applicable, layered, and
+ *   enforceable, and `unansweredDimensions`, the completeness check.
+ * @position Foundation of @astryxdesign/a11y-spec. Every pattern, binding,
+ *   runner, and report is expressed in these types.
+ *
+ * The rules encoded here come from the accepted accessibility spec-test
+ * authoring record, `docs/specs/AST-020/spec.md`:
+ *
+ * - FR1  a WCAG 2.2 A/AA criterion is the conformance basis; an APG-primary
+ *        expectation must still name the WCAG outcome it supports.
+ * - FR4  every expectation carries a stable id, a user outcome, an exact
+ *        normative source, applicability, an evidence layer, and enforcement,
+ *        and exposes its id and source in test names and failure output.
+ * - FR5  every checklist dimension is either encoded or exempted with a named
+ *        owner; silence is not an exemption and neither is "not applicable".
+ * - FR6  evidence layers keep distinct proof boundaries.
+ * - FR9  enforcement is separate from severity and from tool coverage.
+ * - FR14 ids survive refactors.
+ *
+ * FR5 is split across two places on purpose. The half a single expectation can
+ * break — an unknown dimension, an exemption with no owner, a dimension claimed
+ * twice — is refused here, at construction. Whether the pattern as a whole has
+ * answered every dimension is `unansweredDimensions`, asserted by the pattern's
+ * own suite: a contract under construction is incomplete by definition, and a
+ * constructor that throws on it cannot be developed one expectation at a time.
+ *
+ * SYNC: When the shape of an expectation changes, update
+ * - /internal/a11y-spec/README.md (the authoring guide)
+ * - /internal/a11y-spec/src/patterns/switch.ts (the reference pattern)
+ */
+
+import {
+  CHECKLIST_DIMENSIONS,
+  type ChecklistDimensionId,
+  type ChecklistExemption,
+} from './checklist';
+import {EVIDENCE_LAYERS, type EvidenceLayer, type Harness} from './harness';
+
+/** How a failing expectation is treated by a gate (AST-020 FR9). */
+export type Enforcement = 'required' | 'advisory';
+
+/** A WCAG 2.2 success criterion. */
+export interface WcagCriterion {
+  readonly standard: 'wcag';
+  /** Success-criterion number, e.g. `4.1.2`. */
+  readonly id: string;
+  /** Short name, e.g. `Name, Role, Value`. */
+  readonly name: string;
+  readonly level: 'A' | 'AA' | 'AAA';
+  readonly url: string;
+}
+
+/** An exact requirement quoted from a WAI-ARIA APG pattern. */
+export interface ApgRequirement {
+  readonly standard: 'apg';
+  /** APG pattern slug, e.g. `switch`. */
+  readonly pattern: string;
+  /** The requirement, quoted closely enough to find on the page. */
+  readonly requirement: string;
+  readonly url: string;
+}
+
+/** A current Astryx knowledge record that adopts an outcome. */
+export interface AstryxRecord {
+  readonly standard: 'astryx';
+  /** Record id, e.g. `spec:AST-013`. */
+  readonly id: string;
+  readonly url: string;
+}
+
+export type NormativeSource = WcagCriterion | ApgRequirement | AstryxRecord;
+
+/** One-line citation, used in test names and failure output (AST-020 FR4). */
+export function citeSource(source: NormativeSource): string {
+  switch (source.standard) {
+    case 'wcag':
+      return `WCAG 2.2 ${source.id} ${source.name} (${source.level})`;
+    case 'apg':
+      return `APG ${source.pattern}: ${source.requirement}`;
+    case 'astryx':
+      return `Astryx ${source.id}`;
+  }
+}
+
+/**
+ * When an expectation applies to a binding's state. Both halves are required:
+ * the prose is what a reader sees on a `not-applicable` result, the predicate
+ * is what the runner obeys (AST-020 FR4, FR5).
+ */
+export interface Applicability<Facts> {
+  readonly condition: string;
+  readonly test: (facts: Facts) => boolean;
+}
+
+/** What an expectation is handed when it runs. */
+export interface ExpectationContext<Facts> {
+  readonly harness: Harness;
+  /** The element the binding designates as the pattern's control. */
+  readonly subject: Awaited<ReturnType<Harness['subject']>>;
+  /** What the binding declares this state is supposed to be. */
+  readonly facts: Facts;
+}
+
+export interface Expectation<Facts> {
+  /**
+   * Stable id, `<pattern>.<area>.<outcome>`. Ids survive refactors; splitting,
+   * combining, or narrowing one is a contract change with a migration for every
+   * binding and known-failure record that names it (AST-020 FR14).
+   */
+  readonly id: string;
+  /** The user outcome, in one plain-language line. */
+  readonly outcome: string;
+  /** Exact normative sources. The first is primary and names the test. */
+  readonly sources: readonly [NormativeSource, ...NormativeSource[]];
+  /**
+   * The WCAG 2.2 user outcome an APG-primary expectation supports. Required
+   * when the primary source is APG, so an APG mechanic is never presented as a
+   * success criterion of its own (AST-020 FR1).
+   */
+  readonly wcagOutcome?: string;
+  /** The completeness dimensions this expectation carries (AST-020 FR5, FR10). */
+  readonly covers: readonly ChecklistDimensionId[];
+  readonly appliesWhen: Applicability<Facts>;
+  readonly evidenceLayer: EvidenceLayer;
+  readonly enforcement: Enforcement;
+  /**
+   * Why an `advisory` expectation does not gate. Required for every advisory
+   * expectation, so "advisory" is a recorded judgement about adoption rather
+   * than a quiet way to stop a check from mattering (AST-020 FR9).
+   */
+  readonly advisoryBecause?: string;
+  /** Throws (or rejects) with a reader-legible message when the outcome is absent. */
+  readonly run: (context: ExpectationContext<Facts>) => Promise<void>;
+}
+
+export interface PatternContract<Facts> {
+  /** APG pattern slug this contract adopts. */
+  readonly pattern: string;
+  /** The adopted pattern's canonical URL. */
+  readonly url: string;
+  /** What the pattern owns, in one line, for report headers. */
+  readonly scope: string;
+  readonly expectations: readonly Expectation<Facts>[];
+  /** Dimensions this pattern does not own, each naming who does (AST-020 FR5). */
+  readonly exemptions: Readonly<
+    Partial<Record<ChecklistDimensionId, ChecklistExemption>>
+  >;
+}
+
+/** Test name and failure prefix. Carries the id and the source (AST-020 FR4). */
+export function describeExpectation<Facts>(
+  expectation: Expectation<Facts>,
+): string {
+  return `${expectation.id} [${citeSource(expectation.sources[0])}] ${expectation.outcome}`;
+}
+
+/** The dimensions at least one expectation carries. */
+export function coveredDimensions<Facts>(
+  contract: PatternContract<Facts>,
+): readonly ChecklistDimensionId[] {
+  return [
+    ...new Set(
+      contract.expectations.flatMap(expectation => expectation.covers),
+    ),
+  ].sort();
+}
+
+/**
+ * The completeness dimensions this pattern has neither encoded nor exempted.
+ * A finished pattern returns an empty list; anything else is a dimension that
+ * would otherwise disappear silently (AST-020 FR5, FR10, FR12).
+ */
+export function unansweredDimensions<Facts>(
+  contract: PatternContract<Facts>,
+): readonly ChecklistDimensionId[] {
+  const covered = new Set(coveredDimensions(contract));
+  return CHECKLIST_DIMENSIONS.map(dimension => dimension.id).filter(
+    id => !covered.has(id) && contract.exemptions[id] == null,
+  );
+}
+
+const ID_SHAPE = /^[a-z][a-z0-9]*(\.[a-z0-9-]+)+$/;
+const EMPTY_EXEMPTION =
+  /^(n\/?a|not applicable|none|unknown|tbd|does not apply)\.?$/i;
+const DIMENSION_IDS: readonly string[] = CHECKLIST_DIMENSIONS.map(
+  dimension => dimension.id,
+);
+
+/**
+ * Build a pattern contract, refusing one that cannot be audited.
+ *
+ * A contract that omits a source, an evidence layer, an applicability
+ * condition, or an exemption's owner is not "less complete" — it is rejected.
+ * Silence is the failure mode AST-020 is written against, so it is the one this
+ * constructor makes impossible.
+ */
+export function definePattern<Facts>(
+  contract: PatternContract<Facts>,
+): PatternContract<Facts> {
+  const problems: string[] = [];
+  const seen = new Set<string>();
+
+  for (const expectation of contract.expectations) {
+    const {id} = expectation;
+    if (!ID_SHAPE.test(id)) {
+      problems.push(
+        `expectation id ${JSON.stringify(id)} must look like "pattern.area.outcome"`,
+      );
+    }
+    if (!id.startsWith(`${contract.pattern}.`)) {
+      problems.push(
+        `expectation ${id} does not belong to pattern ${contract.pattern}`,
+      );
+    }
+    if (seen.has(id)) {
+      problems.push(`duplicate expectation id ${id}`);
+    }
+    seen.add(id);
+
+    if (expectation.outcome.trim() === '') {
+      problems.push(`${id} states no user outcome`);
+    }
+    if (expectation.sources.length === 0) {
+      problems.push(`${id} cites no normative source`);
+    }
+    if (
+      expectation.sources[0]?.standard === 'apg' &&
+      (expectation.wcagOutcome ?? '').trim() === ''
+    ) {
+      problems.push(
+        `${id} is APG-primary, so it must name the WCAG 2.2 outcome it supports (AST-020 FR1)`,
+      );
+    }
+    if (expectation.covers.length === 0) {
+      problems.push(`${id} carries no completeness dimension (AST-020 FR5)`);
+    }
+    for (const dimension of expectation.covers) {
+      if (!DIMENSION_IDS.includes(dimension)) {
+        problems.push(
+          `${id} claims unknown completeness dimension "${dimension}"`,
+        );
+      }
+      if (contract.exemptions[dimension] != null) {
+        problems.push(
+          `"${dimension}" is both encoded by ${id} and exempted; a dimension has one answer (AST-020 FR5)`,
+        );
+      }
+    }
+    if (expectation.appliesWhen.condition.trim() === '') {
+      problems.push(`${id} states no applicability condition`);
+    }
+    if (!EVIDENCE_LAYERS.includes(expectation.evidenceLayer)) {
+      problems.push(`${id} has an unknown evidence layer`);
+    }
+
+    // FR9: `required` is earned by a directly applicable WCAG A/AA criterion or
+    // by a current Astryx record that adopts the outcome — never by how easy
+    // the check is to automate.
+    const adopted = expectation.sources.some(
+      source =>
+        (source.standard === 'wcag' &&
+          (source.level === 'A' || source.level === 'AA')) ||
+        source.standard === 'astryx',
+    );
+    if (expectation.enforcement === 'required' && !adopted) {
+      problems.push(
+        `${id} is required but cites no WCAG 2.2 A/AA criterion and no current Astryx record (AST-020 FR9)`,
+      );
+    }
+    if (
+      expectation.enforcement === 'advisory' &&
+      (expectation.advisoryBecause ?? '').trim() === ''
+    ) {
+      problems.push(
+        `${id} is advisory but does not say why the outcome is not adopted as a gate (AST-020 FR9)`,
+      );
+    }
+  }
+
+  for (const [dimension, exemption] of Object.entries(contract.exemptions)) {
+    if (!DIMENSION_IDS.includes(dimension)) {
+      problems.push(`exemption "${dimension}" is not a completeness dimension`);
+      continue;
+    }
+    if (exemption == null) {
+      continue;
+    }
+    if (exemption.owner.trim() === '') {
+      problems.push(
+        `"${dimension}" is exempt but names no owner (AST-020 FR5)`,
+      );
+    }
+    if (exemption.verifiedBy.trim() === '') {
+      problems.push(
+        `"${dimension}" is exempt but names no verification method (AST-020 FR5)`,
+      );
+    }
+    if (EMPTY_EXEMPTION.test(exemption.reason.trim())) {
+      problems.push(
+        `"${dimension}" uses "${exemption.reason}" as its exemption reason; FR5 forbids a generic escape hatch`,
+      );
+    }
+  }
+
+  if (problems.length > 0) {
+    throw new Error(
+      `Pattern "${contract.pattern}" is not auditable:\n  - ${problems.join('\n  - ')}`,
+    );
+  }
+
+  return contract;
+}
