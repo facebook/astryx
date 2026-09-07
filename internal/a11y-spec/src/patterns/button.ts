@@ -86,14 +86,36 @@ const WCAG_4_1_2: WcagCriterion = {
 };
 
 /**
- * The buttons family record, `authority: current`, approved 2026-09-04. FR3 is
- * the clause that adopts inertness as an Astryx contract, which is what makes
- * button.unavailable.inert gate under AST-020 FR9.
+ * The buttons family record: `authority: current`, approved 2026-09-04.
+ *
+ * Pinned to the commit that wrote these clauses rather than to a branch. A
+ * normative citation that follows `main` cites whatever the record later
+ * becomes, and the whole point of quoting it is that the quote stays true.
+ */
+const FAMILY_BUTTONS =
+  'https://github.com/facebook/astryx/blob/cb13c1eaa89065cf7656a0d647be428447040d71/docs/families/buttons.md';
+
+/** The clause that adopts operability and keyboard activation. */
+const FAMILY_BUTTONS_FR2: AstryxRecord = {
+  standard: 'astryx',
+  id: 'family:buttons',
+  clause: 'FR2',
+  requirement:
+    'A momentary or persistent action renders an operable button with keyboard activation, focus-visible feedback, and `type="button"` unless the component\'s documented form mode says otherwise.',
+  url: `${FAMILY_BUTTONS}#L108-L112`,
+};
+
+/**
+ * The clause that adopts inertness. Quoted as the MUST sentence alone: the
+ * sentence after it is a MAY about focusable `aria-disabled`, and splicing the
+ * two would quote a requirement the record does not make.
  */
 const FAMILY_BUTTONS_FR3: AstryxRecord = {
   standard: 'astryx',
-  id: 'family:buttons FR3 — "A disabled member MUST NOT invoke its callback or Action… while still blocking activation."',
-  url: 'docs/families/buttons.md',
+  id: 'family:buttons',
+  clause: 'FR3',
+  requirement: 'A disabled member MUST NOT invoke its callback or Action.',
+  url: `${FAMILY_BUTTONS}#L113-L116`,
 };
 
 const APG_ROLE: ApgRequirement = {
@@ -317,22 +339,20 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
       {
         id: 'button.action.runs-on-pointer',
         outcome: 'Clicking the button runs its action.',
-        // APG-primary, deliberately. 4.1.2 governs how a control is EXPOSED —
-        // name, role, value — not whether it does anything when pressed, so
-        // ordering it first would buy a gate with a citation that does not
-        // carry the claim.
-        sources: [APG_ROLE, WCAG_4_1_2],
-        wcagOutcome:
-          'A control exposed as a button tells assistive technology that pressing it performs an action; one that performs none has misreported its own role. That is the 4.1.2 outcome this supports — but 4.1.2 does not itself require the action to run.',
+        // Astryx-primary. FR2 requires "an operable button with keyboard
+        // activation" — operability and keyboard activation as two properties,
+        // not one — so a control that does nothing when clicked fails the
+        // first of them. 4.1.2 is listed after because it governs how a control
+        // is EXPOSED, not what it does, and leading with it would buy the gate
+        // with a citation that does not carry the claim.
+        sources: [FAMILY_BUTTONS_FR2, APG_ROLE, WCAG_4_1_2],
         covers: ['apg-interaction'],
         appliesWhen: {
           condition: 'pressing this state is meant to run its action',
           test: facts => facts.operable,
         },
         evidenceLayer: 'real-browser',
-        enforcement: 'advisory',
-        advisoryBecause:
-          'No WCAG 2.2 A/AA criterion says a button must do something when CLICKED: 2.1.1 covers the keyboard, and this is the pointer. The current Astryx record that adopts activation, family:buttons FR2, is equally keyboard-specific — "an operable button with keyboard activation" — so under AST-020 FR9 the pointer half reports rather than gating. Its keyboard siblings DO gate on 2.1.1, so a button that does nothing at all still fails this contract.',
+        enforcement: 'required',
         run: async ({harness, subject, activations}) => {
           const before = await activations();
           await harness.click(subject);

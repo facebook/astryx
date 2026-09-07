@@ -70,8 +70,21 @@ export interface ApgRequirement {
 /** A current Astryx knowledge record that adopts an outcome. */
 export interface AstryxRecord {
   readonly standard: 'astryx';
-  /** Record id, e.g. `spec:AST-013`. */
+  /** The record's own stable id, e.g. `spec:AST-013` or `family:buttons`. */
   readonly id: string;
+  /** The clause within it, e.g. `FR3`. */
+  readonly clause: string;
+  /**
+   * The requirement, quoted exactly — the same discipline the APG sources
+   * follow. A citation a reader cannot check against the record is not a
+   * citation, and an id alone does not say what was adopted.
+   */
+  readonly requirement: string;
+  /**
+   * A public URL pinned to the bytes this quote was taken from. `main` moves;
+   * a citation that moves with it is a citation to whatever the record becomes,
+   * which is exactly what a normative reference must not be.
+   */
   readonly url: string;
 }
 
@@ -85,7 +98,7 @@ export function citeSource(source: NormativeSource): string {
     case 'apg':
       return `APG ${source.pattern}: ${source.requirement}`;
     case 'astryx':
-      return `Astryx ${source.id}`;
+      return `Astryx ${source.id} ${source.clause}: ${source.requirement}`;
   }
 }
 
@@ -290,6 +303,34 @@ export function definePattern<Facts>(
     }
     if (expectation.sources.length === 0) {
       problems.push(`${id} cites no normative source`);
+    }
+    // An Astryx record can make an expectation gate (FR9), so a citation nobody
+    // can check is not good enough: it must say WHICH record, WHICH clause,
+    // quote the requirement, and link to bytes that cannot move underneath it.
+    for (const source of expectation.sources) {
+      if (source.standard !== 'astryx') {
+        continue;
+      }
+      for (const [field, value] of [
+        ['id', source.id],
+        ['clause', source.clause],
+        ['requirement', source.requirement],
+      ] as const) {
+        if (value.trim() === '') {
+          problems.push(
+            `${id} cites an Astryx record with no ${field} (AST-020 FR1)`,
+          );
+        }
+      }
+      if (!/^https:\/\/[^\s]+$/.test(source.url)) {
+        problems.push(
+          `${id} cites Astryx record "${source.id}" with "${source.url}", which is not a public URL — a reviewer outside this checkout cannot read it (AST-020 FR1)`,
+        );
+      } else if (/\/(?:blob|tree)\/(?:main|master)\//.test(source.url)) {
+        problems.push(
+          `${id} cites Astryx record "${source.id}" at a branch URL, which moves; pin it to a commit so the quote stays attached to the bytes it came from`,
+        );
+      }
     }
     if (
       expectation.sources[0]?.standard === 'apg' &&

@@ -15,8 +15,10 @@
 
 import {describe, expect, it} from 'vitest';
 import {
+  citeSource,
   definePattern,
   unansweredDimensions,
+  type AstryxRecord,
   type Expectation,
   type PatternContract,
 } from './contract';
@@ -148,6 +150,70 @@ describe('definePattern', () => {
         ],
       }),
     ).toThrow(/unknown evidence layer/);
+  });
+
+  describe('an Astryx record as a source', () => {
+    // It can make an expectation GATE (FR9), so a citation a reviewer cannot
+    // check is not good enough.
+    const record = (
+      overrides: Partial<Omit<AstryxRecord, 'standard'>> = {},
+    ): AstryxRecord => ({
+      standard: 'astryx',
+      id: 'family:probes',
+      clause: 'FR1',
+      requirement: 'A probe MUST probe.',
+      url: 'https://github.com/facebook/astryx/blob/abc1234/docs/families/probes.md',
+      ...overrides,
+    });
+
+    it('accepts one that names its record, its clause, and its bytes', () => {
+      expect(
+        pattern({expectations: [expectation({sources: [record()]})]}),
+      ).not.toThrow();
+    });
+
+    it.each([['id'], ['clause'], ['requirement']] as const)(
+      'refuses one with no %s',
+      field => {
+        expect(
+          pattern({
+            expectations: [expectation({sources: [record({[field]: '  '})]})],
+          }),
+        ).toThrow(new RegExp(`cites an Astryx record with no ${field}`));
+      },
+    );
+
+    it('refuses a repo-relative path, which only resolves inside a checkout', () => {
+      expect(
+        pattern({
+          expectations: [
+            expectation({sources: [record({url: 'docs/families/probes.md'})]}),
+          ],
+        }),
+      ).toThrow(/is not a public URL/);
+    });
+
+    it('refuses a branch URL, whose bytes move underneath the quote', () => {
+      expect(
+        pattern({
+          expectations: [
+            expectation({
+              sources: [
+                record({
+                  url: 'https://github.com/facebook/astryx/blob/main/docs/families/probes.md',
+                }),
+              ],
+            }),
+          ],
+        }),
+      ).toThrow(/pin it to a commit/);
+    });
+
+    it('says which record and clause in the citation, not just the id', () => {
+      expect(citeSource(record())).toBe(
+        'Astryx family:probes FR1: A probe MUST probe.',
+      );
+    });
   });
 
   it('refuses an unknown layer in alsoNeeds', () => {
