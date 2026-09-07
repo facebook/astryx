@@ -66,6 +66,9 @@ integrations named in `astryx.config`. Each integration is loaded
 independently, so one broken package degrades that package's contribution and
 never fails the run.
 
+`architecture:cli-response-schema` owns stable response-entry fields and their
+complete type, test, applicable text, and consumer-documentation projections.
+
 ## Boundaries and invariants
 
 - **INV1 — The CLI never asks a question.** No prompt, no TTY detection, no
@@ -107,11 +110,6 @@ never fails the run.
 - **INV12 — Human chatter never touches stdout in JSON mode.** `humanLog` and
   `humanWarn` are the only chatter primitives, and both are no-ops under
   `--json`.
-- **INV13 — Response-entry fields are machine contracts.** The stable JSON shape
-  includes fields inside discriminated `data` entries, not only the outer
-  envelope. Every field is represented in the canonical response type, contract
-  tests, text projection where applicable, and complete consumer-facing schema
-  documentation.
 
 ## Change coupling
 
@@ -120,11 +118,8 @@ updated in the same pull request when it moves an invariant:
 
 - adding, removing, or renaming a command or subcommand;
 - adding an error code, or changing what an existing code means;
-- adding a field to the JSON envelope or any discriminated response-entry
-  schema, removing one, changing its optionality/type/meaning, or changing the
-  shape of one;
-- changing consumer-facing response schema documentation so it no longer projects
-  every machine-readable field;
+- a change to a stable JSON envelope or discriminated response-entry field
+  follows `architecture:cli-response-schema`;
 - adding a formatter, or writing to stdout from anywhere other than `emit` and
   `jsonOut`;
 - changing the file layout under `clients/cli/commands`.
@@ -153,20 +148,19 @@ non-interactive guarantee.
 
 ## Deciding specs
 
-None yet. This record describes behaviour that is already shipped. A change to
-an invariant above needs a system spec.
+- `spec:AST-017/DEC-4` — stable response fields and their complete projections
+  are owned by `architecture:cli-response-schema`.
 
 ## Verification
 
-| Invariant | Evidence                                                                                       | Failure signal                                                                                 |
-| --------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| INV1      | `clients/cli/commands/interactive-guard.test.mjs`                                              | The subprocess hangs: `signal === 'SIGTERM'` and `status === null`.                            |
-| INV2      | `clients/cli/commands/json-contract.test.mjs`                                                  | `--json` stdout does not parse, or parses to a shape outside the two.                          |
-| INV3      | `foundation/response/error-codes.test.mjs`                                                     | A shipped code disappears, or an envelope carries an unregistered one.                         |
-| INV4      | `clients/cli/formatters/index.test.mjs`, type tests                                            | `emit` accepts a bare string, or output varies between pipe and TTY.                           |
-| INV6      | `pnpm check:cli-structure`                                                                     | A command's file or its doc is missing, or sits at the wrong path.                             |
-| INV8      | `clients/cli/cli-exit-codes.test.mjs`                                                          | The same condition exits differently with and without `--json`.                                |
-| INV13     | Response typedef/schema snapshots, API contract tests, formatters, and generated consumer docs | A response-entry field ships without complete type, test, text, or consumer-schema projection. |
+| Invariant | Evidence                                            | Failure signal                                                         |
+| --------- | --------------------------------------------------- | ---------------------------------------------------------------------- |
+| INV1      | `clients/cli/commands/interactive-guard.test.mjs`   | The subprocess hangs: `signal === 'SIGTERM'` and `status === null`.    |
+| INV2      | `clients/cli/commands/json-contract.test.mjs`       | `--json` stdout does not parse, or parses to a shape outside the two.  |
+| INV3      | `foundation/response/error-codes.test.mjs`          | A shipped code disappears, or an envelope carries an unregistered one. |
+| INV4      | `clients/cli/formatters/index.test.mjs`, type tests | `emit` accepts a bare string, or output varies between pipe and TTY.   |
+| INV6      | `pnpm check:cli-structure`                          | A command's file or its doc is missing, or sits at the wrong path.     |
+| INV8      | `clients/cli/cli-exit-codes.test.mjs`               | The same condition exits differently with and without `--json`.        |
 
 ## Open questions
 

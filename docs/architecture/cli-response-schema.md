@@ -12,7 +12,7 @@ owners: [cixzhang]
 applies_to:
   [
     packages/cli/api/,
-    packages/cli/types/,
+    packages/cli/authoring/,
     packages/cli/clients/cli/formatters/,
     packages/cli/clients/cli/commands/,
   ]
@@ -82,8 +82,10 @@ questions.
 
 ## Owning code
 
-- `packages/cli/api/**` — owns response producers and discriminators.
-- `packages/cli/types/**` and colocated API typedefs — own canonical public shapes.
+- `packages/cli/api/**` and colocated `*.type.mjs` files — own response
+  producers, discriminators, and canonical public shapes.
+- `packages/cli/authoring/**` — owns authored metadata schemas that feed public
+  responses.
 - `packages/cli/clients/cli/formatters/**` — owns human projections of response
   values.
 - Command docs and generated consumer references — own complete public schema
@@ -96,9 +98,14 @@ questions.
 
 ## Verification
 
-| Invariant  | Evidence                                                                                  | Failure signal                                                                                    |
-| ---------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| INV1, INV2 | Response type snapshots and API contract fixtures across built-in and integration sources | A nested field is omitted from inventory or changes meaning by source                             |
-| INV3       | Type/test/text/doc projection bijection                                                   | A field exists in code but not docs, or documentation names a field the response does not provide |
-| INV4       | AST-017 compatibility fixture plus current-authority receipt                              | A compatible addition bypasses authority review or an incompatible change is called optional      |
-| INV5       | Template catalog-vs-schema mutation tests                                                 | Catalog values are frozen as API, or a schema field is dismissed as mutable catalog data          |
+| Invariant  | Evidence                                                                                      | Failure signal                                                                                    |
+| ---------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| INV1, INV2 | Response type snapshots and API contract fixtures across built-in and integration sources     | A nested field is omitted from inventory or changes meaning by source                             |
+| INV3       | Required type/test/text/doc projection review; automated bijection is a named enforcement gap | A field exists in code but not docs, or documentation names a field the response does not provide |
+| INV4       | AST-017 compatibility fixture plus current-authority receipt                                  | A compatible addition bypasses authority review or an incompatible change is called optional      |
+| INV5       | Template catalog-vs-schema mutation tests                                                     | Catalog values are frozen as API, or a schema field is dismissed as mutable catalog data          |
+
+Current enforcement gap: no checked-in generator or guard yet proves the complete
+field-to-type/test/text/doc bijection. Reviews must inspect all four projections
+until that guard exists; the focused tests in `verified_by` prove representative
+response behavior, not complete documentation coverage.
