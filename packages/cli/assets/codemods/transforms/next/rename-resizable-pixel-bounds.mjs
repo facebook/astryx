@@ -6,8 +6,8 @@
  * Numbers already mean pixels in minSize/maxSize. This rewrites inline single-
  * and multi-region configurations while preserving shorthand values and the
  * released conflict rule (the unified property wins when both are present).
- * A spread can change property precedence invisibly, so spread-bearing objects
- * stay unchanged and receive a manual-migration TODO instead.
+ * A spread or computed property can change precedence invisibly, so dynamic
+ * objects stay unchanged and receive a manual-migration TODO instead.
  */
 
 export const meta = {
@@ -15,7 +15,7 @@ export const meta = {
   description:
     'Renames deprecated `minSizePx`/`maxSizePx` properties to `minSize`/' +
     '`maxSize` in static inline useResizable configurations and marks ' +
-    'spread-bearing configurations for manual migration.',
+    'objects with spreads or computed properties for manual migration.',
 };
 
 const IMPORT_SOURCES = new Set([
@@ -29,9 +29,9 @@ const RENAMES = new Map([
   ['maxSizePx', 'maxSize'],
 ]);
 const MANUAL_MIGRATION_COMMENT =
-  ' TODO(astryx upgrade): This useResizable configuration contains a spread. ' +
-  'Rename minSizePx/maxSizePx to minSize/maxSize manually without changing ' +
-  'property precedence. ';
+  ' TODO(astryx upgrade): This useResizable configuration contains a spread ' +
+  'or computed property. Rename minSizePx/maxSizePx to minSize/maxSize ' +
+  'manually without changing property precedence. ';
 
 /** @param {any} property */
 function staticPropertyName(property) {
@@ -66,12 +66,13 @@ function migrateObject(j, object) {
   const firstOldProperty = object.properties.find(
     (/** @type {any} */ property) => RENAMES.has(staticPropertyName(property)),
   );
-  const hasSpread = object.properties.some(
+  const hasDynamicProperty = object.properties.some(
     (/** @type {any} */ property) =>
+      property.computed === true ||
       property.type === 'SpreadElement' ||
       property.type === 'ExperimentalSpreadProperty',
   );
-  if (firstOldProperty && hasSpread) {
+  if (firstOldProperty && hasDynamicProperty) {
     firstOldProperty.comments ??= [];
     if (
       !firstOldProperty.comments.some(
