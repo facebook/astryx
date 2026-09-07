@@ -164,6 +164,16 @@ const regions = resize({regions: {
     expect(output).not.toContain('maxSizePx: 900');
   });
 
+  it('leaves spread-bearing bounds for manual migration', async () => {
+    const input = `import {useResizable} from '@astryxdesign/core/Resizable';
+const legacy = {minSizePx: 160};
+const region = useResizable({minSizePx: 80, ...legacy});`;
+    const output = await apply('rename-resizable-pixel-bounds', input);
+    expect(output).toContain('minSizePx: 80');
+    expect(output).not.toContain('minSize: 80');
+    expect(output).toContain('TODO(astryx upgrade)');
+  });
+
   it('leaves unrelated and dynamic configuration objects alone', async () => {
     const input = `import {useResizable} from '@astryxdesign/core/Resizable';
 const config = {minSizePx: 120};
