@@ -54,27 +54,36 @@ those contracts.
 - **INV1 — Render starts from a valid state.** Rendered output MUST derive from
   current props, state, and context. A component MUST NOT render a known-wrong
   initial state and repair it in a follow-up Effect. State stores information that
-  cannot be derived during render or directly from the current interaction.
+  cannot be derived during render or directly from the current interaction. DOM
+  nodes and whole DOM collections MUST NOT be stored in React state; store only the
+  minimal rendering key or own the node through a ref.
 - **INV2 — Discrete intent stays discrete.** Work caused by one user or imperative
-  action MUST NOT be encoded as state whose only purpose is to trigger an Effect
-  when the handler can perform that work. Moving handler work into an Effect MUST
-  NOT delay, repeat, or couple the action to unrelated rendering.
+  action MUST NOT be deferred to an Effect when the originating handler can perform
+  it. Using the same state for rendered output does not make an Effect-owned copy of
+  the action valid. Deferral MUST NOT delay, repeat, or couple the action to
+  unrelated rendering.
 - **INV3 — Effects synchronize external systems.** A new or changed Effect MUST
-  name the external system it synchronizes. Setup and cleanup MUST be paired,
-  repeatable, and safe under dependency changes, node replacement, unmount, and
-  StrictMode replay. Ordinary rerender synchronization MUST NOT duplicate
-  consumer-visible callbacks or other one-time work.
+  name the external system it synchronizes. When setup acquires, installs, or
+  starts a resource, cleanup MUST release that resource. Synchronization that
+  acquires no resource MUST instead be idempotent and safe under dependency
+  changes, node replacement, unmount, and StrictMode replay. Ordinary rerender
+  synchronization MUST NOT duplicate consumer-visible callbacks or other one-time
+  work.
 - **INV4 — Mutable refs do not become hidden rendered state.** Refs MAY hold general
-  non-rendering mutable data. Rendered semantics MUST NOT depend on a ref mutation
-  that does not schedule a render. Ref-backed coordination MUST preserve the
-  current component, family, accessibility, and API contracts.
-- **INV5 — Resource ownership is complete.** Every listener, timer, observer,
-  request, subscription, and imperative browser resource has one declared
+  non-rendering mutable data. A ref mutation MUST NOT be the sole source for a value
+  later read to produce React-rendered output. A callback ref MAY synchronously
+  update an owned DOM node when that DOM update is itself the observable operation
+  and attach, detach, replacement, and consumer override behavior preserve the
+  current contract. Ref-backed coordination MUST preserve the current component,
+  family, accessibility, and API contracts.
+- **INV5 — Resource ownership is complete.** Every listener, timer, animation frame,
+  observer, request, subscription, and imperative browser resource has one declared
   lifecycle owner. Component- or node-owned resources are removed, aborted, or
   released when disabled, replaced, or unmounted. A document-owned singleton MAY
   persist across consumer gaps when current authority names that lifetime and
-  tests prove one shared installation. Optional behavior SHOULD acquire local
-  resources only while enabled.
+  tests prove one shared installation. A persistent singleton without current
+  authority is an authority gap, not by itself proof of an implementation leak.
+  Optional behavior SHOULD acquire local resources only while enabled.
 - **INV6 — Node replacement is a lifecycle event.** A callback ref or other node
   owner handles attachment, `null` detachment, and replacement with another node.
   Cleanup for the old node completes before the new node becomes the active owner.
@@ -83,17 +92,20 @@ those contracts.
   state needed for that behavior and follows INV5–INV6. A repeated row, item, or
   cell path MUST NOT create unbounded observer fan-out when one shared owner can
   provide the same browser fact.
-- **INV8 — Behavior stays with its stable lifecycle owner.** A state machine,
-  gesture, timing protocol, or interaction algorithm is owned by the component or
-  primitive whose lifetime spans every documented replacement and composition
-  seam. Replacing a render prop, slot, child, or visual subpart MUST NOT silently
-  remove owner behavior. Internal hook or utility extraction is not required by
-  this invariant.
+- **INV8 — Behavior stays with its stable lifecycle owner.** Current component,
+  family, interaction, and layer authority identifies the behavior owner and the
+  documented replacement/composition seams; this record does not choose a new
+  owner. A state machine, gesture, timing protocol, or interaction algorithm is
+  owned by the component or primitive whose lifetime spans every documented
+  replacement and composition seam. Replacing a render prop, slot, child, or
+  visual subpart MUST NOT silently remove owner behavior. Internal hook or utility
+  extraction is not required by this invariant.
 - **INV9 — Broadcast identity follows the broadcast contract.** Context values and
-  external-store snapshots MUST NOT change identity for unrelated mutable data
-  when that change would broadcast work to consumers. Public hook-result identity
-  remains owned by `architecture:public-component-api` and the hook's current
-  contract. Ordinary local objects and callbacks have no shared identity promise.
+  external-store snapshots MUST NOT change identity while the semantic broadcast
+  payload is unchanged when that change would broadcast work to consumers. Public
+  hook-result identity remains owned by `architecture:public-component-api` and
+  the hook's current contract. Ordinary local objects and callbacks have no shared
+  identity promise.
 
 ## Authoring guidance
 
@@ -216,11 +228,11 @@ remain authoritative for the user-facing outcomes delegated above.
 
 ## Verification
 
-| Invariant  | Evidence                                                                                                       | Failure signal                                                                                  |
-| ---------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| INV1–INV2  | Initial-render and interaction tests                                                                           | Output flashes a known-wrong state, or one action is delayed or repeated through an Effect      |
-| INV3, INV5 | StrictMode setup/cleanup and dependency-change tests                                                           | Duplicate callback, leaked work, stale subscription, or missing resynchronization               |
-| INV4, INV6 | Ref attach/null/replacement and rendered-output tests                                                          | Old node remains active, cleanup misses replacement, or ref mutation changes semantics silently |
-| INV7       | Real-browser geometry plus subscription-count tests                                                            | Invalid geometry, unbounded repeated observers, or one cleanup removes another subscriber       |
-| INV8       | Owner-observable behavior across documented composition replacement; optional focused internal mechanism tests | Behavior disappears or changes owner when a documented subpart is replaced                      |
-| INV9       | Provider/external-store identity and render-count tests                                                        | Unrelated mutable data broadcasts or snapshot identity creates a render loop                    |
+| Invariant  | Evidence                                                                                                       | Failure signal                                                                                                                              |
+| ---------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1–INV2  | Initial-render and interaction tests                                                                           | Output flashes a known-wrong state, or one action is delayed or repeated through an Effect                                                  |
+| INV3, INV5 | StrictMode setup/cleanup and dependency-change tests                                                           | Duplicate callback, leaked work, stale subscription, or missing resynchronization                                                           |
+| INV4, INV6 | Ref attach/null/replacement, DOM-in-state rejection, and old-node cleanup-before-new-attach mutations          | A DOM node or collection enters state, old node remains active, cleanup misses replacement, or ref mutation changes semantics silently      |
+| INV7       | Real-browser geometry plus N-consumer observer-instance/subscription mutations                                 | Geometry is invalid, observer instances grow with repeated consumers, one unsubscribe silences peers, or cleanup removes another subscriber |
+| INV8       | Owner-observable behavior across documented composition replacement; optional focused internal mechanism tests | Behavior disappears or changes owner when a documented subpart is replaced                                                                  |
+| INV9       | Provider/external-store identity and render-count tests                                                        | Unrelated mutable data broadcasts or snapshot identity creates a render loop                                                                |
