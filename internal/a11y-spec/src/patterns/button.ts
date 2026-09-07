@@ -33,6 +33,7 @@
 import {
   definePattern,
   type ApgRequirement,
+  type AstryxRecord,
   type PatternContract,
   type WcagCriterion,
 } from '../contract';
@@ -82,6 +83,17 @@ const WCAG_4_1_2: WcagCriterion = {
   name: 'Name, Role, Value',
   level: 'A',
   url: `${UNDERSTANDING}/name-role-value.html`,
+};
+
+/**
+ * The buttons family record, `authority: current`, approved 2026-09-04. FR3 is
+ * the clause that adopts inertness as an Astryx contract, which is what makes
+ * button.unavailable.inert gate under AST-020 FR9.
+ */
+const FAMILY_BUTTONS_FR3: AstryxRecord = {
+  standard: 'astryx',
+  id: 'family:buttons FR3 — "A disabled member MUST NOT invoke its callback or Action… while still blocking activation."',
+  url: 'docs/families/buttons.md',
 };
 
 const APG_ROLE: ApgRequirement = {
@@ -320,7 +332,7 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
         evidenceLayer: 'real-browser',
         enforcement: 'advisory',
         advisoryBecause:
-          'APG-only: no WCAG 2.2 A/AA criterion says a button must do something when clicked — 2.1.1 covers the keyboard, and this is the pointer — and no current Astryx record adopts it, so under AST-020 FR9 it reports. Its keyboard siblings DO gate on 2.1.1, so a button that does nothing at all still fails this contract.',
+          'No WCAG 2.2 A/AA criterion says a button must do something when CLICKED: 2.1.1 covers the keyboard, and this is the pointer. The current Astryx record that adopts activation, family:buttons FR2, is equally keyboard-specific — "an operable button with keyboard activation" — so under AST-020 FR9 the pointer half reports rather than gating. Its keyboard siblings DO gate on 2.1.1, so a button that does nothing at all still fails this contract.',
         run: async ({harness, subject, activations}) => {
           const before = await activations();
           await harness.click(subject);
@@ -448,21 +460,18 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
         id: 'button.unavailable.inert',
         outcome:
           'A button reported as unavailable runs nothing when it is clicked — nor when Enter or Space is pressed on it, wherever it can still be focused.',
-        // APG-primary for the same reason: 4.1.2 requires unavailability to be
-        // EXPOSED, which button.unavailable.exposed gates on, and says nothing
-        // about whether the control then declines to act.
-        sources: [APG_UNAVAILABLE, WCAG_4_1_2],
-        wcagOutcome:
-          'A control 4.1.2 requires to be exposed as unavailable is telling the user it will not act; acting anyway makes that exposure a lie. 4.1.2 governs the exposure, not the behaviour, so this supports the criterion rather than being required by it.',
+        // Astryx-primary. 4.1.2 requires unavailability to be EXPOSED — which
+        // button.unavailable.exposed gates on — and says nothing about whether
+        // the control then declines to act. What DOES require the behaviour is
+        // a current Astryx record, so under AST-020 FR9 this gates on that.
+        sources: [FAMILY_BUTTONS_FR3, APG_UNAVAILABLE, WCAG_4_1_2],
         covers: ['apg-interaction'],
         appliesWhen: {
           condition: 'the binding declares this state unavailable',
           test: facts => facts.unavailable,
         },
         evidenceLayer: 'real-browser',
-        enforcement: 'advisory',
-        advisoryBecause:
-          'APG-only, and no current Astryx record adopts it, so under AST-020 FR9 it reports. The exposure half — an unavailable button saying so — is directly applicable 4.1.2 and DOES gate, as button.unavailable.exposed.',
+        enforcement: 'required',
         run: async ({harness, subject, facts, activations}) => {
           const before = await activations();
           await harness.click(subject, {ignoreAvailability: true});

@@ -187,27 +187,58 @@ test('every applicability fact matches what the page exposes', async ({
     await mountState(page, state);
     const subject = page.locator('#storybook-root').getByRole('button').first();
     const harness = createChromiumHarness({page, subject, cdp});
-    const observed = {
-      unavailable: (await (await harness.subject()).computed()).disabled,
-      focusable: await subject.evaluate(element => {
-        (element as HTMLElement).focus();
-        return element.ownerDocument.activeElement === element;
-      }),
-    };
+    const computed = await (await harness.subject()).computed();
+    // Focusability means REACHABLE BY TAB, which is what the expectations mean
+    // by it. `element.focus()` succeeds on a `tabindex="-1"` control no Tab will
+    // ever reach, so measuring it that way would call a real gap a match.
+    await page.evaluate(() => {
+      (document.activeElement as HTMLElement | null)?.blur();
+    });
+    let reachedByTab = false;
+    for (let step = 0; step < 10 && !reachedByTab; step += 1) {
+      await page.keyboard.press('Tab');
+      reachedByTab = await subject.evaluate(
+        element => element.ownerDocument.activeElement === element,
+      );
+    }
+    const observed: Record<'unavailable' | 'focusable' | 'described', boolean> =
+      {
+        unavailable: computed.disabled,
+        focusable: reachedByTab,
+        // Whether supporting text really is attached, which gates two required
+        // expectations. `operable` has no counterpart here: it means "pressing
+        // this is MEANT to act", and observing it would mean running the very
+        // expectations this check exists to protect.
+        described: computed.description.trim() !== '',
+      };
     // `as const satisfies` keeps each row's literal type, so an optional field
     // is absent from the union member of a row that omits it. The interface is
     // the shape to read it through.
     const excused = (state as ButtonBindingState).declaredNotDelivered ?? [];
-    for (const fact of ['unavailable', 'focusable'] as const) {
+    for (const fact of ['unavailable', 'focusable', 'described'] as const) {
       const matches = state.facts[fact] === observed[fact];
-      if (!matches && !excused.includes(fact)) {
+      const excuse = excused.find(entry => entry.fact === fact);
+      if (!matches && excuse == null) {
         wrong.push(
           `${state.id}: declares ${fact}=${state.facts[fact]}, page exposes ${observed[fact]} — either the declaration is stale, or this is a real gap that needs a known-failure record and a declaredNotDelivered entry`,
         );
       }
-      if (matches && excused.includes(fact)) {
+      if (matches && excuse != null) {
         wrong.push(
           `${state.id}: lists ${fact} as declared-but-not-delivered, yet the page delivers it — remove the entry and its known-failure record`,
+        );
+      }
+      // An excuse with no record behind it is an unowned exception, which is
+      // exactly what AST-021 FR8 prohibits.
+      if (
+        excuse != null &&
+        !BUTTON_KNOWN_FAILURES.some(
+          record =>
+            record.expectation === excuse.owned && record.state === state.id,
+        )
+      ) {
+        wrong.push(
+          `${state.id}: excuses ${fact} against "${excuse.owned}", but no known-failure record names that expectation for this state`,
         );
       }
     }

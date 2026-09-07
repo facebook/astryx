@@ -102,7 +102,11 @@ export interface ButtonBindingState {
    * and fails, a listed one is recorded debt. Listing something that is not
    * actually mismatched also fails, so this cannot be padded.
    */
-  readonly declaredNotDelivered?: ReadonlyArray<'unavailable' | 'focusable'>;
+  readonly declaredNotDelivered?: ReadonlyArray<{
+    readonly fact: 'unavailable' | 'focusable' | 'described';
+    /** The known-failure record that owns this gap, by expectation id. */
+    readonly owned: string;
+  }>;
 }
 
 const OPERABLE: ButtonStateFacts = {
@@ -173,7 +177,9 @@ export const BUTTON_BINDING_STATES = [
     facts: facts({operable: false, unavailable: true}),
     visibleLabel: null,
     storyId: 'a11y-button-pattern--button-loading',
-    declaredNotDelivered: ['focusable'],
+    declaredNotDelivered: [
+      {fact: 'focusable', owned: 'button.focus.reachable-and-escapable'},
+    ],
   },
 
   // ---- IconButton ---------------------------------------------------------
@@ -201,7 +207,9 @@ export const BUTTON_BINDING_STATES = [
     facts: facts({operable: false, unavailable: true}),
     visibleLabel: null,
     storyId: 'a11y-button-pattern--icon-button-loading',
-    declaredNotDelivered: ['focusable'],
+    declaredNotDelivered: [
+      {fact: 'focusable', owned: 'button.focus.reachable-and-escapable'},
+    ],
   },
 
   // ---- ClickableCard ------------------------------------------------------
