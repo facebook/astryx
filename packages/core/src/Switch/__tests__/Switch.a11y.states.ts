@@ -28,12 +28,25 @@ export interface SwitchBindingState {
   readonly id: string;
   /** What this state is, for the report and the test name. */
   readonly summary: string;
-  /** What the state declares itself to be; the contract checks the browser against it. */
+  /**
+   * What the state declares itself to be. `checked` is compared against what
+   * the browser exposes, so a binding cannot pass by rendering on and reporting
+   * off. The rest select which expectations apply to this state — declaring a
+   * state described, disabled, required, or in error turns those expectations
+   * on; it does not assert the negative when they are false.
+   */
   readonly facts: SwitchStateFacts;
   /** Props the jsdom lane renders. The value seeds the controlled state. */
   readonly props: Omit<SwitchProps, 'onChange'>;
   /** The checked-in Storybook story the Chromium lane drives. */
   readonly storyId: string;
+  /**
+   * How this state comes to be, when it is not simply how the binding first
+   * renders. `controlled-update` means the owner changed the value through a
+   * second control — nobody touched the switch — so both lanes use that control
+   * during mount rather than asserting anything about it.
+   */
+  readonly arrivesBy?: 'controlled-update';
 }
 
 export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
@@ -51,7 +64,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       described: false,
       required: false,
       invalid: false,
-      busy: false,
     },
   },
   {
@@ -68,7 +80,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       described: false,
       required: false,
       invalid: false,
-      busy: false,
     },
   },
   {
@@ -89,7 +100,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       described: true,
       required: false,
       invalid: false,
-      busy: false,
     },
   },
   {
@@ -108,7 +118,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       described: false,
       required: false,
       invalid: false,
-      busy: false,
     },
   },
   {
@@ -130,7 +139,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       described: true,
       required: false,
       invalid: false,
-      busy: false,
     },
   },
   {
@@ -153,7 +161,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       described: true,
       required: false,
       invalid: false,
-      busy: false,
     },
   },
   {
@@ -174,11 +181,15 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       described: false,
       required: true,
       invalid: false,
-      busy: false,
     },
   },
   {
     id: 'invalid',
+    // Chromium also derives an invalid state from constraint validation on a
+    // required-but-off checkbox, so this state proves that a switch in error is
+    // reported as being in error — not that Switch's own error-status-to-
+    // aria-invalid mapping is what does it. That mapping stays gated in
+    // Switch.test.tsx.
     summary: 'a required switch reporting an error, with the message attached',
     storyId: 'core-switch--with-error-status',
     props: {
@@ -199,7 +210,24 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       described: true,
       required: true,
       invalid: true,
-      busy: false,
+    },
+  },
+  {
+    id: 'on-after-controlled-update',
+    summary:
+      'a switch the owner turned on through another control — the value changed, nobody touched the switch',
+    storyId: 'core-switch--controlled-update',
+    arrivesBy: 'controlled-update',
+    props: {label: 'Sync photos', value: true},
+    facts: {
+      checked: true,
+      operable: true,
+      focusable: true,
+      disabled: false,
+      visibleLabel: 'Sync photos',
+      described: false,
+      required: false,
+      invalid: false,
     },
   },
   {
@@ -217,7 +245,6 @@ export const SWITCH_BINDING_STATES: ReadonlyArray<SwitchBindingState> = [
       described: false,
       required: false,
       invalid: false,
-      busy: true,
     },
   },
 ];

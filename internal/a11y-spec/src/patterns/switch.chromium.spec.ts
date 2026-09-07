@@ -22,7 +22,7 @@
 
 import {expect, test, type CDPSession, type Page} from '@playwright/test';
 import {describeExpectation} from '../contract';
-import {createChromiumHarness} from '../harness/chromium';
+import {CHROMIUM_OBSERVES, createChromiumHarness} from '../harness/chromium';
 import {runBinding, type ExpectationResult} from '../run';
 import {SWITCH_PATTERN} from './switch';
 import {
@@ -33,14 +33,12 @@ import {
   type SwitchFixture,
 } from './switch.fixtures';
 
-const CHROMIUM_LAYERS = ['unit', 'dom', 'accessibility-tree', 'real-browser'];
-
 /**
  * A tab stop after the switch, so "focus can leave it" has somewhere to go.
  * Without it the browser moves focus to its own chrome and the fixture could
  * not tell an escape from a trap.
  */
-function document_(html: string): string {
+function fixturePage(html: string): string {
   return `<!doctype html><html lang="en"><body>${html}<button type="button" id="after">after</button></body></html>`;
 }
 
@@ -57,7 +55,7 @@ async function results(
     facts: target.facts,
     only,
     mount: async () => {
-      await page.setContent(document_(target.html));
+      await page.setContent(fixturePage(target.html));
       return createChromiumHarness({
         page,
         subject: page.locator(SUBJECT_SELECTOR),
@@ -75,7 +73,7 @@ test.describe('switch contract — conforming fixtures', () => {
       const observed = await results(page, cdp, fixture(id));
       const notPassing = observed.filter(
         result =>
-          CHROMIUM_LAYERS.includes(result.evidenceLayer) &&
+          CHROMIUM_OBSERVES.includes(result.evidenceLayer) &&
           result.status !== 'pass' &&
           result.status !== 'not-applicable',
       );
@@ -90,7 +88,7 @@ test.describe('switch contract — conforming fixtures', () => {
 
 test.describe('switch contract — deliberately violating fixtures', () => {
   for (const expectation of SWITCH_PATTERN.expectations) {
-    if (!CHROMIUM_LAYERS.includes(expectation.evidenceLayer)) {
+    if (!CHROMIUM_OBSERVES.includes(expectation.evidenceLayer)) {
       continue;
     }
     for (const fixtureId of SWITCH_MUTATIONS[expectation.id] ?? []) {

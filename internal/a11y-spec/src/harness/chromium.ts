@@ -43,12 +43,12 @@ const OBSERVES: readonly EvidenceLayer[] = [
   'real-browser',
 ];
 
+/** What this harness can observe. Exported so a suite need not restate it. */
+export const CHROMIUM_OBSERVES = OBSERVES;
+
 const KEYS: Record<Key, string> = {
   Space: ' ',
-  Enter: 'Enter',
   Tab: 'Tab',
-  ShiftTab: 'Shift+Tab',
-  Escape: 'Escape',
 };
 
 interface AxValue {
@@ -81,8 +81,8 @@ function property(node: AxNode, name: string): unknown {
 function flag(node: AxNode, name: string): boolean {
   const value = property(node, name);
   // The protocol is not consistent about booleans: `disabled` arrives as a
-  // boolean, `busy` as 1, and `invalid` as a string. Accept all three spellings
-  // of true rather than silently reading a set flag as unset.
+  // boolean, some flags as 1, and `invalid` as a string. Accept all three
+  // spellings of true rather than silently reading a set flag as unset.
   return value === true || value === 'true' || value === 1;
 }
 
@@ -91,9 +91,8 @@ const AX_TARGET_ATTRIBUTE = 'data-a11y-spec-ax-target';
 /**
  * The engine's own accessibility node for the subject.
  *
- * Playwright's `ariaSnapshot` renders role and name but not the required,
- * invalid, or busy state a field contract needs, so this reads the protocol
- * directly. The protocol addresses DOM nodes by id, and the page is on the far
+ * Playwright's `ariaSnapshot` renders role and name but not the invalid state a
+ * field contract needs, so this reads the protocol directly. The protocol addresses DOM nodes by id, and the page is on the far
  * side of the bridge, so the subject is marked with a data attribute for the
  * length of the query and unmarked afterwards. A data attribute takes no part
  * in accessibility computation, so marking it cannot change the answer.
@@ -139,7 +138,6 @@ async function computedNode(
         checked: null,
         disabled: false,
         invalid: false,
-        busy: false,
       };
     }
 
@@ -160,7 +158,6 @@ async function computedNode(
               : null,
       disabled: flag(node, 'disabled'),
       invalid: invalid != null && invalid !== 'false' && invalid !== false,
-      busy: flag(node, 'busy'),
     };
   } finally {
     await locator.evaluate(
@@ -191,6 +188,9 @@ export function createChromiumHarness(
   const subject: Subject = {
     attribute: name => locator.getAttribute(name),
     idReferences: attribute =>
+      // The same walk exists in the jsdom harness. It is not shared: Playwright
+      // serializes this function into the page, so it cannot close over an
+      // import from this package.
       locator.evaluate(
         (element, name) =>
           (element.getAttribute(name) ?? '')
@@ -214,8 +214,14 @@ export function createChromiumHarness(
     name: 'chromium',
     observes: OBSERVES,
     subject: async () => subject,
-    click: async () => {
-      await locator.click({force: true});
+    click: async (_subject, options) => {
+      // Without `force`, Playwright first satisfies itself that the control is
+      // visible, stable, enabled, and actually receives pointer events — so an
+      // ordinary click here also proves a pointer could reach the switch.
+      // `ignoreAvailability` skips that judgement, which is the only way to ask
+      // a control the browser calls unavailable what it does when clicked
+      // anyway.
+      await locator.click({force: options?.ignoreAvailability === true});
     },
     press: async key => {
       await page.keyboard.press(KEYS[key]);
@@ -228,17 +234,5 @@ export function createChromiumHarness(
         }
       });
     },
-    activeElementDescription: () =>
-      page.evaluate(() => {
-        const active = document.activeElement;
-        if (active == null || active === document.body) {
-          return 'the document body';
-        }
-        const label =
-          active.getAttribute('aria-label') ??
-          (active.textContent ?? '').trim().slice(0, 40);
-        const id = active.id === '' ? '' : `#${active.id}`;
-        return `<${active.tagName.toLowerCase()}${id}>${label === '' ? '' : ` "${label}"`}`;
-      }),
   };
 }

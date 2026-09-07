@@ -21,7 +21,7 @@
 
 import {useState} from 'react';
 import {describe, expect, it} from 'vitest';
-import {cleanup, render, screen} from '@testing-library/react';
+import {cleanup, fireEvent, render, screen} from '@testing-library/react';
 import {
   SWITCH_PATTERN,
   blockingResults,
@@ -47,6 +47,30 @@ function ControlledSwitch({value, ...props}: Omit<SwitchProps, 'onChange'>) {
   return <Switch {...props} value={checked} onChange={setChecked} />;
 }
 
+/**
+ * The same switch, plus a second control its owner uses to change the value.
+ * This is the controlled-update case: the value changes because the owner
+ * changed it, not because anyone touched the switch — and the switch stays
+ * operable afterwards. Mirrors the ControlledUpdate story the Chromium lane
+ * drives, including the order, so Tab still reaches the switch first.
+ */
+const REMOTE_LABEL = 'Turn on remotely';
+
+function RemotelyToggledSwitch({
+  value,
+  ...props
+}: Omit<SwitchProps, 'onChange'>) {
+  const [checked, setChecked] = useState(!value);
+  return (
+    <>
+      <Switch {...props} value={checked} onChange={setChecked} />
+      <button type="button" onClick={() => setChecked(value)}>
+        {REMOTE_LABEL}
+      </button>
+    </>
+  );
+}
+
 async function runState(state: SwitchBindingState): Promise<BindingResult> {
   return runBinding({
     contract: SWITCH_PATTERN,
@@ -55,7 +79,12 @@ async function runState(state: SwitchBindingState): Promise<BindingResult> {
     facts: state.facts,
     knownFailures: SWITCH_KNOWN_FAILURES,
     mount: async () => {
-      render(<ControlledSwitch {...state.props} />);
+      if (state.arrivesBy === 'controlled-update') {
+        render(<RemotelyToggledSwitch {...state.props} />);
+        fireEvent.click(screen.getByRole('button', {name: REMOTE_LABEL}));
+      } else {
+        render(<ControlledSwitch {...state.props} />);
+      }
       return createJsdomHarness({
         subject: screen.getByRole('switch', {hidden: true}),
       });

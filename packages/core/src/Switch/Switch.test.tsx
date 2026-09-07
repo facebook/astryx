@@ -356,6 +356,24 @@ describe('Switch', () => {
     expect(screen.getByText('Failed to save setting')).toBeInTheDocument();
   });
 
+  // Retained after review, not by oversight. The shared contract's
+  // switch.invalid.exposed proves that a switch in error is REPORTED in error,
+  // but the bound state is also `isRequired` and off, and Chromium derives an
+  // invalid state from constraint validation alone — so that expectation would
+  // still pass with this mapping deleted. Switch's own error-status-to-
+  // aria-invalid mapping is gated here, together with its negative below.
+  it('sets aria-invalid when status type is error', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Error message'}}
+      />,
+    );
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('does not set aria-invalid when status type is not error', () => {
     render(
       <Switch
@@ -414,6 +432,23 @@ describe('Switch', () => {
 
     await user.tab();
     expect(handleBlur).toHaveBeenCalled();
+  });
+
+  // Retained after review. The shared contract's switch.required.declared
+  // accepts either the native attribute or aria-required, because a non-native
+  // switch can only offer the latter — and Switch sets aria-required from a
+  // form-level default too. Only this test pins `isRequired` to the NATIVE
+  // attribute, which is what makes the browser block submission.
+  it('sets required attribute when isRequired is true', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        isRequired
+      />,
+    );
+    expect(screen.getByRole('switch')).toBeRequired();
   });
 
   describe('disabledMessage', () => {

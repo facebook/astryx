@@ -60,7 +60,10 @@ export async function serveStorybook(
       `.${requested === '/' ? '/index.html' : requested}`,
     );
     // Never serve outside the built Storybook, whatever the URL asks for.
-    if (!resolved.startsWith(root) || !fs.existsSync(resolved)) {
+    // The separator matters: a bare prefix test would also admit a sibling
+    // directory whose name merely starts with the root's.
+    const inside = resolved === root || resolved.startsWith(root + path.sep);
+    if (!inside || !fs.existsSync(resolved)) {
       response.writeHead(404).end('not found');
       return;
     }

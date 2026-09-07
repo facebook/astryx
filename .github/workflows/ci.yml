@@ -165,7 +165,7 @@ jobs:
           # filter above deliberately excludes. Without this the contract could
           # be changed, or a binding broken, with the only job that runs it
           # skipped.
-          A11Y=$(printf '%s\n' "$FILES" | grep -E '^internal/a11y-spec/|\.a11y\.|^playwright\.config\.ts$' | head -1 || true)
+          A11Y=$(printf '%s\n' "$FILES" | grep -E '^internal/a11y-spec/|^packages/[^/]+/src/.*\.a11y\.|^playwright\.config\.ts$' | head -1 || true)
           echo "has_components=$( { [ -n "$CHANGED" ] || [ -n "$A11Y" ]; } && echo true || echo false )" >> "$GITHUB_OUTPUT"
 
           # One classifier owns the release-channel rule. It reads each

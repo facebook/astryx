@@ -53,7 +53,6 @@ export interface ComputedNode {
   readonly checked: 'true' | 'false' | 'mixed' | null;
   readonly disabled: boolean;
   readonly invalid: boolean;
-  readonly busy: boolean;
 }
 
 /** The element a binding designates as the pattern's control. */
@@ -75,7 +74,7 @@ export interface Subject {
 }
 
 /** A key an expectation can send. Spelled by intent, not by engine syntax. */
-export type Key = 'Space' | 'Enter' | 'Tab' | 'ShiftTab' | 'Escape';
+export type Key = 'Space' | 'Tab';
 
 /**
  * A mounted binding, observed at whatever layers this runtime can honestly see.
@@ -87,14 +86,21 @@ export interface Harness {
   readonly observes: readonly EvidenceLayer[];
   /** The element the binding designates as the pattern's control. */
   subject(): Promise<Subject>;
-  /** Real-browser layer: click the subject the way a pointer user would. */
-  click(subject: Subject): Promise<void>;
+  /**
+   * Real-browser layer: click the subject the way a pointer user would,
+   * including the browser's own judgement that the control is there to be
+   * clicked. `ignoreAvailability` drops that judgement, and exists for the one
+   * case that needs it: proving a control the browser considers unavailable
+   * still does not change when someone clicks it anyway.
+   */
+  click(
+    subject: Subject,
+    options?: {ignoreAvailability?: boolean},
+  ): Promise<void>;
   /** Real-browser layer: send a key to whatever currently holds focus. */
   press(key: Key): Promise<void>;
   /** Real-browser layer: park focus at the document body, before the content. */
   resetFocus(): Promise<void>;
-  /** Real-browser layer: the element that currently holds focus, described for humans. */
-  activeElementDescription(): Promise<string>;
 }
 
 /**

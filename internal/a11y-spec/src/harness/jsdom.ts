@@ -28,6 +28,9 @@ import {
 
 const OBSERVES: readonly EvidenceLayer[] = ['unit', 'dom'];
 
+/** What this harness can observe. Exported so a suite need not restate it. */
+export const JSDOM_OBSERVES = OBSERVES;
+
 const HARNESS = 'jsdom';
 
 function unobservable(layer: EvidenceLayer, what: string): never {
@@ -38,6 +41,9 @@ function createSubject(element: Element): Subject {
   return {
     attribute: async name => element.getAttribute(name),
     idReferences: async attribute => {
+      // The same walk exists in the Chromium harness. It is not shared: that
+      // copy is serialized into the page by Playwright, so it cannot close over
+      // an import from this package.
       const value = element.getAttribute(attribute);
       if (value == null || value.trim() === '') {
         return [];
@@ -77,7 +83,5 @@ export function createJsdomHarness(options: JsdomHarnessOptions): Harness {
       unobservable('real-browser', 'a real pointer activation'),
     press: async () => unobservable('real-browser', 'a real key press'),
     resetFocus: async () => unobservable('real-browser', 'real focus'),
-    activeElementDescription: async () =>
-      unobservable('real-browser', 'the real focused element'),
   };
 }

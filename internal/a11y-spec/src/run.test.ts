@@ -34,7 +34,6 @@ function harness(observes: readonly EvidenceLayer[]): Harness {
     click: async () => {},
     press: async () => {},
     resetFocus: async () => {},
-    activeElementDescription: async () => 'the document body',
   };
 }
 

@@ -69,8 +69,15 @@ async function runState(
     // renders, not from whatever the previous expectation toggled it to.
     mount: async () => {
       await page.goto(url, {waitUntil: 'load'});
-      const subject = page.locator('#storybook-root').getByRole('switch');
+      const root = page.locator('#storybook-root');
+      const subject = root.getByRole('switch');
       await subject.waitFor({state: 'attached'});
+      if (state.arrivesBy === 'controlled-update') {
+        // Getting into this state is the owner's doing, not the user's: the
+        // story's second control changes the value the switch is given. Doing
+        // it here, in the mount, keeps every expectation about the switch.
+        await root.getByRole('button', {name: 'Turn on remotely'}).click();
+      }
       return createChromiumHarness({page, subject, cdp});
     },
   });

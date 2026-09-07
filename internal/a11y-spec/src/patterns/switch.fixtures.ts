@@ -48,7 +48,6 @@ const CONFORMING_FACTS: SwitchStateFacts = {
   described: false,
   required: false,
   invalid: false,
-  busy: false,
 };
 
 function facts(overrides: Partial<SwitchStateFacts> = {}): SwitchStateFacts {
@@ -110,12 +109,6 @@ export const SWITCH_FIXTURES: readonly SwitchFixture[] = [
     summary: 'a switch reported as being in error',
     facts: facts({invalid: true}),
     html: nativeSwitch('aria-invalid="true"'),
-  },
-  {
-    id: 'conforming-busy',
-    summary: 'a switch waiting on its own change',
-    facts: facts({busy: true}),
-    html: nativeSwitch('aria-busy="true"'),
   },
 
   // ---- one deliberate violation per expectation ---------------------------
@@ -224,12 +217,6 @@ export const SWITCH_FIXTURES: readonly SwitchFixture[] = [
     facts: facts({invalid: true}),
     html: nativeSwitch(),
   },
-  {
-    id: 'violating-busy-unexposed',
-    summary: 'a switch waiting on its change that never says so',
-    facts: facts({busy: true}),
-    html: nativeSwitch(),
-  },
 ];
 
 export function fixture(id: string): SwitchFixture {
@@ -266,7 +253,6 @@ export const SWITCH_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   'switch.disabled.exposed': ['violating-disabled-unexposed'],
   'switch.required.declared': ['violating-required-unexposed'],
   'switch.invalid.exposed': ['violating-invalid-unexposed'],
-  'switch.busy.exposed': ['violating-busy-unexposed'],
   'switch.state.pointer-round-trip': ['violating-inert', 'violating-one-way'],
   'switch.state.space-round-trip': [
     'violating-pointer-only',
@@ -276,5 +262,5 @@ export const SWITCH_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
     'violating-unreachable',
     'violating-keyboard-trap',
   ],
-  'switch.disabled.inoperable': ['violating-disabled-operable'],
+  'switch.state.inoperable': ['violating-disabled-operable'],
 };

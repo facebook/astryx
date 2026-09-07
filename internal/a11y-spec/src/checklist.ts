@@ -167,6 +167,13 @@ export const CHECKLIST_DIMENSIONS = [
     usualOwnership: 'System, component, and caller content',
   },
   {
+    id: '3.3.1-error-identification',
+    source: 'WCAG 2.2 3.3.1 Error Identification (A)',
+    outcome:
+      'An automatically detected input error is identified, and the error is described to the user in text.',
+    usualOwnership: 'Component and composition',
+  },
+  {
     id: '3.3.2-labels-or-instructions',
     source: 'WCAG 2.2 3.3.2 Labels or Instructions (A)',
     outcome: 'Inputs have persistent labels or needed instructions.',

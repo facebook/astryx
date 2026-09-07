@@ -21,8 +21,12 @@
  */
 
 import {afterEach, describe, expect, it} from 'vitest';
-import {unansweredDimensions} from '../contract';
-import {createJsdomHarness} from '../harness/jsdom';
+import {
+  citeSource,
+  describeExpectation,
+  unansweredDimensions,
+} from '../contract';
+import {JSDOM_OBSERVES, createJsdomHarness} from '../harness/jsdom';
 import {runBinding, type ExpectationResult} from '../run';
 import {SWITCH_PATTERN} from './switch';
 import {
@@ -33,10 +37,8 @@ import {
   type SwitchFixture,
 } from './switch.fixtures';
 
-const JSDOM_LAYERS = ['unit', 'dom'];
-
 const observableHere = SWITCH_PATTERN.expectations.filter(expectation =>
-  JSDOM_LAYERS.includes(expectation.evidenceLayer),
+  JSDOM_OBSERVES.includes(expectation.evidenceLayer),
 );
 
 afterEach(() => {
@@ -112,7 +114,7 @@ describe('switch contract — the jsdom harness reports what it cannot see', () 
   it('reports an expectation above the DOM layer as unrun, never as a pass', async () => {
     const results = await resultsFor(fixture('conforming-off'));
     const above = results.filter(
-      result => !JSDOM_LAYERS.includes(result.evidenceLayer),
+      result => !JSDOM_OBSERVES.includes(result.evidenceLayer),
     );
     // There is at least one, or the contract would be provable without a browser.
     expect(above.length).toBeGreaterThan(0);
@@ -154,10 +156,15 @@ describe.each(observableHere.map(expectation => [expectation.id] as const))(
       },
     );
 
-    it('names its id and its normative source in its description', () => {
-      const result = expectation;
-      expect(result.id).toBe(id);
-      expect(result.sources.length).toBeGreaterThan(0);
+    it('carries its id and its normative source into every failure it reports', async () => {
+      const [violating] = SWITCH_MUTATIONS[id] ?? [];
+      const target = fixture(violating ?? CONFORMING_FIXTURES[0]!);
+      const result = resultFor(await resultsFor(target), id);
+      // AST-020 FR4: a failure has to be understandable without opening the
+      // runner, so the id and the citation travel with the result.
+      expect(result.description).toContain(id);
+      expect(result.description).toContain(citeSource(expectation.sources[0]));
+      expect(describeExpectation(expectation)).toBe(result.description);
     });
   },
 );

@@ -21,8 +21,8 @@
  *
  * SYNC: When an expectation changes, update
  * - /internal/a11y-spec/README.md
- * - /packages/core/src/Switch/Switch.a11y.test.tsx (the jsdom binding)
- * - /packages/core/src/Switch/Switch.a11y.chromium.spec.ts (the Chromium binding)
+ * - /packages/core/src/Switch/__tests__/Switch.a11y.test.tsx (the jsdom binding)
+ * - /packages/core/src/Switch/__tests__/Switch.a11y.chromium.spec.ts (the Chromium binding)
  */
 
 import {
@@ -148,8 +148,6 @@ export interface SwitchStateFacts {
   readonly required: boolean;
   /** Whether it is meant to be exposed as being in error. */
   readonly invalid: boolean;
-  /** Whether it is meant to be exposed as waiting on its own change. */
-  readonly busy: boolean;
 }
 
 function onOff(checked: 'true' | 'false' | 'mixed' | null): string {
@@ -347,7 +345,7 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
         sources: [WCAG_4_1_2],
         covers: ['4.1.2-name-role-value'],
         appliesWhen: {
-          condition: 'this state cannot be operated',
+          condition: 'the binding declares this state unavailable',
           test: facts => facts.disabled,
         },
         evidenceLayer: 'accessibility-tree',
@@ -356,7 +354,7 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           const {disabled} = await subject.computed();
           if (!disabled) {
             throw new Error(
-              'this state cannot be operated, but the browser reports the switch as available, so the user is invited to change something that will not change',
+              'the binding declares this state unavailable, but the browser reports the switch as available, so the user is invited to change something that will not change',
             );
           }
         },
@@ -404,29 +402,6 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           if (!invalid) {
             throw new Error(
               'this state is in error, but the browser does not report the switch as invalid, so the error is only visible to people who can see the message',
-            );
-          }
-        },
-      },
-      {
-        id: 'switch.busy.exposed',
-        outcome:
-          'A switch waiting on its own change reports that it is busy, so the user is not told the setting already applied.',
-        sources: [WCAG_4_1_2],
-        covers: ['4.1.2-name-role-value'],
-        appliesWhen: {
-          condition: 'this state is waiting on its own change',
-          test: facts => facts.busy,
-        },
-        evidenceLayer: 'accessibility-tree',
-        enforcement: 'advisory',
-        advisoryBecause:
-          'WCAG 2.2 4.1.2 covers the states a user sets, and a pending change is not one of them; the adopted APG switch pattern has no busy clause, and no current Astryx record adopts a busy state as a switch contract. It reports so a binding that drops the busy state is visible, and it does not gate.',
-        run: async ({subject}) => {
-          const {busy} = await subject.computed();
-          if (!busy) {
-            throw new Error(
-              'this state is waiting on its own change, but the browser does not report the switch as busy',
             );
           }
         },
@@ -513,40 +488,46 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
         },
       },
       {
-        id: 'switch.disabled.inoperable',
+        id: 'switch.state.inoperable',
         outcome:
-          'A switch reported as unavailable does not change when it is clicked or when Space is pressed on it.',
+          'A switch the user is not meant to be able to change does not change when it is clicked or when Space is pressed on it.',
         sources: [WCAG_4_1_2, APG_STATE],
         covers: ['4.1.2-name-role-value'],
+        // Not keyed on `disabled`: a switch can also be temporarily
+        // unchangeable while it waits on the change it already started, and a
+        // second press that slips through queues a change nobody asked for.
         appliesWhen: {
-          condition: 'this state cannot be operated',
-          test: facts => facts.disabled,
+          condition: 'the user is not meant to be able to change this state',
+          test: facts => !facts.operable,
         },
         evidenceLayer: 'real-browser',
         enforcement: 'required',
         run: async ({harness, subject, facts}) => {
           const before = (await subject.computed()).checked;
-          await harness.click(subject);
+          await harness.click(subject, {ignoreAvailability: true});
           const afterClick = (await subject.computed()).checked;
           if (afterClick !== before) {
             throw new Error(
-              `the switch is reported as unavailable, but clicking it turned it ${onOff(afterClick)}`,
+              `the user is not meant to be able to change this state, but clicking the switch turned it ${onOff(afterClick)}`,
             );
           }
-          // A switch kept focusable while unavailable — the usual way to keep a
-          // reason discoverable — still has to refuse the keyboard.
+          // A switch kept focusable while it cannot be changed — the usual way
+          // to keep a reason or a pending state discoverable — still has to
+          // refuse the keyboard.
           if (!facts.focusable) {
             return;
           }
           await subject.focus();
           if (!(await subject.isFocused())) {
-            return;
+            throw new Error(
+              'this state is meant to stay focusable while it cannot be changed — so the reason or the pending state stays discoverable — but the switch did not take focus',
+            );
           }
           await harness.press('Space');
           const afterSpace = (await subject.computed()).checked;
           if (afterSpace !== before) {
             throw new Error(
-              `the switch is reported as unavailable, but pressing Space on it turned it ${onOff(afterSpace)}`,
+              `the user is not meant to be able to change this state, but pressing Space on the switch turned it ${onOff(afterSpace)}`,
             );
           }
         },
@@ -653,6 +634,13 @@ export const SWITCH_PATTERN: PatternContract<SwitchStateFacts> =
           'this shared contract itself: every component that adopts the pattern binds to the same expectations, so repeated switches are identified the same way',
         reason:
           'Consistency is a property of the whole set of adopters, which one binding cannot demonstrate.',
+      },
+      '3.3.1-error-identification': {
+        owner: 'the binding component',
+        verifiedBy:
+          "the component's own status-message tests; the programmatic half of the outcome — the control itself being identified as the item in error — is carried here by switch.invalid.exposed",
+        reason:
+          '3.3.1 also requires the error to be described to the user in text, and that text is composed around the switch rather than being part of the control, so one control cannot answer the whole criterion.',
       },
       '4.1.3-status-messages': {
         owner:

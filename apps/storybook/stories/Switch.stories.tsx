@@ -569,6 +569,37 @@ export const DisabledWithMessage: Story = {
   },
 };
 
+// The owner changes the value, not the user. A settings page does this when a
+// saved value arrives, or when another control implies this one. The switch
+// still reports the new state, and is still operable afterwards.
+export const ControlledUpdate: Story = {
+  render: args => {
+    const [value, setValue] = useState(false);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          gap: '12px',
+        }}>
+        <Switch
+          {...restArgs}
+          value={value}
+          onChange={checked => setValue(checked)}
+        />
+        <button type="button" onClick={() => setValue(true)}>
+          Turn on remotely
+        </button>
+      </div>
+    );
+  },
+  args: {
+    label: 'Sync photos',
+  },
+};
+
 // Waiting on the change it just started. The switch stays focusable and reports
 // itself busy, and activation is blocked until the change settles, so a second
 // press cannot queue a second change.

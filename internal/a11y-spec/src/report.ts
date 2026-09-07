@@ -4,7 +4,8 @@
  * @file report.ts
  * @input Uses ./run (BindingResult) and ./contract (PatternContract)
  * @output `summarize` and `formatReport` — the facts a reader needs, kept as
- *   separate facts.
+ *   separate facts — plus `blockingResults`, the gate over them, and
+ *   `formatFailures`, the reader-legible failure block bindings assert on.
  * @position Reporting layer. Also the gate: `blockingResults` decides what
  *   fails a build.
  *
