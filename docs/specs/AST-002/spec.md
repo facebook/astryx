@@ -151,9 +151,10 @@ A public API proposal is admitted only when it passes both gates:
 - **FR19 — Bug fixes do not smuggle API design.** A bug fix that can restore current
   behavior without changing public API or behavior beyond current authority MUST do
   so. When restoration genuinely requires a new public primitive or changed public
-  behavior, review enters `novel-human`; the owner first decides and records the
-  exact contract. Implementation convenience, removal of an internal wrapper, or
-  exposure of existing internal fields is not evidence that the API should exist.
+  behavior, authority is unsettled and follows `architecture:knowledge-contracts`;
+  the owner first decides and records the exact contract. Implementation
+  convenience, removal of an internal wrapper, or exposure of existing internal
+  fields is not evidence that the API should exist.
 
 ### Platform support
 
@@ -169,10 +170,8 @@ A public API proposal is admitted only when it passes both gates:
 - API review guidance requires both the caller-need argument and the dependable
   current-contract argument before new public API is accepted.
 - Every public API addition and public behavior change identifies current committed
-  authority. An overloaded input, hidden conditional precedence, or another
-  contradiction is rejected under the applicable current rule. A missing or
-  draft-only owner creates a private `novel-human` hold rather than permission to
-  accept the change.
+  authority, then follows the result and disposition owned by
+  `architecture:knowledge-contracts`. This spec does not redefine those outcomes.
 - Exact-head owner discussion or approval may supply the decision evidence, but it
   does not become reusable or acceptance-clearing authority until the canonical
   owning record commits that decision as `current`.
@@ -188,24 +187,21 @@ A public API proposal is admitted only when it passes both gates:
   Existing released mismatches remain compatible while an explicit deprecation and
   migration is designed; this rule does not silently rename or change them.
 
-### Current contract coverage
+### Current authority dependency
 
-For every public API or public behavior delta:
+For every public API or public behavior delta, identify the canonical owner and
+apply the routing defined by `architecture:knowledge-contracts`. This spec owns
+API admission and semantic-shape requirements; it does not copy review outcomes
+or pull-request disposition.
 
-1. State the exact semantic before → after and identify the canonical owner by
-   scope.
-2. Apply current component, family, architecture, and system authority. Drafts
-   route unresolved questions but cannot settle them.
-3. When current authority matches, continue through ordinary correctness review.
-   When it contradicts the delta, request changes. When no current decision
-   applies, hold privately for the owner.
-4. Record an accepted new decision in the canonical owner and promote it to
-   `current` with its required evidence before accepting the implementation.
-5. Re-review the implementation's exact head against the committed current record.
+A draft record may provide context and route the unresolved question, but it
+cannot clear current authority. Exact-head owner discussion supplies decision
+evidence; the canonical record must commit an accepted decision as `current`
+before implementation acceptance.
 
-This authority gate does not turn every public delta into rejection. It separates
-known, contradictory, and genuinely undecided changes before implementation
-mechanics are judged.
+This authority dependency does not make public API undesirable. Once current
+authority settles the semantic contract, ordinary correctness and evidence review
+still determine whether the implementation satisfies it.
 
 - Existing props and operations are not removed automatically. They are evaluated
   when touched, when adjacent API is proposed, or when they cause a concrete
