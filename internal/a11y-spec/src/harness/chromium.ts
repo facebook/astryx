@@ -46,6 +46,7 @@ export const CHROMIUM_OBSERVES: readonly EvidenceLayer[] = [
 
 const KEYS: Record<Key, string> = {
   Space: ' ',
+  Enter: 'Enter',
   Tab: 'Tab',
 };
 

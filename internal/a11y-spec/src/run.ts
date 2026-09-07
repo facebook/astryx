@@ -117,12 +117,33 @@ export interface RunBindingOptions<Facts> {
   /** Unmount between expectations. */
   readonly unmount?: () => Promise<void> | void;
   /**
+   * How many times this binding's action has run since the current mount.
+   *
+   * Required by any pattern whose expectations read it — a button's activation
+   * leaves no trace on the button, so only the binding can count it. Omitting
+   * it where the pattern needs it is a binding fault and fails loudly.
+   */
+  readonly activations?: () => Promise<number>;
+  /**
    * Run only these expectation ids. Used by the contract's own mutation proof,
    * which asks one expectation at a time whether it notices its outcome being
    * removed. A binding leaves it unset and runs the whole contract.
    */
   readonly only?: readonly string[];
   readonly knownFailures?: readonly KnownFailure[];
+}
+
+/**
+ * Thrown when an expectation reads something only the binding can supply and
+ * the binding did not supply it. A binding fault, not a contract result: it
+ * escapes `runBinding` rather than being recorded as a failure, because the
+ * outcome was never actually tested.
+ */
+export class MissingBindingCapability extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'MissingBindingCapability';
+  }
 }
 
 function messageOf(error: unknown): string {
@@ -203,8 +224,20 @@ export async function runBinding<Facts>(
         notApplicable: reason => {
           throw new NotApplicableHere(reason);
         },
+        activations: async () => {
+          if (options.activations == null) {
+            throw new MissingBindingCapability(
+              `${expectation.id} counts how many times the action ran, but this binding supplies no activation count`,
+            );
+          }
+          return options.activations();
+        },
       });
     } catch (error) {
+      if (error instanceof MissingBindingCapability) {
+        // Never a contract result: the outcome was not tested at all.
+        throw error;
+      }
       if (error instanceof NotApplicableHere) {
         notApplicableReason = error.message;
       } else {

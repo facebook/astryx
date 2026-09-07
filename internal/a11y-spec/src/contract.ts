@@ -131,6 +131,19 @@ export interface ExpectationContext<Facts> {
    * excuse itself: a reader sees which states did not exercise it.
    */
   readonly notApplicable: (reason: string) => never;
+  /**
+   * How many times the control's action has run since it was mounted.
+   *
+   * Some patterns have no state to read. A switch says whether it is on, so
+   * "pressing it worked" is observable from the control itself; a button's
+   * action leaves no trace on the button at all. The BINDING knows — it renders
+   * the component and can count the handler — so it supplies this and the
+   * contract asks.
+   *
+   * A binding that does not supply it makes every expectation reading it fail
+   * as a harness fault, loudly, rather than quietly passing.
+   */
+  readonly activations: () => Promise<number>;
 }
 
 export interface Expectation<Facts> {

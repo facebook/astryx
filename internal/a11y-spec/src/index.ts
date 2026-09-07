@@ -50,6 +50,7 @@ export {
 } from './harness';
 
 export {
+  MissingBindingCapability,
   runBinding,
   type BindingResult,
   type ExpectationResult,
