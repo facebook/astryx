@@ -79,7 +79,7 @@ describe('spec-only workflow contract', () => {
       );
       expect(result.status, result.stderr).toBe(0);
       expect(fs.readFileSync(output, 'utf8')).toBe(
-        'spec_only=true\ndocsite_only=false\n',
+        'spec_only=true\ndocsite_only=false\ntooling_only=false\n',
       );
 
       fs.rmSync(path.join(classifierDir, 'knowledge-paths.cjs'));
@@ -134,7 +134,12 @@ describe('spec-only workflow contract', () => {
     expect(validate).toBeGreaterThan(setup);
     expect(build).toBeGreaterThan(validate);
     expect(generate).toBeGreaterThan(build);
-    expect(docsiteJob.slice(setup, validate)).not.toContain('\n        if:');
+    expect(docsiteJob.slice(setup, validate)).toContain(
+      "if: needs.check-scope.outputs.tooling_only != 'true'",
+    );
+    expect(docsiteJob.slice(setup, validate)).not.toContain(
+      "needs.check-scope.outputs.spec_only != 'true'",
+    );
     expect(docsiteJob.slice(build, generate)).toContain(
       "if: needs.check-scope.outputs.spec_only != 'true'",
     );

@@ -23,6 +23,21 @@ const SPEC_RECORD_PATTERNS = [
 
 const CHANGESET_PATTERN = /^\.changeset\/(?!README\.md$)[^/]+\.md$/;
 
+const SURFACES = Object.freeze({
+  KNOWLEDGE: 'knowledge',
+  DOCSITE: 'docsite',
+  NODE_TOOLING: 'node-tooling',
+  SHARED_OR_UNKNOWN: 'shared-or-unknown',
+});
+
+// Tooling admission is exact and dependency-reviewed. Do not widen this to all
+// of scripts/: that directory also owns generated public artifacts, package
+// builds, releases, and other shared infrastructure.
+const NODE_TOOLING_PATHS = new Set([
+  'scripts/score-ledger.mjs',
+  'scripts/score-ledger.test.mjs',
+]);
+
 const THEME_DOC_CANDIDATE = /^docs\/themes\/(?!README\.md$)[^/]+\.md$/;
 const THEME_PACKAGE_CANDIDATE =
   /^packages\/themes\/[^/]+\/(?:.*\/)?[^/]+\.spec\.md$/;
@@ -65,6 +80,17 @@ function isKnowledgeRecordPath(filePath) {
   );
 }
 
+function isNodeToolingPath(filePath) {
+  return NODE_TOOLING_PATHS.has(filePath);
+}
+
+function surfaceForPath(filePath) {
+  if (isSpecRecordPath(filePath)) return SURFACES.KNOWLEDGE;
+  if (filePath.startsWith('apps/docsite/')) return SURFACES.DOCSITE;
+  if (isNodeToolingPath(filePath)) return SURFACES.NODE_TOOLING;
+  return SURFACES.SHARED_OR_UNKNOWN;
+}
+
 function normalizeChange(change) {
   if (typeof change === 'string') {
     return {filename: change, previous_filename: null};
@@ -83,10 +109,12 @@ function classifyChanges(changes, {expectedCount} = {}) {
     const complete = expectedCount == null || expectedCount === 0;
     return {
       specOnly: false,
+      toolingOnly: false,
       touchesKnowledgeRecords: !complete,
       touchesDesignAssets: false,
       specChangesetConflict: false,
       docsiteOnly: false,
+      surfaces: complete ? [] : [SURFACES.SHARED_OR_UNKNOWN],
       complete,
       reason: complete ? 'no changed files' : 'changed-file list is incomplete',
     };
@@ -98,6 +126,10 @@ function classifyChanges(changes, {expectedCount} = {}) {
       ? [change.filename, change.previous_filename]
       : [change.filename],
   );
+  const surfaces = [
+    ...new Set(allPaths.map(surfaceForPath)),
+    ...(!complete ? [SURFACES.SHARED_OR_UNKNOWN] : []),
+  ].sort();
   const touchesKnowledgeRecords =
     !complete || allPaths.some(isKnowledgeRecordPath);
   const touchesDesignAssets = allPaths.some(filePath =>
@@ -111,15 +143,18 @@ function classifyChanges(changes, {expectedCount} = {}) {
   const specChangesetConflict =
     complete && hasSpecRecord && hasChangeset && !hasPackageReleaseChange;
   const specOnly = complete && allPaths.every(isSpecRecordPath);
-  const docsiteOnly = allPaths.every(filePath =>
-    filePath.startsWith('apps/docsite/'),
-  );
+  const docsiteOnly =
+    complete &&
+    allPaths.every(filePath => filePath.startsWith('apps/docsite/'));
+  const toolingOnly = complete && allPaths.every(isNodeToolingPath);
   return {
     specOnly,
+    toolingOnly,
     touchesKnowledgeRecords,
     touchesDesignAssets,
     specChangesetConflict,
     docsiteOnly,
+    surfaces,
     complete,
     reason: !complete
       ? 'changed-file list is incomplete'
@@ -127,7 +162,9 @@ function classifyChanges(changes, {expectedCount} = {}) {
         ? 'only spec records changed'
         : docsiteOnly
           ? 'only docsite files changed'
-          : 'changes include another surface',
+          : toolingOnly
+            ? 'only admitted Node tooling changed'
+            : 'changes include another surface',
   };
 }
 
@@ -163,7 +200,7 @@ if (require.main === module) {
       throw new Error('GITHUB_OUTPUT is required with --github-output.');
     fs.appendFileSync(
       outputPath,
-      `spec_only=${result.specOnly}\ndocsite_only=${result.docsiteOnly}\n`,
+      `spec_only=${result.specOnly}\ndocsite_only=${result.docsiteOnly}\ntooling_only=${result.toolingOnly}\n`,
     );
   } else {
     process.stdout.write(`${JSON.stringify(result)}\n`);
@@ -171,8 +208,11 @@ if (require.main === module) {
 }
 
 module.exports = {
+  NODE_TOOLING_PATHS,
+  SURFACES,
   classifyChanges,
   isKnowledgeRecordPath,
+  isNodeToolingPath,
   isSpecRecordPath,
   parseNameStatus,
 };

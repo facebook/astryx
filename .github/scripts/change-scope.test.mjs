@@ -4,7 +4,11 @@ import {createRequire} from 'node:module';
 import {describe, expect, it} from 'vitest';
 
 const require = createRequire(import.meta.url);
-const {classifyChanges, parseNameStatus} = require('./change-scope.cjs');
+const {
+  SURFACES,
+  classifyChanges,
+  parseNameStatus,
+} = require('./change-scope.cjs');
 
 describe('spec-only change scope', () => {
   it('accepts system, family, design, theme, component, and plan records', () => {
@@ -173,5 +177,110 @@ describe('spec-only change scope', () => {
       {filename: 'docs/specs/AST-001-x/spec.md'},
       {filename: 'packages/core/src/X/X.spec.md', previous_filename: 'old.ts'},
     ]);
+  });
+});
+
+describe('positive CI surfaces', () => {
+  const scoreLedger = 'scripts/score-ledger.mjs';
+  const scoreLedgerTest = 'scripts/score-ledger.test.mjs';
+
+  it('admits only the complete score-ledger tooling group', () => {
+    const result = classifyChanges([
+      {filename: scoreLedger},
+      {filename: scoreLedgerTest},
+    ]);
+    expect(result.toolingOnly).toBe(true);
+    expect(result.surfaces).toEqual([SURFACES.NODE_TOOLING]);
+  });
+
+  it('keeps pure specification records in the knowledge singleton', () => {
+    const result = classifyChanges([
+      {filename: 'packages/core/src/Button/Button.spec.md'},
+    ]);
+    expect(result.specOnly).toBe(true);
+    expect(result.toolingOnly).toBe(false);
+    expect(result.surfaces).toEqual([SURFACES.KNOWLEDGE]);
+  });
+
+  it.each([
+    {
+      name: 'component spec plus component code',
+      files: [
+        'packages/core/src/Button/Button.spec.md',
+        'packages/core/src/Button/Button.tsx',
+      ],
+    },
+    {
+      name: 'module spec plus Table plugin code',
+      files: [
+        'packages/core/src/Table/plugins/rowStatus/useTableRowStatus.spec.md',
+        'packages/core/src/Table/plugins/rowStatus/useTableRowStatus.tsx',
+      ],
+    },
+    {
+      name: 'tooling plus component code',
+      files: [scoreLedger, 'packages/core/src/Button/Button.tsx'],
+    },
+    {
+      name: 'workflow self-change',
+      files: ['.github/workflows/ci.yml'],
+    },
+    {
+      name: 'classifier self-change',
+      files: ['.github/scripts/change-scope.cjs'],
+    },
+    {
+      name: 'unknown path',
+      files: ['new-surface/unknown.file'],
+    },
+    {
+      name: 'shared infrastructure',
+      files: ['pnpm-lock.yaml'],
+    },
+  ])('fails closed for $name', ({files}) => {
+    const result = classifyChanges(files.map(filename => ({filename})));
+    expect(result.toolingOnly).toBe(false);
+    expect(result.surfaces).toContain(SURFACES.SHARED_OR_UNKNOWN);
+  });
+
+  it.each([
+    'packages/core/src/Button/Button.tsx',
+    'packages/lab/src/TransferList/TransferList.tsx',
+    'packages/charts/src/Chart.tsx',
+    'packages/richtext/src/RichTextView.tsx',
+    'packages/vega/src/VegaChart.tsx',
+  ])('routes public package surface %s through broad CI', filename => {
+    const result = classifyChanges([{filename}]);
+    expect(result.toolingOnly).toBe(false);
+    expect(result.surfaces).toEqual([SURFACES.SHARED_OR_UNKNOWN]);
+  });
+
+  it('fails closed when a tooling path was renamed from an unknown path', () => {
+    const result = classifyChanges([
+      {
+        filename: scoreLedger,
+        previous_filename: 'scripts/legacy-score-tool.mjs',
+      },
+    ]);
+    expect(result.toolingOnly).toBe(false);
+    expect(result.surfaces).toEqual([
+      SURFACES.NODE_TOOLING,
+      SURFACES.SHARED_OR_UNKNOWN,
+    ]);
+  });
+
+  it('fails every specialized lane when the changed-file list is incomplete', () => {
+    for (const filename of [
+      scoreLedger,
+      'apps/docsite/src/app/page.tsx',
+      'docs/specs/AST-030/spec.md',
+    ]) {
+      const result = classifyChanges([{filename}], {expectedCount: 2});
+      expect(result.complete).toBe(false);
+      expect(result.toolingOnly).toBe(false);
+      expect(result.docsiteOnly).toBe(false);
+      expect(result.specOnly).toBe(false);
+      expect(result.surfaces).toContain(SURFACES.SHARED_OR_UNKNOWN);
+    }
   });
 });
