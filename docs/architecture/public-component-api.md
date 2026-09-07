@@ -99,8 +99,8 @@ guidance owns the process used to propose and test APIs.
   package path is public even when its source comment, filename, or current use
   calls it internal. Privacy requires removing the export or moving the capability
   behind a non-exported boundary.
-- **INV13 — Public API and behavior need exact current authority.** Every public
-  API update and every public behavior change receives the authority result from
+- **INV13 — Public deltas route to their authority owner.** Every public API update
+  and every public behavior change follows the result and disposition defined by
   `architecture:knowledge-contracts`. Tests, a Changeset, or a generated manifest
   are evidence; none can settle an absent or contradictory contract.
 
@@ -117,13 +117,10 @@ public promises until promotion.
   and from current main to the synthetic merge. The generated surface manifest
   inventories evidence and maps each row to its canonical component, family,
   architecture, or system owner; it does not decide acceptance.
-- The exact API and behavior delta is matched to current authority before normal
-  correctness review. A match is `preserves` or `settled`; a contradiction is
-  `violates`; an unsettled or novel contract is `novel-human`, following
-  `architecture:knowledge-contracts`.
-- A bug fix is `preserves` only when it restores an existing current contract or
-  standard without adding public API or public behavior beyond it. It requires
-  regression evidence, but not a new API decision.
+- After the generated surface inventory identifies the exact API and behavior
+  delta and its canonical owner, route it under
+  `architecture:knowledge-contracts`. This record does not redefine review results
+  or PR disposition.
 - Consumer docs change when consumer usage or a documented promise changes, or
   when the existing docs would otherwise become false. Fixing an implementation
   defect does not by itself require consumer-doc changes.
