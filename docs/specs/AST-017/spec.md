@@ -114,6 +114,13 @@ preserves the released contract.
   adapter when needed; otherwise classify the narrower or higher-floor range as
   breaking, describe the range change in its Changeset release note, and meet FR8's
   migration obligation.
+- **FR13 — Stable machine schemas project every field.** A stable CLI response
+  contract includes fields inside discriminated `data` entries as well as the
+  outer envelope. Every field is present in the canonical response type, contract
+  tests, text projection where the command provides one, and complete
+  consumer-facing schema documentation. Adding an optional field is nonbreaking
+  when old consumers continue unchanged, but it remains a public schema update and
+  does not bypass current-authority review or documentation.
 
 ### Platform support
 
@@ -141,18 +148,20 @@ updates:
 - changing or completely rebuilding the template's emitted starter page updates
   content for future generations without modifying projects that already copied it.
 
-The stable compatibility boundary remains the CLI operation and response schema,
-not the individual entries currently present in the template catalog.
+The stable compatibility boundary remains the CLI operation and complete response
+schema, not the individual entries currently present in the template catalog.
+Nested entry fields are public schema even when optional; their type, tests, text
+projection where present, and consumer schema documentation move together.
 
 ## Verification
 
-| Contract | Verification                                                                             | Representative states                                                      | Mutation or failure expectation                                                                                           |
-| -------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3  | PR compatibility statement plus latest stable package inspection                         | released export, behavior, CLI command; unreleased and private surface     | A change is labeled from diff size or possibility alone, or a released contract change is missed                          |
-| FR4–FR6  | Old-usage type/runtime/CLI regression test                                               | alias retained, deprecation warning, broad rewrite, low-adoption caller    | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                         |
-| FR7–FR8  | `pnpm check:changesets` plus migration review                                            | breaking and patch Changesets; codemoddable and non-codemoddable migration | Category and bump diverge, or a breaking release gives no usable migration path                                           |
-| FR9–FR11 | CLI contract tests plus template catalog and output tests                                | slug rename, metadata edit, source rebuild, command or schema change       | Catalog data is frozen as API, or a command/schema incompatibility is mislabeled as a catalog-only edit                   |
-| FR12     | Minimum and representative supported-version tests plus manifest and release-note review | retained range, narrowed range, adapter, coordinated upgrade               | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration |
+| Contract | Verification                                                                                                                     | Representative states                                                                         | Mutation or failure expectation                                                                                                                |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3  | PR compatibility statement plus latest stable package inspection                                                                 | released export, behavior, CLI command; unreleased and private surface                        | A change is labeled from diff size or possibility alone, or a released contract change is missed                                               |
+| FR4–FR6  | Old-usage type/runtime/CLI regression test                                                                                       | alias retained, deprecation warning, broad rewrite, low-adoption caller                       | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                              |
+| FR7–FR8  | `pnpm check:changesets` plus migration review                                                                                    | breaking and patch Changesets; codemoddable and non-codemoddable migration                    | Category and bump diverge, or a breaking release gives no usable migration path                                                                |
+| FR9–FR13 | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests | slug rename, metadata edit, source rebuild, optional field addition, command or schema change | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection |
+| FR12     | Minimum and representative supported-version tests plus manifest and release-note review                                         | retained range, narrowed range, adapter, coordinated upgrade                                  | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                      |
 
 ## Decision log
 
