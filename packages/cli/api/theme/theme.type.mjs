@@ -141,6 +141,7 @@
  * @property {'astryx-oklch-v1'} recipe
  * @property {'#000000'} black Exact solid black for theme authoring outside a tonal family.
  * @property {'#ffffff'} white Exact solid white for theme authoring outside a tonal family.
+ * @property {number[]} stops Canonical order for iterating the palette's stop lookup maps.
  * @property {Record<string, {name: string, light?: Record<string, string>, dark?: Record<string, string>}>} palette
  */
 

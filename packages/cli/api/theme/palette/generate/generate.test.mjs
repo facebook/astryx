@@ -51,6 +51,7 @@ describe('themePaletteGenerate', () => {
     expect(result.data.candidate).toMatchObject({
       black: '#000000',
       white: '#ffffff',
+      stops: [20, 50, 80],
     });
   });
 

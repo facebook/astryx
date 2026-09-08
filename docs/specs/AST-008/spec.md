@@ -237,6 +237,8 @@ The first production recipe is defined here and pinned by canonical fixtures:
 - Convert final colors to sRGB by rounding each clamped channel to the nearest
   8-bit integer. Emit lowercase `#rrggbb`. Canonical JSON uses two-space
   indentation, insertion-ordered families and stops, and one trailing newline.
+  Candidates expose the requested stop layout as an ordered `stops` array;
+  family ramp objects are lookup maps and do not define iteration order.
 - Invalid requests fail before producing a candidate. Family-local anchor
   conflicts report the family and produce no adoptable output.
 
@@ -244,10 +246,10 @@ The following canonical candidate fixtures use SHA-256 over UTF-8 canonical JSON
 
 | Fixture                | Request summary                                                                                | Candidate bytes | SHA-256                                                            |
 | ---------------------- | ---------------------------------------------------------------------------------------------- | --------------: | ------------------------------------------------------------------ |
-| `default-three-family` | Neutral `#777777`, blue `#0074e2`, orange `#d57113`; both modes; vibrancy 50; 21 default stops |            3571 | `44ba910320e57a8a56dd87d6a6540d4d21af97d465c6356c366328bee9949ef2` |
-| `exact-anchor`         | Blue `#0074e2`; light only; stops 20, 50, 80; exact stop-50 anchor `#1682d5`                   |             286 | `e91fe5f5b2350408a0f68bb76e5272011586b4a6d891625dfefeccfb3eebd071` |
-| `single-custom-stop`   | Red `#d62830`; dark only; stop 40                                                              |             233 | `61b51f9d23d389d7a2e4d5b3a4558a5ac301f98c48de729abd92c08537a099f3` |
-| `high-tone-balance`    | Green `#358a3a`, teal `#0c7365`, cyan `#0c6f82`; both modes; stops 60, 80, 95                  |             869 | `26a91ffab53c63a9dc1969568ce0d1b52ba3eefda228e05d61a9e4bd8530a57e` |
+| `default-three-family` | Neutral `#777777`, blue `#0074e2`, orange `#d57113`; both modes; vibrancy 50; 21 default stops |            3755 | `11c40191d508274d89d631bb4e1cb662f70ff0dce6c0dec101c317f9f69d3e25` |
+| `exact-anchor`         | Blue `#0074e2`; light only; stops 20, 50, 80; exact stop-50 anchor `#1682d5`                   |             327 | `c42929be3c4b5cb857cada078f62bb5a2242c1a22cfa4ae7546a18592540f7f3` |
+| `single-custom-stop`   | Red `#d62830`; dark only; stop 40                                                              |             258 | `88d3d69865c74c7fb14347b9967575285a7d44ab893087a08bc842bb66b29bbb` |
+| `high-tone-balance`    | Green `#358a3a`, teal `#0c7365`, cyan `#0c6f82`; both modes; stops 60, 80, 95                  |             910 | `873821574fdbe3357304dbc06986bd2e5ec88af80d0f36305626fd826c3cf07b` |
 
 Exact fixture equality is the release gate for recipe compatibility. Monotonicity,
 adjacent-stop distance, hue drift, family distinction, gamut events, and CVD

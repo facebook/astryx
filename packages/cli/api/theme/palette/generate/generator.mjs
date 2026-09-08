@@ -731,6 +731,7 @@ export function generateTonalPalette(input) {
     recipe: PALETTE_RECIPE,
     black: PALETTE_BLACK,
     white: PALETTE_WHITE,
+    stops: [...result.request.stops],
     palette: Object.fromEntries(
       result.families.map(family => [
         family.id,

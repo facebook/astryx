@@ -98,6 +98,25 @@ describe('astryx theme palette generate', () => {
     ).toBe(true);
   });
 
+  it('preserves mixed stop order in the JSON response', async () => {
+    fs.writeFileSync(
+      path.join(temporaryDirectory, 'palette.config.json'),
+      JSON.stringify({
+        modeStrategy: 'light-only',
+        stops: [12.5, 50, 80],
+        families: [{id: 'blue', seed: '#0074e2'}],
+      }),
+    );
+
+    const {status, stdout} = await runCli(
+      ['--json', 'theme', 'palette', 'generate', 'palette.config.json'],
+      {cwd: temporaryDirectory},
+    );
+
+    expect(status).toBe(0);
+    expect(JSON.parse(stdout).data.candidate.stops).toEqual([12.5, 50, 80]);
+  });
+
   it('returns the stable palette-generation error code', async () => {
     fs.writeFileSync(
       path.join(temporaryDirectory, 'palette.config.json'),

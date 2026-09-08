@@ -36,7 +36,7 @@ export const doc = {
     {
       type: 'TonalPaletteCandidate',
       description:
-        'Deterministic candidate data for author review, including standalone black and white values outside the tonal families.',
+        'Deterministic candidate data for author review, including a stops array that defines ramp iteration order and standalone black and white values outside the tonal families.',
     },
   ],
   throws: [

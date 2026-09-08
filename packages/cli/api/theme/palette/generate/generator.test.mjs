@@ -42,11 +42,12 @@ describe('astryx-oklch-v1 palette generator', () => {
     expect(candidate.palette.blue.dark[40]).toMatch(/^#[0-9a-f]{6}$/);
     expect(candidate.black).toBe('#000000');
     expect(candidate.white).toBe('#ffffff');
+    expect(candidate.stops).toEqual([40]);
   });
 
   it('locks the normative recipe fixtures', () => {
     expect(candidateDigest({families})).toBe(
-      '44ba910320e57a8a56dd87d6a6540d4d21af97d465c6356c366328bee9949ef2',
+      '11c40191d508274d89d631bb4e1cb662f70ff0dce6c0dec101c317f9f69d3e25',
     );
     expect(
       candidateDigest({
@@ -68,14 +69,14 @@ describe('astryx-oklch-v1 palette generator', () => {
           },
         ],
       }),
-    ).toBe('e91fe5f5b2350408a0f68bb76e5272011586b4a6d891625dfefeccfb3eebd071');
+    ).toBe('c42929be3c4b5cb857cada078f62bb5a2242c1a22cfa4ae7546a18592540f7f3');
     expect(
       candidateDigest({
         modeStrategy: 'dark-only',
         stops: [40],
         families: [{id: 'red', name: 'Red', seed: '#d62830'}],
       }),
-    ).toBe('61b51f9d23d389d7a2e4d5b3a4558a5ac301f98c48de729abd92c08537a099f3');
+    ).toBe('88d3d69865c74c7fb14347b9967575285a7d44ab893087a08bc842bb66b29bbb');
     expect(
       candidateDigest({
         stops: [60, 80, 95],
@@ -85,7 +86,7 @@ describe('astryx-oklch-v1 palette generator', () => {
           {id: 'cyan', name: 'Cyan', seed: '#0c6f82'},
         ],
       }),
-    ).toBe('26a91ffab53c63a9dc1969568ce0d1b52ba3eefda228e05d61a9e4bd8530a57e');
+    ).toBe('873821574fdbe3357304dbc06986bd2e5ec88af80d0f36305626fd826c3cf07b');
   });
 
   it('defaults to 21 stops while allowing authors to omit endpoints', () => {
@@ -119,6 +120,13 @@ describe('astryx-oklch-v1 palette generator', () => {
       stops: [12.5, 50, 80],
       families: [family],
     });
+
+    expect(custom.stops).toEqual([12.5, 50, 80]);
+    expect(custom.stops.map(stop => custom.palette.blue.light[stop])).toEqual([
+      custom.palette.blue.light[12.5],
+      custom.palette.blue.light[50],
+      custom.palette.blue.light[80],
+    ]);
 
     for (const mode of ['light', 'dark']) {
       for (const stop of COMPACT_11_STOPS) {
