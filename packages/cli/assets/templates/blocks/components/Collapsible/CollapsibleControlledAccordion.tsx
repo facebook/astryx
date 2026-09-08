@@ -18,10 +18,16 @@ import {Stack} from '@astryxdesign/core/Stack';
  * `string[]` for type="multiple".
  */
 const STEPS = ['profile', 'security', 'billing'] as const;
+type Step = (typeof STEPS)[number];
 
 export default function CollapsibleControlledAccordion() {
-  const [open, setOpen] = useState<string | string[]>('profile');
-  const index = STEPS.indexOf(open as (typeof STEPS)[number]);
+  const [open, setOpen] = useState<Step>('profile');
+  const index = STEPS.indexOf(open);
+  const handleOpenChange = (value: string | string[]) => {
+    if (typeof value === 'string' && STEPS.includes(value as Step)) {
+      setOpen(value as Step);
+    }
+  };
 
   return (
     <Stack gap={3} maxWidth={440}>
@@ -45,7 +51,7 @@ export default function CollapsibleControlledAccordion() {
         </Text>
       </Stack>
 
-      <CollapsibleGroup type="single" value={open} onChange={setOpen}>
+      <CollapsibleGroup type="single" value={open} onChange={handleOpenChange}>
         <Stack gap={2}>
           <Card>
             <Collapsible trigger="Profile" value="profile">

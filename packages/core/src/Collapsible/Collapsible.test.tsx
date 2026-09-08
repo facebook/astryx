@@ -3,7 +3,7 @@
 /**
  * @file Collapsible.test.tsx
  * @input Uses vitest, @testing-library/react, Collapsible + CollapsibleGroup
- * @output Characterization and regression coverage for Collapsible behavior
+ * @output Characterization coverage for Collapsible behavior
  * @position Testing; validates Collapsible.tsx (disclosure primitive)
  *
  * SYNC: When Collapsible.tsx changes, update tests to match new behavior
@@ -27,15 +27,6 @@ function contentFor(trigger: HTMLElement): HTMLElement {
   return el as HTMLElement;
 }
 
-/** Resolves the padded element that owns the public content theme target. */
-function themedContentFor(trigger: HTMLElement): HTMLElement {
-  const content = contentFor(trigger).querySelector(
-    '.astryx-collapsible-content',
-  );
-  expect(content).toBeInstanceOf(HTMLElement);
-  return content as HTMLElement;
-}
-
 describe('Collapsible', () => {
   describe('structure and rendering', () => {
     it('renders the trigger content inside a button', () => {
@@ -50,6 +41,7 @@ describe('Collapsible', () => {
     });
 
     it('renders the trigger button with an explicit type="button"', () => {
+      // Prevents implicit form submission when used inside a <form>.
       render(<Collapsible trigger="T">c</Collapsible>);
       expect(screen.getByRole('button')).toHaveAttribute('type', 'button');
     });
@@ -87,35 +79,10 @@ describe('Collapsible', () => {
       );
     });
 
-    it('renders the stable astryx-collapsible-content class on the padded content element', () => {
+    it('renders the stable astryx-collapsible-content class on the content area', () => {
       render(<Collapsible trigger="T">c</Collapsible>);
-      const trigger = screen.getByRole('button');
-      const track = contentFor(trigger);
-      expect(track).not.toHaveClass('astryx-collapsible-content');
-      expect(themedContentFor(trigger)).toHaveClass(
-        'astryx-collapsible-content',
-      );
-    });
-
-    it('keeps themed padding inside the clipping wrapper while closed', () => {
-      render(
-        <>
-          <style>{`.astryx-collapsible-content { padding: 16px; }`}</style>
-          <Collapsible trigger="T" defaultIsOpen={false}>
-            Body
-          </Collapsible>
-        </>,
-      );
-      const trigger = screen.getByRole('button');
-      const track = contentFor(trigger);
-      const content = themedContentFor(trigger);
-      const clip = content.parentElement as HTMLElement;
-
-      expect(clip.parentElement).toBe(track);
-      expect(getComputedStyle(content).paddingTop).toBe('16px');
-      expect(getComputedStyle(track).paddingTop).not.toBe('16px');
-      expect(getComputedStyle(track).gridTemplateRows).toBe('0fr');
-      expect(getComputedStyle(clip).overflow).toBe('hidden');
+      const content = contentFor(screen.getByRole('button'));
+      expect(content).toHaveClass('astryx-collapsible-content');
     });
 
     it('renders a ReactNode trigger, not just a string', () => {
@@ -187,83 +154,24 @@ describe('Collapsible', () => {
       expect(button).toHaveAttribute('aria-expanded', 'true');
     });
 
-    it('marks collapsed content inert and aria-hidden', async () => {
+    it('hides the content region (display:none) only when collapsed', async () => {
       const user = userEvent.setup();
-      render(
-        <Collapsible trigger="T">
-          <a href="#answer">Answer link</a>
-        </Collapsible>,
-      );
-      const button = screen.getByRole('button');
-      const content = contentFor(button);
-
-      // Open: interactive, not hidden.
-      expect(content).not.toHaveAttribute('inert');
-      expect(content).toHaveAttribute('aria-hidden', 'false');
-
-      await user.click(button);
-
-      // Closed: inert + aria-hidden, grid collapses to 0fr.
-      expect(content).toHaveAttribute('inert');
-      expect(content).toHaveAttribute('aria-hidden', 'true');
-    });
-
-    it('removes inert and aria-hidden when opened', async () => {
-      const user = userEvent.setup();
-      render(
-        <Collapsible trigger="T" defaultIsOpen={false}>
-          Body
-        </Collapsible>,
-      );
-      const button = screen.getByRole('button');
-      const content = contentFor(button);
-
-      expect(content).toHaveAttribute('inert');
-      expect(content).toHaveAttribute('aria-hidden', 'true');
-
-      await user.click(button);
-
-      expect(content).not.toHaveAttribute('inert');
-      expect(content).toHaveAttribute('aria-hidden', 'false');
-    });
-
-    it("releases the open clip for the final child's focus outline", async () => {
-      const user = userEvent.setup();
-      render(
-        <Collapsible trigger="T" defaultIsOpen={false}>
-          <span>First child</span>
-          <button type="button" style={{outline: '5px solid currentColor'}}>
-            Final action
-          </button>
-        </Collapsible>,
-      );
-      const trigger = screen.getByRole('button', {name: /T/});
-      const content = themedContentFor(trigger);
-      const clip = content.parentElement as HTMLElement;
-      const finalChild = screen.getByRole('button', {
-        name: 'Final action',
-        hidden: true,
-      });
-
-      expect(getComputedStyle(clip).overflow).toBe('hidden');
-      await user.click(trigger);
-      finalChild.focus();
-
-      expect(content.lastElementChild).toBe(finalChild);
-      expect(finalChild).toHaveFocus();
-      expect(finalChild.getAttribute('style')).toContain('outline: 5px');
-      expect(getComputedStyle(clip).overflow).toBe('visible');
-    });
-
-    it('floors the full-width trigger at the WCAG 2.5.8 target size', () => {
       render(<Collapsible trigger="T">Body</Collapsible>);
-      expect(screen.getByRole('button')).toHaveStyle({minHeight: '24px'});
+      const button = screen.getByRole('button');
+      const content = contentFor(button);
+
+      // Open: not display:none.
+      expect(content).not.toHaveStyle({display: 'none'});
+      await user.click(button);
+      // Collapsed: hidden via the contentHidden style.
+      expect(content).toHaveStyle({display: 'none'});
     });
 
     it('rotates the chevron indicator between open and closed states', async () => {
       const user = userEvent.setup();
       render(<Collapsible trigger="T">Body</Collapsible>);
       const button = screen.getByRole('button');
+      // The chevron lives in the last span of the trigger button.
       const chevron = button.querySelectorAll('span')[1];
       const openClass = chevron.getAttribute('class');
 
@@ -310,6 +218,8 @@ describe('Collapsible', () => {
     });
 
     it('does not self-update when controlled without onOpenChange', async () => {
+      // A controlled instance is driven entirely by the isOpen prop; a click
+      // must not flip the visual state on its own.
       const user = userEvent.setup();
       render(
         <Collapsible trigger="T" isOpen={false}>
@@ -331,6 +241,7 @@ describe('Collapsible', () => {
       );
       const button = screen.getByRole('button');
       await user.click(button);
+      // Still closed — parent hasn't re-rendered with the new value yet.
       expect(button).toHaveAttribute('aria-expanded', 'false');
 
       rerender(
@@ -352,6 +263,7 @@ describe('Collapsible', () => {
       const button = screen.getByRole('button');
       expect(button).toHaveAttribute('aria-disabled', 'true');
       expect(button).toHaveAttribute('tabindex', '-1');
+      // Never the native disabled attribute — it stays focusable/perceivable.
       expect(button).not.toBeDisabled();
     });
 
@@ -394,7 +306,7 @@ describe('Collapsible', () => {
         </Collapsible>,
       );
       const content = contentFor(screen.getByRole('button'));
-      expect(content).not.toHaveAttribute('inert');
+      expect(content).not.toHaveStyle({display: 'none'});
     });
 
     it('does not toggle its group item when disabled', async () => {
@@ -525,6 +437,7 @@ describe('Collapsible', () => {
       expect(b).toHaveAttribute('aria-expanded', 'false');
 
       await user.click(b);
+      // Opening B does not close A in multiple mode.
       expect(a).toHaveAttribute('aria-expanded', 'true');
       expect(b).toHaveAttribute('aria-expanded', 'true');
     });

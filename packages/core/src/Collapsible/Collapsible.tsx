@@ -20,11 +20,6 @@
  * child selectors, so the group cannot draw it from outside. The presentation
  * context is reset around children so nested collapsibles stay chrome-free.
  *
- * Animation uses the same `grid-template-rows: 1fr → 0fr` technique as
- * SideNavItem — pure CSS, no JS timing, no hidden attributes, no rAF. The
- * inner wrapper stays clipped through the opening transition, then releases
- * the clip so focused descendants can paint their outlines outside it.
- *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Collapsible/index.ts (exports)
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
@@ -53,15 +48,16 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
-const releaseContentClip = stylex.keyframes({
-  from: {overflow: 'hidden'},
-  to: {overflow: 'visible'},
-});
-
 const styles = stylex.create({
   root: {
     width: '100%',
   },
+  // Trigger button — full width, flex row, no browser button styling.
+  // Anchors heading-adjacent typography (body family, large size, semibold)
+  // so the label reads as a section header regardless of where the
+  // Collapsible is placed. External themes retarget it independently from the
+  // content via the `astryx-collapsible-trigger` target — e.g. a heading font
+  // on the trigger while the content stays on the body font.
   trigger: {
     all: 'unset',
     boxSizing: 'border-box',
@@ -69,10 +65,6 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    minHeight: {
-      default: '24px',
-      '@media (pointer: coarse)': spacingVars['--spacing-11'],
-    },
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -83,7 +75,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     textAlign: 'start',
     paddingBlock: 0,
+    // `all: unset` above wipes the UA focus outline; restore a keyboard-only
+    // focus ring using the standard token/offset (WCAG 2.4.7).
   },
+  // Capsize: trim leading from text triggers
   triggerLabel: {
     textBoxEdge: 'cap alphabetic',
     textBoxTrim: 'trim-both',
@@ -98,15 +93,24 @@ const styles = stylex.create({
     // starts overlapping the chevron.
     flexGrow: 1,
   },
+  // Disabled trigger — non-interactive, dimmed. Native `disabled` on the
+  // button blocks click + keyboard activation; these styles restore the
+  // visual affordance that `all: unset` wipes.
   triggerDisabled: {
     cursor: 'default',
     opacity: 0.5,
   },
+  // Chevron indicator
   chevron: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    // The chevron is sized off the trigger's own type size (--text-large-size,
+    // 17px), which sits between Icon's `sm` (16px) and `md` (20px) boxes.
+    // Pinning the box to the token keeps the glyph exactly the size it was
+    // when it was a bare 1em SVG inheriting the trigger's font-size, and keeps
+    // it tracking the trigger if a theme retunes that step.
     width: typeScaleVars['--text-large-size'],
     height: typeScaleVars['--text-large-size'],
     fontSize: typeScaleVars['--text-large-size'],
@@ -120,45 +124,14 @@ const styles = stylex.create({
   chevronClosed: {
     transform: 'rotate(0deg)',
   },
-  // Content track — animates via grid-template-rows, same as SideNavItem.
-  // `1fr → 0fr` gives the browser a real interpolation distance without
-  // measuring content height in JS.
-  contentTrack: {
-    display: 'grid',
-    gridTemplateRows: '1fr',
-    transitionProperty: 'grid-template-rows',
-    transitionDuration: {
-      default: `var(--_collapsible-open-duration, ${durationVars['--duration-medium']})`,
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: `var(--_collapsible-open-ease, ${easeVars['--ease-standard']})`,
+  // Content area
+  contentHidden: {
+    display: 'none',
   },
-  contentTrackClosed: {
-    gridTemplateRows: '0fr',
-    transitionDuration: {
-      default: `var(--_collapsible-close-duration, ${durationVars['--duration-medium']})`,
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: `var(--_collapsible-close-ease, ${easeVars['--ease-standard']})`,
-  },
-  // Inner clip wrapper — minHeight 0 lets the grid row shrink the content to
-  // nothing. A step-end animation holds the clip through the opening motion,
-  // then releases it so open descendants can paint focus outlines outside it.
-  contentInner: {
-    overflow: 'hidden',
-    minHeight: 0,
-  },
-  contentInnerOpen: {
-    overflow: 'visible',
-    animationName: releaseContentClip,
-    animationDuration: {
-      default: `var(--_collapsible-open-duration, ${durationVars['--duration-medium']})`,
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    animationTimingFunction: 'step-end',
-  },
-  // Body typography anchor — keeps revealed text at the system body scale.
-  // Padding lives here, inside the clip, so a collapsed panel shows no gap.
+  // Anchors body typography so revealed text renders at the system's body
+  // scale (family/size/weight/leading) instead of inheriting from wherever
+  // the Collapsible is placed. External themes override via the
+  // `astryx-collapsible-content` target, independently from the trigger.
   content: {
     paddingBlockStart: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-family-body'],
@@ -167,24 +140,8 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
   },
-  // Opacity fade runs in parallel with the grid-row transition.
-  contentFade: {
-    opacity: 1,
-    transitionProperty: 'opacity',
-    transitionDuration: {
-      default: `var(--_collapsible-open-duration, ${durationVars['--duration-medium']})`,
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: `var(--_collapsible-open-ease, ${easeVars['--ease-standard']})`,
-  },
-  contentFadeClosed: {
-    opacity: 0,
-    transitionDuration: {
-      default: `var(--_collapsible-close-duration, ${durationVars['--duration-medium']})`,
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: `var(--_collapsible-close-ease, ${easeVars['--ease-standard']})`,
-  },
+  // Group divider chrome — a hairline above every item except the first.
+  // The group's wrapper (or 'all' mode) owns the outer edges.
   divided: {
     borderBlockStartWidth: {
       default: borderVars['--border-width'],
@@ -195,6 +152,9 @@ const styles = stylex.create({
   },
 });
 
+// Density padding for divided/padded accordion rows. paddingBlock mapping
+// follows Table's density scale (spacing-1/2/3); content only pads its end
+// so text doesn't sit on the divider below (block-start stays spacing-1).
 const densityStyles = stylex.create({
   triggerCompact: {paddingBlock: spacingVars['--spacing-1']},
   triggerBalanced: {paddingBlock: spacingVars['--spacing-2']},
@@ -320,6 +280,7 @@ export function Collapsible({
   style,
   ...props
 }: CollapsibleProps) {
+  // Build the config for the hook
   const collapsibleConfig =
     controlledIsOpen !== undefined
       ? {isOpen: controlledIsOpen, onOpenChange}
@@ -330,6 +291,10 @@ export function Collapsible({
     value,
   });
 
+  // Activation is blocked by this guard rather than the native `disabled`
+  // attribute, so the trigger keeps `aria-disabled` semantics and stays
+  // discoverable. A native `disabled` button would silently swallow events
+  // (e.g. a wrapping tooltip's hover) — the system-wide disabled convention.
   const handleToggle = () => {
     if (isDisabled) {
       return;
@@ -341,6 +306,8 @@ export function Collapsible({
   const isDivided = presentation?.hasDividers ?? false;
   const density = presentation?.density ?? null;
 
+  // Links the trigger to the region it shows/hides so assistive tech can move
+  // from the button to its controlled content (disclosure pattern).
   const contentId = useId();
 
   return (
@@ -361,6 +328,11 @@ export function Collapsible({
         aria-disabled={isDisabled || undefined}
         aria-expanded={isOpen}
         aria-controls={contentId}
+        // A disabled trigger drops out of the tab order so it isn't a silently
+        // dead tab stop; activation stays blocked by the handleToggle guard,
+        // and aria-disabled keeps the state perceivable to assistive tech —
+        // the system-wide disabled convention (never native `disabled`, which
+        // would swallow events like a wrapping tooltip's hover).
         tabIndex={isDisabled ? -1 : undefined}
         {...mergeProps(
           themeProps('collapsible-trigger', {
@@ -375,7 +347,11 @@ export function Collapsible({
         <span {...stylex.props(styles.triggerLabel)}>{trigger}</span>
         <Icon
           icon="chevronDown"
+          // Nearest size to the trigger's 17px type step; `chevron` re-pins the
+          // exact box (see the style) so the glyph does not resize.
           size="sm"
+          // Was `--color-icon-secondary` on the old wrapper span; `secondary`
+          // is the same token, expressed as an Icon color.
           color="secondary"
           xstyle={[
             styles.chevron,
@@ -385,38 +361,23 @@ export function Collapsible({
       </button>
       <div
         id={contentId}
-        aria-hidden={!isOpen}
-        inert={!isOpen ? true : undefined}
-        {...stylex.props(
-          styles.contentTrack,
-          !isOpen && styles.contentTrackClosed,
+        {...mergeProps(
+          themeProps('collapsible-content', {
+            density: density ?? undefined,
+          }),
+          stylex.props(
+            styles.content,
+            density != null && contentDensity[density],
+            !isOpen && styles.contentHidden,
+          ),
         )}>
-        <div
-          {...stylex.props(
-            styles.contentInner,
-            isOpen && styles.contentInnerOpen,
-          )}>
-          <div
-            {...mergeProps(
-              themeProps('collapsible-content', {
-                density: density ?? undefined,
-              }),
-              stylex.props(
-                styles.content,
-                styles.contentFade,
-                !isOpen && styles.contentFadeClosed,
-                density != null && contentDensity[density],
-              ),
-            )}>
-            {presentation != null ? (
-              <CollapsibleGroupPresentationContext value={null}>
-                {children}
-              </CollapsibleGroupPresentationContext>
-            ) : (
-              children
-            )}
-          </div>
-        </div>
+        {presentation != null ? (
+          <CollapsibleGroupPresentationContext value={null}>
+            {children}
+          </CollapsibleGroupPresentationContext>
+        ) : (
+          children
+        )}
       </div>
     </div>
   );
