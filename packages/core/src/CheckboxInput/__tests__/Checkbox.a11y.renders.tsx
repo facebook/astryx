@@ -12,7 +12,7 @@
  *   remain in their local suites.
  */
 
-import {useState, type ReactNode} from 'react';
+import {useState, type ReactElement, type ReactNode} from 'react';
 import {CheckboxInput} from '../CheckboxInput';
 import {CheckboxList, CheckboxListItem} from '../../CheckboxList';
 import {DropdownMenu, DropdownMenuCheckboxItem} from '../../DropdownMenu';
@@ -149,7 +149,7 @@ function ControlledCard({
   );
 }
 
-export type CheckboxStateRender = () => ReactNode;
+export type CheckboxStateRender = () => ReactElement;
 
 export const CHECKBOX_STATE_RENDERS: Record<
   CheckboxStateId,
