@@ -3,11 +3,11 @@ schema_version: 3
 template_version: 4
 kind: component
 id: component:Banner
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-09-07
 owners: [cixzhang, imdreamrunner]
 review_triggers: [public-api, layout, theming]
 verified_by:
