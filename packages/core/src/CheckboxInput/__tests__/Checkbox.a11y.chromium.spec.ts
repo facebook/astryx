@@ -170,8 +170,17 @@ test('every applicability fact matches what the page exposes', async ({
   for (const state of CHECKBOX_BINDING_STATES) {
     await mountState(page, state);
     const locator = subjectFor(page, state);
-    const harness = createChromiumHarness({page, subject: locator, cdp});
-    const computed = await (await harness.subject()).computed();
+    const harness = createChromiumHarness({
+      page,
+      subject: locator,
+      pointerTarget: pointerTargetFor(page, state),
+      cdp,
+    });
+    const contractSubject = await harness.subject();
+    const computed = await contractSubject.computed();
+    await harness.click(contractSubject, {ignoreAvailability: true});
+    const afterPointer = (await contractSubject.computed()).checked;
+    const operable = afterPointer !== computed.checked;
     await page.evaluate(() => {
       (document.activeElement as HTMLElement | null)?.blur();
     });
@@ -200,6 +209,8 @@ test('every applicability fact matches what the page exposes', async ({
       focusable: reachedByTab,
       required,
       invalid: computed.invalid,
+      operable,
+      directKeyboardOperation: state.facts.role === 'checkbox',
     } as const;
     const expected = {
       role: state.facts.role,
@@ -209,9 +220,16 @@ test('every applicability fact matches what the page exposes', async ({
       focusable: state.facts.focusable,
       required: state.facts.required,
       invalid: state.facts.invalid,
+      operable: state.facts.operable,
+      directKeyboardOperation: state.facts.directKeyboardOperation,
     } as const;
     const excused = (state as CheckboxBindingState).declaredNotDelivered ?? [];
     for (const fact of Object.keys(expected) as (keyof typeof expected)[]) {
+      if (fact === 'focusable' && !state.facts.directKeyboardOperation) {
+        // A menu composite owns its roving focus. This contract deliberately
+        // makes no claim about whether the item is reachable by page Tab order.
+        continue;
+      }
       const matches = expected[fact] === observed[fact];
       const excuse = excused.find(entry => entry.fact === fact);
       if (!matches && excuse == null) {

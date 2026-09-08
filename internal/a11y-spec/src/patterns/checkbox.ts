@@ -794,7 +794,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         verifiedBy:
           'the repository axe audit, `pnpm a11y:audit`, plus the visual gate',
         reason:
-          'The track, thumb, and focus indicator are painted surfaces; their contrast is a rendered-colour measurement this contract cannot make.',
+          'Checkbox indicators, selectable-card rings, menu focus treatment, and focus indicators are painted surfaces; their contrast is a rendered-colour measurement this contract cannot make.',
       },
       '2.4.2-page-titled': {
         owner: 'the page',
@@ -828,7 +828,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         verifiedBy:
           "the repository visual gate and the component's own focus-ring styling",
         reason:
-          'A focus indicator is a painted result. Astryx checkboxes draw theirs on the track through an ancestor `:has(:focus-visible)` condition, so proving it means comparing pixels, which is the visual layer.',
+          'A focus indicator is a painted result. Each adopter owns its visible focus treatment on its actual interactive surface, verified by component-level focus styling tests and the visual gate.',
       },
       '2.4.11-focus-not-obscured': {
         owner: 'the composing page',
@@ -890,7 +890,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
       'reduced-motion': {
         owner: 'the binding component and the theme',
         verifiedBy:
-          "the component's `prefers-reduced-motion` transition guard and the repository visual gate",
+          "review of each binding's transition declarations and the repository's visual/manual reduced-motion checks",
         reason:
           'Motion is a rendered result over time, and no layer this contract observes can watch it.',
       },
