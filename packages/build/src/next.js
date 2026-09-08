@@ -188,38 +188,44 @@ function sourceEntryAliases(packages, context) {
 }
 
 /**
- * Whether the resolved alias map claims any astryx request at all. Both alias
- * shapes are ordered first-match-wins, so a caller entry that covers a package
- * is as effective as a generated one — where it points is the caller's business,
- * not this helper's. The question is only whether resolution has been directed
- * somewhere, because an alias map that names none of the packages is the
- * pre-0.5.3 config: the app falls through `default` to dist while PostCSS
- * compiles the library from source.
+ * Whether the resolved alias map routes any astryx request at all.
+ *
+ * The test is webpack's own matching rule rather than a list of shapes: a
+ * non-exact alias `key` intercepts a request `R` when `R === key` or `R` starts
+ * with `${key}/`. So an entry covers the packages when one of them sits at or
+ * below its key — `'@astryxdesign'` claims `@astryxdesign/core` even though it
+ * matches no package name as a string. A key *under* a package counts too,
+ * because that is the shape of the entries this helper generates, and a `*` key
+ * claims by pattern, using the same matcher `withoutCallerOverrides` applies.
+ *
+ * Where a caller points its alias is its business; the only thing worth saying
+ * is that nothing routes the packages at all, which is the pre-0.5.3 config. A
+ * false positive here tells someone their working build is broken, while a false
+ * negative merely stays quiet — so this errs toward silence.
  */
 function aliasCoversAstryx(alias, packages) {
-  const claims = request => {
-    // A wildcard key claims by pattern, not by literal name: `@astryxdesign/*`
-    // routes every package under the scope even though it matches none of them
-    // as a string. Same matcher `withoutCallerOverrides` uses to decide which
-    // generated entries a caller has already spoken for.
-    if (request.includes('*')) {
-      const pattern = wildcardPattern(request);
+  const covers = key => {
+    if (key.includes('*')) {
+      const pattern = wildcardPattern(key);
       return packages.some(name => pattern.test(name));
     }
     return packages.some(
-      name => request === name || request.startsWith(`${name}/`),
+      name =>
+        name === key ||
+        name.startsWith(`${key}/`) ||
+        key.startsWith(`${name}/`),
     );
   };
   if (Array.isArray(alias)) {
     return alias.some(
-      entry => entry && typeof entry.name === 'string' && claims(entry.name),
+      entry => entry && typeof entry.name === 'string' && covers(entry.name),
     );
   }
   if (alias == null || typeof alias !== 'object') {
     return false;
   }
   return Object.keys(alias).some(key =>
-    claims(key.endsWith('$') ? key.slice(0, -1) : key),
+    covers(key.endsWith('$') ? key.slice(0, -1) : key),
   );
 }
 

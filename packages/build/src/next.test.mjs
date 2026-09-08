@@ -488,6 +488,46 @@ describe('withAstryx alias coverage', () => {
     }
   });
 
+  // A scope-level key matches no package name as a string, but webpack resolves
+  // `@astryxdesign/core` through it — the key is an ancestor of the request.
+  const scoped = (label, build) =>
+    it(`stays quiet for a scope-prefix alias ${label}`, () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const dir = fs.realpathSync(
+        fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-scope-')),
+      );
+      try {
+        build(dir, path.join(dir, 'customRoot'));
+        expect(warn).not.toHaveBeenCalled();
+      } finally {
+        fs.rmSync(dir, {recursive: true, force: true});
+      }
+    });
+
+  scoped('in the config', (dir, target) =>
+    withAstryx().webpack({resolve: {alias: {'@astryxdesign': target}}}, {dir}),
+  );
+
+  scoped('in array form', (dir, target) =>
+    withAstryx().webpack(
+      {
+        resolve: {
+          alias: [{name: '@astryxdesign', onlyModule: false, alias: target}],
+        },
+      },
+      {dir},
+    ),
+  );
+
+  scoped('from the caller webpack hook', (dir, target) =>
+    withAstryx({
+      webpack: cfg => {
+        cfg.resolve.alias['@astryxdesign'] = target;
+        return cfg;
+      },
+    }).webpack({resolve: {alias: {}}}, {dir}),
+  );
+
   it('stays quiet when the caller routes them from its webpack hook', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const empty = fs.realpathSync(
