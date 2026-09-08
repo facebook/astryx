@@ -798,6 +798,16 @@ describe('hasInteractivePlayground', () => {
       }),
     ).toBe(true);
   });
+
+  it('uses the standard playground for components from canary packages', () => {
+    expect(
+      hasInteractivePlayground({
+        category: 'Data Input',
+        params: null,
+        playground: null,
+      }),
+    ).toBe(true);
+  });
 });
 
 // ── Simulated mobile AppShell context (#4983) ───────────────────────────────

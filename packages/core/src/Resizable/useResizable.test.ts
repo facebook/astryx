@@ -27,8 +27,8 @@ const KEY = `astryx-resizable:${AUTO_SAVE_ID}`;
 
 const BASE_CONFIG = {
   defaultSize: 260,
-  minSizePx: 180,
-  maxSizePx: 480,
+  minSize: 180,
+  maxSize: 480,
   autoSaveId: AUTO_SAVE_ID,
 };
 
@@ -414,7 +414,7 @@ describe('useResizable live collapse state', () => {
 describe('useResizable identity', () => {
   it('keeps callbacks stable when optional snaps are omitted', () => {
     const {result, rerender} = renderHook(() =>
-      useResizable({defaultSize: 200, minSizePx: 100, maxSizePx: 400}),
+      useResizable({defaultSize: 200, minSize: 100, maxSize: 400}),
     );
     const first = {
       expand: result.current.expand,
@@ -433,7 +433,7 @@ describe('useResizable identity', () => {
     let passes = 0;
     const {result} = renderHook(() => {
       passes += 1;
-      return useResizable({defaultSize: 200, minSizePx: 100, maxSizePx: 400});
+      return useResizable({defaultSize: 200, minSize: 100, maxSize: 400});
     });
 
     expect(passes).toBe(1);
@@ -459,8 +459,8 @@ describe('useResizable identity', () => {
         passes += 1;
         useResizable({
           defaultSize: 200,
-          minSizePx: 100,
-          maxSizePx: 400,
+          minSize: 100,
+          maxSize: 400,
           containerRef,
         });
         return null;
@@ -706,8 +706,8 @@ describe('useResizable percentage configuration (AST-010)', () => {
       expect(result.current.size).toBe(80);
     });
 
-    it('permanently re-clamps a legacy numeric maxSizePx recomputed by the caller', () => {
-      // #5934: a table-inbox reading pane derives `maxSizePx` itself, as
+    it('permanently re-clamps a caller-recomputed numeric maxSize', () => {
+      // #5934: a table-inbox reading pane derives `maxSize` itself, as
       // `Math.max(paneFloor, surfaceWidth - listFloor)`, from a plain
       // ResizeObserver measurement — no `containerRef`/`maxSize` percentage
       // in play, so this is the caller-recomputed-literal path, not FR1's
@@ -716,9 +716,9 @@ describe('useResizable percentage configuration (AST-010)', () => {
       // this pins the exact table-inbox pane-widen-then-surface-narrow
       // sequence from the #5934 review so no fix on either side can drop it.
       const {result, rerender} = renderHook(
-        ({maxSizePx}: {maxSizePx: number}) =>
-          useResizable({defaultSize: 400, minSizePx: 300, maxSizePx}),
-        {initialProps: {maxSizePx: 1500}},
+        ({maxSize}: {maxSize: number}) =>
+          useResizable({defaultSize: 400, minSize: 300, maxSize}),
+        {initialProps: {maxSize: 1500}},
       );
 
       // The user drags the separator out to 1066px, well inside the
@@ -728,32 +728,32 @@ describe('useResizable percentage configuration (AST-010)', () => {
 
       // The surface then narrows (no drag involved), so the derived ceiling
       // drops under the size the user chose.
-      rerender({maxSizePx: 834});
+      rerender({maxSize: 834});
 
       expect(result.current.size).toBe(834);
       expect(result.current.props._size).toBe(834);
       expect(result.current.props._maxSizePx).toBe(834);
 
       // Growing the surface again must not revive the pre-clamp selection.
-      rerender({maxSizePx: 1500});
+      rerender({maxSize: 1500});
 
       expect(result.current.size).toBe(834);
       expect(result.current.props._size).toBe(834);
       expect(result.current.props._maxSizePx).toBe(1500);
     });
 
-    it('leaves an in-range user choice alone when a legacy maxSizePx shrinks', () => {
+    it('leaves an in-range user choice alone when maxSize shrinks', () => {
       // The other half of #5934's fix: clamping must not become a second
       // proportional-resize mode. A selection that still fits the new
       // ceiling is the user's answer and stays exactly where they left it.
       const {result, rerender} = renderHook(
-        ({maxSizePx}: {maxSizePx: number}) =>
-          useResizable({defaultSize: 400, minSizePx: 300, maxSizePx}),
-        {initialProps: {maxSizePx: 1500}},
+        ({maxSize}: {maxSize: number}) =>
+          useResizable({defaultSize: 400, minSize: 300, maxSize}),
+        {initialProps: {maxSize: 1500}},
       );
 
       act(() => result.current.resize(700));
-      rerender({maxSizePx: 834});
+      rerender({maxSize: 834});
 
       expect(result.current.size).toBe(700);
     });
@@ -1090,9 +1090,7 @@ describe('useResizable percentage configuration (AST-010)', () => {
       ['Infinity', pixel(Infinity)],
     ])('rejects an invalid direct PixelWidth: %s', (_label, invalid) => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const {result} = renderHook(() =>
-        useResizable({defaultSize: invalid as never}),
-      );
+      const {result} = renderHook(() => useResizable({defaultSize: invalid}));
       expect(result.current.size).toBe(250);
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining('Falling back to 250'),
@@ -1240,9 +1238,7 @@ describe('useResizable percentage configuration (AST-010)', () => {
       [-1, 'a negative number'],
       [Number.NaN, 'NaN'],
     ])('falls back to 250px for defaultSize %s (%s)', (invalid, _why) => {
-      const {result} = renderHook(() =>
-        useResizable({defaultSize: invalid as never}),
-      );
+      const {result} = renderHook(() => useResizable({defaultSize: invalid}));
       expect(result.current.size).toBe(250);
     });
 
@@ -1285,81 +1281,6 @@ describe('useResizable percentage configuration (AST-010)', () => {
         expect.stringContaining('defaultSize: NaN is not a size'),
       );
       warn.mockRestore();
-    });
-
-    it('keeps explicit maxSizePx: Infinity valid', () => {
-      // A shipped template uses this spelling.
-      const {result} = renderHook(() =>
-        useResizable({defaultSize: 900, maxSizePx: Infinity}),
-      );
-      expect(result.current.size).toBe(900);
-    });
-  });
-
-  describe('API4 — the unified bound beats its deprecated alias', () => {
-    it('prefers minSize over minSizePx when untyped input supplies both', () => {
-      // Typed callers cannot do this; a spread or an `any` can, and the
-      // explicit migration target must not lose to a stale alias.
-      const {result} = renderHook(() =>
-        useResizable({
-          defaultSize: 10,
-          ...({minSize: 300, minSizePx: 60} as object),
-        } as never),
-      );
-      expect(result.current.size).toBe(300);
-    });
-
-    it('warns for both ignored aliases when untyped input supplies both pairs', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const {result} = renderHook(() =>
-        useResizable({
-          defaultSize: 250,
-          ...({
-            minSize: 100,
-            minSizePx: 60,
-            maxSize: 500,
-            maxSizePx: 800,
-          } as object),
-        } as never),
-      );
-
-      expect(result.current.size).toBe(250);
-      expect(warn).toHaveBeenCalledTimes(2);
-      expect(warn).toHaveBeenCalledWith(
-        'useResizable: both `minSize` and `minSizePx` were supplied. ' +
-          '`minSize` wins; the deprecated `minSizePx` is ignored.',
-      );
-      expect(warn).toHaveBeenCalledWith(
-        'useResizable: both `maxSize` and `maxSizePx` were supplied. ' +
-          '`maxSize` wins; the deprecated `maxSizePx` is ignored.',
-      );
-      warn.mockRestore();
-    });
-
-    it('preserves exact atomic strings from untyped legacy aliases', () => {
-      const containerRef = makeContainer();
-      const {result} = renderHook(() =>
-        useResizable({
-          defaultSize: 1000,
-          containerRef,
-          ...({minSizePx: '180px', maxSizePx: '50%'} as object),
-        } as never),
-      );
-
-      expect(result.current.props._minSizePx).toBe(180);
-      expect(result.current.props._maxSizePx).toBe(200);
-      expect(result.current.size).toBe(200);
-    });
-
-    it('leaves an old-only caller exactly as it was', () => {
-      const {result} = renderHook(() =>
-        useResizable({defaultSize: 260, minSizePx: 180, maxSizePx: 480}),
-      );
-      expect(result.current.size).toBe(260);
-      act(() => {
-        result.current.resize(9999);
-      });
-      expect(result.current.size).toBe(480);
     });
   });
 
@@ -1698,29 +1619,43 @@ describe('Resizable size source compatibility (AST-010 API3/API4)', () => {
       {defaultSize: percent(40, {min: pixel(333)})},
       {defaultSize: 0, minSize: percent(40, {min: pixel(333)})},
       {defaultSize: 500, maxSize: percent(10, {max: pixel(400)})},
-      {defaultSize: 260, minSizePx: 180, maxSizePx: 480},
+      {defaultSize: 260, minSize: 180, maxSize: 480},
     ] satisfies UseResizableSingleConfig[];
     expect(configs).toHaveLength(9);
   });
 
-  it('rejects unsupported bound strings and alias conflicts', () => {
+  it('rejects unsupported bound strings and removed pixel aliases', () => {
     // @ts-expect-error bound strings are exact px/% only
     const rem: UseResizableSingleConfig = {minSize: '10rem'};
     const cssMath: UseResizableSingleConfig = {
       // @ts-expect-error CSS functions are not part of ResizableSize
       minSize: 'max(40%, 333px)',
     };
-    // @ts-expect-error unified minimum and legacy alias are mutually exclusive
-    const duplicateMin: UseResizableSingleConfig = {
-      minSize: '40%',
+    const removedMin: UseResizableSingleConfig = {
+      // @ts-expect-error minSizePx was removed in 0.6; use minSize
       minSizePx: 100,
     };
-    // @ts-expect-error unified maximum and legacy alias are mutually exclusive
-    const duplicateMax: UseResizableSingleConfig = {
-      maxSize: percent(10, {max: pixel(400)}),
+    const removedMax: UseResizableSingleConfig = {
+      // @ts-expect-error maxSizePx was removed in 0.6; use maxSize
       maxSizePx: 500,
     };
-    expect([rem, cssMath, duplicateMin, duplicateMax]).toHaveLength(4);
+    function useRemovedDynamicBoundsCompileChecks() {
+      const dynamicRemovedMin = {defaultSize: 260, minSizePx: 100};
+      // @ts-expect-error removed aliases must not compile through a variable
+      useResizable(dynamicRemovedMin);
+      const dynamicRemovedMax = {
+        regions: {sidebar: {defaultSize: 260, maxSizePx: 500}},
+      };
+      // @ts-expect-error removed aliases must not compile in dynamic regions
+      useResizable(dynamicRemovedMax);
+      const unionWithRemovedMin = null as unknown as
+        | UseResizableSingleConfig
+        | (UseResizableSingleConfig & {minSizePx: number});
+      // @ts-expect-error every union member must exclude removed aliases
+      useResizable(unionWithRemovedMin);
+    }
+    expect(useRemovedDynamicBoundsCompileChecks).toBeTypeOf('function');
+    expect([rem, cssMath, removedMin, removedMax]).toHaveLength(4);
   });
 });
 

@@ -5,7 +5,7 @@
 /**
  * @file Popover.tsx
  * @input Uses React layout measurement and the usePopover hook
- * @output Exports Popover with viewport fitting, conditional overflow, and trigger-aware focus
+ * @output Exports Popover with viewport fitting, conditional overflow, and content-first focus
  * @position Layer component; declarative wrapper around usePopover hook
  *
  * For hover-triggered overlays, use HoverCard instead.
@@ -28,7 +28,7 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
-import {usePopoverInternal} from './usePopover';
+import {usePopover} from './usePopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
@@ -207,10 +207,12 @@ export interface PopoverProps extends Pick<
   closeButtonLabel?: string;
 
   /**
-   * Whether to move focus into the popover when it opens. Keyboard activation
-   * focuses the first content control; pointer activation focuses the labeled
-   * dialog container so an action does not appear preselected.
-   * Set to `false` for inline showcases or documentation previews.
+   * Whether to move focus into the popover when it opens. Focus enters the
+   * first genuine caller content control; dialogs with none fall back to the
+   * labeled surface. The generated fallback close control is excluded from
+   * initial focus and reveals only when reached through keyboard navigation.
+   * Set to `false` for input-owned focus, inline showcases, or documentation
+   * previews.
    * @default true
    */
   hasAutoFocus?: boolean;
@@ -410,7 +412,7 @@ export function Popover({
     onOpenChange?.(false);
   }, [onOpenChange]);
 
-  const popover = usePopoverInternal({
+  const popover = usePopover({
     dialogLabel: label,
     role,
     isModal,
@@ -512,24 +514,12 @@ export function Popover({
   }, [content, popover.isOpen, scheduleOverflowMeasurement]);
 
   // Shared handler for click events on the trigger button.
-  const handleTriggerClick = useCallback(
-    (event?: {detail: number}) => {
-      if (!isEnabled) {
-        return;
-      }
-      // Pointer/touch activation should not make the first action look
-      // preselected. Keep focus inside the modal dialog by focusing its
-      // labeled container; keyboard and AT activation still focus the first
-      // content control and expose the expected focus ring.
-      popover.toggle({
-        focusTarget:
-          role === 'dialog' && event != null && event.detail > 0
-            ? 'container'
-            : 'first',
-      });
-    },
-    [isEnabled, popover, role],
-  );
+  const handleTriggerClick = useCallback(() => {
+    if (!isEnabled) {
+      return;
+    }
+    popover.toggle();
+  }, [isEnabled, popover]);
 
   // Shared handler for keydown events on role="button" elements.
   // Native <button> synthesizes click on Enter/Space, but role="button"

@@ -17,6 +17,7 @@ export type {StepStatus} from './StepStatus';
 export {useStepperContext} from './StepperContext';
 export type {
   StepperContextValue,
+  StepperRegistrationOptions,
   StepperOrientation,
   StepperIndicatorPosition,
 } from './StepperContext';

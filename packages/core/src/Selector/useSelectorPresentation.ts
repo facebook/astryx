@@ -17,7 +17,7 @@ import {
   type RefObject,
 } from 'react';
 import {
-  usePopoverInternal,
+  usePopover,
   type UsePopoverOptions,
   type UsePopoverReturn,
 } from '../Popover/usePopover';
@@ -31,7 +31,8 @@ import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 interface UseSelectorPresentationOptions {
   presentation: AdaptivePresentation;
   onHide: () => void;
-  popoverOptions: Omit<UsePopoverOptions, 'onHide'>;
+  onShow: () => void;
+  popoverOptions: Omit<UsePopoverOptions, 'onHide' | 'onShow'>;
   triggerRef: RefObject<HTMLElement | null>;
 }
 
@@ -44,14 +45,14 @@ interface SelectorPresentationController {
   isTriggerFocusRingSuppressed: boolean;
   onSheetOpenChange: (isOpen: boolean) => void;
   onTriggerFocus: (event: FocusEvent<HTMLElement>) => void;
-  popover: UsePopoverReturn & {wasJustDismissed: () => boolean};
-  show: () => void;
-  wasJustDismissed: () => boolean;
+  popover: UsePopoverReturn;
+  show: () => boolean;
 }
 
 export function useSelectorPresentation({
   presentation,
   onHide,
+  onShow,
   popoverOptions,
   triggerRef,
 }: UseSelectorPresentationOptions): SelectorPresentationController {
@@ -65,6 +66,8 @@ export function useSelectorPresentation({
   // trigger, then consumers may remove the hidden surface tree.
   const [isSheetPresented, setIsSheetPresented] = useState(false);
   const onHideRef = useRef(onHide);
+  const onShowRef = useRef(onShow);
+  const didShowPopoverRef = useRef(false);
   const {
     isFocusRingSuppressed,
     onFocusReturnTargetFocus,
@@ -72,33 +75,39 @@ export function useSelectorPresentation({
     resetFocusReturn,
   } = useFocusReturnVisibility();
   onHideRef.current = onHide;
+  onShowRef.current = onShow;
 
   const handlePopoverHide = useCallback(() => {
     prepareFocusReturn();
     onHideRef.current();
     triggerRef.current?.focus();
   }, [prepareFocusReturn, triggerRef]);
-  const popover = usePopoverInternal({
+  const handlePopoverShow = useCallback(() => {
+    didShowPopoverRef.current = true;
+    resetFocusReturn();
+    onShowRef.current();
+  }, [resetFocusReturn]);
+  const popover = usePopover({
     ...popoverOptions,
     onHide: handlePopoverHide,
+    onShow: handlePopoverShow,
   });
-  const {
-    hide: hidePopover,
-    show: showPopover,
-    wasJustDismissed: wasPopoverJustDismissed,
-  } = popover;
+  const {hide: hidePopover, show: showPopover} = popover;
 
-  const show = useCallback(() => {
-    resetFocusReturn();
+  const show = useCallback((): boolean => {
     activePresentationRef.current = resolvedPresentation;
     if (resolvedPresentation === 'bottom-sheet') {
+      resetFocusReturn();
+      onShowRef.current();
       isSheetOpenRef.current = true;
       setIsSheetPresented(true);
       setIsSheetOpen(true);
-    } else {
-      setIsSheetPresented(false);
-      showPopover();
+      return true;
     }
+    setIsSheetPresented(false);
+    didShowPopoverRef.current = false;
+    showPopover();
+    return didShowPopoverRef.current;
   }, [resetFocusReturn, resolvedPresentation, showPopover]);
 
   const hide = useCallback(() => {
@@ -145,12 +154,6 @@ export function useSelectorPresentation({
       ? activePresentationRef.current
       : resolvedPresentation;
 
-  const wasJustDismissed = useCallback(
-    () =>
-      activePresentationRef.current === 'popover' && wasPopoverJustDismissed(),
-    [wasPopoverJustDismissed],
-  );
-
   return {
     activePresentation,
     hide,
@@ -162,6 +165,5 @@ export function useSelectorPresentation({
     onTriggerFocus: handleTriggerFocus,
     popover,
     show,
-    wasJustDismissed,
   };
 }
