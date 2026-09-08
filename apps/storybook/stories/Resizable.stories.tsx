@@ -49,8 +49,8 @@ export const HorizontalSplit: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 250,
-      minSizePx: 150,
-      maxSizePx: 500,
+      minSize: 150,
+      maxSize: 500,
     });
     return (
       <div {...stylex.props(ps.shell)}>
@@ -96,8 +96,8 @@ export const VerticalSplit: Story = {
   render: () => {
     const top = useResizable({
       defaultSize: 250,
-      minSizePx: 100,
-      maxSizePx: 350,
+      minSize: 100,
+      maxSize: 350,
       direction: 'vertical',
     });
     return (
@@ -141,7 +141,7 @@ export const Collapsible: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 260,
-      minSizePx: 180,
+      minSize: 180,
       collapsible: true,
       collapsedSize: 60,
     });
@@ -198,13 +198,13 @@ export const ThreePanelIDE: Story = {
   render: () => {
     const explorer = useResizable({
       defaultSize: 220,
-      minSizePx: 150,
-      maxSizePx: 400,
+      minSize: 150,
+      maxSize: 400,
     });
     const editor = useResizable({
       defaultSize: 280,
-      minSizePx: 100,
-      maxSizePx: 350,
+      minSize: 100,
+      maxSize: 350,
       direction: 'vertical',
     });
     return (
@@ -268,8 +268,8 @@ export const SnapPoints: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 260,
-      minSizePx: 56,
-      maxSizePx: 600,
+      minSize: 56,
+      maxSize: 600,
       snaps: [56, 160, 260, 400],
     });
     const isRail = sidebar.size <= 60;
@@ -316,8 +316,8 @@ export const HiddenPill: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 250,
-      minSizePx: 150,
-      maxSizePx: 500,
+      minSize: 150,
+      maxSize: 500,
     });
     return (
       <div {...stylex.props(ps.shell)}>
@@ -357,7 +357,7 @@ export const HiddenPill: Story = {
 /** Disabled handle — divider visible but non-interactive. */
 export const Disabled: Story = {
   render: () => {
-    const sidebar = useResizable({defaultSize: 250, minSizePx: 150});
+    const sidebar = useResizable({defaultSize: 250, minSize: 150});
     return (
       <div {...stylex.props(ps.shell)}>
         <Layout
@@ -392,8 +392,8 @@ export const WithLayout: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 260,
-      minSizePx: 180,
-      maxSizePx: 450,
+      minSize: 180,
+      maxSize: 450,
       collapsible: true,
       collapsedSize: 50,
     });
@@ -463,8 +463,8 @@ export const WithAppShell: Story = {
   render: () => {
     const nav = useResizable({
       defaultSize: 260,
-      minSizePx: 200,
-      maxSizePx: 400,
+      minSize: 200,
+      maxSize: 400,
       collapsible: true,
       collapsedSize: 50,
       snaps: [56, 260],
@@ -524,8 +524,8 @@ export const WithEmbeddedFrame: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 200,
-      minSizePx: 120,
-      maxSizePx: 520,
+      minSize: 120,
+      maxSize: 520,
     });
     return (
       <div {...stylex.props(ps.shell)}>

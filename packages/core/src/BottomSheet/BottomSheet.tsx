@@ -39,7 +39,8 @@ import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import {isImeKeyEvent, useDevWarning, useScrollLock} from '../hooks';
+import {useDevWarning, useScrollLock} from '../hooks';
+import {isImeKeyEvent} from '../utils';
 import {
   BottomSheetPanel,
   type BottomSheetPanelMotion,

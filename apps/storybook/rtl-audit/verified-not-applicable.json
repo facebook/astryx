@@ -1,5 +1,14 @@
 [
   {
+    "component": "core/Banner",
+    "reason": "Banner renders a single wrap-capable flex header row — status icon, title/description column, and an end area pushed over with `marginInlineStart: 'auto'` — above an optional content panel. Its status, close and expand glyphs (`info`, `warning`, `error`, `success`, `close`, `chevronDown`) are all radially symmetric or vertical, and the expanded state rotates the chevron 180° about the block axis. Every inset, corner radius and border it draws is a logical property, so the whole banner mirrors under RTL with nothing positioned, ordered or animated along the inline axis for the audit to assert.",
+    "evidence": {
+      "apps/storybook/stories/Banner.stories.tsx": "sha256:15792a91bf7a7df1d6e15085cc42b9fc7f4df05135d09b6360b2a24ca2a6db5d",
+      "packages/core/src/Banner/Banner.tsx": "sha256:a17ff3f61b7ee40a407373486366877684c650e7d08ae9fc2d8606c0bae9de66",
+      "packages/core/src/Banner/index.ts": "sha256:64591b4c3a37ae382a910fc9314300c3045bf8d602b28cc60a681d7b8f3a17f6"
+    }
+  },
+  {
     "component": "core/ToggleButton",
     "reason": "ToggleButton stories lay out label and optional icon in an inline flex row with logical gap only \u2014 no directional glyphs (the toolbar icons are non-directional), no side-specific placement, order, inset, or offset, no scrolling, dragging, or overlays. Elevation is a symmetric box-shadow, direction-independent by construction, so the LTR and RTL renders are mirror-identical."
   },
@@ -42,5 +51,17 @@
   {
     "component": "unknown/ChartTooltip",
     "reason": "ChartTooltip uses explicitly physical left/right/top viewport placement and clamping. It has no logical start/end placement, direction-dependent control order, horizontal scrolling action, or coarse form hit target; tooltip rows inherit bidi layout without component-specific directional logic."
+  },
+  {
+    "component": "unknown/ThreeD",
+    "reason": "The ThreeD documentation family renders Cartesian x/y/z data visualizations in SVG and WebGL. Its axes and pointer-drag rotation are physical data-space interactions that intentionally remain invariant across writing directions; it has no reading-order controls, inline-start/end placement, directional glyphs, or overlays to mirror."
+  },
+  {
+    "component": "core/Button",
+    "reason": "Button lays out icon, label, and end content in an inline flex row with logical gap and `paddingInline` only; its source carries no physical `left`/`right`, margin, padding, border, or inset anywhere, and the loading overlay is pinned with `insetInlineStart`/`insetInlineEnd`. Nothing is side-specific, nothing scrolls or drags, and the only positioned affordance is the disabled-reason tooltip, which sits on the block axis (above) rather than to a side. The icon slot mirrors with the flex row by construction, and the glyphs the stories use are non-directional. Verified by the audit's own detectors over every Button and IconButton story: D1 icon-mirror, D5 positional-mirror, and the decoration pass all returned N-A with zero not-RTL findings."
+  },
+  {
+    "component": "core/IconButton",
+    "reason": "IconButton is a thin wrapper that renders Button with `isIconOnly`, adding no layout, no positioning, and no directional affordance of its own, so it inherits `core/Button`'s verification above exactly. Its single icon is centred in a square control, which has no reading direction to mirror."
   }
 ]

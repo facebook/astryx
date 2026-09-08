@@ -24,17 +24,18 @@ from the monorepo and writes typed TypeScript registries to `src/generated/`.
 
 `scripts/generate-data.mjs` scans the monorepo and produces:
 
-| Registry               | Source                                     | What it contains                                              |
-| ---------------------- | ------------------------------------------ | ------------------------------------------------------------- |
-| `packageRegistry.ts`   | `packages/*/package.json`                  | Name, version, description, README for each published package |
-| `componentRegistry.ts` | `*.doc.mjs` files                          | Props, usage docs, hooks, groups, per package                 |
-| `blockRegistry.ts`     | CLI `templates/blocks/`                    | Showcase and example blocks with metadata                     |
-| `templateRegistry.ts`  | CLI `templates/pages/`                     | Page-level templates (e.g. dashboard, settings)               |
-| `docsRegistry.ts`      | CLI `docs/`                                | Long-form guide and foundation topics                         |
-| `blogRegistry.ts`      | `src/content/blog/posts/`                  | Human-authored blog posts (frontmatter validated)             |
-| `themeRegistry.ts`     | Installed `@astryxdesign/theme-*` packages | Built theme objects, keyed by package name                    |
-| `showcaseRegistry.ts`  | Blocks with `isShowcase`                   | Copied showcase source files                                  |
-| `exampleRegistry.ts`   | Blocks with `exampleFor`                   | Copied example blocks per component                           |
+| Registry                      | Source                                             | What it contains                                              |
+| ----------------------------- | -------------------------------------------------- | ------------------------------------------------------------- |
+| `packageRegistry.ts`          | `packages/*/package.json`                          | Name, version, description, README for each published package |
+| `componentRegistry.ts`        | Core + CLI-configured integration `.doc.mjs` files | Props, usage docs, hooks, groups, per package                 |
+| `componentPreviewRegistry.ts` | Components from those same packages                | Runtime exports for the shared Properties preview             |
+| `blockRegistry.ts`            | CLI + integration template blocks                  | Showcase and example blocks with metadata                     |
+| `templateRegistry.ts`         | CLI `templates/pages/`                             | Page-level templates (e.g. dashboard, settings)               |
+| `docsRegistry.ts`             | CLI `docs/`                                        | Long-form guide and foundation topics                         |
+| `blogRegistry.ts`             | `src/content/blog/posts/`                          | Human-authored blog posts (frontmatter validated)             |
+| `themeRegistry.ts`            | Installed `@astryxdesign/theme-*` packages         | Built theme objects, keyed by package name                    |
+| `showcaseRegistry.ts`         | Blocks with `isShowcase`                           | Copied showcase source files                                  |
+| `exampleRegistry.ts`          | Blocks with `exampleFor`                           | Copied example blocks per component                           |
 
 The `src/generated/` directory is gitignored. Pages import from these registries
 and render whatever the pipeline found, with no manual wiring needed.
@@ -67,7 +68,12 @@ The target is derived from Vercel's `VERCEL_ENV`: the production deploy is
 dev are `canary`. `scripts/resolve-content-root.mjs` maps the target to the
 filesystem root the pipeline reads from — for `latest` it downloads the
 published package tarballs from npm (their `src/` ships the `.doc.mjs` the
-pipeline needs); for `canary` it reads the live workspace. Only the documented
+pipeline needs); for `canary` it reads the live workspace and loads the
+component integrations in `astryx.config.mjs`. Packages marked
+`astryx.canaryOnly` are excluded from the `latest` snapshot. Their generated
+components use the existing `isReady: false` state and are grouped under the
+owning package on canary, with one flask on that package category rather than
+one marker per component. Only the documented
 **data** is version-pinned — CLI template demos are live-rendered React and
 always resolve `@astryxdesign/core` from the bundled workspace version.
 
@@ -111,11 +117,18 @@ them. Check the theme's `## Fonts` section for the specific Google Fonts URL.
 
 1. Create the package under `packages/<name>/`
 2. Add `"@astryxdesign/<name>": "*"` to `apps/docsite/package.json` dependencies
-3. Run `pnpm generate`
+3. For a canary-only component package, set `astryx.canaryOnly: true` in its
+   `package.json`, add `astryx.integration.mjs` with `components: './src'`,
+   include that file in the package's `files`, and list the package in
+   `apps/docsite/astryx.config.mjs`. Keep optional showcase blocks in the
+   package too and expose their directory through the integration's `templates`
+   field; the docsite retrieves them through the CLI template API.
+4. Run `pnpm generate`
 
 The package appears in the sidebar, the libraries section, and gets its own
 `/docs/<name>` detail page. If the package contains `.doc.mjs` files,
-its components are extracted into `componentRegistry.ts` as well.
+its components are extracted into `componentRegistry.ts` as well. Canary-only
+packages and components appear only on canary builds and carry a flask icon.
 
 ## Adding a Blog Post
 

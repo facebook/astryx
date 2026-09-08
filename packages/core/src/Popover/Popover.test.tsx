@@ -13,12 +13,14 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {readFileSync} from 'node:fs';
 import React, {useRef} from 'react';
 import {Popover} from './Popover';
 import type {UsePopoverReturn} from './usePopover';
 import {Dialog} from '../Dialog';
 import {SegmentedControl, SegmentedControlItem} from '../SegmentedControl';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -618,6 +620,35 @@ describe('Popover', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
     });
 
+    it('does not reopen when the trigger click belongs to its own light dismiss', () => {
+      render(
+        <Popover content={<span>Content</span>} label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const trigger = screen.getByRole('button', {name: 'Open'});
+      const showPopover = vi.mocked(HTMLElement.prototype.showPopover);
+      const callsBeforeOpen = showPopover.mock.calls.length;
+
+      fireEvent.pointerDown(trigger);
+      fireEvent.click(trigger);
+      expect(showPopover).toHaveBeenCalledTimes(callsBeforeOpen + 1);
+
+      fireEvent.pointerDown(trigger);
+      const popover = document.querySelector('[popover]') as HTMLElement;
+      act(() => {
+        popover.dispatchEvent(
+          Object.assign(new Event('toggle'), {
+            oldState: 'open',
+            newState: 'closed',
+          }),
+        );
+      });
+      fireEvent.click(trigger);
+
+      expect(showPopover).toHaveBeenCalledTimes(callsBeforeOpen + 1);
+    });
+
     it('dismisses on Escape pressed inside a roving-focus list', () => {
       render(
         <Popover
@@ -733,7 +764,7 @@ describe('Popover', () => {
   });
 
   describe('focus restoration', () => {
-    it('focuses the dialog container without outlining an action after pointer activation', async () => {
+    it('focuses the first content control after pointer activation', async () => {
       render(
         <Popover
           content={<button type="button">Delete</button>}
@@ -746,15 +777,11 @@ describe('Popover', () => {
         detail: 1,
       });
 
-      const dialog = screen.getByRole('dialog', {
-        name: 'Confirm deletion',
-        hidden: true,
-      });
-      await waitFor(() => expect(dialog).toHaveFocus());
-      expect(dialog).toHaveStyle({outline: 'none'});
-      expect(
-        screen.getByRole('button', {name: 'Delete', hidden: true}),
-      ).not.toHaveFocus();
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', {name: 'Delete', hidden: true}),
+        ).toHaveFocus(),
+      );
     });
 
     it('focuses the first content control after keyboard activation', async () => {
@@ -790,6 +817,11 @@ describe('Popover', () => {
         hidden: true,
       });
       await waitFor(() => expect(dialog).toHaveFocus());
+      for (const className of stylex
+        .props(focusOutlineStyles.focusVisible)
+        .className!.split(' ')) {
+        expect(dialog).toHaveClass(className);
+      }
       expect(
         screen.getByRole('button', {name: 'Close popover', hidden: true}),
       ).not.toHaveFocus();

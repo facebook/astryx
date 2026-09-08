@@ -29,6 +29,7 @@
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "files": [
+    "astryx.integration.mjs",
     "dist",
     "src",
     "README.md",
@@ -58,7 +59,7 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.5.2",
+    "@astryxdesign/core": "0.5.4",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
   },

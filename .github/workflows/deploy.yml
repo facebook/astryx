@@ -79,8 +79,11 @@ jobs:
   # independent by construction (vitest.config.ts), so they split cleanly; the
   # typecheck gates need the `pnpm build` they follow, so they stay together in
   # their own lane and take the build with them.
+  #
+  # `ui` is the heavier project by ~4x here, so it takes the larger runner (see
+  # ci.yml's lane comment).
   test-ui:
-    runs-on: 2-core-ubuntu-arm
+    runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:
@@ -93,7 +96,7 @@ jobs:
       - run: pnpm vitest run --project ui
 
   test-node:
-    runs-on: 4-core-ubuntu
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -135,6 +138,12 @@ jobs:
       - name: Typecheck charts docs
         run: pnpm -F @astryxdesign/charts typecheck:docs
 
+      - name: Typecheck rich text docs
+        run: pnpm -F @astryxdesign/richtext typecheck:docs
+
+      - name: Typecheck Vega docs
+        run: pnpm -F @astryxdesign/vega typecheck:docs
+
       - name: Typecheck template docs
         run: pnpm -F @astryxdesign/cli typecheck:template-docs
 
@@ -149,6 +158,12 @@ jobs:
 
       - name: Typecheck core (including tests)
         run: pnpm -F @astryxdesign/core typecheck
+
+      # The accessibility spec-test contracts are consumed as TypeScript source
+      # by Vitest and Playwright, and neither runner typechecks. This is the
+      # only gate over them.
+      - name: Typecheck accessibility spec-test contracts
+        run: pnpm -F @astryxdesign/a11y-spec typecheck
 
   # Historical job name, kept because `deploy` gates the publish on
   # `needs.test.result == 'success'`. Every lane must pass for that to hold, so
