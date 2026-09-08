@@ -24,6 +24,7 @@ import {findCoreDir, CLI_ROOT} from '../fs/paths.mjs';
 import {assertWithin} from '../fs/path-safety.mjs';
 import {getCliInvocation} from '../env/package-manager.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
+import {Project} from '../config/project.mjs';
 import {humanLog} from '../response/json.mjs';
 import {
   AGENTS_MD,
@@ -47,6 +48,31 @@ import {
 // here so existing importers (init/upgrade commands, the layer-3 nudge in
 // clients/cli/index.mjs, tests) keep their `from './agent-docs.mjs'` paths.
 export {discoverAgentDocs, isAstryxInitialized};
+
+const MAX_PROJECT_AGENT_DOC_LINES = 32;
+const MANAGED_MARKER_TEXT = /(?:ASTRYX|XDS):(START|END)/u;
+
+/** @param {unknown} value @returns {string} */
+function validateIntegrationLabel(value) {
+  if (typeof value !== 'string' || value.length === 0 || value !== value.trim()) {
+    throw new Error('Integration package name is not safe to render in agent docs.');
+  }
+  for (const character of value) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (
+      codePoint <= 0x1f ||
+      (codePoint >= 0x7f && codePoint <= 0x9f) ||
+      codePoint === 0x2028 ||
+      codePoint === 0x2029
+    ) {
+      throw new Error('Integration package name is not safe to render in agent docs.');
+    }
+  }
+  if (MANAGED_MARKER_TEXT.test(value) || value.includes('`')) {
+    throw new Error('Integration package name is not safe to render in agent docs.');
+  }
+  return value;
+}
 
 /**
  * Find tool-specific files that import another detected agent doc.
@@ -186,6 +212,8 @@ export function parseBlockVersion(content) {
  *
  * @param {string} targetDir
  * @param {string} [installedVersion] Defaults to the installed core version.
+ * @param {string} [expectedBlock] Fully rendered block for this project. When
+ *   present, byte differences are stale even if the Core version is unchanged.
  * @returns {{
  *   installedVersion: string,
  *   status: 'missing' | 'stale' | 'current',
@@ -194,7 +222,7 @@ export function parseBlockVersion(content) {
  *   blockVersions: string[],
  * }}
  */
-export function inspectAgentDocs(targetDir, installedVersion) {
+export function inspectAgentDocs(targetDir, installedVersion, expectedBlock) {
   const version = installedVersion ?? getXdsVersion(findCoreDir(targetDir));
   /** @type {Array<{path: string, blockVersion: string|null, legacy: boolean, stale: boolean}>} */
   const files = [];
@@ -213,7 +241,22 @@ export function inspectAgentDocs(targetDir, installedVersion) {
 
     const legacy = !hasNew && hasLegacy;
     const blockVersion = parseBlockVersion(content);
-    const stale = legacy || blockVersion == null || blockVersion !== version;
+    let contentMatches = true;
+    if (expectedBlock != null) {
+      try {
+        const block = findManagedBlock(content);
+        contentMatches =
+          block != null &&
+          content.slice(block.start, block.end) === expectedBlock;
+      } catch {
+        contentMatches = false;
+      }
+    }
+    const stale =
+      legacy ||
+      blockVersion == null ||
+      blockVersion !== version ||
+      !contentMatches;
     files.push({path: rel, blockVersion, legacy, stale});
   }
 
@@ -327,11 +370,29 @@ export function detectStylingSystem(targetDir) {
  * `getting-started` is the one it should reach for first.
  *
  * @param {string} version
- * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[]}} [options]
+ * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[], agentDocs?: Array<{package: string, append: readonly string[]}>}} [options]
  * @returns {string}
  */
-export function generateCompressedIndex(version, {coreDir, invocation = getCliInvocation(), stylingSystem = 'css', topics} = {}) {
+export function generateCompressedIndex(
+  version,
+  {
+    coreDir,
+    invocation = getCliInvocation(),
+    stylingSystem = 'css',
+    topics,
+    agentDocs = [],
+  } = {},
+) {
   const run = invocation;
+  const totalAgentDocLines = agentDocs.reduce(
+    (count, contribution) => count + contribution.append.length,
+    0,
+  );
+  if (totalAgentDocLines > MAX_PROJECT_AGENT_DOC_LINES) {
+    throw new Error(
+      `Configured integrations contribute ${totalAgentDocLines} agent-doc lines, exceeding the ${MAX_PROJECT_AGENT_DOC_LINES}-line project limit.`,
+    );
+  }
   // Annotated because MARKER_START is now an imported const: its literal type
   // survives the module boundary, so the array would infer as that one literal.
   /** @type {string[]} */
@@ -352,7 +413,9 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
 
   // Header — state the CLI prefix once; commands below are shown as `astryx <cmd>`.
   lines.push(`Astryx v${version} · ${componentCount} components`);
-  lines.push(`CLI: run every command as \`${run} <cmd>\` (shown below as \`astryx ...\`).`);
+  lines.push(
+    `CLI: run every command as \`${run} <cmd>\` (shown below as \`astryx ...\`).`,
+  );
   lines.push('');
 
   // Required setup — components ship precompiled CSS; without these imports
@@ -421,10 +484,85 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
     lines.push(`  docs <topic>       ${resolvedTopics.join(', ')}`);
   }
   lines.push('  swizzle <Name>     eject component source for deep customization');
-  lines.push('  upgrade --apply    run after any @astryxdesign/core bump');
+  lines.push('  upgrade --apply    run after any Astryx or integration dependency bump');
+  const appendCount = agentDocs.reduce(
+    (count, contribution) => count + contribution.append.length,
+    0,
+  );
+  if (appendCount > 0) {
+    lines.push('');
+    lines.push('INTEGRATIONS:');
+    for (const contribution of agentDocs) {
+      for (const line of contribution.append) {
+        lines.push(`- \`${contribution.package}\`: ${line}`);
+      }
+    }
+  }
   lines.push(MARKER_END);
 
   return lines.join('\n');
+}
+
+/**
+ * Resolve the complete expected block for one installed project.
+ *
+ * Config and integration modules load once through the existing Project seam.
+ * The returned bytes are reused for every target file.
+ *
+ * @param {string} targetDir
+ * @param {{installedVersion?: string, fresh?: boolean}} [options]
+ * @returns {Promise<string>}
+ */
+export async function renderAgentDocsBlock(
+  targetDir,
+  {installedVersion, fresh = false} = {},
+) {
+  const coreDir = findCoreDir(targetDir);
+  const version = installedVersion ?? getXdsVersion(coreDir);
+  const project = await Project.load(targetDir, {fresh});
+  const failedIntegration = project.loadedIntegrations.find(
+    integration => integration.__loadError != null,
+  );
+  if (failedIntegration) {
+    const packageLabel = validateIntegrationLabel(
+      failedIntegration.name ?? failedIntegration.__spec,
+    );
+    throw new Error(
+      `Cannot render agent docs because integration ${packageLabel} failed to load: ${failedIntegration.__loadError}`,
+    );
+  }
+  const invalidAgentDocs = project.loadedIntegrations.find(
+    integration => integration.__agentDocsError != null,
+  );
+  if (invalidAgentDocs) {
+    const packageLabel = validateIntegrationLabel(
+      invalidAgentDocs.name ?? invalidAgentDocs.__spec,
+    );
+    throw new Error(
+      `Cannot render agent docs because integration ${packageLabel} has invalid agentDocs: ${invalidAgentDocs.__agentDocsError}`,
+    );
+  }
+  const topics = (await project.docs()).names();
+  const agentDocs = project.loadedIntegrations.flatMap(integration => {
+    const append = integration.agentDocs?.append ?? [];
+    if (append.length === 0) return [];
+    return [
+      {
+        package: validateIntegrationLabel(
+          integration.name ?? integration.__spec,
+        ),
+        append,
+      },
+    ];
+  });
+
+  return generateCompressedIndex(version, {
+    coreDir,
+    invocation: getCliInvocation(targetDir),
+    stylingSystem: detectStylingSystem(targetDir),
+    topics,
+    agentDocs,
+  });
 }
 
 /**
@@ -607,14 +745,36 @@ export function removeAgentDocs(targetDir) {
  * @param {string[]} [options.topics] - Doc topics to list in the block; defaults
  *   to the CLI's own. Pass the project's catalog (`(await project.docs()).names()`)
  *   so an integration's topics reach the agent.
+ * @param {string} [options.renderedBlock] - Fully rendered expected block. Init
+ *   and upgrade pass one shared block to every target.
  * @returns {string[]} List of files written
  */
-export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false, topics} = {}) {
+export function installAgentDocs(
+  targetDir,
+  {
+    zh = false,
+    lang,
+    agent,
+    paths,
+    onlyReplace = false,
+    topics,
+    renderedBlock,
+  } = {},
+) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
   const invocation = getCliInvocation(targetDir);
   const stylingSystem = detectStylingSystem(targetDir);
-  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, invocation, stylingSystem, topics});
+  const compressedIndex =
+    renderedBlock ??
+    generateCompressedIndex(version, {
+      coreDir,
+      zh,
+      lang,
+      invocation,
+      stylingSystem,
+      topics,
+    });
   /** @type {string[]} */
   const written = [];
 

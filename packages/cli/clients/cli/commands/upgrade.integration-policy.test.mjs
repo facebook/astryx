@@ -17,6 +17,11 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Command} from 'commander';
 import {registerUpgrade} from './upgrade.mjs';
+import {Project} from '../../../foundation/config/project.mjs';
+import {
+  generateCompressedIndex,
+  renderAgentDocsBlock,
+} from '../../../foundation/agent-docs/agent-docs.mjs';
 
 let tmpDir;
 let originalCwd;
@@ -64,15 +69,21 @@ function writeSource() {
 /**
  * Scaffold a consumer + an installed integration package with codemods.
  * @param {Object<string,string>} codemodFiles "<version>/<id>.mjs" -> body
+ * @param {{agentDocs?: {append?: string[]}, failingPostCodemodHook?: boolean}} [options]
  */
-function scaffoldIntegration(codemodFiles) {
+function scaffoldIntegration(
+  codemodFiles,
+  {agentDocs, failingPostCodemodHook = false} = {},
+) {
   fs.writeFileSync(
     path.join(tmpDir, 'package.json'),
     JSON.stringify({name: 'consumer'}),
   );
   fs.writeFileSync(
     path.join(tmpDir, 'astryx.config.mjs'),
-    `export default { integrations: ['@acme/widgets'] };\n`,
+    failingPostCodemodHook
+      ? `export default {integrations: ['@acme/widgets'], hooks: {postCodemod: [{name: 'fail', buildCommand: () => ({command: process.execPath, args: ['-e', 'process.exit(1)']})}]}};\n`
+      : `export default {integrations: ['@acme/widgets']};\n`,
   );
   const pkgDir = path.join(tmpDir, 'node_modules', '@acme', 'widgets');
   fs.mkdirSync(pkgDir, {recursive: true});
@@ -80,9 +91,13 @@ function scaffoldIntegration(codemodFiles) {
     path.join(pkgDir, 'package.json'),
     JSON.stringify({name: '@acme/widgets', version: '1.0.0'}),
   );
+  const hasCodemods = Object.keys(codemodFiles).length > 0;
   fs.writeFileSync(
     path.join(pkgDir, 'astryx.integration.mjs'),
-    `export default { codemods: './codemods' };\n`,
+    `export default ${JSON.stringify({
+      ...(hasCodemods ? {codemods: './codemods'} : {}),
+      ...(agentDocs ? {agentDocs} : {}),
+    })};\n`,
   );
   for (const [rel, body] of Object.entries(codemodFiles)) {
     const full = path.join(pkgDir, 'codemods', rel);
@@ -119,7 +134,273 @@ async function runJson(args) {
   return null;
 }
 
+async function writePreviousAgentBlock(currentLine, previousLine) {
+  const expected = await renderAgentDocsBlock(tmpDir, {
+    installedVersion: '0.2.0',
+  });
+  expect(expected).toContain(currentLine);
+  const previous = expected.replace(currentLine, previousLine);
+  fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), `# Agents\n\n${previous}\n`);
+  return fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
+}
+
 describe('upgrade integration error policy (skip + warn)', () => {
+  it('leaves the existing block untouched when project config is invalid', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.config.mjs'),
+      `export default {integrations: [42]};\n`,
+    );
+    writeInstalledCore('0.2.0');
+    const before = `# Agents\n\n${generateCompressedIndex('0.2.0', {
+      agentDocs: [
+        {
+          package: '@acme/widgets',
+          append: ['existing integration line'],
+        },
+      ],
+    })}\n`;
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), before);
+
+    const result = await runJson([
+      '--json',
+      'upgrade',
+      '--from',
+      '0.2.0',
+      '--apply',
+    ]);
+
+    expect(result.data.agentDocs.action).toBe('error');
+    expect(fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8')).toBe(before);
+  });
+
+  it('leaves the existing block untouched when integration agentDocs is invalid', async () => {
+    scaffoldIntegration({}, {
+      agentDocs: {append: ['Use the current widget workflow.']},
+    });
+    writeInstalledCore('0.2.0');
+    const before = `# Agents\n\n${generateCompressedIndex('0.2.0', {
+      agentDocs: [
+        {
+          package: '@acme/widgets',
+          append: ['Use the previous widget workflow.'],
+        },
+      ],
+    })}\n`;
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), before);
+    fs.writeFileSync(
+      path.join(
+        tmpDir,
+        'node_modules',
+        '@acme',
+        'widgets',
+        'astryx.integration.mjs',
+      ),
+      `export default {agentDocs: {append: [' invalid']}};\n`,
+    );
+
+    const result = await runJson([
+      '--json',
+      'upgrade',
+      '--from',
+      '0.2.0',
+      '--apply',
+    ]);
+
+    expect(result.data.agentDocs.action).toBe('error');
+    expect(fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8')).toBe(
+      before,
+    );
+  });
+
+  it('detects and applies a same-Core manifest guidance change without a codemod', async () => {
+    const currentLine = 'Use the current widget workflow.';
+    const previousLine = 'Use the previous widget workflow.';
+    scaffoldIntegration({}, {agentDocs: {append: [currentLine]}});
+    writeInstalledCore('0.2.0');
+    const before = await writePreviousAgentBlock(currentLine, previousLine);
+
+    const dryRun = await runJson(['--json', 'upgrade', '--from', '0.2.0']);
+    expect(dryRun.data.agentDocs.action).toBe('would-refresh');
+    expect(fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8')).toBe(
+      before,
+    );
+
+    const applied = await runJson([
+      '--json',
+      'upgrade',
+      '--from',
+      '0.2.0',
+      '--apply',
+    ]);
+    expect(applied.data.agentDocs.action).toBe('refreshed');
+    const after = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
+    expect(after).toContain(currentLine);
+    expect(after).not.toContain(previousLine);
+  });
+
+  it('preserves the prior block when an integration codemod fails', async () => {
+    const currentLine = 'Use the migrated widget workflow.';
+    const previousLine = 'Use the pre-migration widget workflow.';
+    scaffoldIntegration(
+      {
+        '0.2.0/fail.mjs': `export default {type: 'code', title: 'Fail', transform: () => {throw new Error('codemod boom')}};\n`,
+      },
+      {agentDocs: {append: [currentLine]}},
+    );
+    writeInstalledCore('0.2.0');
+    writeSource();
+    const before = await writePreviousAgentBlock(currentLine, previousLine);
+
+    const result = await runJson([
+      '--json',
+      'upgrade',
+      '--from',
+      '0.1.0',
+      '--path',
+      'src',
+      '--apply',
+    ]);
+
+    expect(result.code).toBe('ERR_CODEMOD_FAILED');
+    expect(fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8')).toBe(
+      before,
+    );
+  });
+
+  it('preserves the prior block when a post-codemod hook fails', async () => {
+    const currentLine = 'Use the post-migration widget workflow.';
+    const previousLine = 'Use the old widget workflow.';
+    scaffoldIntegration(
+      {
+        '0.2.0/drop-foo.mjs': `export default {type: 'code', title: 'Drop foo', transform: file => file.source.replace(/foo/g, 'bar')};\n`,
+      },
+      {
+        agentDocs: {append: [currentLine]},
+        failingPostCodemodHook: true,
+      },
+    );
+    writeInstalledCore('0.2.0');
+    writeSource();
+    const before = await writePreviousAgentBlock(currentLine, previousLine);
+
+    const result = await runJson([
+      '--json',
+      'upgrade',
+      '--from',
+      '0.1.0',
+      '--path',
+      'src',
+      '--apply',
+    ]);
+
+    expect(result.code).toBe('ERR_CODEMOD_FAILED');
+    expect(fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8')).toBe(
+      before,
+    );
+  });
+
+  it('renders post-codemod integration membership and order from the rewritten config', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.config.mjs'),
+      `export default {integrations: ['@acme/migrator', '@acme/old']};\n`,
+    );
+
+    const writeIntegration = (name, line, codemod) => {
+      const packageDir = path.join(tmpDir, 'node_modules', ...name.split('/'));
+      fs.mkdirSync(packageDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(packageDir, 'package.json'),
+        JSON.stringify({name, version: '1.0.0'}),
+      );
+      fs.writeFileSync(
+        path.join(packageDir, 'astryx.integration.mjs'),
+        `export default ${JSON.stringify({
+          ...(codemod ? {codemods: './codemods'} : {}),
+          agentDocs: {append: [line]},
+        })};\n`,
+      );
+      if (codemod) {
+        const codemodPath = path.join(
+          packageDir,
+          'codemods',
+          '0.2.0',
+          'replace-integrations.mjs',
+        );
+        fs.mkdirSync(path.dirname(codemodPath), {recursive: true});
+        fs.writeFileSync(codemodPath, codemod);
+      }
+    };
+
+    writeIntegration(
+      '@acme/migrator',
+      'Migrator guidance.',
+      `export default {
+  type: 'config',
+  title: 'Replace integration order',
+  transform: file => file.source.replace(
+    "['@acme/migrator', '@acme/old']",
+    "['@acme/second', '@acme/first']",
+  ),
+};\n`,
+    );
+    writeIntegration('@acme/old', 'Old guidance.');
+    writeIntegration('@acme/second', 'Second guidance.');
+    writeIntegration('@acme/first', 'First guidance.');
+
+    writeInstalledCore('0.2.0');
+    writeSource();
+    fs.writeFileSync(
+      path.join(tmpDir, 'AGENTS.md'),
+      `# Agents\n\n${generateCompressedIndex('0.2.0', {
+        agentDocs: [{package: '@acme/old', append: ['Old guidance.']}],
+      })}\n`,
+    );
+
+    // The real CLI debug preflight loads Project before dispatch. Cache the old
+    // config here so the upgrade must explicitly reload after the CONFIG codemod.
+    await Project.load(tmpDir);
+
+    const result = await runJson([
+      '--json',
+      'upgrade',
+      '--from',
+      '0.1.0',
+      '--path',
+      'src',
+      '--apply',
+    ]);
+
+    expect(result.error).toBeUndefined();
+    expect(result.data.agentDocs.action).toBe('refreshed');
+    const config = fs.readFileSync(
+      path.join(tmpDir, 'astryx.config.mjs'),
+      'utf-8',
+    );
+    expect(config.indexOf('@acme/second')).toBeLessThan(
+      config.indexOf('@acme/first'),
+    );
+    expect(config).not.toContain('@acme/migrator');
+    expect(config).not.toContain('@acme/old');
+
+    const agentDocs = fs.readFileSync(
+      path.join(tmpDir, 'AGENTS.md'),
+      'utf-8',
+    );
+    expect(agentDocs.indexOf('Second guidance.')).toBeLessThan(
+      agentDocs.indexOf('First guidance.'),
+    );
+    expect(agentDocs).not.toContain('Migrator guidance.');
+    expect(agentDocs).not.toContain('Old guidance.');
+  });
+
   it('SKIPS a broken integration codemod instead of hard-failing the upgrade', async () => {
     // A codemod module whose default export is not a valid codemod result —
     // a DEFINITION error. The upgrade must NOT abort; it skips the broken

@@ -18,6 +18,8 @@ verified_by:
     clients/cli/cli-exit-codes.test.mjs,
     clients/cli/error-envelope-code.test.mjs,
     foundation/response/error-codes.test.mjs,
+    foundation/agent-docs/agent-docs.test.mjs,
+    clients/cli/commands/upgrade.integration-policy.test.mjs,
     clients/cli/formatters/index.test.mjs,
   ]
 deciding_specs: [spec:AST-017/DEC-4]
@@ -110,6 +112,10 @@ test, applicable text, and consumer-documentation projections.
 - **INV12 — Human chatter never touches stdout in JSON mode.** `humanLog` and
   `humanWarn` are the only chatter primitives, and both are no-ops under
   `--json`.
+- **INV13 — Agent docs have one rendered source of truth.** Init and upgrade
+  render configured integration `agentDocs` through the existing `Project`
+  seam. Upgrade compares complete block bytes even when Core is unchanged and,
+  when codemods or hooks run, writes the prepared block only after they succeed.
 
 ## Change coupling
 
@@ -143,6 +149,8 @@ non-interactive guarantee.
 - `foundation/response/error-codes.mjs` — the frozen, append-only code set.
 - `foundation/config` — the `Project` discovery seam and the integration
   manifest loader.
+- `foundation/agent-docs` — the shared expected-block renderer and managed-file
+  writer used by init and upgrade.
 - `api/<subject>/…` — the scriptable functions the commands wrap; each owns the
   `type` on its own envelope.
 

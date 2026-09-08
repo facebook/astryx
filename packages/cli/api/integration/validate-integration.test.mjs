@@ -133,6 +133,34 @@ describe('validate-integration API', () => {
     expect(result.issues).toEqual([]);
   });
 
+  it('reports invalid agentDocs without invalidating other manifest fields', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default {
+        components: './components',
+        agentDocs: {append: [' invalid']},
+      };\n`,
+    });
+    const componentsDir = path.join(pkgDir, 'components');
+    fs.mkdirSync(componentsDir);
+    fs.writeFileSync(
+      path.join(componentsDir, 'Widget.doc.mjs'),
+      `export default {name: 'Widget'};\n`,
+    );
+    fs.writeFileSync(
+      path.join(componentsDir, 'Widget.tsx'),
+      `export function Widget() { return null; }\n`,
+    );
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    expect(byCode(result.issues, 'invalid_manifest')).toHaveLength(0);
+    expect(byCode(result.issues, 'invalid_component')).toHaveLength(0);
+    const agentDocsIssues = byCode(result.issues, 'invalid_agent_docs');
+    expect(agentDocsIssues).toHaveLength(1);
+    expect(agentDocsIssues[0].severity).toBe('error');
+  });
+
   it('flags a broken codemod as invalid_codemod error', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {

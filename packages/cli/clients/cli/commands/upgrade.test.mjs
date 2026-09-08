@@ -6,7 +6,10 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {Command} from 'commander';
 import {registerUpgrade} from './upgrade.mjs';
-import {generateCompressedIndex} from '../../../foundation/agent-docs/agent-docs.mjs';
+import {
+  generateCompressedIndex,
+  renderAgentDocsBlock,
+} from '../../../foundation/agent-docs/agent-docs.mjs';
 
 let tmpDir;
 let originalCwd;
@@ -270,10 +273,13 @@ describe('upgrade agent-docs refresh (#4168)', () => {
     expect(fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8')).toBe(corrupted);
   });
 
-  it('stays silent when the block already matches the installed version', async () => {
+  it('stays silent when the block matches the fully rendered project state', async () => {
     writePkg();
     writeInstalledCore('0.0.15');
-    writeAgentBlock('AGENTS.md', '0.0.15');
+    const expected = await renderAgentDocsBlock(tmpDir, {
+      installedVersion: '0.0.15',
+    });
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), `# Doc\n\n${expected}\n`);
 
     const result = await runJson(['--json', 'upgrade', '--from', '0.0.15', '--apply']);
 

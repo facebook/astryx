@@ -16,8 +16,9 @@ export const doc = {
   summary: 'Run codemods to migrate between versions',
   description:
     'Migrates project source from a previous Astryx version to the installed one by ' +
-    'running the registered codemods, and refreshes the managed agent-docs block. ' +
-    'Dry-run by default (preview only); pass --apply to write changes to disk.',
+    'running the registered codemods, and refreshes the fully rendered managed ' +
+    'agent-docs block when Core or configured integration guidance changes. ' +
+    'Dry-run by default; --apply writes the block after selected codemods and hooks succeed.',
   fn: 'upgrade',
   options: [
     {

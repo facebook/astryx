@@ -55,7 +55,14 @@ describe('parseIntegration (load boundary)', () => {
     // exist yet. A hand-maintained list would pass today and start warning
     // falsely about a supported field the day someone forgot to update it.
     const everyKnownKey = Object.fromEntries(
-      Object.keys(integrationSchema.shape).map(key => [key, './x']),
+      Object.keys(integrationSchema.shape).map(key => [
+        key,
+        key === 'issuesUrl'
+          ? 'https://example.com/issues'
+          : key === 'agentDocs'
+            ? {}
+            : './x',
+      ]),
     );
     expect(unknownIntegrationKeys(everyKnownKey)).toEqual([]);
   });
@@ -68,5 +75,75 @@ describe('parseIntegration (load boundary)', () => {
 
   it('rejects a non-URL issuesUrl', () => {
     expect(reason({issuesUrl: 'nope'})).toContain('issuesUrl');
+  });
+
+  it('accepts an optional append array as manifest data', () => {
+    expect(
+      parseIntegration({
+        agentDocs: {
+          append: ['Run acme verify before finishing.'],
+        },
+      }),
+    ).toEqual({
+      agentDocs: {
+        append: ['Run acme verify before finishing.'],
+      },
+    });
+  });
+
+  it('strips future nested agentDocs keys without rejecting append', () => {
+    expect(
+      parseIntegration({
+        agentDocs: {
+          append: ['Run acme verify before finishing.'],
+          futureField: true,
+        },
+      }),
+    ).toEqual({
+      agentDocs: {
+        append: ['Run acme verify before finishing.'],
+      },
+    });
+  });
+
+  it('caps append at eight lines', () => {
+    expect(
+      reason({
+        agentDocs: {
+          append: Array.from({length: 9}, (_, index) => `after ${index}`),
+        },
+      }),
+    ).toMatch(/at most 8 lines/);
+  });
+
+  it('counts Unicode code points rather than UTF-16 code units', () => {
+    expect(() =>
+      parseIntegration({agentDocs: {append: ['😀'.repeat(240)]}}),
+    ).not.toThrow();
+    expect(reason({agentDocs: {append: ['😀'.repeat(241)]}})).toMatch(
+      /240 Unicode code points/,
+    );
+  });
+
+  it.each([
+    ['', /blank/],
+    ['   ', /blank/],
+    [' leading', /surrounding whitespace/],
+    ['trailing ', /surrounding whitespace/],
+    ['two\nlines', /single line|line separators/],
+    ['two\rlines', /control characters|line separators/],
+    ['unicode\u2028separator', /single line/],
+    ['nul\u0000byte', /NUL/],
+    ['control\u0001byte', /control characters/],
+    ['control\u0085byte', /control characters/],
+    ['<!-- ASTRYX:START -->', /managed marker text/],
+    ['XDS:END', /managed marker text/],
+  ])('rejects forbidden agentDocs line %#', (line, message) => {
+    expect(reason({agentDocs: {append: [line]}})).toMatch(message);
+  });
+
+  it('rejects functions and other non-data shapes', () => {
+    expect(reason({agentDocs: () => ({append: ['x']})})).toContain('agentDocs');
+    expect(reason({agentDocs: {append: ['ok', 42]}})).toContain('append');
   });
 });

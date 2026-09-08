@@ -19,8 +19,10 @@ import * as fs from 'node:fs';
 import {CLI_ROOT} from '../../../foundation/fs/paths.mjs';
 import {PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
-import {installAgentDocs} from '../../../foundation/agent-docs/agent-docs.mjs';
-import {loadDocsCatalog} from '../../docs/_adapter.mjs';
+import {
+  installAgentDocs,
+  renderAgentDocsBlock,
+} from '../../../foundation/agent-docs/agent-docs.mjs';
 import {themeTemplate} from '../../theme/template/template.mjs';
 import {listTemplates} from '../../template/template.mjs';
 import {AstryxError} from '../../error.mjs';
@@ -89,11 +91,12 @@ async function applyAgents(cwd, options, invocation, data) {
         ? options.agentDocsPath
         : [options.agentDocsPath]
       : undefined;
-    // The block names the topics the agent can read, and an integration's
-    // topics are part of that set — resolved here rather than inside
-    // installAgentDocs, which is sync and cannot load a project.
-    const topics = (await loadDocsCatalog(cwd)).names();
-    const written = installAgentDocs(cwd, {agent: options.agent, paths, topics});
+    const renderedBlock = await renderAgentDocsBlock(cwd);
+    const written = installAgentDocs(cwd, {
+      agent: options.agent,
+      paths,
+      renderedBlock,
+    });
     data.docsWritten = written;
     logger.log(`✓ AI agent docs installed → ${written.join(', ')}`);
   } catch (err) {

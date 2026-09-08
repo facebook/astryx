@@ -59,7 +59,10 @@ import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
 } from '../../assets/codemods/integration-discovery.mjs';
-import {validateLoadedIntegration} from '../integrations/validate-contributions.mjs';
+import {
+  INVALID_AGENT_DOCS,
+  validateLoadedIntegration,
+} from '../integrations/validate-contributions.mjs';
 import {
   InMemoryConfigCache,
   cacheKey,
@@ -232,11 +235,13 @@ export class Project {
    * lazy and memoized on the returned instance.
    *
    * @param {string} [cwd]
-   * @param {{cache?: import('./config-cache.mjs').ConfigCache}} [options]
+   * @param {{cache?: import('./config-cache.mjs').ConfigCache, fresh?: boolean}} [options]
    * @returns {Promise<Project>}
    */
-  static async load(cwd = process.cwd(), {cache} = {}) {
-    const resolvedCache = cache ?? new InMemoryConfigCache();
+  static async load(cwd = process.cwd(), {cache, fresh = false} = {}) {
+    const resolvedCache = fresh
+      ? new InMemoryConfigCache()
+      : (cache ?? new InMemoryConfigCache());
     const configPath = findConfigPath(cwd);
     const hash = configContentHash(configPath);
 
@@ -250,11 +255,13 @@ export class Project {
     if (configPath) {
       config = await loadModuleWithParser(configPath, parseConfig, {
         label: 'astryx.config',
+        fresh,
       });
       const configDir = path.dirname(configPath);
       integrations = config.integrations ?? [];
       loadedIntegrations = await loadIntegrations(integrations, {
         cwd: configDir,
+        fresh,
       });
     }
 
@@ -378,6 +385,22 @@ export class Project {
   }
 
   /**
+   * Whether this package has an error that invalidates its regular manifest
+   * contributions. Invalid `agentDocs` blocks agent-doc writes only; it must not
+   * withdraw components, templates, docs, or codemods.
+   * @param {string} pkg
+   * @returns {boolean}
+   */
+  #hasBlockingContributionIssue(pkg) {
+    return this.#issues.some(
+      issue =>
+        issue.package === pkg &&
+        issue.severity === 'error' &&
+        issue.code !== INVALID_AGENT_DOCS,
+    );
+  }
+
+  /**
    * Validate one loaded integration and collect any issues. Marks the
    * integration visited so issues() won't redo the work. Best-effort: a
    * validator throwing is itself recorded as an issue, never propagated.
@@ -439,10 +462,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         try {
           // discoverOwnedComponents owns the core+integration record shape;
           // here we add only this integration's records (core is handled
@@ -495,10 +515,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         try {
           const {templates: ts, errors} =
             await discoverIntegrationTemplatesForOne(integration);
@@ -546,10 +563,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         if (!integration?.docs) continue;
         try {
           const {records, errors} = await discoverIntegrationDocs(integration);
@@ -604,10 +618,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         if (!integration?.codemods) continue;
         try {
           // Validate this integration's codemods discover cleanly in
