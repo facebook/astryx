@@ -379,15 +379,20 @@ describe('PowerSearchTouchSurface', () => {
     expect(screen.getByRole('button', {name: 'Manage filters'})).toHaveFocus();
   });
 
-  it('shows selected filters as editable rows with trailing chevrons', () => {
+  it('shows selected filters as editable rows with bold values and trailing chevrons', () => {
     setup({filters: [openFilter]});
     openSheet();
     const selectedList = within(sheet()).getByRole('list');
     expect(within(sheet()).queryByText('Selected filters')).toBeNull();
     expect(selectedList).toBeTruthy();
-    expect(
-      within(selectedList).getByRole('button', {name: 'Status is Open'}),
-    ).toBeTruthy();
+    const row = within(selectedList).getByRole('button', {
+      name: 'Status is Open',
+    });
+    expect(row).toBeTruthy();
+    const value = within(row).getByText('Open');
+    expect(value).toHaveStyle({
+      fontWeight: 'var(--font-weight-bold)',
+    });
     expect(within(selectedList).queryByRole('button', {name: /^Remove/})).toBe(
       null,
     );

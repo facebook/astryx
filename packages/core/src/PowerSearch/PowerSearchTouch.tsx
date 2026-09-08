@@ -6,7 +6,8 @@
  * @file PowerSearchTouch.tsx
  * @input PowerSearchConfig, filters, onChange — the PowerSearch props, unchanged
  * @output Private coarse-pointer surface: field-wide management trigger and a
- *   bottom-sheet filter builder with suggestion-backed content search
+ *   bottom-sheet filter builder with suggestion-backed content search and
+ *   token-matched value emphasis in filter summaries
  * @position Internal PowerSearch surface selected by PowerSearch on coarse pointers
  *
  * PowerSearch's desktop shape is a typeahead that drops a popover under the
@@ -65,6 +66,7 @@ import {useTooltip} from '../Tooltip';
 import {useLocale, useTranslator} from '../i18n';
 import {
   colorVars,
+  fontWeightVars,
   sizeVars,
   spacingVars,
   typeScaleVars,
@@ -200,6 +202,9 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
     whiteSpace: 'nowrap',
+  },
+  filterValue: {
+    fontWeight: fontWeightVars['--font-weight-bold'],
   },
   // --- sheet shell ---------------------------------------------------------
   sheet: {
@@ -1101,10 +1106,16 @@ export function PowerSearchTouchSurface({
       locale,
       timezoneID,
     );
-    const accessibleLabel = [label, value].filter(Boolean).join(' ');
+    const displayLabel = value ? (
+      <>
+        {label} <span {...stylex.props(styles.filterValue)}>{value}</span>
+      </>
+    ) : (
+      label
+    );
     return [
       {
-        accessibleLabel,
+        displayLabel,
         filter,
         index,
         key: `${index}-${filter.field}-${filter.operator}`,
@@ -1309,7 +1320,7 @@ export function PowerSearchTouchSurface({
                             managerRowsRef.current.set(row.index, node);
                           }
                         }}
-                        label={row.accessibleLabel}
+                        label={row.displayLabel}
                         onClick={
                           canEdit
                             ? () => handleFilterEdit(row.index)

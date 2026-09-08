@@ -124,8 +124,10 @@ until its implementation and verification complete.
   field-wide trigger and a filter-management bottom sheet. Capsules in the field are
   display-only and expose no edit or remove controls. The management sheet owns
   a top-right header Add filter action and footer Clear all and Done actions; each
-  selected row has a trailing navigation chevron and opens its update sheet when
-  pressed, where explicit Cancel and Delete actions are available alongside the edit confirmation.
+  selected row uses regular field/operator text with the formatted value in the same
+  bold emphasis as its PowerSearch token, has a trailing navigation chevron, and opens
+  its update sheet when pressed, where explicit Cancel and Delete actions are available
+  alongside the edit confirmation.
   The Add filter sheet owns string-valued content search backed by the standard
   PowerSearch suggestion source, rendered as an in-flow divided list directly below
   its input rather than a popover.
