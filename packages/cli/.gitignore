@@ -17,3 +17,9 @@ foundation/*.d.mts
 # Transient fixture dir written by authoring-migration.tsc.test.mjs (runs the
 # real tsc over migrated output); created + removed per test run.
 .codemod-tsc-*/
+
+# Transient fixture dirs for tests whose theme files need to
+# `import {defineTheme} from '@astryxdesign/core/theme'` and therefore have
+# to live under a real node_modules tree; created + removed per test run.
+.tmp-extends-*/
+.tmp-tokens-*/

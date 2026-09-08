@@ -69,7 +69,7 @@ function resolveCliBin() {
  * Resolves with the child's exit code; never rejects.
  *
  * @param {string} file - The theme file argument, as the user passed it.
- * @param {{out?: string, iconsSpecifier?: string}} options - Parsed command
+ * @param {{out?: string, iconsSpecifier?: string, tokens?: boolean}} options - Parsed command
  *   options that affect generated output.
  * @returns {Promise<number>}
  */
@@ -78,6 +78,7 @@ function runThemeBuildOnceChild(file, options) {
   const args = [cliBin, 'theme', 'build', file];
   if (options.out) args.push('--out', options.out);
   if (options.iconsSpecifier) args.push('--icons-specifier', options.iconsSpecifier);
+  if (options.tokens) args.push('--tokens');
   return new Promise((/** @type {(code: number) => void} */ resolve) => {
     const child = spawn(process.execPath, args, {
       stdio: 'inherit',
@@ -98,7 +99,7 @@ function runThemeBuildOnceChild(file, options) {
  *
  * @param {Array<{file: string, filePath: string}>} entries - The theme file
  *   arguments as the user passed them, with their resolved absolute paths.
- * @param {{out?: string, iconsSpecifier?: string}} options - Parsed command options.
+ * @param {{out?: string, iconsSpecifier?: string, tokens?: boolean}} options - Parsed command options.
  * @returns {Promise<void>} Resolves when the watcher is stopped (Ctrl-C).
  */
 async function runThemeBuildWatch(entries, options) {
@@ -274,7 +275,7 @@ export function registerTheme(program) {
     fn: themeBuildFn,
     action: async (
       /** @type {string[]} */ files,
-      /** @type {{out?: string, watch?: boolean, check?: boolean, iconsSpecifier?: string}} */ options,
+      /** @type {{out?: string, watch?: boolean, check?: boolean, iconsSpecifier?: string, tokens?: boolean}} */ options,
     ) => {
       const json = program.opts().json || false;
       const entries = files.map(file => ({
@@ -355,6 +356,7 @@ export function registerTheme(program) {
               out: options.out,
               check: options.check,
               iconsSpecifier: options.iconsSpecifier,
+              tokens: options.tokens,
             },
             {cwd: process.cwd()},
           );
