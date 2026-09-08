@@ -1,0 +1,119 @@
+{
+  "label": "distinct-icons__light",
+  "identity": "story",
+  "build": {
+    "root": "<audit-worktree>",
+    "expectedSha": "d2b95a5a004a09485310a0018e9fb82a220f87a1",
+    "observedSha": "d2b95a5a004a09485310a0018e9fb82a220f87a1"
+  },
+  "expected": {
+    "globals": {
+      "colorMode": "light",
+      "astryxTheme": "neutral",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 720,
+      "height": 420,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 3,
+    "state": {
+      "variants": [
+        "success",
+        "neutral",
+        "error"
+      ],
+      "labels": [
+        "Accepted",
+        "Pending",
+        "Rejected"
+      ],
+      "widths": [
+        32,
+        32,
+        32
+      ],
+      "iconPaths": [
+        "M19.916 4.626a.75.75 0 0",
+        "M12 2.25c-5.385 0-9.75 4",
+        "M5.47 5.47a.75.75 0 0 1 "
+      ]
+    },
+    "runningAnimations": 0
+  },
+  "observed": {
+    "storyExpected": "core-avatarstatusdot--distinct-custom-icons",
+    "storyObserved": "core-avatarstatusdot--distinct-custom-icons",
+    "routeObserved": "/iframe.html",
+    "globals": {
+      "colorMode": "light",
+      "astryxTheme": "neutral",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "surfaceColor": "rgba(0, 0, 0, 0)",
+    "surfaceLuminance": null,
+    "surfaceClass": "unknown",
+    "direction": "ltr",
+    "viewport": {
+      "width": 720,
+      "height": 420,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 3,
+    "visible": true,
+    "box": {
+      "x": 109.265625,
+      "y": 109.265625,
+      "width": 32,
+      "height": 32,
+      "insideViewport": true
+    },
+    "fonts": "loaded",
+    "runningAnimations": 0,
+    "storybookError": null,
+    "state": {
+      "variants": [
+        "success",
+        "neutral",
+        "error"
+      ],
+      "labels": [
+        "Accepted",
+        "Pending",
+        "Rejected"
+      ],
+      "widths": [
+        32,
+        32,
+        32
+      ],
+      "iconPaths": [
+        "M19.916 4.626a.75.75 0 0",
+        "M12 2.25c-5.385 0-9.75 4",
+        "M5.47 5.47a.75.75 0 0 1 "
+      ]
+    }
+  },
+  "image": {
+    "path": "distinct-icons__light.png.sensors.json",
+    "bytes": 8544
+  }
+}

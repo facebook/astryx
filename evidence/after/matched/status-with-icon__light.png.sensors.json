@@ -1,0 +1,149 @@
+{
+  "label": "status-with-icon__light",
+  "identity": "story",
+  "build": {
+    "root": "<audit-worktree>",
+    "expectedSha": "d2b95a5a004a09485310a0018e9fb82a220f87a1",
+    "observedSha": "d2b95a5a004a09485310a0018e9fb82a220f87a1"
+  },
+  "expected": {
+    "globals": {
+      "colorMode": "light",
+      "astryxTheme": "neutral",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 1100,
+      "height": 880,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 14,
+    "state": {
+      "variants": [
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "neutral",
+        "error"
+      ],
+      "widths": [
+        10,
+        10,
+        10,
+        20,
+        32,
+        10,
+        10,
+        20,
+        20,
+        32,
+        32,
+        32,
+        32,
+        32
+      ],
+      "visibleIcons": 9,
+      "labelled": 14,
+      "glyphs": 0
+    },
+    "runningAnimations": 0
+  },
+  "observed": {
+    "storyExpected": "core-avatar--status-with-icon",
+    "storyObserved": "core-avatar--status-with-icon",
+    "routeObserved": "/iframe.html",
+    "globals": {
+      "colorMode": "light",
+      "astryxTheme": "neutral",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "surfaceColor": "rgba(0, 0, 0, 0)",
+    "surfaceLuminance": null,
+    "surfaceClass": "unknown",
+    "direction": "ltr",
+    "viewport": {
+      "width": 1100,
+      "height": 880,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 14,
+    "visible": true,
+    "box": {
+      "x": 28.078125,
+      "y": 186.078125,
+      "width": 10,
+      "height": 10,
+      "insideViewport": true
+    },
+    "fonts": "loaded",
+    "runningAnimations": 0,
+    "storybookError": null,
+    "state": {
+      "variants": [
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "success",
+        "neutral",
+        "error"
+      ],
+      "widths": [
+        10,
+        10,
+        10,
+        20,
+        32,
+        10,
+        10,
+        20,
+        20,
+        32,
+        32,
+        32,
+        32,
+        32
+      ],
+      "visibleIcons": 9,
+      "labelled": 14,
+      "glyphs": 0
+    }
+  },
+  "image": {
+    "path": "status-with-icon__light.png.sensors.json",
+    "bytes": 24453
+  }
+}

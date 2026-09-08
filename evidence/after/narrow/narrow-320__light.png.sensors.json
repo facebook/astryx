@@ -1,0 +1,101 @@
+{
+  "label": "narrow-320__light",
+  "identity": "story",
+  "build": {
+    "root": "<audit-worktree>",
+    "expectedSha": "d2b95a5a004a09485310a0018e9fb82a220f87a1",
+    "observedSha": "d2b95a5a004a09485310a0018e9fb82a220f87a1"
+  },
+  "expected": {
+    "globals": {
+      "colorMode": "light",
+      "astryxTheme": "neutral",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 320,
+      "height": 420,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 3,
+    "state": {
+      "variants": [
+        "success",
+        "neutral",
+        "error"
+      ],
+      "labels": [
+        "Online",
+        "Away",
+        "Do not disturb"
+      ],
+      "overflow": false
+    },
+    "runningAnimations": 0
+  },
+  "observed": {
+    "storyExpected": "core-avatarstatusdot--narrow-container",
+    "storyObserved": "core-avatarstatusdot--narrow-container",
+    "routeObserved": "/iframe.html",
+    "globals": {
+      "colorMode": "light",
+      "astryxTheme": "neutral",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "surfaceColor": "rgba(0, 0, 0, 0)",
+    "surfaceLuminance": null,
+    "surfaceClass": "unknown",
+    "direction": "ltr",
+    "viewport": {
+      "width": 320,
+      "height": 420,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 3,
+    "visible": true,
+    "box": {
+      "x": 46.984375,
+      "y": 46.984375,
+      "width": 20,
+      "height": 20,
+      "insideViewport": true
+    },
+    "fonts": "loaded",
+    "runningAnimations": 0,
+    "storybookError": null,
+    "state": {
+      "variants": [
+        "success",
+        "neutral",
+        "error"
+      ],
+      "labels": [
+        "Online",
+        "Away",
+        "Do not disturb"
+      ],
+      "overflow": false
+    }
+  },
+  "image": {
+    "path": "narrow-320__light.png.sensors.json",
+    "bytes": 4626
+  }
+}
