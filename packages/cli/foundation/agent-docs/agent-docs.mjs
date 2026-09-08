@@ -49,6 +49,65 @@ import {
 export {discoverAgentDocs, isAstryxInitialized};
 
 /**
+ * Find tool-specific files that import another detected agent doc.
+ *
+ * Claude's `@path` directive is a real include, so injecting the full managed
+ * block beside it duplicates the same instructions. Only an import whose
+ * normalized target is another known agent doc counts; prose mentions and
+ * standalone files keep the normal initialization behavior. Import cycles have
+ * no canonical owner, so their members also stay standalone.
+ *
+ * @param {string} targetDir
+ * @param {string[]} agentDocs
+ * @returns {Set<string>}
+ */
+function discoverAgentDocWrappers(targetDir, agentDocs) {
+  const known = new Set(agentDocs.map(p => path.normalize(p)));
+  /** @type {Map<string, Set<string>>} */
+  const imports = new Map();
+
+  for (const rel of agentDocs) {
+    let content;
+    try {
+      content = fs.readFileSync(path.join(targetDir, rel), 'utf-8');
+    } catch {
+      continue;
+    }
+
+    const targets = new Set();
+    for (const line of content.split(/\r?\n/)) {
+      const match = /^\s*@([^\s]+)\s*$/.exec(line);
+      if (match == null || path.isAbsolute(match[1])) continue;
+      const imported = path.normalize(path.join(path.dirname(rel), match[1]));
+      if (imported !== path.normalize(rel) && known.has(imported)) {
+        targets.add(imported);
+      }
+    }
+    if (targets.size > 0) imports.set(rel, targets);
+  }
+
+  /** @param {string} start */
+  const isCyclic = start => {
+    /**
+     * @param {string} current
+     * @param {Set<string>} seen
+     */
+    const visit = (current, seen) => {
+      for (const imported of imports.get(current) ?? []) {
+        if (imported === start) return true;
+        if (seen.has(imported)) continue;
+        seen.add(imported);
+        if (visit(imported, seen)) return true;
+      }
+      return false;
+    };
+    return visit(start, new Set([start]));
+  };
+
+  return new Set([...imports.keys()].filter(rel => !isCyclic(rel)));
+}
+
+/**
  * Locate the single well-formed managed block in `content`.
  *
  * A naive `indexOf(START)` + `indexOf(END)` corrupts user content on malformed
@@ -532,8 +591,11 @@ export function removeAgentDocs(targetDir) {
  * Used by the init command, upgrade command, and agent-docs command.
  *
  * Strategy (when no agent/paths specified):
- * - Discover all existing agent doc files and update them
- * - If nothing found, create AGENTS.md as default (tool-agnostic standard)
+ * - Discover all existing agent doc files.
+ * - Leave `@path` import wrappers untouched; if an older run expanded a block
+ *   into one, remove that duplicate block.
+ * - Initialize or refresh every standalone file.
+ * - If nothing exists, create AGENTS.md as the tool-agnostic default.
  *
  * @param {string} targetDir
  * @param {object} [options]
@@ -601,13 +663,30 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
     return written;
   }
 
-  // Auto-detect: update all existing agent doc files
+  // Auto-detect: initialize standalone files, but do not expand the managed
+  // block beside an `@path` import of another agent doc. Remove a block from a
+  // wrapper if an older run already duplicated it there.
   const existing = discoverAgentDocs(targetDir);
 
   if (existing.length > 0) {
-    for (const p of existing) {
+    const wrappers = discoverAgentDocWrappers(targetDir, existing);
+    const targets = existing.filter(p => !wrappers.has(p));
+
+    for (const p of targets) {
       const didWrite = injectXdsBlock(path.join(targetDir, p), compressedIndex, {onlyReplace});
       if (didWrite) written.push(p);
+    }
+    for (const p of wrappers) {
+      const filePath = path.join(targetDir, p);
+      if (removeXdsBlock(filePath)) {
+        written.push(p);
+      } else {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        if (content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START)) {
+          // Preserve the existing fail-closed behavior for malformed blocks.
+          injectXdsBlock(filePath, compressedIndex, {onlyReplace: true});
+        }
+      }
     }
     return written;
   }

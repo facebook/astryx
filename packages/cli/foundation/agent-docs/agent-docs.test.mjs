@@ -504,6 +504,74 @@ describe('installAgentDocs', () => {
     expect(claudeContent).toContain('<!-- ASTRYX:START -->');
   });
 
+  it('preserves import wrappers while initializing standalone files', () => {
+    setupCorePackage(tmpDir);
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '# Agents\n');
+    fs.mkdirSync(path.join(tmpDir, '.claude'), {recursive: true});
+    const wrapperPath = path.join(tmpDir, '.claude', 'CLAUDE.md');
+    const wrapper = '@../AGENTS.md\n';
+    fs.writeFileSync(wrapperPath, wrapper);
+    fs.writeFileSync(path.join(tmpDir, '.cursorrules'), 'Cursor rules.\n');
+
+    const written = installAgentDocs(tmpDir);
+
+    expect(written).toEqual(['AGENTS.md', '.cursorrules']);
+    expect(fs.readFileSync(wrapperPath, 'utf-8')).toBe(wrapper);
+    expect(fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8')).toContain(
+      '<!-- ASTRYX:START -->',
+    );
+    expect(fs.readFileSync(path.join(tmpDir, '.cursorrules'), 'utf-8')).toContain(
+      '<!-- ASTRYX:START -->',
+    );
+  });
+
+  it('keeps cyclic imports standalone when another file exists', () => {
+    setupCorePackage(tmpDir);
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '@CLAUDE.md\n');
+    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '@AGENTS.md\n');
+    fs.writeFileSync(path.join(tmpDir, '.cursorrules'), 'Cursor rules.\n');
+
+    const written = installAgentDocs(tmpDir);
+
+    expect(written).toEqual(['AGENTS.md', 'CLAUDE.md', '.cursorrules']);
+    for (const rel of written) {
+      expect(fs.readFileSync(path.join(tmpDir, rel), 'utf-8')).toContain(
+        '<!-- ASTRYX:START -->',
+      );
+    }
+  });
+
+  it('removes a managed block previously expanded into an import wrapper', () => {
+    setupCorePackage(tmpDir);
+    installAgentDocs(tmpDir, {agent: 'codex'});
+    fs.mkdirSync(path.join(tmpDir, '.claude'), {recursive: true});
+    const wrapperPath = path.join(tmpDir, '.claude', 'CLAUDE.md');
+    const wrapper = '@../AGENTS.md\n';
+    fs.writeFileSync(wrapperPath, wrapper);
+    installAgentDocs(tmpDir, {agent: 'claude'});
+    expect(fs.readFileSync(wrapperPath, 'utf-8')).toContain(
+      '<!-- ASTRYX:START -->',
+    );
+
+    const written = installAgentDocs(tmpDir, {onlyReplace: true});
+
+    expect(written).toContain('AGENTS.md');
+    expect(written).toContain('.claude/CLAUDE.md');
+    expect(fs.readFileSync(wrapperPath, 'utf-8')).toBe(wrapper);
+  });
+
+  it('refuses a malformed managed block inside an import wrapper', () => {
+    setupCorePackage(tmpDir);
+    installAgentDocs(tmpDir, {agent: 'codex'});
+    fs.mkdirSync(path.join(tmpDir, '.claude'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, '.claude', 'CLAUDE.md'),
+      '@../AGENTS.md\n<!-- ASTRYX:START -->\nincomplete\n',
+    );
+
+    expect(() => installAgentDocs(tmpDir)).toThrow(/malformed|no matching/i);
+  });
+
   it('updates existing .claude/CLAUDE.md', () => {
     setupCorePackage(tmpDir);
     fs.mkdirSync(path.join(tmpDir, '.claude'), {recursive: true});
