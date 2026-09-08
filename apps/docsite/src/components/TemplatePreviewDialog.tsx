@@ -9,7 +9,8 @@
  * display order. Arrow keys (←/→) also navigate; Escape closes.
  *
  * @input Template metadata, selected index, open state, and navigation callbacks.
- * @output A responsive dialog with live preview and template actions.
+ * @output A responsive dialog with immediate selected previews, pending navigation,
+ * and template actions.
  * @position Shared preview controller for the templates gallery.
  *
  * The header surfaces template metadata (name, description) on
@@ -291,11 +292,12 @@ export function TemplatePreviewDialog({
 
   const count = items.length;
   const current = items[index];
-  // The deferred index drives the heavy preview surface — it lags behind
-  // the committed index during a transition, keeping the old template
-  // visible and the dialog interactive while the next one loads.
+  // Only pending prev/next navigation may retain the deferred preview beneath
+  // its skeleton. Opening a card or syncing a URL must show the current item
+  // immediately, even if the mounted dialog's deferred index is still stale.
   const deferredIndex = useDeferredValue(index);
   const deferredCurrent = items[deferredIndex];
+  const previewCurrent = isPending ? deferredCurrent : current;
 
   const go = (delta: number) => {
     if (count === 0) {
@@ -381,8 +383,8 @@ export function TemplatePreviewDialog({
           <LayoutContent isScrollable={false} padding={0}>
             <div {...stylex.props(styles.body)} ref={hostRef}>
               <TemplatePreviewSurface
-                key={deferredCurrent.slug}
-                slug={deferredCurrent.slug}
+                key={previewCurrent.slug}
+                slug={previewCurrent.slug}
               />
               {isPending && (
                 <div {...stylex.props(styles.skeletonOverlay)}>

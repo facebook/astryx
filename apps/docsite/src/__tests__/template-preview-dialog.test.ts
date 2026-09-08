@@ -1,0 +1,281 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+// @vitest-environment jsdom
+
+/**
+ * @file Template preview selection and transition regressions.
+ * @input Mounted TemplatePreviewDialog with real React scheduling and mocked UI.
+ * @output Records every committed visible preview, including intermediate slugs.
+ * @position Docsite regression coverage for gallery preview lifecycle.
+ */
+
+import {
+  Activity,
+  createElement,
+  Suspense,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {act, cleanup, fireEvent, render, screen} from '@testing-library/react';
+import {TemplatePreviewDialog} from '../components/TemplatePreviewDialog';
+
+vi.mock('@stylexjs/stylex', () => ({
+  create: (styles: unknown) => styles,
+  props: () => ({}),
+}));
+vi.mock('@astryxdesign/core/Icon', () => ({Icon: () => null}));
+vi.mock('@astryxdesign/core/Text', () => ({Text: Box, Heading: Box}));
+vi.mock('@astryxdesign/core/Code', () => ({Code: Box}));
+vi.mock('@astryxdesign/core/Tooltip', () => ({Tooltip: Box}));
+vi.mock('@astryxdesign/core/Layout', () => ({
+  VStack: Box,
+  HStack: Box,
+  LayoutHeader: Box,
+  LayoutContent: Box,
+  Layout: ({header, content}: {header: ReactNode; content: ReactNode}) =>
+    createElement('div', null, header, content),
+}));
+vi.mock('@astryxdesign/core/Button', () => ({
+  Button: ({
+    label,
+    onClick,
+    href,
+  }: {
+    label: string;
+    onClick?: () => void;
+    href?: string;
+  }) =>
+    href
+      ? createElement('a', {href, onClick}, label)
+      : createElement('button', {onClick}, label),
+}));
+vi.mock('@astryxdesign/core/Skeleton', () => ({
+  Skeleton: () => createElement('div', {'data-testid': 'pending-preview'}),
+}));
+// Like the native Dialog, keep children mounted while closed. React's actual
+// deferred-value and transition hooks are deliberately not mocked.
+vi.mock('@astryxdesign/core/Dialog', () => ({
+  Dialog: ({
+    isOpen,
+    children,
+    variant,
+  }: {
+    isOpen: boolean;
+    children: ReactNode;
+    variant?: string;
+  }) =>
+    createElement('dialog', {open: isOpen, 'data-variant': variant}, children),
+}));
+vi.mock('../lib/analytics', () => ({
+  trackCopy: vi.fn(),
+  trackOpenPlayground: vi.fn(),
+  trackNavigate: vi.fn(),
+}));
+vi.mock('../components/TemplatePreviewSurface', () => ({
+  TemplatePreviewSurface: PreviewProbe,
+}));
+
+const commits: {slug: string; covered: boolean}[] = [];
+const items = [
+  {slug: 'template-a', name: 'Template A'},
+  {slug: 'template-b', name: 'Template B'},
+  {slug: 'template-c', name: 'Template C'},
+];
+
+function Box({children}: {children?: ReactNode}) {
+  return createElement('div', null, children);
+}
+
+function PreviewProbe({slug}: {slug: string}) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Observe commits, not speculative renders that React may discard. Every
+  // layout effect runs before RTL's act can flush the deferred follow-up.
+  useLayoutEffect(() => {
+    const dialog = ref.current?.closest('dialog');
+    if (dialog?.open) {
+      commits.push({
+        slug,
+        covered:
+          dialog.querySelector('[data-testid="pending-preview"]') !== null,
+      });
+    }
+  });
+  return createElement('div', {ref, 'data-testid': 'preview'}, slug);
+}
+
+function preview(index: number, isOpen = true, variant?: 'fullscreen') {
+  return createElement(TemplatePreviewDialog, {
+    items,
+    index,
+    isOpen,
+    variant,
+    onOpenChange: vi.fn(),
+    onIndexChange: vi.fn(),
+  });
+}
+
+function expectOnlyVisible(slug: string) {
+  const visible = commits
+    .filter(commit => !commit.covered)
+    .map(commit => commit.slug);
+  expect(visible[0]).toBe(slug);
+  expect(new Set(visible)).toEqual(new Set([slug]));
+}
+
+const originalClose = Object.getOwnPropertyDescriptor(
+  HTMLDialogElement.prototype,
+  'close',
+);
+
+beforeEach(() => {
+  commits.length = 0;
+  // jsdom has no native dialog.close(); this verifies the controller invokes
+  // cleanup, while browser top-layer/focus behavior remains the Dialog's job.
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+    configurable: true,
+    value: vi.fn(function (this: HTMLDialogElement) {
+      this.open = false;
+    }),
+  });
+});
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  if (originalClose) {
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', originalClose);
+  } else {
+    Reflect.deleteProperty(HTMLDialogElement.prototype, 'close');
+  }
+});
+
+describe('template preview selection', () => {
+  it.each([undefined, 'fullscreen'] as const)(
+    'opens the selected template immediately (variant: %s)',
+    variant => {
+      const view = render(preview(0, false, variant));
+      expect(commits).toEqual([]);
+      view.rerender(preview(1, true, variant));
+      expectOnlyVisible('template-b');
+      expect(
+        screen.getByTestId('preview').closest('dialog')?.dataset.variant,
+      ).toBe(variant);
+    },
+  );
+
+  it('opens a different template after closing without unmounting', () => {
+    const view = render(preview(1));
+    view.rerender(preview(0, false));
+    commits.length = 0;
+    view.rerender(preview(2));
+    expectOnlyVisible('template-c');
+  });
+
+  it('immediately follows direct index updates from URL synchronization', () => {
+    const view = render(preview(0));
+    for (const index of [2, 1, 0]) {
+      commits.length = 0;
+      view.rerender(preview(index));
+      expectOnlyVisible(items[index].slug);
+    }
+  });
+
+  it('opens an initial deep-linked index', () => {
+    render(preview(2));
+    expectOnlyVisible('template-c');
+  });
+
+  it('navigates both directions and covers the old preview while pending', () => {
+    function Gallery() {
+      const [index, setIndex] = useState(0);
+      return createElement(TemplatePreviewDialog, {
+        items,
+        index,
+        isOpen: true,
+        onIndexChange: setIndex,
+        onOpenChange: vi.fn(),
+      });
+    }
+    render(createElement(Gallery));
+    for (const [label, oldSlug, nextSlug] of [
+      ['Next template', 'template-a', 'template-b'],
+      ['Previous template', 'template-b', 'template-a'],
+      ['Previous template', 'template-a', 'template-c'],
+    ]) {
+      commits.length = 0;
+      fireEvent.click(screen.getByRole('button', {name: label}));
+      expect(commits).toContainEqual({slug: oldSlug, covered: true});
+      expectOnlyVisible(nextSlug);
+      expect(screen.queryByTestId('pending-preview')).toBeNull();
+    }
+  });
+
+  it('keeps close responsive during a suspended navigation', async () => {
+    let resolve!: () => void;
+    let ready = false;
+    const navigation = new Promise<void>(done => {
+      resolve = done;
+    });
+    function Navigation({index}: {index: number}) {
+      if (index === 1 && !ready) {
+        throw navigation;
+      }
+      return null;
+    }
+    function Gallery() {
+      const [index, setIndex] = useState(0);
+      const [isOpen, setOpen] = useState(true);
+      return createElement(
+        Suspense,
+        {fallback: 'Navigating'},
+        createElement(TemplatePreviewDialog, {
+          items,
+          index,
+          isOpen,
+          onIndexChange: setIndex,
+          onOpenChange: setOpen,
+        }),
+        createElement(Navigation, {index}),
+      );
+    }
+    render(createElement(Gallery));
+    fireEvent.click(screen.getByRole('button', {name: 'Next template'}));
+    expect(screen.getByTestId('pending-preview')).not.toBeNull();
+    expect(screen.getByTestId('preview').textContent).toBe('template-a');
+    fireEvent.click(screen.getByRole('button', {name: 'Close preview'}));
+    expect(screen.getByTestId('preview').closest('dialog')?.open).toBe(false);
+    await act(async () => {
+      ready = true;
+      resolve();
+      await navigation;
+    });
+    expect(screen.getByTestId('preview').textContent).toBe('template-b');
+    expect(screen.getByTestId('preview').closest('dialog')?.open).toBe(false);
+  });
+
+  it('releases the dialog on playground route hiding and unmount', () => {
+    const view = render(
+      createElement(Activity, {mode: 'visible', children: preview(1)}),
+    );
+    expect(
+      screen
+        .getByRole('link', {name: 'Open in Playground'})
+        .getAttribute('href'),
+    ).toBe('/playground?template=template-b');
+    const dialog = screen.getByTestId('preview').closest('dialog')!;
+    view.rerender(
+      createElement(Activity, {mode: 'hidden', children: preview(1)}),
+    );
+    expect(dialog.close).toHaveBeenCalledTimes(1);
+    expect(dialog.open).toBe(false);
+    view.unmount();
+    const next = render(preview(2));
+    const nextDialog = screen.getByTestId('preview').closest('dialog')!;
+    next.unmount();
+    expect(nextDialog.open).toBe(false);
+    expect(nextDialog.close).toHaveBeenCalledTimes(2);
+  });
+});
