@@ -332,6 +332,13 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     ),
   },
   {
+    id: 'violating-declared-unavailable-unreachable',
+    summary:
+      'an unavailable checkbox whose binding promises focusability but whose native disabled state removes it from the tab sequence',
+    facts: facts({disabled: true, operable: false, focusable: true}),
+    html: nativeCheckbox('disabled'),
+  },
+  {
     id: 'violating-keyboard-trap',
     summary: 'a checkbox that swallows the Tab that would leave it',
     facts: facts(),
@@ -475,6 +482,9 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
     'violating-pointer-only-unfocusable',
     'violating-keyboard-trap',
   ],
+  'checkbox.focus.declared-unavailable-reachable': [
+    'violating-declared-unavailable-unreachable',
+  ],
   'checkbox.state.inoperable': [
     'violating-disabled-operable',
     'violating-disabled-keyboard-operable',
@@ -545,6 +555,8 @@ const MUTATION_FAILURES: Readonly<Record<string, string>> = {
     'never reached the checkbox',
   'checkbox.focus.reachable-and-escapable:violating-keyboard-trap':
     'did not move focus off the checkbox',
+  'checkbox.focus.declared-unavailable-reachable:violating-declared-unavailable-unreachable':
+    'never reached the checkbox',
   'checkbox.state.inoperable:violating-disabled-operable':
     'clicking the checkbox turned it',
   'checkbox.state.inoperable:violating-disabled-keyboard-operable':

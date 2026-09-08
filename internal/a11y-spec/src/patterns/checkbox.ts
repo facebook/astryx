@@ -28,9 +28,11 @@
 import {
   definePattern,
   type ApgRequirement,
+  type AstryxRecord,
   type PatternContract,
   type WcagCriterion,
 } from '../contract';
+import type {Harness, Subject} from '../harness';
 import {saysInOrder, spokenWords} from '../spoken';
 
 const APG_URL = 'https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/';
@@ -140,6 +142,14 @@ const APG_SPACE: ApgRequirement = {
   requirement:
     'When the checkbox has focus, pressing the Space key changes the state of the checkbox.',
   url: `${APG_URL}#keyboardinteraction`,
+};
+const AST_021_PRESERVE_BEHAVIOR: AstryxRecord = {
+  standard: 'astryx',
+  id: 'spec:AST-021',
+  clause: 'FR7',
+  requirement:
+    'Existing behavior is preserved unless a separate change authorizes it.',
+  url: 'https://github.com/facebook/astryx/blob/9fdb3819f91b3642b46319f21f4d99f95bc14f16/docs/specs/AST-021/spec.md#L85-L89',
 };
 
 /**
@@ -261,6 +271,29 @@ async function roundTrip(
   if (back !== from) {
     throw new Error(
       `${how} changed the checkbox to ${checkedState(after)}, but doing it again left it ${checkedState(back)} instead of returning it to ${checkedState(from)}: the change only goes one way`,
+    );
+  }
+}
+
+async function assertReachableAndEscapable(
+  harness: Harness,
+  subject: Subject,
+): Promise<void> {
+  await harness.resetFocus();
+  let reached = false;
+  for (let step = 0; step < TAB_BUDGET && !reached; step += 1) {
+    await harness.press('Tab');
+    reached = await subject.isFocused();
+  }
+  if (!reached) {
+    throw new Error(
+      `${TAB_BUDGET} presses of Tab from the start of the document never reached the checkbox, so a keyboard user cannot get to this setting`,
+    );
+  }
+  await harness.press('Tab');
+  if (await subject.isFocused()) {
+    throw new Error(
+      'Tab did not move focus off the checkbox, so a keyboard user is stuck on it',
     );
   }
 }
@@ -741,38 +774,39 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
       {
         id: 'checkbox.focus.reachable-and-escapable',
         outcome:
-          'Tab reaches the checkbox, and Tab again leaves it, so a keyboard user can get to the setting and carry on past it.',
+          'Tab reaches an operable checkbox, and Tab again leaves it, so a keyboard user can get to the setting and carry on past it.',
         sources: [WCAG_2_1_1, WCAG_2_1_2],
         covers: ['2.1.1-keyboard', '2.1.2-no-keyboard-trap'],
         appliesWhen: {
-          condition:
-            'this direct checkbox is operable or intentionally kept in the tab sequence',
-          test: facts =>
-            facts.directKeyboardOperation &&
-            (facts.operable || facts.focusable),
+          condition: 'this direct checkbox is operable',
+          test: facts => facts.directKeyboardOperation && facts.operable,
         },
         evidenceLayer: 'real-browser',
         // No `alsoNeeds`: this one reads only where focus is, which is a real
         // browser's own answer.
         enforcement: 'required',
         run: async ({harness, subject}) => {
-          await harness.resetFocus();
-          let reached = false;
-          for (let step = 0; step < TAB_BUDGET && !reached; step += 1) {
-            await harness.press('Tab');
-            reached = await subject.isFocused();
-          }
-          if (!reached) {
-            throw new Error(
-              `${TAB_BUDGET} presses of Tab from the start of the document never reached the checkbox, so a keyboard user cannot get to this setting`,
-            );
-          }
-          await harness.press('Tab');
-          if (await subject.isFocused()) {
-            throw new Error(
-              'Tab did not move focus off the checkbox, so a keyboard user is stuck on it',
-            );
-          }
+          await assertReachableAndEscapable(harness, subject);
+        },
+      },
+      {
+        id: 'checkbox.focus.declared-unavailable-reachable',
+        outcome:
+          'When a binding promises that an unavailable checkbox remains reachable, Tab reaches it and Tab again leaves it.',
+        sources: [AST_021_PRESERVE_BEHAVIOR],
+        covers: ['2.1.1-keyboard', '2.1.2-no-keyboard-trap'],
+        appliesWhen: {
+          condition:
+            'this direct checkbox is unavailable but its binding promises to keep it in the tab sequence',
+          test: facts =>
+            facts.directKeyboardOperation && !facts.operable && facts.focusable,
+        },
+        evidenceLayer: 'real-browser',
+        enforcement: 'advisory',
+        advisoryBecause:
+          'AST-021 requires a migration to preserve and record existing behavior, but no current component or system record makes focusable-disabled checkboxes a universal conformance requirement.',
+        run: async ({harness, subject}) => {
+          await assertReachableAndEscapable(harness, subject);
         },
       },
       {
