@@ -207,5 +207,5 @@ export const CHECKBOX_STATE_RENDERS: Record<
 
   'card-unchecked': () => <ControlledCard initial={false} />,
   'card-checked': () => <ControlledCard initial />,
-  'card-disabled': () => <ControlledCard initial isDisabled />,
+  'card-disabled': () => <ControlledCard initial={false} isDisabled />,
 };

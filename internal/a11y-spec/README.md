@@ -39,19 +39,18 @@ src/
 ├── spoken.ts      how a visible label is compared against a computed name
 ├── storybook.ts   a static server over a built Storybook, for the browser lane
 └── patterns/
-    ├── switch.ts             the switch pattern
-    ├── switch.fixtures.ts    conforming + deliberately violating fixtures
-    ├── switch.jsdom.test.ts  the contract's own proof, DOM layer
-    ├── switch.chromium.spec.ts  the same proof in a real engine
-    └── button.*              the button pattern, same four files
+    ├── checkbox.*           the checkbox pattern, same four files
+    ├── switch.*             the switch pattern, same four files
+    └── button.*             the button pattern, same four files
 ```
 
 ## The patterns
 
-| Pattern  | Adopted from                                                   | Bound by                                                                 |
-| -------- | -------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `switch` | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/) | Switch                                                                   |
-| `button` | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/) | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton |
+| Pattern    | Adopted from                                                       | Bound by                                                                  |
+| ---------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| `checkbox` | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/) | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard |
+| `switch`   | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)     | Switch                                                                    |
+| `button`   | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)     | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton  |
 
 The button pattern covers the ordinary command button. A toggle button carries
 `aria-pressed` and is its own pattern; anything that adopts link semantics — an

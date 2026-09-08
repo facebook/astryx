@@ -6,23 +6,23 @@
  * @output CHECKBOX_PATTERN — the adopted WAI-ARIA APG "checkbox" pattern as a
  *   reusable contract — and CheckboxStateFacts, what a binding declares each of
  *   its states is supposed to be.
- * @position The first authored pattern. Every later pattern is modelled on it.
+ * @position The third authored pattern, after switch and button.
  *
  * Adopted pattern: https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/
  *
  * What this contract owns is the part of "is it a checkbox" that is the same for
- * every component that adopts the pattern: the control is reported as a checkbox,
- * it is named, its on/off state is exposed and matches what is rendered, the
- * user can turn it on and back off with pointer and keyboard, focus can reach
- * it and leave it, and a checkbox that cannot be operated says so. Everything
- * that varies per component — callbacks, form participation, tooltip
- * composition, styling — stays with the component (`docs/specs/AST-021/spec.md`
- * FR5).
+ * every component that adopts the pattern: the checkbox-bearing role and name are
+ * exposed, the unchecked, checked, or partially checked state matches what is
+ * rendered, pointer activation changes it and can be taken back, direct checkboxes
+ * respond to Space without trapping focus, and unavailable controls stay inert.
+ * Menu arrow navigation and composite focus stay with the menu contract; callback,
+ * form, composition, and styling behavior stays with each component
+ * (`docs/specs/AST-021/spec.md` FR5).
  *
  * SYNC: When an expectation changes, update
  * - /internal/a11y-spec/README.md
- * - /packages/core/src/Checkbox/__tests__/Checkbox.a11y.test.tsx (the jsdom binding)
- * - /packages/core/src/Checkbox/__tests__/Checkbox.a11y.chromium.spec.ts (the Chromium binding)
+ * - /packages/core/src/CheckboxInput/__tests__/Checkbox.a11y.test.tsx (the jsdom binding)
+ * - /packages/core/src/CheckboxInput/__tests__/Checkbox.a11y.chromium.spec.ts (Chromium)
  */
 
 import {
@@ -103,7 +103,14 @@ const APG_MENUITEM_CHECKBOX_ROLE: ApgRequirement = {
   standard: 'apg',
   pattern: 'menu and menubar',
   requirement:
-    'Focusable elements in a menu may have role menuitemcheckbox; when checked, aria-checked is set to true.',
+    'Focusable elements, which may have role menuitem, menuitemradio, or menuitemcheckbox, are referred to as items.',
+  url: 'https://www.w3.org/WAI/ARIA/apg/patterns/menubar/#keyboardinteraction',
+};
+const APG_MENUITEM_CHECKBOX_STATE: ApgRequirement = {
+  standard: 'apg',
+  pattern: 'menu and menubar',
+  requirement:
+    'When a menuitemcheckbox or menuitemradio is checked, aria-checked is set to true.',
   url: 'https://www.w3.org/WAI/ARIA/apg/patterns/menubar/#wai-ariaroles,states,andproperties',
 };
 const APG_LABEL: ApgRequirement = {
@@ -144,7 +151,7 @@ const TAB_BUDGET = 10;
 
 /**
  * An interaction expectation's claim is a real-browser one — pressing this
- * turns it on — but the answer is read out of the accessibility tree, so it
+ * changes its state — but the answer is read out of the accessibility tree, so it
  * cannot run without both.
  */
 const READS_THE_TREE = ['accessibility-tree'] as const;
@@ -247,7 +254,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
     pattern: 'checkbox',
     url: 'https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/',
     scope:
-      'One binary control that is reported as a checkbox, named, state-exposed, and operable by pointer and keyboard in both directions.',
+      'One checkbox-bearing control that exposes its role, name, checked state, and availability; pointer activation works in both directions, and direct checkboxes also support Space and ordinary tab navigation.',
 
     expectations: [
       {
@@ -327,7 +334,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         id: 'checkbox.state.exposed',
         outcome:
           'The unchecked, checked, or partially checked state is exposed and matches what is rendered, so what the user hears is what they see.',
-        sources: [WCAG_4_1_2, APG_STATE],
+        sources: [WCAG_4_1_2, APG_STATE, APG_MENUITEM_CHECKBOX_STATE],
         covers: ['4.1.2-name-role-value', 'apg-interaction'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'accessibility-tree',
@@ -336,7 +343,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           const {checked} = await subject.computed();
           if (checked == null) {
             throw new Error(
-              'the browser exposes no on/off state for this checkbox, so assistive technology cannot say whether the setting is on',
+              'the browser exposes no checked state for this checkbox, so assistive technology cannot say whether it is checked',
             );
           }
           const expected =
@@ -473,7 +480,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
       {
         id: 'checkbox.state.pointer-round-trip',
         outcome:
-          'A pointer turns the checkbox on and back off, and the exposed state follows both ways.',
+          'A pointer changes the checkbox and can change it again, while the exposed state follows each transition.',
         sources: [WCAG_4_1_2, APG_STATE],
         covers: ['4.1.2-name-role-value', 'apg-interaction'],
         appliesWhen: {
@@ -495,7 +502,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
       {
         id: 'checkbox.state.space-round-trip',
         outcome:
-          'With focus on the checkbox, Space turns it on and back off — the keyboard reaches the same function the pointer does.',
+          'With focus on the checkbox, Space changes its state and can change it again — the keyboard reaches the same function the pointer does.',
         sources: [WCAG_2_1_1, APG_SPACE],
         covers: ['2.1.1-keyboard', 'apg-interaction'],
         appliesWhen: {
@@ -677,7 +684,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
       '1.1.1-non-text-content': {
         owner: 'the binding component',
         verifiedBy:
-          "the component's own suite (Checkbox hides its track and thumb from assistive technology and renders its busy state as text) and the repository axe audit, `pnpm a11y:audit`",
+          "the binding components' own suites for decorative indicators and busy content, plus the repository axe audit, `pnpm a11y:audit`",
         reason:
           'The pattern owns one control node. Which decorative graphics a binding paints around that node, and whether each is hidden, is a per-component composition fact this contract never sees.',
       },

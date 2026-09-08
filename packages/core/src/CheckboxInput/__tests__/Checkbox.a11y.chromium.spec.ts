@@ -120,8 +120,14 @@ async function runState(
   });
 }
 
+const FIELD_MARKERS = ['required', 'optional'];
+
 function sameWords(rendered: string, claimed: string): boolean {
-  const words = spokenWords(rendered);
+  const words = [...spokenWords(rendered)];
+  const last = words[words.length - 1];
+  if (last != null && FIELD_MARKERS.includes(last)) {
+    words.pop();
+  }
   const expected = spokenWords(claimed);
   return (
     words.length === expected.length &&

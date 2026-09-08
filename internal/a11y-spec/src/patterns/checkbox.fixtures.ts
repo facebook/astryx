@@ -231,6 +231,12 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     html: divCheckbox('tabindex="0" aria-checked="false"'),
   },
   {
+    id: 'violating-mixed-state-mismatch',
+    summary: 'a partially checked checkbox reported as unchecked',
+    facts: facts({checked: 'mixed', operable: false, focusable: false}),
+    html: divCheckbox('tabindex="0" aria-checked="false"'),
+  },
+  {
     id: 'violating-dangling-description',
     summary: 'a checkbox described by an id that resolves to nothing',
     facts: facts({described: true}),
@@ -336,6 +342,7 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   'checkbox.name.exposed': ['violating-unnamed'],
   'checkbox.state.exposed': [
     'violating-state-mismatch',
+    'violating-mixed-state-mismatch',
     'violating-generic-element',
   ],
   'checkbox.description.exposed': ['violating-empty-description'],
