@@ -26,9 +26,11 @@ function VisibleLabel({children}: {children: ReactNode}) {
 
 function ControlledInput({
   initial,
+  hasChangeHandler = true,
   ...props
 }: {
   initial: boolean | 'indeterminate';
+  hasChangeHandler?: boolean;
   label: string;
   description?: string;
   isLabelHidden?: boolean;
@@ -40,7 +42,13 @@ function ControlledInput({
   status?: {type: 'error' | 'warning' | 'success'; message: string};
 }) {
   const [value, setValue] = useState<boolean | 'indeterminate'>(initial);
-  return <CheckboxInput {...props} value={value} onChange={setValue} />;
+  return (
+    <CheckboxInput
+      {...props}
+      value={value}
+      onChange={hasChangeHandler ? setValue : undefined}
+    />
+  );
 }
 
 function StandaloneListItem({
@@ -132,18 +140,25 @@ function GroupDisabledListItem() {
 
 function MenuCheckbox({
   initial,
+  label = 'Show archived',
+  description,
+  hasChangeHandler = true,
   isDisabled = false,
 }: {
   initial: boolean;
+  label?: ReactNode;
+  description?: ReactNode;
+  hasChangeHandler?: boolean;
   isDisabled?: boolean;
 }) {
   const [value, setValue] = useState(initial);
   return (
     <DropdownMenu button={{label: 'View options'}}>
       <DropdownMenuCheckboxItem
-        label="Show archived"
+        label={label}
+        description={description}
         value={value}
-        onChange={setValue}
+        onChange={hasChangeHandler ? setValue : undefined}
         isDisabled={isDisabled}
       />
     </DropdownMenu>
@@ -212,6 +227,13 @@ export const CHECKBOX_STATE_RENDERS: Record<
   'input-read-only': () => (
     <ControlledInput initial={true} label="Policy acknowledged" isReadOnly />
   ),
+  'input-handlerless-read-only': () => (
+    <ControlledInput
+      initial={true}
+      label="Policy acknowledged"
+      hasChangeHandler={false}
+    />
+  ),
   'input-required': () => (
     <ControlledInput initial={false} label="Accept terms" isRequired />
   ),
@@ -252,6 +274,16 @@ export const CHECKBOX_STATE_RENDERS: Record<
 
   'menu-item-unchecked': () => <MenuCheckbox initial={false} />,
   'menu-item-checked': () => <MenuCheckbox initial />,
+  'menu-item-described': () => (
+    <MenuCheckbox
+      initial={false}
+      label={<VisibleLabel>Show archived</VisibleLabel>}
+      description="Includes projects hidden from active views"
+    />
+  ),
+  'menu-item-handlerless-read-only': () => (
+    <MenuCheckbox initial={false} hasChangeHandler={false} />
+  ),
   'menu-item-disabled': () => <MenuCheckbox initial={false} isDisabled />,
 
   'card-unchecked': () => <ControlledCard initial={false} />,

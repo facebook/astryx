@@ -4,7 +4,8 @@
  * @file run.ts
  * @input Uses ./contract (expectations), ./harness (the runtime seam)
  * @output `runBinding` — runs one pattern contract against one component
- *   binding state — plus the known-failure vocabulary it obeys.
+ *   binding state — plus the known-failure vocabulary and exact-record
+ *   reconciliation helpers it obeys.
  * @position The engine between a pattern and a component. Everything a report
  *   later says about a binding is decided here.
  *
@@ -63,6 +64,8 @@ export interface KnownFailure {
   readonly evidenceLayer: EvidenceLayer;
   /** The exact failure this record covers. Any text change is a different failure. */
   readonly failureEquals: string;
+  /** Exact standards source for the failed user outcome. */
+  readonly standardsReference: string;
   /** What the person using the component actually experiences. */
   readonly userImpact: string;
   /** Public issue tracking the fix. */
@@ -86,8 +89,13 @@ export interface ExpectationResult {
    * unrun because the tree it reads the result from is out of reach.
    */
   readonly missingLayers?: readonly EvidenceLayer[];
-  /** Present when a known-failure record was consulted. */
+  /** Present when an exact known-failure record was consulted. */
   readonly knownFailure?: KnownFailure;
+  /**
+   * Present when this expectation has recorded debt elsewhere, so a failure in
+   * this unrecorded binding/state/layer is a wider failure and must gate.
+   */
+  readonly relatedKnownFailure?: KnownFailure;
 }
 
 export interface BindingResult {
@@ -279,6 +287,12 @@ export async function runBinding<Facts>(
     }
 
     const record = findKnownFailure(knownFailures, expectation, binding, state);
+    const relatedRecord =
+      record == null
+        ? knownFailures.find(
+            candidate => candidate.expectation === expectation.id,
+          )
+        : undefined;
 
     if (failure === undefined) {
       results.push(
@@ -288,7 +302,7 @@ export async function runBinding<Facts>(
               ...base,
               status: 'unexpected-pass',
               knownFailure: record,
-              detail: `the recorded failure no longer happens; remove the known-failure record and let ${record.issue} close`,
+              detail: `the recorded failure no longer happens; remove this stale known-failure record and update ${record.issue}; close the issue only when no remaining records refer to it`,
             },
       );
       continue;
@@ -308,10 +322,13 @@ export async function runBinding<Facts>(
       ...base,
       status: 'fail',
       detail:
-        record == null
-          ? failure
-          : `${failure}\n\nA known failure is recorded for this expectation, binding, and state, but it covers a different failure (${JSON.stringify(record.failureEquals)}). A known failure never widens to cover a new one.`,
+        record != null
+          ? `${failure}\n\nA known failure is recorded for this expectation, binding, and state, but it covers a different failure (${JSON.stringify(record.failureEquals)}). A known failure never widens to cover a new one.`
+          : relatedRecord != null
+            ? `${failure}\n\nA known failure exists for this expectation, but it does not cover this binding, state, and evidence layer (${relatedRecord.binding} [${relatedRecord.state}] at ${relatedRecord.evidenceLayer}). A known failure never widens to cover a new result.`
+            : failure,
       knownFailure: record,
+      relatedKnownFailure: relatedRecord,
     });
   }
 

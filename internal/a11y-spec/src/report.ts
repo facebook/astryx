@@ -159,7 +159,9 @@ export function blockingResults(
         result =>
           result.status === 'unexpected-pass' ||
           (result.status === 'fail' &&
-            (result.enforcement === 'required' || result.knownFailure != null)),
+            (result.enforcement === 'required' ||
+              result.knownFailure != null ||
+              result.relatedKnownFailure != null)),
       )
       .map(result => ({binding, result})),
   );

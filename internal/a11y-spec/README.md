@@ -80,14 +80,14 @@ activation. Reporting those as passes because the attributes look right is the
 exact failure [`AST-009`](../../docs/specs/AST-009/spec.md) is written against,
 so this package reports them as unrun instead and proves them in Chromium.
 
-| Status            | Meaning                                               | Gates                              |
-| ----------------- | ----------------------------------------------------- | ---------------------------------- |
-| `pass`            | the outcome was observed                              | —                                  |
-| `fail`            | the outcome was absent                                | when the expectation is `required` |
-| `known-failure`   | the exact recorded historical failure, still failing  | no                                 |
-| `unexpected-pass` | a recorded failure that now passes; delete the record | yes                                |
-| `not-applicable`  | this state cannot exercise the outcome                | —                                  |
-| `unrun`           | a layer this expectation reads was out of reach here  | —                                  |
+| Status            | Meaning                                               | Gates                                                                    |
+| ----------------- | ----------------------------------------------------- | ------------------------------------------------------------------------ |
+| `pass`            | the outcome was observed                              | —                                                                        |
+| `fail`            | the outcome was absent                                | when required, or when the expectation has exact recorded debt elsewhere |
+| `known-failure`   | the exact recorded historical failure, still failing  | no                                                                       |
+| `unexpected-pass` | a recorded failure that now passes; delete the record | yes                                                                      |
+| `not-applicable`  | this state cannot exercise the outcome                | —                                                                        |
+| `unrun`           | a layer this expectation reads was out of reach here  | —                                                                        |
 
 No status is averaged into another, and there is no score. A pattern with one
 required failure is not "mostly conformant" (AST-021 FR11).
@@ -156,14 +156,15 @@ and styling stay in the component's own suite (AST-021 FR5).
 ## Known failures
 
 A known failure names one expectation, one binding, one state, one evidence
-layer, the user impact, a public issue, and why the migration is not the place
-to fix it. It still runs, it still fails, and it is reported as debt. The
-record matches the complete failure message, not a substring; a different
-message, another state, or a wider failure fails the build even for an advisory
-expectation. A full binding sweep also requires every record to match exactly one
-executed result, so deleted states and renamed expectations cannot orphan debt.
-An expectation that starts passing is reported as an unexpected pass so the
-stale record is deleted (AST-021 FR8–FR10).
+layer, the exact standards reference, the user impact, a public issue, and why
+the migration is not the place to fix it. It still runs, it still fails, and is
+reported as debt. The record matches the complete failure message, not a
+substring; a different message, another state, or a wider failure fails the
+build even for an advisory expectation. A full binding sweep also requires every
+record to match exactly one executed result, so deleted states and renamed
+expectations cannot orphan debt. An expectation that starts passing is reported
+as an unexpected pass so that exact stale record is deleted; its issue closes
+only when no remaining records refer to it (AST-021 FR8–FR10).
 
 ## Running
 

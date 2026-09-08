@@ -149,6 +149,18 @@ export const CHECKBOX_BINDING_STATES = [
     storyId: 'a11y-checkbox-pattern--input-read-only',
   },
   {
+    id: 'input-handlerless-read-only',
+    binding: 'CheckboxInput',
+    summary:
+      'a controlled handlerless checkbox that is inert but does not declare read-only semantics',
+    facts: facts({checked: true, operable: false, readOnly: true}),
+    visibleLabel: 'Policy acknowledged',
+    storyId: 'a11y-checkbox-pattern--input-handlerless-read-only',
+    declaredNotDelivered: [
+      {fact: 'readOnly', owned: 'checkbox.readonly.declared'},
+    ],
+  },
+  {
     id: 'input-required',
     binding: 'CheckboxInput',
     summary: 'a checkbox declared required',
@@ -288,6 +300,34 @@ export const CHECKBOX_BINDING_STATES = [
     visibleLabel: 'Show archived',
     storyId: 'a11y-checkbox-pattern--menu-item-checked',
     opensMenu: true,
+  },
+  {
+    id: 'menu-item-described',
+    binding: 'DropdownMenuCheckboxItem',
+    summary: 'a menu checkbox item with visible supporting text',
+    facts: menuFacts({
+      description: 'Includes projects hidden from active views',
+    }),
+    visibleLabel: 'Show archived',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--menu-item-described',
+    opensMenu: true,
+    declaredNotDelivered: [
+      {fact: 'description', owned: 'checkbox.description.resolvable'},
+    ],
+  },
+  {
+    id: 'menu-item-handlerless-read-only',
+    binding: 'DropdownMenuCheckboxItem',
+    summary:
+      'a handlerless menu checkbox item that is inert but does not declare read-only semantics',
+    facts: menuFacts({operable: false, readOnly: true}),
+    visibleLabel: 'Show archived',
+    storyId: 'a11y-checkbox-pattern--menu-item-handlerless-read-only',
+    opensMenu: true,
+    declaredNotDelivered: [
+      {fact: 'readOnly', owned: 'checkbox.readonly.declared'},
+    ],
   },
   {
     id: 'menu-item-disabled',

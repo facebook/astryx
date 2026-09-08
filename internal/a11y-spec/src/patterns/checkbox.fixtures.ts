@@ -359,6 +359,15 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     html: nativeCheckbox('aria-disabled="true"'),
   },
   {
+    id: 'violating-disabled-keyboard-operable',
+    summary:
+      'a checkbox that refuses pointer activation while its unavailable state still changes with Space',
+    facts: facts({disabled: true, operable: false}),
+    html: divCheckbox(
+      `tabindex="0" aria-checked="false" aria-disabled="true" onclick="event.preventDefault()" ${TOGGLE_ON_SPACE}`,
+    ),
+  },
+  {
     id: 'violating-required-unexposed',
     summary: 'a checkbox that must be on but never says so',
     facts: facts({required: true}),
@@ -466,7 +475,10 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
     'violating-pointer-only-unfocusable',
     'violating-keyboard-trap',
   ],
-  'checkbox.state.inoperable': ['violating-disabled-operable'],
+  'checkbox.state.inoperable': [
+    'violating-disabled-operable',
+    'violating-disabled-keyboard-operable',
+  ],
 };
 
 const MUTATION_FAILURES: Readonly<Record<string, string>> = {
@@ -535,6 +547,8 @@ const MUTATION_FAILURES: Readonly<Record<string, string>> = {
     'did not move focus off the checkbox',
   'checkbox.state.inoperable:violating-disabled-operable':
     'clicking the checkbox turned it',
+  'checkbox.state.inoperable:violating-disabled-keyboard-operable':
+    'pressing Space on the checkbox turned it',
 };
 
 export function expectedMutationFailure(
