@@ -13,11 +13,11 @@ import type {KnownFailure} from '@astryxdesign/a11y-spec';
 const CHECKBOX_LIST_DESCRIPTION_ISSUE =
   'https://github.com/facebook/astryx/issues/6154';
 const RICH_LABEL_NAME_ISSUE = 'https://github.com/facebook/astryx/issues/6161';
-const HANDLERLESS_READONLY_ISSUE =
+const LIST_HANDLERLESS_READONLY_ISSUE =
   'https://github.com/facebook/astryx/issues/6163';
-const HANDLERLESS_INPUT_READONLY_ISSUE =
+const INPUT_HANDLERLESS_READONLY_ISSUE =
   'https://github.com/facebook/astryx/issues/6165';
-const HANDLERLESS_MENU_UNAVAILABLE_ISSUE =
+const MENU_HANDLERLESS_UNAVAILABLE_ISSUE =
   'https://github.com/facebook/astryx/issues/6166';
 
 export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
@@ -28,6 +28,7 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     evidenceLayer: 'dom',
     failureEquals:
       'the binding renders supporting text for this state, but the checkbox has no aria-describedby, so the text is never attached to the control',
+    standardsReference: 'WCAG 2.2 1.3.1 Info and Relationships (Level A)',
     userImpact:
       'The browser accessibility node exposes no separate description for the visible supporting text, so downstream accessibility consumers cannot distinguish it as the choice explanation.',
     issue: CHECKBOX_LIST_DESCRIPTION_ISSUE,
@@ -41,6 +42,7 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     evidenceLayer: 'accessibility-tree',
     failureEquals:
       'the binding expects the description "Receive notifications by email", but the browser computes no accessible description',
+    standardsReference: 'WCAG 2.2 4.1.2 Name, Role, Value (Level A)',
     userImpact:
       'The browser computes no distinct description for the visible explanation; this records browser exposure only, not what any assistive technology announces.',
     issue: CHECKBOX_LIST_DESCRIPTION_ISSUE,
@@ -54,6 +56,7 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     evidenceLayer: 'accessibility-tree',
     failureEquals:
       'the visible label reads "Pro plan" but the browser computes the accessible name as "Checkbox", so speaking the visible label does not reach this control',
+    standardsReference: 'WCAG 2.2 2.5.3 Label in Name (Level A)',
     userImpact:
       'The browser exposes every rich-label item without an aria-label under the generic name "Checkbox", so speech input cannot address the item by the visible words.',
     issue: RICH_LABEL_NAME_ISSUE,
@@ -67,11 +70,12 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     evidenceLayer: 'dom',
     failureEquals:
       'this state is read-only, but the checkbox does not declare aria-readonly="true"',
+    standardsReference: 'WCAG 2.2 4.1.2 Name, Role, Value (Level A)',
     userImpact:
-      'The browser exposes a handlerless inert checkbox without a read-only declaration, so accessibility consumers cannot distinguish it from an editable control.',
-    issue: HANDLERLESS_INPUT_READONLY_ISSUE,
+      'The browser exposes a controlled handlerless checkbox without a read-only declaration, so accessibility consumers cannot distinguish its static value from an editable setting.',
+    issue: INPUT_HANDLERLESS_READONLY_ISSUE,
     reason:
-      'The public API permits a controlled value without onChange or changeAction. The migration records that supported branch without changing the component API.',
+      'CheckboxInput makes both onChange and changeAction optional. With neither handler, the controlled value cannot persist a user change, but the component does not declare the resulting read-only state.',
   },
   {
     expectation: 'checkbox.readonly.declared',
@@ -80,9 +84,10 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     evidenceLayer: 'dom',
     failureEquals:
       'this state is read-only, but the checkbox does not declare aria-readonly="true"',
+    standardsReference: 'WCAG 2.2 4.1.2 Name, Role, Value (Level A)',
     userImpact:
       'The browser exposes a handlerless inert checkbox without a read-only declaration, so accessibility consumers cannot distinguish it from an editable control.',
-    issue: HANDLERLESS_READONLY_ISSUE,
+    issue: LIST_HANDLERLESS_READONLY_ISSUE,
     reason:
       'The public standalone API permits an item with isChecked and no onCheck. The row is inert, but CheckboxInput does not receive isReadOnly.',
   },
@@ -93,37 +98,26 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     evidenceLayer: 'accessibility-tree',
     failureEquals:
       'the binding declares this state unavailable, but the browser reports the checkbox as available, so the user is invited to change something that will not change',
+    standardsReference: 'WCAG 2.2 4.1.2 Name, Role, Value (Level A)',
     userImpact:
       'The menu item looks available to accessibility consumers, but activation cannot change its controlled value because it has no handler.',
-    issue: HANDLERLESS_MENU_UNAVAILABLE_ISSUE,
+    issue: MENU_HANDLERLESS_UNAVAILABLE_ISSUE,
     reason:
-      'The public API permits a controlled value without onChange. The migration records the inert-but-available mismatch without changing the component API.',
+      'DropdownMenuCheckboxItem makes onChange optional. Without it, the controlled value cannot persist a user change, but the role-bearing item remains exposed as available.',
   },
-
   {
-    expectation: 'checkbox.focus.reachable-and-escapable',
+    expectation: 'checkbox.focus.declared-inoperable-reachable',
     binding: 'SelectableCard',
     state: 'card-disabled',
     evidenceLayer: 'real-browser',
     failureEquals:
       '10 presses of Tab from the start of the document never reached the checkbox, so a keyboard user cannot get to this setting',
+    standardsReference:
+      'Astryx spec:AST-021 FR7 (preserve existing documented behavior); SelectableCard isDisabled public prop contract',
     userImpact:
-      'A keyboard or screen-reader user cannot tab to the disabled card to discover that the option exists and is unavailable.',
+      'A keyboard user cannot tab to the disabled card to discover that the option exists and is unavailable, despite the public prop contract promising continued focusability.',
     issue: 'https://github.com/facebook/astryx/issues/6156',
     reason:
-      'SelectableCard documents a focusable aria-disabled state, but the implementation applies native disabled to its checkbox and removes it from the tab sequence.',
-  },
-  {
-    expectation: 'checkbox.state.inoperable',
-    binding: 'SelectableCard',
-    state: 'card-disabled',
-    evidenceLayer: 'real-browser',
-    failureEquals:
-      'this state is meant to stay focusable while it cannot be changed — so the reason or the pending state stays discoverable — but the checkbox did not take focus',
-    userImpact:
-      'The disabled card is inert, but its documented focusable-disabled state cannot be verified because the role-bearing checkbox refuses focus.',
-    issue: 'https://github.com/facebook/astryx/issues/6156',
-    reason:
-      'This is the inertness-side result of the same native-disabled mismatch and stays separate from tab reachability under AST-021 FR8.',
+      'SelectableCard documents a focusable aria-disabled state, but the implementation applies native disabled to its checkbox and removes it from the tab sequence. This advisory migration check records that public-contract mismatch without presenting disabled focusability as a WCAG requirement.',
   },
 ];

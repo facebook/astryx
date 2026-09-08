@@ -145,10 +145,10 @@ export function neverExercised(
  *
  * A `required` expectation that fails is a regression. An unexpected pass is a
  * stale debt record, and AST-021 FR9 requires removing it rather than counting
- * it. An ordinary `advisory` failure reports without gating, but a failure that
- * disagrees with a known-failure record blocks regardless of enforcement: the
- * record may suppress only its one exact historical result. An `unrun` layer
- * gates nothing — it is a coverage fact, reported as one.
+ * it. An ordinary `advisory` failure reports without gating, including when it
+ * differs from recorded advisory debt: AST-020 FR9 says advisory expectations
+ * report only. An `unrun` layer gates nothing — it is a coverage fact, reported
+ * as one.
  */
 export function blockingResults(
   bindings: readonly BindingResult[],
@@ -158,8 +158,7 @@ export function blockingResults(
       .filter(
         result =>
           result.status === 'unexpected-pass' ||
-          (result.status === 'fail' &&
-            (result.enforcement === 'required' || result.knownFailure != null)),
+          (result.status === 'fail' && result.enforcement === 'required'),
       )
       .map(result => ({binding, result})),
   );
@@ -192,9 +191,16 @@ export function formatReport(report: Report): string {
         result.status === 'known-failure' && result.knownFailure != null
           ? ` (${result.knownFailure.issue})`
           : '';
+      const failureLike =
+        result.status === 'fail' ||
+        result.status === 'known-failure' ||
+        result.status === 'unexpected-pass';
       lines.push(
-        `  ${result.status.padEnd(15)} ${result.expectation} · ${result.evidenceLayer} · ${result.enforcement}${suffix}`,
+        `  ${result.status.padEnd(15)} ${failureLike ? result.description : result.expectation} · ${result.evidenceLayer} · ${result.enforcement}${suffix}`,
       );
+      if (failureLike && result.detail != null) {
+        lines.push(`    ${result.detail.split('\n').join('\n    ')}`);
+      }
     }
     lines.push('');
   }

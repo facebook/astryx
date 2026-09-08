@@ -139,20 +139,6 @@ describe('CheckboxInput', () => {
     expect(screen.getByText('Receive weekly updates')).toBeInTheDocument();
   });
 
-  it('keeps the description out of the accessible name', () => {
-    render(
-      <CheckboxInput
-        label="Email notifications"
-        description="We'll send weekly digests"
-        value={false}
-        onChange={() => {}}
-      />,
-    );
-    const checkbox = screen.getByRole('checkbox');
-    expect(checkbox).toHaveAccessibleName('Email notifications');
-    expect(checkbox).toHaveAccessibleDescription("We'll send weekly digests");
-  });
-
   it('toggles when clicking on the description', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();

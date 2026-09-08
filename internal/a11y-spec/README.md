@@ -156,14 +156,16 @@ and styling stay in the component's own suite (AST-021 FR5).
 ## Known failures
 
 A known failure names one expectation, one binding, one state, one evidence
-layer, the user impact, a public issue, and why the migration is not the place
-to fix it. It still runs, it still fails, and it is reported as debt. The
-record matches the complete failure message, not a substring; a different
-message, another state, or a wider failure fails the build even for an advisory
-expectation. A full binding sweep also requires every record to match exactly one
-executed result, so deleted states and renamed expectations cannot orphan debt.
-An expectation that starts passing is reported as an unexpected pass so the
-stale record is deleted (AST-021 FR8–FR10).
+layer, the exact standards reference, the user impact, a public issue, and why
+the migration is not the place to fix it. It still runs, it still fails, and is
+reported as debt. The record matches the complete failure message, not a
+substring; a different message, another state, or a wider failure remains a
+`fail` rather than being absorbed by the record. Required failures gate;
+advisory failures remain report-only under AST-020 FR9. A full binding sweep
+also requires every record to match exactly one executed result, so deleted
+states and renamed expectations cannot orphan debt. An expectation that starts
+passing is reported as an unexpected pass so that exact stale record is deleted;
+its issue closes only when no remaining records refer to it (AST-021 FR8–FR10).
 
 ## Running
 

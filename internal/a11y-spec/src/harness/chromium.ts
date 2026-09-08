@@ -2,8 +2,9 @@
 
 /**
  * @file chromium.ts
- * @input Uses a Playwright `Page` and a `Locator` for the subject, and the
- *   Chrome DevTools Protocol accessibility domain behind them
+ * @input Uses a Playwright `Page`, the semantic subject `Locator`, optional
+ *   binding-owned pointer-target and visible-label `Locator`s, and the Chrome
+ *   DevTools Protocol accessibility domain behind them
  * @output `createChromiumHarness` — a harness that observes the DOM,
  *   accessibility-tree, and real-browser layers of a page rendered by a real
  *   shipping engine — plus `holdMotionStill`, the page setup its specs share.

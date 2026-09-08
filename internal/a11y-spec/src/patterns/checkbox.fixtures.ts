@@ -177,6 +177,15 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     html: nativeCheckbox('disabled'),
   },
   {
+    id: 'conforming-focusable-disabled',
+    summary:
+      'an unavailable checkbox that stays in the tab sequence and refuses both pointer and keyboard changes',
+    facts: facts({disabled: true, operable: false, focusable: true}),
+    html: nativeCheckbox(
+      `aria-disabled="true" onclick="event.preventDefault()" onkeydown="if (event.key === ' ') { event.preventDefault(); }"`,
+    ),
+  },
+  {
     id: 'conforming-pending',
     summary:
       'a checkbox that refuses its own change without being disabled — the case where "cannot be changed" and "reported disabled" come apart',
@@ -330,6 +339,13 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     ),
   },
   {
+    id: 'violating-declared-unavailable-unreachable',
+    summary:
+      'an unavailable checkbox whose binding promises focusability but whose native disabled state removes it from the tab sequence',
+    facts: facts({disabled: true, operable: false, focusable: true}),
+    html: nativeCheckbox('disabled'),
+  },
+  {
     id: 'violating-keyboard-trap',
     summary: 'a checkbox that swallows the Tab that would leave it',
     facts: facts(),
@@ -355,6 +371,15 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     summary: 'a checkbox marked disabled that still changes state',
     facts: facts({disabled: true, operable: false}),
     html: nativeCheckbox('aria-disabled="true"'),
+  },
+  {
+    id: 'violating-disabled-keyboard-operable',
+    summary:
+      'a checkbox that refuses pointer activation while its unavailable state still changes with Space',
+    facts: facts({disabled: true, operable: false}),
+    html: divCheckbox(
+      `tabindex="0" aria-checked="false" aria-disabled="true" onclick="event.preventDefault()" ${TOGGLE_ON_SPACE}`,
+    ),
   },
   {
     id: 'violating-required-unexposed',
@@ -464,75 +489,88 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
     'violating-pointer-only-unfocusable',
     'violating-keyboard-trap',
   ],
-  'checkbox.state.inoperable': ['violating-disabled-operable'],
+  'checkbox.focus.declared-inoperable-reachable': [
+    'violating-declared-unavailable-unreachable',
+  ],
+  'checkbox.state.inoperable': [
+    'violating-disabled-operable',
+    'violating-disabled-keyboard-operable',
+  ],
 };
 
 const MUTATION_FAILURES: Readonly<Record<string, string>> = {
   'checkbox.description.resolvable:violating-dangling-description':
-    'resolves to nothing',
+    'aria-describedby points at "hint", which resolves to nothing',
   'checkbox.description.resolvable:violating-wrong-description':
-    'aria-describedby resolves to "This text describes a different control."',
+    'the binding expects the description "Sends a notification for every mention.", but aria-describedby resolves to "This text describes a different control."',
   'checkbox.role.exposed:violating-checkbox-role':
-    'adopts the checkbox role, but the browser reports "switch"',
+    'this binding adopts the checkbox role, but the browser reports "switch"',
   'checkbox.role.exposed:violating-generic-element':
-    'browser reports "generic"',
-  'checkbox.name.exposed:violating-unnamed': 'computes no accessible name',
+    'this binding adopts the checkbox role, but the browser reports "generic"',
+  'checkbox.name.exposed:violating-unnamed':
+    'the browser computes no accessible name for this checkbox, so the accessibility node does not identify the choice',
   'checkbox.state.exposed:violating-state-mismatch':
-    'renders checked but the browser reports it as unchecked',
+    'this state renders checked but the browser reports it as unchecked',
   'checkbox.state.exposed:violating-mixed-state-mismatch':
-    'renders partially checked but the browser reports it as unchecked',
+    'this state renders partially checked but the browser reports it as unchecked',
   'checkbox.state.exposed:violating-generic-element':
-    'exposes no checked state',
+    'the browser accessibility node exposes no checked state for this checkbox',
   'checkbox.description.exposed:violating-empty-description':
-    'computes no accessible description',
+    'the binding expects the description "Sends a notification for every mention.", but the browser computes no accessible description',
   'checkbox.description.exposed:violating-wrong-description':
-    'browser computes "This text describes a different control."',
+    'the binding expects the description "Sends a notification for every mention.", but the browser computes "This text describes a different control."',
   'checkbox.disabled.exposed:violating-disabled-unexposed':
-    'reports the checkbox as available',
+    'the binding declares this state unavailable, but the browser reports the checkbox as available, so the user is invited to change something that will not change',
   'checkbox.disabled.not-exposed:violating-disabled-overexposed':
-    'exposes the checkbox as disabled',
+    'this state is available, but the browser exposes the checkbox as disabled',
   'checkbox.readonly.declared:violating-readonly-unexposed':
-    'does not declare aria-readonly="true"',
+    'this state is read-only, but the checkbox does not declare aria-readonly="true"',
   'checkbox.readonly.not-declared:violating-readonly-overexposed':
-    'declares aria-readonly="true"',
-  'checkbox.required.declared:violating-required-unexposed': 'declares neither',
+    'this state is editable, but the checkbox declares aria-readonly="true"',
+  'checkbox.required.declared:violating-required-unexposed':
+    'this state is required, but the checkbox declares neither the native required attribute nor aria-required="true", so user agents receive no required-state declaration',
   'checkbox.required.not-declared:violating-required-overexposed':
-    'exposes a required declaration',
+    'this state is not required, but the checkbox exposes a required declaration',
   'checkbox.invalid.exposed:violating-invalid-unexposed':
-    'does not report the checkbox as invalid',
+    'this state is in error, but the browser does not report the checkbox as invalid, so the error is only visible to people who can see the message',
   'checkbox.invalid.not-exposed:violating-invalid-overexposed':
-    'exposes the checkbox as invalid',
+    'this state is not invalid, but the browser exposes the checkbox as invalid',
   'checkbox.name.matches-visible-label:violating-name-mismatch':
-    'visible label reads',
+    'the visible label reads "Notifications" but the browser computes the accessible name as "Toggle", so speaking the visible label does not reach this control',
   'checkbox.state.survives-an-aborted-press:violating-down-event-toggle':
-    'releasing away from it still turned it',
+    'pressing the checkbox and releasing away from it still turned it checked: the change happens on the way down, so a press cannot be taken back',
   'checkbox.state.keeps-focus-on-change:violating-focus-moves-on-change':
-    'moved focus off it',
-  'checkbox.state.keeps-focus-on-change:violating-inert': 'nothing changed',
+    'changing the checkbox to checked moved focus off it, so the user is somewhere else without having asked to be',
+  'checkbox.state.keeps-focus-on-change:violating-inert':
+    'pressing Space left the checkbox unchecked, so nothing changed and this expectation has no change to judge',
   'checkbox.state.keeps-focus-on-change:violating-pointer-only-unfocusable':
-    'checkbox did not take focus',
+    'the checkbox did not take focus, so this state cannot be changed from the keyboard at all',
   'checkbox.state.pointer-round-trip:violating-inert':
-    'cannot be changed to checked',
+    'clicking the checkbox left the checkbox unchecked: it cannot be changed to checked',
   'checkbox.state.pointer-round-trip:violating-wrong-start-first-noop':
-    'binding declares unchecked, but the browser starts checked',
+    'the binding declares unchecked, but the browser starts checked',
   'checkbox.state.pointer-round-trip:violating-one-way':
-    'change only goes one way',
+    'clicking the checkbox changed the checkbox to checked, but doing it again left it checked instead of returning it to unchecked: the change only goes one way',
   'checkbox.state.space-round-trip:violating-pointer-only':
-    'cannot be changed to checked',
+    'pressing Space on the focused checkbox left the checkbox unchecked: it cannot be changed to checked',
   'checkbox.state.space-round-trip:violating-pointer-only-unfocusable':
-    'checkbox did not take focus',
+    'the checkbox did not take focus, so Space never reaches it',
   'checkbox.state.space-round-trip:violating-wrong-start-first-noop':
-    'binding declares unchecked, but the browser starts checked',
+    'the binding declares unchecked, but the browser starts checked',
   'checkbox.state.space-round-trip:violating-one-way':
-    'change only goes one way',
+    'pressing Space on the focused checkbox changed the checkbox to checked, but doing it again left it checked instead of returning it to unchecked: the change only goes one way',
   'checkbox.focus.reachable-and-escapable:violating-unreachable':
-    'never reached the checkbox',
+    '10 presses of Tab from the start of the document never reached the checkbox, so a keyboard user cannot get to this setting',
   'checkbox.focus.reachable-and-escapable:violating-pointer-only-unfocusable':
-    'never reached the checkbox',
+    '10 presses of Tab from the start of the document never reached the checkbox, so a keyboard user cannot get to this setting',
   'checkbox.focus.reachable-and-escapable:violating-keyboard-trap':
-    'did not move focus off the checkbox',
+    'Tab did not move focus off the checkbox, so a keyboard user is stuck on it',
+  'checkbox.focus.declared-inoperable-reachable:violating-declared-unavailable-unreachable':
+    '10 presses of Tab from the start of the document never reached the checkbox, so a keyboard user cannot get to this setting',
   'checkbox.state.inoperable:violating-disabled-operable':
-    'clicking the checkbox turned it',
+    'the user is not meant to be able to change this state, but clicking the checkbox turned it checked',
+  'checkbox.state.inoperable:violating-disabled-keyboard-operable':
+    'the user is not meant to be able to change this state, but pressing Space on the checkbox turned it checked',
 };
 
 export function expectedMutationFailure(

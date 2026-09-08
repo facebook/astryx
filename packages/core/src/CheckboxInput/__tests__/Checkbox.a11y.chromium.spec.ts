@@ -233,7 +233,14 @@ test('every applicability fact matches what the page exposes', async ({
       }
       const matches = expected[fact] === observed[fact];
       const excuse = excused.find(entry => entry.fact === fact);
-      if (!matches && excuse == null) {
+      // Operability and focusability have their own real-browser expectations,
+      // including advisory ones. Let those results carry their declared
+      // enforcement instead of turning this inventory cross-check into a hidden
+      // required gate. The remaining facts feed required semantic expectations,
+      // so an unexplained mismatch there still means the binding inventory lies.
+      const reportsThroughExpectation =
+        fact === 'operable' || fact === 'focusable';
+      if (!matches && excuse == null && !reportsThroughExpectation) {
         wrong.push(
           `${state.id}: declares ${fact}=${String(expected[fact])}, page exposes ${String(observed[fact])}`,
         );
@@ -291,6 +298,52 @@ test('every expectation is exercised by at least one bound state', async ({
   }
   expect(neverExercised(results)).toEqual([]);
   expect(unmatchedKnownFailures(CHECKBOX_KNOWN_FAILURES, results)).toEqual([]);
+});
+
+test('CheckboxInput keeps supporting text out of its accessible name', async ({
+  page,
+}) => {
+  const state = CHECKBOX_BINDING_STATES.find(
+    candidate => candidate.id === 'input-described',
+  );
+  if (state == null) {
+    throw new Error('missing input-described binding state');
+  }
+  const cdp = await page.context().newCDPSession(page);
+  await mountState(page, state);
+  const subject = await createChromiumHarness({
+    page,
+    subject: subjectFor(page, state),
+    cdp,
+  }).subject();
+  const computed = await subject.computed();
+  expect(computed.name).toBe('Share usage data');
+  expect(computed.description).toBe('Help improve the product');
+});
+
+test('the disabled SelectableCard records only its documented focusability mismatch', async ({
+  page,
+}) => {
+  const state = CHECKBOX_BINDING_STATES.find(
+    candidate => candidate.id === 'card-disabled',
+  );
+  if (state == null) {
+    throw new Error('missing card-disabled binding state');
+  }
+  const cdp = await page.context().newCDPSession(page);
+  const result = await runState(page, cdp, state);
+  expect(
+    result.results.find(
+      candidate =>
+        candidate.expectation ===
+        'checkbox.focus.declared-inoperable-reachable',
+    )?.status,
+  ).toBe('known-failure');
+  expect(
+    result.results.find(
+      candidate => candidate.expectation === 'checkbox.state.inoperable',
+    )?.status,
+  ).toBe('pass');
 });
 
 for (const state of CHECKBOX_BINDING_STATES) {

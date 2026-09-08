@@ -94,6 +94,7 @@ function knownFailure(overrides: Partial<KnownFailure> = {}): KnownFailure {
     state: 'default',
     evidenceLayer: 'dom',
     failureEquals: 'the stub outcome is missing entirely',
+    standardsReference: 'WCAG 2.2 4.1.2 Name, Role, Value (Level A)',
     userImpact: 'The stub does nothing for the user.',
     issue: 'https://github.com/facebook/astryx/issues/1',
     reason: 'Recorded by the migration; the fix is its own change.',
@@ -270,12 +271,16 @@ describe('runBinding', () => {
       expect(blockingResults([result])).toHaveLength(1);
     });
 
-    it('fails in a state the record does not name', async () => {
-      const result = await run(contractThat(missing), {
-        state: 'another-state',
-        knownFailures: [knownFailure()],
-      });
+    it('reports an advisory failure in a state the record does not name', async () => {
+      const result = await run(
+        contractThat(missing, {enforcement: 'advisory'}),
+        {
+          state: 'another-state',
+          knownFailures: [knownFailure()],
+        },
+      );
       expect(result.results[0]?.status).toBe('fail');
+      expect(blockingResults([result])).toEqual([]);
     });
 
     it('fails at an evidence layer the record does not name', async () => {
@@ -295,7 +300,7 @@ describe('runBinding', () => {
       expect(blockingResults([result])).toHaveLength(1);
     });
 
-    it('blocks a different advisory failure when a known record was consulted', async () => {
+    it('reports a different advisory failure when a known record was consulted', async () => {
       const result = await run(
         contractThat(
           () => {
@@ -307,7 +312,7 @@ describe('runBinding', () => {
       );
       expect(result.results[0]?.status).toBe('fail');
       expect(result.results[0]?.knownFailure).toBeDefined();
-      expect(blockingResults([result])).toHaveLength(1);
+      expect(blockingResults([result])).toEqual([]);
     });
 
     it('accepts a record matched by exactly one executed result', async () => {
@@ -339,7 +344,12 @@ describe('runBinding', () => {
         },
       );
       expect(result.results[0]?.status).toBe('unexpected-pass');
-      expect(result.results[0]?.detail).toContain('remove the known-failure');
+      expect(result.results[0]?.detail).toContain(
+        'remove this stale known-failure',
+      );
+      expect(result.results[0]?.detail).toContain(
+        'close the issue only when no remaining records refer to it',
+      );
       expect(blockingResults([result])).toHaveLength(1);
     });
   });
@@ -361,6 +371,16 @@ describe('runBinding', () => {
 });
 
 describe('the report keeps its facts apart', () => {
+  it('prints the source and failure detail for a report-only advisory result', async () => {
+    const result = await run(contractThat(missing, {enforcement: 'advisory'}));
+    const text = formatReport(
+      summarize(contractThat(missing, {enforcement: 'advisory'}), [result]),
+    );
+    expect(text).toContain('WCAG 2.2 4.1.2 Name, Role, Value (A)');
+    expect(text).toContain('the stub outcome is missing entirely');
+    expect(blockingResults([result])).toEqual([]);
+  });
+
   it('counts each status separately and quotes no score', async () => {
     const contract = contractThat(missing);
     const failing = await run(contract);
