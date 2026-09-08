@@ -63,5 +63,14 @@
   {
     "component": "core/IconButton",
     "reason": "IconButton is a thin wrapper that renders Button with `isIconOnly`, adding no layout, no positioning, and no directional affordance of its own, so it inherits `core/Button`'s verification above exactly. Its single icon is centred in a square control, which has no reading direction to mirror."
+  },
+  {
+    "component": "core/SelectableCard",
+    "reason": "SelectableCard renders content in normal flow inside a symmetric Card. Its hover overlay and selected ring cover all four edges equally, its source uses no physical left/right positioning or directional glyphs, and its checkbox interaction uses only pointer, Space, Enter, and Tab rather than inline-direction keys. Every current story therefore has no component-owned visual or behavioral RTL difference for the audit to measure.",
+    "evidence": {
+      "apps/storybook/stories/SelectableCard.stories.tsx": "sha256:35704da575bb80fc580309a5d4182ab4569abbd1449c665f69f1f00767b5790b",
+      "packages/core/src/SelectableCard/SelectableCard.tsx": "sha256:5fa8fcf087296e33415a2696b91e478608b737506f26775715132a3a63e9218e",
+      "packages/core/src/SelectableCard/index.ts": "sha256:9cf677856807a09ee444ce68b21118bca9729592485f892da7e0bb64ee1d7501"
+    }
   }
 ]
