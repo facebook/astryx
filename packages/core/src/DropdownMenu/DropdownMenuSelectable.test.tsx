@@ -8,6 +8,7 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {useState} from 'react';
 import userEvent from '@testing-library/user-event';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuCheckboxItem} from './DropdownMenuCheckboxItem';
@@ -133,6 +134,36 @@ describe('DropdownMenuCheckboxItem', () => {
 });
 
 describe('DropdownMenuRadioGroup / RadioItem', () => {
+  it('keeps option-2 unchecked until it is activated', async () => {
+    const user = userEvent.setup();
+
+    function RadioPreview() {
+      const [value, setValue] = useState('option-1');
+      return (
+        <DropdownMenu button={{label: 'Sort'}}>
+          <DropdownMenuRadioGroup
+            value={value}
+            onChange={setValue}
+            label="Radio group">
+            <DropdownMenuRadioItem value="option-2" label="Option 2" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+      );
+    }
+
+    render(<RadioPreview />);
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+
+    const option = screen.getByRole('menuitemradio', {
+      name: 'Option 2',
+      hidden: true,
+    });
+    expect(option).toHaveAttribute('aria-checked', 'false');
+
+    await user.click(option);
+    expect(option).toHaveAttribute('aria-checked', 'true');
+  });
+
   it('renders a named group with radios reflecting the selected value', async () => {
     const user = userEvent.setup();
     render(

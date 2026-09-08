@@ -114,6 +114,8 @@ export type {
   DebugSchemaVersion,
   DebugOutcome,
   DebugOptionSource,
+  DebugResultKind,
+  DebugInvocationSource,
   DebugEventError,
   DebugEventOutput,
   DebugEventEnv,

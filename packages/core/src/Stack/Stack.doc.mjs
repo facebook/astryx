@@ -39,6 +39,17 @@ export const docs = {
       displayName: 'Stack',
       description:
         'Unified stack layout component with a direction prop. Use direction="horizontal" for left-to-right flow or direction="vertical" (default) for top-to-bottom. For convenience, HStack and VStack are pre-configured wrappers.',
+      playground: {
+        defaults: {
+          direction: 'horizontal',
+          gap: 2,
+          children: [
+            {__element: 'Card', props: {padding: 3}, children: 'Item 1'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 2'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 3'},
+          ],
+        },
+      },
       props: [
         {
           name: 'direction',
@@ -174,6 +185,16 @@ export const docs = {
       displayName: 'H Stack',
       description:
         'Horizontal stack for arranging items left-to-right. Supports polymorphic rendering.',
+      playground: {
+        defaults: {
+          gap: 2,
+          children: [
+            {__element: 'Card', props: {padding: 3}, children: 'Item 1'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 2'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 3'},
+          ],
+        },
+      },
       props: [
         {
           name: 'gap',
@@ -301,6 +322,16 @@ export const docs = {
       displayName: 'V Stack',
       description:
         'Vertical stack for arranging items top-to-bottom. Supports polymorphic rendering.',
+      playground: {
+        defaults: {
+          gap: 2,
+          children: [
+            {__element: 'Card', props: {padding: 3}, children: 'Item 1'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 2'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 3'},
+          ],
+        },
+      },
       props: [
         {
           name: 'gap',
@@ -423,6 +454,13 @@ export const docs = {
       displayName: 'Stack Item',
       description:
         'Stack item for controlling individual item behavior within a stack. Supports polymorphic rendering.',
+      playground: {
+        wrapper: {component: 'HStack', props: {gap: 2, width: 300}},
+        defaults: {
+          size: 'fill',
+          children: {__element: 'Card', props: {padding: 3}, children: 'Fills the row'},
+        },
+      },
       props: [
         {
           name: 'size',

@@ -33,7 +33,7 @@ function Harness({
   handleProps?: Partial<ResizeHandleProps>;
 }) {
   const region = useResizable(
-    config ?? {defaultSize: 200, minSizePx: 100, maxSizePx: 400},
+    config ?? {defaultSize: 200, minSize: 100, maxSize: 400},
   );
   return (
     <ResizeHandle resizable={region.props} label="Resize" {...handleProps} />
@@ -141,7 +141,12 @@ describe('ResizeHandle', () => {
   it('resizes along the block axis for a vertical handle', () => {
     render(
       <Harness
-        config={{defaultSize: 200, minSizePx: 100, maxSizePx: 400}}
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          direction: 'vertical',
+        }}
         handleProps={{direction: 'vertical'}}
       />,
     );
@@ -157,13 +162,32 @@ describe('ResizeHandle', () => {
     expect(separator).toHaveAttribute('aria-valuenow', '200');
   });
 
+  it('warns when the handle and hook use different axes', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          direction: 'vertical',
+        }}
+        handleProps={{direction: 'horizontal'}}
+      />,
+    );
+    expect(warn).toHaveBeenCalledWith(
+      'ResizeHandle: direction="horizontal" but its useResizable region is ' +
+        '"vertical". They must match: the hook measures one axis and the ' +
+        'handle drags the other.',
+    );
+    warn.mockRestore();
+  });
+
   it('collapses on Enter when the region is collapsible', () => {
     render(
       <Harness
         config={{
           defaultSize: 200,
-          minSizePx: 100,
-          maxSizePx: 400,
+          minSize: 100,
+          maxSize: 400,
           collapsible: true,
         }}
       />,
@@ -183,8 +207,8 @@ describe('ResizeHandle', () => {
       <Harness
         config={{
           defaultSize: 200,
-          minSizePx: 100,
-          maxSizePx: 400,
+          minSize: 100,
+          maxSize: 400,
           collapsible: true,
         }}
       />,
@@ -204,8 +228,8 @@ describe('ResizeHandle', () => {
       <Harness
         config={{
           defaultSize: 200,
-          minSizePx: 100,
-          maxSizePx: 400,
+          minSize: 100,
+          maxSize: 400,
           collapsible: true,
         }}
       />,
@@ -294,6 +318,48 @@ describe('ResizeHandle', () => {
 
     fireEvent.pointerMove(hitArea, {pointerId: 1, clientX: 30, clientY: 0});
     expect(resizable._onResizeMove).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['pointercancel', fireEvent.pointerCancel],
+    ['lostpointercapture', fireEvent.lostPointerCapture],
+  ])('tells the region the gesture is over on %s', (_name, fire) => {
+    // A cancelled drag is not a resize end, but it IS the end of the gesture:
+    // the region freezes its percentage basis for the duration of a drag, and
+    // without this it stays frozen at the container size from grab time.
+    const resizable = {...makeResizable(), _onResizeCancel: vi.fn()};
+    render(<ResizeHandle resizable={resizable} label="Resize" />);
+    const hitArea = getHitArea();
+
+    fireEvent.pointerDown(hitArea, {pointerId: 1, clientX: 0, clientY: 0});
+    fire(hitArea, {pointerId: 1});
+    expect(resizable._onResizeCancel).toHaveBeenCalledTimes(1);
+    expect(resizable._onResizeEnd).not.toHaveBeenCalled();
+  });
+
+  it('does not report a cancel for a drag that ended normally', () => {
+    const resizable = {...makeResizable(), _onResizeCancel: vi.fn()};
+    render(<ResizeHandle resizable={resizable} label="Resize" />);
+    const hitArea = getHitArea();
+
+    fireEvent.pointerDown(hitArea, {pointerId: 1, clientX: 0, clientY: 0});
+    fireEvent.pointerUp(hitArea, {pointerId: 1, clientX: 30, clientY: 0});
+    expect(resizable._onResizeEnd).toHaveBeenCalledTimes(1);
+    // lostpointercapture follows every release; the drag is already cleared.
+    fireEvent.lostPointerCapture(hitArea, {pointerId: 1});
+    expect(resizable._onResizeCancel).not.toHaveBeenCalled();
+  });
+
+  it('tells the region the gesture is over when unmounted mid-drag', () => {
+    // The region outlives the handle here, so nothing else would release it.
+    const resizable = {...makeResizable(), _onResizeCancel: vi.fn()};
+    const {unmount} = render(
+      <ResizeHandle resizable={resizable} label="Resize" />,
+    );
+    fireEvent.pointerDown(getHitArea(), {pointerId: 1, clientX: 0, clientY: 0});
+    unmount();
+    expect(resizable._onResizeCancel).toHaveBeenCalledTimes(1);
+    expect(resizable._onResizeEnd).not.toHaveBeenCalled();
   });
 
   it('stops driving the region and releases body styles when unmounted mid-drag', () => {
@@ -397,7 +463,17 @@ describe('ResizeHandle', () => {
     ['horizontal' as const, 'translateX'],
     ['vertical' as const, 'translateY'],
   ])('offsets the %s grab zone along the pill axis only', (direction, axis) => {
-    render(<Harness handleProps={{direction, pillPlacement: 'start'}} />);
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          direction,
+        }}
+        handleProps={{direction, pillPlacement: 'start'}}
+      />,
+    );
     const hitArea = getSeparator().firstElementChild as HTMLElement;
     const translates = (hitArea.getAttribute('style') ?? '')
       .split(';')

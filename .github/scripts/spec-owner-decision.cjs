@@ -15,12 +15,62 @@ const GATE_STATUS_CONTEXT = 'spec-owner-approval';
 const READY_STATUS_PREFIX = 'spec-owner-ready/';
 const TRUSTED_STATUS_CREATOR = 'github-actions[bot]';
 
+// The workflow trigger filters comments with GitHub's `startsWith` against the
+// raw body, which neither trims nor lowercases. Every parser below applies the
+// same precondition, so a comment the trigger drops can never be read as a
+// decision by a run started for some other event.
+const OWNER_COMMAND_PREFIXES = ['/approve-spec', '/revoke-spec'];
+
+function isDispatchableOwnerCommand(body) {
+  return (
+    typeof body === 'string' &&
+    OWNER_COMMAND_PREFIXES.some(prefix => body.startsWith(prefix))
+  );
+}
+
 function parseOwnerCommand(body, headSha) {
+  if (!isDispatchableOwnerCommand(body)) return null;
+  // The command prefix must match the trigger exactly, but a commit SHA is
+  // case-insensitive everywhere else in git and GitHub. Accept either casing
+  // rather than silently ignoring a copy-pasted uppercase head.
   const match = body
     .trim()
-    .match(/^\/(approve|revoke)-spec\s+([0-9a-f]{40})$/i);
-  if (!match || headSha !== match[2].toLowerCase()) return null;
-  return match[1].toLowerCase() === 'approve';
+    .match(/^\/(approve|revoke)-spec\s+([0-9a-fA-F]{40})$/);
+  if (!match || headSha.toLowerCase() !== match[2].toLowerCase()) return null;
+  return match[1] === 'approve';
+}
+
+/**
+ * Recognize that a comment was meant as an owner command, whatever it names.
+ * Only the exact-head form in `parseOwnerCommand` decides the gate; this looser
+ * shape exists so a near-miss command is answered instead of ignored.
+ */
+function parseOwnerCommandIntent(body) {
+  if (!isDispatchableOwnerCommand(body)) return null;
+  const match = body
+    .trimEnd()
+    .match(/^\/(approve|revoke)-spec(?![-\w])([\s\S]*)$/);
+  if (!match) return null;
+  return {verb: match[1], argument: match[2].trim()};
+}
+
+/**
+ * Explain why a recognized owner command does not decide the gate, or return
+ * null when it does. The reasons are the two silent failures owners hit: a
+ * command that names no full head SHA, and one that names a superseded commit.
+ */
+function describeOwnerCommandProblem(intent, headSha) {
+  if (!intent) return null;
+  if (!intent.argument) {
+    return 'it did not name a commit';
+  }
+  if (!/^[0-9a-f]{40}$/i.test(intent.argument)) {
+    return 'it did not name exactly one full 40-character commit SHA';
+  }
+  if (intent.argument.toLowerCase() !== headSha.toLowerCase()) {
+    return `it named ${intent.argument.slice(0, 7)}, which is not the current head`;
+  }
+  return null;
 }
 
 function candidateTime(candidate) {
@@ -162,7 +212,12 @@ function isTrustedWorkflowStatus(status, repository) {
   );
 }
 
-function parseReadyAttestations(statuses, {repository, headSha}) {
+function parseReadyAttestations(statuses, {repository, headSha, owners}) {
+  // A ready marker is only design-group evidence, and only from a handle that
+  // is a design owner *now*. Markers published before that rule existed, or
+  // by someone since removed from .github/DESIGNOWNERS, are historical noise
+  // and must not authorize anything.
+  const allowed = new Set((owners ?? []).map(owner => owner.toLowerCase()));
   const attestations = [];
   for (const status of statuses) {
     if (
@@ -175,7 +230,7 @@ function parseReadyAttestations(statuses, {repository, headSha}) {
     const owner = status.context
       .slice(READY_STATUS_PREFIX.length)
       .toLowerCase();
-    if (!/^[a-z0-9-]+$/.test(owner)) continue;
+    if (!/^[a-z0-9-]+$/.test(owner) || !allowed.has(owner)) continue;
     const match = status.description?.match(
       /^Owner ready at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)\.$/,
     );
@@ -241,13 +296,17 @@ function requiresOwnerApproval(records, options = {}) {
 
 module.exports = {
   GATE_STATUS_CONTEXT,
+  OWNER_COMMAND_PREFIXES,
   READY_STATUS_PREFIX,
   canonicalRunUrl,
+  describeOwnerCommandProblem,
+  isDispatchableOwnerCommand,
   newestGateRun,
   parseAuthority,
   parseCanonicalRunId,
   parseKind,
   parseOwnerCommand,
+  parseOwnerCommandIntent,
   parseOwnerFile,
   parseReadyAttestations,
   requiredApprovalGroups,

@@ -88,24 +88,23 @@ A public API proposal is admitted only when it passes both gates:
   may expose a narrower option set while the package-internal implementation
   accepts wider semantic options under that same operation. Add another operation
   only for genuinely distinct caller-owned intent with a different contract.
-- **FR12 — Mechanical screening does not outrun contract coverage.** Every API
-  addition or semantic change is rejected now when the pull request lacks a
-  readable semantic delta or fails to update or add the canonical owning record.
-  Component-local semantics belong in the component spec; family-, architecture-,
-  or system-owned semantics update that owner instead. A draft record is valid
-  review context but not policy. Mechanical review also rejects derivable choices,
-  overloaded inputs, hidden conditional precedence, and duplicate operations now.
-  Only rejection because the canonical owner lacks `current` authority is deferred
-  until a current policy explicitly activates coverage enforcement for the
-  affected scope.
+- **FR12 — Mechanical screening does not outrun contract coverage.** Every public
+  API addition or semantic behavior change identifies its exact before → after,
+  canonical owner, and applicable current record before acceptance. Component-local
+  semantics belong in the component spec; family-, architecture-, or system-owned
+  semantics update that owner instead. A draft record is valid review context but
+  not policy and cannot clear the authority gate. Mechanical review also rejects
+  derivable choices, overloaded inputs, hidden conditional precedence, and
+  duplicate operations.
 - **FR13 — Surviving changes make the semantic delta explicit.** Owner review
-  receives a link to the canonical owner, one sentence stating the semantic
-  before → after, the applicable review classification, and representative syntax
-  only when public syntax changes.
-- **FR14 — Contract restorations are preserves.** A fix that restores a current
-  contract or standard is classified `preserves` and supplies regression evidence.
-  It does not create a new API decision or semantic spec delta unless consumer
-  usage or a documented promise also changes.
+  receives a link to the canonical current owner, one sentence stating the semantic
+  before → after, the applicable authority result from
+  `architecture:knowledge-contracts`, and representative syntax only when public
+  syntax changes.
+- **FR14 — Contract restorations are preserves.** A fix is `preserves` only when it
+  restores a current contract or standard and adds no public API or public behavior
+  beyond that authority. It supplies regression evidence. Any additional public
+  delta independently follows FR12 even when delivered in a bug-fix pull request.
 - **FR15 — Invalid states are prevented where practical.** Public APIs prevent
   bad results when doing so does not make the API harder to understand. Make
   statically knowable invalid combinations unrepresentable where practical;
@@ -124,6 +123,38 @@ A public API proposal is admitted only when it passes both gates:
   naming the input after one mechanism. Parallel inputs do not create hidden
   conditional precedence: an override is valid only when its name, type, and
   behavior across every combination form an explicit coherent contract.
+- **FR17 — Public module and utility function names disclose one atomic role.**
+  Choose a verb from the function's primary caller-observable result and side
+  effects, not from an internal implementation step. Distinguish construction,
+  inspection, lookup, conversion, registration, and guaranteed state. `define*`
+  constructs or normalizes and returns a durable typed value used by a supported
+  consumer. It may reuse validation as a precondition, but a function that only
+  inspects input or returns the same input unchanged is not `define*`. `validate*`
+  and `check*` inspect input and return structured results; their contracts state
+  which failures are returned and which conditions throw. If construction,
+  validation, registration, or another capability is public, expose it as its own
+  callable function rather than hiding two public roles behind one name. A released
+  mismatch is deprecated and migrated under the compatibility contract, not
+  silently renamed. Other verbs receive rules only when shipped repository
+  evidence supports them. Component prop and event naming remains separate. CLI
+  command verbs and their programmatic command twins belong to the
+  [CLI surface architecture](../../architecture/cli-surface.md) and CLI
+  conventions; this requirement does not define their command semantics.
+- **FR18 — Public primitives support composition intentionally.** Astryx prefers
+  public contracts for stable behavior that product builders must compose,
+  coordinate, or build on across callsites. That preference does not promote raw
+  implementation machinery. A proposed primitive API names semantic caller intent,
+  defines accepted and rejected operations and outcomes, and receives an owning
+  current contract before acceptance. Internal focus targets, gesture memory, DOM
+  slots, timers, and equivalent mechanisms stay private unless independently
+  admitted as durable caller-owned concepts.
+- **FR19 — Bug fixes do not smuggle API design.** A bug fix that can restore current
+  behavior without changing public API or behavior beyond current authority MUST do
+  so. Any additional public delta follows `architecture:knowledge-contracts`
+  independently: existing current authority may already settle it, and only absent
+  authority requires a new owner decision. Implementation convenience, removal of
+  an internal wrapper, or exposure of existing internal fields is not evidence that
+  an API should exist.
 
 ### Platform support
 
@@ -136,54 +167,41 @@ A public API proposal is admitted only when it passes both gates:
 
 ## Current-state impact
 
-- API review guidance must require both the caller-need argument and the
-  dependable-contract argument before new public API is accepted.
-- Public API additions and semantic changes that overload an input or create
-  hidden conditional precedence are rejected now under FR16, even when the
-  canonical owner is draft or missing. Missing `current` authority alone remains
-  staged and non-blocking.
-- Before broad rejection for missing `current` authority on a canonical owning
-  record is activated, a blinded historical benchmark must measure both correct
-  pauses and false blocks. A pattern of pausing clearly justified APIs means the
-  gate needs refinement.
+- API review guidance requires both the caller-need argument and the dependable
+  current-contract argument before new public API is accepted.
+- Every public API addition and public behavior change identifies current committed
+  authority, then follows the result and disposition owned by
+  `architecture:knowledge-contracts`. This spec does not redefine those outcomes.
+- Exact-head owner discussion or approval may supply the decision evidence, but it
+  does not become reusable or acceptance-clearing authority until the canonical
+  owning record commits that decision as `current`.
 - Component specs own component-local semantic API contracts, including public
   hooks and utilities they explicitly co-own. Family, architecture, and system
   records own their respective shared semantics. The component's `.doc.mjs`
   remains the consumer syntax and reference authority.
 - Component specs inherit current family contracts and record only local public
   concepts, additions, and explicit exceptions; they do not copy shared rules.
+- Public module and utility function review compares the verb with the function's
+  returned value, validation contract, side effects, and supported consumers.
+  Component prop/event naming and CLI command semantics keep their separate owners.
+  Existing released mismatches remain compatible while an explicit deprecation and
+  migration is designed; this rule does not silently rename or change them.
 
-### Staged contract coverage
+### Current authority dependency
 
-Semantic contract coverage is incomplete. During the staged rollout:
+For every public API or public behavior delta, identify the canonical owner and
+apply the routing defined by `architecture:knowledge-contracts`. This spec owns
+API admission and semantic-shape requirements; it does not copy review outcomes
+or pull-request disposition.
 
-1. The pull request states the semantic before → after, identifies the canonical
-   owner by scope, and updates or adds that record. Component-local semantics use
-   the component spec; shared family, architecture, or system semantics use that
-   owner. A draft record is acceptable review context and names its intended
-   owner, but it is not policy.
-2. Review applies only current component, family, architecture, and system rules.
-   A draft routes an unresolved `novel-human` delta to the owner; it cannot clear
-   the gate or be cited as `settled`.
-3. The owner decides in the pull request. Exact-head owner approval settles only
-   that change. An accepted contract and its evidence remain in the canonical
-   owning record; rejected direction is removed unless it protects a durable
-   boundary.
-4. An owning record becomes `current` only after its local requirements,
-   verification, relationships, approval, and every applicable acceptance
-   prerequisite in current architecture are complete. For component specs, this
-   includes the historical benchmark and pull-request enforcement required by the
-   current knowledge contract. Only then can later reviews reuse it as policy.
+A draft record may provide context and route the unresolved question, but it
+cannot clear current authority. Exact-head owner discussion supplies decision
+evidence; the canonical record must commit an accepted decision as `current`
+before implementation acceptance.
 
-Missing `current` authority on a canonical owning record becomes a mechanical
-rejection only after a current policy change explicitly activates enforcement for
-a named scope, that scope has current contract coverage, and the historical
-benchmark has passed. Until then, missing current authority uses the staged owner
-path rather than rejecting the API.
-
-That deferral applies only to authority coverage. It does not defer current
-cross-component rules: an API addition or semantic change that violates FR16 is
-rejected now even when its canonical component owner is draft or missing.
+This authority dependency does not make public API undesirable. Once current
+authority settles the semantic contract, ordinary correctness and evidence review
+still determine whether the implementation satisfies it.
 
 - Existing props and operations are not removed automatically. They are evaluated
   when touched, when adjacent API is proposed, or when they cause a concrete
@@ -210,19 +228,22 @@ rejected now even when its canonical component owner is draft or missing.
 
 ## Verification
 
-| Contract   | Verification                                                                       | Representative states                                                      | Mutation or failure expectation                                                                                                       |
-| ---------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1, FR5   | Blinded historical API review benchmark                                            | recent utility, mid-range, and composition API additions                   | Reviewer accepts a prop without identifying caller-owned semantic variation                                                           |
-| FR2, FR3   | Component tests and real-browser layout evidence                                   | content, container, viewport, parent context, and platform variation       | Public API exposes a value the component can derive reliably                                                                          |
-| FR4, FR6   | API surface review for utility, mid-range, and composition components              | existing slot, theme, style, layout, and behavior seams                    | High-level component accumulates one-off tuning props instead of using its owning layer                                               |
-| FR7, FR8   | Consumer examples and behavior tests                                               | default, each public value, composed use, and unsupported use              | Meaning depends on implementation knowledge or tests assert only classes/data attributes                                              |
-| FR9, FR10  | Component ownership and accessibility review                                       | owned content, external sibling content, missing or incorrect context      | A state is correct only when the caller fulfills a promise the component cannot verify                                                |
-| FR11       | Public and package-internal operation inventory; PR #5373                          | one component module and one semantic action                               | One semantic action gains parallel operation names distinguished only by implementation needs                                         |
-| FR12, FR13 | PR delta/canonical-owner update check, staged owner routing, and blinded benchmark | missing delta/update, draft or current authority, and owner-ready delta    | Missing delta/owner update passes, missing current authority dead-ends rollout, draft becomes policy, or automation decides semantics |
-| FR14       | Focused regression tests against the current contract or standard                  | defect state and representative unchanged states                           | A restoration invents a new decision or lacks evidence that the regression stays fixed                                                |
-| FR15       | Type-level constraints plus runtime validation and behavior tests                  | invalid values, unsupported combinations, and legitimate composition       | The API silently renders a broken state or prevents a valid composition                                                               |
-| FR16       | Full value-domain, input-shape, and parallel-combination contract review           | semantic variants, raw or palette values, explicit overrides, and defaults | One value or shape switches the controlled axis, or a parallel input silently changes precedence                                      |
-| Burden     | Benchmark classification: allow, correct pause, false block, not applicable        | recent accepted and rejected API changes                                   | Clearly justified APIs are repeatedly paused or blocked without surfacing a real decision                                             |
+| Contract   | Verification                                                                                           | Representative states                                                                         | Mutation or failure expectation                                                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR1, FR5   | Blinded historical API review benchmark                                                                | recent utility, mid-range, and composition API additions                                      | Reviewer accepts a prop without identifying caller-owned semantic variation                                                                            |
+| FR2, FR3   | Component tests and real-browser layout evidence                                                       | content, container, viewport, parent context, and platform variation                          | Public API exposes a value the component can derive reliably                                                                                           |
+| FR4, FR6   | API surface review for utility, mid-range, and composition components                                  | existing slot, theme, style, layout, and behavior seams                                       | High-level component accumulates one-off tuning props instead of using its owning layer                                                                |
+| FR7, FR8   | Consumer examples and behavior tests                                                                   | default, each public value, composed use, and unsupported use                                 | Meaning depends on implementation knowledge or tests assert only classes/data attributes                                                               |
+| FR9, FR10  | Component ownership and accessibility review                                                           | owned content, external sibling content, missing or incorrect context                         | A state is correct only when the caller fulfills a promise the component cannot verify                                                                 |
+| FR11       | Public and package-internal operation inventory; PR #5373                                              | one component module and one semantic action                                                  | One semantic action gains parallel operation names distinguished only by implementation needs                                                          |
+| FR12, FR13 | Public-delta/canonical-owner check and exact authority routing                                         | missing delta/update; matching, contradictory, draft-only, or absent authority                | Missing delta/owner update passes, contradiction is accepted, draft becomes policy, or automation decides semantics                                    |
+| FR14       | Focused regression tests against the current contract or standard                                      | defect state, representative unchanged states, and any adjacent public delta                  | A restoration invents a new decision, lacks regression evidence, or hides an additional public change under a bug-fix label                            |
+| FR15       | Type-level constraints plus runtime validation and behavior tests                                      | invalid values, unsupported combinations, and legitimate composition                          | The API silently renders a broken state or prevents a valid composition                                                                                |
+| FR16       | Full value-domain, input-shape, and parallel-combination contract review                               | semantic variants, raw or palette values, explicit overrides, and defaults                    | One value or shape switches the controlled axis, or a parallel input silently changes precedence                                                       |
+| FR17       | Public module/utility export inventory plus implementation, test, consumer, and release-history review | construction, inspection, lookup, conversion, registration, hooks, and released compatibility | A verb hides the returned value or side effect, two public roles are fused, a non-hook utility uses `use*`, or a released mismatch is silently renamed |
+| FR18       | Multi-caller composition scenarios plus owning-contract review                                         | shared semantic operation, internal-only mechanism, and two representative consumers          | Product builders cannot compose stable behavior, or implementation fields are exposed without caller-owned semantics                                   |
+| FR19       | Bug-fix before/after authority diff plus public-surface and behavior inventory                         | pure restoration, restoration plus novel API, and internal-wrapper removal                    | A bug-fix label bypasses human hold, or internal mechanics become public because exposure is convenient                                                |
+| Burden     | Benchmark classification: allow, correct pause, false block, not applicable                            | recent accepted and rejected API changes                                                      | Clearly justified APIs are repeatedly paused or blocked without surfacing a real decision                                                              |
 
 ## Decision log
 
@@ -269,49 +290,44 @@ Rejected: creating a parallel operation because one internal call path needs
 additional control. That choice exposes internal call-path differences and leaves
 maintainers or consumers to distinguish two names for one action.
 
-### DEC-4 — API review separates objective rejection from owner judgment
+### DEC-4 — API review separates mechanical evidence from owner judgment
 
 **Reference:** `spec:AST-002/DEC-4`
-**Decider:** `cixzhang`, `2026-08-31`
+**Decider:** `cixzhang`, `2026-09-06`
 
-The API gate rejects a missing PR-readable semantic delta, a missing canonical-
-owner-record update, a derivable implementation choice, an overloaded input,
-hidden conditional precedence, or duplicate operation names for one semantic
-action now. Component-local semantics update the component spec; shared semantics
-update their family, architecture, or system owner. During rollout, that canonical
-record may be draft context routed to its owner; draft context never becomes
-policy. Only rejection because the canonical owner lacks `current` authority waits
-for a later current policy that activates enforcement for a covered, benchmarked
-scope. A surviving proposal is presented as an explicit semantic delta for the
-human owner to accept, reject, or refine. Automation does not make that judgment.
+Mechanical review inventories the exact public API and behavior delta, identifies
+the canonical owner, and rejects objective API-shape violations such as derivable
+choices, overloaded inputs, hidden conditional precedence, or duplicate operation
+names for one semantic action. It does not decide unsettled semantics.
 
-Rejected: asking owners to discover both mechanical defects and the intended
-semantic change from implementation code, or rejecting all API work until every
-component contract is current. Either path wastes human judgment or dead-ends the
-coverage rollout.
+When current authority does not settle a surviving proposal, route it privately to
+the human owner. The owner accepts, rejects, or refines the semantic contract; the
+accepted decision becomes review authority only after it is committed in the
+canonical record as `current`.
 
-### DEC-5 — Semantic contracts apply now; broad coverage rejection activates later
+Rejected: asking owners to discover mechanical defects from implementation code,
+treating generated evidence as a semantic decision, or publishing a contributor-
+facing verdict before the owner settles an absent contract.
+
+### DEC-5 — Public changes require committed current authority
 
 **Reference:** `spec:AST-002/DEC-5`
-**Decider:** `cixzhang`, `2026-08-31`
+**Decider:** `cixzhang`, `2026-09-06`
 
-Semantic API contracts apply now at their canonical owner, and the one-canonical-
-operation rule applies now to public and package-internal forms of the same
-semantic action. API changes that lack a PR-readable semantic delta or fail to
-update or add the canonical owning record are rejected now. Component-local
-semantics use the component spec; family-, architecture-, or system-owned
-semantics use that record. The canonical record may remain draft context routed
-to its owner.
+Every public API addition and public behavior change identifies applicable current
+committed authority before implementation acceptance. Draft records provide
+context and route questions, but they are not policy and cannot clear the gate.
+Exact-head owner discussion or approval is decision evidence, not a substitute for
+recording the accepted contract as current.
 
-Broad mechanical rejection because that canonical owner lacks `current`
-authority is not active. It requires a later current policy decision that names
-the enforced scope after that scope has current contract coverage and the
-historical benchmark shows the gate can block changes without unacceptable false
-rejections.
+Missing authority creates the private unsettled path owned by
+`architecture:knowledge-contracts`; it is not permission to accept the change and
+not an automatic contributor-facing rejection. After the canonical decision is
+current, review the implementation's exact head against it.
 
-Rejected: delaying semantic contract ownership until every owning record is
-current, or treating this decision as immediate authorization to reject every API
-change whose canonical owner is draft or missing.
+Rejected: the former staged exception that let one pull request proceed on owner
+approval while leaving its reusable contract draft or missing. That path made the
+same public behavior acceptable in one review and undiscoverable in the next.
 
 ### DEC-6 — Public inputs keep one semantic responsibility
 
@@ -338,6 +354,53 @@ while `success`, `warning`, and `error` mean tone plus a default themed icon, wi
 an optional `icon` that conditionally overrides representation. That shape would
 not pass current API review pending a canonical `component:Table` contract. This
 decision does not prescribe the replacement API.
+
+### DEC-7 — Public module and utility verbs disclose atomic roles
+
+**Reference:** `spec:AST-002/DEC-7`
+**Decider:** `cixzhang`, `2026-09-03`
+
+Choose a public module or utility function's verb from its primary
+caller-observable result and side effects, not from an internal implementation
+step. Distinguish construction, inspection, lookup, conversion, registration,
+and guaranteed state. `define*` constructs or normalizes and returns a durable
+typed value used by a supported consumer. Validation may be its precondition, but
+inspection or an unchanged identity result alone is not definition. `validate*`
+and `check*` inspect input and return structured results; their contracts state
+which failures are returned and which conditions throw.
+
+When construction, validation, registration, or another capability is public,
+each has its own callable role. A released mismatch follows an explicit
+deprecation and migration instead of a silent rename or behavior change. Other
+verbs receive repository-wide rules only when shipped evidence supports them.
+Component prop and event naming remains separate. CLI command verbs and their
+programmatic command twins remain with the CLI surface owner.
+
+Rejected: treating a function that only validates and returns its input as a
+`define*` function, returning a bare predicate from a public `validate*` or
+`check*` function, using `use*` for a non-hook utility, or hiding separately
+public registration inside a constructor without a compatibility plan.
+
+### DEC-8 — Public primitives are intentional semantic contracts
+
+**Reference:** `spec:AST-002/DEC-8`
+**Decider:** `cixzhang`, `2026-09-06`
+
+Prefer a public primitive when product builders need to compose stable behavior
+across callsites and the contract can name caller intent, operations, outcomes,
+and failure behavior without exposing implementation machinery. Record that
+contract as current before accepting the public surface.
+
+A bug fix does not create an exception. When it restores current authority, keep
+its API and behavior within that contract. Any additional public primitive or
+observable behavior follows `architecture:knowledge-contracts`: reuse an existing
+current decision when one settles the delta, and ask the owner only when authority
+is absent.
+
+Rejected: promoting internal focus targets, gesture memory, DOM slots, timers, or
+other existing fields merely because removing an internal wrapper or fixing one
+path becomes easier. Existing implementation is evidence of mechanics, not intent
+for permanent public API.
 
 ## Open questions
 

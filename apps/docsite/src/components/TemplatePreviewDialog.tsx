@@ -8,6 +8,10 @@
  * prev/next arrows to move quickly between templates in the gallery's
  * display order. Arrow keys (←/→) also navigate; Escape closes.
  *
+ * @input Template metadata, selected index, open state, and navigation callbacks.
+ * @output A responsive dialog with live preview and template actions.
+ * @position Shared preview controller for the templates gallery.
+ *
  * The header surfaces template metadata (name, description) on
  * the left. All controls cluster on the right of the header: a
  * copy-to-clipboard CLI scaffold command, an Open in Playground action,
@@ -22,6 +26,7 @@ import {
   useCallback,
   useEffect,
   useDeferredValue,
+  useRef,
   useState,
   useTransition,
 } from 'react';
@@ -41,14 +46,13 @@ import {Skeleton} from '@astryxdesign/core/Skeleton';
 import {Dialog} from '@astryxdesign/core/Dialog';
 import {Tooltip} from '@astryxdesign/core/Tooltip';
 import {TemplatePreviewSurface} from './TemplatePreviewSurface';
-import {buildPlaygroundHref} from './playgroundLink';
+import {buildTemplatePlaygroundHref} from './playgroundLink';
 import {trackCopy, trackOpenPlayground, trackNavigate} from '../lib/analytics';
 
 export interface TemplatePreviewItem {
   slug: string;
   name: string;
   description?: string;
-  source?: string;
   category?: string;
 }
 
@@ -103,6 +107,21 @@ const styles = stylex.create({
     width: '100%',
     minWidth: 0,
   },
+  // The CLI command shrinks before the buttons do, and stays on one line.
+  commandGroup: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  commandCode: {
+    flexShrink: 1,
+    minWidth: 0,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  noShrink: {
+    flexShrink: 0,
+  },
   skeletonOverlay: {
     position: 'absolute',
     insetInline: '16px',
@@ -146,7 +165,7 @@ function TemplatePreviewHeader({
   onCopyCommand,
   onClose,
 }: TemplatePreviewHeaderProps) {
-  const playgroundHref = item.source ? buildPlaygroundHref(item.source) : null;
+  const playgroundHref = buildTemplatePlaygroundHref(item.slug);
 
   const metadata = (
     <VStack
@@ -156,7 +175,7 @@ function TemplatePreviewHeader({
       }>
       <Heading level={2}>{item.name}</Heading>
       {item.description && (
-        <Text type="body" color="secondary">
+        <Text type="body" color="secondary" maxLines={2}>
           {item.description}
         </Text>
       )}
@@ -164,8 +183,11 @@ function TemplatePreviewHeader({
   );
 
   const copyButton = (
-    <HStack gap={2} vAlign="center">
-      <Code>{`npx @astryxdesign/cli template ${item.slug}`}</Code>
+    <HStack gap={2} vAlign="center" xstyle={styles.commandGroup}>
+      <Code
+        xstyle={
+          styles.commandCode
+        }>{`npx @astryxdesign/cli template ${item.slug}`}</Code>
       <Button
         variant="ghost"
         isIconOnly
@@ -173,11 +195,12 @@ function TemplatePreviewHeader({
         label={cmdCopied ? 'Copied!' : 'Copy install command'}
         icon={<Icon icon={cmdCopied ? 'check' : 'copy'} color="inherit" />}
         onClick={onCopyCommand}
+        xstyle={styles.noShrink}
       />
     </HStack>
   );
 
-  const playgroundButton = playgroundHref ? (
+  const playgroundButton = (
     <Button
       label="Open in Playground"
       variant="primary"
@@ -190,8 +213,9 @@ function TemplatePreviewHeader({
           category: item.category,
         });
       }}
+      xstyle={styles.noShrink}
     />
-  ) : null;
+  );
 
   const closeButton = (
     <Button
@@ -240,6 +264,30 @@ export function TemplatePreviewDialog({
 }: TemplatePreviewDialogProps) {
   const [cmdCopied, setCmdCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  // Release the top layer when this dialog is torn down while still open.
+  //
+  // `showModal()` makes the rest of the document inert, and `close()` is the
+  // only thing that undoes it — removing the element does not. Dialog closes on
+  // an `isOpen` transition, which never happens here: "Open in Playground" is a
+  // client-side navigation, so React tears this subtree down with the dialog
+  // still open and the playground arrives with an invisible modal holding the
+  // whole page inert, unclickable until a reload.
+  //
+  // The element is captured on mount rather than read during cleanup, because
+  // by cleanup time this tree is on its way out and `closest()` may no longer
+  // reach it. Teardown, not unmount: React destroys effects when a subtree is
+  // hidden too, which is what a router does to the outgoing route — and that is
+  // the path that was breaking.
+  const hostRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const dialog = hostRef.current?.closest('dialog');
+    return () => {
+      if (dialog?.open) {
+        dialog.close();
+      }
+    };
+  }, []);
 
   const count = items.length;
   const current = items[index];
@@ -331,7 +379,7 @@ export function TemplatePreviewDialog({
         }
         content={
           <LayoutContent isScrollable={false} padding={0}>
-            <div {...stylex.props(styles.body)}>
+            <div {...stylex.props(styles.body)} ref={hostRef}>
               <TemplatePreviewSurface
                 key={deferredCurrent.slug}
                 slug={deferredCurrent.slug}

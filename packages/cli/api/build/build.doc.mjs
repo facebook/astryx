@@ -59,7 +59,7 @@ export const doc = {
     {
       type: 'build.kit',
       description:
-        'The grouped composition kit: the echoed query, hasResults/directMatch flags, the closest page templates (≤3), drop-in block patterns (≤5), idea-specific components/hooks (≤6), and the always-on frame + foundation component-name arrays.',
+        'The grouped composition kit: the echoed query, hasResults/matchCount/directMatch fields, the closest page templates (≤3), drop-in block patterns (≤5), idea-specific components/hooks (≤6), and the always-on frame + foundation component-name arrays. Carries `hint` only when the kit came back thin — what to try instead, so a caller does not read a near-empty kit as "the package has nothing".',
     },
   ],
   throws: [

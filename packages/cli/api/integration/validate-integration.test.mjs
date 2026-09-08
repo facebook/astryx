@@ -68,10 +68,32 @@ describe('validate-integration API', () => {
     expect(errors).toBe(0);
   });
 
-  it('flags an unknown manifest key as invalid_manifest error', async () => {
+  it('reports an unknown manifest key as a warning, and still loads the rest', async () => {
+    // The manifest used to be parsed with a strict schema, so a single unknown
+    // key failed the parse — and an integration whose manifest fails to parse
+    // contributes NOTHING, taking its components, templates and codemods down
+    // with it on every consumer resolving an older CLI (#5119). A key this CLI
+    // does not know is almost always a key from a newer one.
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {
       manifest: `export default { components: './c', bogus: true };\n`,
+    });
+    const result = await validateLocalIntegration(pkgDir);
+    expect(byCode(result.issues, 'invalid_manifest')).toHaveLength(0);
+
+    const unknown = byCode(result.issues, 'unknown_manifest_key');
+    expect(unknown).toHaveLength(1);
+    expect(unknown[0].severity).toBe('warning');
+    expect(unknown[0].message).toContain('"bogus"');
+    // The declared root is still seen — it is missing on disk, which is the
+    // proof the rest of the manifest was read rather than discarded.
+    expect(byCode(result.issues, 'missing_root')).toHaveLength(1);
+  });
+
+  it('still flags a known manifest key of the wrong type as invalid_manifest', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default { components: 42 };\n`,
     });
     const result = await validateLocalIntegration(pkgDir);
     const manifestIssues = byCode(result.issues, 'invalid_manifest');

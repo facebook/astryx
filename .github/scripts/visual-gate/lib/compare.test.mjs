@@ -210,6 +210,66 @@ describe('compareCaptures', () => {
     expect(fs.existsSync(path.join(baselineDir, 'shots/c.png'))).toBe(true);
   });
 
+  it('prunes every reviewed removal when keys=all', () => {
+    const gate = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../gate.mjs');
+    const baselineDir = path.join(root, 'all-baseline');
+    const captureDir = path.join(root, 'all-release-capture');
+    fs.mkdirSync(path.join(baselineDir, 'shots'), {recursive: true});
+    fs.mkdirSync(path.join(captureDir, 'shots'), {recursive: true});
+    for (const [key, value] of [
+      ['b', [1, 1, 1]],
+      ['c', [2, 2, 2]],
+    ]) {
+      fs.writeFileSync(
+        path.join(baselineDir, `shots/${key}.png`),
+        png(1, 1, value),
+      );
+    }
+    fs.writeFileSync(
+      path.join(baselineDir, 'manifest.json'),
+      JSON.stringify(manifest({b: {sha256: 'b'}, c: {sha256: 'c'}})),
+    );
+    const current = manifest({a: {sha256: 'a'}});
+    current.context = {releasePlan: createReleasePlan([{key: 'a'}])};
+    fs.writeFileSync(
+      path.join(captureDir, 'manifest.json'),
+      JSON.stringify(current),
+    );
+    fs.writeFileSync(
+      path.join(captureDir, 'verdict.json'),
+      JSON.stringify({
+        status: 'changed',
+        removed: ['b', 'c'],
+        context: current.context,
+      }),
+    );
+
+    execFileSync(
+      process.execPath,
+      [
+        gate,
+        'accept',
+        '--baseline',
+        baselineDir,
+        '--out',
+        captureDir,
+        '--keys',
+        'all',
+        '--prune',
+        '--reason',
+        'Reviewed policy reduction',
+      ],
+      {encoding: 'utf8'},
+    );
+
+    const accepted = JSON.parse(
+      fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8'),
+    );
+    expect(Object.keys(accepted.shots)).toEqual([]);
+    expect(fs.existsSync(path.join(baselineDir, 'shots/b.png'))).toBe(false);
+    expect(fs.existsSync(path.join(baselineDir, 'shots/c.png'))).toBe(false);
+  });
+
   it('rejects caller-controlled canonical release scope', () => {
     const gate = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../gate.mjs');
     expect(() =>

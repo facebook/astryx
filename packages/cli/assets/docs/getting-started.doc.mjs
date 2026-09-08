@@ -81,11 +81,28 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Available themes: @astryxdesign/theme-neutral (muted minimal, a good starting point), @astryxdesign/theme-butter, @astryxdesign/theme-chocolate, @astryxdesign/theme-gothic (dark-only), @astryxdesign/theme-matcha, @astryxdesign/theme-stone, and @astryxdesign/theme-y2k. See `astryx docs theme` for the full theming guide.',
+          text: 'Available themes:',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            '`@astryxdesign/theme-neutral`: muted and minimal; a good starting point',
+            '`@astryxdesign/theme-butter`: warm, golden tones with blue accents',
+            '`@astryxdesign/theme-chocolate`: rich chocolate and caramel tones',
+            '`@astryxdesign/theme-gothic`: dark-only theme with ink and noir influences',
+            '`@astryxdesign/theme-matcha`: earthy greens and botanical tones',
+            '`@astryxdesign/theme-stone`: warm neutrals inspired by sandstone',
+            '`@astryxdesign/theme-y2k`: playful early-2000s pop aesthetic',
+          ],
         },
         {
           type: 'prose',
           text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. See the Cascade Layer Safety section in `astryx docs migration` before building screens.',
+        },
+        {
+          type: 'prose',
+          text: 'Run `astryx docs theme` for the full theming guide.',
         },
       ],
     },

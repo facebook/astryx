@@ -20,7 +20,7 @@ verified_by:
     foundation/response/error-codes.test.mjs,
     clients/cli/formatters/index.test.mjs,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-017/DEC-4]
 ---
 
 # CLI surface architecture
@@ -65,6 +65,9 @@ goes through the `Project` seam in `foundation/config`, which resolves the
 integrations named in `astryx.config`. Each integration is loaded
 independently, so one broken package degrades that package's contribution and
 never fails the run.
+
+AST-017 DEC-4 owns stable response-entry fields and requires their complete type,
+test, applicable text, and consumer-documentation projections.
 
 ## Boundaries and invariants
 
@@ -115,7 +118,8 @@ updated in the same pull request when it moves an invariant:
 
 - adding, removing, or renaming a command or subcommand;
 - adding an error code, or changing what an existing code means;
-- adding a field to the JSON envelope, or changing the shape of one;
+- a change to a stable JSON envelope or discriminated response-entry field
+  follows `spec:AST-017/DEC-4`;
 - adding a formatter, or writing to stdout from anywhere other than `emit` and
   `jsonOut`;
 - changing the file layout under `clients/cli/commands`.
@@ -144,8 +148,8 @@ non-interactive guarantee.
 
 ## Deciding specs
 
-None yet. This record describes behaviour that is already shipped. A change to
-an invariant above needs a system spec.
+- `spec:AST-017/DEC-4` — stable response fields and their complete projections
+  are current compatibility authority.
 
 ## Verification
 

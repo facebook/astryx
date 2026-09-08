@@ -46,7 +46,11 @@ Astryx keeps different facts in different places:
   measured receipts, known gaps, compatibility, and artifacts.
 - System specs record decisions that cross components or themes or change architecture.
 - Consumer docs explain props, examples, and usage.
-- Audit records hold current evidence and findings.
+- Audit records hold current evidence and findings. The operational store is the
+  automated wiki `component-scores.json`, which supplies the current post-fix score
+  and unresolved findings to the sandbox. The bootstrap reserved colocated
+  `<PublicName>.audit.json` files, but no schema or records activated that path; it is
+  not an audit datastore or current migration target.
 
 The reviewer starts with the changed code and the nearest current component or
 module contract. They follow only the links needed for the question:
@@ -111,6 +115,107 @@ Every record is either:
   private release or automation systems.
 - **INV9 — Current records have no implicit precedence.** A newer, narrower, or
   more local current record does not silently override another current record.
+- **INV10 — Records describe ideal behavior, not pull-request verdicts.** A current
+  record states durable requirements, prohibitions, compatibility, ownership, and
+  evidence independently of any one implementation change. It never exists to
+  approve a pull request and never approves, rejects, classifies, designates, or
+  authorizes a specific one. Pull requests and issues may appear only as clearly
+  non-authoritative examples, historical evidence, or references; the rule must
+  remain complete without them. The reviewer owns each change's disposition
+  against current authority.
+- **INV11 — Every public delta has an authority result.** Every public API update
+  and every public behavior change is matched to current committed authority
+  before acceptance. Package-export shape is not the only trigger: reachable
+  supporting types, context members, hook returns, defaults, and observable
+  behavior participate too.
+- **INV12 — Audit state has one automated datastore.** Wiki
+  `component-scores.json` is the operational source for current scores and
+  unresolved findings. The unactivated `<PublicName>.audit.json` convention is
+  retired. A future storage change requires an explicit system decision, versioned
+  data contract, automated migration and reconciliation, sandbox-reader cutover,
+  and rollback evidence; it MUST NOT create per-component shadow ledgers by
+  convention.
+- **INV13 — Authors search before creating authority.** Before creating or
+  materially expanding a record, search current records and open pull requests by
+  proposed canonical owner/id, affected paths and exported symbols, and semantic
+  behavior terms. Extend or project the existing canonical owner by default. A new
+  record requires a distinct fact boundary and an explicit explanation of why no
+  existing owner can contain it. Open pull requests coordinate overlapping work;
+  they remain non-authoritative evidence.
+
+## Writing specifications and contracts
+
+These rules guide writing. They do not permit semantic compaction. They come from
+directional evidence and project-owner judgment; the agent benchmark did not
+measure human readability, so this is not a quantified readability claim.
+
+Before writing:
+
+1. Search current records for the behavior, public symbols, affected paths, and
+   proposed canonical owner/id.
+2. Search open pull requests for the same owner path, symbols, and semantic terms.
+3. Update the canonical owner or coordinate with the overlapping work. Create a
+   new record only when the fact has a distinct owner and explain that boundary in
+   the pull-request summary.
+
+Then write the contract:
+
+- Use familiar words and short, direct sentences.
+- State each rule once, beside the conditions and exceptions that control it.
+- Use readable tables for branches or state matrices when they improve scanning.
+  Never remove contract content merely to shorten a record.
+
+Plain language must preserve normative force, predicates, cardinality, defaults,
+compatibility, authority, owners, IDs, evidence state, and decision status. Do not
+delete, weaken, merge, or hide distinct normative content. Replace a local fact
+with a link only when this record's ownership rules assign that fact to another
+canonical owner.
+
+Qualifiers and authority verbs are contract semantics, not polish. Words such as
+`only`, `every`, `consistently`, `current`, `records`, `owns`, `delegates`, and
+`inherits` MUST NOT be dropped, generalized, weakened, or upgraded during a
+rewrite. When reshaping a rule, keep its action, activating conditions,
+exceptions or non-goals, owner, and evidence state in the same row or bullet as
+the claim they limit.
+
+Aim to keep a single specification record at or below 200 lines. This is a soft
+readability ceiling, not a schema rule, validation gate, deletion target, or
+reason to migrate accepted history. Exceed it when the full contract, exact
+conditions, evidence boundaries, decisions, or required template structure need
+more room. First remove true duplication, shorten prose without changing meaning,
+use readable tables or lists, and link genuinely shared authority as INV2
+requires. If the record still exceeds 200 lines, keep the content and explain why
+in pull-request review. Do not minify tables or paragraphs to game the count;
+human scanability wins.
+
+### Same rule, plainer form
+
+Dense:
+
+> When `items` contains exactly one visible item, the component MUST announce that
+> item exactly once; when `items` contains zero or more than one visible item, it
+> MUST NOT announce an item, and consumers that omit `items` MUST retain the
+> existing silent behavior.
+
+Plain:
+
+| Condition                           | Required behavior                       |
+| ----------------------------------- | --------------------------------------- |
+| `items` is omitted                  | MUST keep the existing silent behavior. |
+| Exactly one visible item is present | MUST announce that item exactly once.   |
+| Zero or more than one is present    | MUST NOT announce an item.              |
+
+The plain version changes the shape, not the meaning.
+
+### Before review
+
+- [ ] Compare the edited text with its source and confirm that every contract
+      property named above remains explicit.
+- [ ] Confirm each rule's action, conditions, qualifiers, exceptions or non-goals,
+      owner, authority verb, and evidence state remain explicit and adjacent to the
+      claim they limit.
+- [ ] Confirm tables and lists improve scanning without hiding content; if the
+      record exceeds 200 lines, explain why it needs the extra space.
 
 ### When current records disagree
 
@@ -137,16 +242,32 @@ Before any component, module, family, design, theme, or architecture record beco
 1. The record names the code surface that can affect it and the checks that
    verify it.
 2. A pull request touching that surface triggers a focused contract review.
-3. The review records one of four results:
-   - `preserves`: the change still satisfies the current contract;
-   - `settled`: an existing human decision applies and is cited;
-   - `novel-human`: the contract needs a new human decision;
+3. The review records one of five results:
+   - `preserves`: the exact delta restores or retains current authority without
+     adding public API or behavior beyond it;
+   - `settled`: an existing current human decision covers the exact delta and is
+     cited;
+   - `violates`: the exact delta contradicts current authority;
+   - `novel-human`: no current authority settles the exact public API, behavior,
+     ownership, compatibility, or design delta; or
    - `out-of-scope`: another component, module, family, system, or product owns it.
-4. `preserves` and `settled` proceed without asking the human again.
-5. `novel-human` remains blocked until the owning record contains the new
-   decision and receives approval.
-6. Audit freshness is computed from the same code and test relationship, so a
+4. `preserves` and `settled` enter normal correctness review. They are eligible
+   for approval only when the implementation and evidence also pass.
+5. `violates` receives request-changes. The implementation conforms to current
+   authority, or an owner-approved current spec update lands before acceptance.
+6. `novel-human` enters a private human hold. No contributor-facing verdict or
+   approval is published until the owning record contains the exact decision and
+   becomes current.
+7. A bug fix is `preserves` only when it restores existing current authority
+   without changing public API or public behavior beyond that contract.
+8. Audit freshness is computed from the same code and test relationship, so a
    relevant code change cannot leave an audit looking current.
+
+Audit-storage migration is a separate contract change. It requires a versioned
+data contract, automated conversion and reconciliation of existing wiki rows, a
+named source of truth during transition, sandbox-reader cutover, and rollback
+evidence. Repository-local per-component files are not a migration plan by
+themselves.
 
 ### Recording a new human decision
 
@@ -193,12 +314,15 @@ Examples:
 
 - NumberInput changes its stepping math. Its current contract says the final
   operation clamps to `min`/`max`, and the mapped tests still pass. Result:
-  `preserves`; no human question and no spec edit.
+  `preserves`; continue to normal correctness review with no human question.
 - A new NumberInput path uses the same previously approved transformation order.
-  Result: `settled`; cite that `DEC` and continue without asking again.
+  Result: `settled`; cite that `DEC` and continue to normal correctness review.
+- A package-exported context changes a required function parameter while its
+  current contract preserves the earlier operation shape. Result: `violates`;
+  request changes or land an owner-approved compatibility decision first.
 - Selector removes empty indicator space, but no current decision says whether
-  option labels must stay aligned. Result: `novel-human`; the reviewer asks the
-  alignment question and records the answer in Selector's contract.
+  option labels must stay aligned. Result: `novel-human`; hold privately while the
+  owner decides and records the alignment contract.
 - A product requests a one-off width prop for a family-owned input layout rule.
   Result: `out-of-scope`; route the change to the family contract rather than
   creating a component-specific API.
@@ -222,6 +346,9 @@ this flow passes the historical review benchmark and is enforced on pull request
   fixture, test, generated, build-output, coverage, dependency, and
   `*.generated.spec.md` paths are ignored consistently by discovery and PR
   routing.
+- Wiki `component-scores.json` is the current operational audit datastore. The
+  historical `<PublicName>.audit.json` reservation never received a schema or active
+  records and is retired by INV12.
 - `packages/themes/<theme>/<theme>.spec.md` contains that package theme's
   canonical record; `docs/themes/README.md` is guidance and an index only.
 - `docs/schemas/knowledge/` defines required structure.
@@ -266,11 +393,33 @@ Rejected: requiring the owner to open a second pull request for every ruling,
 because it separates the answer from the change and adds unnecessary review
 work.
 
+### DEC-3 — Search overlapping authority before writing
+
+**Reference:** `architecture:knowledge-contracts/DEC-3`
+**Decider:** `cixzhang`, `2026-09-07`
+
+Before drafting a new record or materially expanding one, search current records
+and open pull requests using more than the proposed title: canonical owner/id,
+affected paths, exported symbols, and semantic behavior terms. Extend or project
+the canonical owner when the fact already belongs there. Create a new record only
+for a distinct fact boundary and explain why the existing owner cannot contain it.
+
+Rejected: searching only filenames or landed records. Semantic overlap may use a
+different title, and open work may already be changing the same owner before it
+lands. Open pull requests coordinate work and provide evidence; they do not become
+authority.
+
 ## Verification
 
-| Invariant                         | Evidence                                       | Failure signal                                                                                                                                      |
-| --------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV6                        | `scripts/check-knowledge.test.mjs`             | An unapproved current record or unmigrated active record passes                                                                                     |
-| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`        | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                    |
-| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs` | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current theme record |
-| INV3, INV4                        | Blinded historical review benchmark            | Reviewer re-asks a settled decision or invents a new one                                                                                            |
+| Invariant                         | Evidence                                                    | Failure signal                                                                                                                                              |
+| --------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV6                        | `scripts/check-knowledge.test.mjs`                          | An unapproved current record or unmigrated active record passes                                                                                             |
+| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`                     | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                            |
+| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs`              | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current theme record         |
+| INV3, INV4, INV11                 | Blinded historical review benchmark                         | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                          |
+| INV10                             | Record-content and review-disposition fixtures              | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                                    |
+| INV13                             | Blinded spec-authorship fixture plus overlap-search receipt | An author creates parallel authority, searches only landed records or filenames, misses open work on the canonical owner, or treats an open PR as authority |
+
+Current enforcement gap: no checked-in gate yet proves the open-pull-request
+search. Until one exists, the pull-request summary records the search terms,
+canonical owner/path, and overlapping open work inspected.

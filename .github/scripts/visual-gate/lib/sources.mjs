@@ -174,7 +174,7 @@ function unreadableTheme(repoRoot, name, built, error, rebuilt) {
 
 /**
  * @param {string} repoRoot
- * @returns {{excludeStories: Record<string, string>, viewport: {width: number, height: number}, settleMs: number, scoutConcurrency: number, captureConcurrency: number, compareConcurrency: number, threshold: number, maxDiffPixels: number, defaultTheme: string, probeTheme: string, stableStoryPackages: string[], prVisualShotLimit: number, visualPlanSafetyLimit: number, tiers: string[]}}
+ * @returns {{excludeStories: Record<string, string>, viewport: {width: number, height: number}, settleMs: number, scoutConcurrency: number, captureConcurrency: number, compareConcurrency: number, threshold: number, maxDiffPixels: number, defaultTheme: string, probeTheme: string, baselineThemes: string[], stableStoryPackages: string[], stableStoryGroups: string[], prVisualShotLimit: number, visualPlanSafetyLimit: number, tiers: string[]}}
  */
 export function loadConfig(repoRoot) {
   const defaults = {
@@ -188,7 +188,9 @@ export function loadConfig(repoRoot) {
     maxDiffPixels: 0,
     defaultTheme: 'neutral',
     probeTheme: 'probe',
+    baselineThemes: ['neutral', 'probe'],
     stableStoryPackages: ['Core'],
+    stableStoryGroups: ['Core'],
     prVisualShotLimit: 240,
     visualPlanSafetyLimit: 5000,
     tiers: ['surface', 'theme-matrix', 'probe'],

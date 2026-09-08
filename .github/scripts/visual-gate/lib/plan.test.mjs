@@ -11,8 +11,11 @@ import {
   accountBaseline,
   baselineVisualStories,
   buildPlan,
+  canonicalBaselineStories,
   createReleasePlan,
+  emptyVisualPlanMessage,
   exceedsPrVisualShotLimit,
+  existingComponentBaselinePlan,
   readStoryIndex,
   readThemeCatalog,
   representativeStories,
@@ -65,6 +68,71 @@ describe('storiesInPackages', () => {
   });
 });
 
+describe('canonicalBaselineStories', () => {
+  const owners = {groups: ['Core'], packages: ['Core']};
+
+  it('keeps only canonical title groups when no story declares a component', () => {
+    const mixed = [
+      ...stories,
+      story({
+        id: 'foundations-button--default',
+        title: 'Foundations/Button',
+        name: 'Default',
+        component: 'Button',
+      }),
+      story({
+        id: 'lab-button--default',
+        title: 'Lab/Button',
+        name: 'Default',
+        component: 'Button',
+      }),
+    ];
+    expect(
+      canonicalBaselineStories(mixed, owners).map(story => story.id),
+    ).toEqual(stories.map(story => story.id));
+  });
+
+  it('keeps a published component whose only story is titled under another group', () => {
+    const resizable = story({
+      id: 'lab-resizable--horizontal-split',
+      title: 'Lab/Resizable',
+      name: 'Horizontal Split',
+      component: 'Resizable',
+      componentPackage: '@astryxdesign/core',
+    });
+    expect(
+      canonicalBaselineStories([...stories, resizable], owners).map(
+        story => story.id,
+      ),
+    ).toContain('lab-resizable--horizontal-split');
+  });
+
+  it('drops a canary component even when its story is titled under a canonical group', () => {
+    const labInCore = story(
+      {
+        id: 'core-drawer--default',
+        title: 'Core/Drawer',
+        name: 'Default',
+        component: 'Drawer',
+        componentPackage: '@astryxdesign/lab',
+      },
+      '@astryxdesign/lab',
+      false,
+    );
+    expect(
+      canonicalBaselineStories([...stories, labInCore], owners).map(
+        story => story.id,
+      ),
+    ).toEqual(stories.map(story => story.id));
+  });
+
+  it('allows an explicit all-groups audit without changing the release default', () => {
+    expect(canonicalBaselineStories(stories, {...owners, groups: ['*']})).toEqual(
+      stories,
+    );
+  });
+});
+
 describe('representativeStories', () => {
   it('prefers a conventionally named story over source order', () => {
     expect(representativeStories(stories).get('Button').id).toBe('core-button--default');
@@ -72,6 +140,22 @@ describe('representativeStories', () => {
 
   it('falls back to the first story when no name is conventional', () => {
     expect(representativeStories(stories).get('Badge').id).toBe('core-badge--solid');
+  });
+});
+
+describe('existingComponentBaselinePlan', () => {
+  it('drops only component-selected keys that have no accepted baseline', () => {
+    const plan = [
+      {key: 'component-existing', reasons: ['component']},
+      {key: 'component-new', reasons: ['component', 'theme:y2k']},
+      {key: 'theme-new', reasons: ['component', 'changed-theme:y2k']},
+      {key: 'probe-new', reasons: ['probe']},
+    ];
+    expect(
+      existingComponentBaselinePlan(plan, {
+        shots: {'component-existing': {}},
+      }).map(shot => shot.key),
+    ).toEqual(['component-existing', 'theme-new', 'probe-new']);
   });
 });
 
@@ -183,6 +267,14 @@ describe('exceedsPrVisualShotLimit', () => {
   });
 });
 
+describe('emptyVisualPlanMessage', () => {
+  it('names the scope that planned nothing and the one path that seeds frames', () => {
+    expect(emptyVisualPlanMessage('Component scope Resizable')).toMatch(
+      /^Component scope Resizable planned no shots;.*manual baseline workflow\.$/,
+    );
+  });
+});
+
 describe('buildPlan', () => {
   it('photographs one story per component in the default theme for the surface tier', () => {
     const plan = buildPlan({stories, targets, themeOverrides, defaultTheme: 'neutral', tiers: ['surface']});
@@ -191,6 +283,68 @@ describe('buildPlan', () => {
       'core-badge--solid__neutral-light',
       'core-button--default__neutral-dark',
       'core-button--default__neutral-light',
+    ]);
+  });
+
+  it('keeps tagged visual contracts in the neutral surface plan', () => {
+    const tagged = [
+      ...stories,
+      story({
+        id: 'core-button--separator',
+        title: 'Core/Button',
+        name: 'Separator',
+        component: 'Button',
+        tags: ['visual-baseline'],
+      }),
+      story({
+        id: 'core-button--variants',
+        title: 'Core/Button',
+        name: 'Variants',
+        component: 'Button',
+        tags: ['visual-theme-matrix'],
+      }),
+    ];
+    const plan = buildPlan({
+      stories: tagged,
+      targets,
+      themeOverrides,
+      defaultTheme: 'neutral',
+      tiers: ['surface'],
+    });
+    expect(new Set(plan.map(shot => shot.storyId))).toEqual(
+      new Set([
+        'core-button--default',
+        'core-badge--solid',
+        'core-button--separator',
+        'core-button--variants',
+      ]),
+    );
+    expect(new Set(plan.map(shot => shot.theme))).toEqual(new Set(['neutral']));
+  });
+
+  it('keeps matrix-tagged stories in the probe baseline', () => {
+    const tagged = [
+      ...stories,
+      story({
+        id: 'core-button--variants',
+        title: 'Core/Button',
+        name: 'Variants',
+        component: 'Button',
+        tags: ['visual-theme-matrix'],
+      }),
+    ];
+    const plan = buildPlan({
+      stories: tagged,
+      targets,
+      themeOverrides,
+      observations: {},
+      defaultTheme: 'neutral',
+      tiers: ['probe'],
+      probeTheme: 'probe',
+    });
+    expect(plan.map(shot => shot.key)).toEqual([
+      'core-button--variants__probe-dark',
+      'core-button--variants__probe-light',
     ]);
   });
 
@@ -338,6 +492,7 @@ describe('readStoryIndex package metadata', () => {
     fs.mkdirSync(path.join(storybook, 'stories'), {recursive: true});
     fs.mkdirSync(dist);
     fs.writeFileSync(path.join(storybook, 'stories/Composite.stories.tsx'), "import {Table} from '@astryxdesign/core/Table';");
+    fs.writeFileSync(path.join(storybook, 'stories/Dune.stories.tsx'), "import {Table} from '@astryxdesign/core/Table';");
     fs.writeFileSync(path.join(storybook, 'stories/Lab.stories.tsx'), "import {Thing} from '@astryxdesign/lab'; import {Button} from '@astryxdesign/core/Button';");
     fs.writeFileSync(path.join(storybook, 'stories/CoreMixed.stories.tsx'), "import {Thing} from '@astryxdesign/lab'; import {Layer} from '@astryxdesign/core/Layer';");
     fs.writeFileSync(path.join(storybook, 'stories/Probe.stories.tsx'), "import {Button} from '@astryxdesign/core/Button';");
@@ -349,6 +504,10 @@ describe('readStoryIndex package metadata', () => {
       mixed: {type: 'story', id: 'core-layer--default', title: 'Core/Layer', name: 'Default', importPath: './stories/CoreMixed.stories.tsx'},
       probe: {type: 'story', id: 'core-probe--default', title: 'Core/Themes/Probe Theme', name: 'Default', importPath: './stories/Probe.stories.tsx'},
       prOnly: {type: 'story', id: 'core-new--default', title: 'Core/New', name: 'Default', importPath: './stories/NewPrOnly.stories.tsx'},
+      // A Core component whose only story sits under another title group, and a
+      // template page that merely composes Core components.
+      elsewhere: {type: 'story', id: 'lab-resizable--split', title: 'Lab/Resizable', name: 'Split', componentPath: '../../packages/core/src/Resizable/index.ts', importPath: './stories/Resizable.stories.tsx'},
+      template: {type: 'story', id: 'dune--overview', title: 'Dune', name: 'Overview', importPath: './stories/Dune.stories.tsx'},
       skipped: {type: 'story', id: 'core-skip--default', title: 'Core/Skip', name: 'Default', tags: ['no-visual']},
     }}));
     return {root, dist};
@@ -366,6 +525,49 @@ describe('readStoryIndex package metadata', () => {
       expect(indexed.find(value => value.id === 'core-probe--default')).toMatchObject({packageName: '@astryxdesign/theme-probe', stableVisual: false});
       expect(indexed.find(value => value.id === 'core-new--default')).toMatchObject({packageName: '@astryxdesign/core', packageNames: ['@astryxdesign/core'], stableVisual: true});
       expect(indexed.some(value => value.id === 'core-skip--default')).toBe(false);
+    } finally {
+      fs.rmSync(root, {recursive: true, force: true});
+    }
+  });
+
+  it('resolves canonical ownership from the declared component, not the title group', () => {
+    const {root, dist} = fixture();
+    try {
+      const indexed = readStoryIndex(dist, [], root);
+      expect(indexed.find(value => value.id === 'lab-resizable--split')).toMatchObject({
+        component: 'Resizable',
+        packageName: '@astryxdesign/core',
+        componentPackage: '@astryxdesign/core',
+      });
+      expect(indexed.find(value => value.id === 'dune--overview')).toMatchObject({
+        packageName: '@astryxdesign/core',
+        componentPackage: null,
+      });
+      const canonical = canonicalBaselineStories(
+        storiesInPackages(indexed, ['Core']),
+        {groups: ['Core'], packages: ['Core']},
+      ).map(value => value.id);
+      // A published Core component keeps its frames wherever its story is
+      // titled; a template page that only imports Core still owns none.
+      expect(canonical).toContain('lab-resizable--split');
+      expect(canonical).not.toContain('dune--overview');
+      expect(canonical).not.toContain('charts-bar--default');
+    } finally {
+      fs.rmSync(root, {recursive: true, force: true});
+    }
+  });
+
+  it('allows the private probe theme only as an explicit baseline fixture', () => {
+    const {root} = fixture();
+    try {
+      expect(readThemeCatalog(root).probe).toMatchObject({
+        stableVisual: false,
+        coverageFixture: false,
+      });
+      expect(readThemeCatalog(root, ['probe']).probe).toMatchObject({
+        stableVisual: true,
+        coverageFixture: true,
+      });
     } finally {
       fs.rmSync(root, {recursive: true, force: true});
     }
@@ -431,11 +633,49 @@ describe('readStoryIndex package metadata', () => {
       expect(summary).toEqual({
         total: 974,
         plannedCurrentStable: 882,
+        policyExcluded: 0,
         intentionallyExcluded: 92,
         preservedLegacy: 0,
         unclassified: 0,
       });
       expect(Object.keys(account.manifest.shots)).toHaveLength(882);
+    } finally {
+      fs.rmSync(root, {recursive: true, force: true});
+    }
+  });
+
+  it('classifies accepted but noncanonical keys as policy exclusions', () => {
+    const {root} = fixture();
+    try {
+      const account = accountBaseline(
+        {
+          shots: {
+            'core-button--default__neutral-light': {
+              storyId: 'core-button--default',
+              title: 'Core/Button',
+              component: 'Button',
+              theme: 'neutral',
+              mode: 'light',
+            },
+          },
+        },
+        [
+          {
+            id: 'core-button--default',
+            packageName: '@astryxdesign/core',
+            packageNames: ['@astryxdesign/core'],
+            stableVisual: true,
+          },
+        ],
+        readThemeCatalog(root),
+        root,
+      );
+      expect(summarizeBaselineAccounting(account, [])).toMatchObject({
+        total: 1,
+        plannedCurrentStable: 0,
+        policyExcluded: 1,
+        unclassified: 0,
+      });
     } finally {
       fs.rmSync(root, {recursive: true, force: true});
     }
@@ -463,6 +703,7 @@ describe('readStoryIndex package metadata', () => {
       expect(summarizeBaselineAccounting(account, [])).toEqual({
         total: 1,
         plannedCurrentStable: 0,
+        policyExcluded: 0,
         intentionallyExcluded: 0,
         preservedLegacy: 1,
         unclassified: 0,
@@ -497,6 +738,7 @@ describe('readStoryIndex package metadata', () => {
       expect(summarizeBaselineAccounting(account, [])).toEqual({
         total: 1,
         plannedCurrentStable: 0,
+        policyExcluded: 0,
         intentionallyExcluded: 0,
         preservedLegacy: 0,
         unclassified: 1,

@@ -14,7 +14,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../fs/path-safety.mjs';
 import {parseIntegration} from '../../authoring/integration/parse.mjs';
-import {loadModuleWithParser, findPresentFiles} from '../fs/module-loader.mjs';
+// The key census is internal to the schema module on purpose: it is derived
+// from the schema so it cannot drift, and it is not public API.
+import {unknownIntegrationKeys} from '../../authoring/integration/schema.mjs';
+import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
 
 /**
  * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
@@ -34,6 +37,11 @@ import {loadModuleWithParser, findPresentFiles} from '../fs/module-loader.mjs';
  * @property {string} __manifestFile
  * @property {string} [__loadError] set when the manifest failed to load/validate;
  *   such an integration contributes nothing and is surfaced via Project.issues()
+ * @property {string[]} [__unknownKeys] manifest keys this CLI does not know —
+ *   surfaced as a warning; the rest of the manifest still contributes
+ * @property {import('../../authoring/debug/type').DebugEventHandler} [__debug]
+ *   the manifest module's `debug` NAMED export, when it exported a function.
+ *   Not a manifest key — see {@link loadManifest}.
  */
 
 /** Conventional manifest basenames, in load-precedence order. */
@@ -56,15 +64,51 @@ export function findManifestPaths(dir) {
 
 /**
  * Load and validate a manifest module's default export against the integration
- * schema. Default export only — `.ts` is loaded via jiti; `.mjs`/`.js` via
- * dynamic import. Throws if the default export is missing or invalid. Exposed
- * for validate-integration.
+ * schema, and report the keys this CLI does not know. Default export only —
+ * `.ts` is loaded via jiti; `.mjs`/`.js` via dynamic import. Throws if the
+ * default export is missing or invalid.
+ *
+ * The raw default export is inspected before it is parsed, because parsing
+ * strips the unknown keys: after `parseIntegration` there is nothing left to
+ * report. Exposed for validate-integration.
+ *
+ * `debug` comes back separately because it is a NAMED export, not a manifest
+ * key. A key would have to survive the manifest schema of every CLI version
+ * already installed against this integration, and older ones reject an unknown
+ * key outright — losing that integration's components, templates and codemods
+ * with it (#5119). A named export is simply not read by a CLI that does not
+ * know about it, so an integration can start contributing one without a
+ * coordinated upgrade.
+ *
+ * @param {string} file absolute manifest path
+ * @param {string} [label] used in error messages
+ * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler}>}
+ */
+export async function loadManifest(file, label = 'integration manifest') {
+  const mod = await importUserModule(file);
+  const raw = mod?.default;
+  return {
+    manifest: parseIntegration(raw, label),
+    unknownKeys: unknownIntegrationKeys(raw),
+    debug:
+      typeof mod?.debug === 'function'
+        ? /** @type {import('../../authoring/debug/type').DebugEventHandler} */ (
+            mod.debug
+          )
+        : undefined,
+  };
+}
+
+/**
+ * Load and validate a manifest module's default export against the integration
+ * schema. Throws if the default export is missing or invalid. Exposed for
+ * validate-integration.
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
  * @returns {Promise<import('../../authoring/integration/type').AstryxIntegration>}
  */
 export async function loadManifestObject(file, label = 'integration manifest') {
-  return loadModuleWithParser(file, parseIntegration, {label});
+  return (await loadManifest(file, label)).manifest;
 }
 
 /**
@@ -149,12 +193,16 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
 
     const manifestFile = resolveManifestPath(packageDir, spec);
     let manifest;
+    /** @type {string[]} */
+    let unknownKeys;
+    /** @type {import('../../authoring/debug/type').DebugEventHandler | undefined} */
+    let debugHandler;
     try {
-      manifest = await loadModuleWithParser(
-        manifestFile,
-        parseIntegration,
-        {label: `Integration ${spec}`},
-      );
+      ({
+        manifest,
+        unknownKeys,
+        debug: debugHandler,
+      } = await loadManifest(manifestFile, `Integration ${spec}`));
     } catch (err) {
       // A manifest that throws on import or fails schema validation must NOT take
       // down every command (component/docs/theme don't need this integration).
@@ -190,6 +238,8 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
       codemods: resolveRoot(manifest.codemods),
       docs: resolveRoot(manifest.docs),
       issuesUrl: manifest.issuesUrl,
+      __unknownKeys: unknownKeys,
+      __debug: debugHandler,
       __spec: spec,
       __packageDir: packageDir,
       __manifestFile: manifestFile,

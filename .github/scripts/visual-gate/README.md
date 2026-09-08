@@ -72,11 +72,12 @@ Exit codes are the contract: `0` pass, `1` crashed, `2` changed.
 
 `pr-visual` compares only the stable published visual surface:
 
-- Core component change → the representative story in every accepted baseline
-  theme. Additional stories may opt into the default theme with
-  `visual-baseline`, or the same all-theme matrix with `visual-theme-matrix`;
-  all are captured light/dark. Behavioral and audit-only fixtures stay in their
-  dedicated checks without multiplying the pixel baseline.
+- Core component change → the representative story and any explicitly opted-in
+  story, but only for frame keys already present in the accepted baseline.
+  `visual-baseline` opts into the default theme and `visual-theme-matrix` opts
+  into every accepted theme; neither tag lets an ordinary PR create a new
+  baseline key. Behavioral and audit-only fixtures stay in their dedicated
+  checks without multiplying the pixel baseline.
 - Published theme change → every currently accepted visual story rendered in that
   theme. This catches a theme beginning to override a component it did not
   previously target. Theme-only plans are not charged against the focused
@@ -103,13 +104,27 @@ The representative story (`Default`, `Primary`, and similar conventional names)
 is selected automatically and needs no tag. Use `visual-baseline` for an
 additional default-theme contract, `visual-theme-matrix` only when that story
 must be judged in every accepted theme, and no visual tag for behavioral or
-audit-only fixtures. The existing `no-visual` tag excludes an unstable story
-from visual capture entirely.
+audit-only fixtures. Ordinary PRs can update existing contracts but cannot add
+or remove baseline keys; seed or prune coverage through the manual baseline
+workflow. The existing `no-visual` tag excludes an unstable story from visual
+capture entirely.
 
 The daily gate uses the same boundary: `stableStoryPackages` in
 `visual-gate.config.json` is currently `["Core"]`, so Lab/canary stories cannot
 hold a stable release. Pass `--story-packages '*'` only for an explicit
 non-release audit.
+
+Ownership decides which stories may own canonical frames, and a Storybook title
+is only evidence of it. When the index records the source file of the component
+a story declares, that source decides: a Core component keeps its frames even
+when its story is titled under another group, and a composed demo cannot earn
+one by importing Core. `stableStoryGroups` is the fallback for the stories that
+declare no component at all, where the title group is the only signal there is.
+
+An empty plan is refused rather than reported clean, in every lane. A plan with
+no shots compares nothing, so a scope whose keys are missing from the accepted
+baseline fails closed and says so; seed the missing frames through the manual
+baseline workflow.
 
 `.github/scripts/visual-scope.mjs` owns that classification from package
 metadata; workflow YAML does not hard-code today's package names.
@@ -127,8 +142,10 @@ written by CI, from the pinned runner label.
 
 The gate asks two things, and only one of them is a screenshot.
 
-**Did anything move?** — the shot tiers, compared against an accepted baseline.
-Catches any visual regression, in any theme.
+**Did the canonical visual contract move?** — representative and explicitly
+tagged Core stories in Neutral, plus generated Probe coverage, compared against
+an accepted baseline. Theme-specific design still renders in Storybook, but it
+does not multiply the permanent screenshot baseline.
 
 **Did each theming target's override actually reach the pixels?** — `gate.mjs
 reach`, and no baseline is involved. A pixel diff cannot answer this: when an

@@ -1,7 +1,15 @@
 #!/usr/bin/env node
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** Build, serve, and measure one copied canonical fixture in two color schemes. */
+/** Build, serve, and measure one copied canonical fixture in two color schemes.
+ *
+ * The build never runs in the sandbox it measures. The agent's sandbox is the
+ * attested artifact — its bytes are what the runner digested and what integrity
+ * and any later recovery read — so it is copied into a disposable build root
+ * first and only the copy is built and served. See `setup-workspace.mjs`. The
+ * integrity analysis still reads the original, because the original is the
+ * thing being attested.
+ */
 
 import {spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
@@ -11,6 +19,7 @@ import {fileURLToPath} from 'node:url';
 import {analyzeSetupIntegrity} from './setup-integrity.mjs';
 import {openInteractionState} from './setup-interactions.mjs';
 import {validatePromptContracts} from './setup-matrix.mjs';
+import {createMeasurementWorkspace} from './setup-workspace.mjs';
 import {
   assertPublicArtifactSafe,
   publicProvenance,
@@ -51,9 +60,21 @@ export function parseLayerOrder(css) {
   return order;
 }
 
+/**
+ * Run the app's build.
+ *
+ * `CI=true` and piped stdio keep it non-interactive: a package manager or
+ * bundler that finds no TTY must not stop to ask anything, and a spinner that
+ * probes for one must not error out. Measurement is unattended by definition.
+ */
 function build(appDir) {
   const started = Date.now();
-  const result = spawnSync('pnpm', ['build'], {cwd: appDir, encoding: 'utf8'});
+  const result = spawnSync('pnpm', ['build'], {
+    cwd: appDir,
+    encoding: 'utf8',
+    env: {...process.env, CI: 'true'},
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
   return {
     ok: result.status === 0,
     status: result.status ?? -1,
@@ -72,12 +93,17 @@ export function classifyCssAssets(files) {
 export function measurementPrivateValues({
   appDir,
   outFile,
+  buildDir = null,
   environment = process.env,
   cwd = process.cwd(),
   repoRoot = REPO_ROOT,
 }) {
   return [
     appDir,
+    buildDir,
+    // The disposable build root's parent, so neither the copy's path nor the
+    // temporary directory holding it can reach a public artifact.
+    buildDir ? path.dirname(buildDir) : null,
     repoRoot,
     cwd,
     path.dirname(outFile),
@@ -133,6 +159,34 @@ const MIME = {
   '.woff2': 'font/woff2',
 };
 
+/**
+ * The origin to fetch a locally bound server on, derived from what it actually
+ * bound to.
+ *
+ * The pairing that has to hold is bind address and fetch address. Listening
+ * without a host binds the wildcard — `::` wherever Node has IPv6 — while the
+ * fetch used a hardcoded `127.0.0.1`, so the two only agreed as long as the
+ * host mapped v4-in-v6. Where it does not, every page load fails to connect and
+ * the measurement looks like a broken app rather than a broken harness. That is
+ * what made an operator wrap the measurer in a network namespace with loopback
+ * forced up; nothing about measuring an app needs that.
+ *
+ * A wildcard is never a fetchable address, so it is rewritten to the loopback
+ * of its own family: `0.0.0.0` to `127.0.0.1`, `::` to `[::1]`. Anything else
+ * is used as bound, and IPv6 literals are bracketed as a URL requires.
+ */
+export function loopbackOrigin(address) {
+  if (!address || typeof address !== 'object') {
+    throw new Error('server.address() did not return an AddressInfo');
+  }
+  const {address: host, port, family} = address;
+  const ipv6 = family === 'IPv6' || family === 6 || String(host).includes(':');
+  const WILDCARD = new Set(['0.0.0.0', '::', '::0', '0:0:0:0:0:0:0:0', '']);
+  const target = WILDCARD.has(host) ? (ipv6 ? '::1' : '127.0.0.1') : host;
+  const bracketed = target.includes(':') ? `[${target}]` : target;
+  return `http://${bracketed}:${port}`;
+}
+
 function serve(distDir) {
   const server = http.createServer((request, response) => {
     const url = new URL(request.url ?? '/', 'http://localhost');
@@ -153,13 +207,27 @@ function serve(distDir) {
     );
     fs.createReadStream(file).pipe(response);
   });
-  return new Promise(resolve =>
-    server.listen(0, () => resolve({server, port: server.address().port})),
-  );
+  return new Promise((resolve, reject) => {
+    server.once('error', reject);
+    // Bind IPv4 loopback explicitly rather than the wildcard: the app under
+    // measurement is only ever fetched from this process, so there is no reason
+    // to listen on anything reachable, and an explicit bind is what makes the
+    // fetch address predictable. The origin is still read back from the socket
+    // rather than assumed.
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      resolve({server, port: address.port, origin: loopbackOrigin(address)});
+    });
+  });
 }
 
 /* c8 ignore start -- executed in the page rather than in Node. */
-function readPage(spec) {
+/**
+ * Exported so the canonical suite can run the real reader in a real browser
+ * against a fixed DOM, rather than restating its rules in a copy that can
+ * drift. It is passed to `page.evaluate`, so it must stay self-contained.
+ */
+export function readPage(spec) {
   const normalizedRect = rect => {
     const normalize = value => Math.round(value * 64) / 64;
     return {
@@ -213,8 +281,37 @@ function readPage(spec) {
       Math.round((Math.max(light, dark) / Math.min(light, dark)) * 100) / 100
     );
   };
+  /**
+   * The host copy a container renders, excluding task-owned subtrees.
+   *
+   * Two exclusions, for two different reasons.
+   *
+   * Task-owned subtrees (`data-vibe-*`) are skipped because the task mandated
+   * them: a container that must gain a control necessarily gains that control's
+   * text, and comparing it exactly would report the mandate as host damage.
+   *
+   * Unrendered subtrees are skipped because this measure exists to detect
+   * *visible* host change, and text the browser does not paint is not visible
+   * host change. This is not a hole an executor can hide damage in: removing or
+   * rewriting host copy still changes the string, so hiding a host paragraph
+   * still reports the words it lost. Only *invisible additions* stop counting.
+   *
+   * The case that forced this: a design-system control's own overlay is not
+   * always a DOM child of that control. An Astryx `Button` with a `tooltip`
+   * renders the tooltip as a `display: none` sibling — hoisted out of the
+   * button because a button cannot legally contain it — linked by
+   * `aria-describedby`. The subtree exclusion above cannot see it, so the
+   * mandated control's own closed tooltip landed in the host container's text
+   * and scored as host damage while nothing on screen had changed.
+   */
   const protectedText = element => {
     const parts = [];
+    const rendered = node =>
+      typeof node.checkVisibility !== 'function' ||
+      node.checkVisibility({
+        contentVisibilityAuto: true,
+        visibilityProperty: true,
+      });
     const visit = node => {
       for (const child of node.childNodes) {
         if (child.nodeType === Node.TEXT_NODE) {
@@ -229,6 +326,7 @@ function readPage(spec) {
         ) {
           continue;
         }
+        if (!rendered(child)) continue;
         visit(child);
       }
     };
@@ -371,6 +469,39 @@ function readPage(spec) {
         inTopLayer,
         portalChild: topLayerElement.parentElement === document.body,
       },
+      /**
+       * The host token scopes this surface sits inside, nearest first.
+       *
+       * Recorded so that "the host's tokens no longer reach this element" is
+       * reported as the structural fact it is, rather than only as a list of
+       * colours that came out different. The two failures look identical in a
+       * style diff and have opposite fixes: restate the colours and the next
+       * host token change silently desynchronizes; restore the boundary and the
+       * host's own rules resolve as they always did.
+       */
+      tokenScopes: (spec.hostTokenScopes ?? []).length
+        ? (() => {
+            const scopes = [];
+            for (
+              let node = element;
+              node instanceof Element;
+              node = node.parentElement
+            ) {
+              for (const selector of spec.hostTokenScopes) {
+                let matches = false;
+                try {
+                  matches = node.matches(selector);
+                } catch {
+                  matches = false;
+                }
+                if (matches && !scopes.includes(selector)) {
+                  scopes.push(selector);
+                }
+              }
+            }
+            return scopes;
+          })()
+        : [],
     };
   };
 
@@ -463,9 +594,46 @@ function readPage(spec) {
 }
 /* c8 ignore stop */
 
+/**
+ * Wait for running CSS transitions to finish before anything is measured.
+ *
+ * A probe read is meant to capture the app at rest. `getComputedStyle` on an
+ * element with a running transition returns the *interpolated* value, which
+ * Chromium serializes in the interpolation space rather than the space the
+ * value was authored in — so a host button whose colour never changed reads
+ * back as `oklab(0.985 0 0)` mid-transition and `oklch(0.985 0 0)` at rest.
+ * The numbers are identical; only the spelling differs, and an exact string
+ * comparison scores that as host damage.
+ *
+ * The harness triggers these itself: opening an interaction clicks host
+ * controls, and a host control with `transition-colors` starts a transition on
+ * that click. Whether the read lands inside the transition window depends on
+ * how long the app's own bundle takes to respond, which is stable per app —
+ * so this misreads deterministically for some apps and never for others, which
+ * is worse than flaky.
+ *
+ * Only `CSSTransition` is awaited. Transitions always finish; a decorative
+ * infinite animation never would, so awaiting every animation would hang. The
+ * timeout is a backstop for a transition on a property that never settles.
+ */
+export async function settleTransitions(page, timeoutMs = 2000) {
+  await page.evaluate(async ms => {
+    const running = document
+      .getAnimations()
+      .filter(animation => animation.constructor.name === 'CSSTransition');
+    if (running.length === 0) return;
+    await Promise.race([
+      Promise.allSettled(running.map(animation => animation.finished)),
+      new Promise(resolve => {
+        setTimeout(resolve, ms);
+      }),
+    ]);
+  }, timeoutMs);
+}
+
 async function readScheme({
   browser,
-  port,
+  origin,
   colorScheme,
   probeSpec,
   interaction,
@@ -483,9 +651,11 @@ async function readScheme({
   );
   page.on('pageerror', error => pageErrors.push(String(error)));
   page.on('requestfailed', request => failedRequests.push(request.url()));
-  await page.goto(`http://127.0.0.1:${port}/`);
+  await page.goto(`${origin}/`);
   await page.waitForLoadState('networkidle');
   await page.evaluate(() => document.fonts.ready);
+  // Quiesce mount-time transitions so the interaction starts from rest.
+  await settleTransitions(page);
   let state = {opened: false, keyboardReached: {}};
   let interactionError = null;
   if (interaction) {
@@ -495,6 +665,8 @@ async function readScheme({
       interactionError = String(error);
     }
   }
+  // Quiesce the transitions the interaction above just started.
+  await settleTransitions(page);
   const reading = await page.evaluate(readPage, {...probeSpec, interaction});
   if (reading.interaction) {
     reading.interaction.opened = state.opened && interactionError === null;
@@ -584,6 +756,7 @@ async function main() {
   const probeSpec = {
     properties: probeFile.properties,
     surfaceProperties,
+    hostTokenScopes: fixtureProbes.hostTokenScopes ?? [],
     probes: fixtureProbes.probes,
     rootVariables: fixtureProbes.rootVariables,
     interaction: fixtureProbes.interaction ?? null,
@@ -606,112 +779,132 @@ async function main() {
     };
   }
 
-  const measurement = {
-    label,
-    fixture: fixtureId,
-    app: appDir,
-    measuredAt: new Date().toISOString(),
-    build: build(appDir),
-    layerOrder: [],
-    measurementErrors: [],
-    ...(taskDefinition
-      ? {
-          task: {
-            id: taskDefinition.id,
-            kind: taskDefinition.kind,
-            contract: taskDefinition.contract,
-          },
-          executionStatus: provenance?.execution?.status ?? 'missing',
-          integrity,
-        }
-      : {}),
-    schemes: {},
-  };
+  // The build runs on a disposable copy. `appDir` stays exactly as the agent
+  // left it — that tree is the attested artifact, and integrity below reads it.
+  const workspace = createMeasurementWorkspace(appDir);
+  const buildDir = workspace.dir;
 
-  if (measurement.build.ok) {
-    const distDir = path.join(appDir, 'dist');
-    const layers = emittedLayerOrder(distDir);
-    measurement.layerOrder = layers.order;
-    measurement.measurementErrors = layers.errors;
-    const {chromium} = await import('playwright');
-    const {server, port} = await serve(distDir);
-    const browser = await chromium.launch();
+  try {
+    const measurement = {
+      label,
+      fixture: fixtureId,
+      app: appDir,
+      measuredAt: new Date().toISOString(),
+      build: build(buildDir),
+      layerOrder: [],
+      measurementErrors: [],
+      ...(taskDefinition
+        ? {
+            task: {
+              id: taskDefinition.id,
+              kind: taskDefinition.kind,
+              contract: taskDefinition.contract,
+            },
+            executionStatus: provenance?.execution?.status ?? 'missing',
+            integrity,
+          }
+        : {}),
+      schemes: {},
+    };
 
-    for (const colorScheme of ['light', 'dark']) {
-      const mainReading = await readScheme({
-        browser,
-        port,
-        colorScheme,
-        probeSpec,
-        interaction: probeSpec.interaction,
-      });
-      const taskInteractions = {};
-      for (const interaction of taskDefinition?.contract.interactions ?? []) {
-        const taskReading = await readScheme({
+    if (measurement.build.ok) {
+      const distDir = path.join(buildDir, 'dist');
+      const layers = emittedLayerOrder(distDir);
+      measurement.layerOrder = layers.order;
+      measurement.measurementErrors = layers.errors;
+      const {chromium} = await import('playwright');
+      const {server, origin} = await serve(distDir);
+      const browser = await chromium.launch();
+
+      for (const colorScheme of ['light', 'dark']) {
+        const mainReading = await readScheme({
           browser,
-          port,
+          origin,
           colorScheme,
-          probeSpec: {...probeSpec, probes: [], rootVariables: [], results: []},
-          interaction,
+          probeSpec,
+          interaction: probeSpec.interaction,
         });
-        taskInteractions[interaction.id] = taskReading.reading.interaction;
-        mainReading.consoleErrors.push(...taskReading.consoleErrors);
-        mainReading.pageErrors.push(...taskReading.pageErrors);
-        mainReading.failedRequests.push(...taskReading.failedRequests);
+        const taskInteractions = {};
+        for (const interaction of taskDefinition?.contract.interactions ?? []) {
+          const taskReading = await readScheme({
+            browser,
+            origin,
+            colorScheme,
+            probeSpec: {
+              ...probeSpec,
+              probes: [],
+              rootVariables: [],
+              results: [],
+            },
+            interaction,
+          });
+          taskInteractions[interaction.id] = taskReading.reading.interaction;
+          mainReading.consoleErrors.push(...taskReading.consoleErrors);
+          mainReading.pageErrors.push(...taskReading.pageErrors);
+          mainReading.failedRequests.push(...taskReading.failedRequests);
+        }
+        if (screenshotDir) {
+          fs.mkdirSync(screenshotDir, {recursive: true});
+          const page = await browser.newPage({
+            viewport: {width: 1280, height: 720},
+            colorScheme,
+          });
+          await page.goto(`${origin}/`);
+          await page.screenshot({
+            path: path.join(screenshotDir, `${label}-${colorScheme}.png`),
+            fullPage: true,
+          });
+          await page.close();
+        }
+        measurement.schemes[colorScheme] = {
+          ...mainReading.reading,
+          taskInteractions,
+          consoleErrors: mainReading.consoleErrors,
+          pageErrors: mainReading.pageErrors,
+          failedRequests: mainReading.failedRequests,
+        };
       }
-      if (screenshotDir) {
-        fs.mkdirSync(screenshotDir, {recursive: true});
-        const page = await browser.newPage({
-          viewport: {width: 1280, height: 720},
-          colorScheme,
-        });
-        await page.goto(`http://127.0.0.1:${port}/`);
-        await page.screenshot({
-          path: path.join(screenshotDir, `${label}-${colorScheme}.png`),
-          fullPage: true,
-        });
-        await page.close();
-      }
-      measurement.schemes[colorScheme] = {
-        ...mainReading.reading,
-        taskInteractions,
-        consoleErrors: mainReading.consoleErrors,
-        pageErrors: mainReading.pageErrors,
-        failedRequests: mainReading.failedRequests,
-      };
+
+      await browser.close();
+      server.close();
     }
 
-    await browser.close();
-    server.close();
-  }
-
-  const privateValues = measurementPrivateValues({appDir, outFile});
-  const exportedMeasurement = publicMeasurement(measurement, {
-    fixtureId,
-    privateValues,
-  });
-  fs.mkdirSync(path.dirname(outFile), {recursive: true});
-  fs.writeFileSync(
-    outFile,
-    `${JSON.stringify(exportedMeasurement, null, 2)}\n`,
-  );
-
-  if (provenance) {
-    const sidecarOut = outFile.replace(/\.json$/, '.provenance.json');
-    const exportedProvenance = publicProvenance(provenance, {privateValues});
+    const privateValues = measurementPrivateValues({
+      appDir,
+      outFile,
+      buildDir,
+    });
+    const exportedMeasurement = publicMeasurement(measurement, {
+      fixtureId,
+      privateValues,
+    });
+    fs.mkdirSync(path.dirname(outFile), {recursive: true});
     fs.writeFileSync(
-      sidecarOut,
-      `${JSON.stringify(exportedProvenance, null, 2)}\n`,
+      outFile,
+      `${JSON.stringify(exportedMeasurement, null, 2)}\n`,
     );
-  }
 
-  console.log(
-    `${label}: build ${measurement.build.ok ? 'ok' : `FAILED (${measurement.build.status})`}` +
-      (measurement.build.ok
-        ? `, ${measurement.schemes.light.consoleErrors.length} console errors` +
-          `, ${Object.values(measurement.schemes.light.probes).filter(probe => probe.missing).length} probes missing`
-        : ''),
-  );
+    if (provenance) {
+      const sidecarOut = outFile.replace(/\.json$/, '.provenance.json');
+      const exportedProvenance = publicProvenance(provenance, {privateValues});
+      fs.writeFileSync(
+        sidecarOut,
+        `${JSON.stringify(exportedProvenance, null, 2)}\n`,
+      );
+    }
+
+    console.log(
+      `${label}: build ${measurement.build.ok ? 'ok' : `FAILED (${measurement.build.status})`}` +
+        (measurement.build.ok
+          ? `, ${measurement.schemes.light.consoleErrors.length} console errors` +
+            `, ${Object.values(measurement.schemes.light.probes).filter(probe => probe.missing).length} probes missing`
+          : ''),
+    );
+  } finally {
+    // A failed build leaves the same debris a successful one does, so the copy
+    // is removed on every path out.
+    workspace.cleanup();
+  }
 }
 
 const isMain =

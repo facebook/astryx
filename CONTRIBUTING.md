@@ -92,9 +92,6 @@ cd astryx
 # Install dependencies
 pnpm install
 
-# Build core package first (required for Storybook)
-pnpm -F @astryxdesign/core build
-
 # Start Storybook for component development
 cd apps/storybook
 pnpm dev
@@ -102,19 +99,9 @@ pnpm dev
 
 ### Running Storybook
 
-Storybook loads pre-built packages from `dist/` folders, so you need to build packages before running Storybook.
-
-**First time setup:**
-
-```bash
-# Build all packages
-pnpm build
-
-# Or build just core
-pnpm -F @astryxdesign/core build
-```
-
-**Start Storybook:**
+Storybook resolves every workspace package to its `src/` directory and compiles
+it itself, so a fresh clone needs no build step first — `pnpm install` then
+`pnpm dev` is enough.
 
 ```bash
 cd apps/storybook
@@ -127,16 +114,8 @@ Storybook will open at http://localhost:6006 with:
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
-**If you make changes to `@astryxdesign/core`:**
-
-```bash
-# Rebuild core package
-pnpm -F @astryxdesign/core build
-
-# Restart Storybook to see changes
-cd apps/storybook
-pnpm dev
-```
+**If you make changes to `@astryxdesign/core`:** nothing extra. The dev server
+serves the edited source, so the story updates on save — no rebuild, no restart.
 
 ### Running the Doc Site
 
@@ -468,6 +447,32 @@ When the audit reports baseline entries as "resolved", delete them from
 > third of the success criteria). A green `pr-a11y` job does not mean a
 > component is accessible — keyboard flows, focus order, screen-reader
 > semantics, and contrast in context still need manual checks.
+
+### Accessibility spec-test contracts
+
+axe finds broad markup violations; it does not know that a switch has to turn
+back off. The reusable **accessibility spec tests** in
+[`internal/a11y-spec/`](internal/a11y-spec/README.md) encode one adopted
+WAI-ARIA APG pattern as a standards-traceable contract, and components bind to
+it. Each expectation names the WCAG success criterion or APG requirement it
+comes from, the evidence layer that can observe it, and whether it gates.
+
+They run in two lanes, and the split is the point: jsdom proves DOM-layer facts
+in `pnpm test`, and everything that needs a computed accessibility tree, real
+focus, or real activation is reported `unrun` there and proven in Chromium.
+
+```bash
+# One-time setup
+pnpm storybook:build
+npx playwright install chromium
+
+pnpm test:a11y-contract      # the Chromium lane (also runs inside pr-a11y)
+```
+
+Adopting the pattern in a new component means binding to the existing contract,
+not copying its assertions — see the package README and
+[`docs/specs/AST-020`](docs/specs/AST-020/spec.md) /
+[`docs/specs/AST-021`](docs/specs/AST-021/spec.md).
 
 ### RTL audits
 

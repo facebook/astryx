@@ -143,18 +143,20 @@ const indeterminateRotation = stylex.keyframes({
   '100%': {transform: 'rotate(360deg)'},
 });
 
+// SVG dash percentages scale with the square viewport. A 300% gap exceeds every
+// ring circumference; shifting the 2% + 300% pattern by 302% closes the loop.
 const indeterminateDash = stylex.keyframes({
   '0%': {
-    strokeDasharray: '1, 150',
-    strokeDashoffset: '0',
+    strokeDasharray: '2%, 300%',
+    strokeDashoffset: '0%',
   },
   '50%': {
-    strokeDasharray: '90, 150',
-    strokeDashoffset: '-35',
+    strokeDasharray: '175%, 300%',
+    strokeDashoffset: '-68%',
   },
   '100%': {
-    strokeDasharray: '90, 150',
-    strokeDashoffset: '-124',
+    strokeDasharray: '2%, 300%',
+    strokeDashoffset: '-302%',
   },
 });
 

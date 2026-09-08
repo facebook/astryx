@@ -25,6 +25,7 @@ function scaffold({
   brokenComponent = false,
   brokenCodemod = false,
   docs = null,
+  unknownKeys = null,
   integrationIssuesUrl = 'https://example.com/widgets/issues',
 } = {}) {
   fs.writeFileSync(
@@ -50,6 +51,7 @@ function scaffold({
   if (withTemplates) manifest.templates = './templates';
   if (withCodemods) manifest.codemods = './codemods';
   if (docs) manifest.docs = './docs';
+  if (unknownKeys) Object.assign(manifest, unknownKeys);
   if (integrationIssuesUrl) manifest.issuesUrl = integrationIssuesUrl;
   fs.writeFileSync(
     path.join(pkgDir, 'astryx.integration.mjs'),
@@ -274,6 +276,39 @@ describe('Project discovery', () => {
     // Same identity (cached value) and no additional discovery walk.
     expect(second).toBe(first);
     expect(spy.mock.calls.length).toBe(callsAfterFirst);
+  });
+});
+
+describe('Project forward compatibility', () => {
+  // An integration is published once and installed against many CLI versions,
+  // so a manifest key from a NEWER CLI reaches an older one routinely. It used
+  // to fail the strict parse, and a manifest that fails to parse contributes
+  // nothing — one added field cost the package its components, templates and
+  // codemods on every older consumer, silently (#5119).
+  it('keeps every contribution when the manifest holds a key this CLI does not know', async () => {
+    scaffold({unknownKeys: {futureRoot: './future', anotherOne: 42}});
+    const project = await Project.load(tmpDir);
+
+    const comps = await project.components();
+    expect(comps.some(c => c.name === 'Widget' && c.package === '@acme/widgets')).toBe(true);
+    expect((await project.templates()).some(t => t.package === '@acme/widgets')).toBe(true);
+    const {integration} = await project.codemods('0.1.0', '0.2.0');
+    expect(integration).toHaveLength(1);
+
+    const issues = await project.issues();
+    expect(issues.every(i => i.severity !== 'error')).toBe(true);
+    const unknown = issues.filter(i => i.code === 'unknown_manifest_key');
+    expect(unknown).toHaveLength(1);
+    expect(unknown[0].severity).toBe('warning');
+    expect(unknown[0].message).toContain('"futureRoot"');
+    expect(unknown[0].message).toContain('"anotherOne"');
+  });
+
+  it('still refuses a known key of the wrong type', async () => {
+    scaffold({unknownKeys: {components: 42}});
+    const project = await Project.load(tmpDir);
+    const issues = await project.issues();
+    expect(issues.some(i => i.severity === 'error')).toBe(true);
   });
 });
 

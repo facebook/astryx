@@ -10,7 +10,8 @@ approved_by: cixzhang
 approved_at: 2026-09-02
 phase: accepted
 owners: [cixzhang, josephfarina]
-affects_architecture: [architecture:public-component-api]
+affects_architecture:
+  [architecture:public-component-api, architecture:cli-surface]
 affects_families: []
 affects_contributing: [contributing:release-process, contributing:templates]
 affects_consumer_docs: [release-process, templates]
@@ -75,7 +76,12 @@ preserves the released contract.
   `0.x`, that category carries a minor bump; every nonbreaking published category
   carries a patch bump. Documentation-only, test-only, and private-package-only
   changes need no Changeset. `pnpm changeset:new` is the authoring path and
-  `pnpm check:changesets` enforces the current category/bump coupling.
+  `pnpm check:changesets` enforces the current category/bump coupling. Classify
+  each published package update in multi-package work. A fixed-group version-only
+  co-bump needs no Changeset entry by itself, but a generated dependency or peer
+  range edit is part of that package's update and must be classified and named in a
+  Changeset. When categories differ, use separate Changesets so every package entry
+  follows its own classification.
 - **FR8 — Migration evidence matches the affected surface.** Every breaking change
   names the old valid usage, the replacement, and how consumers migrate. Supply an
   `astryx upgrade` codemod when consumer source can be rewritten mechanically.
@@ -98,6 +104,24 @@ preserves the released contract.
   contractual surfaces under FR3. Individual catalog values returned through that
   schema, including template slugs, names, descriptions, categories, keywords, and
   starter content, are not independently stable API identifiers.
+- **FR12 — Supported inter-package ranges are contracts.** For an update to a
+  published package, its latest stable release's documented installation scenarios
+  and declared dependency or peer ranges define the supported companion package
+  versions. The update is breaking for that package when upgrading it alone makes
+  any such combination stop working unchanged, including by narrowing or raising
+  the range. A coordinated upgrade that works does not change that classification.
+  A dependency bump is not breaking when every previously supported combination
+  keeps working. Keep every previously supported version in range and provide an
+  adapter when needed; otherwise classify the narrower or higher-floor range as
+  breaking, describe the range change in its Changeset release note, and meet FR8's
+  migration obligation.
+- **FR13 — Stable machine schemas project every field.** A stable CLI response
+  contract includes fields inside discriminated `data` entries as well as the
+  outer envelope. Every field is present in the canonical response type, contract
+  tests, text projection where the command provides one, and complete
+  consumer-facing schema documentation. Adding an optional field is nonbreaking
+  when old consumers continue unchanged, but it remains a public schema update and
+  does not bypass current-authority review or documentation.
 
 ### Platform support
 
@@ -125,17 +149,20 @@ updates:
 - changing or completely rebuilding the template's emitted starter page updates
   content for future generations without modifying projects that already copied it.
 
-The stable compatibility boundary remains the CLI operation and response schema,
-not the individual entries currently present in the template catalog.
+The stable compatibility boundary remains the CLI operation and complete response
+schema, not the individual entries currently present in the template catalog.
+Nested entry fields are public schema even when optional; their type, tests, text
+projection where present, and consumer schema documentation move together.
 
 ## Verification
 
-| Contract | Verification                                                     | Representative states                                                      | Mutation or failure expectation                                                                         |
-| -------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| FR1–FR3  | PR compatibility statement plus latest stable package inspection | released export, behavior, CLI command; unreleased and private surface     | A change is labeled from diff size or possibility alone, or a released contract change is missed        |
-| FR4–FR6  | Old-usage type/runtime/CLI regression test                       | alias retained, deprecation warning, broad rewrite, low-adoption caller    | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility       |
-| FR7–FR8  | `pnpm check:changesets` plus migration review                    | breaking and patch Changesets; codemoddable and non-codemoddable migration | Category and bump diverge, or a breaking release gives no usable migration path                         |
-| FR9–FR11 | CLI contract tests plus template catalog and output tests        | slug rename, metadata edit, source rebuild, command or schema change       | Catalog data is frozen as API, or a command/schema incompatibility is mislabeled as a catalog-only edit |
+| Contract | Verification                                                                                                                     | Representative states                                                                         | Mutation or failure expectation                                                                                                                |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3  | PR compatibility statement plus latest stable package inspection                                                                 | released export, behavior, CLI command; unreleased and private surface                        | A change is labeled from diff size or possibility alone, or a released contract change is missed                                               |
+| FR4–FR6  | Old-usage type/runtime/CLI regression test                                                                                       | alias retained, deprecation warning, broad rewrite, low-adoption caller                       | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                              |
+| FR7–FR8  | `pnpm check:changesets` plus migration review                                                                                    | breaking and patch Changesets; codemoddable and non-codemoddable migration                    | Category and bump diverge, or a breaking release gives no usable migration path                                                                |
+| FR9–FR13 | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests | slug rename, metadata edit, source rebuild, optional field addition, command or schema change | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection |
+| FR12     | Minimum and representative supported-version tests plus manifest and release-note review                                         | retained range, narrowed range, adapter, coordinated upgrade                                  | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                      |
 
 ## Decision log
 
@@ -172,6 +199,40 @@ without confusing current catalog contents with the interface that serves them.
 Rejected: treating a slug as stable API merely because it is interpolated into an
 exact CLI invocation. That would freeze catalog data and discourage clearer naming
 without protecting a contract the template system intends to make.
+
+### DEC-3 — Package updates keep their own range promises
+
+**Reference:** `spec:AST-017/DEC-3`
+**Decider:** `cixzhang`, `2026-09-03`
+
+Treat the latest stable package's declared dependency or peer range and documented
+installation scenario as its compatibility promise. Consumers may upgrade that
+package with any companion version the range still allows; a coordinated release
+cannot require an undeclared lockstep upgrade. Classify the package update that
+creates the mismatch. Supporting package updates keep their own classifications.
+A coordinated breaking range change remains allowed when its Changeset release note
+describes the new range and its FR8 migration tells consumers how to move.
+
+Rejected: marking every dependency bump breaking, which would freeze compatible
+maintenance, or calling an update nonbreaking merely because a coordinated upgrade
+works, which would break supported independent consumers.
+
+### DEC-4 — Stable CLI response fields receive complete projections
+
+**Reference:** `spec:AST-017/DEC-4`
+**Decider:** `cixzhang`, `2026-09-06`
+
+Treat every field in a stable machine-readable CLI response—including nested
+entry fields—as public schema. Keep its canonical type, contract tests, applicable
+text output, and complete consumer documentation aligned in the same change.
+
+An optional field addition may remain nonbreaking when old consumers continue
+unchanged. That compatibility result does not make the field private or waive
+current-authority and documentation requirements.
+
+Rejected: documenting only the outer envelope, relying on implementation typedefs
+as consumer documentation, or treating a response-entry field as mutable catalog
+data merely because the value it carries may evolve.
 
 ## Open questions
 

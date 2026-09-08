@@ -1,4 +1,8 @@
 {
+  "@astryx.pagination.label": {
+    "defaultMessage": "Pagination",
+    "description": "Aria label for the pagination navigation region."
+  },
   "@astryx.pagination.previous": {
     "defaultMessage": "Aller à la page précédente",
     "description": "Aria label for the previous-page button."
@@ -30,6 +34,10 @@
   "@astryx.pagination.goToPageInput": {
     "defaultMessage": "Aller à la page",
     "description": "Aria label for the editable page/row number box in the input pagination variant. No number — the box holds the value itself."
+  },
+  "@astryx.pagination.pageLabel": {
+    "defaultMessage": "Page",
+    "description": "Visible label before the editable box in the input pagination variant. Example: \"Page [ 1 ] / 10\"."
   },
   "@astryx.pagination.pageIndicators": {
     "defaultMessage": "Indicateurs de page",
@@ -598,6 +606,10 @@
   "@astryx.dateInput.clear": {
     "defaultMessage": "Effacer {label}",
     "description": "Aria label for the clear-value button in DateInput / DateRangeInput / DateTimeInput. `{label}` is the field's own label so screen readers announce e.g. 'Clear Start date'."
+  },
+  "@astryx.dateInput.invalidDate": {
+    "defaultMessage": "Date non valide",
+    "description": "Screen-reader-only live-region alert in DateInput / DateTimeInput when the typed date cannot be parsed. The field silently reverts on blur, so this is the only rejection feedback a screen-reader user gets."
   },
   "@astryx.dateTimeInput.timeSuffix": {
     "defaultMessage": "Heure de {label}",

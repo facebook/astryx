@@ -158,7 +158,9 @@ export interface UseFocusTrapReturn<T extends HTMLElement = HTMLElement> {
  * - Handles both Tab and Shift+Tab navigation
  * - Restores focus to the element that was focused before activation when the
  *   trap deactivates or unmounts, unless focus was already moved elsewhere
- *   (so consumers that restore focus themselves are unaffected)
+ *   (so consumers that restore focus themselves are unaffected) or focus
+ *   never entered the trap (so popups that keep focus on their trigger, like
+ *   comboboxes, are unaffected)
  *
  * @example
  * ```
@@ -243,6 +245,18 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
    * now-unmounted) trap container. If focus already moved to some other element
    * outside the trap (the user clicked elsewhere, or a consumer such as
    * DropdownMenu already refocused its trigger), the restore is a no-op.
+   *
+   * The restore is also skipped when focus never entered the trap while it
+   * was active. Some popups — a Typeahead/PowerSearch listbox anchored to its
+   * own input — deliberately keep DOM focus on the trigger and never move it
+   * into the trap container (they open with `role: "none"` and
+   * `hasAutoFocus: false`). For those, the restore would cancel a blur the
+   * user asked for on outside-click dismissal, re-focusing the trigger so a
+   * second click no longer fires a `focus` event and cannot reopen the menu.
+   * Tracking `focusin` inside the container distinguishes "focus was here and
+   * we should rescue it" from "focus was never here and we should leave it
+   * alone" — popups that do take focus (Dialog, DropdownMenu, a Typeahead
+   * option click) are unaffected.
    */
   useEffect(() => {
     if (!isActive) {
@@ -253,7 +267,27 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
     // Snapshot the container now; by cleanup it may be detached or unmounted.
     const container = containerRef.current;
 
+    // Whether focus ever entered the trap container while it was active.
+    // Initialized from the current active element in case focus was already
+    // inside at activation (e.g. a programmatic focus before the effect ran).
+    let hadFocusInside =
+      container != null && container.contains(document.activeElement);
+
+    const markFocusInside = (event: FocusEvent) => {
+      const target = event.target as Node | null;
+      if (target != null && containerRef.current?.contains(target)) {
+        hadFocusInside = true;
+      }
+    };
+    document.addEventListener('focusin', markFocusInside, true);
+
     return () => {
+      document.removeEventListener('focusin', markFocusInside, true);
+
+      if (!hadFocusInside) {
+        return;
+      }
+
       const active = document.activeElement;
       const focusWasLost =
         active == null ||

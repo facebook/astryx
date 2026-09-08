@@ -8,6 +8,9 @@ export const docs = {
   displayName: 'Side Nav Item',
   isHiddenFromOverview: true,
   description: 'Navigation item with icon, selected state, optional end content, and nesting support via children.',
+  playground: {
+    defaults: {label: 'Dashboard', icon: 'viewColumns', isSelected: true},
+  },
   props: [
     {
       name: 'label',

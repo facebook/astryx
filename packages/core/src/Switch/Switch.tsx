@@ -41,7 +41,7 @@ import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import {switchScope} from './switch.markers.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -159,6 +159,7 @@ const styles = stylex.create({
   },
   input: {
     position: 'absolute',
+    top: '50%',
     margin: 0,
     padding: 0,
     opacity: 0,
@@ -167,25 +168,11 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     zIndex: 1,
-    minInlineSize: {
-      default: null,
-      '@media (pointer: coarse)': '24px',
-    },
-    minBlockSize: {
-      default: null,
-      '@media (pointer: coarse)': '24px',
-    },
-    insetBlockStart: {
-      default: null,
-      '@media (pointer: coarse)': '50%',
-    },
-    insetInlineStart: {
-      default: null,
-      '@media (pointer: coarse)': '50%',
-    },
-    transform: {
-      default: null,
-      '@media (pointer: coarse)': 'translate(-50%, -50%)',
+  },
+  inputCoarse: {
+    '@media (pointer: coarse)': {
+      minInlineSize: 24,
+      minBlockSize: 24,
     },
   },
   inputDisabled: {
@@ -311,7 +298,6 @@ const styles = stylex.create({
   labelWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-0-5'],
     justifyContent: 'center',
   },
   description: {
@@ -589,6 +575,8 @@ export function Switch({
         aria-busy={isBusy || undefined}
         {...stylex.props(
           styles.input,
+          rtlStyles.centerInline('-50%'),
+          styles.inputCoarse,
           inputSizeStyles[size],
           isDisabled && styles.inputDisabled,
           isBusy && styles.inputBusy,

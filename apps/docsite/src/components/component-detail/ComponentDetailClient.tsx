@@ -352,8 +352,10 @@ export function ComponentDetailClient({
         <VStack gap={2}>
           <Text type="display-1">{comp.displayName}</Text>
           <Text type="supporting" color="secondary">
+            {!comp.isReady ? 'Canary · ' : ''}
             {pkg}
             {pkgVersion ? ` v${pkgVersion}` : ''} · {comp.moduleName}
+            {!comp.isReady && pkg ? ` · npm install ${pkg}@canary` : ''}
           </Text>
         </VStack>
 

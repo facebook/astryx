@@ -30,9 +30,7 @@
 # design label is advisory and does not). Both are cleared when an entitled
 # owner approves (code → CODEOWNER; design → DESIGNOWNER
 # or CODEOWNER). Code detection is path-based and deterministic; design adds a
-# content-based diff score (deterministic too — same diff, same score). The
-# Copilot reviewer reads these labels to focus its review (see
-# .github/copilot-instructions.md).
+# content-based diff score (deterministic too — same diff, same score).
 #
 # HARD GATE (code review only): this emits a "review-required" COMMIT STATUS.
 # When code review is needed it's set to `pending`, which blocks a required
@@ -492,9 +490,9 @@ jobs:
               }
             }
 
-            // No explanatory comment is posted here on purpose. The label is the
-            // mechanical signal; the Copilot reviewer reads it and explains why
-            // review is needed with actual judgment — better than a static one.
+            // No explanatory comment is posted here on purpose. The label and
+            // status are the mechanical signals; reviews provide judgment
+            // separately rather than through a static workflow comment.
 
             // --- The blocking gate: a "review-required" COMMIT STATUS. ---
             // We use a commit STATUS (not a check run) for two reasons:

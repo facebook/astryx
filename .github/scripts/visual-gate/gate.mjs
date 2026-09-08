@@ -40,14 +40,16 @@ import {
   accountBaseline,
   baselineVisualStories,
   buildPlan,
+  canonicalBaselineStories,
   createReleasePlan,
+  emptyVisualPlanMessage,
   exceedsPrVisualShotLimit,
+  existingComponentBaselinePlan,
   readStoryIndex,
   readThemeCatalog,
   resolvePrVisualTotalShotLimit,
   storiesInPackages,
   summarizeBaselineAccounting,
-  withBaselineCoverage,
   withThemeMetadata,
 } from './lib/plan.mjs';
 import {READ_TARGETS, emptyAccumulator, fold} from './lib/probe-reach.mjs';
@@ -59,7 +61,7 @@ import {loadConfig, loadThemeOverrides, loadThemingTargets} from './lib/sources.
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
 const EXIT = {clean: 0, crashed: 1, changed: 2};
-const RELEASE_TIERS = ['surface', 'theme-matrix'];
+const RELEASE_TIERS = ['surface', 'probe'];
 
 const argv = process.argv.slice(2);
 const command = argv[0];
@@ -77,7 +79,7 @@ const captureIdentity = () => ({
 
 const config = loadConfig(REPO_ROOT);
 const releaseMode = command === 'release';
-const themeCatalog = readThemeCatalog(REPO_ROOT);
+const themeCatalog = readThemeCatalog(REPO_ROOT, config.baselineThemes);
 const storybookDir = path.resolve(flag('storybook-dir') ?? 'apps/storybook/dist');
 const baselineDir = path.resolve(flag('baseline') ?? '.visual-baseline');
 let outDir = path.resolve(flag('out') ?? '.visual-run');
@@ -100,7 +102,9 @@ const maxShots = resolvePrVisualTotalShotLimit({
   components,
   matrixThemes,
   tiers,
-  configuredLimit: config.prVisualShotLimit,
+  configuredLimit: releaseMode
+    ? config.visualPlanSafetyLimit
+    : config.prVisualShotLimit,
   safetyLimit: config.visualPlanSafetyLimit,
 });
 const storyPackages = (flag('story-packages') ?? config.stableStoryPackages.join(','))
@@ -192,7 +196,11 @@ async function plan() {
     Object.keys(config.excludeStories),
     REPO_ROOT,
   );
-  const stories = storiesInPackages(indexedStories, storyPackages);
+  const packageStories = storiesInPackages(indexedStories, storyPackages);
+  const stories = canonicalBaselineStories(packageStories, {
+    groups: config.stableStoryGroups,
+    packages: storyPackages,
+  });
   const {manifest: baselineManifest} = readBaseline(baselineDir);
   const componentThemes = acceptedVisualThemes(
     baselineManifest,
@@ -227,17 +235,20 @@ async function plan() {
   }
 
   const componentShotCount = tiers.includes('component')
-    ? buildPlan({
-        stories,
-        targets,
-        themeOverrides,
-        observations,
-        defaultTheme: config.defaultTheme,
-        tiers: ['component'],
-        components,
-        componentThemes,
-        probeTheme: config.probeTheme,
-      }).length
+    ? existingComponentBaselinePlan(
+        buildPlan({
+          stories,
+          targets,
+          themeOverrides,
+          observations,
+          defaultTheme: config.defaultTheme,
+          tiers: ['component'],
+          components,
+          componentThemes,
+          probeTheme: config.probeTheme,
+        }),
+        baselineManifest,
+      ).length
     : 0;
   let shots = buildPlan({
     stories,
@@ -252,6 +263,9 @@ async function plan() {
     themeStories,
     probeTheme: config.probeTheme,
   });
+  if (tiers.includes('component')) {
+    shots = existingComponentBaselinePlan(shots, baselineManifest);
+  }
   let baselineAccount = null;
   if (releaseMode) {
     baselineAccount = accountBaseline(
@@ -260,11 +274,6 @@ async function plan() {
       themeCatalog,
       REPO_ROOT,
     );
-    shots = withBaselineCoverage(shots, {
-      stories,
-      baselineManifest: baselineAccount.manifest,
-      themes: themeCatalog,
-    });
   }
   shots = withThemeMetadata(shots, themeCatalog);
   // A sample is for trying the rig out, never for a gate run: it is taken
@@ -292,7 +301,20 @@ async function plan() {
   };
 }
 
+/** How this run describes what it planned, for a refusal a human has to act on. */
+function plannedScope() {
+  if (planFile) return 'The exact trusted plan';
+  if (components.length) return `Component scope ${components.join(', ')}`;
+  return `Tier scope ${tiers.join(', ')}`;
+}
+
 async function runCapture(shots, releasePlan = null) {
+  // An empty plan is not a clean run. Every lane that captures pixels refuses
+  // one here, on the way in, so a scope whose keys are missing from the
+  // accepted baseline cannot report the absence of evidence as evidence.
+  if (shots.length === 0) {
+    throw new Error(emptyVisualPlanMessage(plannedScope()));
+  }
   if (shots.length > config.visualPlanSafetyLimit) {
     throw new Error(
       `Visual plan has ${shots.length} shots; safety limit is ${config.visualPlanSafetyLimit}.`,
@@ -442,7 +464,7 @@ async function check() {
   ];
 
   const {manifest: rawBaseline, exists} = readBaseline(baselineDir);
-  const baselineManifest = releaseMode ? baselineAccount.manifest : rawBaseline;
+  const baselineManifest = rawBaseline;
   const blocker = exists ? incomparable(baselineManifest, manifest) : null;
   if (blocker) {
     failures.push({key: 'baseline', error: blocker});
@@ -554,7 +576,7 @@ function summarize(verdict, baselineExists) {
   const accounting = verdict.context?.baselineAccounting;
   if (accounting) {
     lines.push(
-      `Baseline accounting: ${accounting.plannedCurrentStable} planned stable · ${accounting.intentionallyExcluded} intentionally excluded · ${accounting.preservedLegacy} preserved legacy · ${accounting.unclassified} unclassified`,
+      `Baseline accounting: ${accounting.plannedCurrentStable} planned stable · ${accounting.policyExcluded} policy-excluded · ${accounting.intentionallyExcluded} intentionally excluded · ${accounting.preservedLegacy} preserved legacy · ${accounting.unclassified} unclassified`,
       '',
     );
     if (accounting.unclassifiedKeys) {
@@ -782,12 +804,15 @@ async function main() {
         ? JSON.parse(fs.readFileSync(verdictPath, 'utf8'))
         : null;
       const requested = flag('keys');
+      const removed = new Set(verdict?.removed ?? []);
       const named =
         !requested || requested === 'all'
-          ? Object.keys(currentManifest.shots)
+          ? [
+              ...Object.keys(currentManifest.shots),
+              ...(has('prune') ? removed : []),
+            ]
           : requested.split(',').filter(Boolean);
       if (new Set(named).size !== named.length) throw new Error('accept repeats a shot key.');
-      const removed = new Set(verdict?.removed ?? []);
       const prune = has('prune') ? named.filter(key => removed.has(key)) : [];
       const keys = named.filter(key => currentManifest.shots[key]);
       const unknown = named.filter(key => !currentManifest.shots[key] && !removed.has(key));

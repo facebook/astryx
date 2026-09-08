@@ -17,9 +17,14 @@ import {Badge} from '../Badge/Badge';
 import {InternationalizationProvider} from '../i18n';
 
 describe('Button', () => {
+  // Retained, narrowed: the shared contract proves the ROLE and the accessible
+  // NAME in a real engine (button.role.exposed, button.name.exposed), which is
+  // strictly stronger than asserting them here. What stays is the part it does
+  // not own — that Button renders `label` as text a person can read, rather
+  // than only as an accessible name.
   it('renders label as visible text', () => {
     render(<Button label="Click me" />);
-    expect(screen.getByRole('button', {name: 'Click me'})).toBeInTheDocument();
+    expect(screen.getByRole('button')).toHaveTextContent('Click me');
   });
 
   it('renders children instead of label when provided', () => {
@@ -42,7 +47,11 @@ describe('Button', () => {
     expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
-  it('renders icon-only button with aria-label', () => {
+  // Retained, narrowed: the shared contract proves an icon-only button HAS an
+  // accessible name, computed by a real engine. What stays is Button's own
+  // mapping — `isIconOnly` routes `label` to `aria-label` instead of to text,
+  // and the icon is still rendered.
+  it('maps label to aria-label and keeps the icon when icon-only', () => {
     render(
       <Button
         label="Settings"
@@ -50,8 +59,9 @@ describe('Button', () => {
         isIconOnly
       />,
     );
-    const button = screen.getByRole('button', {name: 'Settings'});
+    const button = screen.getByRole('button');
     expect(button).toHaveAttribute('aria-label', 'Settings');
+    expect(button).not.toHaveTextContent('Settings');
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 

@@ -372,9 +372,76 @@ export function generateThemeRules(theme: DefinedTheme): string[] {
   //    themed type's font-size across the astryx-base → astryx-theme layers)
   generateSizeOverrides(theme.components || {}, parts);
 
+  // 6. Heading `weight`-prop overrides. These are emitted after authored type
+  //    rules in the same layer so an explicit prop remains an override even
+  //    when a custom visual type declares its own default weight.
+  generateHeadingWeightOverrides(theme.components || {}, parts);
+
   // (on-media rules are generated separately — see generateOnMediaCSS)
 
   return parts;
+}
+
+/** Named Heading/Text weight props and their theme-owned token values. */
+const HEADING_WEIGHT_TOKEN_MAP: Record<string, string> = {
+  normal: 'var(--font-weight-normal)',
+  medium: 'var(--font-weight-medium)',
+  semibold: 'var(--font-weight-semibold)',
+  bold: 'var(--font-weight-bold)',
+};
+
+/**
+ * Re-emit Heading's explicit weight choices in the theme layer.
+ *
+ * Component and type overrides live above the StyleX base layer, so the
+ * component's ordinary weight class cannot win there by itself. Emitting the
+ * reflected weight classes after authored component rules makes the public
+ * `weight` prop a dependable override of a type or level default.
+ */
+function generateHeadingWeightOverrides(
+  components: Record<string, unknown>,
+  parts: string[],
+  surface?: 'dark' | 'light',
+  inheritedComponents?: Record<string, unknown>,
+): void {
+  const headingRules = components.heading;
+  if (!headingRules || typeof headingRules !== 'object') {
+    return;
+  }
+  const headingRuleMap = headingRules as Record<string, unknown>;
+  const inheritedHeadingRules = inheritedComponents?.heading;
+  const inheritedHeadingRuleMap =
+    inheritedHeadingRules && typeof inheritedHeadingRules === 'object'
+      ? (inheritedHeadingRules as Record<string, unknown>)
+      : undefined;
+
+  for (const [weightName, weightValue] of Object.entries(
+    HEADING_WEIGHT_TOKEN_MAP,
+  )) {
+    const styleKey = `weight:${weightName}`;
+    const authoredWeight = getAuthoredHeadingWeight(headingRuleMap, styleKey);
+    const inheritedWeight = inheritedHeadingRuleMap
+      ? getAuthoredHeadingWeight(inheritedHeadingRuleMap, styleKey)
+      : undefined;
+    const effectiveWeight = authoredWeight ?? inheritedWeight ?? weightValue;
+    const suffix = parseStyleKey(`weight:${weightName}`);
+    const selector = surface
+      ? `:is(${mediaSelector(surface)}) :is(${componentClassSelector('heading', suffix)})`
+      : componentClassSelector('heading', suffix);
+    parts.push(`  ${selector} { font-weight: ${effectiveWeight}; }`);
+  }
+}
+
+function getAuthoredHeadingWeight(
+  headingRuleMap: Record<string, unknown>,
+  styleKey: string,
+): string | undefined {
+  const rule = headingRuleMap[styleKey];
+  if (rule == null || typeof rule !== 'object' || Array.isArray(rule)) {
+    return undefined;
+  }
+  const fontWeight = (rule as Record<string, unknown>).fontWeight;
+  return typeof fontWeight === 'string' ? fontWeight : undefined;
 }
 
 /**
@@ -751,6 +818,16 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
           }
         }
       }
+
+      // Apply the effective explicit Heading weight after media-specific type
+      // rules. A surface-authored target wins, followed by the inherited main
+      // target and then the built-in token fallback.
+      generateHeadingWeightOverrides(
+        onMedia.components,
+        parts,
+        surface,
+        theme.components,
+      );
     }
   }
 

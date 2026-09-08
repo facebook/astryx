@@ -106,7 +106,7 @@ function fullCommandName(actionCommand, root) {
 }
 
 /**
- * Load the project's `debug` function, if it has one.
+ * Load the handlers that will receive this run, before Commander parses.
  *
  * Called from the bin BEFORE Commander parses, not from a hook. Most commands
  * never touch `astryx.config` on their own, and parse errors and `--help`
@@ -117,14 +117,30 @@ function fullCommandName(actionCommand, root) {
  * module and loads every integration it names, and before this feature most
  * commands did neither: running a project's own code on `astryx --version`,
  * for a project that never asked for any of this, is not a cost the feature
- * gets to impose. So the file is read as text first and only loaded if the
- * word appears in it. A project with no config pays one `existsSync` walk; a
- * project with a config and no `debug` pays one small `readFile`.
+ * gets to impose. So the file is read as text first and only loaded if it
+ * mentions something that could produce a handler. A project with no config
+ * pays one `existsSync` walk; a project with a config that mentions neither
+ * pays one small `readFile`.
+ *
+ * TWO words open the gate, because there are two places a handler can come
+ * from. `debug` is the project's own. `integrations` is the other: an
+ * integration contributes a handler as a `debug` named export from its
+ * manifest, so a config that lists integrations may have one even though the
+ * word `debug` appears nowhere in it — which is the shape of essentially every
+ * app that installs an integration. Without the second word this feature would
+ * reach only the commands that happen to load a Project for their own reasons
+ * (`component`, `search`, `docs`, `template`, `doctor`, …) and would miss
+ * `--version`, `--help`, `theme *`, `blog`, and every parse error.
+ *
+ * Measured cost of that second word, on an integration whose manifest is
+ * TypeScript (the expensive case — jiti): ~50ms added to `astryx --version`,
+ * and nothing at all to a command that was going to load the project anyway.
+ * It is paid only by projects that declare integrations.
  *
  * The text test is deliberately loose — any occurrence, comments included —
  * because a false positive costs one config load the CLI used to do anyway,
  * while a false negative silently records nothing. The one shape it cannot
- * see is a config that never spells the word, e.g. spreading in an object
+ * see is a config that never spells either word, e.g. spreading in an object
  * from another module; that is documented on the `debug` config key.
  *
  * @returns {Promise<void>}
@@ -136,7 +152,8 @@ export async function loadProjectDebugHandler() {
     );
     const configPath = findConfigPath(process.cwd());
     if (!configPath) return;
-    if (!fs.readFileSync(configPath, 'utf-8').includes('debug')) {
+    const text = fs.readFileSync(configPath, 'utf-8');
+    if (!text.includes('debug') && !text.includes('integrations')) {
       debug.noteConfigGateSkipped();
       return;
     }
