@@ -3,12 +3,12 @@ schema_version: 1
 template_version: 1
 kind: system-spec
 id: spec:AST-008
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-09-08
+phase: accepted
 owners: [cixzhang, rubyycheung, imdreamrunner]
 affects_architecture:
   [architecture:theme-authoring-contract, architecture:theme-compilation]
