@@ -16,6 +16,7 @@ import {useState, type ReactElement, type ReactNode} from 'react';
 import {CheckboxInput} from '../CheckboxInput';
 import {CheckboxList, CheckboxListItem} from '../../CheckboxList';
 import {DropdownMenu, DropdownMenuCheckboxItem} from '../../DropdownMenu';
+import {FormLayout} from '../../FormLayout';
 import {List} from '../../List';
 import {SelectableCard} from '../../SelectableCard';
 import type {CheckboxStateId} from './Checkbox.a11y.states';
@@ -26,9 +27,11 @@ function VisibleLabel({children}: {children: ReactNode}) {
 
 function ControlledInput({
   initial,
+  hasChangeHandler = true,
   ...props
 }: {
   initial: boolean | 'indeterminate';
+  hasChangeHandler?: boolean;
   label: string;
   description?: string;
   isLabelHidden?: boolean;
@@ -40,7 +43,21 @@ function ControlledInput({
   status?: {type: 'error' | 'warning' | 'success'; message: string};
 }) {
   const [value, setValue] = useState<boolean | 'indeterminate'>(initial);
-  return <CheckboxInput {...props} value={value} onChange={setValue} />;
+  return (
+    <CheckboxInput
+      {...props}
+      value={value}
+      onChange={hasChangeHandler ? setValue : undefined}
+    />
+  );
+}
+
+function InheritedRequiredInput() {
+  return (
+    <FormLayout defaultOptionality="required">
+      <ControlledInput initial={false} label="Marketing consent" />
+    </FormLayout>
+  );
 }
 
 function StandaloneListItem({
@@ -133,17 +150,22 @@ function GroupDisabledListItem() {
 function MenuCheckbox({
   initial,
   isDisabled = false,
+  description,
+  hasChangeHandler = true,
 }: {
   initial: boolean;
   isDisabled?: boolean;
+  description?: ReactNode;
+  hasChangeHandler?: boolean;
 }) {
   const [value, setValue] = useState(initial);
   return (
     <DropdownMenu button={{label: 'View options'}}>
       <DropdownMenuCheckboxItem
         label="Show archived"
+        description={description}
         value={value}
-        onChange={setValue}
+        onChange={hasChangeHandler ? setValue : undefined}
         isDisabled={isDisabled}
       />
     </DropdownMenu>
@@ -212,14 +234,36 @@ export const CHECKBOX_STATE_RENDERS: Record<
   'input-read-only': () => (
     <ControlledInput initial={true} label="Policy acknowledged" isReadOnly />
   ),
+  'input-handlerless-read-only': () => (
+    <ControlledInput
+      initial={true}
+      label="Policy acknowledged"
+      hasChangeHandler={false}
+    />
+  ),
   'input-required': () => (
     <ControlledInput initial={false} label="Accept terms" isRequired />
   ),
+  'input-inherited-required-valid': () => <InheritedRequiredInput />,
   'input-invalid': () => (
     <ControlledInput
       initial={false}
       label="Accept terms"
       status={{type: 'error', message: 'You must accept the terms'}}
+    />
+  ),
+  'input-warning': () => (
+    <ControlledInput
+      initial={false}
+      label="Enable sharing"
+      status={{type: 'warning', message: 'This setting affects all workspaces'}}
+    />
+  ),
+  'input-success': () => (
+    <ControlledInput
+      initial={true}
+      label="Email notifications"
+      status={{type: 'success', message: 'Preference saved'}}
     />
   ),
 
@@ -252,6 +296,12 @@ export const CHECKBOX_STATE_RENDERS: Record<
 
   'menu-item-unchecked': () => <MenuCheckbox initial={false} />,
   'menu-item-checked': () => <MenuCheckbox initial />,
+  'menu-item-described': () => (
+    <MenuCheckbox initial={false} description="Include unpublished items" />
+  ),
+  'menu-item-handlerless-inert': () => (
+    <MenuCheckbox initial={false} hasChangeHandler={false} />
+  ),
   'menu-item-disabled': () => <MenuCheckbox initial={false} isDisabled />,
 
   'card-unchecked': () => <ControlledCard initial={false} />,

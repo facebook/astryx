@@ -32,7 +32,7 @@ export interface CheckboxBindingState {
   readonly storyId: string;
   readonly opensMenu?: boolean;
   readonly declaredNotDelivered?: ReadonlyArray<{
-    readonly fact: 'description' | 'focusable' | 'readOnly';
+    readonly fact: 'description' | 'disabled' | 'focusable' | 'readOnly';
     readonly owned: string;
   }>;
 }
@@ -41,7 +41,6 @@ const DEFAULT_FACTS: CheckboxStateFacts = {
   role: 'checkbox',
   checked: false,
   operable: true,
-  directKeyboardOperation: true,
   focusable: true,
   disabled: false,
   description: null,
@@ -61,7 +60,6 @@ const menuFacts = (
 ): CheckboxStateFacts =>
   facts({
     role: 'menuitemcheckbox',
-    directKeyboardOperation: false,
     focusable: false,
     ...overrides,
   });
@@ -149,12 +147,33 @@ export const CHECKBOX_BINDING_STATES = [
     storyId: 'a11y-checkbox-pattern--input-read-only',
   },
   {
+    id: 'input-handlerless-read-only',
+    binding: 'CheckboxInput',
+    summary:
+      'a handlerless controlled checkbox that is inert but does not declare read-only semantics',
+    facts: facts({checked: true, operable: false, readOnly: true}),
+    visibleLabel: 'Policy acknowledged',
+    storyId: 'a11y-checkbox-pattern--input-handlerless-read-only',
+    declaredNotDelivered: [
+      {fact: 'readOnly', owned: 'checkbox.readonly.declared'},
+    ],
+  },
+  {
     id: 'input-required',
     binding: 'CheckboxInput',
     summary: 'a checkbox declared required',
     facts: facts({required: true, invalid: true}),
     visibleLabel: 'Accept terms',
     storyId: 'a11y-checkbox-pattern--input-required',
+  },
+  {
+    id: 'input-inherited-required-valid',
+    binding: 'CheckboxInput',
+    summary:
+      'an unchecked checkbox inheriting required semantics without native validation',
+    facts: facts({required: true}),
+    visibleLabel: 'Marketing consent',
+    storyId: 'a11y-checkbox-pattern--input-inherited-required-valid',
   },
   {
     id: 'input-invalid',
@@ -166,6 +185,22 @@ export const CHECKBOX_BINDING_STATES = [
     }),
     visibleLabel: 'Accept terms',
     storyId: 'a11y-checkbox-pattern--input-invalid',
+  },
+  {
+    id: 'input-warning',
+    binding: 'CheckboxInput',
+    summary: 'a valid checkbox with warning supporting text',
+    facts: facts({description: 'This setting affects all workspaces'}),
+    visibleLabel: 'Enable sharing',
+    storyId: 'a11y-checkbox-pattern--input-warning',
+  },
+  {
+    id: 'input-success',
+    binding: 'CheckboxInput',
+    summary: 'a valid checkbox with success supporting text',
+    facts: facts({checked: true, description: 'Preference saved'}),
+    visibleLabel: 'Email notifications',
+    storyId: 'a11y-checkbox-pattern--input-success',
   },
 
   {
@@ -288,6 +323,29 @@ export const CHECKBOX_BINDING_STATES = [
     visibleLabel: 'Show archived',
     storyId: 'a11y-checkbox-pattern--menu-item-checked',
     opensMenu: true,
+  },
+  {
+    id: 'menu-item-described',
+    binding: 'DropdownMenuCheckboxItem',
+    summary:
+      'a menu checkbox item whose secondary row text participates in its visible name',
+    facts: menuFacts(),
+    visibleLabel: 'Show archived Include unpublished items',
+    storyId: 'a11y-checkbox-pattern--menu-item-described',
+    opensMenu: true,
+  },
+  {
+    id: 'menu-item-handlerless-inert',
+    binding: 'DropdownMenuCheckboxItem',
+    summary:
+      'a handlerless menu checkbox that does nothing but is not exposed as unavailable',
+    facts: menuFacts({operable: false, disabled: true}),
+    visibleLabel: 'Show archived',
+    storyId: 'a11y-checkbox-pattern--menu-item-handlerless-inert',
+    opensMenu: true,
+    declaredNotDelivered: [
+      {fact: 'disabled', owned: 'checkbox.disabled.exposed'},
+    ],
   },
   {
     id: 'menu-item-disabled',

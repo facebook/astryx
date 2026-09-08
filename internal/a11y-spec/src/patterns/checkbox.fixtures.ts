@@ -45,7 +45,6 @@ const CONFORMING_FACTS: CheckboxStateFacts = {
   role: 'checkbox',
   checked: false,
   operable: true,
-  directKeyboardOperation: true,
   focusable: true,
   disabled: false,
   description: null,
@@ -86,7 +85,6 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
       'a menu checkbox item whose composite owns keyboard navigation and focus',
     facts: facts({
       role: 'menuitemcheckbox',
-      directKeyboardOperation: false,
       focusable: false,
     }),
     html: `<div ${SUBJECT_ATTRIBUTE} role="menuitemcheckbox" tabindex="-1" aria-checked="false" ${TOGGLE_ON_CLICK}>Notifications</div>`,

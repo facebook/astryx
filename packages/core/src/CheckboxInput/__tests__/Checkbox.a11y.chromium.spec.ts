@@ -212,7 +212,6 @@ test('every applicability fact matches what the page exposes', async ({
       readOnly,
       invalid: computed.invalid,
       operable,
-      directKeyboardOperation: state.facts.role === 'checkbox',
     } as const;
     const expected = {
       role: state.facts.role,
@@ -224,11 +223,10 @@ test('every applicability fact matches what the page exposes', async ({
       readOnly: state.facts.readOnly,
       invalid: state.facts.invalid,
       operable: state.facts.operable,
-      directKeyboardOperation: state.facts.directKeyboardOperation,
     } as const;
     const excused = (state as CheckboxBindingState).declaredNotDelivered ?? [];
     for (const fact of Object.keys(expected) as (keyof typeof expected)[]) {
-      if (fact === 'focusable' && !state.facts.directKeyboardOperation) {
+      if (fact === 'focusable' && state.facts.role === 'menuitemcheckbox') {
         // A menu composite owns its roving focus. This contract deliberately
         // makes no claim about whether the item is reachable by page Tab order.
         continue;

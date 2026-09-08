@@ -131,7 +131,7 @@ const APG_DESCRIBEDBY: ApgRequirement = {
   standard: 'apg',
   pattern: 'checkbox',
   requirement:
-    'If the presentation includes additional descriptive static text relevant to a checkbox, the checkbox has aria-describedby set to the id of the element containing the description.',
+    'If the presentation includes additional descriptive static text relevant to a checkbox or to a group of checkboxes, the checkbox or checkbox group has aria-describedby set to the id of the element containing the description.',
   url: `${APG_URL}#wai-ariaroles,states,andproperties`,
 };
 const APG_SPACE: ApgRequirement = {
@@ -175,8 +175,6 @@ export interface CheckboxStateFacts {
   readonly checked: boolean | 'mixed';
   /** Whether the user is meant to be able to change it. */
   readonly operable: boolean;
-  /** Whether this pattern owns direct Space operation for this state. */
-  readonly directKeyboardOperation: boolean;
   /** Whether it is meant to be reachable in the page tab sequence. */
   readonly focusable: boolean;
   /** Whether it is meant to be exposed as unavailable. */
@@ -654,7 +652,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         appliesWhen: {
           condition:
             'the user is meant to be able to change this direct checkbox',
-          test: facts => facts.operable && facts.directKeyboardOperation,
+          test: facts => facts.operable && facts.role === 'checkbox',
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: READS_THE_TREE,
@@ -709,7 +707,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         appliesWhen: {
           condition:
             'the user is meant to be able to change this direct checkbox',
-          test: facts => facts.operable && facts.directKeyboardOperation,
+          test: facts => facts.operable && facts.role === 'checkbox',
         },
         evidenceLayer: 'real-browser',
         // The claim is about a CHANGE, so the state has to be read before and
@@ -748,8 +746,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           condition:
             'this direct checkbox is operable or intentionally kept in the tab sequence',
           test: facts =>
-            facts.directKeyboardOperation &&
-            (facts.operable || facts.focusable),
+            facts.role === 'checkbox' && (facts.operable || facts.focusable),
         },
         evidenceLayer: 'real-browser',
         // No `alsoNeeds`: this one reads only where focus is, which is a real
@@ -807,7 +804,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           // A checkbox kept focusable while it cannot be changed — the usual way
           // to keep a reason or a pending state discoverable — still has to
           // refuse the keyboard.
-          if (!facts.focusable || !facts.directKeyboardOperation) {
+          if (!facts.focusable || facts.role !== 'checkbox') {
             return;
           }
           await subject.focus();
@@ -832,6 +829,14 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
     // reported by `unansweredDimensions` and asserted empty by this pattern's
     // suite (AST-020 FR5).
     exemptions: {
+      'apg-interaction': {
+        owner: 'the checkbox-group composition and its binding component',
+        verifiedBy:
+          'group-level DOM and accessibility-tree tests for the group role, group name, and any group-level aria-describedby relationship',
+        reason:
+          'This contract owns one checkbox-bearing control. APG also covers naming and describing a checkbox group, which can only be verified where the group is composed around its members.',
+        coversRemainderOnly: true,
+      },
       '1.1.1-non-text-content': {
         owner: 'the binding component',
         verifiedBy:
