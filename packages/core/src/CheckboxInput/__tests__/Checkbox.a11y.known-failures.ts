@@ -12,6 +12,7 @@ import type {KnownFailure} from '@astryxdesign/a11y-spec';
 
 const CHECKBOX_LIST_DESCRIPTION_ISSUE =
   'https://github.com/facebook/astryx/issues/6154';
+const MENU_DESCRIPTION_ISSUE = 'https://github.com/facebook/astryx/issues/6159';
 const RICH_LABEL_NAME_ISSUE = 'https://github.com/facebook/astryx/issues/6161';
 const LIST_HANDLERLESS_READONLY_ISSUE =
   'https://github.com/facebook/astryx/issues/6163';
@@ -50,6 +51,34 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     issue: CHECKBOX_LIST_DESCRIPTION_ISSUE,
     reason:
       'This is the accessibility-tree face of the missing relationship recorded above. It is separate because each known failure names exactly one expectation and layer.',
+  },
+  {
+    expectation: 'checkbox.description.resolvable',
+    binding: 'DropdownMenuCheckboxItem',
+    state: 'menu-item-described',
+    evidenceLayer: 'dom',
+    failureEquals:
+      'the binding renders supporting text for this state, but the checkbox has no aria-describedby, so the text is never attached to the control',
+    standardsReference: 'WCAG 2.2 1.3.1 Info and Relationships (Level A)',
+    userImpact:
+      'The menu item renders an explanation, but accessibility consumers cannot resolve it as supporting text for that choice.',
+    issue: MENU_DESCRIPTION_ISSUE,
+    reason:
+      'DropdownMenuCheckboxItem renders its public description below the label but does not reference that content from the role-bearing menu item. The migration records the gap without changing component behavior.',
+  },
+  {
+    expectation: 'checkbox.description.exposed',
+    binding: 'DropdownMenuCheckboxItem',
+    state: 'menu-item-described',
+    evidenceLayer: 'accessibility-tree',
+    failureEquals:
+      'the binding expects the description "Include unpublished items", but the browser computes no accessible description',
+    standardsReference: 'WCAG 2.2 4.1.2 Name, Role, Value (Level A)',
+    userImpact:
+      'The browser computes no distinct description for the visible menu-item explanation; this records browser exposure only, not what assistive technology announces.',
+    issue: MENU_DESCRIPTION_ISSUE,
+    reason:
+      'This is the accessibility-tree face of the missing authored relationship above and remains a separate exact layer result under AST-021 FR8.',
   },
   {
     expectation: 'checkbox.name.matches-visible-label',
