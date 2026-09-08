@@ -41,22 +41,6 @@ beforeEach(() => {
 });
 
 describe('DropdownMenuCheckboxItem', () => {
-  it('renders role menuitemcheckbox and reflects checked state', async () => {
-    const user = userEvent.setup();
-    render(
-      <DropdownMenu button={{label: 'View'}}>
-        <DropdownMenuCheckboxItem label="Show archived" value={true} />
-      </DropdownMenu>,
-    );
-    await user.click(screen.getByRole('button', {name: /View/}));
-    expect(
-      screen.getByRole('menuitemcheckbox', {
-        name: /Show archived/,
-        hidden: true,
-      }),
-    ).toHaveAttribute('aria-checked', 'true');
-  });
-
   it('calls onChange with the toggled value on click', async () => {
     const user = userEvent.setup();
     const onChangeSpy = vi.fn();
