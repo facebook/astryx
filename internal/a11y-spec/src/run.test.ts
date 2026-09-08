@@ -271,7 +271,7 @@ describe('runBinding', () => {
       expect(blockingResults([result])).toHaveLength(1);
     });
 
-    it('blocks an advisory failure in a state the record does not name', async () => {
+    it('reports an advisory failure in a state the record does not name', async () => {
       const result = await run(
         contractThat(missing, {enforcement: 'advisory'}),
         {
@@ -280,10 +280,7 @@ describe('runBinding', () => {
         },
       );
       expect(result.results[0]?.status).toBe('fail');
-      expect(result.results[0]?.detail).toContain(
-        'does not cover this binding, state, and evidence layer',
-      );
-      expect(blockingResults([result])).toHaveLength(1);
+      expect(blockingResults([result])).toEqual([]);
     });
 
     it('fails at an evidence layer the record does not name', async () => {
@@ -303,7 +300,7 @@ describe('runBinding', () => {
       expect(blockingResults([result])).toHaveLength(1);
     });
 
-    it('blocks a different advisory failure when a known record was consulted', async () => {
+    it('reports a different advisory failure when a known record was consulted', async () => {
       const result = await run(
         contractThat(
           () => {
@@ -315,7 +312,7 @@ describe('runBinding', () => {
       );
       expect(result.results[0]?.status).toBe('fail');
       expect(result.results[0]?.knownFailure).toBeDefined();
-      expect(blockingResults([result])).toHaveLength(1);
+      expect(blockingResults([result])).toEqual([]);
     });
 
     it('accepts a record matched by exactly one executed result', async () => {

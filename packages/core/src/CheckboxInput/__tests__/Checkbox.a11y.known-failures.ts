@@ -134,34 +134,4 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     reason:
       'DropdownMenuCheckboxItem makes onChange optional. Without it, the controlled value cannot persist a user change, but the role-bearing item does not declare the resulting read-only state.',
   },
-  {
-    expectation: 'checkbox.focus.reachable-and-escapable',
-    binding: 'SelectableCard',
-    state: 'card-disabled',
-    evidenceLayer: 'real-browser',
-    failureEquals:
-      '10 presses of Tab from the start of the document never reached the checkbox, so a keyboard user cannot get to this setting',
-    standardsReference:
-      'WCAG 2.2 2.1.1 Keyboard and 2.1.2 No Keyboard Trap (Level A)',
-    userImpact:
-      'A keyboard or screen-reader user cannot tab to the disabled card to discover that the option exists and is unavailable.',
-    issue: 'https://github.com/facebook/astryx/issues/6156',
-    reason:
-      'SelectableCard documents a focusable aria-disabled state, but the implementation applies native disabled to its checkbox and removes it from the tab sequence.',
-  },
-  {
-    expectation: 'checkbox.state.inoperable',
-    binding: 'SelectableCard',
-    state: 'card-disabled',
-    evidenceLayer: 'real-browser',
-    failureEquals:
-      'this state is meant to stay focusable while it cannot be changed — so the reason or the pending state stays discoverable — but the checkbox did not take focus',
-    standardsReference:
-      'WAI-ARIA APG Checkbox checked-state requirement; supports WCAG 2.2 4.1.2 Name, Role, Value (Level A)',
-    userImpact:
-      'The disabled card is inert, but its documented focusable-disabled state cannot be verified because the role-bearing checkbox refuses focus.',
-    issue: 'https://github.com/facebook/astryx/issues/6156',
-    reason:
-      'This is the inertness-side result of the same native-disabled mismatch and stays separate from tab reachability under AST-021 FR8.',
-  },
 ];

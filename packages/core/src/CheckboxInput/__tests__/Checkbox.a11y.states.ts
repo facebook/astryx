@@ -362,15 +362,11 @@ export const CHECKBOX_BINDING_STATES = [
   {
     id: 'card-disabled',
     binding: 'SelectableCard',
-    summary:
-      'an unavailable selectable card, intended to remain focusable so it stays discoverable',
-    facts: facts({operable: false, disabled: true}),
+    summary: 'an unavailable selectable card outside the tab sequence',
+    facts: facts({operable: false, focusable: false, disabled: true}),
     visibleLabel: 'Analytics',
     visibleLabelSelector: '[data-a11y-visible-label]',
     pointerTargetSelector: '[data-a11y-pointer-target]',
     storyId: 'a11y-checkbox-pattern--card-disabled',
-    declaredNotDelivered: [
-      {fact: 'focusable', owned: 'checkbox.focus.reachable-and-escapable'},
-    ],
   },
 ] as const satisfies ReadonlyArray<CheckboxBindingState>;

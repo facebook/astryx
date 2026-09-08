@@ -910,9 +910,9 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
       '2.5.8-target-size': {
         owner: 'the binding component and the composing page',
         verifiedBy:
-          "the repository axe audit's `target-size` rule, which applies WCAG 2.2's spacing exception across neighbouring targets",
+          'real-browser geometry measurement of the target and its neighbouring-target spacing in representative compositions, plus manual review of applicable WCAG exceptions',
         reason:
-          'The exception that decides most real checkboxes depends on the clearance between a target and its neighbours, which a binding rendered on its own cannot see.',
+          'The exception that decides most real checkboxes depends on the clearance between a target and its neighbours, which a binding rendered on its own cannot see. The repository axe audit does not enable the experimental target-size rule, so it is not evidence for this dimension.',
       },
       '3.1.1-language-of-page': {
         owner: 'the page',

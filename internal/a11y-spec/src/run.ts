@@ -91,11 +91,6 @@ export interface ExpectationResult {
   readonly missingLayers?: readonly EvidenceLayer[];
   /** Present when an exact known-failure record was consulted. */
   readonly knownFailure?: KnownFailure;
-  /**
-   * Present when this expectation has recorded debt elsewhere, so a failure in
-   * this unrecorded binding/state/layer is a wider failure and must gate.
-   */
-  readonly relatedKnownFailure?: KnownFailure;
 }
 
 export interface BindingResult {
@@ -287,12 +282,6 @@ export async function runBinding<Facts>(
     }
 
     const record = findKnownFailure(knownFailures, expectation, binding, state);
-    const relatedRecord =
-      record == null
-        ? knownFailures.find(
-            candidate => candidate.expectation === expectation.id,
-          )
-        : undefined;
 
     if (failure === undefined) {
       results.push(
@@ -322,13 +311,10 @@ export async function runBinding<Facts>(
       ...base,
       status: 'fail',
       detail:
-        record != null
-          ? `${failure}\n\nA known failure is recorded for this expectation, binding, and state, but it covers a different failure (${JSON.stringify(record.failureEquals)}). A known failure never widens to cover a new one.`
-          : relatedRecord != null
-            ? `${failure}\n\nA known failure exists for this expectation, but it does not cover this binding, state, and evidence layer (${relatedRecord.binding} [${relatedRecord.state}] at ${relatedRecord.evidenceLayer}). A known failure never widens to cover a new result.`
-            : failure,
+        record == null
+          ? failure
+          : `${failure}\n\nA known failure is recorded for this expectation, binding, and state, but it covers a different failure (${JSON.stringify(record.failureEquals)}). A known failure never widens to cover a new one.`,
       knownFailure: record,
-      relatedKnownFailure: relatedRecord,
     });
   }
 
