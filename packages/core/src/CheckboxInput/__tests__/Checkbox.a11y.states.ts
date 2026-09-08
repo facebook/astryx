@@ -327,12 +327,15 @@ export const CHECKBOX_BINDING_STATES = [
   {
     id: 'menu-item-described',
     binding: 'DropdownMenuCheckboxItem',
-    summary:
-      'a menu checkbox item whose secondary row text participates in its visible name',
-    facts: menuFacts(),
-    visibleLabel: 'Show archived Include unpublished items',
+    summary: 'a menu checkbox item with visible supporting text',
+    facts: menuFacts({description: 'Include unpublished items'}),
+    visibleLabel: 'Show archived',
+    visibleLabelSelector: '[data-a11y-visible-label]',
     storyId: 'a11y-checkbox-pattern--menu-item-described',
     opensMenu: true,
+    declaredNotDelivered: [
+      {fact: 'description', owned: 'checkbox.description.resolvable'},
+    ],
   },
   {
     id: 'menu-item-handlerless-inert',
