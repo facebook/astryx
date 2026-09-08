@@ -130,7 +130,7 @@ test.describe('checkbox contract — deliberately violating fixtures', () => {
           expectation.id,
         ]);
         expect(result?.status, result?.detail ?? 'no result').toBe('fail');
-        expect(result?.detail ?? '').toContain(
+        expect(result?.detail ?? '').toBe(
           expectedMutationFailure(expectation.id, fixtureId),
         );
       });

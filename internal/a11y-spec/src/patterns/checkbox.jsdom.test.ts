@@ -152,9 +152,7 @@ describe.each(observableHere.map(expectation => [expectation.id] as const))(
         const target = fixture(name);
         const result = resultFor(await resultsFor(target), id);
         expect(result.status, `${id} against ${name}`).toBe('fail');
-        expect(result.detail ?? '').toContain(
-          expectedMutationFailure(id, name),
-        );
+        expect(result.detail ?? '').toBe(expectedMutationFailure(id, name));
       },
     );
 
