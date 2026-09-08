@@ -98,7 +98,7 @@ function serializeCandidate(candidate, outputPath) {
   );
 }
 
-/** @param {PaletteGenerationResult} result @param {string} candidateText @param {string | null} [previewText] */
+/** @param {PaletteGenerationResult} result @param {string} candidateText @param {string | null} [previewText] @returns {import('../../theme.type.mjs').TonalPaletteGenerationReceipt} */
 function receiptFor(result, candidateText, previewText = null) {
   return {
     schemaVersion: 1,

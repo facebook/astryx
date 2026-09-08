@@ -7,7 +7,7 @@
  */
 
 /**
- * xds --json build (no query) — the "how to build a page" playbook signal.
+ * astryx --json build (no query) — the "how to build a page" playbook signal.
  *
  * @typedef {object} BuildHelpResponse
  * @property {'build.help'} type
@@ -16,7 +16,7 @@
  */
 
 /**
- * xds --json build "<idea>" — the composition kit for what you're building.
+ * astryx --json build "<idea>" — the composition kit for what you're building.
  *
  * Entries are raw `SearchResultEntry` objects (no package-manager-prefixed
  * command strings — the CLI adds those); `frame`/`foundation` are static

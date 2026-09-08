@@ -6,18 +6,18 @@
  *
  * Each template is exactly two files: page.tsx (code) + template.doc.mjs (metadata).
  *
- * Invocation                                 -> type discriminator
+ * Invocation                               -> type discriminator
  * ------------------------------------------------------------------
- * xds --json template [--list]              -> template.list
- * xds --json template <name>               -> template.show
- * xds --json template <name> --skeleton    -> template.skeleton
- * xds --json template <name> [path]        -> template.copy
- * xds --json template --cdn [path]         -> template.cdn
- * (unknown template)                        -> CLIError
+ * astryx --json template [--list]          -> template.list
+ * astryx --json template <name>            -> template.show
+ * astryx --json template <name> --skeleton -> template.skeleton
+ * astryx --json template <name> [path]     -> template.copy
+ * astryx --json template --cdn [path]      -> template.cdn
+ * (unknown template)                       -> CLIError
  */
 
 /**
- * xds --json template [--list]
+ * astryx --json template [--list]
  * @typedef {object} TemplateListResponse
  * @property {'template.list'} type
  * @property {TemplateListEntry[]} data
@@ -37,7 +37,7 @@
  */
 
 /**
- * xds --json template <name>
+ * astryx --json template <name>
  * @typedef {object} TemplateShowResponse
  * @property {'template.show'} type
  * @property {object} data
@@ -49,7 +49,7 @@
  */
 
 /**
- * xds --json template <name> --skeleton
+ * astryx --json template <name> --skeleton
  * @typedef {object} TemplateSkeletonResponse
  * @property {'template.skeleton'} type
  * @property {object} data
@@ -60,7 +60,7 @@
  */
 
 /**
- * xds --json template <name> [path]
+ * astryx --json template <name> [path]
  * @typedef {object} TemplateCopyResponse
  * @property {'template.copy'} type
  * @property {object} data
@@ -71,7 +71,7 @@
  */
 
 /**
- * xds --json template --cdn [path]
+ * astryx --json template --cdn [path]
  * `written: false` with `reason: 'exists'` is a success: the command is safe to
  * re-run, and an edited page is the consumer's file to keep. `version` is the
  * Astryx version every CDN URL in the file was pinned to.

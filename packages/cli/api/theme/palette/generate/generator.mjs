@@ -12,15 +12,17 @@ import {
 
 /** @typedef {import('../../theme.type.mjs').TonalPaletteAnchor} TonalPaletteAnchor */
 /** @typedef {import('../../theme.type.mjs').TonalPaletteGenerationInput} TonalPaletteGenerationInput */
+/** @typedef {import('../../theme.type.mjs').TonalPaletteRampDiagnostics} TonalPaletteRampDiagnostics */
+/** @typedef {import('../../theme.type.mjs').TonalPaletteCoordinationDiagnostics} TonalPaletteCoordinationDiagnostics */
+/** @typedef {import('../../theme.type.mjs').TonalPaletteNormalizedRequest} NormalizedRequest */
 /** @typedef {[number, number, number]} ColorTriple */
 /** @typedef {'light' | 'dark'} PaletteMode */
 /** @typedef {{lightness: number, chroma: number, hue: number}} PolarColor */
 /** @typedef {TonalPaletteAnchor & {color: string, generatedColor: string, deltaE: number}} AnchorResult */
-/** @typedef {{colors: Record<number, string>, diagnostics: Record<string, unknown>}} GeneratedRamp */
+/** @typedef {{colors: Record<number, string>, diagnostics: TonalPaletteRampDiagnostics}} GeneratedRamp */
 /** @typedef {{id: string, name: string, seed: string, kind: 'chromatic' | 'neutral', anchors: TonalPaletteAnchor[]}} NormalizedFamily */
-/** @typedef {{recipe: typeof PALETTE_RECIPE, vibrancy: number, neutralProfile: string, modeStrategy: string, stops: number[], families: NormalizedFamily[]}} NormalizedRequest */
 /** @typedef {{id: string, name: string, seed: string, light?: GeneratedRamp, dark?: GeneratedRamp}} GeneratedFamily */
-/** @typedef {{recipe: typeof PALETTE_RECIPE, status: 'candidate', request: NormalizedRequest, families: GeneratedFamily[], coordination: Record<string, unknown>[], errors: {familyId: string, message: string}[]}} PaletteGenerationResult */
+/** @typedef {{recipe: typeof PALETTE_RECIPE, status: 'candidate', request: NormalizedRequest, families: GeneratedFamily[], coordination: TonalPaletteCoordinationDiagnostics[], errors: {familyId: string, message: string}[]}} PaletteGenerationResult */
 
 export const PALETTE_RECIPE = 'astryx-oklch-v1';
 export const PALETTE_BLACK = '#000000';
@@ -411,6 +413,7 @@ function buildDiagnostics(colors, stops, sourceHue, gamutMappedStops, anchors) {
   let minimumAdjacentDeltaE = Number.POSITIVE_INFINITY;
   let maximumAdjacentDeltaE = 0;
   let maximumHueDrift = 0;
+  /** @type {TonalPaletteRampDiagnostics['hueIdentityRisk']} */
   let hueIdentityRisk = null;
   for (let index = 0; index < stops.length; index++) {
     const stop = stops[index];
@@ -526,6 +529,7 @@ function buildCoordinationDiagnostics(request, families) {
           chroma: hexToOklch(color).C,
         };
       });
+    /** @type {[string, string] | null} */
     let closestFamilies = null;
     let minimumFamilyDeltaE = Number.POSITIVE_INFINITY;
     for (let index = 0; index < samples.length; index++) {

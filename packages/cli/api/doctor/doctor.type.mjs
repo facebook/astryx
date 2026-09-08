@@ -32,7 +32,7 @@
  */
 
 /**
- * xds --json doctor
+ * astryx --json doctor
  * @typedef {object} DoctorResponse
  * @property {'doctor'} type
  * @property {object} data
