@@ -147,7 +147,7 @@ export const CHECKBOX_BINDING_STATES = [
     id: 'input-required',
     binding: 'CheckboxInput',
     summary: 'a checkbox declared required',
-    facts: facts({required: true}),
+    facts: facts({required: true, invalid: true}),
     visibleLabel: 'Accept terms',
     storyId: 'a11y-checkbox-pattern--input-required',
   },
@@ -201,6 +201,16 @@ export const CHECKBOX_BINDING_STATES = [
     declaredNotDelivered: [
       {fact: 'description', owned: 'checkbox.description.resolvable'},
     ],
+  },
+  {
+    id: 'list-item-rich-label-missing-name',
+    binding: 'CheckboxListItem',
+    summary:
+      'a rich-label list item with no equivalent plain-text accessible name',
+    facts: facts(),
+    visibleLabel: 'Pro plan',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--list-item-rich-label-missing-name',
   },
   {
     id: 'list-item-disabled',

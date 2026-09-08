@@ -189,7 +189,7 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
   {
     id: 'conforming-required',
     summary: 'a required checkbox',
-    facts: facts({required: true}),
+    facts: facts({required: true, invalid: true}),
     html: nativeCheckbox('required'),
   },
   {
@@ -334,6 +334,18 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     html: nativeCheckbox(),
   },
   {
+    id: 'violating-required-overexposed',
+    summary: 'an optional checkbox falsely declared required',
+    facts: facts({checked: true}),
+    html: nativeCheckbox('checked required'),
+  },
+  {
+    id: 'violating-invalid-overexposed',
+    summary: 'a valid checkbox falsely exposed as invalid',
+    facts: facts(),
+    html: nativeCheckbox('aria-invalid="true"'),
+  },
+  {
     id: 'violating-invalid-unexposed',
     summary: 'a checkbox in error that never says so',
     facts: facts({invalid: true}),
@@ -380,7 +392,9 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   ],
   'checkbox.disabled.exposed': ['violating-disabled-unexposed'],
   'checkbox.required.declared': ['violating-required-unexposed'],
+  'checkbox.required.not-declared': ['violating-required-overexposed'],
   'checkbox.invalid.exposed': ['violating-invalid-unexposed'],
+  'checkbox.invalid.not-exposed': ['violating-invalid-overexposed'],
   'checkbox.name.matches-visible-label': ['violating-name-mismatch'],
   'checkbox.state.survives-an-aborted-press': ['violating-down-event-toggle'],
   'checkbox.state.keeps-focus-on-change': [
@@ -422,8 +436,12 @@ const MUTATION_FAILURES: Readonly<Record<string, string>> = {
   'checkbox.disabled.exposed:violating-disabled-unexposed':
     'reports the checkbox as available',
   'checkbox.required.declared:violating-required-unexposed': 'declares neither',
+  'checkbox.required.not-declared:violating-required-overexposed':
+    'exposes a required declaration',
   'checkbox.invalid.exposed:violating-invalid-unexposed':
     'does not report the checkbox as invalid',
+  'checkbox.invalid.not-exposed:violating-invalid-overexposed':
+    'exposes the checkbox as invalid',
   'checkbox.name.matches-visible-label:violating-name-mismatch':
     'visible label reads',
   'checkbox.state.survives-an-aborted-press:violating-down-event-toggle':

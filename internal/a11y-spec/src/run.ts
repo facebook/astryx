@@ -61,11 +61,8 @@ export interface KnownFailure {
   readonly binding: string;
   readonly state: string;
   readonly evidenceLayer: EvidenceLayer;
-  /**
-   * A distinctive fragment of the failure this record covers. A failure whose
-   * message does not contain it is a different failure, and still fails.
-   */
-  readonly failureIncludes: string;
+  /** The exact failure this record covers. Any text change is a different failure. */
+  readonly failureEquals: string;
   /** What the person using the component actually experiences. */
   readonly userImpact: string;
   /** Public issue tracking the fix. */
@@ -163,6 +160,22 @@ function findKnownFailure<Facts>(
       record.state === state &&
       record.evidenceLayer === expectation.evidenceLayer,
   );
+}
+
+export function unmatchedKnownFailures(
+  knownFailures: readonly KnownFailure[],
+  bindings: readonly BindingResult[],
+): readonly string[] {
+  return knownFailures.flatMap(record => {
+    const matches = bindings.flatMap(binding =>
+      binding.results.filter(result => result.knownFailure === record),
+    ).length;
+    return matches === 1
+      ? []
+      : [
+          `${record.binding} [${record.state}] ${record.expectation} at ${record.evidenceLayer} matched ${matches} results; every known-failure record must match exactly one executed result`,
+        ];
+  });
 }
 
 export async function runBinding<Facts>(
@@ -281,7 +294,7 @@ export async function runBinding<Facts>(
       continue;
     }
 
-    if (record != null && failure.includes(record.failureIncludes)) {
+    if (record != null && failure === record.failureEquals) {
       results.push({
         ...base,
         status: 'known-failure',
@@ -297,7 +310,7 @@ export async function runBinding<Facts>(
       detail:
         record == null
           ? failure
-          : `${failure}\n\nA known failure is recorded for this expectation, binding, and state, but it covers a different failure (${JSON.stringify(record.failureIncludes)}). A known failure never widens to cover a new one.`,
+          : `${failure}\n\nA known failure is recorded for this expectation, binding, and state, but it covers a different failure (${JSON.stringify(record.failureEquals)}). A known failure never widens to cover a new one.`,
       knownFailure: record,
     });
   }

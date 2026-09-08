@@ -53,6 +53,9 @@ export const ListItemUnchecked = storyFor('list-item-unchecked');
 export const ListItemChecked = storyFor('list-item-checked');
 export const ListItemMixed = storyFor('list-item-mixed');
 export const ListItemDescribed = storyFor('list-item-described');
+export const ListItemRichLabelMissingName = storyFor(
+  'list-item-rich-label-missing-name',
+);
 export const ListItemDisabled = storyFor('list-item-disabled');
 export const ListItemLoading = storyFor('list-item-loading');
 export const ListItemReadOnly = storyFor('list-item-read-only');

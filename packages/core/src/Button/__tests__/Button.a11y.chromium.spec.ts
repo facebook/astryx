@@ -28,6 +28,7 @@ import {
   formatFailures,
   formatReport,
   neverExercised,
+  unmatchedKnownFailures,
   runBinding,
   spokenWords,
   summarize,
@@ -316,6 +317,7 @@ test('every expectation is exercised by at least one bound state', async ({
   // looks. This is the only place that can notice: the contract never sees the
   // states, so whether a condition matches a real one is a binding-side fact.
   expect(neverExercised(results)).toEqual([]);
+  expect(unmatchedKnownFailures(BUTTON_KNOWN_FAILURES, results)).toEqual([]);
 });
 
 for (const state of BUTTON_BINDING_STATES) {

@@ -51,6 +51,7 @@ function StandaloneListItem({
   isLoading,
   isReadOnly = false,
   plainLabel = false,
+  omitAriaLabel = false,
 }: {
   initial: boolean | 'indeterminate';
   label: string;
@@ -59,6 +60,7 @@ function StandaloneListItem({
   isLoading?: boolean;
   isReadOnly?: boolean;
   plainLabel?: boolean;
+  omitAriaLabel?: boolean;
 }) {
   const [checked, setChecked] = useState<boolean | 'indeterminate'>(initial);
   return (
@@ -66,7 +68,7 @@ function StandaloneListItem({
       <CheckboxListItem
         data-a11y-visible-label={plainLabel || undefined}
         label={plainLabel ? label : <VisibleLabel>{label}</VisibleLabel>}
-        aria-label={plainLabel ? undefined : label}
+        aria-label={plainLabel || omitAriaLabel ? undefined : label}
         description={description}
         isChecked={checked}
         onCheck={isReadOnly ? undefined : setChecked}
@@ -219,6 +221,9 @@ export const CHECKBOX_STATE_RENDERS: Record<
       label="Email"
       description="Receive notifications by email"
     />
+  ),
+  'list-item-rich-label-missing-name': () => (
+    <StandaloneListItem initial={false} label="Pro plan" omitAriaLabel />
   ),
   'list-item-disabled': () => (
     <StandaloneListItem initial={false} label="SMS" isDisabled />

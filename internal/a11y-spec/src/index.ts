@@ -52,6 +52,7 @@ export {
 export {
   MissingBindingCapability,
   runBinding,
+  unmatchedKnownFailures,
   type BindingResult,
   type ExpectationResult,
   type KnownFailure,

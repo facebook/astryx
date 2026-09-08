@@ -22,6 +22,7 @@ import {
   formatFailures,
   formatReport,
   neverExercised,
+  unmatchedKnownFailures,
   runBinding,
   spokenWords,
   summarize,
@@ -187,6 +188,9 @@ test('every applicability fact matches what the page exposes', async ({
         : state.facts.checked
           ? 'true'
           : 'false';
+    const required =
+      (await locator.getAttribute('required')) != null ||
+      (await locator.getAttribute('aria-required')) === 'true';
     const observed = {
       role: computed.role,
       checked: computed.checked,
@@ -194,6 +198,8 @@ test('every applicability fact matches what the page exposes', async ({
       description:
         computed.description.trim() === '' ? null : computed.description,
       focusable: reachedByTab,
+      required,
+      invalid: computed.invalid,
     } as const;
     const expected = {
       role: state.facts.role,
@@ -201,6 +207,8 @@ test('every applicability fact matches what the page exposes', async ({
       disabled: state.facts.disabled,
       description: state.facts.description,
       focusable: state.facts.focusable,
+      required: state.facts.required,
+      invalid: state.facts.invalid,
     } as const;
     const excused = (state as CheckboxBindingState).declaredNotDelivered ?? [];
     for (const fact of Object.keys(expected) as (keyof typeof expected)[]) {
@@ -263,6 +271,7 @@ test('every expectation is exercised by at least one bound state', async ({
     );
   }
   expect(neverExercised(results)).toEqual([]);
+  expect(unmatchedKnownFailures(CHECKBOX_KNOWN_FAILURES, results)).toEqual([]);
 });
 
 for (const state of CHECKBOX_BINDING_STATES) {

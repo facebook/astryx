@@ -23,7 +23,7 @@ import {
   neverExercised,
   summarize,
 } from './report';
-import {runBinding, type KnownFailure} from './run';
+import {runBinding, unmatchedKnownFailures, type KnownFailure} from './run';
 
 interface Facts {
   readonly applicable: boolean;
@@ -93,7 +93,7 @@ function knownFailure(overrides: Partial<KnownFailure> = {}): KnownFailure {
     binding: 'Stub',
     state: 'default',
     evidenceLayer: 'dom',
-    failureIncludes: 'the stub outcome is missing',
+    failureEquals: 'the stub outcome is missing entirely',
     userImpact: 'The stub does nothing for the user.',
     issue: 'https://github.com/facebook/astryx/issues/1',
     reason: 'Recorded by the migration; the fix is its own change.',
@@ -283,6 +283,44 @@ describe('runBinding', () => {
         knownFailures: [knownFailure({evidenceLayer: 'real-browser'})],
       });
       expect(result.results[0]?.status).toBe('fail');
+    });
+
+    it('fails when only a substring of the recorded failure matches', async () => {
+      const result = await run(contractThat(missing), {
+        knownFailures: [
+          knownFailure({failureEquals: 'the stub outcome is missing'}),
+        ],
+      });
+      expect(result.results[0]?.status).toBe('fail');
+      expect(blockingResults([result])).toHaveLength(1);
+    });
+
+    it('blocks a different advisory failure when a known record was consulted', async () => {
+      const result = await run(
+        contractThat(
+          () => {
+            throw new Error('the stub outcome broke differently');
+          },
+          {enforcement: 'advisory'},
+        ),
+        {knownFailures: [knownFailure()]},
+      );
+      expect(result.results[0]?.status).toBe('fail');
+      expect(result.results[0]?.knownFailure).toBeDefined();
+      expect(blockingResults([result])).toHaveLength(1);
+    });
+
+    it('reports a record orphaned by a missing state or expectation', async () => {
+      const orphan = knownFailure({state: 'deleted-state'});
+      const result = await run(
+        contractThat(() => {}),
+        {
+          knownFailures: [orphan],
+        },
+      );
+      expect(unmatchedKnownFailures([orphan], [result])).toEqual([
+        expect.stringContaining('matched 0 results'),
+      ]);
     });
 
     it('reports an unexpected pass when the recorded failure stops happening', async () => {

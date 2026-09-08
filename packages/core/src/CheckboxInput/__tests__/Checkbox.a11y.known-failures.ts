@@ -14,6 +14,7 @@ const CHECKBOX_LIST_DESCRIPTION_ISSUE =
   'https://github.com/facebook/astryx/issues/6154';
 const MENU_CHECKBOX_DESCRIPTION_ISSUE =
   'https://github.com/facebook/astryx/issues/6159';
+const RICH_LABEL_NAME_ISSUE = 'https://github.com/facebook/astryx/issues/6161';
 
 export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
   {
@@ -21,7 +22,8 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     binding: 'CheckboxListItem',
     state: 'list-item-described',
     evidenceLayer: 'dom',
-    failureIncludes: 'has no aria-describedby',
+    failureEquals:
+      'the binding renders supporting text for this state, but the checkbox has no aria-describedby, so the text is never attached to the control',
     userImpact:
       'The browser accessibility node exposes no separate description for the visible supporting text, so downstream accessibility consumers cannot distinguish it as the choice explanation.',
     issue: CHECKBOX_LIST_DESCRIPTION_ISSUE,
@@ -33,7 +35,8 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     binding: 'CheckboxListItem',
     state: 'list-item-described',
     evidenceLayer: 'accessibility-tree',
-    failureIncludes: 'computes no accessible description',
+    failureEquals:
+      'the binding expects the description "Receive notifications by email", but the browser computes no accessible description',
     userImpact:
       'The browser computes no distinct description for the visible explanation; this records browser exposure only, not what any assistive technology announces.',
     issue: CHECKBOX_LIST_DESCRIPTION_ISSUE,
@@ -45,7 +48,8 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     binding: 'DropdownMenuCheckboxItem',
     state: 'menu-item-described',
     evidenceLayer: 'dom',
-    failureIncludes: 'has no aria-describedby',
+    failureEquals:
+      'the binding renders supporting text for this state, but the checkbox has no aria-describedby, so the text is never attached to the control',
     userImpact:
       'The browser exposes the secondary text only inside the item name, not as the distinct description declared by this binding.',
     issue: MENU_CHECKBOX_DESCRIPTION_ISSUE,
@@ -57,12 +61,26 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     binding: 'DropdownMenuCheckboxItem',
     state: 'menu-item-described',
     evidenceLayer: 'accessibility-tree',
-    failureIncludes: 'computes no accessible description',
+    failureEquals:
+      'the binding expects the description "Include unpublished items", but the browser computes no accessible description',
     userImpact:
       'The browser computes no distinct accessibility description for the checkable menu item; this does not claim what an assistive technology announces.',
     issue: MENU_CHECKBOX_DESCRIPTION_ISSUE,
     reason:
       'This records the accessibility-tree outcome separately from the missing DOM relationship so one future fix must satisfy both exact gates.',
+  },
+  {
+    expectation: 'checkbox.name.matches-visible-label',
+    binding: 'CheckboxListItem',
+    state: 'list-item-rich-label-missing-name',
+    evidenceLayer: 'accessibility-tree',
+    failureEquals:
+      'the visible label reads "Pro plan" but the browser computes the accessible name as "Checkbox", so speaking the visible label does not reach this control',
+    userImpact:
+      'The browser exposes every rich-label item without an aria-label under the generic name "Checkbox", so speech input cannot address the item by the visible words.',
+    issue: RICH_LABEL_NAME_ISSUE,
+    reason:
+      'The public API permits a ReactNode label without an equivalent plain-text name. The migration records that supported branch without changing the component API.',
   },
 
   {
@@ -70,7 +88,8 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     binding: 'SelectableCard',
     state: 'card-disabled',
     evidenceLayer: 'real-browser',
-    failureIncludes: 'never reached the checkbox',
+    failureEquals:
+      '10 presses of Tab from the start of the document never reached the checkbox, so a keyboard user cannot get to this setting',
     userImpact:
       'A keyboard or screen-reader user cannot tab to the disabled card to discover that the option exists and is unavailable.',
     issue: 'https://github.com/facebook/astryx/issues/6156',
@@ -82,7 +101,8 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     binding: 'SelectableCard',
     state: 'card-disabled',
     evidenceLayer: 'real-browser',
-    failureIncludes: 'the checkbox did not take focus',
+    failureEquals:
+      'this state is meant to stay focusable while it cannot be changed — so the reason or the pending state stays discoverable — but the checkbox did not take focus',
     userImpact:
       'The disabled card is inert, but its documented focusable-disabled state cannot be verified because the role-bearing checkbox refuses focus.',
     issue: 'https://github.com/facebook/astryx/issues/6156',

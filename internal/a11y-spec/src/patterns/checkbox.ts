@@ -487,6 +487,28 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         },
       },
       {
+        id: 'checkbox.required.not-declared',
+        outcome:
+          'A checkbox that is not required does not expose a false required state.',
+        sources: [WCAG_4_1_2, WCAG_3_3_2],
+        covers: ['4.1.2-name-role-value', '3.3.2-labels-or-instructions'],
+        appliesWhen: {
+          condition: 'this state is not required',
+          test: facts => !facts.required,
+        },
+        evidenceLayer: 'dom',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const native = await subject.attribute('required');
+          const aria = await subject.attribute('aria-required');
+          if (native != null || aria === 'true') {
+            throw new Error(
+              'this state is not required, but the checkbox exposes a required declaration',
+            );
+          }
+        },
+      },
+      {
         id: 'checkbox.invalid.exposed',
         outcome:
           'A checkbox in error is reported as being in error, so the user can find what needs fixing.',
@@ -503,6 +525,27 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           if (!invalid) {
             throw new Error(
               'this state is in error, but the browser does not report the checkbox as invalid, so the error is only visible to people who can see the message',
+            );
+          }
+        },
+      },
+      {
+        id: 'checkbox.invalid.not-exposed',
+        outcome:
+          'A checkbox that is not invalid does not expose a false invalid state.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is not invalid',
+          test: facts => !facts.invalid,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {invalid} = await subject.computed();
+          if (invalid) {
+            throw new Error(
+              'this state is not invalid, but the browser exposes the checkbox as invalid',
             );
           }
         },

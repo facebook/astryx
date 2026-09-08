@@ -35,7 +35,8 @@ export const BUTTON_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     binding: 'Button',
     state: 'button-loading',
     evidenceLayer: 'real-browser',
-    failureIncludes: 'never reached the button',
+    failureEquals:
+      '10 presses of Tab from the start of the document never reached the button, so a keyboard user cannot get to this action',
     userImpact:
       'A keyboard user who activates Save and waits is dropped to the top of the document the moment the action starts, and the button leaves the tab sequence entirely — so they cannot get back to it, to see that it is busy or to interrupt it. The next Tab restarts from the beginning of the page.',
     issue: BUSY_FOCUS_ISSUE,
@@ -47,7 +48,8 @@ export const BUTTON_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     binding: 'IconButton',
     state: 'icon-button-loading',
     evidenceLayer: 'real-browser',
-    failureIncludes: 'never reached the button',
+    failureEquals:
+      '10 presses of Tab from the start of the document never reached the button, so a keyboard user cannot get to this action',
     userImpact:
       'The same drop from an icon button, where it is worse: an icon button is usually one of several in a row, so the user loses their place among them.',
     issue: BUSY_FOCUS_ISSUE,
@@ -60,7 +62,8 @@ export const BUTTON_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     binding: 'Button',
     state: 'button-loading',
     evidenceLayer: 'real-browser',
-    failureIncludes: 'declared focusable so its reason stays reachable',
+    failureEquals:
+      'this state is declared focusable so its reason stays reachable, but it cannot take focus — so a keyboard user can neither read why it is unavailable nor reach it to confirm it refuses to act',
     userImpact:
       'The third face of the same defect: because the busy button cannot take focus, there is no way to confirm from the keyboard that it declines a second press — the user can neither reach it nor see why it is unavailable.',
     issue: BUSY_FOCUS_ISSUE,
@@ -72,7 +75,8 @@ export const BUTTON_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     binding: 'IconButton',
     state: 'icon-button-loading',
     evidenceLayer: 'real-browser',
-    failureIncludes: 'declared focusable so its reason stays reachable',
+    failureEquals:
+      'this state is declared focusable so its reason stays reachable, but it cannot take focus — so a keyboard user can neither read why it is unavailable nor reach it to confirm it refuses to act',
     userImpact: 'The same, from an icon button.',
     issue: BUSY_FOCUS_ISSUE,
     reason: 'Inherited from Button, as above.',
@@ -84,7 +88,8 @@ export const BUTTON_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     binding: 'ClickableCard',
     state: 'clickable-card',
     evidenceLayer: 'real-browser',
-    failureIncludes: 'a pointer press cannot land on this control',
+    failureEquals:
+      'a pointer press cannot land on this control: something else is on top of it at its own centre, so there is no press here to abort',
     userImpact:
       'The same defect seen from the other side: pointer cancellation cannot be demonstrated on a control no pointer press can land on. Recorded rather than reported green — a serene pass here would claim an outcome nobody observed.',
     issue: CARD_POINTER_ISSUE,
@@ -96,7 +101,8 @@ export const BUTTON_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     binding: 'ClickableCard',
     state: 'clickable-card',
     evidenceLayer: 'real-browser',
-    failureIncludes: 'a pointer could not reach this control',
+    failureEquals:
+      'a pointer could not reach this control within 2000ms: the browser never found it visible, stable, and able to receive a pointer event. Something is covering it, or it is clipped to nothing.',
     userImpact:
       "Anyone whose tooling acts on the accessible object rather than on pixels — a speech-input user saying the card's name, or assistive technology dispatching a click at the element it is told is the button — aims at a 1×1 control the card's own content paints over. A sighted mouse user is unaffected: they click the card surface, which handles it.",
     issue: CARD_POINTER_ISSUE,
