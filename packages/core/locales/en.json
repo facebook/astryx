@@ -859,6 +859,58 @@
     "defaultMessage": "Search…",
     "description": "Grey placeholder text inside the empty PowerSearch input. Imperative verb; trailing `…` is one character."
   },
+  "@astryx.powersearch.mobile.addFilterTitle": {
+    "defaultMessage": "Add filter",
+    "description": "Button label and title of the PowerSearch touch sheet where the user chooses which filter to add. Singular noun because the flow adds one condition at a time."
+  },
+  "@astryx.powersearch.mobile.manageFiltersTrigger": {
+    "defaultMessage": "Manage filters",
+    "description": "Accessible name for the field-wide PowerSearch touch trigger. Activating it opens the filter-management sheet rather than accepting text directly."
+  },
+  "@astryx.powersearch.mobile.manageFiltersPlaceholder": {
+    "defaultMessage": "Filters…",
+    "description": "Visible text in an empty touch PowerSearch field. Activating the field opens filter management; the trailing ellipsis signals that another surface will open."
+  },
+  "@astryx.powersearch.mobile.manageFiltersTitle": {
+    "defaultMessage": "Filters",
+    "description": "Title of the first PowerSearch touch sheet, where users review, add, edit, or remove active filters."
+  },
+  "@astryx.powersearch.mobile.noSelectedFilters": {
+    "defaultMessage": "No filters selected",
+    "description": "Empty-state message in PowerSearch's touch management sheet when there are no active filters."
+  },
+  "@astryx.powersearch.mobile.done": {
+    "defaultMessage": "Done",
+    "description": "Primary footer button in the PowerSearch touch management sheet that closes the sheet after filter management."
+  },
+  "@astryx.powersearch.mobile.editFilterTitle": {
+    "defaultMessage": "Edit filter",
+    "description": "Primary confirmation button in the PowerSearch touch editor when updating an existing filter."
+  },
+  "@astryx.powersearch.mobile.filterTitle": {
+    "defaultMessage": "{field} {operator}",
+    "description": "Title of a simple PowerSearch touch value sheet. {field} is the filter field label and {operator} is its only operator label; translators may reorder them."
+  },
+  "@astryx.powersearch.mobile.selectedValue": {
+    "defaultMessage": "{value}, selected",
+    "description": "Accessible name for the currently selected single-choice value in PowerSearch's touch editor. {value} is the visible option label."
+  },
+  "@astryx.powersearch.mobile.back": {
+    "defaultMessage": "Back",
+    "description": "Screen-reader-only label on the chevron button that returns to the previous step of PowerSearch's touch filter-builder sheet. Navigation, not \"rear\"."
+  },
+  "@astryx.powersearch.mobile.searchFields": {
+    "defaultMessage": "Search filters",
+    "description": "Screen-reader-only label for the search box above the field list in PowerSearch's touch sheet. It narrows the list of filters offered, not the underlying data."
+  },
+  "@astryx.powersearch.mobile.searchFieldsPlaceholder": {
+    "defaultMessage": "Search filters…",
+    "description": "Placeholder inside that same search box. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.powersearch.mobile.noFields": {
+    "defaultMessage": "No filters match your search",
+    "description": "Empty state shown in PowerSearch's touch sheet when the typed query matches none of the available filters."
+  },
   "@astryx.resizable.collapsed": {
     "defaultMessage": "Collapsed",
     "description": "aria-valuetext for the Resizable drag handle (role=separator) while its panel is collapsed to zero size. Replaces the numeric value announcement, since the numeric value is clamped to the minimum while collapsed. Adjective describing the panel state, not a verb/command."

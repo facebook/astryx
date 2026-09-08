@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import React, {useState} from 'react';
+import React, {useLayoutEffect, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {PowerSearch} from '@astryxdesign/core/PowerSearch';
 import type {
@@ -298,6 +298,11 @@ const fullConfig: PowerSearchConfig = {
   ],
 };
 
+const touchConfig: PowerSearchConfig = {
+  ...fullConfig,
+  contentSearchFieldKey: 'title',
+};
+
 function simpleField(
   key: string,
   label: string,
@@ -443,6 +448,36 @@ const issueTrackerConfig: PowerSearchConfig = {
   ],
 };
 
+function CoarsePointerPowerSearch(
+  props: React.ComponentProps<typeof PowerSearch>,
+) {
+  const [isReady, setIsReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const originalMatchMedia = window.matchMedia;
+    const coarsePointerMedia: MediaQueryList = {
+      matches: true,
+      media: '(pointer: coarse)',
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => true,
+    };
+    window.matchMedia = query =>
+      query === '(pointer: coarse)'
+        ? coarsePointerMedia
+        : originalMatchMedia.call(window, query);
+    setIsReady(true);
+    return () => {
+      window.matchMedia = originalMatchMedia;
+    };
+  }, []);
+
+  return isReady ? <PowerSearch {...props} /> : null;
+}
+
 // =============================================================================
 // Meta
 // =============================================================================
@@ -512,6 +547,30 @@ export const Default: Story = {
   },
   args: {
     placeholder: 'Search by status, title, priority...',
+  },
+};
+
+export const TouchSurface: Story = {
+  name: 'Touch Surface',
+  render: args => {
+    const [filters, setFilters] = useState<PowerSearchFilter[]>([
+      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+      {
+        field: 'priority',
+        operator: 'is',
+        value: {type: 'enum', value: 'p1'},
+      },
+    ]);
+    return (
+      <div style={{width: 390, maxWidth: '100%'}}>
+        <CoarsePointerPowerSearch
+          {...args}
+          config={touchConfig}
+          filters={filters}
+          onChange={newFilters => setFilters([...newFilters])}
+        />
+      </div>
+    );
   },
 };
 

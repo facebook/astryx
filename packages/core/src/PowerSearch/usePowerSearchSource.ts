@@ -5,8 +5,8 @@
 /**
  * @file usePowerSearchSource.ts
  * @input InternalConfig
- * @output SearchSource for field typeahead in the main tokenizer
- * @position Hook; consumed by PowerSearch
+ * @output SearchSource for PowerSearch field, operator, value, and content suggestions
+ * @position Hook; consumed by pointer and touch PowerSearch surfaces
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
@@ -20,6 +20,14 @@ import {resolveOperatorLabel} from './resolveOperatorLabel';
 import type {InternalConfig} from './useInternalConfig';
 import type {PowerSearchItem, PowerSearchOperator, FilterValue} from './types';
 
+interface SynchronousPowerSearchSource extends Omit<
+  SearchSource<PowerSearchItem>,
+  'search' | 'bootstrap'
+> {
+  search(query: string): PowerSearchItem[];
+  bootstrap(): PowerSearchItem[];
+}
+
 /**
  * @param maxTypedResults Cap applied to ranked results for a non-empty query.
  *   The source never truncates empty-query browsing; PowerSearch's view applies
@@ -28,7 +36,7 @@ import type {PowerSearchItem, PowerSearchOperator, FilterValue} from './types';
 export function usePowerSearchSource(
   config: InternalConfig,
   maxTypedResults: number,
-): SearchSource<PowerSearchItem> {
+): SynchronousPowerSearchSource {
   const t = useTranslator();
   return useMemo(() => {
     const allItems = buildFieldItems(config);

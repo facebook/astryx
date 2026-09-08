@@ -5,7 +5,7 @@
 /**
  * @file PowerSearchToken.tsx
  * @input PowerSearchTokenProps
- * @output Default token pill for PowerSearch filters
+ * @output Default size-matched token pill for PowerSearch filters
  * @position Public component; used internally by PowerSearch and available for consumer composition
  */
 
@@ -39,6 +39,7 @@ export function PowerSearchToken({
   field,
   operator,
   maxLength,
+  size,
   onClick,
   onRemove,
   isDisabled,
@@ -75,6 +76,7 @@ export function PowerSearchToken({
   return (
     <Token
       label={tokenLabel}
+      size={size}
       endContent={valueContent}
       onClick={
         onClick
