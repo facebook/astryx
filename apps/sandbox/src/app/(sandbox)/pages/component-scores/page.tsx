@@ -37,7 +37,8 @@ import {
   radiusVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {Drawer, Stat} from '@astryxdesign/lab';
+import {Drawer} from '@astryxdesign/core/Drawer';
+import {Stat} from '@astryxdesign/lab';
 
 import {
   AUDIT_PROMPT,
