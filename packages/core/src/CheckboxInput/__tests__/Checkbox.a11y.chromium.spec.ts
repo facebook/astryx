@@ -295,6 +295,31 @@ test('every expectation is exercised by at least one bound state', async ({
   expect(unmatchedKnownFailures(CHECKBOX_KNOWN_FAILURES, results)).toEqual([]);
 });
 
+test('the disabled SelectableCard records only its documented focusability mismatch', async ({
+  page,
+}) => {
+  const state = CHECKBOX_BINDING_STATES.find(
+    candidate => candidate.id === 'card-disabled',
+  );
+  if (state == null) {
+    throw new Error('missing card-disabled binding state');
+  }
+  const cdp = await page.context().newCDPSession(page);
+  const result = await runState(page, cdp, state);
+  expect(
+    result.results.find(
+      candidate =>
+        candidate.expectation ===
+        'checkbox.focus.declared-unavailable-reachable',
+    )?.status,
+  ).toBe('known-failure');
+  expect(
+    result.results.find(
+      candidate => candidate.expectation === 'checkbox.state.inoperable',
+    )?.status,
+  ).toBe('pass');
+});
+
 for (const state of CHECKBOX_BINDING_STATES) {
   test(`${state.binding} [${state.id}] — ${state.summary}`, async ({page}) => {
     test.setTimeout(2 * 60 * 1000);
