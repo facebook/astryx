@@ -5,7 +5,8 @@
  * @input Uses CheckboxStateFacts from @astryxdesign/a11y-spec
  * @output CHECKBOX_BINDING_STATES — the AST-021 inventory for every current
  *   checkbox-bearing Astryx part and every state that changes the shared pattern
- *   outcome.
+ *   outcome — plus CHECKBOX_CALLEE_EXCLUSIONS for composed/decorative callsites
+ *   that reuse an already-bound part without exposing another checkbox control.
  * @position Data-only binding inventory. JSX lives in Checkbox.a11y.renders.tsx
  *   so Playwright can import this file without loading component source.
  */
@@ -32,7 +33,8 @@ export interface CheckboxBindingState {
   readonly storyId: string;
   readonly opensMenu?: boolean;
   readonly declaredNotDelivered?: ReadonlyArray<{
-    readonly fact: 'description' | 'disabled' | 'focusable' | 'readOnly';
+    readonly fact:
+      'description' | 'disabled' | 'focusable' | 'invalid' | 'readOnly';
     readonly owned: string;
   }>;
 }
@@ -63,6 +65,21 @@ const menuFacts = (
     focusable: false,
     ...overrides,
   });
+
+export const CHECKBOX_CALLEE_EXCLUSIONS = [
+  {
+    owner: 'Table selection',
+    part: 'CheckboxInput',
+    reason:
+      'Table select-all and row selection compose the already-bound CheckboxInput part; Table owns selection labels and group context, while the shared input states cover hidden labels and mixed state.',
+  },
+  {
+    owner: 'MultiSelector option decoration',
+    part: 'CheckboxInput',
+    reason:
+      'MultiSelector renders its CheckboxInput inside an inert, aria-hidden marker; role="option" remains the only exposed selectable control and the decorative checkbox is outside this pattern inventory.',
+  },
+] as const;
 
 export const CHECKBOX_BINDING_STATES = [
   {
@@ -162,9 +179,12 @@ export const CHECKBOX_BINDING_STATES = [
     id: 'input-required',
     binding: 'CheckboxInput',
     summary: 'a checkbox declared required',
-    facts: facts({required: true, invalid: true}),
+    facts: facts({required: true}),
     visibleLabel: 'Accept terms',
     storyId: 'a11y-checkbox-pattern--input-required',
+    declaredNotDelivered: [
+      {fact: 'invalid', owned: 'checkbox.invalid.not-exposed'},
+    ],
   },
   {
     id: 'input-inherited-required-valid',

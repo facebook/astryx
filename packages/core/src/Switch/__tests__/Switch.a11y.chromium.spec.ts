@@ -29,6 +29,7 @@ import {
   runBinding,
   spokenWords,
   summarize,
+  unmatchedKnownFailures,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
 import {
@@ -181,6 +182,7 @@ test('every expectation is exercised by at least one bound state', async ({
   // looks. This is the only place that can notice: the contract never sees the
   // states, so whether a condition matches a real one is a binding-side fact.
   expect(neverExercised(results)).toEqual([]);
+  expect(unmatchedKnownFailures(SWITCH_KNOWN_FAILURES, results)).toEqual([]);
 });
 
 for (const state of SWITCH_BINDING_STATES) {

@@ -25,6 +25,7 @@ import {CHECKBOX_KNOWN_FAILURES} from './Checkbox.a11y.known-failures';
 import {CHECKBOX_STATE_RENDERS} from './Checkbox.a11y.renders';
 import {
   CHECKBOX_BINDING_STATES,
+  CHECKBOX_CALLEE_EXCLUSIONS,
   type CheckboxBindingRow,
 } from './Checkbox.a11y.states';
 
@@ -76,7 +77,7 @@ describe('the checkbox binding inventory', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('covers every current checkbox-bearing component part', () => {
+  it('binds every checkbox-bearing public part with its own semantics', () => {
     const bound = new Set(CHECKBOX_BINDING_STATES.map(state => state.binding));
     expect([...bound].sort()).toEqual([
       'CheckboxInput',
@@ -84,6 +85,24 @@ describe('the checkbox binding inventory', () => {
       'DropdownMenuCheckboxItem',
       'SelectableCard',
     ]);
+  });
+
+  it('records composed and decorative CheckboxInput callsites explicitly', () => {
+    expect(CHECKBOX_CALLEE_EXCLUSIONS).toEqual([
+      expect.objectContaining({
+        owner: 'Table selection',
+        part: 'CheckboxInput',
+      }),
+      expect.objectContaining({
+        owner: 'MultiSelector option decoration',
+        part: 'CheckboxInput',
+      }),
+    ]);
+    expect(
+      CHECKBOX_CALLEE_EXCLUSIONS.every(
+        exclusion => exclusion.reason.length > 0,
+      ),
+    ).toBe(true);
   });
 
   it('renders exactly one role-bearing subject for every state', () => {

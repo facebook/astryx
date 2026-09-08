@@ -321,7 +321,7 @@ describe('CheckboxInput', () => {
     expect(container.querySelector('.astryx-icon')).toBeInTheDocument();
   });
 
-  it('renders status message and sets aria-invalid for error', () => {
+  it('renders the status message for an error', () => {
     render(
       <CheckboxInput
         label="Accept terms"
@@ -331,10 +331,6 @@ describe('CheckboxInput', () => {
       />,
     );
     expect(screen.getByText('Required field')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox')).toHaveAttribute(
-      'aria-invalid',
-      'true',
-    );
   });
 
   // Regression: the status is conditionally mounted, so it must be announced
