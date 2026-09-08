@@ -59,6 +59,9 @@ export const ListItemRichLabelMissingName = storyFor(
 export const ListItemDisabled = storyFor('list-item-disabled');
 export const ListItemLoading = storyFor('list-item-loading');
 export const ListItemReadOnly = storyFor('list-item-read-only');
+export const ListItemHandlerlessReadOnly = storyFor(
+  'list-item-handlerless-read-only',
+);
 export const ListItemGroupDisabledWithMessage = storyFor(
   'list-item-group-disabled-with-message',
 );

@@ -101,6 +101,18 @@ function ReadOnlyCollectionListItem() {
   );
 }
 
+function HandlerlessListItem() {
+  return (
+    <List>
+      <CheckboxListItem
+        data-a11y-visible-label
+        label="Completed task"
+        isChecked
+      />
+    </List>
+  );
+}
+
 function GroupDisabledListItem() {
   return (
     <CheckboxList
@@ -235,6 +247,7 @@ export const CHECKBOX_STATE_RENDERS: Record<
     <StandaloneListItem initial={false} label="Push notifications" isLoading />
   ),
   'list-item-read-only': () => <ReadOnlyCollectionListItem />,
+  'list-item-handlerless-read-only': () => <HandlerlessListItem />,
   'list-item-group-disabled-with-message': () => <GroupDisabledListItem />,
 
   'menu-item-unchecked': () => <MenuCheckbox initial={false} />,

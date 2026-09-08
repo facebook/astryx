@@ -13,6 +13,8 @@ import type {KnownFailure} from '@astryxdesign/a11y-spec';
 const CHECKBOX_LIST_DESCRIPTION_ISSUE =
   'https://github.com/facebook/astryx/issues/6154';
 const RICH_LABEL_NAME_ISSUE = 'https://github.com/facebook/astryx/issues/6161';
+const HANDLERLESS_READONLY_ISSUE =
+  'https://github.com/facebook/astryx/issues/6163';
 
 export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
   {
@@ -53,6 +55,19 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     issue: RICH_LABEL_NAME_ISSUE,
     reason:
       'The public API permits a ReactNode label without an equivalent plain-text name. The migration records that supported branch without changing the component API.',
+  },
+  {
+    expectation: 'checkbox.readonly.declared',
+    binding: 'CheckboxListItem',
+    state: 'list-item-handlerless-read-only',
+    evidenceLayer: 'dom',
+    failureEquals:
+      'this state is read-only, but the checkbox does not declare aria-readonly="true"',
+    userImpact:
+      'The browser exposes a handlerless inert checkbox without a read-only declaration, so accessibility consumers cannot distinguish it from an editable control.',
+    issue: HANDLERLESS_READONLY_ISSUE,
+    reason:
+      'The public standalone API permits an item with isChecked and no onCheck. The row is inert, but CheckboxInput does not receive isReadOnly.',
   },
 
   {

@@ -294,6 +294,15 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     html: divCheckbox('tabindex="0" aria-checked="false"'),
   },
   {
+    id: 'violating-wrong-start-first-noop',
+    summary:
+      'a checkbox rendered checked despite an unchecked declaration, whose first activation does nothing and second activation unchecks it',
+    facts: facts(),
+    html: divCheckbox(
+      `tabindex="0" aria-checked="true" onclick="const count = Number(this.dataset.activations || '0') + 1; this.dataset.activations = String(count); if (count === 2) { this.setAttribute('aria-checked', 'false'); }" onkeydown="if (event.key === ' ') { event.preventDefault(); this.click(); }"`,
+    ),
+  },
+  {
     id: 'violating-one-way',
     summary: 'a checkbox that turns on and cannot be turned back off',
     facts: facts(),
@@ -306,6 +315,13 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     summary: 'a checkbox that answers a pointer but ignores the keyboard',
     facts: facts(),
     html: divCheckbox(`tabindex="0" aria-checked="false" ${TOGGLE_ON_CLICK}`),
+  },
+  {
+    id: 'violating-pointer-only-unfocusable',
+    summary:
+      'an operable checkbox whose facts try to opt out of direct keyboard focus',
+    facts: facts({focusable: false}),
+    html: divCheckbox(`aria-checked="false" ${TOGGLE_ON_CLICK}`),
   },
   {
     id: 'violating-unreachable',
@@ -322,6 +338,12 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     html: nativeCheckbox(
       `onkeydown="if (event.key === 'Tab') { event.preventDefault(); }"`,
     ),
+  },
+  {
+    id: 'violating-disabled-overexposed',
+    summary: 'an available checkbox falsely exposed as disabled',
+    facts: facts({focusable: false, operable: false}),
+    html: nativeCheckbox('disabled'),
   },
   {
     id: 'violating-disabled-unexposed',
@@ -414,6 +436,7 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
     'violating-wrong-description',
   ],
   'checkbox.disabled.exposed': ['violating-disabled-unexposed'],
+  'checkbox.disabled.not-exposed': ['violating-disabled-overexposed'],
   'checkbox.readonly.declared': ['violating-readonly-unexposed'],
   'checkbox.readonly.not-declared': ['violating-readonly-overexposed'],
   'checkbox.required.declared': ['violating-required-unexposed'],
@@ -425,14 +448,22 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   'checkbox.state.keeps-focus-on-change': [
     'violating-focus-moves-on-change',
     'violating-inert',
+    'violating-pointer-only-unfocusable',
   ],
-  'checkbox.state.pointer-round-trip': ['violating-inert', 'violating-one-way'],
+  'checkbox.state.pointer-round-trip': [
+    'violating-inert',
+    'violating-wrong-start-first-noop',
+    'violating-one-way',
+  ],
   'checkbox.state.space-round-trip': [
     'violating-pointer-only',
+    'violating-pointer-only-unfocusable',
+    'violating-wrong-start-first-noop',
     'violating-one-way',
   ],
   'checkbox.focus.reachable-and-escapable': [
     'violating-unreachable',
+    'violating-pointer-only-unfocusable',
     'violating-keyboard-trap',
   ],
   'checkbox.state.inoperable': ['violating-disabled-operable'],
@@ -460,6 +491,8 @@ const MUTATION_FAILURES: Readonly<Record<string, string>> = {
     'browser computes "This text describes a different control."',
   'checkbox.disabled.exposed:violating-disabled-unexposed':
     'reports the checkbox as available',
+  'checkbox.disabled.not-exposed:violating-disabled-overexposed':
+    'exposes the checkbox as disabled',
   'checkbox.readonly.declared:violating-readonly-unexposed':
     'does not declare aria-readonly="true"',
   'checkbox.readonly.not-declared:violating-readonly-overexposed':
@@ -478,15 +511,25 @@ const MUTATION_FAILURES: Readonly<Record<string, string>> = {
   'checkbox.state.keeps-focus-on-change:violating-focus-moves-on-change':
     'moved focus off it',
   'checkbox.state.keeps-focus-on-change:violating-inert': 'nothing changed',
+  'checkbox.state.keeps-focus-on-change:violating-pointer-only-unfocusable':
+    'checkbox did not take focus',
   'checkbox.state.pointer-round-trip:violating-inert':
     'cannot be changed to checked',
+  'checkbox.state.pointer-round-trip:violating-wrong-start-first-noop':
+    'binding declares unchecked, but the browser starts checked',
   'checkbox.state.pointer-round-trip:violating-one-way':
     'change only goes one way',
   'checkbox.state.space-round-trip:violating-pointer-only':
     'cannot be changed to checked',
+  'checkbox.state.space-round-trip:violating-pointer-only-unfocusable':
+    'checkbox did not take focus',
+  'checkbox.state.space-round-trip:violating-wrong-start-first-noop':
+    'binding declares unchecked, but the browser starts checked',
   'checkbox.state.space-round-trip:violating-one-way':
     'change only goes one way',
   'checkbox.focus.reachable-and-escapable:violating-unreachable':
+    'never reached the checkbox',
+  'checkbox.focus.reachable-and-escapable:violating-pointer-only-unfocusable':
     'never reached the checkbox',
   'checkbox.focus.reachable-and-escapable:violating-keyboard-trap':
     'did not move focus off the checkbox',

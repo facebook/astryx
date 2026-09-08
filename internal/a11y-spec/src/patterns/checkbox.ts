@@ -225,6 +225,12 @@ async function roundTrip(
   how: string,
 ): Promise<void> {
   const from = start === 'mixed' ? 'mixed' : start ? 'true' : 'false';
+  const initial = await read();
+  if (initial !== from) {
+    throw new Error(
+      `the binding declares ${checkedState(from)}, but the browser starts ${checkedState(initial)}`,
+    );
+  }
   await activate();
   const after = await read();
 
@@ -463,6 +469,27 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         },
       },
       {
+        id: 'checkbox.disabled.not-exposed',
+        outcome:
+          'An available checkbox does not expose a false disabled state.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is available',
+          test: facts => !facts.disabled,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {disabled} = await subject.computed();
+          if (disabled) {
+            throw new Error(
+              'this state is available, but the browser exposes the checkbox as disabled',
+            );
+          }
+        },
+      },
+      {
         id: 'checkbox.readonly.declared',
         outcome:
           'A read-only checkbox declares that its value cannot be changed.',
@@ -626,9 +653,8 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         covers: ['2.1.1-keyboard', 'apg-interaction'],
         appliesWhen: {
           condition:
-            'the user is meant to be able to change this state and to focus it',
-          test: facts =>
-            facts.operable && facts.focusable && facts.directKeyboardOperation,
+            'the user is meant to be able to change this direct checkbox',
+          test: facts => facts.operable && facts.directKeyboardOperation,
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: READS_THE_TREE,
@@ -682,9 +708,8 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         covers: ['3.2.2-on-input'],
         appliesWhen: {
           condition:
-            'the user is meant to be able to change this state and to focus it',
-          test: facts =>
-            facts.operable && facts.focusable && facts.directKeyboardOperation,
+            'the user is meant to be able to change this direct checkbox',
+          test: facts => facts.operable && facts.directKeyboardOperation,
         },
         evidenceLayer: 'real-browser',
         // The claim is about a CHANGE, so the state has to be read before and
@@ -720,8 +745,11 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         sources: [WCAG_2_1_1, WCAG_2_1_2],
         covers: ['2.1.1-keyboard', '2.1.2-no-keyboard-trap'],
         appliesWhen: {
-          condition: 'this state is meant to be in the tab sequence',
-          test: facts => facts.focusable,
+          condition:
+            'this direct checkbox is operable or intentionally kept in the tab sequence',
+          test: facts =>
+            facts.directKeyboardOperation &&
+            (facts.operable || facts.focusable),
         },
         evidenceLayer: 'real-browser',
         // No `alsoNeeds`: this one reads only where focus is, which is a real
@@ -894,11 +922,11 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           'A component rendered in isolation owns no document language and cannot supply one.',
       },
       '3.2.4-consistent-identification': {
-        owner: 'the design system',
+        owner: 'the composing application and caller content',
         verifiedBy:
-          'this shared contract itself: every component that adopts the pattern binds to the same expectations, so repeated checkboxes are identified the same way',
+          'cross-page review that equivalent checkbox functions use consistent names and identification in their application context',
         reason:
-          'Consistency is a property of the whole set of adopters, which one binding cannot demonstrate.',
+          'This contract gives each adopter the same role and state rules, but one isolated binding cannot compare equivalent functions across pages or application workflows.',
       },
       '3.2.2-on-input': {
         owner: 'the caller, for its own onChange',

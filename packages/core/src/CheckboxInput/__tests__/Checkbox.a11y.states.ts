@@ -32,7 +32,7 @@ export interface CheckboxBindingState {
   readonly storyId: string;
   readonly opensMenu?: boolean;
   readonly declaredNotDelivered?: ReadonlyArray<{
-    readonly fact: 'description' | 'focusable';
+    readonly fact: 'description' | 'focusable' | 'readOnly';
     readonly owned: string;
   }>;
 }
@@ -245,6 +245,19 @@ export const CHECKBOX_BINDING_STATES = [
     visibleLabel: 'Email',
     visibleLabelSelector: '[data-a11y-visible-label]',
     storyId: 'a11y-checkbox-pattern--list-item-read-only',
+  },
+  {
+    id: 'list-item-handlerless-read-only',
+    binding: 'CheckboxListItem',
+    summary:
+      'a standalone handlerless item that is inert but does not declare read-only semantics',
+    facts: facts({checked: true, operable: false, readOnly: true}),
+    visibleLabel: 'Completed task',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--list-item-handlerless-read-only',
+    declaredNotDelivered: [
+      {fact: 'readOnly', owned: 'checkbox.readonly.declared'},
+    ],
   },
   {
     id: 'list-item-group-disabled-with-message',
