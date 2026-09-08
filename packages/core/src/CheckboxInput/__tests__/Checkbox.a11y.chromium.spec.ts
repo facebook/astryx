@@ -235,7 +235,14 @@ test('every applicability fact matches what the page exposes', async ({
       }
       const matches = expected[fact] === observed[fact];
       const excuse = excused.find(entry => entry.fact === fact);
-      if (!matches && excuse == null) {
+      // Operability and focusability have their own real-browser expectations,
+      // including advisory ones. Let those results carry their declared
+      // enforcement instead of turning this inventory cross-check into a hidden
+      // required gate. The remaining facts feed required semantic expectations,
+      // so an unexplained mismatch there still means the binding inventory lies.
+      const reportsThroughExpectation =
+        fact === 'operable' || fact === 'focusable';
+      if (!matches && excuse == null && !reportsThroughExpectation) {
         wrong.push(
           `${state.id}: declares ${fact}=${String(expected[fact])}, page exposes ${String(observed[fact])}`,
         );

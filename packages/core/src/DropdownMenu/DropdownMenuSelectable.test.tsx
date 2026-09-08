@@ -4,6 +4,8 @@
  * @file DropdownMenuSelectable.test.tsx
  * @input vitest, @testing-library/react, DropdownMenu + selectable items
  * @output Unit tests for DropdownMenuCheckboxItem / RadioGroup / RadioItem (#3829)
+ * @position Component-local callback and composition coverage; shared checkbox
+ *   role, name, state, and interaction outcomes live in the reusable contract.
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
