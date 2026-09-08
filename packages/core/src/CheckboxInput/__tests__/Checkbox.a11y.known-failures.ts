@@ -19,8 +19,6 @@ const INPUT_HANDLERLESS_READONLY_ISSUE =
   'https://github.com/facebook/astryx/issues/6165';
 const MENU_HANDLERLESS_UNAVAILABLE_ISSUE =
   'https://github.com/facebook/astryx/issues/6166';
-const REQUIRED_PREMATURE_INVALID_ISSUE =
-  'https://github.com/facebook/astryx/issues/6169';
 
 export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
   {
@@ -64,21 +62,6 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     issue: RICH_LABEL_NAME_ISSUE,
     reason:
       'The public API permits a ReactNode label without an equivalent plain-text name. The migration records that supported branch without changing the component API.',
-  },
-  {
-    expectation: 'checkbox.invalid.not-exposed',
-    binding: 'CheckboxInput',
-    state: 'input-required',
-    evidenceLayer: 'accessibility-tree',
-    failureEquals:
-      'this state is not invalid, but the browser exposes the checkbox as invalid',
-    standardsReference:
-      'WCAG 2.2 4.1.2 Name, Role, Value (Level A); WCAG 2.2 3.3.1 Error Identification (Level A)',
-    userImpact:
-      'An untouched required checkbox is exposed as invalid before the product detects or presents an error.',
-    issue: REQUIRED_PREMATURE_INVALID_ISSUE,
-    reason:
-      'The native required attribute makes Chromium expose unchecked constraint invalidity immediately. The migration records that current browser-facing outcome without treating it as intended behavior.',
   },
   {
     expectation: 'checkbox.readonly.declared',

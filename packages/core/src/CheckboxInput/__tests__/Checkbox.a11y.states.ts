@@ -179,12 +179,9 @@ export const CHECKBOX_BINDING_STATES = [
     id: 'input-required',
     binding: 'CheckboxInput',
     summary: 'a checkbox declared required',
-    facts: facts({required: true}),
+    facts: facts({required: true, invalid: true}),
     visibleLabel: 'Accept terms',
     storyId: 'a11y-checkbox-pattern--input-required',
-    declaredNotDelivered: [
-      {fact: 'invalid', owned: 'checkbox.invalid.not-exposed'},
-    ],
   },
   {
     id: 'input-inherited-required-valid',
