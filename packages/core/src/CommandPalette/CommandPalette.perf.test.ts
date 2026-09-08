@@ -1,70 +1,75 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
-import {createValueLookup} from './CommandPalette';
+import {createElement} from 'react';
+import {fireEvent, render, waitFor} from '@testing-library/react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
+import {CommandPalette} from './CommandPalette';
 
-/**
- * Operation-count perf test for the delegated hover-highlight lookup.
- *
- * The counted operation is one `item.value` read — one comparison in the
- * previous linear `findIndex` scan, which ran on every bubbled mouseover.
- * Crossing 50 items cost 1,275 comparisons (sum of scan lengths) versus a
- * single Map probe per hover now. Counting is exact (getter-based), like
- * parser.perf.test.ts, so the numbers hold on loaded CI machines.
- */
+beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = vi.fn(function (
+    this: HTMLDialogElement,
+  ) {
+    this.setAttribute('open', '');
+  });
+});
 
-function makeItems(count: number): {value: string}[] {
-  // Plain objects with a counting getter on `value`.
-  return Array.from({length: count}, (_, i) => ({
-    get value() {
-      totalReads++;
-      return `item-${i}`;
-    },
+async function delegatedMouseOverScans(count: number) {
+  const items = Array.from({length: count}, (_, index) => ({
+    id: `item-${index}`,
+    label: `Item ${index}`,
   }));
-}
+  const view = render(
+    createElement(CommandPalette, {
+      isOpen: true,
+      onOpenChange: () => {},
+      searchSource: createStaticSource(items),
+    }),
+  );
+  await waitFor(() => expect(view.getAllByRole('option')).toHaveLength(count));
+  const lastOption = view.getAllByRole('option').at(-1);
+  if (!lastOption) {
+    throw new Error('missing last option');
+  }
 
-let totalReads = 0;
-
-/** Simulate the pointer crossing every item once, then ten moves within the last item. */
-function simulatedHoverWork(count: number) {
-  totalReads = 0;
-  const items = makeItems(count);
-  const lookup = createValueLookup(items);
-  const buildReads = totalReads;
-  for (let i = 0; i < count; i++) {
-    if (lookup(`item-${i}`) === undefined) {
-      throw new Error('missing index');
+  let scannedItems = 0;
+  const arrayFindIndex = Array.prototype.findIndex;
+  function trackedFindIndex(
+    this: unknown[],
+    predicate: (value: unknown, index: number, array: unknown[]) => unknown,
+    thisArg?: unknown,
+  ): number {
+    if (
+      this.length === count &&
+      (this[0] as {value?: unknown} | undefined)?.value === 'item-0' &&
+      (this.at(-1) as {value?: unknown} | undefined)?.value ===
+        `item-${count - 1}`
+    ) {
+      scannedItems += this.length;
     }
+    return arrayFindIndex.call(this, predicate, thisArg);
   }
-  for (let i = 0; i < 10; i++) {
-    lookup(`item-${count - 1}`);
+  const findIndexSpy = vi
+    .spyOn(Array.prototype, 'findIndex')
+    .mockImplementation(trackedFindIndex);
+
+  try {
+    for (let i = 0; i < 10; i++) {
+      fireEvent.mouseOver(lastOption);
+    }
+    expect(view.getByRole('combobox')).toHaveAttribute(
+      'aria-activedescendant',
+      lastOption.id,
+    );
+  } finally {
+    findIndexSpy.mockRestore();
+    view.unmount();
   }
-  return {buildReads, lookupReads: totalReads - buildReads};
+  return scannedItems;
 }
 
-describe('createValueLookup operation counts', () => {
-  it('bounds hover lookups to one Map probe at two list sizes', () => {
-    // Ten times the list size does not change the lookup cost: zero
-    // `value` reads after the one-time build. A regression to a linear
-    // per-event scan would read values on every hover and fail here.
-    const small = simulatedHoverWork(50);
-    const large = simulatedHoverWork(500);
-    expect(small.lookupReads).toBe(0);
-    expect(large.lookupReads).toBe(small.lookupReads);
-  });
-
-  it('pays exactly one pass over the items when the index is built', () => {
-    // The build itself is linear by design (one read per item), charged
-    // once per results change — not per mouseover.
-    const {buildReads} = simulatedHoverWork(500);
-    expect(buildReads).toBe(500);
-  });
-
-  it('matches findIndex semantics: first occurrence wins, misses are undefined', () => {
-    const items = [{value: 'a'}, {value: 'b'}, {value: 'a'}];
-    const lookup = createValueLookup(items);
-    expect(lookup('a')).toBe(0);
-    expect(lookup('b')).toBe(1);
-    expect(lookup('missing')).toBeUndefined();
+describe('CommandPalette delegated mouseover performance', () => {
+  it.each([50, 500])('does not scan %i items per mouseover', async count => {
+    expect(await delegatedMouseOverScans(count)).toBe(0);
   });
 });

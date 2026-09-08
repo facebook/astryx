@@ -175,10 +175,9 @@ function buildSelectableItems(items: SearchableItem[]): SelectorOptionData[] {
  * mouseover handler (#6077). The index is built once per results change;
  * each hover then pays a Map probe instead of a linear findIndex scan,
  * so cost no longer scales with list size. Keeps the first occurrence of
- * duplicate values to match the previous findIndex behavior. Exported for
- * the operation-count perf test.
+ * duplicate values to match the previous findIndex behavior.
  */
-export function createValueLookup<T extends {value: string}>(
+function createValueLookup<T extends {value: string}>(
   items: ReadonlyArray<T>,
 ): (value: string) => number | undefined {
   const indexByValue = new Map<string, number>();
