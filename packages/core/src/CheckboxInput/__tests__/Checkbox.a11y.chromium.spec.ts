@@ -302,6 +302,27 @@ test('every expectation is exercised by at least one bound state', async ({
   expect(unmatchedKnownFailures(CHECKBOX_KNOWN_FAILURES, results)).toEqual([]);
 });
 
+test('CheckboxInput keeps supporting text out of its accessible name', async ({
+  page,
+}) => {
+  const state = CHECKBOX_BINDING_STATES.find(
+    candidate => candidate.id === 'input-described',
+  );
+  if (state == null) {
+    throw new Error('missing input-described binding state');
+  }
+  const cdp = await page.context().newCDPSession(page);
+  await mountState(page, state);
+  const subject = await createChromiumHarness({
+    page,
+    subject: subjectFor(page, state),
+    cdp,
+  }).subject();
+  const computed = await subject.computed();
+  expect(computed.name).toBe('Share usage data');
+  expect(computed.description).toBe('Help improve the product');
+});
+
 test('the disabled SelectableCard records only its documented focusability mismatch', async ({
   page,
 }) => {
