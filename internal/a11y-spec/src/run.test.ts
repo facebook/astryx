@@ -310,6 +310,14 @@ describe('runBinding', () => {
       expect(blockingResults([result])).toHaveLength(1);
     });
 
+    it('accepts a record matched by exactly one executed result', async () => {
+      const record = knownFailure();
+      const result = await run(contractThat(missing), {
+        knownFailures: [record],
+      });
+      expect(unmatchedKnownFailures([record], [result])).toEqual([]);
+    });
+
     it('reports a record orphaned by a missing state or expectation', async () => {
       const orphan = knownFailure({state: 'deleted-state'});
       const result = await run(

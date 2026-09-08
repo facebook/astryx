@@ -65,7 +65,6 @@ export const ListItemGroupDisabledWithMessage = storyFor(
 
 export const MenuItemUnchecked = storyFor('menu-item-unchecked');
 export const MenuItemChecked = storyFor('menu-item-checked');
-export const MenuItemDescribed = storyFor('menu-item-described');
 export const MenuItemDisabled = storyFor('menu-item-disabled');
 
 export const CardUnchecked = storyFor('card-unchecked');

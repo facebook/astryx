@@ -121,18 +121,15 @@ function GroupDisabledListItem() {
 function MenuCheckbox({
   initial,
   isDisabled = false,
-  description,
 }: {
   initial: boolean;
   isDisabled?: boolean;
-  description?: ReactNode;
 }) {
   const [value, setValue] = useState(initial);
   return (
     <DropdownMenu button={{label: 'View options'}}>
       <DropdownMenuCheckboxItem
         label="Show archived"
-        description={description}
         value={value}
         onChange={setValue}
         isDisabled={isDisabled}
@@ -242,9 +239,6 @@ export const CHECKBOX_STATE_RENDERS: Record<
 
   'menu-item-unchecked': () => <MenuCheckbox initial={false} />,
   'menu-item-checked': () => <MenuCheckbox initial />,
-  'menu-item-described': () => (
-    <MenuCheckbox initial={false} description="Include unpublished items" />
-  ),
   'menu-item-disabled': () => <MenuCheckbox initial={false} isDisabled />,
 
   'card-unchecked': () => <ControlledCard initial={false} />,

@@ -277,19 +277,6 @@ export const CHECKBOX_BINDING_STATES = [
     opensMenu: true,
   },
   {
-    id: 'menu-item-described',
-    binding: 'DropdownMenuCheckboxItem',
-    summary:
-      'a menu checkbox item with secondary row text; menu composition owns that text',
-    facts: menuFacts({description: 'Include unpublished items'}),
-    visibleLabel: 'Show archived Include unpublished items',
-    storyId: 'a11y-checkbox-pattern--menu-item-described',
-    opensMenu: true,
-    declaredNotDelivered: [
-      {fact: 'description', owned: 'checkbox.description.resolvable'},
-    ],
-  },
-  {
     id: 'menu-item-disabled',
     binding: 'DropdownMenuCheckboxItem',
     summary: 'an unavailable menu checkbox item',

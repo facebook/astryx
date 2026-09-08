@@ -90,6 +90,28 @@ test.describe('checkbox contract — conforming fixtures', () => {
   }
 });
 
+test('every expectation passes against at least one conforming fixture', async ({
+  page,
+}) => {
+  test.setTimeout(2 * 60 * 1000);
+  const cdp = await page.context().newCDPSession(page);
+  const withoutPass: string[] = [];
+  for (const expectation of CHECKBOX_PATTERN.expectations) {
+    let passed = false;
+    for (const id of CONFORMING_FIXTURES) {
+      const [result] = await results(page, cdp, fixture(id), [expectation.id]);
+      if (result?.status === 'pass') {
+        passed = true;
+        break;
+      }
+    }
+    if (!passed) {
+      withoutPass.push(expectation.id);
+    }
+  }
+  expect(withoutPass).toEqual([]);
+});
+
 test.describe('checkbox contract — deliberately violating fixtures', () => {
   for (const expectation of CHECKBOX_PATTERN.expectations) {
     if (

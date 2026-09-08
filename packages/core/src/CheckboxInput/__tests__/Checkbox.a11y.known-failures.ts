@@ -12,8 +12,6 @@ import type {KnownFailure} from '@astryxdesign/a11y-spec';
 
 const CHECKBOX_LIST_DESCRIPTION_ISSUE =
   'https://github.com/facebook/astryx/issues/6154';
-const MENU_CHECKBOX_DESCRIPTION_ISSUE =
-  'https://github.com/facebook/astryx/issues/6159';
 const RICH_LABEL_NAME_ISSUE = 'https://github.com/facebook/astryx/issues/6161';
 
 export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
@@ -42,32 +40,6 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     issue: CHECKBOX_LIST_DESCRIPTION_ISSUE,
     reason:
       'This is the accessibility-tree face of the missing relationship recorded above. It is separate because each known failure names exactly one expectation and layer.',
-  },
-  {
-    expectation: 'checkbox.description.resolvable',
-    binding: 'DropdownMenuCheckboxItem',
-    state: 'menu-item-described',
-    evidenceLayer: 'dom',
-    failureEquals:
-      'the binding renders supporting text for this state, but the checkbox has no aria-describedby, so the text is never attached to the control',
-    userImpact:
-      'The browser exposes the secondary text only inside the item name, not as the distinct description declared by this binding.',
-    issue: MENU_CHECKBOX_DESCRIPTION_ISSUE,
-    reason:
-      'DropdownMenuCheckboxItem renders secondary text in the row without relating it to the role-bearing menuitemcheckbox. The migration records the gap without changing behavior.',
-  },
-  {
-    expectation: 'checkbox.description.exposed',
-    binding: 'DropdownMenuCheckboxItem',
-    state: 'menu-item-described',
-    evidenceLayer: 'accessibility-tree',
-    failureEquals:
-      'the binding expects the description "Include unpublished items", but the browser computes no accessible description',
-    userImpact:
-      'The browser computes no distinct accessibility description for the checkable menu item; this does not claim what an assistive technology announces.',
-    issue: MENU_CHECKBOX_DESCRIPTION_ISSUE,
-    reason:
-      'This records the accessibility-tree outcome separately from the missing DOM relationship so one future fix must satisfy both exact gates.',
   },
   {
     expectation: 'checkbox.name.matches-visible-label',

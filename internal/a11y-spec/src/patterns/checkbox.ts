@@ -506,8 +506,8 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         id: 'checkbox.required.declared',
         outcome:
           'A checkbox that has to be checked declares that requirement in markup for user agents and assistive technology to consume.',
-        sources: [WCAG_3_3_2, WCAG_4_1_2],
-        covers: ['3.3.2-labels-or-instructions'],
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
         appliesWhen: {
           condition: 'this state is required',
           test: facts => facts.required,
@@ -532,8 +532,8 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         id: 'checkbox.required.not-declared',
         outcome:
           'A checkbox that is not required does not expose a false required state.',
-        sources: [WCAG_4_1_2, WCAG_3_3_2],
-        covers: ['4.1.2-name-role-value', '3.3.2-labels-or-instructions'],
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
         appliesWhen: {
           condition: 'this state is not required',
           test: facts => !facts.required,
@@ -906,6 +906,14 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           'integration and page-level review of what a caller does in response to the change',
         reason:
           "A change of context is a change of user agent, viewport, focus, or content that changes the page's meaning. The checkbox owns exactly one of those: whether activating it moves focus. If a caller's onChange navigates, reloads, or rewrites the page around the control, that is the caller's context change to warn about before the user reaches the checkbox, and no run of one component can observe it.",
+        coversRemainderOnly: true,
+      },
+      '3.3.2-labels-or-instructions': {
+        owner: 'the binding component and caller content',
+        verifiedBy:
+          'component tests and content review for persistent visible labels and any instructions required to complete the choice',
+        reason:
+          'This contract proves that the checkbox has an accessible name and accurately declares requiredness. Whether the visible label stays present and whether the person needs additional instructions are presentation and content outcomes owned by the binding and caller.',
         coversRemainderOnly: true,
       },
       '3.3.1-error-identification': {
