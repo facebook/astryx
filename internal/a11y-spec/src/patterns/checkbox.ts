@@ -799,7 +799,10 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           condition:
             'this direct checkbox is unavailable but its binding promises to keep it in the tab sequence',
           test: facts =>
-            facts.directKeyboardOperation && !facts.operable && facts.focusable,
+            facts.directKeyboardOperation &&
+            facts.disabled &&
+            !facts.operable &&
+            facts.focusable,
         },
         evidenceLayer: 'real-browser',
         enforcement: 'advisory',

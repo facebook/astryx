@@ -179,6 +179,15 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     html: nativeCheckbox('disabled'),
   },
   {
+    id: 'conforming-focusable-disabled',
+    summary:
+      'an unavailable checkbox that stays in the tab sequence and refuses both pointer and keyboard changes',
+    facts: facts({disabled: true, operable: false, focusable: true}),
+    html: nativeCheckbox(
+      `aria-disabled="true" onclick="event.preventDefault()" onkeydown="if (event.key === ' ') { event.preventDefault(); }"`,
+    ),
+  },
+  {
     id: 'conforming-pending',
     summary:
       'a checkbox that refuses its own change without being disabled — the case where "cannot be changed" and "reported disabled" come apart',
