@@ -181,7 +181,7 @@ astryx docs tokens --dense`,
           label: 'MCP config (same for all tools)',
           code: `{
   "mcpServers": {
-    "xds": {
+    "astryx": {
       "type": "url",
       "url": "https://astryx.atmeta.com/mcp"
     }

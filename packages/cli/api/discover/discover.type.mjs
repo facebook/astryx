@@ -6,16 +6,16 @@
  *
  * Invocation                                      -> type discriminator
  * ------------------------------------------------------------------
- * xds --json discover                            -> discover.list
- * xds --json discover @scope/name                -> discover.detail
- * xds --json discover @scope/name/Component      -> discover.detail.doc
- * xds --json discover <searchterm> (1 match)     -> discover.detail.doc
- * xds --json discover <searchterm> (N matches)   -> discover.search
- * (not found)                                    -> CLIError
+ * astryx --json discover                          -> discover.list
+ * astryx --json discover @scope/name              -> discover.detail
+ * astryx --json discover @scope/name/Component    -> discover.detail.doc
+ * astryx --json discover <searchterm> (1 match)   -> discover.detail.doc
+ * astryx --json discover <searchterm> (N matches) -> discover.search
+ * (not found)                                     -> CLIError
  */
 
 /**
- * xds --json discover
+ * astryx --json discover
  * @typedef {object} DiscoverListResponse
  * @property {'discover.list'} type
  * @property {DiscoverListEntry[]} data
@@ -35,21 +35,21 @@
  */
 
 /**
- * xds --json discover @scope/name
+ * astryx --json discover @scope/name
  * @typedef {object} DiscoverDetailResponse
  * @property {'discover.detail'} type
  * @property {DiscoverListEntry} data
  */
 
 /**
- * xds --json discover @scope/name/Component
+ * astryx --json discover @scope/name/Component
  * @typedef {object} DiscoverDetailDocResponse
  * @property {'discover.detail.doc'} type
  * @property {import('@astryxdesign/cli/authoring').ComponentDoc} data
  */
 
 /**
- * xds --json discover <searchterm> (multiple matches)
+ * astryx --json discover <searchterm> (multiple matches)
  * @typedef {object} DiscoverSearchResponse
  * @property {'discover.search'} type
  * @property {{query: string, matches: DiscoverSearchEntry[]}} data
