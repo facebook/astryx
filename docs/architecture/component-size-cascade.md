@@ -3,11 +3,11 @@ schema_version: 1
 template_version: 1
 kind: architecture
 id: architecture:component-size-cascade
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-09-07
 owners: [cixzhang]
 applies_to:
   [
