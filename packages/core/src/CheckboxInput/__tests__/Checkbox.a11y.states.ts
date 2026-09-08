@@ -372,7 +372,7 @@ export const CHECKBOX_BINDING_STATES = [
     declaredNotDelivered: [
       {
         fact: 'focusable',
-        owned: 'checkbox.focus.declared-unavailable-reachable',
+        owned: 'checkbox.focus.declared-inoperable-reachable',
       },
     ],
   },

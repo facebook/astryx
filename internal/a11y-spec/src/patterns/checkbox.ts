@@ -790,24 +790,21 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         },
       },
       {
-        id: 'checkbox.focus.declared-unavailable-reachable',
+        id: 'checkbox.focus.declared-inoperable-reachable',
         outcome:
-          'When a binding promises that an unavailable checkbox remains reachable, Tab reaches it and Tab again leaves it.',
+          'When a binding promises that an inoperable checkbox remains reachable, Tab reaches it and Tab again leaves it.',
         sources: [AST_021_PRESERVE_BEHAVIOR],
         covers: ['2.1.1-keyboard', '2.1.2-no-keyboard-trap'],
         appliesWhen: {
           condition:
-            'this direct checkbox is unavailable but its binding promises to keep it in the tab sequence',
+            'this direct checkbox is inoperable but its binding promises to keep it in the tab sequence',
           test: facts =>
-            facts.directKeyboardOperation &&
-            facts.disabled &&
-            !facts.operable &&
-            facts.focusable,
+            facts.directKeyboardOperation && !facts.operable && facts.focusable,
         },
         evidenceLayer: 'real-browser',
         enforcement: 'advisory',
         advisoryBecause:
-          'AST-021 requires a migration to preserve and record existing behavior, but no current component or system record makes focusable-disabled checkboxes a universal conformance requirement.',
+          'AST-021 requires a migration to preserve and record existing behavior, but no current component or system record makes focusability of every inoperable checkbox a universal conformance requirement.',
         run: async ({harness, subject}) => {
           await assertReachableAndEscapable(harness, subject);
         },

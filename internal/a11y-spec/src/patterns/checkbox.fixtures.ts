@@ -491,7 +491,7 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
     'violating-pointer-only-unfocusable',
     'violating-keyboard-trap',
   ],
-  'checkbox.focus.declared-unavailable-reachable': [
+  'checkbox.focus.declared-inoperable-reachable': [
     'violating-declared-unavailable-unreachable',
   ],
   'checkbox.state.inoperable': [
@@ -564,7 +564,7 @@ const MUTATION_FAILURES: Readonly<Record<string, string>> = {
     'never reached the checkbox',
   'checkbox.focus.reachable-and-escapable:violating-keyboard-trap':
     'did not move focus off the checkbox',
-  'checkbox.focus.declared-unavailable-reachable:violating-declared-unavailable-unreachable':
+  'checkbox.focus.declared-inoperable-reachable:violating-declared-unavailable-unreachable':
     'never reached the checkbox',
   'checkbox.state.inoperable:violating-disabled-operable':
     'clicking the checkbox turned it',

@@ -191,9 +191,16 @@ export function formatReport(report: Report): string {
         result.status === 'known-failure' && result.knownFailure != null
           ? ` (${result.knownFailure.issue})`
           : '';
+      const failureLike =
+        result.status === 'fail' ||
+        result.status === 'known-failure' ||
+        result.status === 'unexpected-pass';
       lines.push(
-        `  ${result.status.padEnd(15)} ${result.expectation} · ${result.evidenceLayer} · ${result.enforcement}${suffix}`,
+        `  ${result.status.padEnd(15)} ${failureLike ? result.description : result.expectation} · ${result.evidenceLayer} · ${result.enforcement}${suffix}`,
       );
+      if (failureLike && result.detail != null) {
+        lines.push(`    ${result.detail.split('\n').join('\n    ')}`);
+      }
     }
     lines.push('');
   }

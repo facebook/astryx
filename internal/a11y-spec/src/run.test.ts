@@ -371,6 +371,16 @@ describe('runBinding', () => {
 });
 
 describe('the report keeps its facts apart', () => {
+  it('prints the source and failure detail for a report-only advisory result', async () => {
+    const result = await run(contractThat(missing, {enforcement: 'advisory'}));
+    const text = formatReport(
+      summarize(contractThat(missing, {enforcement: 'advisory'}), [result]),
+    );
+    expect(text).toContain('WCAG 2.2 4.1.2 Name, Role, Value (A)');
+    expect(text).toContain('the stub outcome is missing entirely');
+    expect(blockingResults([result])).toEqual([]);
+  });
+
   it('counts each status separately and quotes no score', async () => {
     const contract = contractThat(missing);
     const failing = await run(contract);

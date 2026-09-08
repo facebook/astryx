@@ -135,7 +135,7 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
       'DropdownMenuCheckboxItem makes onChange optional. Without it, the controlled value cannot persist a user change, but the role-bearing item does not declare the resulting read-only state.',
   },
   {
-    expectation: 'checkbox.focus.declared-unavailable-reachable',
+    expectation: 'checkbox.focus.declared-inoperable-reachable',
     binding: 'SelectableCard',
     state: 'card-disabled',
     evidenceLayer: 'real-browser',

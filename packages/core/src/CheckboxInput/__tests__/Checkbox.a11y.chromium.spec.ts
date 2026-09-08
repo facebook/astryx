@@ -338,7 +338,7 @@ test('the disabled SelectableCard records only its documented focusability misma
     result.results.find(
       candidate =>
         candidate.expectation ===
-        'checkbox.focus.declared-unavailable-reachable',
+        'checkbox.focus.declared-inoperable-reachable',
     )?.status,
   ).toBe('known-failure');
   expect(
