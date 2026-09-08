@@ -149,13 +149,11 @@ function GroupDisabledListItem() {
 
 function MenuCheckbox({
   initial,
-  label = 'Show archived',
   isDisabled = false,
   description,
   hasChangeHandler = true,
 }: {
   initial: boolean;
-  label?: ReactNode;
   isDisabled?: boolean;
   description?: ReactNode;
   hasChangeHandler?: boolean;
@@ -164,7 +162,7 @@ function MenuCheckbox({
   return (
     <DropdownMenu button={{label: 'View options'}}>
       <DropdownMenuCheckboxItem
-        label={label}
+        label="Show archived"
         description={description}
         value={value}
         onChange={hasChangeHandler ? setValue : undefined}
@@ -299,11 +297,7 @@ export const CHECKBOX_STATE_RENDERS: Record<
   'menu-item-unchecked': () => <MenuCheckbox initial={false} />,
   'menu-item-checked': () => <MenuCheckbox initial />,
   'menu-item-described': () => (
-    <MenuCheckbox
-      initial={false}
-      label={<VisibleLabel>Show archived</VisibleLabel>}
-      description="Include unpublished items"
-    />
+    <MenuCheckbox initial={false} description="Include unpublished items" />
   ),
   'menu-item-handlerless-inert': () => (
     <MenuCheckbox initial={false} hasChangeHandler={false} />
