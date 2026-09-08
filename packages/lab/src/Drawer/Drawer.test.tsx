@@ -24,6 +24,12 @@ beforeEach(() => {
   HTMLDialogElement.prototype.show = vi.fn(function (this: HTMLDialogElement) {
     this.setAttribute('open', '');
   });
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('open', '');
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('open');
+  });
   HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
     this.removeAttribute('open');
   });
@@ -90,15 +96,45 @@ describe('Drawer', () => {
       expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
     });
 
-    it('opens with show() and no aria-modal when hasScrim is false', () => {
+    it('opens with showPopover() and no aria-modal when hasScrim is false', () => {
       render(
         <Drawer isOpen onOpenChange={() => {}} label="Details" hasScrim={false}>
           Content
         </Drawer>,
       );
-      expect(HTMLDialogElement.prototype.show).toHaveBeenCalled();
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      expect(HTMLDialogElement.prototype.show).not.toHaveBeenCalled();
       expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog')).toHaveAttribute('popover', 'manual');
       expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-modal');
+    });
+
+    it('leaves the manual popover and preserves close listeners after exit', () => {
+      const {rerender} = render(
+        <Drawer isOpen onOpenChange={() => {}} label="Details" hasScrim={false}>
+          Content
+        </Drawer>,
+      );
+      const dialog = screen.getByRole('dialog', {hidden: true});
+      const handleClose = vi.fn();
+      dialog.addEventListener('close', handleClose);
+
+      rerender(
+        <Drawer
+          isOpen={false}
+          onOpenChange={() => {}}
+          label="Details"
+          hasScrim={false}>
+          Content
+        </Drawer>,
+      );
+      act(() => {
+        fireEvent.transitionEnd(dialog, {propertyName: 'transform'});
+      });
+
+      expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+      expect(handleClose).toHaveBeenCalledTimes(1);
+      expect(dialog).not.toHaveAttribute('open');
     });
   });
 
@@ -349,6 +385,20 @@ describe('Drawer', () => {
     });
   });
 
+  it('traps Tab focus inside a modal drawer', () => {
+    render(
+      <Drawer isOpen onOpenChange={() => {}} label="Details">
+        <button type="button">First action</button>
+      </Drawer>,
+    );
+    const closeButton = screen.getByRole('button', {name: 'Close'});
+    closeButton.focus();
+
+    fireEvent.keyDown(document, {key: 'Tab'});
+
+    expect(screen.getByRole('button', {name: 'First action'})).toHaveFocus();
+  });
+
   it('focuses the element with data-autofocus on open', () => {
     render(
       <Drawer isOpen onOpenChange={() => {}} label="Details">
@@ -505,7 +555,7 @@ describe('Drawer', () => {
   });
 
   describe('LIFO stacking', () => {
-    it('Escape only closes the last-opened drawer', () => {
+    it('Escape closes only the last-opened drawer, regardless of event target', () => {
       const closeFirst = vi.fn();
       const closeSecond = vi.fn();
       render(
@@ -527,15 +577,9 @@ describe('Drawer', () => {
         </>,
       );
 
-      // Escape inside the first (bottom-of-stack) drawer is ignored.
+      // The shared document-level owner routes Escape to the top layer even
+      // when the event starts inside a lower sibling.
       fireEvent.keyDown(screen.getByRole('dialog', {name: 'First'}), {
-        key: 'Escape',
-      });
-      expect(closeFirst).not.toHaveBeenCalled();
-      expect(closeSecond).not.toHaveBeenCalled();
-
-      // Escape inside the last-opened drawer closes it.
-      fireEvent.keyDown(screen.getByRole('dialog', {name: 'Second'}), {
         key: 'Escape',
       });
       expect(closeSecond).toHaveBeenCalledWith(false);
@@ -565,24 +609,84 @@ describe('Drawer', () => {
       );
     }
 
-    it('closes stacked drawers innermost-first', () => {
-      vi.useFakeTimers();
-      try {
-        render(<StackHarness />);
-        const outer = screen.getByRole('dialog', {name: 'Outer'});
-        const inner = screen.getByRole('dialog', {name: 'Inner'});
+    it('keeps a closing top drawer on the stack until its exit completes', () => {
+      render(<StackHarness />);
+      const outer = screen.getByRole('dialog', {name: 'Outer'});
+      const inner = screen.getByRole('dialog', {name: 'Inner'});
 
-        fireEvent.keyDown(inner, {key: 'Escape'});
-        // Inner unregistered when isOpen flipped — outer is now the top.
-        fireEvent.keyDown(outer, {key: 'Escape'});
-        act(() => {
-          vi.advanceTimersByTime(300);
-        });
-        expect(inner).not.toHaveAttribute('open');
-        expect(outer).not.toHaveAttribute('open');
-      } finally {
-        vi.useRealTimers();
-      }
+      fireEvent.keyDown(inner, {key: 'Escape'});
+      // The inner host is still top-layer present while it slides out. A second
+      // Escape must be consumed by that closing surface, not reach the outer.
+      fireEvent.keyDown(outer, {key: 'Escape'});
+      expect(outer).toHaveAttribute('open');
+      expect(inner).toHaveAttribute('open');
+
+      act(() => {
+        fireEvent.transitionEnd(inner, {propertyName: 'transform'});
+      });
+      expect(inner).not.toHaveAttribute('open');
+      expect(outer).toHaveAttribute('open');
+
+      fireEvent.keyDown(outer, {key: 'Escape'});
+      act(() => {
+        fireEvent.transitionEnd(outer, {propertyName: 'transform'});
+      });
+      expect(outer).not.toHaveAttribute('open');
+    });
+
+    function ReopenHarness() {
+      const [firstOpen, setFirstOpen] = useState(true);
+      const [secondOpen, setSecondOpen] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setFirstOpen(false)}>
+            Close first
+          </button>
+          <button type="button" onClick={() => setFirstOpen(true)}>
+            Reopen first
+          </button>
+          <Drawer
+            isOpen={firstOpen}
+            onOpenChange={setFirstOpen}
+            label="First"
+            hasScrim={false}>
+            First content
+          </Drawer>
+          <Drawer
+            isOpen={secondOpen}
+            onOpenChange={setSecondOpen}
+            label="Second"
+            hasScrim={false}>
+            Second content
+          </Drawer>
+        </>
+      );
+    }
+
+    it('moves a reopened sibling above a drawer that stayed open', () => {
+      render(<ReopenHarness />);
+      const first = screen.getByRole('dialog', {name: 'First'});
+      const second = screen.getByRole('dialog', {name: 'Second'});
+
+      fireEvent.click(screen.getByRole('button', {name: 'Close first'}));
+      act(() => {
+        fireEvent.transitionEnd(first, {propertyName: 'transform'});
+      });
+      expect(first).not.toHaveAttribute('open');
+      expect(second).toHaveAttribute('open');
+
+      fireEvent.click(screen.getByRole('button', {name: 'Reopen first'}));
+      expect(first).toHaveAttribute('open');
+
+      // Browser top-layer order now paints First above Second. The shared
+      // dismissal stack must use the same reopened-last ordering even when the
+      // key event starts in the lower sibling.
+      fireEvent.keyDown(second, {key: 'Escape'});
+      act(() => {
+        fireEvent.transitionEnd(first, {propertyName: 'transform'});
+      });
+      expect(first).not.toHaveAttribute('open');
+      expect(second).toHaveAttribute('open');
     });
 
     it('unregisters unmounted drawers so the remaining one becomes top', () => {
