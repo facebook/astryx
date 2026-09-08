@@ -475,6 +475,9 @@ describe('componentRegistry', () => {
     });
     expect(layoutFooter!.playground?.wrapper).toMatchObject({
       component: 'Layout',
+      // Mount into Layout's footer slot, not its default (centred) content
+      // slot, so the preview shows a docked footer.
+      slotProp: 'footer',
     });
   });
 
