@@ -3,11 +3,11 @@ schema_version: 1
 template_version: 1
 kind: architecture
 id: architecture:react-component-runtime
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-09-07
 owners: [cixzhang]
 applies_to: [packages/core/src/, packages/lab/src/]
 verified_by:
@@ -227,6 +227,13 @@ None. Component, family, API, accessibility, layer, interaction, and style recor
 remain authoritative for the user-facing outcomes delegated above.
 
 ## Verification
+
+Lint and focused tests are one-way evidence. A lint failure means the construct
+violates the invariant that rule enforces. A passing lint run does not prove the
+full runtime contract because many ownership, lifecycle, composition, and
+observable-behavior predicates require review or runtime evidence. Likewise, a
+focused test proves only its named behavior and mutation expectation; a green
+component suite is not blanket conformance with every invariant.
 
 | Invariant        | Evidence                                                                                                       | Failure signal                                                                                                                              |
 | ---------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
