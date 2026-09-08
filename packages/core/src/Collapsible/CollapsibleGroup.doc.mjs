@@ -42,9 +42,9 @@ export const docs = {
       description: "Row density controlling trigger and content block padding on the group's items. Defaults to 'balanced' when dividers are shown; otherwise items keep their default unpadded look.",
     },
     {
-      name: 'chevronPlacement',
-      type: "'start' | 'end' | 'none'",
-      description: "Which side of the trigger the items' chevrons sit on, or 'none' to draw none and let each trigger carry its own affordance. Set here rather than per item: a list whose arrows change sides row to row reads as a mistake. An individual Collapsible can still override it.",
+      name: 'chevronPosition',
+      type: "'start' | 'end'",
+      description: "Logical position shared by the group's direct Collapsible items. `end` is the default trailing indicator; `start` is a leading disclosure arrow that points inward when collapsed (mirrored under RTL) and down when expanded. An individual Collapsible can still override it.",
       default: "'end'",
     },
     {
@@ -104,9 +104,9 @@ export const docsZh = {
       description: "控制组内项目触发器和内容块内边距的行密度。显示分隔线时默认为 'balanced'；否则项目保持默认的无内边距外观。",
     },
     {
-      name: 'chevronPlacement',
-      type: "'start' | 'end' | 'none'",
-      description: "组内项目箭头位于触发器的哪一侧，或用 'none' 完全不绘制箭头，由触发器自行提供提示。建议在此统一设置而非逐项设置：同一列表中箭头左右不一致会显得像缺陷。单个 Collapsible 仍可覆盖此设置。",
+      name: 'chevronPosition',
+      type: "'start' | 'end'",
+      description: "组内直接 Collapsible 项目的逻辑箭头位置。`end` 是默认的尾随指示器；`start` 是前置展开箭头，折叠时指向内容（RTL 下镜像），展开时向下。单个 Collapsible 仍可覆盖此设置。",
       default: "'end'",
     },
     {
@@ -130,7 +130,7 @@ export const docsDense = {
     onChange: 'callback on open items change',
     hasDividers: "draw hairline dividers between items; enables wrapper div + 'balanced' density; use bare Collapsible children",
     density: "row padding 'compact' | 'balanced' | 'spacious'; defaults 'balanced' with dividers, else unpadded",
-    chevronPlacement: "chevron side for items: 'end' (default, trailing) | 'start' (leading disclosure arrow, TreeList glyph) | 'none' (no chevron; trigger supplies its own affordance); per-item prop wins",
+    chevronPosition: "logical chevron position for direct items: 'end' (default trailing, down/up) | 'start' (leading, inward/down with RTL mirroring); per-item prop wins",
     children: 'Collapsible instances to coordinate',
   },
 };

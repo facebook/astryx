@@ -7,7 +7,7 @@
  * @input Uses React createContext
  * @output Exports CollapsibleGroupContext, CollapsibleGroupContextValue,
  *   CollapsibleGroupPresentationContext, CollapsibleGroupPresentationValue,
- *   CollapsibleGroupDensity, and CollapsibleChevronPlacement types
+ *   CollapsibleGroupDensity, and CollapsibleChevronPosition types
  * @position Context definitions for collapsible group coordination and presentation
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -44,19 +44,13 @@ CollapsibleGroupContext.displayName = 'CollapsibleGroupContext';
 export type CollapsibleGroupDensity = 'compact' | 'balanced' | 'spacious';
 
 /**
- * Which side of the trigger the chevron sits on, or `none` to draw no chevron
- * at all.
+ * Logical position of Collapsible's disclosure chevron.
  *
- * `end` is the default trailing indicator. `start` is the leading disclosure
- * arrow used by tree and file-browser patterns, and it changes the glyph as
- * well as the side: a leading arrow points into the row when closed and turns
- * down when open, matching TreeList. `none` hands the affordance to the
- * trigger's own content.
- *
- * One prop rather than a side plus a boolean, because a side and "no chevron"
- * cannot both be true and a pair of props would let a caller say so.
+ * `end` is the default trailing indicator: down when collapsed, up when
+ * expanded. `start` is the leading disclosure pattern: inward toward content
+ * when collapsed (mirrored under RTL), down when expanded.
  */
-export type CollapsibleChevronPlacement = 'start' | 'end' | 'none';
+export type CollapsibleChevronPosition = 'start' | 'end';
 
 /**
  * Presentation value provided by CollapsibleGroup so each Collapsible can
@@ -69,12 +63,12 @@ export interface CollapsibleGroupPresentationValue {
   /** Resolved row density, or null to keep the default (unpadded) look. */
   density: CollapsibleGroupDensity | null;
   /**
-   * Chevron side for the group's items, or null to leave each item on its own
-   * default. An item's own `chevronPlacement` still wins, but mixing sides
-   * within one group reads as a mistake, so the group is the usual place to
-   * set it.
+   * Chevron position for the group's direct items, or null to leave each item on
+   * its own default. An item's own `chevronPosition` still wins, but mixing
+   * positions within one group reads as a mistake, so the group is the usual
+   * place to set it.
    */
-  chevronPlacement: CollapsibleChevronPlacement | null;
+  chevronPosition: CollapsibleChevronPosition | null;
 }
 
 /**

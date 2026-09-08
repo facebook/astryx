@@ -67,9 +67,9 @@ export const docs = {
       description: 'Callback invoked when the open state changes.',
     },
     {
-      name: 'chevronPlacement',
-      type: "'start' | 'end' | 'none'",
-      description: 'Which side of the trigger the chevron sits on, or `none` to draw none. `end` is a trailing indicator; `start` is a leading disclosure arrow, which also changes the glyph — it points into the row when closed and turns down when open, matching TreeList. `none` is for a trigger that carries its own affordance, such as an icon that becomes an arrow on hover; the trigger keeps aria-expanded either way, but nothing on screen says "this opens" unless your trigger says it. Inside a CollapsibleGroup this defaults to the group\'s chevronPlacement.',
+      name: 'chevronPosition',
+      type: "'start' | 'end'",
+      description: 'Logical position of Collapsible\'s disclosure chevron. `end` (default) follows the label, pointing down when collapsed and up when expanded. `start` precedes the label, pointing inward toward content when collapsed (mirrored under RTL) and down when expanded. Inside a CollapsibleGroup this defaults to the group\'s chevronPosition.',
       default: "'end'",
     },
     {
@@ -95,7 +95,7 @@ export const docs = {
     ],
     anatomy: [
       { name: 'Trigger', required: true, description: 'The always-visible button that toggles the content. Shows a label and a chevron indicator.' },
-      { name: 'Chevron', required: false, description: 'Animated arrow that rotates to show open or closed state. Sits after the label by default; chevronPlacement="start" moves it ahead of the label as a leading disclosure arrow, and chevronPlacement="none" drops it so the trigger can supply its own.' },
+      { name: 'Chevron', required: false, description: 'Animated disclosure arrow. It follows the label by default; chevronPosition="start" moves it ahead of the label, points inward when collapsed (mirrored under RTL), and turns down when expanded.' },
       { name: 'Content', required: false, description: 'The area that hides or reveals when the trigger is clicked.' },
     ],
   },

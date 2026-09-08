@@ -66,7 +66,7 @@ export const SingleMode: Story = {
     <CollapsibleGroup
       type="single"
       defaultValue="general"
-      chevronPlacement="start">
+      chevronPosition="start">
       <VStack gap={2}>
         <Card>
           <Collapsible trigger="General Settings" value="general">

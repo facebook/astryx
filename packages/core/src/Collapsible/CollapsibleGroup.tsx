@@ -34,7 +34,7 @@ import {
   CollapsibleGroupPresentationContext,
 } from './CollapsibleGroupContext';
 import type {
-  CollapsibleChevronPlacement,
+  CollapsibleChevronPosition,
   CollapsibleGroupContextValue,
   CollapsibleGroupDensity,
   CollapsibleGroupPresentationValue,
@@ -98,13 +98,12 @@ export interface CollapsibleGroupProps extends Omit<
   density?: CollapsibleGroupDensity;
 
   /**
-   * Which side of the trigger the items' chevrons sit on, or `none` to draw no
-   * chevrons and let each trigger carry its own affordance. Set here rather
-   * than per item: a list whose arrows change sides row to row reads as a bug.
-   * An individual Collapsible can still override it.
+   * Logical position of the items' disclosure chevrons. Set this on the group
+   * when its direct items should share one position; an individual Collapsible
+   * can still override it.
    * @default 'end'
    */
-  chevronPlacement?: CollapsibleChevronPlacement;
+  chevronPosition?: CollapsibleChevronPosition;
 
   /**
    * Children — any components that support isCollapsible + value.
@@ -185,7 +184,7 @@ export function CollapsibleGroup({
   onChange,
   hasDividers = false,
   density,
-  chevronPlacement,
+  chevronPosition,
   children,
   ref,
   xstyle,
@@ -248,9 +247,9 @@ export function CollapsibleGroup({
     () => ({
       hasDividers,
       density: resolvedDensity,
-      chevronPlacement: chevronPlacement ?? null,
+      chevronPosition: chevronPosition ?? null,
     }),
-    [hasDividers, resolvedDensity, chevronPlacement],
+    [hasDividers, resolvedDensity, chevronPosition],
   );
 
   // The wrapper anchors divider chrome: it makes the items' :first-child

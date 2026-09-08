@@ -17,7 +17,7 @@ export type {CollapsibleProps} from './Collapsible';
 export {CollapsibleGroup} from './CollapsibleGroup';
 export type {CollapsibleGroupProps} from './CollapsibleGroup';
 export type {
-  CollapsibleChevronPlacement,
+  CollapsibleChevronPosition,
   CollapsibleGroupDensity,
 } from './CollapsibleGroupContext';
 
