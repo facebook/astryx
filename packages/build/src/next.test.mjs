@@ -124,6 +124,19 @@ function corePath(...segments) {
 }
 
 describe('withAstryx', () => {
+  // Every case in this block is a config that resolves successfully, so none of
+  // them may warn. Asserting it here rather than per-test means a future
+  // coverage check that misreads a working alias — as one did for wildcards —
+  // fails the suite instead of quietly logging into it.
+  let warned;
+  beforeEach(() => {
+    warned = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    expect(warned).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
   it('resolves the package root to its source entry', () => {
     expect(resolveFromApp('@astryxdesign/core')).toBe(corePath('src/index.ts'));
   });

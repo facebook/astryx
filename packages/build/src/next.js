@@ -197,8 +197,19 @@ function sourceEntryAliases(packages, context) {
  * compiles the library from source.
  */
 function aliasCoversAstryx(alias, packages) {
-  const claims = request =>
-    packages.some(name => request === name || request.startsWith(`${name}/`));
+  const claims = request => {
+    // A wildcard key claims by pattern, not by literal name: `@astryxdesign/*`
+    // routes every package under the scope even though it matches none of them
+    // as a string. Same matcher `withoutCallerOverrides` uses to decide which
+    // generated entries a caller has already spoken for.
+    if (request.includes('*')) {
+      const pattern = wildcardPattern(request);
+      return packages.some(name => pattern.test(name));
+    }
+    return packages.some(
+      name => request === name || request.startsWith(`${name}/`),
+    );
+  };
   if (Array.isArray(alias)) {
     return alias.some(
       entry => entry && typeof entry.name === 'string' && claims(entry.name),
