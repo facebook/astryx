@@ -200,6 +200,7 @@ test('every applicability fact matches what the page exposes', async ({
     const required =
       (await locator.getAttribute('required')) != null ||
       (await locator.getAttribute('aria-required')) === 'true';
+    const readOnly = (await locator.getAttribute('aria-readonly')) === 'true';
     const observed = {
       role: computed.role,
       checked: computed.checked,
@@ -208,6 +209,7 @@ test('every applicability fact matches what the page exposes', async ({
         computed.description.trim() === '' ? null : computed.description,
       focusable: reachedByTab,
       required,
+      readOnly,
       invalid: computed.invalid,
       operable,
       directKeyboardOperation: state.facts.role === 'checkbox',
@@ -219,6 +221,7 @@ test('every applicability fact matches what the page exposes', async ({
       description: state.facts.description,
       focusable: state.facts.focusable,
       required: state.facts.required,
+      readOnly: state.facts.readOnly,
       invalid: state.facts.invalid,
       operable: state.facts.operable,
       directKeyboardOperation: state.facts.directKeyboardOperation,

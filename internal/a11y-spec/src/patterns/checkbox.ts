@@ -183,6 +183,8 @@ export interface CheckboxStateFacts {
   readonly disabled: boolean;
   /** Supporting text that must be exposed as this state's description. */
   readonly description: string | null;
+  /** Whether it is meant to be exposed as read-only. */
+  readonly readOnly: boolean;
   /** Whether it is meant to be exposed as required. */
   readonly required: boolean;
   /** Whether it is meant to be exposed as being in error. */
@@ -456,6 +458,46 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           if (!disabled) {
             throw new Error(
               'the binding declares this state unavailable, but the browser reports the checkbox as available, so the user is invited to change something that will not change',
+            );
+          }
+        },
+      },
+      {
+        id: 'checkbox.readonly.declared',
+        outcome:
+          'A read-only checkbox declares that its value cannot be changed.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is read-only',
+          test: facts => facts.readOnly,
+        },
+        evidenceLayer: 'dom',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          if ((await subject.attribute('aria-readonly')) !== 'true') {
+            throw new Error(
+              'this state is read-only, but the checkbox does not declare aria-readonly="true"',
+            );
+          }
+        },
+      },
+      {
+        id: 'checkbox.readonly.not-declared',
+        outcome:
+          'An editable checkbox does not expose a false read-only state.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is not read-only',
+          test: facts => !facts.readOnly,
+        },
+        evidenceLayer: 'dom',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          if ((await subject.attribute('aria-readonly')) === 'true') {
+            throw new Error(
+              'this state is editable, but the checkbox declares aria-readonly="true"',
             );
           }
         },

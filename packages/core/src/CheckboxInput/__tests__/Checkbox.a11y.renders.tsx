@@ -49,7 +49,6 @@ function StandaloneListItem({
   description,
   isDisabled,
   isLoading,
-  isReadOnly = false,
   plainLabel = false,
   omitAriaLabel = false,
 }: {
@@ -58,7 +57,6 @@ function StandaloneListItem({
   description?: ReactNode;
   isDisabled?: boolean;
   isLoading?: boolean;
-  isReadOnly?: boolean;
   plainLabel?: boolean;
   omitAriaLabel?: boolean;
 }) {
@@ -71,7 +69,7 @@ function StandaloneListItem({
         aria-label={plainLabel || omitAriaLabel ? undefined : label}
         description={description}
         isChecked={checked}
-        onCheck={isReadOnly ? undefined : setChecked}
+        onCheck={setChecked}
         isDisabled={isDisabled}
         isLoading={isLoading}
       />
@@ -91,6 +89,14 @@ function CollectionListItem({initial}: {initial: boolean}) {
         aria-label="Email"
         value="email"
       />
+    </CheckboxList>
+  );
+}
+
+function ReadOnlyCollectionListItem() {
+  return (
+    <CheckboxList label="Notification methods" value={['email']} isReadOnly>
+      <CheckboxListItem data-a11y-visible-label label="Email" value="email" />
     </CheckboxList>
   );
 }
@@ -231,9 +237,7 @@ export const CHECKBOX_STATE_RENDERS: Record<
   'list-item-loading': () => (
     <StandaloneListItem initial={false} label="Push notifications" isLoading />
   ),
-  'list-item-read-only': () => (
-    <StandaloneListItem initial label="Email" isReadOnly />
-  ),
+  'list-item-read-only': () => <ReadOnlyCollectionListItem />,
   'list-item-group-disabled-with-message': () => <GroupDisabledListItem />,
 
   'menu-item-unchecked': () => <MenuCheckbox initial={false} />,

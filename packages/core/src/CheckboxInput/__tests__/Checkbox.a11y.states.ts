@@ -45,6 +45,7 @@ const DEFAULT_FACTS: CheckboxStateFacts = {
   focusable: true,
   disabled: false,
   description: null,
+  readOnly: false,
   required: false,
   invalid: false,
 };
@@ -131,6 +132,10 @@ export const CHECKBOX_BINDING_STATES = [
     id: 'input-loading',
     binding: 'CheckboxInput',
     summary: 'a busy checkbox that stays focusable but refuses another change',
+    // Loading is inventoried because it changes operability. The public
+    // isLoading -> aria-busy mapping remains in CheckboxInput.test.tsx under
+    // AST-021 FR5: APG Checkbox adopts no busy state, and no current Astryx
+    // record makes it a reusable checkbox-pattern requirement.
     facts: facts({operable: false}),
     visibleLabel: 'Email notifications',
     storyId: 'a11y-checkbox-pattern--input-loading',
@@ -139,7 +144,7 @@ export const CHECKBOX_BINDING_STATES = [
     id: 'input-read-only',
     binding: 'CheckboxInput',
     summary: 'a read-only checkbox that stays focusable and cannot change',
-    facts: facts({checked: true, operable: false}),
+    facts: facts({checked: true, operable: false, readOnly: true}),
     visibleLabel: 'Policy acknowledged',
     storyId: 'a11y-checkbox-pattern--input-read-only',
   },
@@ -225,6 +230,8 @@ export const CHECKBOX_BINDING_STATES = [
     id: 'list-item-loading',
     binding: 'CheckboxListItem',
     summary: 'a busy list item that stays focusable but refuses another change',
+    // The list row's aria-busy and spinner composition remain component-owned;
+    // this pattern row covers the shared checkbox's changed operability.
     facts: facts({operable: false}),
     visibleLabel: 'Push notifications',
     visibleLabelSelector: '[data-a11y-visible-label]',
@@ -234,7 +241,7 @@ export const CHECKBOX_BINDING_STATES = [
     id: 'list-item-read-only',
     binding: 'CheckboxListItem',
     summary: 'a read-only list item that stays focusable and cannot change',
-    facts: facts({checked: true, operable: false}),
+    facts: facts({checked: true, operable: false, readOnly: true}),
     visibleLabel: 'Email',
     visibleLabelSelector: '[data-a11y-visible-label]',
     storyId: 'a11y-checkbox-pattern--list-item-read-only',

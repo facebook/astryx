@@ -49,6 +49,7 @@ const CONFORMING_FACTS: CheckboxStateFacts = {
   focusable: true,
   disabled: false,
   description: null,
+  readOnly: false,
   required: false,
   invalid: false,
 };
@@ -184,6 +185,14 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     facts: facts({operable: false}),
     html: nativeCheckbox(
       `onclick="event.preventDefault()" onkeydown="if (event.key === ' ') { event.preventDefault(); }"`,
+    ),
+  },
+  {
+    id: 'conforming-readonly',
+    summary: 'a read-only checkbox that stays focusable and does not change',
+    facts: facts({readOnly: true, operable: false}),
+    html: nativeCheckbox(
+      `aria-readonly="true" onclick="event.preventDefault()" onkeydown="if (event.key === ' ') { event.preventDefault(); }"`,
     ),
   },
   {
@@ -334,6 +343,20 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     html: nativeCheckbox(),
   },
   {
+    id: 'violating-readonly-unexposed',
+    summary: 'a read-only checkbox with no read-only declaration',
+    facts: facts({readOnly: true, operable: false}),
+    html: nativeCheckbox(
+      `onclick="event.preventDefault()" onkeydown="if (event.key === ' ') { event.preventDefault(); }"`,
+    ),
+  },
+  {
+    id: 'violating-readonly-overexposed',
+    summary: 'an editable checkbox falsely declared read-only',
+    facts: facts(),
+    html: nativeCheckbox('aria-readonly="true"'),
+  },
+  {
     id: 'violating-required-overexposed',
     summary: 'an optional checkbox falsely declared required',
     facts: facts({checked: true}),
@@ -391,6 +414,8 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
     'violating-wrong-description',
   ],
   'checkbox.disabled.exposed': ['violating-disabled-unexposed'],
+  'checkbox.readonly.declared': ['violating-readonly-unexposed'],
+  'checkbox.readonly.not-declared': ['violating-readonly-overexposed'],
   'checkbox.required.declared': ['violating-required-unexposed'],
   'checkbox.required.not-declared': ['violating-required-overexposed'],
   'checkbox.invalid.exposed': ['violating-invalid-unexposed'],
@@ -435,6 +460,10 @@ const MUTATION_FAILURES: Readonly<Record<string, string>> = {
     'browser computes "This text describes a different control."',
   'checkbox.disabled.exposed:violating-disabled-unexposed':
     'reports the checkbox as available',
+  'checkbox.readonly.declared:violating-readonly-unexposed':
+    'does not declare aria-readonly="true"',
+  'checkbox.readonly.not-declared:violating-readonly-overexposed':
+    'declares aria-readonly="true"',
   'checkbox.required.declared:violating-required-unexposed': 'declares neither',
   'checkbox.required.not-declared:violating-required-overexposed':
     'exposes a required declaration',
