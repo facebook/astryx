@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {iconButtonAccessibilityThemeCoverage} from '../accessibility/generatedThemeCoverage.mjs';
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -112,6 +114,7 @@ export const docs = {
           'Disabled controls do not need to meet these contrast ratios.',
       },
     ],
+    accessibilityThemeCoverage: iconButtonAccessibilityThemeCoverage,
     bestPractices: [
       { guidance: true, description: 'Make the aria-label specific: a trash icon labeled "Delete conversation" is clearer than just "Delete" for screen readers.' },
       { guidance: true, description: 'Add a tooltip: even a gear icon can mean Settings, Preferences, or Configure.' },

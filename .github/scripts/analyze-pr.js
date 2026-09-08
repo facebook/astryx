@@ -45,7 +45,7 @@ const pkgSrc = (pkg) => `${pkg.dir}/src`;
 const pkgDist = (pkg) => `${pkg.dir}/dist`;
 
 // Directories under a package's src that are not components.
-const EXCLUDED_DIRS = ['hooks', 'theme', 'utils', 'i18n', '__tests__'];
+const EXCLUDED_DIRS = ['accessibility', 'hooks', 'theme', 'utils', 'i18n', '__tests__'];
 
 // Get list of component names for a package, honoring its src layout.
 function getComponentNames(pkg) {

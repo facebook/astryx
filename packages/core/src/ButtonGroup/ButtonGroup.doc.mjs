@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {buttonGroupAccessibilityThemeCoverage} from '../accessibility/generatedThemeCoverage.mjs';
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -86,6 +88,7 @@ export const docs = {
           'Disabled controls do not need to meet these contrast ratios.',
       },
     ],
+    accessibilityThemeCoverage: buttonGroupAccessibilityThemeCoverage,
     bestPractices: [
       {guidance: true, description: 'Group buttons that perform related actions on the same object, like copy, cut, paste on selected text.'},
       {guidance: true, description: 'Use the same variant for all buttons in a group so they look like a single connected unit.'},

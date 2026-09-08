@@ -62,6 +62,22 @@ console.log(
   })`,
 );
 
+if (DOCSITE_TARGET === 'canary') {
+  execFileSync(
+    process.execPath,
+    [
+      '--import',
+      'tsx',
+      path.join(
+        REPO_ROOT,
+        'scripts/generate-component-accessibility-coverage.mjs',
+      ),
+      '--check',
+    ],
+    {cwd: REPO_ROOT, stdio: 'inherit'},
+  );
+}
+
 fs.mkdirSync(OUT_DIR, {recursive: true});
 
 // ── Helpers ────────────────────────────────────────────────────────────
