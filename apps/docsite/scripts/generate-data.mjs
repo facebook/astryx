@@ -72,6 +72,7 @@ if (DOCSITE_TARGET === 'canary') {
         REPO_ROOT,
         'scripts/generate-component-accessibility-coverage.mjs',
       ),
+      '--check',
     ],
     {cwd: REPO_ROOT, stdio: 'inherit'},
   );

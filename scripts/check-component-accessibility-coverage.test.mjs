@@ -1,5 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import * as generatedCoverage from '../packages/core/src/accessibility/generatedThemeCoverage.mjs';
 import {neutralTheme} from '../packages/themes/neutral/src/neutralTheme.ts';
@@ -19,6 +22,10 @@ import {
   buildRegisteredAccessibilityCoverage,
   componentAccessibilityAuditModules,
 } from './accessibility/component-audit-registry.mjs';
+import {
+  renderGeneratedSource,
+  runGenerator,
+} from './generate-component-accessibility-coverage.mjs';
 
 const docsByComponent = Object.fromEntries(
   await Promise.all(
@@ -94,6 +101,60 @@ describe('registered component accessibility coverage', () => {
       }
     }
   });
+
+  it('rejects duplicate modules and malformed generated exports', () => {
+    const module = {
+      id: 'example',
+      components: [{name: 'Button', exportName: 'buttonCoverage'}],
+      buildCoverage: () => ({Button: []}),
+    };
+    expect(() =>
+      buildRegisteredAccessibilityCoverage([module, module]),
+    ).toThrow('Duplicate accessibility audit module example');
+    expect(() =>
+      buildRegisteredAccessibilityCoverage([
+        {
+          ...module,
+          components: [{name: 'Button', exportName: 'not-valid'}],
+        },
+      ]),
+    ).toThrow('Invalid accessibility coverage export not-valid');
+  });
+
+  it('renders deterministically and checks generated files without import side effects', async () => {
+    const directory = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'astryx-accessibility-coverage-'),
+    );
+    const output = path.join(directory, 'coverage.mjs');
+    const coverage = {
+      zebraCoverage: [{theme: 'Zebra', tables: []}],
+      alphaCoverage: [{theme: 'Alpha', tables: []}],
+    };
+    const stdout = {write: () => {}};
+    const stderr = {write: () => {}};
+    try {
+      const source = renderGeneratedSource(coverage);
+      expect(source.indexOf('alphaCoverage')).toBeLessThan(
+        source.indexOf('zebraCoverage'),
+      );
+      expect(source).toContain('// AUTO-GENERATED — do not edit manually.');
+      expect(await runGenerator([], {coverage, output, stdout, stderr})).toBe(
+        0,
+      );
+      expect(
+        await runGenerator(['--check'], {coverage, output, stdout, stderr}),
+      ).toBe(0);
+      fs.writeFileSync(output, 'stale\n');
+      expect(
+        await runGenerator(['--check'], {coverage, output, stdout, stderr}),
+      ).toBe(1);
+      expect(await runGenerator(['--unknown'], {output, stdout, stderr})).toBe(
+        2,
+      );
+    } finally {
+      fs.rmSync(directory, {recursive: true, force: true});
+    }
+  });
 });
 
 describe('Pressable controls audit module', () => {
@@ -113,7 +174,7 @@ describe('Pressable controls audit module', () => {
     expect(destructive.measurements).toContainEqual(
       expect.objectContaining({
         label: 'Pointer down',
-        value: '4.78:1',
+        value: '5.36:1',
       }),
     );
     const secondaryBadges = buttonLight.results
@@ -122,8 +183,8 @@ describe('Pressable controls audit module', () => {
     expect(secondaryBadges.breakdown).toContainEqual(
       expect.objectContaining({
         label: 'Neutral',
-        value: '10.83:1',
-        colorPair: {foreground: '#262626', background: '#dadada'},
+        value: '11.68:1',
+        colorPair: {foreground: '#262626', background: '#e2e2e2'},
       }),
     );
     const destructiveBadges = destructive.measurements.find(
@@ -132,15 +193,15 @@ describe('Pressable controls audit module', () => {
     expect(destructiveBadges.breakdown).toContainEqual(
       expect.objectContaining({
         label: 'Red',
-        value: '6.58:1',
-        colorPair: {foreground: '#89001a', background: '#f6c4cc'},
+        value: '6.65:1',
+        colorPair: {foreground: '#8a0011', background: '#ffc4be'},
       }),
     );
     expect(destructiveBadges.breakdown).toContainEqual(
       expect.objectContaining({
         label: 'Orange',
-        value: '7.60:1',
-        colorPair: {foreground: '#6e3500', background: '#f8e1be'},
+        value: '6.43:1',
+        colorPair: {foreground: '#733100', background: '#ffc7a1'},
       }),
     );
 
@@ -159,12 +220,12 @@ describe('Pressable controls audit module', () => {
       result => result.name === 'Unselected',
     );
     expect(unselected.measurements).toContainEqual(
-      expect.objectContaining({label: 'Rest', value: '4.37:1', status: 'Fail'}),
+      expect.objectContaining({label: 'Rest', value: '4.12:1', status: 'Fail'}),
     );
     expect(unselected.measurements).toContainEqual(
       expect.objectContaining({
         label: 'Hover',
-        value: '3.74:1',
+        value: '3.52:1',
         status: 'Fail',
       }),
     );
@@ -210,10 +271,10 @@ describe('Pressable controls audit module', () => {
     ).toEqual([]);
     expect(
       Object.keys(neutralTheme.components?.['segmented-control'] ?? {}),
-    ).toEqual([]);
+    ).toEqual(['base']);
     expect(
       Object.keys(neutralTheme.components?.['segmented-control-item'] ?? {}),
-    ).toEqual([]);
+    ).toEqual(['size:sm', 'size:md', 'size:lg', 'selected']);
   });
 
   it('derives every row status from required measurements', () => {

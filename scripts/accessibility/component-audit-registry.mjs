@@ -6,20 +6,28 @@ export const componentAccessibilityAuditModules = [
   pressableControlsAuditModule,
 ];
 
-export const generatedCoverageUrl = new URL(
-  '../../packages/core/src/accessibility/generatedThemeCoverage.mjs',
-  import.meta.url,
-);
+const EXPORT_NAME = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+
+function nonEmptyString(value, label) {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new TypeError(`${label} must be a non-empty string`);
+  }
+  return value;
+}
 
 export function buildRegisteredAccessibilityCoverage(
   modules = componentAccessibilityAuditModules,
 ) {
-  const generated = {};
+  const generated = new Map();
   const componentNames = new Set();
+  const moduleIds = new Set();
 
   for (const module of modules) {
     if (
-      !module.id ||
+      module == null ||
+      typeof module !== 'object' ||
+      typeof module.id !== 'string' ||
+      module.id.trim() === '' ||
       !Array.isArray(module.components) ||
       module.components.length === 0 ||
       typeof module.buildCoverage !== 'function'
@@ -28,9 +36,23 @@ export function buildRegisteredAccessibilityCoverage(
         'Every accessibility audit module needs an id, components, and builder',
       );
     }
+    if (moduleIds.has(module.id)) {
+      throw new Error(`Duplicate accessibility audit module ${module.id}`);
+    }
+    moduleIds.add(module.id);
+
     const coverage = module.buildCoverage();
+    if (
+      coverage == null ||
+      typeof coverage !== 'object' ||
+      Array.isArray(coverage)
+    ) {
+      throw new TypeError(`${module.id} must build a component-keyed object`);
+    }
     const declaredComponents = new Set(
-      module.components.map(component => component.name),
+      module.components.map((component, index) =>
+        nonEmptyString(component?.name, `${module.id} component ${index} name`),
+      ),
     );
     for (const componentName of Object.keys(coverage)) {
       if (!declaredComponents.has(componentName)) {
@@ -40,23 +62,41 @@ export function buildRegisteredAccessibilityCoverage(
       }
     }
     for (const component of module.components) {
-      if (componentNames.has(component.name)) {
-        throw new Error(`Duplicate accessibility audit for ${component.name}`);
-      }
-      if (generated[component.exportName] !== undefined) {
+      const componentName = nonEmptyString(
+        component?.name,
+        `${module.id} component name`,
+      );
+      const exportName = nonEmptyString(
+        component?.exportName,
+        `${module.id} ${componentName} exportName`,
+      );
+      if (!EXPORT_NAME.test(exportName)) {
         throw new Error(
-          `Duplicate accessibility coverage export ${component.exportName}`,
+          `Invalid accessibility coverage export ${exportName} for ${componentName}`,
         );
       }
-      if (coverage[component.name] === undefined) {
+      if (componentNames.has(componentName)) {
+        throw new Error(`Duplicate accessibility audit for ${componentName}`);
+      }
+      if (generated.has(exportName)) {
         throw new Error(
-          `${module.id} did not build coverage for ${component.name}`,
+          `Duplicate accessibility coverage export ${exportName}`,
         );
       }
-      componentNames.add(component.name);
-      generated[component.exportName] = coverage[component.name];
+      if (!Object.hasOwn(coverage, componentName)) {
+        throw new Error(
+          `${module.id} did not build coverage for ${componentName}`,
+        );
+      }
+      if (!Array.isArray(coverage[componentName])) {
+        throw new TypeError(
+          `${module.id} built non-array coverage for ${componentName}`,
+        );
+      }
+      componentNames.add(componentName);
+      generated.set(exportName, coverage[componentName]);
     }
   }
 
-  return generated;
+  return Object.fromEntries(generated);
 }
