@@ -56,6 +56,7 @@ function buildFixture() {
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Card'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Button'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Line'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/core/src/accessibility'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/themes/neutral/src'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/themes/probe/src'), {recursive: true});
 
@@ -66,6 +67,10 @@ function buildFixture() {
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), 'export {}\n');
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Button/index.ts'), 'export {}\n');
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Line/index.ts'), 'export {}\n');
+  fs.writeFileSync(
+    path.join(upstream, 'packages/core/src/accessibility/generated.mjs'),
+    'export {}\n',
+  );
   fs.writeFileSync(
     path.join(upstream, 'packages/themes/neutral/package.json'),
     JSON.stringify({name: '@astryxdesign/theme-neutral', private: false}),
@@ -92,6 +97,10 @@ function buildFixture() {
   git(upstream, ['branch', 'feature', branchPoint]);
   git(upstream, ['checkout', '-q', 'feature']);
   fs.appendFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), 'export const Card = {}\n');
+  fs.appendFileSync(
+    path.join(upstream, 'packages/core/src/accessibility/generated.mjs'),
+    'export const generated = true\n',
+  );
   fs.appendFileSync(path.join(upstream, 'packages/themes/neutral/src/theme.ts'), 'export const changed = true\n');
   fs.appendFileSync(path.join(upstream, 'packages/themes/probe/src/theme.ts'), 'export const changed = true\n');
   git(upstream, ['add', '-A']);

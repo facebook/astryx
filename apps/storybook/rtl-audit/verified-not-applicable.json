@@ -63,5 +63,9 @@
   {
     "component": "core/IconButton",
     "reason": "IconButton is a thin wrapper that renders Button with `isIconOnly`, adding no layout, no positioning, and no directional affordance of its own, so it inherits `core/Button`'s verification above exactly. Its single icon is centred in a square control, which has no reading direction to mirror."
+  },
+  {
+    "component": "core/SegmentedControl",
+    "reason": "SegmentedControl and SegmentedControlItem use inline-flex layout, logical padding, symmetric radii and shadows, and no physical inline positioning, transforms, scrolling, dragging, or overlays. The Storybook icons are direction-neutral grid, list, and table glyphs. Horizontal radio-group ArrowLeft and ArrowRight navigation follows DOM previous/next order per the ARIA pattern and is intentionally writing-direction independent, so there is no RTL-specific visual or behavior relationship for this audit to measure."
   }
 ]
