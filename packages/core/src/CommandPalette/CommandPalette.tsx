@@ -170,6 +170,27 @@ function buildSelectableItems(items: SearchableItem[]): SelectorOptionData[] {
   return result;
 }
 
+/**
+ * O(1) value → index lookup over selectable items, used by the delegated
+ * mouseover handler (#6077). The index is built once per results change;
+ * each hover then pays a Map probe instead of a linear findIndex scan,
+ * so cost no longer scales with list size. Keeps the first occurrence of
+ * duplicate values to match the previous findIndex behavior. Exported for
+ * the operation-count perf test.
+ */
+export function createValueLookup<T extends {value: string}>(
+  items: ReadonlyArray<T>,
+): (value: string) => number | undefined {
+  const indexByValue = new Map<string, number>();
+  for (let i = 0; i < items.length; i++) {
+    const value = items[i].value;
+    if (!indexByValue.has(value)) {
+      indexByValue.set(value, i);
+    }
+  }
+  return value => indexByValue.get(value);
+}
+
 interface RendererProps<T extends SearchableItem> {
   items: T[];
   value: string;
@@ -316,6 +337,11 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
   const selectableItems = useMemo(
     () => buildSelectableItems(optimisticResults),
     [optimisticResults],
+  );
+
+  const valueLookup = useMemo(
+    () => createValueLookup(selectableItems),
+    [selectableItems],
   );
 
   const handleClose = useCallback(() => {
@@ -520,13 +546,12 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       if (itemValue == null) {
         return;
       }
-      const index = selectableItems.findIndex(item => item.value === itemValue);
-      const item = selectableItems[index];
-      if (item) {
-        combobox.onItemMouseEnter(item, index);
+      const index = valueLookup(itemValue);
+      if (index !== undefined) {
+        combobox.onItemMouseEnter(selectableItems[index], index);
       }
     },
-    [combobox, selectableItems],
+    [combobox, selectableItems, valueLookup],
   );
 
   const contextValue = useMemo(
