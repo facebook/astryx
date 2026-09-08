@@ -181,8 +181,8 @@ export interface CheckboxStateFacts {
   readonly focusable: boolean;
   /** Whether it is meant to be exposed as unavailable. */
   readonly disabled: boolean;
-  /** Whether supporting text is meant to be attached as a description. */
-  readonly described: boolean;
+  /** Supporting text that must be exposed as this state's description. */
+  readonly description: string | null;
   /** Whether it is meant to be exposed as required. */
   readonly required: boolean;
   /** Whether it is meant to be exposed as being in error. */
@@ -202,8 +202,16 @@ function checkedState(checked: 'true' | 'false' | 'mixed' | null): string {
   }
 }
 
+function sameWords(actual: string, expected: string): boolean {
+  const actualWords = spokenWords(actual);
+  const expectedWords = spokenWords(expected);
+  return (
+    actualWords.length === expectedWords.length &&
+    actualWords.every((word, index) => word === expectedWords[index])
+  );
+}
+
 /**
- * Turn the checkbox and turn it back, checking the exposed state after each move.
  * Half a round trip is not the outcome: a control that turns on and cannot turn
  * off has failed the person using it just as completely as one that never
  * turned on (AST-020 FR8).
@@ -271,7 +279,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           if (role !== facts.role) {
             throw new Error(
               role == null
-                ? `the browser exposes no role for this ${facts.role} control — it is not in the accessibility tree at all, so assistive technology cannot announce it`
+                ? `the browser exposes no role for this ${facts.role} control, so the accessibility node does not identify which widget pattern it implements`
                 : `this binding adopts the ${facts.role} role, but the browser reports "${role}"`,
             );
           }
@@ -290,7 +298,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           const {name} = await subject.computed();
           if (name.trim() === '') {
             throw new Error(
-              'the browser computes no accessible name for this checkbox, so it is announced as an unlabelled control',
+              'the browser computes no accessible name for this checkbox, so the accessibility node does not identify the choice',
             );
           }
         },
@@ -333,7 +341,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
       {
         id: 'checkbox.state.exposed',
         outcome:
-          'The unchecked, checked, or partially checked state is exposed and matches what is rendered, so what the user hears is what they see.',
+          'The browser accessibility node exposes the unchecked, checked, or partially checked state that the binding renders.',
         sources: [WCAG_4_1_2, APG_STATE, APG_MENUITEM_CHECKBOX_STATE],
         covers: ['4.1.2-name-role-value', 'apg-interaction'],
         appliesWhen: ALWAYS,
@@ -343,7 +351,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           const {checked} = await subject.computed();
           if (checked == null) {
             throw new Error(
-              'the browser exposes no checked state for this checkbox, so assistive technology cannot say whether it is checked',
+              'the browser accessibility node exposes no checked state for this checkbox',
             );
           }
           const expected =
@@ -367,11 +375,17 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         covers: ['1.3.1-info-and-relationships'],
         appliesWhen: {
           condition: 'the binding renders supporting text for this state',
-          test: facts => facts.described,
+          test: facts => facts.description != null,
         },
         evidenceLayer: 'dom',
         enforcement: 'required',
-        run: async ({subject}) => {
+        run: async ({subject, facts}) => {
+          const expected = facts.description;
+          if (expected == null) {
+            throw new Error(
+              'description expectation ran without expected text',
+            );
+          }
           const attribute = await subject.attribute('aria-describedby');
           const ids = (attribute ?? '').split(/\s+/).filter(Boolean);
           if (ids.length === 0) {
@@ -383,7 +397,15 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           const dangling = ids.filter((_, index) => targets[index] == null);
           if (dangling.length > 0) {
             throw new Error(
-              `aria-describedby points at ${dangling.map(id => `"${id}"`).join(', ')}, which ${dangling.length === 1 ? 'resolves' : 'resolve'} to nothing; that description never reaches anyone`,
+              `aria-describedby points at ${dangling.map(id => `"${id}"`).join(', ')}, which ${dangling.length === 1 ? 'resolves' : 'resolve'} to nothing`,
+            );
+          }
+          const attached = targets
+            .filter((text): text is string => text != null)
+            .join(' ');
+          if (!sameWords(attached, expected)) {
+            throw new Error(
+              `the binding expects the description "${expected}", but aria-describedby resolves to "${attached}"`,
             );
           }
         },
@@ -391,20 +413,28 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
       {
         id: 'checkbox.description.exposed',
         outcome:
-          'The supporting text reaches the user as the control’s description, not just as nearby markup.',
+          'The browser computes the intended supporting text as the control’s distinct accessible description, not just as nearby markup.',
         sources: [WCAG_4_1_2, APG_DESCRIBEDBY],
         covers: ['4.1.2-name-role-value'],
         appliesWhen: {
           condition: 'the binding renders supporting text for this state',
-          test: facts => facts.described,
+          test: facts => facts.description != null,
         },
         evidenceLayer: 'accessibility-tree',
         enforcement: 'required',
-        run: async ({subject}) => {
-          const {description} = await subject.computed();
-          if (description.trim() === '') {
+        run: async ({subject, facts}) => {
+          const expected = facts.description;
+          if (expected == null) {
             throw new Error(
-              'the binding renders supporting text for this state, but the browser computes no accessible description, so the explanation is never announced with the control',
+              'description expectation ran without expected text',
+            );
+          }
+          const {description} = await subject.computed();
+          if (!sameWords(description, expected)) {
+            throw new Error(
+              description.trim() === ''
+                ? `the binding expects the description "${expected}", but the browser computes no accessible description`
+                : `the binding expects the description "${expected}", but the browser computes "${description}"`,
             );
           }
         },

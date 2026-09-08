@@ -23,7 +23,7 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     evidenceLayer: 'dom',
     failureIncludes: 'has no aria-describedby',
     userImpact:
-      'A screen-reader user reaches the checkbox without the visible supporting text that explains the choice.',
+      'The browser accessibility node exposes no separate description for the visible supporting text, so downstream accessibility consumers cannot distinguish it as the choice explanation.',
     issue: CHECKBOX_LIST_DESCRIPTION_ISSUE,
     reason:
       'CheckboxListItem renders its description in the ListItem row but does not pass or reference that content from the nested CheckboxInput. The migration records the gap without changing component behavior.',
@@ -35,7 +35,7 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     evidenceLayer: 'accessibility-tree',
     failureIncludes: 'computes no accessible description',
     userImpact:
-      'The same visible explanation is absent from the browser accessibility node, so assistive technology cannot present it with the checkbox.',
+      'The browser computes no distinct description for the visible explanation; this records browser exposure only, not what any assistive technology announces.',
     issue: CHECKBOX_LIST_DESCRIPTION_ISSUE,
     reason:
       'This is the accessibility-tree face of the missing relationship recorded above. It is separate because each known failure names exactly one expectation and layer.',
@@ -47,7 +47,7 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     evidenceLayer: 'dom',
     failureIncludes: 'has no aria-describedby',
     userImpact:
-      'A screen-reader user reaches the checkable menu item without the visible secondary text that explains the choice.',
+      'The browser exposes the secondary text only inside the item name, not as the distinct description declared by this binding.',
     issue: MENU_CHECKBOX_DESCRIPTION_ISSUE,
     reason:
       'DropdownMenuCheckboxItem renders secondary text in the row without relating it to the role-bearing menuitemcheckbox. The migration records the gap without changing behavior.',
@@ -59,7 +59,7 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     evidenceLayer: 'accessibility-tree',
     failureIncludes: 'computes no accessible description',
     userImpact:
-      'The visible secondary text is absent from the computed accessibility description of the checkable menu item.',
+      'The browser computes no distinct accessibility description for the checkable menu item; this does not claim what an assistive technology announces.',
     issue: MENU_CHECKBOX_DESCRIPTION_ISSUE,
     reason:
       'This records the accessibility-tree outcome separately from the missing DOM relationship so one future fix must satisfy both exact gates.',

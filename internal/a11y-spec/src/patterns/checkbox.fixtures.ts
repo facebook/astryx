@@ -48,7 +48,7 @@ const CONFORMING_FACTS: CheckboxStateFacts = {
   directKeyboardOperation: true,
   focusable: true,
   disabled: false,
-  described: false,
+  description: null,
   required: false,
   invalid: false,
 };
@@ -114,7 +114,7 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
   {
     id: 'conforming-described',
     summary: 'a checkbox with supporting text attached as its description',
-    facts: facts({described: true}),
+    facts: facts({description: 'Sends a notification for every mention.'}),
     html:
       '<p id="hint">Sends a notification for every mention.</p>' +
       nativeCheckbox('aria-describedby="hint"'),
@@ -152,6 +152,15 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
     html:
       '<label for="fx" style="pointer-events:none">Notifications</label>' +
       `<input id="fx" ${SUBJECT_ATTRIBUTE} type="checkbox" role="checkbox">`,
+  },
+  {
+    id: 'conforming-label-pointer-transparent-and-clipped',
+    summary:
+      'a fully clipped label that also ignores pointer input, so it remains invisible',
+    facts: facts(),
+    html:
+      '<label for="fx" style="pointer-events:none;clip-path:inset(100%)">Notifications</label>' +
+      `<input id="fx" ${SUBJECT_ATTRIBUTE} type="checkbox" role="checkbox" aria-label="Notification setting">`,
   },
   {
     id: 'conforming-label-hidden-by-ancestor',
@@ -248,14 +257,22 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
   {
     id: 'violating-dangling-description',
     summary: 'a checkbox described by an id that resolves to nothing',
-    facts: facts({described: true}),
+    facts: facts({description: 'Sends a notification for every mention.'}),
     html: nativeCheckbox('aria-describedby="hint"'),
   },
   {
     id: 'violating-empty-description',
     summary: 'a checkbox described by an element that renders no text',
-    facts: facts({described: true}),
+    facts: facts({description: 'Sends a notification for every mention.'}),
     html: '<p id="hint"></p>' + nativeCheckbox('aria-describedby="hint"'),
+  },
+  {
+    id: 'violating-wrong-description',
+    summary: 'a checkbox pointing at unrelated nonempty text',
+    facts: facts({description: 'Sends a notification for every mention.'}),
+    html:
+      '<p id="hint">This text describes a different control.</p>' +
+      nativeCheckbox('aria-describedby="hint"'),
   },
   {
     id: 'violating-inert',
@@ -343,7 +360,10 @@ export const CONFORMING_FIXTURES: readonly string[] = CHECKBOX_FIXTURES.filter(
  * "the contract can actually fail" stops being a claim (AST-020 FR11).
  */
 export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
-  'checkbox.description.resolvable': ['violating-dangling-description'],
+  'checkbox.description.resolvable': [
+    'violating-dangling-description',
+    'violating-wrong-description',
+  ],
   'checkbox.role.exposed': [
     'violating-checkbox-role',
     'violating-generic-element',
@@ -354,7 +374,10 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
     'violating-mixed-state-mismatch',
     'violating-generic-element',
   ],
-  'checkbox.description.exposed': ['violating-empty-description'],
+  'checkbox.description.exposed': [
+    'violating-empty-description',
+    'violating-wrong-description',
+  ],
   'checkbox.disabled.exposed': ['violating-disabled-unexposed'],
   'checkbox.required.declared': ['violating-required-unexposed'],
   'checkbox.invalid.exposed': ['violating-invalid-unexposed'],
@@ -379,6 +402,8 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
 const MUTATION_FAILURES: Readonly<Record<string, string>> = {
   'checkbox.description.resolvable:violating-dangling-description':
     'resolves to nothing',
+  'checkbox.description.resolvable:violating-wrong-description':
+    'aria-describedby resolves to "This text describes a different control."',
   'checkbox.role.exposed:violating-checkbox-role':
     'adopts the checkbox role, but the browser reports "switch"',
   'checkbox.role.exposed:violating-generic-element':
@@ -392,6 +417,8 @@ const MUTATION_FAILURES: Readonly<Record<string, string>> = {
     'exposes no checked state',
   'checkbox.description.exposed:violating-empty-description':
     'computes no accessible description',
+  'checkbox.description.exposed:violating-wrong-description':
+    'browser computes "This text describes a different control."',
   'checkbox.disabled.exposed:violating-disabled-unexposed':
     'reports the checkbox as available',
   'checkbox.required.declared:violating-required-unexposed': 'declares neither',

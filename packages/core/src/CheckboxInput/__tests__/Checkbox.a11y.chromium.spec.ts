@@ -191,14 +191,15 @@ test('every applicability fact matches what the page exposes', async ({
       role: computed.role,
       checked: computed.checked,
       disabled: computed.disabled,
-      described: computed.description.trim() !== '',
+      description:
+        computed.description.trim() === '' ? null : computed.description,
       focusable: reachedByTab,
     } as const;
     const expected = {
       role: state.facts.role,
       checked: expectedChecked,
       disabled: state.facts.disabled,
-      described: state.facts.described,
+      description: state.facts.description,
       focusable: state.facts.focusable,
     } as const;
     const excused = (state as CheckboxBindingState).declaredNotDelivered ?? [];

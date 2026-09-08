@@ -330,24 +330,47 @@ export function createChromiumHarness(
                 return true;
               }
               const box = node.getBoundingClientRect();
-              if (getComputedStyle(node).pointerEvents === 'none') {
-                // Pointer transparency leaves the text visible; it only lets an
-                // ancestor surface receive the pointer instead.
-                return true;
+              const inlineStyle = (node as HTMLElement).style;
+              const pointerTransparent =
+                getComputedStyle(node).pointerEvents === 'none';
+              const originalPointerEvents =
+                inlineStyle.getPropertyValue('pointer-events');
+              const originalPriority =
+                inlineStyle.getPropertyPriority('pointer-events');
+              if (pointerTransparent) {
+                // Hit testing normally skips pointer-transparent labels even though
+                // they paint. Temporarily make only this node targetable so the
+                // same paint sampling still distinguishes visible text from a
+                // fully clipped box.
+                inlineStyle.setProperty('pointer-events', 'auto', 'important');
               }
-              const samples: ReadonlyArray<readonly [number, number]> = [
-                [box.x + box.width / 2, box.y + box.height / 2],
-                [box.x + 1, box.y + box.height / 2],
-                [box.right - 1, box.y + box.height / 2],
-              ];
-              return samples.some(([x, y]) => {
-                const at = node.ownerDocument.elementFromPoint(x, y);
-                if (at == null) {
-                  // Outside the viewport, so nothing is there to read.
-                  return false;
+              try {
+                const samples: ReadonlyArray<readonly [number, number]> = [
+                  [box.x + box.width / 2, box.y + box.height / 2],
+                  [box.x + 1, box.y + box.height / 2],
+                  [box.right - 1, box.y + box.height / 2],
+                ];
+                return samples.some(([x, y]) => {
+                  const at = node.ownerDocument.elementFromPoint(x, y);
+                  if (at == null) {
+                    // Outside the viewport, so nothing is there to read.
+                    return false;
+                  }
+                  return at === node || node.contains(at) || !at.contains(node);
+                });
+              } finally {
+                if (pointerTransparent) {
+                  if (originalPointerEvents === '') {
+                    inlineStyle.removeProperty('pointer-events');
+                  } else {
+                    inlineStyle.setProperty(
+                      'pointer-events',
+                      originalPointerEvents,
+                      originalPriority,
+                    );
+                  }
                 }
-                return at === node || node.contains(at) || !at.contains(node);
-              });
+              }
             };
 
             // The text a person can actually READ inside this node.

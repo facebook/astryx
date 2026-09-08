@@ -32,7 +32,7 @@ export interface CheckboxBindingState {
   readonly storyId: string;
   readonly opensMenu?: boolean;
   readonly declaredNotDelivered?: ReadonlyArray<{
-    readonly fact: 'described' | 'focusable';
+    readonly fact: 'description' | 'focusable';
     readonly owned: string;
   }>;
 }
@@ -44,7 +44,7 @@ const DEFAULT_FACTS: CheckboxStateFacts = {
   directKeyboardOperation: true,
   focusable: true,
   disabled: false,
-  described: false,
+  description: null,
   required: false,
   invalid: false,
 };
@@ -94,7 +94,7 @@ export const CHECKBOX_BINDING_STATES = [
     id: 'input-described',
     binding: 'CheckboxInput',
     summary: 'a checkbox with supporting text attached',
-    facts: facts({described: true}),
+    facts: facts({description: 'Help improve the product'}),
     visibleLabel: 'Share usage data',
     storyId: 'a11y-checkbox-pattern--input-described',
   },
@@ -119,7 +119,11 @@ export const CHECKBOX_BINDING_STATES = [
     binding: 'CheckboxInput',
     summary:
       'an unavailable checkbox kept focusable so its attached reason remains reachable',
-    facts: facts({operable: false, disabled: true, described: true}),
+    facts: facts({
+      operable: false,
+      disabled: true,
+      description: 'Managed by your administrator',
+    }),
     visibleLabel: 'Managed setting',
     storyId: 'a11y-checkbox-pattern--input-disabled-with-message',
   },
@@ -151,7 +155,10 @@ export const CHECKBOX_BINDING_STATES = [
     id: 'input-invalid',
     binding: 'CheckboxInput',
     summary: 'a checkbox whose current value is in error',
-    facts: facts({invalid: true, described: true}),
+    facts: facts({
+      invalid: true,
+      description: 'You must accept the terms',
+    }),
     visibleLabel: 'Accept terms',
     storyId: 'a11y-checkbox-pattern--input-invalid',
   },
@@ -187,12 +194,12 @@ export const CHECKBOX_BINDING_STATES = [
     id: 'list-item-described',
     binding: 'CheckboxListItem',
     summary: 'a list item with visible supporting text for the choice',
-    facts: facts({described: true}),
+    facts: facts({description: 'Receive notifications by email'}),
     visibleLabel: 'Email',
     visibleLabelSelector: '[data-a11y-visible-label]',
     storyId: 'a11y-checkbox-pattern--list-item-described',
     declaredNotDelivered: [
-      {fact: 'described', owned: 'checkbox.description.resolvable'},
+      {fact: 'description', owned: 'checkbox.description.resolvable'},
     ],
   },
   {
@@ -257,12 +264,12 @@ export const CHECKBOX_BINDING_STATES = [
     binding: 'DropdownMenuCheckboxItem',
     summary:
       'a menu checkbox item with secondary row text; menu composition owns that text',
-    facts: menuFacts({described: true}),
+    facts: menuFacts({description: 'Include unpublished items'}),
     visibleLabel: 'Show archived Include unpublished items',
     storyId: 'a11y-checkbox-pattern--menu-item-described',
     opensMenu: true,
     declaredNotDelivered: [
-      {fact: 'described', owned: 'checkbox.description.resolvable'},
+      {fact: 'description', owned: 'checkbox.description.resolvable'},
     ],
   },
   {
