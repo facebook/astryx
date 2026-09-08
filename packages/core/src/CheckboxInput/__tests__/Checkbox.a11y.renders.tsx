@@ -140,6 +140,7 @@ function ControlledCard({
   const [selected, setSelected] = useState(initial);
   return (
     <SelectableCard
+      data-a11y-pointer-target
       label="Analytics"
       isSelected={selected}
       onChange={setSelected}

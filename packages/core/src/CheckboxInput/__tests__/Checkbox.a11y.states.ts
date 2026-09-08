@@ -28,6 +28,7 @@ export interface CheckboxBindingState {
   readonly facts: CheckboxStateFacts;
   readonly visibleLabel: string | null;
   readonly visibleLabelSelector?: string;
+  readonly pointerTargetSelector?: string;
   readonly storyId: string;
   readonly opensMenu?: boolean;
   readonly declaredNotDelivered?: ReadonlyArray<{
@@ -256,10 +257,13 @@ export const CHECKBOX_BINDING_STATES = [
     binding: 'DropdownMenuCheckboxItem',
     summary:
       'a menu checkbox item with secondary row text; menu composition owns that text',
-    facts: menuFacts(),
+    facts: menuFacts({described: true}),
     visibleLabel: 'Show archived Include unpublished items',
     storyId: 'a11y-checkbox-pattern--menu-item-described',
     opensMenu: true,
+    declaredNotDelivered: [
+      {fact: 'described', owned: 'checkbox.description.resolvable'},
+    ],
   },
   {
     id: 'menu-item-disabled',
@@ -278,6 +282,7 @@ export const CHECKBOX_BINDING_STATES = [
     facts: facts(),
     visibleLabel: 'Analytics',
     visibleLabelSelector: '[data-a11y-visible-label]',
+    pointerTargetSelector: '[data-a11y-pointer-target]',
     storyId: 'a11y-checkbox-pattern--card-unchecked',
   },
   {
@@ -287,6 +292,7 @@ export const CHECKBOX_BINDING_STATES = [
     facts: facts({checked: true}),
     visibleLabel: 'Analytics',
     visibleLabelSelector: '[data-a11y-visible-label]',
+    pointerTargetSelector: '[data-a11y-pointer-target]',
     storyId: 'a11y-checkbox-pattern--card-checked',
   },
   {
@@ -297,6 +303,7 @@ export const CHECKBOX_BINDING_STATES = [
     facts: facts({operable: false, disabled: true}),
     visibleLabel: 'Analytics',
     visibleLabelSelector: '[data-a11y-visible-label]',
+    pointerTargetSelector: '[data-a11y-pointer-target]',
     storyId: 'a11y-checkbox-pattern--card-disabled',
     declaredNotDelivered: [
       {fact: 'focusable', owned: 'checkbox.focus.reachable-and-escapable'},

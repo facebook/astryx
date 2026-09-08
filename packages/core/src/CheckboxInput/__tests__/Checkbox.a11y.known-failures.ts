@@ -12,6 +12,8 @@ import type {KnownFailure} from '@astryxdesign/a11y-spec';
 
 const CHECKBOX_LIST_DESCRIPTION_ISSUE =
   'https://github.com/facebook/astryx/issues/6154';
+const MENU_CHECKBOX_DESCRIPTION_ISSUE =
+  'https://github.com/facebook/astryx/issues/6159';
 
 export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
   {
@@ -38,55 +40,31 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     reason:
       'This is the accessibility-tree face of the missing relationship recorded above. It is separate because each known failure names exactly one expectation and layer.',
   },
+  {
+    expectation: 'checkbox.description.resolvable',
+    binding: 'DropdownMenuCheckboxItem',
+    state: 'menu-item-described',
+    evidenceLayer: 'dom',
+    failureIncludes: 'has no aria-describedby',
+    userImpact:
+      'A screen-reader user reaches the checkable menu item without the visible secondary text that explains the choice.',
+    issue: MENU_CHECKBOX_DESCRIPTION_ISSUE,
+    reason:
+      'DropdownMenuCheckboxItem renders secondary text in the row without relating it to the role-bearing menuitemcheckbox. The migration records the gap without changing behavior.',
+  },
+  {
+    expectation: 'checkbox.description.exposed',
+    binding: 'DropdownMenuCheckboxItem',
+    state: 'menu-item-described',
+    evidenceLayer: 'accessibility-tree',
+    failureIncludes: 'computes no accessible description',
+    userImpact:
+      'The visible secondary text is absent from the computed accessibility description of the checkable menu item.',
+    issue: MENU_CHECKBOX_DESCRIPTION_ISSUE,
+    reason:
+      'This records the accessibility-tree outcome separately from the missing DOM relationship so one future fix must satisfy both exact gates.',
+  },
 
-  {
-    expectation: 'checkbox.state.pointer-round-trip',
-    binding: 'SelectableCard',
-    state: 'card-unchecked',
-    evidenceLayer: 'real-browser',
-    failureIncludes: 'a pointer could not reach this control within 2000ms',
-    userImpact:
-      'A speech-input user or assistive technology that activates the exposed checkbox object cannot check the card, even though clicking the visible card surface works.',
-    issue: 'https://github.com/facebook/astryx/issues/6155',
-    reason:
-      'SelectableCard splits pointer handling onto the card while role, name, and state live on a clipped 1×1 checkbox. The migration records the exact unchecked-state failure without changing the component.',
-  },
-  {
-    expectation: 'checkbox.state.survives-an-aborted-press',
-    binding: 'SelectableCard',
-    state: 'card-unchecked',
-    evidenceLayer: 'real-browser',
-    failureIncludes: 'a pointer press cannot land on this control',
-    userImpact:
-      'Pointer cancellation cannot be demonstrated on the unchecked role-bearing control because a pointer press cannot land on it at all.',
-    issue: 'https://github.com/facebook/astryx/issues/6155',
-    reason:
-      'This is a separate outcome from activation: each known failure names one expectation, and a future fix has to prove both ordinary activation and cancellation.',
-  },
-  {
-    expectation: 'checkbox.state.pointer-round-trip',
-    binding: 'SelectableCard',
-    state: 'card-checked',
-    evidenceLayer: 'real-browser',
-    failureIncludes: 'a pointer could not reach this control within 2000ms',
-    userImpact:
-      'The same inaccessible activation target prevents assistive tooling from unchecking an already selected card.',
-    issue: 'https://github.com/facebook/astryx/issues/6155',
-    reason:
-      'The checked state is recorded separately so the unchecked result cannot mask a one-direction-only repair.',
-  },
-  {
-    expectation: 'checkbox.state.survives-an-aborted-press',
-    binding: 'SelectableCard',
-    state: 'card-checked',
-    evidenceLayer: 'real-browser',
-    failureIncludes: 'a pointer press cannot land on this control',
-    userImpact:
-      'Pointer cancellation is likewise unobservable on the checked role-bearing control because the pointer cannot land there.',
-    issue: 'https://github.com/facebook/astryx/issues/6155',
-    reason:
-      'The checked-state cancellation path is its own exact gate and cannot be hidden by the unchecked-state record.',
-  },
   {
     expectation: 'checkbox.focus.reachable-and-escapable',
     binding: 'SelectableCard',

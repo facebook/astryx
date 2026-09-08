@@ -145,6 +145,15 @@ export const CHECKBOX_FIXTURES: readonly CheckboxFixture[] = [
       `<input id="fx" ${SUBJECT_ATTRIBUTE} type="checkbox" role="checkbox">`,
   },
   {
+    id: 'conforming-label-pointer-transparent',
+    summary:
+      'a readable label that ignores pointer input so its containing row can receive the click',
+    facts: facts(),
+    html:
+      '<label for="fx" style="pointer-events:none">Notifications</label>' +
+      `<input id="fx" ${SUBJECT_ATTRIBUTE} type="checkbox" role="checkbox">`,
+  },
+  {
     id: 'conforming-label-hidden-by-ancestor',
     summary:
       'a label inside a hidden wrapper: nothing is readable, and the name comes from aria-label',

@@ -87,6 +87,14 @@ function visibleLabelFor(
   return selector == null ? undefined : page.locator(selector).first();
 }
 
+function pointerTargetFor(
+  page: Page,
+  state: CheckboxBindingRow,
+): Locator | undefined {
+  const selector = (state as CheckboxBindingState).pointerTargetSelector;
+  return selector == null ? undefined : page.locator(selector).first();
+}
+
 async function runState(
   page: Page,
   cdp: CDPSession,
@@ -103,6 +111,7 @@ async function runState(
       return createChromiumHarness({
         page,
         subject: subjectFor(page, state),
+        pointerTarget: pointerTargetFor(page, state),
         cdp,
         visibleLabel: visibleLabelFor(page, state),
       });
