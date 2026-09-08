@@ -33,6 +33,7 @@ import {
   CONFORMING_FIXTURES,
   SUBJECT_SELECTOR,
   CHECKBOX_MUTATIONS,
+  expectedMutationFailure,
   fixture,
   type CheckboxFixture,
 } from './checkbox.fixtures';
@@ -107,7 +108,9 @@ test.describe('checkbox contract — deliberately violating fixtures', () => {
           expectation.id,
         ]);
         expect(result?.status, result?.detail ?? 'no result').toBe('fail');
-        expect(result?.detail ?? '').not.toBe('');
+        expect(result?.detail ?? '').toContain(
+          expectedMutationFailure(expectation.id, fixtureId),
+        );
       });
     }
   }

@@ -3,8 +3,11 @@
 /**
  * @file CheckboxInput.test.tsx
  * @input Uses vitest, @testing-library/react, CheckboxInput component
- * @output Unit tests for CheckboxInput component behavior
- * @position Testing; validates CheckboxInput.tsx implementation
+ * @output Unit tests for CheckboxInput-specific API, callback, form,
+ *   composition, and styling behavior. Shared checkbox semantics live in
+ *   __tests__/Checkbox.a11y.test.tsx and its Chromium twin.
+ * @position Component-owned regression tests; validates CheckboxInput.tsx without
+ *   duplicating outcomes owned by the reusable checkbox contract.
  *
  * SYNC: When CheckboxInput.tsx changes, update tests to match new behavior
  */
@@ -75,27 +78,6 @@ beforeEach(() => {
 });
 
 describe('CheckboxInput', () => {
-  it('renders with label', () => {
-    render(
-      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
-    );
-    expect(screen.getByLabelText('Accept terms')).toBeInTheDocument();
-  });
-
-  it('renders as unchecked by default', () => {
-    render(
-      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
-    );
-    expect(screen.getByRole('checkbox')).not.toBeChecked();
-  });
-
-  it('renders as checked when value prop is true', () => {
-    render(
-      <CheckboxInput label="Accept terms" value={true} onChange={() => {}} />,
-    );
-    expect(screen.getByRole('checkbox')).toBeChecked();
-  });
-
   it('calls onChange with new checked state when clicked', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
@@ -157,20 +139,6 @@ describe('CheckboxInput', () => {
     expect(screen.getByText('Receive weekly updates')).toBeInTheDocument();
   });
 
-  it('associates description with checkbox via aria-describedby', () => {
-    render(
-      <CheckboxInput
-        label="Subscribe"
-        description="Receive weekly updates"
-        value={false}
-        onChange={() => {}}
-      />,
-    );
-    const checkbox = screen.getByRole('checkbox');
-    const description = screen.getByText('Receive weekly updates');
-    expect(checkbox).toHaveAttribute('aria-describedby', description.id);
-  });
-
   it('toggles when clicking on the description', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
@@ -184,36 +152,6 @@ describe('CheckboxInput', () => {
     );
     await user.click(screen.getByText('Receive weekly updates'));
     expect(handleChange).toHaveBeenCalledWith(true, expect.any(Object));
-  });
-
-  it('does not fold the description into the checkbox accessible name', () => {
-    // The description stays a sibling of the <label>, so it must NOT become
-    // part of the checkbox's accessible name (which is computed from the
-    // associated label). It belongs in the accessible DESCRIPTION only
-    // (via aria-describedby) — otherwise screen readers announce it twice.
-    render(
-      <CheckboxInput
-        label="Email notifications"
-        description="We'll send weekly digests"
-        value={false}
-        onChange={() => {}}
-      />,
-    );
-    const checkbox = screen.getByRole('checkbox');
-    expect(checkbox).toHaveAccessibleName('Email notifications');
-    expect(checkbox).toHaveAccessibleDescription("We'll send weekly digests");
-  });
-
-  it('is disabled when isDisabled prop is true', () => {
-    render(
-      <CheckboxInput
-        label="Accept terms"
-        value={false}
-        onChange={() => {}}
-        isDisabled
-      />,
-    );
-    expect(screen.getByRole('checkbox')).toBeDisabled();
   });
 
   it('does not call onChange when isDisabled', async () => {

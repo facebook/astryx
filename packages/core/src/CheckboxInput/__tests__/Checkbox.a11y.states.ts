@@ -212,6 +212,25 @@ export const CHECKBOX_BINDING_STATES = [
     visibleLabelSelector: '[data-a11y-visible-label]',
     storyId: 'a11y-checkbox-pattern--list-item-loading',
   },
+  {
+    id: 'list-item-read-only',
+    binding: 'CheckboxListItem',
+    summary: 'a read-only list item that stays focusable and cannot change',
+    facts: facts({checked: true, operable: false}),
+    visibleLabel: 'Email',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--list-item-read-only',
+  },
+  {
+    id: 'list-item-group-disabled-with-message',
+    binding: 'CheckboxListItem',
+    summary:
+      'an item in an unavailable group, kept focusable so the group reason is discoverable',
+    facts: facts({checked: true, operable: false, disabled: true}),
+    visibleLabel: 'Email',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--list-item-group-disabled-with-message',
+  },
 
   {
     id: 'menu-item-unchecked',
@@ -230,6 +249,16 @@ export const CHECKBOX_BINDING_STATES = [
     facts: menuFacts({checked: true}),
     visibleLabel: 'Show archived',
     storyId: 'a11y-checkbox-pattern--menu-item-checked',
+    opensMenu: true,
+  },
+  {
+    id: 'menu-item-described',
+    binding: 'DropdownMenuCheckboxItem',
+    summary:
+      'a menu checkbox item with secondary row text; menu composition owns that text',
+    facts: menuFacts(),
+    visibleLabel: 'Show archived Include unpublished items',
+    storyId: 'a11y-checkbox-pattern--menu-item-described',
     opensMenu: true,
   },
   {

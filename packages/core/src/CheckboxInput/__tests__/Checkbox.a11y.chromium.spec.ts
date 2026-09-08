@@ -79,22 +79,12 @@ async function mountState(
   await subjectFor(page, state).waitFor({state: 'attached'});
 }
 
-function visibleLabelReader(
+function visibleLabelFor(
   page: Page,
   state: CheckboxBindingRow,
-): (() => Promise<string | null>) | undefined {
+): Locator | undefined {
   const selector = (state as CheckboxBindingState).visibleLabelSelector;
-  if (selector == null) {
-    return undefined;
-  }
-  return async () => {
-    const label = page.locator(selector).first();
-    if (!(await label.isVisible())) {
-      return null;
-    }
-    const text = (await label.innerText()).replace(/\s+/g, ' ').trim();
-    return text === '' ? null : text;
-  };
+  return selector == null ? undefined : page.locator(selector).first();
 }
 
 async function runState(
@@ -114,7 +104,7 @@ async function runState(
         page,
         subject: subjectFor(page, state),
         cdp,
-        visibleLabelText: visibleLabelReader(page, state),
+        visibleLabel: visibleLabelFor(page, state),
       });
     },
   });
@@ -145,7 +135,7 @@ test('the state inventory describes each visible label', async ({page}) => {
       page,
       subject: subjectFor(page, state),
       cdp,
-      visibleLabelText: visibleLabelReader(page, state),
+      visibleLabel: visibleLabelFor(page, state),
     });
     const rendered = await (await harness.subject()).visibleLabelText();
     const matches =
@@ -256,7 +246,7 @@ test('every expectation is exercised by at least one bound state', async ({
             page,
             subject: subjectFor(page, state),
             cdp,
-            visibleLabelText: visibleLabelReader(page, state),
+            visibleLabel: visibleLabelFor(page, state),
           });
         },
       }),

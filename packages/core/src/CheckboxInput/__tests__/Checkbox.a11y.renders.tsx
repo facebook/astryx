@@ -49,12 +49,14 @@ function StandaloneListItem({
   description,
   isDisabled,
   isLoading,
+  isReadOnly = false,
 }: {
   initial: boolean | 'indeterminate';
   label: string;
   description?: ReactNode;
   isDisabled?: boolean;
   isLoading?: boolean;
+  isReadOnly?: boolean;
 }) {
   const [checked, setChecked] = useState<boolean | 'indeterminate'>(initial);
   return (
@@ -64,7 +66,7 @@ function StandaloneListItem({
         aria-label={label}
         description={description}
         isChecked={checked}
-        onCheck={setChecked}
+        onCheck={isReadOnly ? undefined : setChecked}
         isDisabled={isDisabled}
         isLoading={isLoading}
       />
@@ -88,18 +90,38 @@ function CollectionListItem({initial}: {initial: boolean}) {
   );
 }
 
+function GroupDisabledListItem() {
+  return (
+    <CheckboxList
+      label="Notification methods"
+      value={['email']}
+      onChange={() => {}}
+      isDisabled
+      disabledMessage="Managed by your administrator">
+      <CheckboxListItem
+        label={<VisibleLabel>Email</VisibleLabel>}
+        aria-label="Email"
+        value="email"
+      />
+    </CheckboxList>
+  );
+}
+
 function MenuCheckbox({
   initial,
   isDisabled = false,
+  description,
 }: {
   initial: boolean;
   isDisabled?: boolean;
+  description?: ReactNode;
 }) {
   const [value, setValue] = useState(initial);
   return (
     <DropdownMenu button={{label: 'View options'}}>
       <DropdownMenuCheckboxItem
         label="Show archived"
+        description={description}
         value={value}
         onChange={setValue}
         isDisabled={isDisabled}
@@ -200,9 +222,16 @@ export const CHECKBOX_STATE_RENDERS: Record<
   'list-item-loading': () => (
     <StandaloneListItem initial={false} label="Push notifications" isLoading />
   ),
+  'list-item-read-only': () => (
+    <StandaloneListItem initial label="Email" isReadOnly />
+  ),
+  'list-item-group-disabled-with-message': () => <GroupDisabledListItem />,
 
   'menu-item-unchecked': () => <MenuCheckbox initial={false} />,
   'menu-item-checked': () => <MenuCheckbox initial />,
+  'menu-item-described': () => (
+    <MenuCheckbox initial={false} description="Include unpublished items" />
+  ),
   'menu-item-disabled': () => <MenuCheckbox initial={false} isDisabled />,
 
   'card-unchecked': () => <ControlledCard initial={false} />,

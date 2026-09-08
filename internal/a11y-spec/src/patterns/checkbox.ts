@@ -433,7 +433,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
       {
         id: 'checkbox.required.declared',
         outcome:
-          'A checkbox that has to be on declares it, so the obligation reaches assistive technology before the user submits.',
+          'A checkbox that has to be checked declares that requirement in markup for user agents and assistive technology to consume.',
         sources: [WCAG_3_3_2, WCAG_4_1_2],
         covers: ['3.3.2-labels-or-instructions'],
         appliesWhen: {
@@ -451,7 +451,7 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
           const aria = await subject.attribute('aria-required');
           if (native == null && aria !== 'true') {
             throw new Error(
-              'this state is required, but the checkbox declares neither the native required attribute nor aria-required="true", so nothing tells assistive technology the setting must be on',
+              'this state is required, but the checkbox declares neither the native required attribute nor aria-required="true", so user agents receive no required-state declaration',
             );
           }
         },

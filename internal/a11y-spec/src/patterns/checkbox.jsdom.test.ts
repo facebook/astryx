@@ -34,6 +34,7 @@ import {
   CONFORMING_FIXTURES,
   SUBJECT_SELECTOR,
   CHECKBOX_MUTATIONS,
+  expectedMutationFailure,
   fixture,
   type CheckboxFixture,
 } from './checkbox.fixtures';
@@ -151,7 +152,9 @@ describe.each(observableHere.map(expectation => [expectation.id] as const))(
         const target = fixture(name);
         const result = resultFor(await resultsFor(target), id);
         expect(result.status, `${id} against ${name}`).toBe('fail');
-        expect(result.detail ?? '').not.toBe('');
+        expect(result.detail ?? '').toContain(
+          expectedMutationFailure(id, name),
+        );
       },
     );
 

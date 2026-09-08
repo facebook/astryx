@@ -353,7 +353,6 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   'checkbox.state.survives-an-aborted-press': ['violating-down-event-toggle'],
   'checkbox.state.keeps-focus-on-change': [
     'violating-focus-moves-on-change',
-    // A checkbox that never changes cannot show that focus survives a change.
     'violating-inert',
   ],
   'checkbox.state.pointer-round-trip': ['violating-inert', 'violating-one-way'],
@@ -367,3 +366,60 @@ export const CHECKBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   ],
   'checkbox.state.inoperable': ['violating-disabled-operable'],
 };
+
+const MUTATION_FAILURES: Readonly<Record<string, string>> = {
+  'checkbox.description.resolvable:violating-dangling-description':
+    'resolves to nothing',
+  'checkbox.role.exposed:violating-checkbox-role':
+    'adopts the checkbox role, but the browser reports "switch"',
+  'checkbox.role.exposed:violating-generic-element':
+    'browser reports "generic"',
+  'checkbox.name.exposed:violating-unnamed': 'computes no accessible name',
+  'checkbox.state.exposed:violating-state-mismatch':
+    'renders checked but the browser reports it as unchecked',
+  'checkbox.state.exposed:violating-mixed-state-mismatch':
+    'renders partially checked but the browser reports it as unchecked',
+  'checkbox.state.exposed:violating-generic-element':
+    'exposes no checked state',
+  'checkbox.description.exposed:violating-empty-description':
+    'computes no accessible description',
+  'checkbox.disabled.exposed:violating-disabled-unexposed':
+    'reports the checkbox as available',
+  'checkbox.required.declared:violating-required-unexposed': 'declares neither',
+  'checkbox.invalid.exposed:violating-invalid-unexposed':
+    'does not report the checkbox as invalid',
+  'checkbox.name.matches-visible-label:violating-name-mismatch':
+    'visible label reads',
+  'checkbox.state.survives-an-aborted-press:violating-down-event-toggle':
+    'releasing away from it still turned it',
+  'checkbox.state.keeps-focus-on-change:violating-focus-moves-on-change':
+    'moved focus off it',
+  'checkbox.state.keeps-focus-on-change:violating-inert': 'nothing changed',
+  'checkbox.state.pointer-round-trip:violating-inert':
+    'cannot be changed to checked',
+  'checkbox.state.pointer-round-trip:violating-one-way':
+    'change only goes one way',
+  'checkbox.state.space-round-trip:violating-pointer-only':
+    'cannot be changed to checked',
+  'checkbox.state.space-round-trip:violating-one-way':
+    'change only goes one way',
+  'checkbox.focus.reachable-and-escapable:violating-unreachable':
+    'never reached the checkbox',
+  'checkbox.focus.reachable-and-escapable:violating-keyboard-trap':
+    'did not move focus off the checkbox',
+  'checkbox.state.inoperable:violating-disabled-operable':
+    'clicking the checkbox turned it',
+};
+
+export function expectedMutationFailure(
+  expectation: string,
+  target: string,
+): string {
+  const detail = MUTATION_FAILURES[`${expectation}:${target}`];
+  if (detail == null) {
+    throw new Error(
+      `no expected failure detail for ${expectation} against ${target}`,
+    );
+  }
+  return detail;
+}
