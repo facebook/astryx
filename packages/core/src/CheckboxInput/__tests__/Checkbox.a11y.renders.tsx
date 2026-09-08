@@ -50,6 +50,7 @@ function StandaloneListItem({
   isDisabled,
   isLoading,
   isReadOnly = false,
+  plainLabel = false,
 }: {
   initial: boolean | 'indeterminate';
   label: string;
@@ -57,13 +58,15 @@ function StandaloneListItem({
   isDisabled?: boolean;
   isLoading?: boolean;
   isReadOnly?: boolean;
+  plainLabel?: boolean;
 }) {
   const [checked, setChecked] = useState<boolean | 'indeterminate'>(initial);
   return (
     <List>
       <CheckboxListItem
-        label={<VisibleLabel>{label}</VisibleLabel>}
-        aria-label={label}
+        data-a11y-visible-label={plainLabel || undefined}
+        label={plainLabel ? label : <VisibleLabel>{label}</VisibleLabel>}
+        aria-label={plainLabel ? undefined : label}
         description={description}
         isChecked={checked}
         onCheck={isReadOnly ? undefined : setChecked}
@@ -204,7 +207,7 @@ export const CHECKBOX_STATE_RENDERS: Record<
   ),
 
   'list-item-unchecked': () => (
-    <StandaloneListItem initial={false} label="Email" />
+    <StandaloneListItem initial={false} label="Email" plainLabel />
   ),
   'list-item-checked': () => <CollectionListItem initial />,
   'list-item-mixed': () => (

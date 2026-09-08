@@ -481,7 +481,9 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         id: 'checkbox.state.pointer-round-trip',
         outcome:
           'A pointer changes the checkbox and can change it again, while the exposed state follows each transition.',
-        sources: [WCAG_4_1_2, APG_STATE],
+        sources: [APG_STATE, WCAG_4_1_2],
+        wcagOutcome:
+          'The checked state exposed under 4.1.2 stays synchronized with the state the user changes.',
         covers: ['4.1.2-name-role-value', 'apg-interaction'],
         appliesWhen: {
           condition: 'the user is meant to be able to change this state',
@@ -489,7 +491,9 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: READS_THE_TREE,
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          'APG specifies keyboard state change but does not independently require pointer activation, and no current Astryx checkbox record adopts it as a gate.',
         run: async ({harness, subject, facts}) => {
           await roundTrip(
             facts.checked,
@@ -632,7 +636,9 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         id: 'checkbox.state.inoperable',
         outcome:
           'A checkbox the user is not meant to be able to change does not change when it is clicked or when Space is pressed on it.',
-        sources: [WCAG_4_1_2, APG_STATE],
+        sources: [APG_STATE, WCAG_4_1_2],
+        wcagOutcome:
+          'The checked state exposed under 4.1.2 does not claim a change the unavailable control did not accept.',
         covers: ['4.1.2-name-role-value'],
         // Not keyed on `disabled`: a checkbox can also be temporarily
         // unchangeable while it waits on the change it already started, and a
@@ -643,7 +649,9 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: READS_THE_TREE,
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          'The standards require accurate exposed state, but no current Astryx checkbox record independently adopts inertness for every unavailable or pending state.',
         run: async ({harness, subject, facts}) => {
           const before = (await subject.computed()).checked;
           await harness.click(subject, {ignoreAvailability: true});
