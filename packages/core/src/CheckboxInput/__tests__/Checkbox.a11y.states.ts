@@ -1,0 +1,276 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Checkbox.a11y.states.ts
+ * @input Uses CheckboxStateFacts from @astryxdesign/a11y-spec
+ * @output CHECKBOX_BINDING_STATES — the AST-021 inventory for every current
+ *   checkbox-bearing Astryx part and every state that changes the shared pattern
+ *   outcome.
+ * @position Data-only binding inventory. JSX lives in Checkbox.a11y.renders.tsx
+ *   so Playwright can import this file without loading component source.
+ */
+
+import type {CheckboxStateFacts} from '@astryxdesign/a11y-spec';
+
+export type CheckboxBinding =
+  | 'CheckboxInput'
+  | 'CheckboxListItem'
+  | 'DropdownMenuCheckboxItem'
+  | 'SelectableCard';
+
+export type CheckboxBindingRow = (typeof CHECKBOX_BINDING_STATES)[number];
+export type CheckboxStateId = (typeof CHECKBOX_BINDING_STATES)[number]['id'];
+
+export interface CheckboxBindingState {
+  readonly id: string;
+  readonly binding: CheckboxBinding;
+  readonly summary: string;
+  readonly facts: CheckboxStateFacts;
+  readonly visibleLabel: string | null;
+  readonly visibleLabelSelector?: string;
+  readonly storyId: string;
+  readonly opensMenu?: boolean;
+  readonly declaredNotDelivered?: ReadonlyArray<{
+    readonly fact: 'described' | 'focusable';
+    readonly owned: string;
+  }>;
+}
+
+const DEFAULT_FACTS: CheckboxStateFacts = {
+  role: 'checkbox',
+  checked: false,
+  operable: true,
+  directKeyboardOperation: true,
+  focusable: true,
+  disabled: false,
+  described: false,
+  required: false,
+  invalid: false,
+};
+
+function facts(
+  overrides: Partial<CheckboxStateFacts> = {},
+): CheckboxStateFacts {
+  return {...DEFAULT_FACTS, ...overrides};
+}
+
+const menuFacts = (
+  overrides: Partial<CheckboxStateFacts> = {},
+): CheckboxStateFacts =>
+  facts({
+    role: 'menuitemcheckbox',
+    directKeyboardOperation: false,
+    focusable: false,
+    ...overrides,
+  });
+
+export const CHECKBOX_BINDING_STATES = [
+  {
+    id: 'input-unchecked',
+    binding: 'CheckboxInput',
+    summary: 'the default unchecked checkbox with a visible label',
+    facts: facts(),
+    visibleLabel: 'Email notifications',
+    storyId: 'a11y-checkbox-pattern--input-unchecked',
+  },
+  {
+    id: 'input-checked',
+    binding: 'CheckboxInput',
+    summary: 'the same checkbox checked',
+    facts: facts({checked: true}),
+    visibleLabel: 'Email notifications',
+    storyId: 'a11y-checkbox-pattern--input-checked',
+  },
+  {
+    id: 'input-mixed',
+    binding: 'CheckboxInput',
+    summary: 'a tri-state select-all checkbox in its partially checked state',
+    facts: facts({checked: 'mixed'}),
+    visibleLabel: 'Select all notifications',
+    storyId: 'a11y-checkbox-pattern--input-mixed',
+  },
+  {
+    id: 'input-described',
+    binding: 'CheckboxInput',
+    summary: 'a checkbox with supporting text attached',
+    facts: facts({described: true}),
+    visibleLabel: 'Share usage data',
+    storyId: 'a11y-checkbox-pattern--input-described',
+  },
+  {
+    id: 'input-hidden-label',
+    binding: 'CheckboxInput',
+    summary: 'a checkbox named by a visually hidden associated label',
+    facts: facts(),
+    visibleLabel: null,
+    storyId: 'a11y-checkbox-pattern--input-hidden-label',
+  },
+  {
+    id: 'input-disabled',
+    binding: 'CheckboxInput',
+    summary: 'a natively disabled checkbox outside the tab sequence',
+    facts: facts({operable: false, focusable: false, disabled: true}),
+    visibleLabel: 'Managed setting',
+    storyId: 'a11y-checkbox-pattern--input-disabled',
+  },
+  {
+    id: 'input-disabled-with-message',
+    binding: 'CheckboxInput',
+    summary:
+      'an unavailable checkbox kept focusable so its attached reason remains reachable',
+    facts: facts({operable: false, disabled: true, described: true}),
+    visibleLabel: 'Managed setting',
+    storyId: 'a11y-checkbox-pattern--input-disabled-with-message',
+  },
+  {
+    id: 'input-loading',
+    binding: 'CheckboxInput',
+    summary: 'a busy checkbox that stays focusable but refuses another change',
+    facts: facts({operable: false}),
+    visibleLabel: 'Email notifications',
+    storyId: 'a11y-checkbox-pattern--input-loading',
+  },
+  {
+    id: 'input-read-only',
+    binding: 'CheckboxInput',
+    summary: 'a read-only checkbox that stays focusable and cannot change',
+    facts: facts({checked: true, operable: false}),
+    visibleLabel: 'Policy acknowledged',
+    storyId: 'a11y-checkbox-pattern--input-read-only',
+  },
+  {
+    id: 'input-required',
+    binding: 'CheckboxInput',
+    summary: 'a checkbox declared required',
+    facts: facts({required: true}),
+    visibleLabel: 'Accept terms',
+    storyId: 'a11y-checkbox-pattern--input-required',
+  },
+  {
+    id: 'input-invalid',
+    binding: 'CheckboxInput',
+    summary: 'a checkbox whose current value is in error',
+    facts: facts({invalid: true, described: true}),
+    visibleLabel: 'Accept terms',
+    storyId: 'a11y-checkbox-pattern--input-invalid',
+  },
+
+  {
+    id: 'list-item-unchecked',
+    binding: 'CheckboxListItem',
+    summary: 'a standalone checkbox list item',
+    facts: facts(),
+    visibleLabel: 'Email',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--list-item-unchecked',
+  },
+  {
+    id: 'list-item-checked',
+    binding: 'CheckboxListItem',
+    summary: 'a checked item in a controlled CheckboxList collection',
+    facts: facts({checked: true}),
+    visibleLabel: 'Email',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--list-item-checked',
+  },
+  {
+    id: 'list-item-mixed',
+    binding: 'CheckboxListItem',
+    summary: 'a standalone partially checked list item',
+    facts: facts({checked: 'mixed'}),
+    visibleLabel: 'Select all',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--list-item-mixed',
+  },
+  {
+    id: 'list-item-described',
+    binding: 'CheckboxListItem',
+    summary: 'a list item with visible supporting text for the choice',
+    facts: facts({described: true}),
+    visibleLabel: 'Email',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--list-item-described',
+    declaredNotDelivered: [
+      {fact: 'described', owned: 'checkbox.description.resolvable'},
+    ],
+  },
+  {
+    id: 'list-item-disabled',
+    binding: 'CheckboxListItem',
+    summary: 'an individually disabled list item',
+    facts: facts({operable: false, focusable: false, disabled: true}),
+    visibleLabel: 'SMS',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--list-item-disabled',
+  },
+  {
+    id: 'list-item-loading',
+    binding: 'CheckboxListItem',
+    summary: 'a busy list item that stays focusable but refuses another change',
+    facts: facts({operable: false}),
+    visibleLabel: 'Push notifications',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--list-item-loading',
+  },
+
+  {
+    id: 'menu-item-unchecked',
+    binding: 'DropdownMenuCheckboxItem',
+    summary:
+      'an unchecked menu checkbox item; the menu contract owns composite focus and keys',
+    facts: menuFacts(),
+    visibleLabel: 'Show archived',
+    storyId: 'a11y-checkbox-pattern--menu-item-unchecked',
+    opensMenu: true,
+  },
+  {
+    id: 'menu-item-checked',
+    binding: 'DropdownMenuCheckboxItem',
+    summary: 'a checked menu checkbox item',
+    facts: menuFacts({checked: true}),
+    visibleLabel: 'Show archived',
+    storyId: 'a11y-checkbox-pattern--menu-item-checked',
+    opensMenu: true,
+  },
+  {
+    id: 'menu-item-disabled',
+    binding: 'DropdownMenuCheckboxItem',
+    summary: 'an unavailable menu checkbox item',
+    facts: menuFacts({operable: false, disabled: true}),
+    visibleLabel: 'Show archived',
+    storyId: 'a11y-checkbox-pattern--menu-item-disabled',
+    opensMenu: true,
+  },
+
+  {
+    id: 'card-unchecked',
+    binding: 'SelectableCard',
+    summary: 'an independently selectable card, unchecked',
+    facts: facts(),
+    visibleLabel: 'Analytics',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--card-unchecked',
+  },
+  {
+    id: 'card-checked',
+    binding: 'SelectableCard',
+    summary: 'the same selectable card checked',
+    facts: facts({checked: true}),
+    visibleLabel: 'Analytics',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--card-checked',
+  },
+  {
+    id: 'card-disabled',
+    binding: 'SelectableCard',
+    summary:
+      'an unavailable selectable card, intended to remain focusable so it stays discoverable',
+    facts: facts({operable: false, disabled: true}),
+    visibleLabel: 'Analytics',
+    visibleLabelSelector: '[data-a11y-visible-label]',
+    storyId: 'a11y-checkbox-pattern--card-disabled',
+    declaredNotDelivered: [
+      {fact: 'focusable', owned: 'checkbox.focus.reachable-and-escapable'},
+    ],
+  },
+] as const satisfies ReadonlyArray<CheckboxBindingState>;
