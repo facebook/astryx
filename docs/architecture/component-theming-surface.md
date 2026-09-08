@@ -30,7 +30,7 @@ verified_by:
     packages/core/src/theme/extensibleAxes.test.ts,
     packages/core/src/theme/derivedVarRegistry.test.ts,
   ]
-deciding_specs: [spec:AST-012/DEC-2, spec:AST-012/DEC-3]
+deciding_specs: [spec:AST-012/DEC-2, spec:AST-012/DEC-3, spec:AST-012/DEC-5]
 ---
 
 # Component theming surface
@@ -80,10 +80,14 @@ component-spec metadata describe those selector axes without exposing maintainer
 dispositions to consumers; they do not declare which CSS properties have
 guaranteed behavior.
 
-An adaptation rule may style an existing visual-prop value but does not create a
-conditional type surface. A custom value is introduced on the effective root
-`components` map, where build tooling can generate unconditional module
-augmentation; adaptation rules may then restyle that value under conditions.
+An adaptation rule uses the same component target, axis, value-domain, and
+extension validation as root `components`; it does not create a parallel
+component-value policy. Built-in values and values accepted by authoritative open
+primitive domains may be styled only inside a rule and need no matching root style
+declaration. A custom value whose validity depends on theme enrollment is
+introduced on the effective root `components` map, where build tooling can
+generate unconditional module augmentation; adaptation rules may then restyle
+that value under conditions.
 
 The shared guaranteed-property catalog is:
 
@@ -180,12 +184,15 @@ but acceptance alone is best effort, not a compatibility promise.
   placement, directional, and state-machine axes remain closed regardless. A
   theme may redefine an existing value on a closed axis, but it may not add one.
 - **INV15 — Conditional styling does not create conditional API.** Adaptation
-  rules may style only visual-prop values already present in the built-in or
-  effective root surface. New values are declared at the root before any rule
-  uses them, so generated types do not depend on a media condition. Tooling
-  enforces this when it can resolve the finite built-in domain; opaque alias-backed
-  domains retain the known validation boundary shared with root themes, and
-  pass-through acceptance does not make an axis extensible.
+  component writes use the same shared validation as root component writes. A rule
+  may style an independently valid built-in or open-primitive value without
+  duplicating that target or value in root `components`. A custom value that
+  becomes valid only through theme enrollment must be enrolled on the effective
+  root surface before a rule uses it, so generated types never depend on a media
+  condition. An unresolved shared-validation result carries into adaptations
+  unchanged and tightens automatically when the shared contract becomes
+  authoritative; it is not a permanent adaptation exemption or an extension
+  point.
 
 This record does not own semantic token definitions, theme authoring precedence,
 how themes become output, or the design rationale for a component's appearance.
@@ -253,29 +260,33 @@ how themes become output, or the design rationale for a component's appearance.
 ## Deciding specs
 
 - `spec:AST-012/DEC-2` and `spec:AST-012/DEC-3` constrain adaptation component
-  writes to the closed ordered rule model.
+  writes to the closed ordered rule model. `spec:AST-012/DEC-5` makes component
+  validation shared with root themes and reserves effective-root presence for
+  values whose validity depends on theme enrollment.
 
 ## Verification
 
-| Invariant    | Evidence                                                                                                           | Failure signal                                                                                                                |
-| ------------ | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| INV1         | Cross-package target/documentation inventory                                                                       | An exported target in a participating package is invisible to metadata or CLI validation                                      |
-| INV2, INV3   | Bidirectional anatomy-disposition/target check                                                                     | A current target has no semantic part owner, anatomy mechanically creates targets, or `none` silently becomes future policy   |
-| INV4, INV5   | Component review plus rendered DOM inspection                                                                      | Public target lands on non-painting plumbing or aliases a child primitive without distinct semantics                          |
-| INV6         | `themingTargets.test.ts` and `extensibleAxes.test.ts`                                                              | State/variant is invisible to the owner target or becomes an unnecessary parallel target                                      |
-| INV7, INV8   | Existing property fixtures (partial; gaps below)                                                                   | A declared property is missing evidence, or an unlisted counterpart is treated as implied                                     |
-| INV9         | API docs and compatibility review                                                                                  | Generic property acceptance is presented as a supported compatibility promise                                                 |
-| INV10, INV11 | Existing registry/public-var/runtime tests (partial; gaps below)                                                   | A public semantic var bypasses admission, or a consumer must write a private var to reach promised behavior                   |
-| INV12, INV13 | Alias and family-owner fixtures                                                                                    | Deprecated aliases count as current parts or cross-doc ownership remains implicit                                             |
-| INV14        | Component contract, owner review, focused no-match fallback test, and structural `extensibleAxes.test.ts` coverage | An ineligible axis opens, a missing rule changes behavior unpredictably, or the map/reflection/docs wiring drifts             |
-| INV15        | Theme build adaptation fixtures covering resolvable and opaque prop domains                                        | A resolvable rule-only custom value creates conditional CSS, or opaque-domain pass-through is mistaken for an extension point |
+| Invariant    | Evidence                                                                                                           | Failure signal                                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1         | Cross-package target/documentation inventory                                                                       | An exported target in a participating package is invisible to metadata or CLI validation                                                                                |
+| INV2, INV3   | Bidirectional anatomy-disposition/target check                                                                     | A current target has no semantic part owner, anatomy mechanically creates targets, or `none` silently becomes future policy                                             |
+| INV4, INV5   | Component review plus rendered DOM inspection                                                                      | Public target lands on non-painting plumbing or aliases a child primitive without distinct semantics                                                                    |
+| INV6         | `themingTargets.test.ts` and `extensibleAxes.test.ts`                                                              | State/variant is invisible to the owner target or becomes an unnecessary parallel target                                                                                |
+| INV7, INV8   | Existing property fixtures (partial; gaps below)                                                                   | A declared property is missing evidence, or an unlisted counterpart is treated as implied                                                                               |
+| INV9         | API docs and compatibility review                                                                                  | Generic property acceptance is presented as a supported compatibility promise                                                                                           |
+| INV10, INV11 | Existing registry/public-var/runtime tests (partial; gaps below)                                                   | A public semantic var bypasses admission, or a consumer must write a private var to reach promised behavior                                                             |
+| INV12, INV13 | Alias and family-owner fixtures                                                                                    | Deprecated aliases count as current parts or cross-doc ownership remains implicit                                                                                       |
+| INV14        | Component contract, owner review, focused no-match fallback test, and structural `extensibleAxes.test.ts` coverage | An ineligible axis opens, a missing rule changes behavior unpredictably, or the map/reflection/docs wiring drifts                                                       |
+| INV15        | Shared root/adaptation component-validation fixtures covering finite, open, enrolled, and unresolved domains       | Root and adaptation disagree, a valid open value requires a root style, a rule conditionally enrolls a custom value, or unresolved behavior becomes adaptation-specific |
 
 Known conformance and verification gaps:
 
-- Alias-backed finite prop domains that build tooling cannot currently enumerate
-  share the root-theme validation boundary: a rule-only value may pass through
-  even though the axis is not extensible. This is a validation gap, not API
-  admission; resolvable domains remain fail-closed.
+- Component validation has unresolved domains while the shared contract remains
+  incomplete. Root and adaptation surfaces carry the same result and diagnostic;
+  this is shared validation debt, not an adaptation-specific exception or API
+  admission. When the shared contract becomes authoritative, both surfaces tighten
+  automatically. Independently valid built-in and open primitive values do not
+  require matching root style declarations.
 
 - The component schema has no machine-readable axis-classification or fallback
   field. `extensibleAxes.test.ts` therefore checks only structural consistency;

@@ -109,14 +109,17 @@ A breakpoint map alone emits no CSS. Only rules with adaptation values do.
   rule, values use the root expansion, deep-merge, and kind precedence. A
   generative axis expands against the root axis metadata, and every produced leaf
   counts as a write by that rule. Missing required scale fields MUST be supplied
-  rather than synthesized from approximate built-in defaults. A rule may style an
-  existing component visual-prop value and is not an enrollment surface for new
-  values. When tooling can resolve a prop's finite built-in domain, it MUST reject
-  a rule-only value that is neither built in nor present on the effective root
-  component surface. An opaque alias-backed domain that current validation cannot
-  resolve MAY retain the same pass-through behavior as root-theme validation;
-  accepting such a value does not make the axis extensible. States are
-  component-owned and never theme-generated.
+  rather than synthesized from approximate built-in defaults. Component writes in
+  rules MUST use the same target, axis, value-domain, and extension validation as
+  root `components`; adaptations define no separate component-value validation
+  policy. A rule MAY style a built-in value or a value accepted by an
+  authoritative open primitive domain even when the effective root has no style
+  rule for that target or value. A value whose validity depends on theme
+  enrollment MUST already be enrolled on the effective root `components` surface;
+  a rule MUST NOT introduce it conditionally. An unresolved result from shared
+  root validation carries into adaptation validation unchanged. It is neither a
+  permanent adaptation exemption nor evidence that the axis is extensible. States
+  are component-owned and never theme-generated.
 - **FR5 — Media surfaces remain more specific.** Adaptation values resolve over the
   root theme. When an `onDark` or `onLight` override and an adaptation write the
   same resolved leaf, the media-surface value wins. Adaptations do not create a
@@ -160,12 +163,15 @@ A breakpoint map alone emits no CSS. Only rules with adaptation values do.
   token reads and server-safe token helpers remain root-value reads.
 - **IR3 — Tooling sees rule-only values.** Validation, component diagnostics,
   private-variable checks, font notices, and `light-dark()` color-scheme detection
-  MUST inspect values declared only in rules. Generated variant/type validation
-  MUST reject a rule-only visual-prop value absent from the effective root
-  component surface when the prop's finite built-in domain is resolvable. For an
-  opaque alias-backed domain that the current validator cannot enumerate, tooling
-  MAY retain the existing root-theme validation boundary instead of failing
-  closed; this is a known validation limitation, not a new extension point.
+  MUST inspect values declared only in rules. Component writes in rules MUST pass
+  through the same shared validation path as root component writes. Adaptation adds
+  only the no-conditional-enrollment check: a value accepted solely through theme
+  enrollment MUST already exist on the effective root component surface. Built-in
+  finite values and values accepted by authoritative open primitive domains do not
+  require a matching root style declaration. Rule validation MUST inherit future
+  improvements to root validation automatically; tooling MUST NOT maintain an
+  adaptation-specific allowlist, unresolved-domain exception, or domain-inference
+  path.
 - **IR4 — Built themes preserve extension semantics.** A built theme's JavaScript
   module retains the effective width-breakpoint map, normalized generative-axis
   metadata, enrolled local-token lineage, and ordered normalized rules required
@@ -203,13 +209,13 @@ extension metadata remain useful implementation evidence.
 
 ## Verification
 
-| Contract | Verification                                                  | Representative states                                                                                                                                                                                           | Failure signal                                                                                                                                                                                          |
-| -------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3  | Width-breakpoint and condition matrix plus browser boundaries | defaults/overrides; from/below/range; pointer/contrast/motion; multi-field AND; empty/no rules                                                                                                                  | A point acts as an upper bound, intervals gap/overlap, fields OR together, or an unused map emits CSS.                                                                                                  |
-| FR4–FR7  | Shared resolver, surface, cascade-order, and extension tests  | enrolled/unenrolled local tokens; incomplete scales; resolvable/opaque visual-prop domains; later generated vs earlier explicit leaves; surface collisions; broad/narrow reorder; child append/removal attempts | A rule enrolls a local name, a resolvable rule-only value widens vocabulary, an opaque-domain pass-through is treated as an extension point, missing input is approximated, or inherited order is lost. |
-| FR8      | Theme/AppShell integration                                    | all names/`none`; SSR hint; no/nearest/root/nested theme; exact boundaries                                                                                                                                      | AppShell uses the wrong map, equality, or scope.                                                                                                                                                        |
-| IR1–IR3  | Runtime/build and CLI positive/negative fixtures              | invalid map/range/field; source axis metadata; duplicate `when`; root-restoring rules; declaration targets; resolvable and opaque rule-only visual values; non-CSS token reads                                  | Invalid input writes output, metadata disappears, blocks merge/reorder/drop, targets diverge, adaptation leaks into JS reads, or tooling misses a resolvable value.                                     |
-| IR4      | Generated-module import and size tests                        | no rules/rules; source/built parent and child; generative/local-token metadata                                                                                                                                  | Breakpoints, rules, order, or metadata disappear; extension diverges; CSS text enters the module; or resolved layers duplicate.                                                                         |
+| Contract | Verification                                                  | Representative states                                                                                                                                                                                                                               | Failure signal                                                                                                                                                                                                                 |
+| -------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR1–FR3  | Width-breakpoint and condition matrix plus browser boundaries | defaults/overrides; from/below/range; pointer/contrast/motion; multi-field AND; empty/no rules                                                                                                                                                      | A point acts as an upper bound, intervals gap/overlap, fields OR together, or an unused map emits CSS.                                                                                                                         |
+| FR4–FR7  | Shared resolver, surface, cascade-order, and extension tests  | enrolled/unenrolled local tokens; incomplete scales; finite built-ins; open primitive values absent from root; root-enrolled and rule-only custom values; unresolved shared results; later generated vs earlier explicit leaves; surface collisions | A rule enrolls a local or component value, a valid open value requires a dummy root rule, adaptation validation diverges from root validation, an unresolved result becomes a permanent exemption, or inherited order is lost. |
+| FR8      | Theme/AppShell integration                                    | all names/`none`; SSR hint; no/nearest/root/nested theme; exact boundaries                                                                                                                                                                          | AppShell uses the wrong map, equality, or scope.                                                                                                                                                                               |
+| IR1–IR3  | Runtime/build and CLI positive/negative fixtures              | invalid map/range/field; source axis metadata; duplicate `when`; root-restoring rules; finite/open/unresolved component domains; declaration targets; root-enrolled and rule-only custom values; non-CSS token reads                                | Invalid input writes output, root and adaptation component validation disagree, an independently valid value is forced into root, an adaptation conditionally enrolls a custom value, or tooling misses a rule-only value.     |
+| IR4      | Generated-module import and size tests                        | no rules/rules; source/built parent and child; generative/local-token metadata                                                                                                                                                                      | Breakpoints, rules, order, or metadata disappear; extension diverges; CSS text enters the module; or resolved layers duplicate.                                                                                                |
 
 ## Decision log
 
@@ -266,6 +272,22 @@ data for `extends`, while emitted CSS remains a separate artifact.
 
 Rejected: compiling away authoring intent from built bases and silently narrowing
 the existing theme-extension contract.
+
+### DEC-5 — Reuse root component validation; reserve root for enrollment
+
+**Reference:** `spec:AST-012/DEC-5`
+**Decider:** `cixzhang`, `2026-09-08`
+
+Component writes in adaptation rules use the same target, axis, value-domain, and
+extension validation as root `components`. A built-in finite value or a value
+accepted by an authoritative open primitive domain may appear only in a rule; it
+does not require a matching root style declaration. The effective-root requirement
+applies only when a value's validity comes from theme enrollment. Unresolved shared
+results carry into adaptations unchanged, and future improvements to root
+validation tighten adaptations automatically.
+
+Rejected: adaptation-specific value resolvers, allowlists, unresolved-domain
+exceptions, and dummy root rules for independently valid values.
 
 ## Open questions
 
