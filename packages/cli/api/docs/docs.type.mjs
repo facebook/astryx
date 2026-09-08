@@ -4,17 +4,17 @@
  * @file Colocated types for the `docs` command — source of truth for the docs
  *   command JSON responses. `types/docs.d.ts` re-exports these.
  *
- *   Invocation                          -> type discriminator
+ *   Invocation                           -> type discriminator
  *   ------------------------------------------------------------
- *   xds --json docs                     -> docs.list
- *   xds --json docs <topic>             -> docs.detail
- *   xds --json docs <topic> --index     -> docs.index
- *   xds --json docs <topic> <section>   -> docs.detail.section
- *   (unknown topic/section)             -> CLIError
+ *   astryx --json docs                   -> docs.list
+ *   astryx --json docs <topic>           -> docs.detail
+ *   astryx --json docs <topic> --index   -> docs.index
+ *   astryx --json docs <topic> <section> -> docs.detail.section
+ *   (unknown topic/section)              -> CLIError
  */
 
 /**
- * xds --json docs
+ * astryx --json docs
  * @typedef {object} DocsListResponse
  * @property {'docs.list'} type
  * @property {DocsListEntry[]} data
@@ -31,14 +31,14 @@
  */
 
 /**
- * xds --json docs <topic> --index
+ * astryx --json docs <topic> --index
  * @typedef {object} DocsIndexResponse
  * @property {'docs.index'} type
  * @property {DocsIndex} data
  */
 
 /**
- * xds --json docs <topic>
+ * astryx --json docs <topic>
  * @typedef {object} DocsDetailResponse
  * @property {'docs.detail'} type
  * @property {import('@astryxdesign/cli/authoring').ReferenceDoc} data
@@ -63,7 +63,7 @@
  */
 
 /**
- * xds --json docs <topic> <section>
+ * astryx --json docs <topic> <section>
  * @typedef {object} DocsDetailSectionResponse
  * @property {'docs.detail.section'} type
  * @property {import('@astryxdesign/cli/authoring').ReferenceSection} data
