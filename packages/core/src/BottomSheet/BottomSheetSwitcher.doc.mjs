@@ -1,6 +1,28 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
 
+const anatomy = [
+  {
+    name: 'Shared dialog',
+    required: true,
+    description:
+      'One native dialog that owns modality, focus, dismissal, and lifecycle for the complete flow.',
+  },
+  {
+    name: 'Sheet panels',
+    required: true,
+    description:
+      'Direct BottomSheet children; exactly one is interactive while a previous panel may remain visible and inert during a handoff.',
+  },
+  {
+    name: 'Scrim',
+    required: false,
+    description:
+      'Native dialog backdrop shown by the default scrim-backed modal presentation.',
+  },
+];
+
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'BottomSheetSwitcher',
   displayName: 'Bottom Sheet Switcher',
@@ -123,6 +145,17 @@ export const docs = {
     'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The switcher owns one shared native <dialog>: modal flows call showModal() once for one top-layer boundary and one ::backdrop across the whole flow, while no-scrim flows use a non-modal show() shell. Its ref and shared DOM props target that dialog.',
   props: [
     {
+      name: 'ref',
+      type: 'Ref<HTMLDialogElement>',
+      description: 'Ref forwarded to the one shared native dialog.',
+    },
+    {
+      name: 'onCancel',
+      type: '(event: SyntheticEvent<HTMLDialogElement>) => void',
+      description:
+        'Called before the switcher handles a native dialog cancel request. Calling preventDefault() keeps the controlled flow open.',
+    },
+    {
       name: 'activeSheet',
       type: 'string | null',
       description:
@@ -151,6 +184,7 @@ export const docs = {
     },
   ],
   usage: {
+    anatomy,
     description:
       "Coordinates a multi-step bottom-sheet flow in one shared dialog; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.",
     bestPractices: [
@@ -160,9 +194,19 @@ export const docs = {
           'Use when each step depends on the previous one and only one step needs attention at a time.',
       },
       {
+        guidance: true,
+        description:
+          'Give every child a unique sheetId and non-empty label, choose its purpose to match dismissal requirements, and follow the WAI-ARIA Dialog (Modal) pattern for scrim-backed flows: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/.',
+      },
+      {
         guidance: false,
         description:
           "Don't split information across sheets when people need to compare it; use a full-page layout that keeps the relevant content visible together instead.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't use the switcher when multiple panels must stay interactive or visible together; activeSheet intentionally selects one interactive step.",
       },
     ],
   },
@@ -201,6 +245,7 @@ export const docsDense = {
   description:
     'controller with one shared native dialog for mutually exclusive multi-step BottomSheets',
   usage: {
+    anatomy,
     description:
       "Coordinates a multi-step bottom-sheet flow in one shared dialog; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.",
     bestPractices: [
@@ -210,9 +255,19 @@ export const docsDense = {
           'Use when each step depends on the previous one and only one step needs attention at a time.',
       },
       {
+        guidance: true,
+        description:
+          'Give every child a unique sheetId and non-empty label, choose its purpose to match dismissal requirements, and follow the WAI-ARIA Dialog (Modal) pattern for scrim-backed flows: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/.',
+      },
+      {
         guidance: false,
         description:
           "Don't split information across sheets when people need to compare it; use a full-page layout that keeps the relevant content visible together instead.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't use the switcher when multiple panels must stay interactive or visible together; activeSheet intentionally selects one interactive step.",
       },
     ],
   },

@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheetSwitcher.tsx
- * @input Uses React context, StyleX, theme tokens, focus/scroll-lock hooks, BottomSheetSwitcherContext
+ * @input Uses React context, StyleX, theme tokens, shared layer dismissal, focus/scroll-lock hooks, BottomSheetSwitcherContext
  * @output Exports BottomSheetSwitcher and BottomSheetSwitcherProps
  * @position Core switcher for mutually exclusive BottomSheet flows
  *
@@ -36,7 +36,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
   type SyntheticEvent,
@@ -45,8 +44,10 @@ import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import {hasActiveFocusTrapEscape, useFocusTrap, useScrollLock} from '../hooks';
-import {composeEventHandlers, isImeKeyEvent, mergeProps} from '../utils';
+import {useFocusTrap, useScrollLock} from '../hooks';
+import {LayerDepthProvider} from '../Layer/LayerDepthContext';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {composeEventHandlers, mergeProps} from '../utils';
 import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
 import {
   BottomSheetSwitcherContext,
@@ -282,7 +283,13 @@ export function BottomSheetSwitcher({
   }, [allowsLightDismiss, onActiveSheetChange]);
   const {containerRef} = useFocusTrap<HTMLDialogElement>({
     isActive: isModal,
-    onEscape: dismissOnEscape,
+  });
+  const {shouldDismissOnCloseRequest} = useLayerDismissal({
+    isActive: isFlowVisible,
+    escapeBehavior: allowsEscapeDismiss ? 'close' : 'block',
+    onDismiss: dismissOnEscape,
+    getContainer: () => dialogRef.current,
+    isPresent: () => dialogRef.current?.open ?? false,
   });
   useScrollLock(isModal);
 
@@ -565,26 +572,11 @@ export function BottomSheetSwitcher({
   const handleCancel = useCallback(
     (event: SyntheticEvent<HTMLDialogElement>) => {
       event.preventDefault();
-      dismissOnEscape();
-    },
-    [dismissOnEscape],
-  );
-  const handleKeyDown = useCallback(
-    (event: ReactKeyboardEvent<HTMLDialogElement>) => {
-      // Modal Escape is owned by useFocusTrap so nested traps can win. A
-      // non-modal switcher has no outer trap, so retain local dismissal while
-      // deferring to an active nested layer and ignoring IME cancellation.
-      if (
-        !isModal &&
-        event.key === 'Escape' &&
-        !isImeKeyEvent(event.nativeEvent) &&
-        !hasActiveFocusTrapEscape()
-      ) {
-        event.preventDefault();
+      if (shouldDismissOnCloseRequest()) {
         dismissOnEscape();
       }
     },
-    [dismissOnEscape, isModal],
+    [dismissOnEscape, shouldDismissOnCloseRequest],
   );
   const handleClick = useCallback(
     (event: ReactMouseEvent<HTMLDialogElement>) => {
@@ -622,11 +614,11 @@ export function BottomSheetSwitcher({
         aria-modal={isModal ? 'true' : undefined}
         onCancel={composeEventHandlers(onCancel, handleCancel)}
         onClick={composeEventHandlers(onClick, handleClick)}
-        onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}
+        onKeyDown={onKeyDown}
         {...(activeSheetPurpose === 'required'
           ? {role: 'alertdialog'}
           : undefined)}>
-        {children}
+        <LayerDepthProvider>{children}</LayerDepthProvider>
         <BottomSheetEdgeTint />
       </dialog>
     </BottomSheetSwitcherContext>

@@ -14,6 +14,7 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import {createRef, useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {useFocusTrap} from '../hooks';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 
@@ -129,6 +130,14 @@ function NestedEscapeTrap({onEscape}: {onEscape: () => void}) {
       Nested layer
     </div>
   );
+}
+
+function NestedDismissibleLayer({onDismiss}: {onDismiss: () => void}) {
+  useLayerDismissal({
+    isActive: true,
+    onDismiss,
+  });
+  return <button type="button">Nested layer trigger</button>;
 }
 
 const panelRefA = (_element: HTMLDivElement | null) => {};
@@ -795,6 +804,50 @@ describe('BottomSheetSwitcher', () => {
     });
 
     expect(onNestedEscape).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
+  });
+
+  it('lets a nested registered layer handle Escape before a non-modal switcher', () => {
+    const onActiveSheetChange = vi.fn();
+    const onNestedDismiss = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}
+        hasScrim={false}>
+        <BottomSheet sheetId="details" label="Details">
+          <NestedDismissibleLayer onDismiss={onNestedDismiss} />
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Nested layer trigger'});
+    trigger.focus();
+    fireEvent.keyDown(trigger, {key: 'Escape'});
+
+    expect(onNestedDismiss).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps a non-modal switcher open when a platform close targets it under a nested layer', () => {
+    const onActiveSheetChange = vi.fn();
+    const onNestedDismiss = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}
+        hasScrim={false}>
+        <BottomSheet sheetId="details" label="Details">
+          <NestedDismissibleLayer onDismiss={onNestedDismiss} />
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    const event = new Event('cancel', {cancelable: true});
+    getSharedDialog().dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(onNestedDismiss).not.toHaveBeenCalled();
     expect(onActiveSheetChange).not.toHaveBeenCalled();
   });
 

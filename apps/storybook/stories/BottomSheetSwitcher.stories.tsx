@@ -236,16 +236,34 @@ function MultiStepSwitcherExample({
   );
 }
 
+const openFlow: NonNullable<Story['play']> = async ({canvasElement}) => {
+  const trigger = canvasElement.querySelector('button');
+  if (trigger instanceof HTMLElement) {
+    trigger.click();
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+};
+
 export const HugContent: Story = {
   name: 'Hug content',
   render: () => <MultiStepSwitcherExample height="hug" />,
+  play: openFlow,
 };
 
 export const Capped: Story = {
   render: () => <MultiStepSwitcherExample height="capped" />,
+  play: openFlow,
 };
 
 export const NoScrim: Story = {
   name: 'No scrim',
   render: () => <MultiStepSwitcherExample height="hug" hasScrim={false} />,
+  play: openFlow,
+};
+
+export const NarrowViewport: Story = {
+  name: 'Narrow viewport',
+  parameters: {viewport: {defaultViewport: 'mobile1'}},
+  render: () => <MultiStepSwitcherExample height="hug" />,
+  play: openFlow,
 };
