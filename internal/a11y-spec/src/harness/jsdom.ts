@@ -54,6 +54,11 @@ function createSubject(element: Element): Subject {
           return target == null ? null : (target.textContent ?? '').trim();
         });
     },
+    visibleIdReferences: async () =>
+      unobservable(
+        'real-browser',
+        'whether referenced text is visibly rendered',
+      ),
     labelText: async () => {
       const labelledBy = element.getAttribute('aria-labelledby');
       if (labelledBy != null && labelledBy.trim() !== '') {

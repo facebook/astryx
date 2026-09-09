@@ -231,6 +231,12 @@ export const TEXT_INPUT_FIXTURES: readonly TextInputFixture[] = [
     html: `<label for="fx">Name</label><span>Enter a valid name.</span><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true">`,
   },
   {
+    id: 'violating-hidden-related-error',
+    summary: 'an aria-errormessage target hidden while the control is invalid',
+    facts: facts({invalid: true, errorMessage: 'Enter a valid name.'}),
+    html: `<label for="fx">Name</label><span id="error" hidden>Enter a valid name.</span><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true" aria-errormessage="error">`,
+  },
+  {
     id: 'violating-editing-inert',
     summary: 'an apparently editable text input that refuses keyboard changes',
     facts: facts({value: 'Start'}),
@@ -304,6 +310,7 @@ export const TEXT_INPUT_MUTATIONS: Readonly<Record<string, readonly string[]>> =
       'violating-hidden-unrelated-error',
       'violating-visible-unrelated-error',
     ],
+    'text-input.error.related-text-visible': ['violating-hidden-related-error'],
     'text-input.editing.keyboard-round-trip': ['violating-editing-inert'],
     'text-input.focus.reachable-and-escapable': [
       'violating-unreachable',

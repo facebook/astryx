@@ -94,6 +94,14 @@ const INPUT_FIELDS_FR4: AstryxRecord = {
   url: 'https://github.com/facebook/astryx/blob/029368bde880cb25a7912523510419285d803a90/docs/families/input-fields.md#L151-L154',
 };
 
+const WAI_ARIA_ERROR_MESSAGE: WebStandardRequirement = {
+  standard: 'web-standard',
+  specification: 'WAI-ARIA 1.2',
+  requirement:
+    'Authors SHOULD ensure the element referenced by aria-errormessage is visible when the object is in an invalid state.',
+  url: 'https://www.w3.org/TR/wai-aria-1.2/#aria-errormessage',
+};
+
 const HTML_AAM_INPUT_TEXTBOX: WebStandardRequirement = {
   standard: 'web-standard',
   specification: 'HTML Accessibility API Mappings 1.0',
@@ -574,6 +582,40 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
           ) {
             throw new Error(
               `the binding identifies the error as "${expected}", but no aria-errormessage or aria-describedby target contains that text`,
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.error.related-text-visible',
+        outcome:
+          'The textual error connected to an invalid control is visibly rendered while the error applies.',
+        sources: [WCAG_3_3_1, WAI_ARIA_ERROR_MESSAGE],
+        covers: ['3.3.1-error-identification', '1.3.1-info-and-relationships'],
+        appliesWhen: {
+          condition: 'this invalid state supplies textual error feedback',
+          test: facts => facts.invalid && facts.errorMessage != null,
+        },
+        evidenceLayer: 'real-browser',
+        enforcement: 'required',
+        run: async ({subject, facts}) => {
+          const expected = facts.errorMessage;
+          if (expected == null) {
+            throw new Error(
+              'error visibility expectation ran without expected error text',
+            );
+          }
+          const visibleRelatedText = [
+            ...(await subject.visibleIdReferences('aria-errormessage')),
+            ...(await subject.visibleIdReferences('aria-describedby')),
+          ];
+          if (
+            !visibleRelatedText.some(
+              text => text != null && sameWords(text, expected),
+            )
+          ) {
+            throw new Error(
+              `the binding identifies the error as "${expected}", but no visibly rendered aria-errormessage or aria-describedby target contains that text`,
             );
           }
         },

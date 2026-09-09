@@ -268,6 +268,32 @@ export function createChromiumHarness(
             }),
         attribute,
       ),
+    visibleIdReferences: attribute =>
+      locator.evaluate(
+        (element, name) =>
+          (element.getAttribute(name) ?? '')
+            .split(/\s+/)
+            .filter(Boolean)
+            .map(id => {
+              const target = element.ownerDocument.getElementById(id);
+              if (
+                target == null ||
+                !target.checkVisibility({
+                  visibilityProperty: true,
+                  opacityProperty: true,
+                  contentVisibilityAuto: true,
+                })
+              ) {
+                return null;
+              }
+              const box = target.getBoundingClientRect();
+              if (box.width <= 1 || box.height <= 1) {
+                return null;
+              }
+              return (target.textContent ?? '').trim();
+            }),
+        attribute,
+      ),
     labelText: () =>
       locator.evaluate(element => {
         const labelledBy = element.getAttribute('aria-labelledby');
