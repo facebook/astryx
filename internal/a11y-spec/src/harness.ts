@@ -37,10 +37,9 @@ export type EvidenceLayer = (typeof EVIDENCE_LAYERS)[number];
 /**
  * What the browser computes for a node. Only an engine can answer this.
  *
- * Requiredness is deliberately absent: Chromium's protocol does not emit a
- * `required` property for a checkbox, so putting one here would be a field this
- * package could only ever fill with a guess. The switch contract reads that
- * declaration at the DOM layer instead.
+ * Properties are nullable when the engine does not expose them for a role. For
+ * example, Chromium emits `required` for native textboxes but not checkboxes;
+ * callers must not substitute a DOM guess for a missing tree property.
  */
 export interface ComputedNode {
   /** Computed role, e.g. `switch`. */
@@ -49,6 +48,14 @@ export interface ComputedNode {
   readonly name: string;
   /** Computed accessible description. */
   readonly description: string;
+  /** Computed text value, or null when the node exposes no value. */
+  readonly value: string | null;
+  /** Whether the engine exposes the textbox as multi-line. */
+  readonly multiline: boolean | null;
+  /** Whether the engine exposes the control as read-only. */
+  readonly readOnly: boolean | null;
+  /** Whether the engine exposes the control as required. */
+  readonly required: boolean | null;
   /** Computed checked state, or null when the node exposes none. */
   readonly checked: 'true' | 'false' | 'mixed' | null;
   readonly disabled: boolean;
@@ -65,6 +72,10 @@ export interface Subject {
    * is an id that resolves to nothing — a description the user never gets.
    */
   idReferences(attribute: string): Promise<readonly (string | null)[]>;
+  /** DOM layer: persistent author-supplied label text, excluding placeholder. */
+  labelText(): Promise<string | null>;
+  /** DOM/runtime layer: the live value of a native text control, if this is one. */
+  textValue(): Promise<string | null>;
   /** Accessibility-tree layer: what the engine computes for this node. */
   computed(): Promise<ComputedNode>;
   /**
@@ -120,6 +131,10 @@ export interface Harness {
    * press, slide off, let go.
    */
   abortedPress(subject: Subject): Promise<void>;
+  /** Real-browser layer: type text into the focused subject. */
+  typeText(subject: Subject, text: string): Promise<void>;
+  /** Real-browser layer: select and delete all text from the subject. */
+  clearText(subject: Subject): Promise<void>;
   /** Real-browser layer: send a key to whatever currently holds focus. */
   press(key: Key): Promise<void>;
   /** Real-browser layer: park focus at the document body, before the content. */

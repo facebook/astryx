@@ -91,7 +91,6 @@ describe('text-input contract — completeness', () => {
 
 describe('text-input contract — jsdom evidence boundary', () => {
   it('reports every higher-layer expectation as unrun, never as pass', async () => {
-    const results = await resultsFor(fixture(CONFORMING_FIXTURES[0]));
     for (const expectation of TEXT_INPUT_PATTERN.expectations) {
       if (
         requiredLayers(expectation).every(layer =>
@@ -100,9 +99,14 @@ describe('text-input contract — jsdom evidence boundary', () => {
       ) {
         continue;
       }
-      const result = results.find(
-        candidate => candidate.expectation === expectation.id,
+      const fixtureId = CONFORMING_FIXTURES.find(id =>
+        expectation.appliesWhen.test(fixture(id).facts),
       );
+      expect(
+        fixtureId,
+        `${expectation.id} has no applicable conforming fixture`,
+      ).toBeDefined();
+      const [result] = await resultsFor(fixture(fixtureId!), [expectation.id]);
       expect(result?.status, expectation.id).toBe('unrun');
     }
   });

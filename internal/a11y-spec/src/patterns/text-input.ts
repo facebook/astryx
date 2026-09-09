@@ -12,10 +12,60 @@
 
 import {
   definePattern,
+  type AstryxRecord,
   type PatternContract,
   type WcagCriterion,
   type WebStandardRequirement,
 } from '../contract';
+import {saysInOrder, spokenWords} from '../spoken';
+
+const WCAG_1_3_1: WcagCriterion = {
+  standard: 'wcag',
+  id: '1.3.1',
+  name: 'Info and Relationships',
+  level: 'A',
+  url: 'https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html',
+};
+
+const WCAG_2_1_1: WcagCriterion = {
+  standard: 'wcag',
+  id: '2.1.1',
+  name: 'Keyboard',
+  level: 'A',
+  url: 'https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html',
+};
+
+const WCAG_2_1_2: WcagCriterion = {
+  standard: 'wcag',
+  id: '2.1.2',
+  name: 'No Keyboard Trap',
+  level: 'A',
+  url: 'https://www.w3.org/WAI/WCAG22/Understanding/no-keyboard-trap.html',
+};
+
+const WCAG_2_5_3: WcagCriterion = {
+  standard: 'wcag',
+  id: '2.5.3',
+  name: 'Label in Name',
+  level: 'A',
+  url: 'https://www.w3.org/WAI/WCAG22/Understanding/label-in-name.html',
+};
+
+const WCAG_3_3_1: WcagCriterion = {
+  standard: 'wcag',
+  id: '3.3.1',
+  name: 'Error Identification',
+  level: 'A',
+  url: 'https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html',
+};
+
+const WCAG_3_3_2: WcagCriterion = {
+  standard: 'wcag',
+  id: '3.3.2',
+  name: 'Labels or Instructions',
+  level: 'A',
+  url: 'https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html',
+};
 
 const WCAG_4_1_2: WcagCriterion = {
   standard: 'wcag',
@@ -23,6 +73,15 @@ const WCAG_4_1_2: WcagCriterion = {
   name: 'Name, Role, Value',
   level: 'A',
   url: 'https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html',
+};
+
+const AST_021_PRESERVE_BEHAVIOR: AstryxRecord = {
+  standard: 'astryx',
+  id: 'spec:AST-021',
+  clause: 'FR7',
+  requirement:
+    'Existing behavior is preserved unless a separate change authorizes it.',
+  url: 'https://github.com/facebook/astryx/blob/029368bde880cb25a7912523510419285d803a90/docs/specs/AST-021/spec.md#L85-L89',
 };
 
 const HTML_AAM_INPUT_TEXTBOX: WebStandardRequirement = {
@@ -44,6 +103,17 @@ const ALWAYS = {
   condition: 'the binding renders a native text control',
   test: () => true,
 };
+
+function sameWords(actual: string, expected: string): boolean {
+  const actualWords = spokenWords(actual);
+  const expectedWords = spokenWords(expected);
+  return (
+    actualWords.length === expectedWords.length &&
+    actualWords.every((word, index) => word === expectedWords[index])
+  );
+}
+
+const TAB_BUDGET = 10;
 
 export interface TextInputStateFacts {
   readonly multiline: boolean;
@@ -85,6 +155,504 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
           }
         },
       },
+      {
+        id: 'text-input.value.exposed',
+        outcome:
+          'The accessibility node exposes the current text value instead of the placeholder or a stale value.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition:
+            'the binding exposes an ordinary, non-protected text value',
+          test: facts => facts.value != null,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject, facts}) => {
+          const expected = facts.value;
+          if (expected == null) {
+            throw new Error('value expectation ran without an expected value');
+          }
+          const {value} = await subject.computed();
+          if (value !== expected) {
+            throw new Error(
+              `the binding renders the value ${JSON.stringify(expected)}, but the browser exposes ${JSON.stringify(value)}`,
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.multiline.exposed',
+        outcome:
+          'The accessibility node distinguishes a multi-line text area from a single-line text input.',
+        sources: [WCAG_4_1_2, HTML_AAM_INPUT_TEXTBOX, HTML_AAM_TEXTAREA],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: ALWAYS,
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject, facts}) => {
+          const {multiline} = await subject.computed();
+          if (multiline !== facts.multiline) {
+            throw new Error(
+              `the binding renders a ${facts.multiline ? 'multi-line' : 'single-line'} text control, but the browser exposes it as ${multiline ? 'multi-line' : 'single-line'}`,
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.name.exposed',
+        outcome:
+          'The text control has an accessible name, so the user knows what to enter.',
+        sources: [WCAG_4_1_2, WCAG_3_3_2],
+        covers: ['4.1.2-name-role-value', '3.3.2-labels-or-instructions'],
+        appliesWhen: ALWAYS,
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {name} = await subject.computed();
+          if (name.trim() === '') {
+            throw new Error(
+              'the browser computes no accessible name for this text control, so nothing identifies what the user should enter',
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.label.persistently-associated',
+        outcome:
+          'The text control has a persistent programmatic label instead of using placeholder text as its only identification.',
+        sources: [WCAG_3_3_2, WCAG_1_3_1],
+        covers: [
+          '3.3.2-labels-or-instructions',
+          '1.3.1-info-and-relationships',
+        ],
+        appliesWhen: ALWAYS,
+        evidenceLayer: 'dom',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const label = await subject.labelText();
+          if (label == null || label.trim() === '') {
+            throw new Error(
+              'the text control has no persistent label relationship; placeholder text alone disappears while the user enters a value',
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.name.matches-visible-label',
+        outcome:
+          'The accessible name contains the visible label, so someone using speech input can say what they can read.',
+        sources: [WCAG_2_5_3],
+        covers: ['2.5.3-label-in-name'],
+        appliesWhen: ALWAYS,
+        evidenceLayer: 'accessibility-tree',
+        alsoNeeds: ['real-browser'],
+        enforcement: 'required',
+        run: async ({subject, notApplicable}) => {
+          const visible = await subject.visibleLabelText();
+          if (visible == null) {
+            return notApplicable(
+              'this state renders no visible label text, so there are no visible words for a speech-input user to say',
+            );
+          }
+          const {name} = await subject.computed();
+          if (!saysInOrder(spokenWords(name), spokenWords(visible))) {
+            throw new Error(
+              `the visible label reads "${visible}" but the browser computes the accessible name as "${name}", so speaking the visible label does not reach this control`,
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.description.resolvable',
+        outcome:
+          'Every piece of supporting text the control points at exists and matches the intended description.',
+        sources: [WCAG_1_3_1],
+        covers: ['1.3.1-info-and-relationships'],
+        appliesWhen: {
+          condition: 'the binding renders supporting text for this state',
+          test: facts => facts.description != null,
+        },
+        evidenceLayer: 'dom',
+        enforcement: 'required',
+        run: async ({subject, facts}) => {
+          const expected = facts.description;
+          if (expected == null) {
+            throw new Error(
+              'description expectation ran without expected supporting text',
+            );
+          }
+          const attribute = await subject.attribute('aria-describedby');
+          const ids = (attribute ?? '').split(/\s+/).filter(Boolean);
+          if (ids.length === 0) {
+            throw new Error(
+              'the binding renders supporting text for this state, but the text control has no aria-describedby',
+            );
+          }
+          const targets = await subject.idReferences('aria-describedby');
+          const dangling = ids.filter((_, index) => targets[index] == null);
+          if (dangling.length > 0) {
+            throw new Error(
+              `aria-describedby points at ${dangling.map(id => `"${id}"`).join(', ')}, which ${dangling.length === 1 ? 'resolves' : 'resolve'} to nothing`,
+            );
+          }
+          const attached = targets
+            .filter((text): text is string => text != null)
+            .join(' ');
+          if (!sameWords(attached, expected)) {
+            throw new Error(
+              `the binding expects the description "${expected}", but aria-describedby resolves to "${attached}"`,
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.description.exposed',
+        outcome:
+          'The browser computes the intended supporting text as the control’s accessible description.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'the binding renders supporting text for this state',
+          test: facts => facts.description != null,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject, facts}) => {
+          const expected = facts.description;
+          if (expected == null) {
+            throw new Error(
+              'description expectation ran without expected supporting text',
+            );
+          }
+          const {description} = await subject.computed();
+          if (!sameWords(description, expected)) {
+            throw new Error(
+              description.trim() === ''
+                ? `the binding expects the description "${expected}", but the browser computes no accessible description`
+                : `the binding expects the description "${expected}", but the browser computes "${description}"`,
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.disabled.exposed',
+        outcome:
+          'A text control the binding marks unavailable is reported as unavailable.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'the binding declares this state unavailable',
+          test: facts => facts.disabled,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {disabled} = await subject.computed();
+          if (!disabled) {
+            throw new Error(
+              'the binding declares this text control unavailable, but the browser reports it as available',
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.disabled.not-exposed',
+        outcome:
+          'An available text control does not expose a false disabled state.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is available',
+          test: facts => !facts.disabled,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {disabled} = await subject.computed();
+          if (disabled) {
+            throw new Error(
+              'this text control is available, but the browser exposes it as disabled',
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.readonly.exposed',
+        outcome:
+          'A read-only text control is exposed as read-only, so the user knows its value cannot be edited.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is read-only and not disabled',
+          test: facts => facts.readOnly && !facts.disabled,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {readOnly} = await subject.computed();
+          if (readOnly !== true) {
+            throw new Error(
+              'the binding declares this text control read-only, but the browser does not expose a read-only state',
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.readonly.not-exposed',
+        outcome:
+          'An editable, available text control does not expose a false read-only state.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is editable and available',
+          test: facts => !facts.readOnly && !facts.disabled,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {readOnly} = await subject.computed();
+          if (readOnly === true) {
+            throw new Error(
+              'this text control is editable, but the browser exposes it as read-only',
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.required.exposed',
+        outcome:
+          'A required text control exposes that obligation before form submission.',
+        sources: [WCAG_3_3_2, WCAG_4_1_2],
+        covers: ['3.3.2-labels-or-instructions', '4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is required',
+          test: facts => facts.required,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {required} = await subject.computed();
+          if (required !== true) {
+            throw new Error(
+              'the binding declares this text control required, but the browser does not expose a required state',
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.required.not-exposed',
+        outcome:
+          'An optional text control does not expose a false required state.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is not required',
+          test: facts => !facts.required,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {required} = await subject.computed();
+          if (required === true) {
+            throw new Error(
+              'this text control is optional, but the browser exposes it as required',
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.invalid.exposed',
+        outcome:
+          'A text control in error is exposed as invalid, so the user can find what needs fixing.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is invalid',
+          test: facts => facts.invalid,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {invalid} = await subject.computed();
+          if (!invalid) {
+            throw new Error(
+              'the binding declares this text control invalid, but the browser reports it as valid',
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.invalid.not-exposed',
+        outcome: 'A valid text control does not expose a false invalid state.',
+        sources: [WCAG_4_1_2],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'this state is valid',
+          test: facts => !facts.invalid,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {invalid} = await subject.computed();
+          if (invalid) {
+            throw new Error(
+              'this text control is valid, but the browser exposes it as invalid',
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.error.identified-in-text',
+        outcome:
+          'An invalid text control has textual error feedback attached, so the failure is not conveyed only by color or an icon.',
+        sources: [WCAG_3_3_1],
+        covers: ['3.3.1-error-identification'],
+        appliesWhen: {
+          condition: 'this state is invalid',
+          test: facts => facts.invalid,
+        },
+        evidenceLayer: 'dom',
+        enforcement: 'required',
+        run: async ({subject, facts}) => {
+          const expected = facts.errorMessage;
+          if (expected == null || expected.trim() === '') {
+            throw new Error(
+              'the binding declares this text control invalid but supplies no textual error description',
+            );
+          }
+          const targets = await subject.idReferences('aria-describedby');
+          if (
+            !targets.some(text => text != null && sameWords(text, expected))
+          ) {
+            throw new Error(
+              `the binding identifies the error as "${expected}", but no aria-describedby target contains that text`,
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.editing.keyboard-round-trip',
+        outcome:
+          'A keyboard user can add text, clear it, and restore the starting value in an editable control.',
+        sources: [WCAG_2_1_1],
+        covers: ['2.1.1-keyboard'],
+        appliesWhen: {
+          condition: 'this state is editable and focusable',
+          test: facts => facts.editable && facts.focusable,
+        },
+        evidenceLayer: 'real-browser',
+        enforcement: 'required',
+        run: async ({harness, subject}) => {
+          await subject.focus();
+          if (!(await subject.isFocused())) {
+            throw new Error(
+              'the text control did not take focus, so keyboard editing cannot reach it',
+            );
+          }
+          const initial = await subject.textValue();
+          if (initial == null) {
+            throw new Error(
+              'the role-bearing subject exposes no editable text value',
+            );
+          }
+          await harness.typeText(subject, 'x');
+          const changed = await subject.textValue();
+          if (
+            changed == null ||
+            changed === initial ||
+            !changed.includes('x')
+          ) {
+            throw new Error(
+              `typing "x" left the value ${JSON.stringify(changed)} instead of adding the typed text`,
+            );
+          }
+          await harness.clearText(subject);
+          const cleared = await subject.textValue();
+          if (cleared !== '') {
+            throw new Error(
+              `clearing the text control left the value ${JSON.stringify(cleared)} instead of an empty value`,
+            );
+          }
+          if (initial !== '') {
+            await harness.typeText(subject, initial);
+            const restored = await subject.textValue();
+            if (restored !== initial) {
+              throw new Error(
+                `typing the starting value back left ${JSON.stringify(restored)} instead of ${JSON.stringify(initial)}`,
+              );
+            }
+          }
+        },
+      },
+      {
+        id: 'text-input.focus.reachable-and-escapable',
+        outcome:
+          'Tab reaches a focusable text control and Tab again leaves it, so a keyboard user can edit and continue.',
+        sources: [WCAG_2_1_1, WCAG_2_1_2],
+        covers: ['2.1.1-keyboard', '2.1.2-no-keyboard-trap'],
+        appliesWhen: {
+          condition: 'this state is meant to be in the tab sequence',
+          test: facts => facts.focusable,
+        },
+        evidenceLayer: 'real-browser',
+        enforcement: 'required',
+        run: async ({harness, subject}) => {
+          await harness.resetFocus();
+          let reached = false;
+          for (let step = 0; step < TAB_BUDGET && !reached; step += 1) {
+            await harness.press('Tab');
+            reached = await subject.isFocused();
+          }
+          if (!reached) {
+            throw new Error(
+              `${TAB_BUDGET} presses of Tab from the start of the document never reached the text control`,
+            );
+          }
+          await harness.press('Tab');
+          if (await subject.isFocused()) {
+            throw new Error(
+              'Tab did not move focus off the text control, so a keyboard user is trapped in it',
+            );
+          }
+        },
+      },
+      {
+        id: 'text-input.editing.inoperable',
+        outcome:
+          'A focusable text control declared read-only or unavailable does not accept keyboard edits.',
+        sources: [AST_021_PRESERVE_BEHAVIOR],
+        covers: ['2.1.1-keyboard'],
+        appliesWhen: {
+          condition: 'this state is focusable but not editable',
+          test: facts => facts.focusable && !facts.editable,
+        },
+        evidenceLayer: 'real-browser',
+        enforcement: 'advisory',
+        advisoryBecause:
+          'AST-021 requires migrations to preserve existing behavior, but no current text-input component record makes one universal inertness rule authoritative for every future binding.',
+        run: async ({harness, subject}) => {
+          await subject.focus();
+          const initial = await subject.textValue();
+          if (initial == null) {
+            throw new Error(
+              'the role-bearing subject exposes no text value to protect',
+            );
+          }
+          await harness.typeText(subject, 'x');
+          if ((await subject.textValue()) !== initial) {
+            throw new Error(
+              'typing changed a text control the binding declares non-editable',
+            );
+          }
+          await harness.clearText(subject);
+          if ((await subject.textValue()) !== initial) {
+            throw new Error(
+              'keyboard deletion changed a text control the binding declares non-editable',
+            );
+          }
+        },
+      },
     ],
     exemptions: {
       '1.1.1-non-text-content': {
@@ -95,11 +663,12 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
           'Decorative and informative graphics are composed around the native text control, not exposed by the control node this pattern observes.',
       },
       '1.3.1-info-and-relationships': {
-        owner: 'the binding component',
+        owner: 'the binding component and composing page',
         verifiedBy:
-          "the component's own label, description, status, and counter relationship tests",
+          'the description relationship expectation here plus component DOM-order tests and page-level structural review',
         reason:
-          'Until the shared description expectation is authored, each binding retains the exact DOM relationship checks for its supporting content.',
+          'This contract proves the text-control relationships it can read. Broader field structure and surrounding page relationships remain with their composition owners.',
+        coversRemainderOnly: true,
       },
       '1.3.2-meaningful-sequence': {
         owner: 'the binding component and composing page',
@@ -129,15 +698,11 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
       },
       '2.1.1-keyboard': {
         owner: 'the binding component',
-        verifiedBy: "the component's own editing tests",
+        verifiedBy:
+          'the native keyboard-editing expectation here plus component tests for composed buttons and shortcuts',
         reason:
-          'Until the shared editing expectation is authored, each native control keeps its keyboard-editing evidence locally.',
-      },
-      '2.1.2-no-keyboard-trap': {
-        owner: 'the binding component and composing page',
-        verifiedBy: 'component focus tests and page-level keyboard review',
-        reason:
-          'Until the shared focus expectation is authored, the binding and page retain focus-entry and exit evidence.',
+          'This contract proves text entry and deletion on the role-bearing control. Clear buttons, Enter callbacks, and other composed functions remain with their own component or pattern tests.',
+        coversRemainderOnly: true,
       },
       '2.4.2-page-titled': {
         owner: 'the page',
@@ -183,13 +748,6 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
         reason:
           'The text control itself has no component-owned single-pointer action; clear and tooltip buttons are separate bound patterns.',
       },
-      '2.5.3-label-in-name': {
-        owner: 'the binding component',
-        verifiedBy:
-          'real-browser comparison of visible label and computed name',
-        reason:
-          'Until the shared visible-label expectation is authored, each binding retains this comparison.',
-      },
       '2.5.8-target-size': {
         owner: 'the binding component and composing page',
         verifiedBy:
@@ -218,23 +776,26 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
       },
       '3.3.1-error-identification': {
         owner: 'the binding component and caller',
-        verifiedBy: "the component's own validation-message tests",
+        verifiedBy:
+          'the invalid-state error-text expectation here plus validation logic and content review in the binding application',
         reason:
-          'Until the shared error-text expectation is authored, bindings retain proof that detected errors are described in text.',
+          'This contract proves that a bound invalid state carries attached error text. The caller still owns detecting the right error and supplying useful wording.',
+        coversRemainderOnly: true,
       },
       '3.3.2-labels-or-instructions': {
         owner: 'the binding component and caller content',
         verifiedBy:
-          'component label tests and content review of needed instructions',
+          'the accessibility-tree naming expectation here plus component and content review for visible persistence and needed instructions',
         reason:
-          'Until the shared naming and description expectations are authored, the binding retains label association and the caller owns instruction wording.',
+          'This contract proves that a name exists. Whether the label stays visibly present and whether additional instructions are needed remain presentation and content outcomes.',
+        coversRemainderOnly: true,
       },
       '4.1.2-name-role-value': {
-        owner: 'the binding component and later expectations in this contract',
+        owner: 'the binding component and browser for specialized states',
         verifiedBy:
-          'the accessibility-tree role expectation here, plus component tests until the remaining shared name, value, and state expectations are authored',
+          'the role, name, description, value, multiline, disabled, read-only, required, and invalid accessibility-tree expectations in this contract plus component-local tests for states outside the shared model',
         reason:
-          'The role is encoded here. Name, value, and state exposure remain with each binding until their vertical slices are added to this contract.',
+          'The shared native textbox states are encoded here. Protected password-value representation, busy semantics not adopted by current authority, and component-specific composed parts remain with their narrower owners.',
         coversRemainderOnly: true,
       },
       '4.1.3-status-messages': {

@@ -84,6 +84,7 @@ interface AxNode {
   readonly role?: AxValue;
   readonly name?: AxValue;
   readonly description?: AxValue;
+  readonly value?: AxValue;
   readonly backendDOMNodeId?: number;
   readonly properties?: readonly AxProperty[];
 }
@@ -103,6 +104,17 @@ function flag(node: AxNode, name: string): boolean {
   // accept every spelling of true rather than silently reading a set flag as
   // unset.
   return value === true || value === 'true' || value === 1;
+}
+
+function optionalFlag(node: AxNode, name: string): boolean | null {
+  const value = property(node, name);
+  if (value === true || value === 'true' || value === 1) {
+    return true;
+  }
+  if (value === false || value === 'false' || value === 0) {
+    return false;
+  }
+  return null;
 }
 
 const AX_TARGET_ATTRIBUTE = 'data-a11y-spec-ax-target';
@@ -154,19 +166,34 @@ async function computedNode(
         role: null,
         name: '',
         description: '',
+        value: null,
+        multiline: null,
+        readOnly: null,
+        required: null,
         checked: null,
         disabled: false,
         invalid: false,
       };
     }
 
+    const role = text(node.role);
     const checked = property(node, 'checked');
     const invalid = property(node, 'invalid');
+    const exposedValue = node.value?.value;
 
     return {
-      role: text(node.role) === '' ? null : text(node.role),
+      role: role === '' ? null : role,
       name: text(node.name),
       description: text(node.description),
+      value:
+        typeof exposedValue === 'string'
+          ? exposedValue
+          : role === 'textbox'
+            ? ''
+            : null,
+      multiline: optionalFlag(node, 'multiline'),
+      readOnly: optionalFlag(node, 'readonly'),
+      required: optionalFlag(node, 'required'),
       checked:
         checked === 'true' || checked === true
           ? 'true'
@@ -241,6 +268,48 @@ export function createChromiumHarness(
             }),
         attribute,
       ),
+    labelText: () =>
+      locator.evaluate(element => {
+        const labelledBy = element.getAttribute('aria-labelledby');
+        if (labelledBy != null && labelledBy.trim() !== '') {
+          const text = labelledBy
+            .split(/\s+/)
+            .filter(Boolean)
+            .map(
+              id => element.ownerDocument.getElementById(id)?.textContent ?? '',
+            )
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          return text === '' ? null : text;
+        }
+        const ariaLabel = element.getAttribute('aria-label')?.trim();
+        if (ariaLabel != null && ariaLabel !== '') {
+          return ariaLabel;
+        }
+        if (
+          element instanceof HTMLInputElement ||
+          element instanceof HTMLTextAreaElement
+        ) {
+          const text = Array.from(element.labels ?? [])
+            .map(label => label.textContent ?? '')
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          return text === '' ? null : text;
+        }
+        return null;
+      }),
+    textValue: () =>
+      locator.evaluate(element => {
+        if (
+          element instanceof HTMLInputElement ||
+          element instanceof HTMLTextAreaElement
+        ) {
+          return element.value;
+        }
+        return null;
+      }),
     computed: () => computedNode(cdp, locator),
     visibleLabelText: async () => {
       const explicitLabel =
@@ -530,6 +599,15 @@ export function createChromiumHarness(
       await page.mouse.down();
       await page.mouse.move(releaseX, releaseY);
       await page.mouse.up();
+    },
+    typeText: async (_subject, text) => {
+      await locator.focus();
+      await page.keyboard.type(text);
+    },
+    clearText: async () => {
+      await locator.focus();
+      await page.keyboard.press('ControlOrMeta+A');
+      await page.keyboard.press('Backspace');
     },
     press: async key => {
       await page.keyboard.press(KEYS[key]);

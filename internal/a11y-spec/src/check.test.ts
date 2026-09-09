@@ -42,6 +42,8 @@ function harness(observes: readonly EvidenceLayer[]): Harness {
     subject: async () => subject,
     click: async () => {},
     abortedPress: async () => {},
+    typeText: async () => {},
+    clearText: async () => {},
     press: async () => {},
     resetFocus: async () => {},
   };

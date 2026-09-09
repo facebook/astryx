@@ -54,6 +54,51 @@ function createSubject(element: Element): Subject {
           return target == null ? null : (target.textContent ?? '').trim();
         });
     },
+    labelText: async () => {
+      const labelledBy = element.getAttribute('aria-labelledby');
+      if (labelledBy != null && labelledBy.trim() !== '') {
+        const text = (
+          await Promise.all(
+            labelledBy
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(
+                async id =>
+                  element.ownerDocument.getElementById(id)?.textContent ?? '',
+              ),
+          )
+        )
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return text === '' ? null : text;
+      }
+      const ariaLabel = element.getAttribute('aria-label')?.trim();
+      if (ariaLabel != null && ariaLabel !== '') {
+        return ariaLabel;
+      }
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement
+      ) {
+        const text = Array.from(element.labels ?? [])
+          .map(label => label.textContent ?? '')
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return text === '' ? null : text;
+      }
+      return null;
+    },
+    textValue: async () => {
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement
+      ) {
+        return element.value;
+      }
+      return null;
+    },
     computed: async () =>
       unobservable('accessibility-tree', 'a computed accessibility node'),
     visibleLabelText: async () =>
@@ -83,6 +128,10 @@ export function createJsdomHarness(options: JsdomHarnessOptions): Harness {
       unobservable('real-browser', 'a real pointer activation'),
     abortedPress: async () =>
       unobservable('real-browser', 'a real pointer press'),
+    typeText: async () =>
+      unobservable('real-browser', 'real keyboard text entry'),
+    clearText: async () =>
+      unobservable('real-browser', 'real keyboard text deletion'),
     press: async () => unobservable('real-browser', 'a real key press'),
     resetFocus: async () => unobservable('real-browser', 'real focus'),
   };
