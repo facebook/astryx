@@ -17,6 +17,7 @@ import {
   type Page,
 } from '@playwright/test';
 import {
+  MissingBindingCapability,
   MODAL_DIALOG_PATTERN,
   blockingResults,
   checkAccessibilitySpec,
@@ -96,7 +97,7 @@ async function mountState(
 ): Promise<{
   readonly root: Locator;
   readonly subject: Locator;
-  readonly focusEntryWasModal: boolean;
+  readonly focusEntryWasModal: boolean | undefined;
 }> {
   await page.goto(
     `${storybook.origin}/iframe.html?id=${state.storyId}&viewMode=story`,
@@ -113,9 +114,6 @@ async function mountState(
     const runtime = globalThis as ModalFocusEntryGlobal;
     return runtime.__astryxModalFocusEntryWasModal;
   });
-  if (focusEntryWasModal === undefined) {
-    throw new Error('opening Dialog produced no observable focus entry');
-  }
   return {root, subject, focusEntryWasModal};
 }
 
@@ -140,7 +138,7 @@ async function runState(
   state: DialogModalBindingState,
 ): Promise<BindingResult> {
   await installModalFocusEntryRecorder(page);
-  let focusEntryWasModal = false;
+  let focusEntryWasModal: boolean | undefined;
   return checkAccessibilitySpec({
     spec: MODAL_DIALOG_PATTERN,
     binding: 'Dialog',
@@ -171,7 +169,14 @@ async function runState(
         },
       });
     },
-    initialFocusEntry: async () => ({subjectWasModal: focusEntryWasModal}),
+    initialFocusEntry: async () => {
+      if (focusEntryWasModal === undefined) {
+        throw new MissingBindingCapability(
+          'Dialog binding supplies no focus-entry observation',
+        );
+      }
+      return {subjectWasModal: focusEntryWasModal};
+    },
   });
 }
 

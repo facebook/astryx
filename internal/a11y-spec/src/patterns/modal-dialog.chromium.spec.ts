@@ -9,7 +9,11 @@
  */
 
 import {expect, test, type CDPSession, type Page} from '@playwright/test';
-import {checkAccessibilitySpec, type ExpectationResult} from '../check';
+import {
+  MissingBindingCapability,
+  checkAccessibilitySpec,
+  type ExpectationResult,
+} from '../check';
 import {describeExpectation, requiredLayers} from '../contract';
 import {
   CHROMIUM_OBSERVES,
@@ -39,7 +43,7 @@ async function results(
   target: ModalDialogFixture,
   only?: readonly string[],
 ): Promise<readonly ExpectationResult[]> {
-  let focusEntryWasModal = false;
+  let focusEntryWasModal: boolean | undefined;
   const run = await checkAccessibilitySpec({
     spec: MODAL_DIALOG_PATTERN,
     binding: 'fixture',
@@ -64,8 +68,15 @@ async function results(
         document.addEventListener('focusin', recordFirstEntry, true);
       });
       await page.locator('[data-a11y-relation="invoker"]').click();
+      const recordedFocusEntry = await subject.getAttribute(
+        'data-a11y-focus-entry-modal',
+      );
       focusEntryWasModal =
-        (await subject.getAttribute('data-a11y-focus-entry-modal')) === 'true';
+        recordedFocusEntry === 'true'
+          ? true
+          : recordedFocusEntry === 'false'
+            ? false
+            : undefined;
       if (target.moveFocusOutsideAfterOpen === true) {
         await page.locator('[data-a11y-relation="background"]').focus();
       }
@@ -83,7 +94,14 @@ async function results(
         },
       });
     },
-    initialFocusEntry: async () => ({subjectWasModal: focusEntryWasModal}),
+    initialFocusEntry: async () => {
+      if (focusEntryWasModal === undefined) {
+        throw new MissingBindingCapability(
+          'modal-dialog fixture supplies no focus-entry observation',
+        );
+      }
+      return {subjectWasModal: focusEntryWasModal};
+    },
   });
   return run.results;
 }

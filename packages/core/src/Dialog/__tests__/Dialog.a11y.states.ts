@@ -7,8 +7,10 @@
  *   shared modal-dialog outcome
  * @position Data-only inventory shared by the jsdom and Chromium bindings.
  *
- * `purpose="required"` is excluded because it exposes `alertdialog`, a distinct
- * pattern. `isInline` is excluded because it deliberately has no modal behavior.
+ * `purpose="required"` and AlertDialog are excluded because they expose
+ * `alertdialog`, a distinct pattern. `isInline` is excluded because it
+ * deliberately has no modal behavior. MobileNav is excluded because its
+ * current record is draft and does not adopt this exact modal-dialog model.
  * Nested-surface ordering remains owned by family:overlay-dismissal and the
  * existing Dialog component tests.
  *

@@ -523,6 +523,14 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         reason:
           'Pointer dismissal channels vary by the component’s declared purpose and are not a universal modal-dialog action.',
       },
+      '2.5.3-label-in-name': {
+        owner: 'the binding component and caller-composed controls',
+        verifiedBy:
+          'component-specific label-in-name tests and content review for controls inside the dialog',
+        reason:
+          'This contract verifies the dialog container’s visible title; buttons, fields, and other controls composed inside retain their own label-in-name obligations.',
+        coversRemainderOnly: true,
+      },
       '2.5.8-target-size': {
         owner: 'the binding component and caller content',
         verifiedBy: 'the repository axe audit and visual gate',
