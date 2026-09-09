@@ -27,7 +27,10 @@ import {
 
 function fixturePage(target: ModalDialogFixture): string {
   const method = target.presentation === 'nonmodal' ? 'show' : 'showModal';
-  return `<!doctype html><html lang="en"><body><button type="button" data-a11y-relation="invoker" onclick="const subject = document.querySelector('${MODAL_DIALOG_SUBJECT_SELECTOR}'); if (subject instanceof HTMLDialogElement && !subject.open) subject.${method}();">Open dialog</button>${target.html}<button type="button" data-a11y-relation="background">Background action</button></body></html>`;
+  const present = target.focusBeforeModalPresentation
+    ? `subject.show(); const initial = subject.querySelector('[data-a11y-relation~=initial]'); if (initial instanceof HTMLElement) initial.focus(); subject.close(); subject.showModal();`
+    : `subject.${method}();`;
+  return `<!doctype html><html lang="en"><body><button type="button" data-a11y-relation="invoker" onclick="const subject = document.querySelector('${MODAL_DIALOG_SUBJECT_SELECTOR}'); if (subject instanceof HTMLDialogElement && !subject.open) { ${present} }">Open dialog</button>${target.html}<button type="button" data-a11y-relation="background">Background action</button></body></html>`;
 }
 
 async function results(
@@ -36,6 +39,7 @@ async function results(
   target: ModalDialogFixture,
   only?: readonly string[],
 ): Promise<readonly ExpectationResult[]> {
+  let focusEntryWasModal = false;
   const run = await checkAccessibilitySpec({
     spec: MODAL_DIALOG_PATTERN,
     binding: 'fixture',
@@ -46,7 +50,22 @@ async function results(
       await page.setContent(fixturePage(target));
       await holdMotionStill(page);
       const subject = page.locator(MODAL_DIALOG_SUBJECT_SELECTOR);
+      await subject.evaluate(dialog => {
+        dialog.setAttribute('data-a11y-focus-entry-modal', 'unobserved');
+        const recordFirstEntry = (event: FocusEvent) => {
+          if (event.target instanceof Node && dialog.contains(event.target)) {
+            dialog.setAttribute(
+              'data-a11y-focus-entry-modal',
+              String(dialog.matches(':modal')),
+            );
+            document.removeEventListener('focusin', recordFirstEntry, true);
+          }
+        };
+        document.addEventListener('focusin', recordFirstEntry, true);
+      });
       await page.locator('[data-a11y-relation="invoker"]').click();
+      focusEntryWasModal =
+        (await subject.getAttribute('data-a11y-focus-entry-modal')) === 'true';
       if (target.moveFocusOutsideAfterOpen === true) {
         await page.locator('[data-a11y-relation="background"]').focus();
       }
@@ -64,6 +83,7 @@ async function results(
         },
       });
     },
+    initialFocusEntry: async () => ({subjectWasModal: focusEntryWasModal}),
   });
   return run.results;
 }

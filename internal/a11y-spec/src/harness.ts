@@ -50,6 +50,8 @@ export interface ComputedNode {
   readonly description: string;
   /** Computed text value, or null when the node exposes no value. */
   readonly value: string | null;
+  /** Whether the engine exposes the subject as modal. */
+  readonly modal: boolean | null;
   /** Whether the engine exposes the textbox as multi-line. */
   readonly multiline: boolean | null;
   /** Whether the engine exposes the control as read-only. */

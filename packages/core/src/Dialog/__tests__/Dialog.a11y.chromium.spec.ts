@@ -47,6 +47,39 @@ import {
 
 let storybook: StaticServer;
 
+type ModalFocusEntryGlobal = typeof globalThis & {
+  __astryxModalFocusEntryRecorderInstalled?: boolean;
+  __astryxModalFocusEntryWasModal?: boolean;
+};
+
+async function installModalFocusEntryRecorder(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const runtime = globalThis as ModalFocusEntryGlobal;
+    if (runtime.__astryxModalFocusEntryRecorderInstalled === true) {
+      return;
+    }
+    runtime.__astryxModalFocusEntryRecorderInstalled = true;
+    runtime.__astryxModalFocusEntryWasModal = undefined;
+    document.addEventListener(
+      'focusin',
+      event => {
+        if (runtime.__astryxModalFocusEntryWasModal !== undefined) {
+          return;
+        }
+        const target = event.target;
+        if (!(target instanceof Element)) {
+          return;
+        }
+        const dialog = target.closest('dialog');
+        if (dialog instanceof HTMLDialogElement) {
+          runtime.__astryxModalFocusEntryWasModal = dialog.matches(':modal');
+        }
+      },
+      true,
+    );
+  });
+}
+
 test.beforeAll(async () => {
   storybook = await serveStorybook(
     process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR,
@@ -63,6 +96,7 @@ async function mountState(
 ): Promise<{
   readonly root: Locator;
   readonly subject: Locator;
+  readonly focusEntryWasModal: boolean;
 }> {
   await page.goto(
     `${storybook.origin}/iframe.html?id=${state.storyId}&viewMode=story`,
@@ -75,7 +109,14 @@ async function mountState(
   await expect
     .poll(async () => subject.evaluate(element => element.matches(':modal')))
     .toBe(true);
-  return {root, subject};
+  const focusEntryWasModal = await page.evaluate(() => {
+    const runtime = globalThis as ModalFocusEntryGlobal;
+    return runtime.__astryxModalFocusEntryWasModal;
+  });
+  if (focusEntryWasModal === undefined) {
+    throw new Error('opening Dialog produced no observable focus entry');
+  }
+  return {root, subject, focusEntryWasModal};
 }
 
 function initialTarget(
@@ -98,6 +139,8 @@ async function runState(
   cdp: CDPSession,
   state: DialogModalBindingState,
 ): Promise<BindingResult> {
+  await installModalFocusEntryRecorder(page);
+  let focusEntryWasModal = false;
   return checkAccessibilitySpec({
     spec: MODAL_DIALOG_PATTERN,
     binding: 'Dialog',
@@ -105,7 +148,9 @@ async function runState(
     facts: state.facts,
     knownFailures: DIALOG_MODAL_KNOWN_FAILURES,
     mount: async () => {
-      const {root, subject} = await mountState(page, state);
+      const mounted = await mountState(page, state);
+      const {root, subject} = mounted;
+      focusEntryWasModal = mounted.focusEntryWasModal;
       return createChromiumHarness({
         page,
         subject,
@@ -126,44 +171,9 @@ async function runState(
         },
       });
     },
+    initialFocusEntry: async () => ({subjectWasModal: focusEntryWasModal}),
   });
 }
-
-test('Dialog enters native modality before initial focus moves inside', async ({
-  page,
-}) => {
-  const state = DIALOG_MODAL_BINDING_STATES.find(
-    candidate => candidate.id === 'labelled-described-default-title',
-  );
-  if (state == null) {
-    throw new Error('missing labelled-described-default-title binding state');
-  }
-
-  await page.goto(
-    `${storybook.origin}/iframe.html?id=${state.storyId}&viewMode=story`,
-    {waitUntil: 'load'},
-  );
-  await holdMotionStill(page);
-  const root = page.locator('#storybook-root');
-  const subject = root.locator('dialog');
-
-  await subject.evaluate(dialog => {
-    dialog.setAttribute('data-modal-before-focus', 'unobserved');
-    const recordFirstEntry = (event: FocusEvent) => {
-      if (event.target instanceof Node && dialog.contains(event.target)) {
-        dialog.setAttribute(
-          'data-modal-before-focus',
-          String(dialog.matches(':modal')),
-        );
-        document.removeEventListener('focusin', recordFirstEntry, true);
-      }
-    };
-    document.addEventListener('focusin', recordFirstEntry, true);
-  });
-
-  await root.getByRole('button', {name: DIALOG_CONTRACT_OPEN_LABEL}).click();
-  await expect(subject).toHaveAttribute('data-modal-before-focus', 'true');
-});
 
 test('every expectation is exercised and every known failure matches once', async ({
   page,

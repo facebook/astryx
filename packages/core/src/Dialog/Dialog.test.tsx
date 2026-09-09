@@ -146,6 +146,19 @@ describe('Dialog', () => {
     expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
   });
 
+  it('honors an initial-focus request from an action descendant', () => {
+    render(
+      <Dialog isOpen={true} onOpenChange={() => {}}>
+        <DialogHeader title="Choose an action" />
+        <button type="button" data-autofocus>
+          Continue
+        </button>
+      </Dialog>,
+    );
+
+    expect(screen.getByRole('button', {name: 'Continue'})).toHaveFocus();
+  });
+
   describe('purpose: info (default)', () => {
     it('calls onOpenChange(false) when Escape is pressed', () => {
       const handleHide = vi.fn();

@@ -65,7 +65,7 @@ export const DIALOG_MODAL_BINDING_STATES: ReadonlyArray<DialogModalBindingState>
     {
       id: 'explicit-descendant-focus',
       summary:
-        'a form dialog whose programmatically focusable heading explicitly requests initial focus',
+        'a form dialog whose supported TextInput request wins over an earlier focusable action',
       storyId: 'a11y-dialog-modal-pattern--explicit-descendant-focus',
       render: 'explicit-focus',
       initialTarget: {kind: 'textbox', name: 'Name'},

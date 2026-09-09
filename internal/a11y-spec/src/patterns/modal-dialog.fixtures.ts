@@ -17,6 +17,7 @@ export interface ModalDialogFixture {
   readonly facts: ModalDialogStateFacts;
   readonly html: string;
   readonly presentation?: 'modal' | 'nonmodal';
+  readonly focusBeforeModalPresentation?: boolean;
   readonly moveFocusOutsideAfterOpen?: boolean;
 }
 
@@ -79,6 +80,20 @@ export const MODAL_DIALOG_FIXTURES: readonly ModalDialogFixture[] = [
     presentation: 'nonmodal',
     moveFocusOutsideAfterOpen: true,
     html: '<dialog data-a11y-subject aria-label="Read terms"><p>There are no controls in this task.</p></dialog>',
+  },
+  {
+    id: 'violating-modal-unexposed',
+    summary: 'a native modal whose accessibility semantics deny modality',
+    facts: LABELLED_FACTS,
+    html: '<dialog data-a11y-subject aria-modal="false" aria-labelledby="title"><h2 id="title" data-a11y-visible-label>Review changes</h2><button type="button">Continue</button></dialog>',
+  },
+  {
+    id: 'violating-focus-before-modal',
+    summary:
+      'a dialog whose requested content receives focus before native modal presentation',
+    facts: INTERACTIVE_FACTS,
+    focusBeforeModalPresentation: true,
+    html: '<dialog data-a11y-subject aria-labelledby="title"><h2 id="title" data-a11y-visible-label>Review changes</h2><button type="button" data-a11y-relation="initial close" autofocus onclick="this.closest(\'dialog\').close()">Confirm</button></dialog>',
   },
   {
     id: 'violating-initial-target',
@@ -158,6 +173,8 @@ export const MODAL_DIALOG_MUTATIONS: Readonly<
   Record<string, readonly string[]>
 > = {
   'modal-dialog.modal.in-top-layer': ['violating-nonmodal-presentation'],
+  'modal-dialog.modal.exposed': ['violating-modal-unexposed'],
+  'modal-dialog.focus.enters-after-modal': ['violating-focus-before-modal'],
   'modal-dialog.focus.initial-target': ['violating-initial-target'],
   'modal-dialog.focus.native-fallback': ['violating-native-fallback-outside'],
   'modal-dialog.focus.restored': ['violating-focus-not-restored'],

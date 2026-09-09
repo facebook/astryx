@@ -180,6 +180,7 @@ async function computedNode(
         name: '',
         description: '',
         value: null,
+        modal: null,
         multiline: null,
         readOnly: null,
         required: null,
@@ -204,6 +205,7 @@ async function computedNode(
           : role === 'textbox'
             ? ''
             : null,
+      modal: optionalFlag(node, 'modal'),
       multiline: optionalFlag(node, 'multiline'),
       readOnly: optionalFlag(node, 'readonly'),
       required: optionalFlag(node, 'required'),
@@ -655,6 +657,67 @@ export function createChromiumHarness(
               }),
           attribute,
         ),
+      visibleIdReferences: attribute =>
+        related.evaluate(
+          (element, relation) =>
+            (element.getAttribute(relation) ?? '')
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(id => {
+                const target = element.ownerDocument.getElementById(id);
+                if (target == null || !target.checkVisibility()) {
+                  return null;
+                }
+                const text = (target.textContent ?? '')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                return text === '' ? null : text;
+              }),
+          attribute,
+        ),
+      labelText: () =>
+        related.evaluate(element => {
+          const labelledBy = element.getAttribute('aria-labelledby');
+          if (labelledBy != null && labelledBy.trim() !== '') {
+            const text = labelledBy
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(
+                id =>
+                  element.ownerDocument.getElementById(id)?.textContent ?? '',
+              )
+              .join(' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            return text === '' ? null : text;
+          }
+          const ariaLabel = element.getAttribute('aria-label')?.trim();
+          if (ariaLabel != null && ariaLabel !== '') {
+            return ariaLabel;
+          }
+          if (
+            element instanceof HTMLInputElement ||
+            element instanceof HTMLTextAreaElement
+          ) {
+            const text = Array.from(element.labels ?? [])
+              .map(label => label.textContent ?? '')
+              .join(' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            return text === '' ? null : text;
+          }
+          return null;
+        }),
+      textValue: () =>
+        related.evaluate(element => {
+          if (
+            element instanceof HTMLInputElement ||
+            element instanceof HTMLTextAreaElement
+          ) {
+            return element.value;
+          }
+          return null;
+        }),
       computed: () => computedNode(cdp, related),
       visibleLabelText: async () => {
         const value = (await related.innerText()).trim();

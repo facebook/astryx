@@ -27,6 +27,7 @@ export {
   type Enforcement,
   type Expectation,
   type ExpectationContext,
+  type InitialFocusEntryObservation,
   type NormativeSource,
   type PatternContract,
   type WcagCriterion,

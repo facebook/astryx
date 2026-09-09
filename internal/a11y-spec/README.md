@@ -75,6 +75,11 @@ button's action leaves no trace on the button at all. A pattern like that reads
 binding that does not makes every expectation reading it fail loudly, never
 pass quietly.
 
+Ordering-sensitive focus expectations similarly read `initialFocusEntry()`.
+The binding starts recording before its subject can receive focus and supplies
+whether the subject was already in its native modal state at the first entry;
+a missing observation is a binding fault, not a contract pass or failure.
+
 ## Evidence layers are the load-bearing idea
 
 An expectation names the layer that characterizes its claim, plus — in

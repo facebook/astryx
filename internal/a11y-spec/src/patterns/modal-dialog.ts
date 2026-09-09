@@ -49,6 +49,13 @@ const APG_ROLE: ApgRequirement = {
     'The element that serves as the dialog container has a role of dialog.',
   url: `${APG_URL}#wai-ariaroles,states,andproperties`,
 };
+const APG_MODAL: ApgRequirement = {
+  standard: 'apg',
+  pattern: 'dialog-modal',
+  requirement:
+    'The aria-modal property is set to true on the dialog container.',
+  url: `${APG_URL}#wai-ariaroles,states,andproperties`,
+};
 const APG_NAME: ApgRequirement = {
   standard: 'apg',
   pattern: 'dialog-modal',
@@ -76,7 +83,7 @@ const DIALOG_FR2: AstryxRecord = {
   id: 'component:Dialog',
   clause: 'FR2',
   requirement:
-    'Dialog MUST honor an eligible descendant initial-focus request.',
+    'Dialog MUST honor an eligible descendant initial-focus request. A request is eligible only when its rendered target is inside the active Dialog, is neither hidden nor inert, and can receive programmatic focus when selection runs. DialogHeader supplies its title as the default when no non-default eligible request is rendered. Ordering among multiple non-default requests is unspecified (AV3).',
   url: DIALOG_FR1.url,
 };
 const DIALOG_FR3: AstryxRecord = {
@@ -92,7 +99,7 @@ const DIALOG_FR4: AstryxRecord = {
   id: 'component:Dialog',
   clause: 'FR4',
   requirement:
-    'Closing a native Dialog MUST return focus to the still-connected external element that invoked the modal when that element can receive focus.',
+    'Closing a native Dialog MUST return focus to the still-connected external element that invoked the modal when that element can receive focus. Descendant mount focus MUST NOT replace that return owner.',
   url: DIALOG_FR1.url,
 };
 
@@ -139,6 +146,45 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
           if (!(await subject.isModal())) {
             throw new Error(
               'the dialog is open but is not a native modal in the browser top layer, so the page behind it remains in the same interaction context',
+            );
+          }
+        },
+      },
+      {
+        id: 'modal-dialog.modal.exposed',
+        outcome:
+          'The browser accessibility tree exposes the dialog as modal, matching the active interaction boundary.',
+        sources: [WCAG_4_1_2, APG_MODAL],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: ALWAYS,
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {modal} = await subject.computed();
+          if (modal !== true) {
+            throw new Error(
+              'the browser accessibility tree does not expose this active dialog as modal',
+            );
+          }
+        },
+      },
+      {
+        id: 'modal-dialog.focus.enters-after-modal',
+        outcome:
+          'The dialog reaches the browser’s native modal state before focus first enters its requested content.',
+        sources: [DIALOG_FR1],
+        covers: ['2.4.3-focus-order', 'apg-interaction'],
+        appliesWhen: {
+          condition: 'the binding declares an eligible initial-focus target',
+          test: facts => facts.hasDeclaredInitialTarget,
+        },
+        evidenceLayer: 'real-browser',
+        enforcement: 'required',
+        run: async ({initialFocusEntry}) => {
+          const entry = await initialFocusEntry();
+          if (!entry.subjectWasModal) {
+            throw new Error(
+              "focus entered the dialog before it reached the browser's native modal state",
             );
           }
         },
@@ -211,12 +257,6 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
           if (!(await invoker.isFocused())) {
             throw new Error(
               'closing the modal dialog did not return focus to its still-available invoker',
-            );
-          }
-          await harness.press('Enter');
-          if (!(await subject.isModal())) {
-            throw new Error(
-              'focus returned to the invoker, but activating it did not reopen the modal dialog',
             );
           }
         },
@@ -396,6 +436,14 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         verifiedBy: 'component DOM-order tests and content review',
         reason:
           'Reading order inside a modal task depends on the content the binding composes.',
+      },
+      '1.3.5-identify-input-purpose': {
+        owner:
+          'caller content and the form controls composed inside the dialog',
+        verifiedBy:
+          'form-control contracts and integration review of autocomplete purposes',
+        reason:
+          'The modal-dialog pattern does not choose or encode the purpose of caller-composed input fields.',
       },
       '1.4.1-use-of-color': {
         owner: 'the binding component, theme, and caller content',

@@ -141,6 +141,11 @@ export class NotApplicableHere extends Error {
   }
 }
 
+/** What the browser observed at the first focus entry into the mounted subject. */
+export interface InitialFocusEntryObservation {
+  readonly subjectWasModal: boolean;
+}
+
 /** What an expectation is handed when it runs. */
 export interface ExpectationContext<Facts> {
   readonly harness: Harness;
@@ -170,6 +175,13 @@ export interface ExpectationContext<Facts> {
    * as a harness fault, loudly, rather than quietly passing.
    */
   readonly activations: () => Promise<number>;
+  /**
+   * The first focus entry into the mounted subject, captured by the binding from
+   * browser events that occurred before the expectation began sampling state.
+   * A binding that cannot supply it fails as a binding fault rather than turning
+   * a missing observation into a contract result.
+   */
+  readonly initialFocusEntry: () => Promise<InitialFocusEntryObservation>;
 }
 
 export interface Expectation<Facts> {

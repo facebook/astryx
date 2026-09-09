@@ -15,7 +15,11 @@
  */
 
 import {describe, expect, it, vi} from 'vitest';
-import {definePattern, type PatternContract} from './contract';
+import {
+  definePattern,
+  type ExpectationContext,
+  type PatternContract,
+} from './contract';
 import type {EvidenceLayer, Harness, Subject} from './harness';
 import {
   blockingResults,
@@ -51,7 +55,7 @@ function harness(observes: readonly EvidenceLayer[]): Harness {
 }
 
 function contractThat(
-  behaviour: () => void,
+  behaviour: (context: ExpectationContext<Facts>) => void | Promise<void>,
   overrides: {
     layer?: EvidenceLayer;
     alsoNeeds?: readonly EvidenceLayer[];
@@ -88,7 +92,7 @@ function contractThat(
           overrides.enforcement === 'advisory'
             ? 'Nothing adopts the stub outcome.'
             : undefined,
-        run: async () => behaviour(),
+        run: async context => behaviour(context),
       },
     ],
   });
@@ -115,6 +119,7 @@ async function run(
     knownFailures?: readonly KnownFailure[];
     observes?: readonly EvidenceLayer[];
     state?: string;
+    initialFocusEntry?: () => Promise<{readonly subjectWasModal: boolean}>;
   } = {},
 ) {
   return checkAccessibilitySpec({
@@ -124,6 +129,7 @@ async function run(
     facts: options.facts ?? {applicable: true},
     mount: async () => harness(options.observes ?? ['unit', 'dom']),
     knownFailures: options.knownFailures,
+    initialFocusEntry: options.initialFocusEntry,
   });
 }
 
@@ -196,6 +202,36 @@ describe('checkAccessibilitySpec', () => {
       {observes: ['unit', 'dom', 'accessibility-tree', 'real-browser']},
     );
     expect(behaviour).toHaveBeenCalled();
+    expect(result.results[0]?.status).toBe('pass');
+  });
+
+  it('treats a missing first-focus observation as a binding fault', async () => {
+    const spec = contractThat(
+      async ({initialFocusEntry}) => {
+        await initialFocusEntry();
+      },
+      {layer: 'real-browser'},
+    );
+
+    await expect(
+      run(spec, {observes: ['unit', 'dom', 'real-browser']}),
+    ).rejects.toThrow('supplies no focus-entry observation');
+  });
+
+  it('passes the binding-owned first-focus observation to the expectation', async () => {
+    const observed = vi.fn(async () => ({subjectWasModal: true}));
+    const spec = contractThat(
+      async ({initialFocusEntry}) => {
+        expect(await initialFocusEntry()).toEqual({subjectWasModal: true});
+      },
+      {layer: 'real-browser'},
+    );
+
+    const result = await run(spec, {
+      observes: ['unit', 'dom', 'real-browser'],
+      initialFocusEntry: observed,
+    });
+    expect(observed).toHaveBeenCalledOnce();
     expect(result.results[0]?.status).toBe('pass');
   });
 
