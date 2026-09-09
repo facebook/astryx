@@ -63,6 +63,11 @@ export type {
   ThemeAdaptationTypographyConfig,
 } from './themeAdaptations';
 
+// Component adaptations (spec:AST-031) are deliberately NOT exported here. The
+// spec is still a draft, so the value types, the condition compiler, and the
+// resolver hook all stay package-internal until a component's public policy
+// prop is separately accepted; that component's PR adds the export it needs.
+
 export type {
   SyntaxTokenName,
   DomainTokenName,

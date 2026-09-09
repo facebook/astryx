@@ -12,10 +12,15 @@ import React from 'react';
  *   Composes Layout internally to provide header, sideNav, and main content areas.
  *   Use for any app that needs a top nav, side navigation, and scrollable content.
  *
+ *   `mobileNav.breakpoint` names an AST-012 width point; the value comes from
+ *   the shared accessor in /packages/core/src/theme/effectiveBreakpoints.ts, so
+ *   AppShell and component adaptations agree on what `md` is.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/AppShell/AppShell.doc.mjs
  * - /packages/core/src/AppShell/index.ts
  * - /packages/core/src/AppShell/AppShell.test.tsx
+ * - /packages/core/src/theme/effectiveBreakpoints.ts (named width points)
  * - /apps/storybook/stories/AppShell.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/AppShell/ (showcase blocks)
  */
@@ -56,11 +61,8 @@ import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
-import {useThemeDefinition} from '../theme/useTheme';
-import {
-  DEFAULT_WIDTH_BREAKPOINTS,
-  type WidthBreakpointName,
-} from '../theme/themeAdaptations';
+import {useEffectiveWidthBreakpoints} from '../theme/effectiveBreakpoints';
+import type {WidthBreakpointName} from '../theme/themeAdaptations';
 import type {AppShellVariantMap} from './index';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -468,7 +470,9 @@ export function AppShell({
   ...rest
 }: AppShellProps) {
   const t = useTranslator();
-  const activeTheme = useThemeDefinition();
+  // Named width points resolve through the shared accessor (spec:AST-031 FR5),
+  // never by reading the theme's `__adaptations` storage here.
+  const widthBreakpoints = useEffectiveWidthBreakpoints();
   // =========================================================================
   // Parse mobileNav prop — normalize to config, custom element, or disabled
   // =========================================================================
@@ -504,14 +508,10 @@ export function AppShell({
   // =========================================================================
   // Mobile nav open state (controlled + uncontrolled)
   // =========================================================================
-  const activeWidthBreakpoints = activeTheme?.__adaptations?.widthBreakpoints;
   const breakpointQuery =
     sideNavBreakpoint === 'none'
       ? '(width < 0px)'
-      : `(width < ${
-          activeWidthBreakpoints?.[sideNavBreakpoint] ??
-          DEFAULT_WIDTH_BREAKPOINTS[sideNavBreakpoint]
-        }px)`;
+      : `(width < ${widthBreakpoints[sideNavBreakpoint]}px)`;
   const isBelowBreakpoint = useMediaQuery(
     breakpointQuery,
     sideNavBreakpoint === 'none' ? false : mobileNavConfig?.defaultIsMobile,
