@@ -127,9 +127,10 @@ describe('public value shape', () => {
 });
 
 describe('package-internal surface', () => {
-  it('is not reachable from the theme entry point while AST-031 is a draft', () => {
+  it('publishes the authoring vocabulary but no resolver', () => {
     // Types are erased, so the runtime check is the negative one: nothing that
-    // resolves an adaptation is exported (spec:AST-031 IR1/IR2).
+    // RESOLVES an adaptation is exported (spec:AST-031 IR1/IR2). Selector's
+    // public `adaptations` prop admitted the value shape, not the machinery.
     for (const internal of [
       'compileComponentAdaptations',
       'useComponentAdaptations',
@@ -143,15 +144,31 @@ describe('package-internal surface', () => {
     }
 
     // The value TYPES are erased at runtime, so the guard on them is the
-    // barrel source: it must not re-export this module at all.
+    // barrel source: it re-exports exactly the three authoring types a caller
+    // needs to write a policy, and nothing else from this module.
     const barrelSource = fs.readFileSync(
       path.join(path.dirname(fileURLToPath(import.meta.url)), 'index.ts'),
       'utf8',
     );
-    expect(barrelSource).not.toMatch(
-      /^\s*export .*from '\.\/componentAdaptations'/m,
+    const reExport = barrelSource.match(
+      /export type \{([^}]*)\} from '\.\/componentAdaptations';/,
     );
-    expect(barrelSource).not.toContain('ComponentAdaptations,');
+    expect(reExport).not.toBeNull();
+    expect(
+      reExport![1]
+        .split(',')
+        .map(name => name.trim())
+        .filter(Boolean)
+        .sort(),
+    ).toEqual([
+      'ComponentAdaptationCondition',
+      'ComponentAdaptationRule',
+      'ComponentAdaptations',
+    ]);
+    // A value re-export would smuggle the compiler out with the types.
+    expect(barrelSource).not.toMatch(
+      /^\s*export \{[^}]*\} from '\.\/componentAdaptations'/m,
+    );
 
     // The width vocabulary the types refer to is public, and unmoved.
     expect(themeBarrel).toHaveProperty('WIDTH_BREAKPOINT_NAMES');

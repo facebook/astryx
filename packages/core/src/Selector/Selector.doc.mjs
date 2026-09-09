@@ -337,8 +337,14 @@ export const docs = {
       name: 'presentation',
       type: "'popover' | 'bottom-sheet' | 'adaptive'",
       description:
-        'How the option list is presented. adaptive uses a bottom sheet on compact touch screens and an anchored popover otherwise.',
+        "How the option list is presented. adaptive uses a bottom sheet below the theme's md width point on coarse-pointer devices, and an anchored popover otherwise; the boundary is exclusive, so a viewport exactly at md stays anchored. Those three values are the whole set: any other value throws rather than falling back to popover. Mutually exclusive with adaptations.",
       default: "'popover'",
+    },
+    {
+      name: 'adaptations',
+      type: "{default: 'popover' | 'bottom-sheet', rules: Array<{when: {width?: {from?: 'sm' | 'md' | 'lg' | 'xl' | '2xl', below?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'}, pointer?: 'coarse' | 'fine'}, value: 'popover' | 'bottom-sheet'}>}",
+      description:
+        "Environment-conditioned presentation policy, for the cases the adaptive shorthand cannot express. default is the server-rendered, hydration, and no-match surface; rules are checked in order and the LAST match wins. Width names resolve against the nearest Theme's width points, from is inclusive, below is exclusive, and the fields of one when are ANDed. Mutually exclusive with presentation; passing both throws. Known limitation, shared with the adaptive shorthand and with MultiSelector: with server rendering, a policy that resolves differently on the client is not honored by a selector that starts open — it comes up closed, because the open runs from a mount effect holding the server value. Pass a policy that does not change across hydration there, such as {default: 'bottom-sheet', rules: []}.",
     },
     {
       name: 'width',
@@ -405,6 +411,11 @@ export const docs = {
           'Use presentation="adaptive" when the selector should become a bottom sheet on compact touch screens.',
       },
       {
+        guidance: true,
+        description:
+          'Reach for adaptations only when the adaptive shorthand is wrong for the surface — a different width point, a pointer-only rule, or a server-rendered bottom sheet.',
+      },
+      {
         guidance: false,
         description:
           'Use for action menus; use Dropdown Menu for triggering commands or navigation.',
@@ -464,6 +475,11 @@ export const docsZh = {
         guidance: true,
         description:
           'Set a meaningful placeholder that hints at the expected selection (e.g. "Choose a country" not "Select...").',
+      },
+      {
+        guidance: true,
+        description:
+          'Use presentation="adaptive" when the selector should become a bottom sheet on compact touch screens, and adaptations when the rule differs from that shorthand. The two props are mutually exclusive.',
       },
       {
         guidance: false,
@@ -535,6 +551,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use variant="ghost" in toolbars with ghost buttons; prefer statusVariant="tooltip" for compact validation status.',
+      },
+      {
+        guidance: true,
+        description:
+          'presentation="adaptive" = bottom sheet below the theme md width on a coarse pointer (md itself stays anchored); adaptations={{default, rules}} for any other rule. The two props are mutually exclusive.',
       },
       {
         guidance: false,

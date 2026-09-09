@@ -3,12 +3,15 @@
 /**
  * @file componentAdaptations.ts
  * @input One component's authored adaptation policy and the effective width map
- * @output Package-internal component-adaptation types plus validation and
- *   media-query compilation for the JavaScript resolver
- * @position spec:AST-031 FR1/FR2/IR1/IR3. Package-internal in every direction:
- *   AST-031 is a draft, so neither these types nor the compiler are exported
- *   from the package entry point. The component PR that admits a public
- *   `adaptations` prop is what makes the value shape public.
+ * @output Public component-adaptation authoring types plus package-internal
+ *   validation and media-query compilation for the JavaScript resolver
+ * @position spec:AST-031 FR1/FR2/IR1/IR3. Split surface: the AUTHORING
+ *   VOCABULARY below (`ComponentAdaptations`, `ComponentAdaptationRule`,
+ *   `ComponentAdaptationCondition`) is exported from the package entry point,
+ *   because Selector's `adaptations` prop is a public policy a caller cannot
+ *   type without it. Everything under "Package-internal compilation" is not:
+ *   components own their public policy props, and the compiler stays behind
+ *   them.
  *
  * A component adaptation is ONE closed policy value, not a bag of conditional
  * props: `default` is the server-rendered, hydration, and no-match value, and
@@ -24,8 +27,9 @@
  * SYNC: When modified, update:
  * - /packages/core/src/theme/adaptationConditions.ts (shared condition grammar)
  * - /packages/core/src/theme/useComponentAdaptations.ts (runtime resolver)
- * - /packages/core/src/theme/index.ts (kept free of these exports while
- *   spec:AST-031 is a draft)
+ * - /packages/core/src/theme/index.ts (re-exports the authoring vocabulary
+ *   only; the compiler stays package-internal)
+ * - /packages/core/src/Selector/Selector.tsx (first public consumer)
  * - /packages/core/src/theme/componentAdaptations.test.ts
  */
 
@@ -40,7 +44,7 @@ import {
 } from './adaptationConditions';
 
 // =============================================================================
-// Authoring vocabulary (package-internal until a component prop admits it)
+// Authoring vocabulary (public; re-exported from the package entry point)
 // =============================================================================
 
 /**

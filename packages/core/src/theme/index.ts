@@ -63,10 +63,17 @@ export type {
   ThemeAdaptationTypographyConfig,
 } from './themeAdaptations';
 
-// Component adaptations (spec:AST-031) are deliberately NOT exported here. The
-// spec is still a draft, so the value types, the condition compiler, and the
-// resolver hook all stay package-internal until a component's public policy
-// prop is separately accepted; that component's PR adds the export it needs.
+// Component adaptations (spec:AST-031). The AUTHORING VOCABULARY is public as
+// of Selector's `adaptations` prop — a caller cannot write a policy for a
+// public prop without the types that describe it. The condition compiler and
+// the `useComponentAdaptations` resolver stay package-internal: components own
+// their public policy props, and admitting a resolver would publish a second,
+// component-less way to read the environment that no record covers.
+export type {
+  ComponentAdaptations,
+  ComponentAdaptationRule,
+  ComponentAdaptationCondition,
+} from './componentAdaptations';
 
 export type {
   SyntaxTokenName,
