@@ -4,14 +4,14 @@
 /**
  * @file Dialog.a11y.test.tsx
  * @input Uses the shared modal-dialog contract, @testing-library/react, and the
- *   actual Dialog and DialogHeader components
+ *   actual Dialog binding render map
  * @output Dialog's jsdom binding through expectAccessibilitySpec
  * @position Fast DOM-semantics lane. Browser-owned focus, top-layer, inertness,
- *   dismissal, and computed-tree outcomes run in Dialog.a11y.chromium.spec.ts.
+ *   and computed-tree outcomes run in Dialog.a11y.chromium.spec.ts.
  */
 
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {cleanup, render, screen} from '@testing-library/react';
+import {cleanup, fireEvent, render, screen} from '@testing-library/react';
 import {
   MODAL_DIALOG_PATTERN,
   checkAccessibilitySpec,
@@ -20,12 +20,10 @@ import {
   summarize,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
-import {Dialog} from '../Dialog';
-import {DialogHeader} from '../DialogHeader';
 import {DIALOG_MODAL_KNOWN_FAILURES} from './Dialog.a11y.known-failures';
+import {renderDialogModalState} from './Dialog.a11y.renders';
 import {
-  DIALOG_CONTRACT_FIRST_LABEL,
-  DIALOG_CONTRACT_LAST_LABEL,
+  DIALOG_CONTRACT_OPEN_LABEL,
   DIALOG_MODAL_BINDING_STATES,
   type DialogModalBindingState,
 } from './Dialog.a11y.states';
@@ -41,57 +39,11 @@ beforeEach(() => {
   });
 });
 
-function DialogState({state}: {state: DialogModalBindingState}) {
-  switch (state.render) {
-    case 'labelled-described':
-      return (
-        <Dialog
-          isOpen
-          onOpenChange={() => {}}
-          aria-describedby="dialog-contract-description">
-          <DialogHeader title="Review changes" />
-          <p id="dialog-contract-description">
-            Confirm the changes before continuing.
-          </p>
-          <button type="button">{DIALOG_CONTRACT_FIRST_LABEL}</button>
-          <button type="button">{DIALOG_CONTRACT_LAST_LABEL}</button>
-        </Dialog>
-      );
-    case 'explicit-focus':
-      return (
-        <Dialog
-          isOpen
-          onOpenChange={() => {}}
-          purpose="form"
-          aria-labelledby="dialog-contract-explicit-title">
-          <h2
-            id="dialog-contract-explicit-title"
-            tabIndex={-1}
-            data-autofocus
-            autoFocus>
-            Edit profile
-          </h2>
-          <p>Review the profile before saving.</p>
-        </Dialog>
-      );
-    case 'conditional':
-      return (
-        <Dialog isOpen onOpenChange={() => {}} aria-label="Sensitive review">
-          <DialogHeader title="Sensitive review" />
-          <p>This content exists only while the task is open.</p>
-        </Dialog>
-      );
-    case 'no-focusable':
-      return (
-        <Dialog isOpen onOpenChange={() => {}} aria-label="Read terms">
-          <p>There are no controls in this task.</p>
-        </Dialog>
-      );
-  }
-}
-
 function renderState(state: DialogModalBindingState): void {
-  render(<DialogState state={state} />);
+  render(renderDialogModalState(state));
+  fireEvent.click(
+    screen.getByRole('button', {name: DIALOG_CONTRACT_OPEN_LABEL}),
+  );
 }
 
 function dialogSubject(): HTMLElement {

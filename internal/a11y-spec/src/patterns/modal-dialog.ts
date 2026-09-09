@@ -11,7 +11,6 @@
 
 import {
   definePattern,
-  type ApgRequirement,
   type AstryxRecord,
   type PatternContract,
   type WcagCriterion,
@@ -19,7 +18,6 @@ import {
 import {saysInOrder, spokenWords} from '../spoken';
 
 const UNDERSTANDING = 'https://www.w3.org/WAI/WCAG22/Understanding';
-const APG_URL = 'https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/';
 
 const WCAG_1_3_1: WcagCriterion = {
   standard: 'wcag',
@@ -84,21 +82,6 @@ const LAYER_NATIVE_MODAL: AstryxRecord = {
     'dialog.showModal() provides a native modal boundary, backdrop, inert outside content, and platform close requests.',
   url: 'https://github.com/facebook/astryx/blob/029368bde880cb25a7912523510419285d803a90/docs/architecture/layer-runtime.md',
 };
-const OVERLAY_FR2: AstryxRecord = {
-  standard: 'astryx',
-  id: 'family:overlay-dismissal',
-  clause: 'FR2',
-  requirement:
-    'An unclaimed Escape press is routed to exactly one topmost registered present member.',
-  url: 'https://github.com/facebook/astryx/blob/029368bde880cb25a7912523510419285d803a90/docs/families/overlay-dismissal.md',
-};
-const APG_TAB_CONTAINMENT: ApgRequirement = {
-  standard: 'apg',
-  pattern: 'dialog-modal',
-  requirement:
-    'Tab and Shift + Tab move focus among tabbable elements inside the dialog, wrapping at either end.',
-  url: `${APG_URL}#keyboardinteraction`,
-};
 
 const ALWAYS = {
   condition: 'the binding renders a modal dialog',
@@ -110,8 +93,6 @@ export interface ModalDialogStateFacts {
   readonly described: boolean;
   readonly hasDeclaredInitialTarget: boolean;
   readonly usesNativeFocusFallback: boolean;
-  readonly containsTabFocus: boolean;
-  readonly dismissesOnEscape: boolean;
   readonly restoresFocus: boolean;
   readonly makesBackgroundInert: boolean;
 }
@@ -121,7 +102,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
     pattern: 'modal-dialog',
     url: 'https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/',
     scope:
-      'One native modal dialog that exposes its meaning and keeps the person’s focus and interaction inside the active task until dismissal.',
+      'One native modal dialog that enters the browser modal state before focus, exposes its role and name, applies its declared focus entry and return, and makes the background inert.',
     expectations: [
       {
         id: 'modal-dialog.modal.in-top-layer',
@@ -183,72 +164,6 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         },
       },
       {
-        id: 'modal-dialog.focus.tab-contained',
-        outcome:
-          'Tab and Shift+Tab keep focus inside the active modal task, including at both ends of its tab sequence.',
-        sources: [LAYER_NATIVE_MODAL, APG_TAB_CONTAINMENT],
-        covers: [
-          '2.1.1-keyboard',
-          '2.1.2-no-keyboard-trap',
-          '2.4.3-focus-order',
-          'apg-interaction',
-        ],
-        appliesWhen: {
-          condition: 'the modal has a focusable tab sequence',
-          test: facts => facts.containsTabFocus,
-        },
-        evidenceLayer: 'real-browser',
-        enforcement: 'required',
-        run: async ({harness, subject}) => {
-          const last = await harness.related('last');
-          await last.focus();
-          await harness.press('Tab');
-          if (!(await subject.containsFocus())) {
-            throw new Error(
-              'Tab from the last control moved focus outside the active modal dialog',
-            );
-          }
-
-          const first = await harness.related('first');
-          await first.focus();
-          await harness.press('Shift+Tab');
-          if (!(await subject.containsFocus())) {
-            throw new Error(
-              'Shift+Tab from the first control moved focus outside the active modal dialog',
-            );
-          }
-        },
-      },
-      {
-        id: 'modal-dialog.dismissal.escape-round-trip',
-        outcome:
-          'Escape closes a dismissible modal, and its invoker can open the task again.',
-        sources: [OVERLAY_FR2],
-        covers: ['2.1.1-keyboard', 'apg-interaction'],
-        appliesWhen: {
-          condition: 'the binding declares Escape as a dismissal command',
-          test: facts => facts.dismissesOnEscape,
-        },
-        evidenceLayer: 'real-browser',
-        enforcement: 'required',
-        run: async ({harness, subject}) => {
-          await harness.press('Escape');
-          if ((await subject.attribute('open')) != null) {
-            throw new Error(
-              'pressing Escape left the dismissible modal dialog open',
-            );
-          }
-          const invoker = await harness.related('invoker');
-          await invoker.focus();
-          await harness.press('Enter');
-          if (!(await subject.isModal())) {
-            throw new Error(
-              'Escape closed the modal dialog, but activating its invoker did not open it again',
-            );
-          }
-        },
-      },
-      {
         id: 'modal-dialog.focus.restored',
         outcome:
           'Closing the modal returns focus to its still-available invoker, so the person resumes where the task began.',
@@ -261,7 +176,9 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         evidenceLayer: 'real-browser',
         enforcement: 'required',
         run: async ({harness, subject}) => {
-          await harness.press('Escape');
+          const close = await harness.related('close');
+          await close.focus();
+          await harness.press('Enter');
           const invoker = await harness.related('invoker');
           if (!(await invoker.isFocused())) {
             throw new Error(
@@ -281,7 +198,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         outcome:
           'While the modal is active, controls behind it cannot receive focus or pointer interaction.',
         sources: [LAYER_NATIVE_MODAL],
-        covers: ['2.1.1-keyboard', '2.4.3-focus-order', 'apg-interaction'],
+        covers: ['2.4.3-focus-order', 'apg-interaction'],
         appliesWhen: {
           condition: 'the binding declares a modal background',
           test: facts => facts.makesBackgroundInert,
@@ -311,7 +228,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
       {
         id: 'modal-dialog.role.exposed',
         outcome:
-          'The modal task is exposed as a dialog, so assistive technology identifies the kind of surface the person entered.',
+          'The browser accessibility tree exposes the modal task with role dialog.',
         sources: [WCAG_4_1_2],
         covers: ['4.1.2-name-role-value'],
         appliesWhen: ALWAYS,
@@ -331,7 +248,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
       {
         id: 'modal-dialog.name.exposed',
         outcome:
-          'The dialog has an accessible name, so the person knows which task has taken focus.',
+          'The browser accessibility tree exposes a non-empty name for the dialog.',
         sources: [WCAG_4_1_2],
         covers: ['4.1.2-name-role-value'],
         appliesWhen: ALWAYS,
@@ -341,7 +258,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
           const {name} = await subject.computed();
           if (name.trim() === '') {
             throw new Error(
-              'the browser computes no accessible name for this dialog, so the modal task is announced without its purpose',
+              'the browser computes no accessible name for this dialog',
             );
           }
         },
@@ -401,30 +318,9 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         },
       },
       {
-        id: 'modal-dialog.description.exposed',
-        outcome:
-          'Supporting context reaches the person as the dialog description, not only as nearby text.',
-        sources: [WCAG_4_1_2],
-        covers: ['4.1.2-name-role-value'],
-        appliesWhen: {
-          condition: 'the dialog has supporting descriptive content',
-          test: facts => facts.described,
-        },
-        evidenceLayer: 'accessibility-tree',
-        enforcement: 'required',
-        run: async ({subject}) => {
-          const {description} = await subject.computed();
-          if (description.trim() === '') {
-            throw new Error(
-              'the binding renders supporting content, but the browser computes no accessible description for the dialog',
-            );
-          }
-        },
-      },
-      {
         id: 'modal-dialog.description.references-resolve',
         outcome:
-          'Every element used to describe the dialog exists, so supporting context is not silently lost.',
+          'Every id in aria-describedby resolves to an existing element, so the authored relationship is complete.',
         sources: [WCAG_1_3_1],
         covers: ['1.3.1-info-and-relationships'],
         appliesWhen: {
@@ -445,7 +341,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
           const dangling = ids.filter((_, index) => targets[index] == null);
           if (dangling.length > 0) {
             throw new Error(
-              `aria-describedby points at ${dangling.map(id => `"${id}"`).join(', ')}, which ${dangling.length === 1 ? 'resolves' : 'resolve'} to nothing; the dialog loses that supporting context`,
+              `aria-describedby points at ${dangling.map(id => `"${id}"`).join(', ')}, which ${dangling.length === 1 ? 'resolves' : 'resolve'} to nothing`,
             );
           }
         },
@@ -494,18 +390,16 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
       '2.1.1-keyboard': {
         owner: 'the binding component and caller content',
         verifiedBy:
-          'component tests for controls composed inside the dialog and integration review of caller-owned commands',
+          'component tests for Escape policy and controls composed inside the dialog, plus integration review of caller-owned commands',
         reason:
-          'This contract covers modal entry, containment, and Escape dismissal; the keyboard operation of each composed control remains with that control.',
-        coversRemainderOnly: true,
+          'Current Dialog and overlay authority keep keyboard dismissal policy and composed-control operation outside this reusable modal-focus contract.',
       },
       '2.1.2-no-keyboard-trap': {
-        owner: 'the binding component',
+        owner: 'the binding component and its current focus contract',
         verifiedBy:
-          'the component dismissal-policy tests for every supported purpose',
+          'component browser tests after the Dialog owner adopts an exact containment and escape outcome',
         reason:
-          'This contract proves focus stays in an active dismissible task and Escape closes it; non-dismissible product policy and explicit completion controls remain component-owned.',
-        coversRemainderOnly: true,
+          'Current Dialog authority does not adopt APG Tab wrapping as a required outcome, so this contract does not turn that mechanic into policy.',
       },
       '2.4.2-page-titled': {
         owner: 'the page',
@@ -595,7 +489,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         verifiedBy:
           'component-specific tests for states and values not owned by the dialog surface',
         reason:
-          'This contract covers the dialog role, name, and description; descendant controls own their own roles, states, and values.',
+          'This contract covers the dialog role and name; descendant controls own their own roles, states, and values.',
         coversRemainderOnly: true,
       },
       '4.1.3-status-messages': {

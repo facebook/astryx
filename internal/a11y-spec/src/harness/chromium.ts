@@ -81,8 +81,6 @@ const KEYS: Record<Key, string> = {
   Space: ' ',
   Enter: 'Enter',
   Tab: 'Tab',
-  'Shift+Tab': 'Shift+Tab',
-  Escape: 'Escape',
 };
 
 interface AxValue {

@@ -110,7 +110,7 @@ export interface Subject {
 }
 
 /** A key an expectation can send. Spelled by intent, not by engine syntax. */
-export type Key = 'Space' | 'Enter' | 'Tab' | 'Shift+Tab' | 'Escape';
+export type Key = 'Space' | 'Enter' | 'Tab';
 
 /**
  * A mounted binding, observed at whatever layers this runtime can honestly see.

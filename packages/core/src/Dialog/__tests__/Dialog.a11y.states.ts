@@ -20,8 +20,7 @@ import type {ModalDialogStateFacts} from '@astryxdesign/a11y-spec';
 
 export const DIALOG_CONTRACT_OPEN_LABEL = 'Open contract dialog';
 export const DIALOG_CONTRACT_BACKGROUND_LABEL = 'Background action';
-export const DIALOG_CONTRACT_FIRST_LABEL = 'Previous';
-export const DIALOG_CONTRACT_LAST_LABEL = 'Continue';
+export const DIALOG_CONTRACT_CLOSE_LABEL = 'Close';
 
 export type DialogInitialTarget =
   {readonly kind: 'dialog'} | {readonly kind: 'heading'; readonly name: string};
@@ -42,8 +41,6 @@ const MODAL_FACTS = {
   described: false,
   hasDeclaredInitialTarget: true,
   usesNativeFocusFallback: false,
-  containsTabFocus: false,
-  dismissesOnEscape: true,
   restoresFocus: true,
   makesBackgroundInert: true,
 } as const satisfies ModalDialogStateFacts;
@@ -53,22 +50,21 @@ export const DIALOG_MODAL_BINDING_STATES: ReadonlyArray<DialogModalBindingState>
     {
       id: 'labelled-described-default-title',
       summary:
-        'an informational dialog labelled by DialogHeader, described by supporting text, and containing a two-control tab sequence',
-      storyId: 'core-dialog--accessibility-contract-labelled-described',
+        'an informational dialog labelled by DialogHeader, described by supporting text, and containing explicit actions',
+      storyId: 'a11y-dialog-modal-pattern--labelled-described-default-title',
       render: 'labelled-described',
       initialTarget: {kind: 'heading', name: 'Review changes'},
       visibleTitle: 'Review changes',
       facts: {
         ...MODAL_FACTS,
         described: true,
-        containsTabFocus: true,
       },
     },
     {
       id: 'explicit-descendant-focus',
       summary:
         'a form dialog whose programmatically focusable heading explicitly requests initial focus',
-      storyId: 'core-dialog--accessibility-contract-explicit-initial-focus',
+      storyId: 'a11y-dialog-modal-pattern--explicit-descendant-focus',
       render: 'explicit-focus',
       initialTarget: {kind: 'heading', name: 'Edit profile'},
       visibleTitle: 'Edit profile',
@@ -78,7 +74,8 @@ export const DIALOG_MODAL_BINDING_STATES: ReadonlyArray<DialogModalBindingState>
       id: 'conditional-content-focus-restoration',
       summary:
         'a dialog whose focus-requesting content mounts only on the opening transition and unmounts on close',
-      storyId: 'core-dialog--accessibility-contract-conditional-content',
+      storyId:
+        'a11y-dialog-modal-pattern--conditional-content-focus-restoration',
       render: 'conditional',
       initialTarget: {kind: 'heading', name: 'Sensitive review'},
       visibleTitle: 'Sensitive review',
@@ -88,7 +85,7 @@ export const DIALOG_MODAL_BINDING_STATES: ReadonlyArray<DialogModalBindingState>
       id: 'no-focusable-content',
       summary:
         'a named informational dialog with no eligible descendant focus request or tabbable content',
-      storyId: 'core-dialog--accessibility-contract-no-focusable-content',
+      storyId: 'a11y-dialog-modal-pattern--no-focusable-content',
       render: 'no-focusable',
       initialTarget: {kind: 'dialog'},
       visibleTitle: null,
@@ -97,6 +94,7 @@ export const DIALOG_MODAL_BINDING_STATES: ReadonlyArray<DialogModalBindingState>
         labelledBy: false,
         hasDeclaredInitialTarget: false,
         usesNativeFocusFallback: true,
+        restoresFocus: false,
       },
     },
   ];

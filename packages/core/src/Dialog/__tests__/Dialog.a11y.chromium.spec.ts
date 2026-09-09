@@ -39,8 +39,7 @@ import {
 import {DIALOG_MODAL_KNOWN_FAILURES} from './Dialog.a11y.known-failures';
 import {
   DIALOG_CONTRACT_BACKGROUND_LABEL,
-  DIALOG_CONTRACT_FIRST_LABEL,
-  DIALOG_CONTRACT_LAST_LABEL,
+  DIALOG_CONTRACT_CLOSE_LABEL,
   DIALOG_CONTRACT_OPEN_LABEL,
   DIALOG_MODAL_BINDING_STATES,
   type DialogModalBindingState,
@@ -112,8 +111,7 @@ async function runState(
         cdp,
         related: {
           initial: initialTarget(root, subject, state),
-          first: root.getByRole('button', {name: DIALOG_CONTRACT_FIRST_LABEL}),
-          last: root.getByRole('button', {name: DIALOG_CONTRACT_LAST_LABEL}),
+          close: root.getByRole('button', {name: DIALOG_CONTRACT_CLOSE_LABEL}),
           invoker: root.getByRole('button', {
             name: DIALOG_CONTRACT_OPEN_LABEL,
           }),

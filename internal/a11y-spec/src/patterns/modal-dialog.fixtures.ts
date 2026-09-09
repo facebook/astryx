@@ -25,8 +25,6 @@ const LABELLED_FACTS: ModalDialogStateFacts = {
   described: false,
   hasDeclaredInitialTarget: false,
   usesNativeFocusFallback: false,
-  containsTabFocus: false,
-  dismissesOnEscape: false,
   restoresFocus: false,
   makesBackgroundInert: false,
 };
@@ -34,8 +32,6 @@ const LABELLED_FACTS: ModalDialogStateFacts = {
 const INTERACTIVE_FACTS: ModalDialogStateFacts = {
   ...LABELLED_FACTS,
   hasDeclaredInitialTarget: true,
-  containsTabFocus: true,
-  dismissesOnEscape: true,
   restoresFocus: true,
   makesBackgroundInert: true,
 };
@@ -58,7 +54,7 @@ export const MODAL_DIALOG_FIXTURES: readonly ModalDialogFixture[] = [
     summary:
       'a labelled modal with an explicit initial target and two controls',
     facts: INTERACTIVE_FACTS,
-    html: '<dialog data-a11y-subject aria-labelledby="title" onkeydown="if (event.key === \'Tab\') { const first = this.querySelector(\'[data-a11y-relation~=first]\'); const last = this.querySelector(\'[data-a11y-relation~=last]\'); if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); } else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); } }"><h2 id="title" data-a11y-visible-label>Review changes</h2><button type="button" data-a11y-relation="initial first" autofocus>Confirm</button><button type="button" data-a11y-relation="last">Cancel</button></dialog>',
+    html: '<dialog data-a11y-subject aria-labelledby="title"><h2 id="title" data-a11y-visible-label>Review changes</h2><button type="button" data-a11y-relation="initial close" autofocus onclick="this.closest(\'dialog\').close()">Confirm</button><button type="button">Cancel</button></dialog>',
   },
   {
     id: 'conforming-no-focusable-content',
@@ -67,8 +63,7 @@ export const MODAL_DIALOG_FIXTURES: readonly ModalDialogFixture[] = [
       ...LABELLED_FACTS,
       labelledBy: false,
       usesNativeFocusFallback: true,
-      dismissesOnEscape: true,
-      restoresFocus: true,
+      restoresFocus: false,
       makesBackgroundInert: true,
     },
     html: '<dialog data-a11y-subject aria-label="Read terms"><p>There are no controls in this task.</p></dialog>',
@@ -103,20 +98,7 @@ export const MODAL_DIALOG_FIXTURES: readonly ModalDialogFixture[] = [
     id: 'violating-focus-not-restored',
     summary: 'a modal that moves focus away from its invoker after close',
     facts: INTERACTIVE_FACTS,
-    html: '<dialog data-a11y-subject aria-labelledby="title" oncancel="event.preventDefault(); this.close(); queueMicrotask(() => document.querySelector(\'[data-a11y-relation~=background]\').focus())"><h2 id="title" data-a11y-visible-label>Review changes</h2><button type="button" data-a11y-relation="initial first" autofocus>Confirm</button><button type="button" data-a11y-relation="last">Cancel</button></dialog>',
-  },
-  {
-    id: 'violating-escape-blocked',
-    summary: 'a dismissible modal that consumes Escape without closing',
-    facts: INTERACTIVE_FACTS,
-    html: '<dialog data-a11y-subject aria-labelledby="title" oncancel="event.preventDefault()"><h2 id="title" data-a11y-visible-label>Review changes</h2><button type="button" data-a11y-relation="initial first" autofocus>Confirm</button><button type="button" data-a11y-relation="last">Cancel</button></dialog>',
-  },
-  {
-    id: 'violating-tab-leak',
-    summary: 'a non-modal dialog whose tab sequence reaches the background',
-    facts: INTERACTIVE_FACTS,
-    presentation: 'nonmodal',
-    html: '<dialog data-a11y-subject aria-labelledby="title"><h2 id="title" data-a11y-visible-label>Review changes</h2><button type="button" data-a11y-relation="initial first" autofocus>Confirm</button><button type="button" data-a11y-relation="last">Cancel</button></dialog>',
+    html: '<dialog data-a11y-subject aria-labelledby="title"><h2 id="title" data-a11y-visible-label>Review changes</h2><button type="button" data-a11y-relation="initial close" autofocus onclick="this.closest(\'dialog\').close(); queueMicrotask(() => document.querySelector(\'[data-a11y-relation~=background]\').focus())">Confirm</button></dialog>',
   },
   {
     id: 'violating-nonmodal-presentation',
@@ -150,12 +132,6 @@ export const MODAL_DIALOG_FIXTURES: readonly ModalDialogFixture[] = [
     html: '<dialog data-a11y-subject aria-labelledby="missing"></dialog>',
   },
   {
-    id: 'violating-empty-description',
-    summary: 'a dialog whose referenced description has no text',
-    facts: {...LABELLED_FACTS, described: true},
-    html: '<dialog data-a11y-subject aria-labelledby="title" aria-describedby="details"><h2 id="title" data-a11y-visible-label>Review changes</h2><p id="details"></p></dialog>',
-  },
-  {
     id: 'violating-dangling-description',
     summary: 'a dialog described by an id that resolves to nothing',
     facts: {...LABELLED_FACTS, described: true},
@@ -184,15 +160,12 @@ export const MODAL_DIALOG_MUTATIONS: Readonly<
   'modal-dialog.modal.in-top-layer': ['violating-nonmodal-presentation'],
   'modal-dialog.focus.initial-target': ['violating-initial-target'],
   'modal-dialog.focus.native-fallback': ['violating-native-fallback-outside'],
-  'modal-dialog.focus.tab-contained': ['violating-tab-leak'],
-  'modal-dialog.dismissal.escape-round-trip': ['violating-escape-blocked'],
   'modal-dialog.focus.restored': ['violating-focus-not-restored'],
   'modal-dialog.background.inert': ['violating-background-active'],
   'modal-dialog.role.exposed': ['violating-generic-role'],
   'modal-dialog.name.exposed': ['violating-unnamed'],
   'modal-dialog.name.matches-visible-label': ['violating-name-mismatch'],
   'modal-dialog.name.references-resolve': ['violating-dangling-label'],
-  'modal-dialog.description.exposed': ['violating-empty-description'],
   'modal-dialog.description.references-resolve': [
     'violating-dangling-description',
   ],

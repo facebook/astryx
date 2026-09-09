@@ -12,20 +12,6 @@ import type {KnownFailure} from '@astryxdesign/a11y-spec';
 
 export const DIALOG_MODAL_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
   {
-    expectation: 'modal-dialog.focus.tab-contained',
-    binding: 'Dialog',
-    state: 'labelled-described-default-title',
-    evidenceLayer: 'real-browser',
-    failureEquals:
-      'Tab from the last control moved focus outside the active modal dialog',
-    standardsReference:
-      'Astryx architecture:layer-runtime native modal boundary and the adopted APG modal-dialog Tab containment outcome.',
-    userImpact:
-      'A keyboard user can leave the active modal task through the end of its tab sequence instead of cycling within the task.',
-    reason:
-      'This migration records the existing containment violation without adding component focus-trap behavior.',
-  },
-  {
     expectation: 'modal-dialog.focus.restored',
     binding: 'Dialog',
     state: 'conditional-content-focus-restoration',

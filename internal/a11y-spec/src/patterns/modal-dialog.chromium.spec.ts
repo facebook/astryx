@@ -58,8 +58,7 @@ async function results(
         cdp,
         related: {
           initial: page.locator('[data-a11y-relation~="initial"]'),
-          first: page.locator('[data-a11y-relation~="first"]'),
-          last: page.locator('[data-a11y-relation~="last"]'),
+          close: page.locator('[data-a11y-relation~="close"]'),
           invoker: page.locator('[data-a11y-relation~="invoker"]'),
           background: page.locator('[data-a11y-relation~="background"]'),
         },
