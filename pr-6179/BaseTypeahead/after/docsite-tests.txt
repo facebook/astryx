@@ -1,47 +1,48 @@
+HEAD=d539b93eaa472e66bdab154f3c623a26af874189
 $ vitest run
 
  RUN  v4.1.10 <repository>/apps/docsite
 
- ✓ src/__tests__/blog.test.ts (33 tests) 115ms
- ✓ src/__tests__/component-preview-theme.test.ts (3 tests) 186ms
- ✓ src/__tests__/did-you-mean.test.ts (8 tests) 10ms
- ✓ src/__tests__/component-detail-wiring.test.ts (6 tests) 523ms
-     ✓ reaches every module in component-detail/ from a page  499ms
- ✓ src/__tests__/mcp-server.test.ts (22 tests) 72ms
- ✓ src/__tests__/playground-format.test.ts (36 tests) 1026ms
-     ✓ formats messy TSX in the repo’s house style  361ms
-     ✓ matches the repo’s own Prettier byte-for-byte  416ms
- ✓ src/__tests__/search-palette.test.ts (5 tests) 39ms
- ✓ src/__tests__/code-linkifiers.test.ts (39 tests) 14ms
- ✓ src/__tests__/playground-scope.test.ts (12 tests) 17ms
- ✓ src/__tests__/compress.test.ts (4 tests) 7ms
- ✓ src/__tests__/sitemap.test.ts (7 tests) 29ms
+ ✓ src/__tests__/component-preview-theme.test.ts (3 tests) 390ms
+     ✓ lets <Theme> carry the preview icons instead of registering them globally  380ms
+ ✓ src/__tests__/blog.test.ts (33 tests) 170ms
+ ✓ src/__tests__/mcp-server.test.ts (22 tests) 122ms
+ ✓ src/__tests__/component-detail-wiring.test.ts (6 tests) 1119ms
+     ✓ reaches every module in component-detail/ from a page  1096ms
+ ✓ src/__tests__/search-palette.test.ts (5 tests) 35ms
+ ✓ src/__tests__/sitemap.test.ts (7 tests) 27ms
+ ✓ src/__tests__/anatomy-helpers.test.ts (7 tests) 8ms
+ ✓ src/__tests__/playground-format.test.ts (36 tests) 1067ms
+     ✓ matches the repo’s own Prettier byte-for-byte  391ms
+ ✓ src/__tests__/playground-scope.test.ts (12 tests) 16ms
  ✓ src/__tests__/changelog-view.test.ts (6 tests) 18ms
- ✓ src/__tests__/changelog-linkify.test.ts (19 tests) 7ms
- ✓ src/__tests__/pageMetadata.test.ts (9 tests) 10ms
- ✓ src/__tests__/component-detail-resolve-elements.test.ts (6 tests) 8ms
- ✓ src/__tests__/docs-linkify.test.ts (8 tests) 6ms
- ✓ src/__tests__/component-preview-state.test.ts (37 tests) 25ms
- ✓ src/__tests__/component-prop-controls.test.ts (11 tests) 21ms
- ✓ src/__tests__/theme-helpers.test.ts (3 tests) 16ms
- ✓ src/__tests__/playground-number-control.test.ts (3 tests) 17ms
- ✓ src/__tests__/static-shell.test.ts (4 tests) 9ms
+ ✓ src/__tests__/playground-preview-channel.test.ts (6 tests) 6ms
  ✓ src/__tests__/theming-helpers.test.ts (22 tests) 11ms
- ✓ src/__tests__/inline-tokens.test.ts (9 tests) 7ms
- ✓ src/__tests__/theme-concentricity.test.ts (10 tests) 7ms
- ✓ src/__tests__/type-definitions.test.ts (18 tests) 46ms
- ✓ src/__tests__/playground-preview-channel.test.ts (6 tests) 15ms
- ✓ src/__tests__/template-gallery-performance.test.ts (2 tests) 4ms
- ✓ src/__tests__/anatomy-helpers.test.ts (7 tests) 23ms
- ✓ src/__tests__/code-examples.test.ts (4 tests) 4ms
- ✓ src/__tests__/component-categories.test.ts (2 tests) 3ms
- ✓ src/__tests__/live-number-input.test.ts (3 tests) 3ms
- ✓ src/__tests__/interactive-preview.test.ts (3 tests) 342ms
- ✓ src/__tests__/prose-link.test.ts (5 tests) 7ms
- ✓ src/__tests__/data-extraction.test.ts (123 tests) 413ms
+ ✓ src/__tests__/code-linkifiers.test.ts (39 tests) 34ms
+ ✓ src/__tests__/theme-helpers.test.ts (3 tests) 17ms
+ ✓ src/__tests__/did-you-mean.test.ts (8 tests) 10ms
+ ✓ src/__tests__/static-shell.test.ts (4 tests) 10ms
+ ✓ src/__tests__/component-prop-controls.test.ts (11 tests) 27ms
+ ✓ src/__tests__/component-preview-state.test.ts (37 tests) 86ms
+ ✓ src/__tests__/pageMetadata.test.ts (9 tests) 71ms
+ ✓ src/__tests__/playground-number-control.test.ts (3 tests) 25ms
+ ✓ src/__tests__/component-detail-resolve-elements.test.ts (6 tests) 6ms
+ ✓ src/__tests__/compress.test.ts (4 tests) 8ms
+ ✓ src/__tests__/theme-concentricity.test.ts (10 tests) 6ms
+ ✓ src/__tests__/changelog-linkify.test.ts (19 tests) 7ms
+ ✓ src/__tests__/inline-tokens.test.ts (9 tests) 5ms
+ ✓ src/__tests__/docs-linkify.test.ts (8 tests) 7ms
+ ✓ src/__tests__/code-examples.test.ts (4 tests) 7ms
+ ✓ src/__tests__/template-gallery-performance.test.ts (2 tests) 5ms
+ ✓ src/__tests__/type-definitions.test.ts (18 tests) 15ms
+ ✓ src/__tests__/live-number-input.test.ts (3 tests) 4ms
+ ✓ src/__tests__/component-categories.test.ts (2 tests) 4ms
+ ✓ src/__tests__/interactive-preview.test.ts (3 tests) 371ms
+ ✓ src/__tests__/prose-link.test.ts (5 tests) 9ms
+ ✓ src/__tests__/data-extraction.test.ts (123 tests) 323ms
 
  Test Files  34 passed (34)
       Tests  495 passed (495)
-   Start at  05:26:39
-   Duration  7.97s (transform 26.82s, setup 0ms, import 36.83s, tests 3.06s, environment 1.37s)
+   Start at  05:37:36
+   Duration  11.65s (transform 35.02s, setup 0ms, import 49.08s, tests 4.04s, environment 1.94s)
 

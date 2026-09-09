@@ -1,12 +1,13 @@
+HEAD=d539b93eaa472e66bdab154f3c623a26af874189
 
  RUN  v4.1.10 <repository>
 
 Built pseudo.json — 362 keys
 Built pseudo.json — 362 keys
-(node:75537) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(node:88631) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
 (Use `node --trace-warnings ...` to show where the warning was created)
- ❯ |ui| packages/core/src/Typeahead/BaseTypeahead.audit-gap.test.tsx (1 test | 1 failed) 186ms
-   × blocks keyboard selection when the open combobox becomes focusable-disabled 183ms
+ ❯ |ui| packages/core/src/Typeahead/BaseTypeahead.audit-gap.test.tsx (1 test | 1 failed) 204ms
+   × blocks keyboard selection when the open combobox becomes focusable-disabled 200ms
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -40,6 +41,6 @@ Number of calls: 1
 
  Test Files  1 failed (1)
       Tests  1 failed (1)
-   Start at  05:25:57
-   Duration  3.60s (transform 1.75s, setup 232ms, import 1.93s, tests 186ms, environment 656ms)
+   Start at  05:37:51
+   Duration  4.16s (transform 2.25s, setup 258ms, import 2.48s, tests 204ms, environment 556ms)
 

@@ -3,8 +3,8 @@
   "identity": "story",
   "build": {
     "root": "<repository>",
-    "expectedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f",
-    "observedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f"
+    "expectedSha": "d539b93eaa472e66bdab154f3c623a26af874189",
+    "observedSha": "d539b93eaa472e66bdab154f3c623a26af874189"
   },
   "expected": {
     "story": "core-basetypeahead--logical-dropdown-placement",

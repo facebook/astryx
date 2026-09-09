@@ -4,7 +4,7 @@
 - Mode: Night Watch `N`
 - Rubric: `1.16`
 - Baseline: [`53bc34db7c9dd40c3fe0f0e0f419adaea71a73cd`](https://github.com/facebook/astryx/commit/53bc34db7c9dd40c3fe0f0e0f419adaea71a73cd)
-- Audited exact head: [`7595c9e54cd3878376f1b624ab852190c9e7050f`](https://github.com/facebook/astryx/commit/7595c9e54cd3878376f1b624ab852190c9e7050f)
+- Audited exact head: [`d539b93eaa472e66bdab154f3c623a26af874189`](https://github.com/facebook/astryx/commit/d539b93eaa472e66bdab154f3c623a26af874189)
 - Pull request: [#6179](https://github.com/facebook/astryx/pull/6179)
 - Before: **63.4 / D**
 - After: **79.4 / C**
