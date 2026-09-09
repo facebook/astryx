@@ -105,7 +105,22 @@ describe('every command reports what it answered with', () => {
       .filter(({command}) => reportsResultVia(command) === 'manual')
       .map(({name}) => name)
       .sort();
-    expect(manual).toEqual([...RECORD_FOR_THEMSELVES].sort());
+    const unexpected = manual.filter(
+      name => !RECORD_FOR_THEMSELVES.includes(name),
+    );
+    // Two very different causes, and the message has to name both: someone
+    // used the hatch instead of the contract, OR one of the real command
+    // MODULES failed to import and left its fallback stub in its place (the
+    // stub carries the mark, so it lands here). The second is a broken CLI,
+    // not a broken test.
+    expect(manual, unexpected.length
+      ? `unexpected commands recording for themselves: ${unexpected.join(', ')} ` +
+        `— either a hand-registered command is using markReportsResult instead ` +
+        `of returning a CommandResult, or that command's module failed to load ` +
+        `and left its fallback stub behind (run \`astryx <name>\` to see the ` +
+        `import error)`
+      : '',
+    ).toEqual([...RECORD_FOR_THEMSELVES].sort());
   });
 
   it('pins the commands that have no action at all', () => {

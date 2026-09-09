@@ -701,10 +701,12 @@ export function registerTheme(program) {
       const answered = resultSet({
         count: result.data.targets.length,
         resultKind: 'theme',
-        directMatch:
-          filter == null
-            ? undefined
-            : matched.size === 1 && matched.has(String(filter).toLowerCase()),
+        // Falsy, not just null: the api treats an empty filter as no filter
+        // at all, so recording one as a match that missed would invent a
+        // failed lookup out of a run that never looked anything up.
+        directMatch: !filter
+          ? undefined
+          : matched.size === 1 && matched.has(String(filter).toLowerCase()),
       });
       if (json) {
         jsonOut(result);
