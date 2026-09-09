@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {AppShell} from '@astryxdesign/core/AppShell';
 import {
   SideNav,
   SideNavHeading,
@@ -673,6 +674,46 @@ export const CollapsibleSidebar: Story = {
         />
       </SideNavSection>
     </SideNav>
+  ),
+};
+
+// =============================================================================
+// Resizable in AppShell
+// =============================================================================
+
+export const ResizableInAppShell: Story = {
+  name: 'Resizable in AppShell',
+  parameters: {
+    layout: 'fullscreen',
+  },
+  render: () => (
+    <AppShell
+      contentPadding={6}
+      sideNav={
+        <SideNav
+          resizable
+          header={
+            <SideNavHeading
+              icon={
+                <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+              }
+              heading="My App"
+            />
+          }>
+          <SideNavSection title="Main">
+            <SideNavItem
+              label="Dashboard"
+              icon={HomeIcon}
+              selectedIcon={HomeIconSolid}
+              isSelected
+            />
+            <SideNavItem label="Projects" icon={FolderIcon} />
+            <SideNavItem label="Analytics" icon={ChartBarIcon} />
+          </SideNavSection>
+        </SideNav>
+      }>
+      <Text type="body">Drag the sidebar edge to resize the navigation.</Text>
+    </AppShell>
   ),
 };
 

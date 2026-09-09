@@ -989,6 +989,16 @@ describe('SideNav resizable', () => {
     ).toBeInTheDocument();
   });
 
+  it('clips the overlay drag handle within the resizable nav bounds', () => {
+    render(<SideNav resizable>Content</SideNav>);
+    const nav = screen.getByRole('navigation');
+    const container = nav.parentElement;
+    const handle = screen.getByTestId('astryx-sidenav-resize-handle');
+
+    expect(container).toContainElement(handle);
+    expect(getComputedStyle(container!).overflow).toBe('clip');
+  });
+
   it('does not render drag handle without resizable', () => {
     render(<SideNav>Content</SideNav>);
     expect(
