@@ -22,6 +22,10 @@ const meta: Meta<typeof BottomSheetSwitcher> = {
       story: {inline: false, height: '560px'},
     },
   },
+  argTypes: {
+    ref: {control: false},
+    onCancel: {control: false},
+  },
   decorators: [
     Story => (
       <div style={{minHeight: 480, padding: 32}}>

@@ -24,6 +24,7 @@
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
  * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.doc.mjs
+ * - /packages/core/src/BottomSheet/BottomSheetSwitcher.spec.md
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx
  * - /packages/core/src/BottomSheet/index.ts
  * - /apps/storybook/stories/BottomSheetSwitcher.stories.tsx
@@ -204,6 +205,16 @@ export interface BottomSheetSwitcherProps extends BaseProps<HTMLDialogElement> {
  * Coordinates a set of BottomSheets so zero or one is active at a time inside
  * one shared native dialog. During a handoff the previous panel stays visible
  * and inert beneath the entering panel, then fades after motion completes.
+ *
+ * @example
+ * ```
+ * <BottomSheetSwitcher
+ *   activeSheet={activeSheet}
+ *   onActiveSheetChange={setActiveSheet}>
+ *   <BottomSheet sheetId="details" label="Details">…</BottomSheet>
+ *   <BottomSheet sheetId="confirm" label="Confirm">…</BottomSheet>
+ * </BottomSheetSwitcher>
+ * ```
  */
 export function BottomSheetSwitcher({
   activeSheet,
