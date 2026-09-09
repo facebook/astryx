@@ -98,7 +98,7 @@ const WAI_ARIA_ERROR_MESSAGE: WebStandardRequirement = {
   standard: 'web-standard',
   specification: 'WAI-ARIA 1.2',
   requirement:
-    'Authors SHOULD ensure the element referenced by aria-errormessage is visible when the object is in an invalid state.',
+    'When aria-errormessage is pertinent, authors MUST ensure the content is not hidden and is included in a container that meets the requirements for an ARIA live region.',
   url: 'https://www.w3.org/TR/wai-aria-1.2/#aria-errormessage',
 };
 
@@ -571,6 +571,16 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
           if (expected == null || expected.trim() === '') {
             throw new Error(
               'the binding declares this text control invalid but supplies no textual error description',
+            );
+          }
+          const errorMessageAttribute =
+            await subject.attribute('aria-errormessage');
+          const errorMessageIds = (errorMessageAttribute ?? '')
+            .split(/\s+/)
+            .filter(Boolean);
+          if (errorMessageIds.length > 1) {
+            throw new Error(
+              `aria-errormessage accepts exactly one id, but this control declares ${errorMessageIds.map(id => `"${id}"`).join(', ')}`,
             );
           }
           const relatedText = [

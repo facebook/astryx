@@ -231,6 +231,13 @@ export const TEXT_INPUT_FIXTURES: readonly TextInputFixture[] = [
     html: `<label for="fx">Name</label><span>Enter a valid name.</span><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true">`,
   },
   {
+    id: 'violating-multi-id-errormessage',
+    summary:
+      'an aria-errormessage value containing more than its one allowed id',
+    facts: facts({invalid: true, errorMessage: 'Enter a valid name.'}),
+    html: `<label for="fx">Name</label><span id="other">Other error.</span><span id="error">Enter a valid name.</span><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true" aria-errormessage="other error">`,
+  },
+  {
     id: 'violating-hidden-related-error',
     summary: 'an aria-errormessage target hidden while the control is invalid',
     facts: facts({invalid: true, errorMessage: 'Enter a valid name.'}),
@@ -328,6 +335,7 @@ export const TEXT_INPUT_MUTATIONS: Readonly<Record<string, readonly string[]>> =
       'violating-error-without-text',
       'violating-hidden-unrelated-error',
       'violating-visible-unrelated-error',
+      'violating-multi-id-errormessage',
     ],
     'text-input.error.related-text-visible': [
       'violating-hidden-related-error',
