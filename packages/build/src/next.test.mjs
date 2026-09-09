@@ -424,7 +424,7 @@ describe('withAstryx alias coverage', () => {
     try {
       withAstryx().webpack({resolve: {}}, {dir: empty});
       expect(warn).toHaveBeenCalledOnce();
-      expect(warn.mock.calls[0][0]).toMatch(/produced no alias for/);
+      expect(warn.mock.calls[0][0]).toMatch(/no alias routes/);
     } finally {
       fs.rmSync(empty, {recursive: true, force: true});
     }
@@ -490,6 +490,92 @@ describe('withAstryx alias coverage', () => {
 
   // A scope-level key matches no package name as a string, but webpack resolves
   // `@astryxdesign/core` through it — the key is an ancestor of the request.
+  // An exact key restricted to the bare scope matches only `@astryxdesign`,
+  // which nothing imports, so it routes no package and must not buy silence.
+  // These need an app with nothing installed: with a package present the
+  // generated entries route it and there is correctly nothing to report.
+  const ineffective = (label, build) =>
+    it(`warns for an exact scope-only alias ${label}`, () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const dir = fs.realpathSync(
+        fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-exact-')),
+      );
+      try {
+        build(dir, path.join(dir, 'customRoot'));
+        expect(warn).toHaveBeenCalledOnce();
+        expect(warn.mock.calls[0][0]).toMatch(/no alias routes/);
+      } finally {
+        fs.rmSync(dir, {recursive: true, force: true});
+      }
+    });
+
+  ineffective('in the config', (dir, target) =>
+    withAstryx().webpack({resolve: {alias: {'@astryxdesign$': target}}}, {dir}),
+  );
+
+  ineffective('in array form', (dir, target) =>
+    withAstryx().webpack(
+      {
+        resolve: {
+          alias: [{name: '@astryxdesign', onlyModule: true, alias: target}],
+        },
+      },
+      {dir},
+    ),
+  );
+
+  ineffective('from the caller webpack hook', (dir, target) =>
+    withAstryx({
+      webpack: cfg => {
+        cfg.resolve.alias['@astryxdesign$'] = target;
+        return cfg;
+      },
+    }).webpack({resolve: {alias: {}}}, {dir}),
+  );
+
+  // The boundary: exactness removes the ancestor case and only that one, so an
+  // exact key at or below a package still routes a real request.
+  const effectiveExact = (label, build) =>
+    it(`stays quiet for an exact alias ${label}`, () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const dir = fs.realpathSync(
+        fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-exact-ok-')),
+      );
+      try {
+        build(dir, path.join(dir, 'customRoot'));
+        expect(warn).not.toHaveBeenCalled();
+      } finally {
+        fs.rmSync(dir, {recursive: true, force: true});
+      }
+    });
+
+  effectiveExact('on the package itself', (dir, target) =>
+    withAstryx().webpack(
+      {resolve: {alias: {'@astryxdesign/core$': target}}},
+      {dir},
+    ),
+  );
+
+  effectiveExact('on the package, array form', (dir, target) =>
+    withAstryx().webpack(
+      {
+        resolve: {
+          alias: [
+            {name: '@astryxdesign/core', onlyModule: true, alias: target},
+          ],
+        },
+      },
+      {dir},
+    ),
+  );
+
+  effectiveExact('on a subpath under the package', (dir, target) =>
+    withAstryx().webpack(
+      {resolve: {alias: {'@astryxdesign/core/Badge$': target}}},
+      {dir},
+    ),
+  );
+
   const scoped = (label, build) =>
     it(`stays quiet for a scope-prefix alias ${label}`, () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

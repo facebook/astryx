@@ -190,43 +190,52 @@ function sourceEntryAliases(packages, context) {
 /**
  * Whether the resolved alias map routes any astryx request at all.
  *
- * The test is webpack's own matching rule rather than a list of shapes: a
+ * The test is webpack's own matching rule rather than a list of shapes. A
  * non-exact alias `key` intercepts a request `R` when `R === key` or `R` starts
- * with `${key}/`. So an entry covers the packages when one of them sits at or
- * below its key — `'@astryxdesign'` claims `@astryxdesign/core` even though it
- * matches no package name as a string. A key *under* a package counts too,
- * because that is the shape of the entries this helper generates, and a `*` key
- * claims by pattern, using the same matcher `withoutCallerOverrides` applies.
+ * with `${key}/`, so an entry covers the packages when one of them sits at or
+ * below its key: `'@astryxdesign'` claims `@astryxdesign/core`. A key *under* a
+ * package counts too, because that is the shape of the entries this helper
+ * generates, and a `*` key claims by pattern, using the same matcher
+ * `withoutCallerOverrides` applies.
+ *
+ * Exactness — a trailing `$` on an object key, `onlyModule: true` on an array
+ * entry — restricts an entry to the literal request, which removes the
+ * ancestor case and only that one. `'@astryxdesign/core$'` still routes a real
+ * request; `'@astryxdesign$'` routes only the bare scope specifier, which
+ * nothing imports, so it covers nothing.
  *
  * Where a caller points its alias is its business; the only thing worth saying
- * is that nothing routes the packages at all, which is the pre-0.5.3 config. A
- * false positive here tells someone their working build is broken, while a false
- * negative merely stays quiet — so this errs toward silence.
+ * is that no entry routes the packages at all. A false positive tells someone
+ * their working build is broken, so an ambiguous config stays quiet — but an
+ * exact-scope key is not ambiguous, it is determinately ineffective.
  */
 function aliasCoversAstryx(alias, packages) {
-  const covers = key => {
-    if (key.includes('*')) {
-      const pattern = wildcardPattern(key);
+  const covers = (key, exact) => {
+    const bare = key.endsWith('$') ? key.slice(0, -1) : key;
+    const isExact = exact || key.endsWith('$');
+    if (bare.includes('*')) {
+      const pattern = wildcardPattern(bare);
       return packages.some(name => pattern.test(name));
     }
     return packages.some(
       name =>
-        name === key ||
-        name.startsWith(`${key}/`) ||
-        key.startsWith(`${name}/`),
+        name === bare ||
+        bare.startsWith(`${name}/`) ||
+        (!isExact && name.startsWith(`${bare}/`)),
     );
   };
   if (Array.isArray(alias)) {
     return alias.some(
-      entry => entry && typeof entry.name === 'string' && covers(entry.name),
+      entry =>
+        entry &&
+        typeof entry.name === 'string' &&
+        covers(entry.name, entry.onlyModule === true),
     );
   }
   if (alias == null || typeof alias !== 'object') {
     return false;
   }
-  return Object.keys(alias).some(key =>
-    covers(key.endsWith('$') ? key.slice(0, -1) : key),
-  );
+  return Object.keys(alias).some(key => covers(key, false));
 }
 
 /**
@@ -316,12 +325,14 @@ function withAstryx(nextConfig = {}) {
       // not proof the build is wrong.
       if (!aliasCoversAstryx(merged.resolve.alias, astryxPackages)) {
         console.warn(
-          '[@astryxdesign/build] withAstryx() produced no alias for ' +
-            `${astryxPackages.join(', ')}, and none was configured. Either they ` +
-            'are not installed where the app can see them, or their export maps ' +
-            'ship no `source` condition. Source resolution is not in effect, so ' +
-            'the app will load dist while the PostCSS pass compiles the library ' +
-            'from source.',
+          '[@astryxdesign/build] withAstryx(): no alias routes ' +
+            `${astryxPackages.join(', ')} to their \`source\` entries. Either they ` +
+            'are not installed where the app can see them, their export maps ' +
+            'ship no `source` condition, or a configured alias does not match ' +
+            'the requests — an exact key such as `@astryxdesign$` matches only ' +
+            'the bare specifier. Source resolution is not in effect, so the app ' +
+            'will load dist while the PostCSS pass compiles the library from ' +
+            'source.',
         );
       }
 
