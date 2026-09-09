@@ -213,6 +213,17 @@
     }
   },
   {
+    "component": "BaseTypeahead",
+    "storyId": "core-basetypeahead--logical-dropdown-placement",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": "[role=\"listbox\"]",
+      "overlayRoot": "[data-base-typeahead-anchor=\"true\"]"
+    }
+  },
+  {
     "component": "Typeahead",
     "storyId": "core-typeahead--rtl-end-lane",
     "dims": [

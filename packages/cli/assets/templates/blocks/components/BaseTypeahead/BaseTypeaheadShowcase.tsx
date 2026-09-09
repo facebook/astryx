@@ -6,40 +6,36 @@ import {useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {BaseTypeahead, createStaticSource} from '@astryxdesign/core/Typeahead';
 import type {SearchableItem} from '@astryxdesign/core/Typeahead';
-import {Icon} from '@astryxdesign/core/Icon';
-import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {
   borderVars,
   colorVars,
   focusVars,
   radiusVars,
+  sizeVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 const frameworks: SearchableItem[] = [
   {id: 'react', label: 'React'},
   {id: 'vue', label: 'Vue'},
-  {id: 'angular', label: 'Angular'},
   {id: 'svelte', label: 'Svelte'},
-  {id: 'solid', label: 'SolidJS'},
-  {id: 'remix', label: 'Remix'},
   {id: 'next', label: 'Next.js'},
-  {id: 'nuxt', label: 'Nuxt'},
 ];
-
 const source = createStaticSource(frameworks);
 
 const styles = stylex.create({
-  root: {width: 320},
+  root: {width: 360},
   field: {
+    alignItems: 'center',
     backgroundColor: colorVars['--color-background-surface'],
-    borderColor: colorVars['--color-border'],
+    borderColor: colorVars['--color-border-emphasized'],
     borderRadius: radiusVars['--radius-element'],
     borderStyle: 'solid',
     borderWidth: borderVars['--border-width'],
-    paddingBlock: spacingVars['--spacing-1-5'],
+    display: 'flex',
+    minHeight: sizeVars['--size-element-md'],
     paddingInline: spacingVars['--spacing-2'],
     outlineColor: {
       default: 'transparent',
@@ -54,27 +50,27 @@ const styles = stylex.create({
   },
 });
 
-export default function BaseTypeaheadCustomSearch() {
+export default function BaseTypeaheadShowcase() {
   const [value, setValue] = useState<SearchableItem | null>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
 
   return (
     <VStack gap={3} xstyle={styles.root}>
-      <HStack ref={wrapperRef} gap={2} vAlign="center" xstyle={styles.field}>
-        <Icon icon={MagnifyingGlassIcon} size="sm" color="secondary" />
+      <Text type="label">Framework</Text>
+      <div ref={anchorRef} {...stylex.props(styles.field)}>
         <BaseTypeahead
-          aria-label="Search frameworks"
+          aria-label="Framework"
+          anchorRef={anchorRef}
+          debounceMs={0}
+          hasEntriesOnFocus
+          onChange={setValue}
+          placeholder="Search frameworks…"
           searchSource={source}
           value={value}
-          onChange={setValue}
-          anchorRef={wrapperRef}
-          placeholder="Search frameworks…"
-          hasEntriesOnFocus
-          debounceMs={0}
         />
-      </HStack>
+      </div>
       <Text type="supporting" color="secondary">
-        {value != null ? `Selected: ${value.label}` : 'No selection'}
+        {value == null ? 'Choose a framework' : `Selected: ${value.label}`}
       </Text>
     </VStack>
   );

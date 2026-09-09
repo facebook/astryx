@@ -1,5 +1,62 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Input',
+    required: true,
+    description:
+      'Bare combobox input. The caller supplies its visible field chrome and accessible name.',
+  },
+  {
+    name: 'Loading status',
+    required: false,
+    description:
+      'Named Spinner shown beside the input while an asynchronous source is pending, unless a composed owner takes over the busy indicator lane.',
+  },
+  {
+    name: 'Dropdown',
+    required: false,
+    description:
+      'Anchored listbox surface containing current search or bootstrap results.',
+  },
+  {
+    name: 'Empty state',
+    required: false,
+    description:
+      'Disabled listbox option shown after a completed search returns no results.',
+  },
+  {
+    name: 'Result group heading',
+    required: false,
+    description: 'Visible label for a group of result options.',
+  },
+  {
+    name: 'Result row',
+    required: false,
+    description:
+      'Option wrapper that owns highlight, selection, pointer, and keyboard behavior.',
+  },
+  {
+    name: 'Default item content',
+    required: false,
+    description:
+      'TypeaheadItem label and optional supporting content rendered inside a result row.',
+  },
+  {
+    name: 'Caller-rendered item content',
+    required: false,
+    description:
+      'Caller content supplied through renderItem or item.element inside the stable result row.',
+  },
+  {
+    name: 'Selected result state',
+    required: false,
+    description:
+      'Selected row weight and trailing check shown when a result matches value.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -7,15 +64,38 @@ export const docs = {
   subComponentOf: 'Typeahead',
   displayName: 'Base Typeahead',
   isHiddenFromOverview: true,
-  description: 'Unstyled combobox engine providing input, search, keyboard navigation, and dropdown. No wrapper div, no border styling, no token rendering. Used by Typeahead and Tokenizer for custom compositions.',
+  description:
+    'Composable combobox engine providing a bare input, search, keyboard navigation, and a styled result dropdown. It renders no input wrapper, border, or selected-value token. Typeahead and Tokenizer compose it for standard fields.',
   usage: {
-    description: 'Unstyled combobox engine providing input, search, keyboard navigation, and dropdown. No wrapper div, no border styling, no token rendering. Used by Typeahead and Tokenizer for custom compositions.',
+    anatomy,
+    description:
+      'Composable combobox engine providing a bare input, search, keyboard navigation, and a styled result dropdown. It renders no input wrapper, border, or selected-value token. Typeahead and Tokenizer compose it for standard fields.',
     bestPractices: [
-      { guidance: true, description: 'Use Typeahead or Tokenizer for standard fields; they wrap BaseTypeahead with the wrapper div, border styling, and token rendering it intentionally omits.' },
-      { guidance: true, description: 'Provide your own wrapper div with border and layout when composing directly, since BaseTypeahead renders no visual chrome of its own.' },
-      { guidance: true, description: 'Pass anchorRef pointing to your wrapper so the dropdown positions against your custom input chrome, not just the bare input element.' },
-      { guidance: false, description: 'Expect a wrapper div, border, or token rendering. BaseTypeahead is an engine only; all visual chrome is the caller\'s responsibility.' },
-      { guidance: false, description: 'Use BaseTypeahead when Typeahead or Tokenizer would suffice; the extra wrapper and styling work is only justified for truly custom compositions.' },
+      {
+        guidance: true,
+        description:
+          'Use Typeahead or Tokenizer for standard fields; they wrap BaseTypeahead with input chrome and selected-value rendering it intentionally omits.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide your own visible label or aria-label and custom input wrapper so the bare combobox has an accessible name, focus treatment, border, and layout.',
+      },
+      {
+        guidance: true,
+        description:
+          'Pass anchorRef pointing to your wrapper so the dropdown positions against your custom input chrome, not just the bare input element.',
+      },
+      {
+        guidance: false,
+        description:
+          'Expect input chrome or selected-value rendering. BaseTypeahead is an engine; the caller owns those visible parts.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use BaseTypeahead when Typeahead or Tokenizer would suffice; the extra wrapper and styling work is only justified for truly custom compositions.',
+      },
     ],
   },
   props: [
@@ -46,7 +126,7 @@ export const docs = {
       name: 'placeholder',
       type: 'string',
       description: 'Input placeholder text.',
-      default: "'Search...'",
+      default: "'Search…'",
     },
     {
       name: 'hasEntriesOnFocus',
@@ -63,12 +143,14 @@ export const docs = {
     {
       name: 'menuWidth',
       type: 'number',
-      description: 'Fixed dropdown width in pixels. The menu never shrinks below its anchor width.',
+      description:
+        'Fixed dropdown width in pixels. The menu never shrinks below its anchor width.',
     },
     {
       name: 'minQueryLength',
       type: 'number',
-      description: 'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
+      description:
+        'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
       default: '1',
     },
     {
@@ -84,6 +166,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isFocusableDisabled',
+      type: 'boolean',
+      description:
+        'Keep a disabled input focusable with aria-disabled and readOnly so a caller-owned disabled reason remains discoverable.',
+      default: 'false',
+    },
+    {
       name: 'hasAutoFocus',
       type: 'boolean',
       description: 'Auto-focus the input on mount.',
@@ -92,13 +181,21 @@ export const docs = {
     {
       name: 'debounceMs',
       type: 'number',
-      description: 'Debounce delay in ms before triggering search. Set to 0 for synchronous sources.',
+      description:
+        'Debounce delay in ms before triggering search. Set to 0 for synchronous sources.',
       default: '150',
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: 'Size used to scale dropdown option padding.',
+      default: "'md'",
     },
     {
       name: 'anchorRef',
       type: 'RefObject<HTMLElement | null>',
-      description: 'Ref to the anchor element for dropdown positioning. If not provided, the input itself is used.',
+      description:
+        'Ref to the anchor element for dropdown positioning. If not provided, the input itself is used.',
     },
     {
       name: 'inputXStyle',
@@ -106,9 +203,21 @@ export const docs = {
       description: 'Additional StyleX styles for the input element.',
     },
     {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'Standard BaseProps StyleX styles applied to the input. Must be a stylex.create() value, not an inline style object.',
+    },
+    {
+      name: 'inputTabIndex',
+      type: 'number',
+      description: 'Tab-order override for the input element.',
+    },
+    {
       name: 'onKeyDown',
       type: '(e: React.KeyboardEvent<HTMLInputElement>) => void',
-      description: 'Additional keydown handler called before internal keyboard navigation. Call e.preventDefault() to skip internal handling.',
+      description:
+        'Additional keydown handler called before internal keyboard navigation. Call e.preventDefault() to skip internal handling.',
     },
     {
       name: 'onChangeQuery',
@@ -130,6 +239,11 @@ export const docs = {
       type: 'string',
       description: 'Additional aria-describedby IDs.',
     },
+    {
+      name: 'ariaLabelledBy',
+      type: 'string',
+      description: 'Additional aria-labelledby IDs used to name the combobox.',
+    },
   ],
 };
 
@@ -137,7 +251,8 @@ export const docsZh = {
   name: 'BaseTypeahead',
   isHiddenFromOverview: true,
   displayName: 'Base Typeahead',
-  description: '无样式的组合框引擎，提供输入、搜索、键盘导航和下拉列表。无包装 div，无边框样式，无标记渲染。由 Typeahead 和 Tokenizer 用于自定义组合。',
+  description:
+    '可组合的组合框引擎，提供裸输入框、搜索、键盘导航和带样式的结果下拉列表。它不渲染输入框包装、边框或已选值标记；Typeahead 和 Tokenizer 将其组合成标准字段。',
   props: [
     {
       name: 'searchSource',
@@ -166,7 +281,7 @@ export const docsZh = {
       name: 'placeholder',
       type: 'string',
       description: '输入框占位文本。',
-      default: "'Search...'",
+      default: "'Search…'",
     },
     {
       name: 'hasEntriesOnFocus',
@@ -188,7 +303,8 @@ export const docsZh = {
     {
       name: 'minQueryLength',
       type: 'number',
-      description: '查询搜索源前的最小查询长度。低于该长度不会发起搜索，菜单保持关闭。',
+      description:
+        '查询搜索源前的最小查询长度。低于该长度不会发起搜索，菜单保持关闭。',
       default: '1',
     },
     {
@@ -204,6 +320,13 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'isFocusableDisabled',
+      type: 'boolean',
+      description:
+        '使用 aria-disabled 和只读状态保持禁用输入框可聚焦，以便访问调用方提供的禁用原因。',
+      default: 'false',
+    },
+    {
       name: 'hasAutoFocus',
       type: 'boolean',
       description: '挂载时自动聚焦输入框。',
@@ -216,6 +339,12 @@ export const docsZh = {
       default: '150',
     },
     {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: '用于调整下拉选项内边距的尺寸。',
+      default: "'md'",
+    },
+    {
       name: 'anchorRef',
       type: 'RefObject<HTMLElement | null>',
       description: '用于下拉列表定位的锚点元素引用。未提供时使用输入框本身。',
@@ -226,9 +355,20 @@ export const docsZh = {
       description: '输入元素的附加 StyleX 样式。',
     },
     {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description: '应用于输入元素的标准 BaseProps StyleX 样式。',
+    },
+    {
+      name: 'inputTabIndex',
+      type: 'number',
+      description: '输入元素的 Tab 顺序覆盖。',
+    },
+    {
       name: 'onKeyDown',
       type: '(e: React.KeyboardEvent<HTMLInputElement>) => void',
-      description: '在内部键盘导航之前调用的附加 keydown 处理函数。调用 e.preventDefault() 可跳过内部处理。',
+      description:
+        '在内部键盘导航之前调用的附加 keydown 处理函数。调用 e.preventDefault() 可跳过内部处理。',
     },
     {
       name: 'onChangeQuery',
@@ -250,6 +390,11 @@ export const docsZh = {
       type: 'string',
       description: '附加的 aria-describedby ID。',
     },
+    {
+      name: 'ariaLabelledBy',
+      type: 'string',
+      description: '用于命名组合框的附加 aria-labelledby ID。',
+    },
   ],
 };
 
@@ -257,14 +402,35 @@ export const docsDense = {
   name: 'BaseTypeahead',
   isHiddenFromOverview: true,
   displayName: 'Base Typeahead',
-  description: 'Unstyled combobox engine; input+search+keyboard nav+dropdown. No wrapper/border/token. Used by Typeahead+Tokenizer.',
+  description:
+    'Composable combobox engine providing a bare input and a styled result dropdown. Callers own input chrome and selected-value presentation.',
   usage: {
     bestPractices: [
-      { guidance: true, description: 'Use Typeahead or Tokenizer for standard fields; they add the wrapper, border, and token rendering BaseTypeahead omits.' },
-      { guidance: true, description: 'Provide your own wrapper div with border and layout when composing directly; BaseTypeahead renders no chrome.' },
-      { guidance: true, description: 'Pass anchorRef to your wrapper so the dropdown positions against your input chrome, not the bare input.' },
-      { guidance: false, description: 'Expect wrapper, border, or token rendering. Engine only; chrome is the caller\'s job.' },
-      { guidance: false, description: 'Use BaseTypeahead when Typeahead or Tokenizer suffice; extra work only pays off for custom compositions.' },
+      {
+        guidance: true,
+        description:
+          'Use Typeahead or Tokenizer for standard fields; they add the input chrome and selected-value rendering BaseTypeahead omits.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a visible label or aria-label plus a custom wrapper with focus treatment, border, and layout.',
+      },
+      {
+        guidance: true,
+        description:
+          'Pass anchorRef to your wrapper so the dropdown positions against your input chrome, not the bare input.',
+      },
+      {
+        guidance: false,
+        description:
+          'Expect input chrome or selected-value rendering. The caller owns those visible parts.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use BaseTypeahead when Typeahead or Tokenizer suffice; extra work only pays off for custom compositions.',
+      },
     ],
   },
   propDescriptions: {
@@ -276,17 +442,25 @@ export const docsDense = {
     hasEntriesOnFocus: 'Bootstrap results on focus.',
     maxMenuItems: 'Max dropdown items.',
     menuWidth: 'Fixed dropdown width in pixels.',
-    minQueryLength: 'Min query length before searching. Menu stays closed below it.',
+    minQueryLength:
+      'Min query length before searching. Menu stays closed below it.',
     emptySearchResultsText: 'Text when no results.',
     isDisabled: 'Whether input disabled.',
+    isFocusableDisabled:
+      'Keep disabled input focusable for a caller-owned disabled reason.',
     hasAutoFocus: 'Auto-focus on mount.',
     debounceMs: 'Search debounce ms. 0 for sync.',
+    size: 'Dropdown option padding size.',
     anchorRef: 'Anchor for dropdown positioning. Defaults to input.',
     inputXStyle: 'Additional StyleX styles for input.',
-    onKeyDown: 'Keydown before internal nav. preventDefault() skips internal handling.',
+    xstyle: 'Standard BaseProps StyleX styles for input.',
+    inputTabIndex: 'Input tab-order override.',
+    onKeyDown:
+      'Keydown before internal nav. preventDefault() skips internal handling.',
     onChangeQuery: 'Fired on query text change.',
     onOpenChange: 'Fired on dropdown open/close.',
     inputId: 'Input ID for label association.',
     ariaDescribedBy: 'Additional aria-describedby IDs.',
+    ariaLabelledBy: 'Additional aria-labelledby IDs for the combobox name.',
   },
 };

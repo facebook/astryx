@@ -37,6 +37,7 @@ import {TypeaheadItem} from './TypeaheadItem';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
 import {
+  borderVars,
   colorVars,
   spacingVars,
   radiusVars,
@@ -44,7 +45,13 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {getKey, groupItems, mergeProps} from '../utils';
+import {
+  characterCount,
+  composeEventHandlers,
+  getKey,
+  groupItems,
+  mergeProps,
+} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
@@ -106,8 +113,8 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * for a result set that cannot be meaningful yet — and the user does not
    * see "no results" for a query that was never searched.
    *
-   * Measured with `String.length` (UTF-16 code units), like every other
-   * length check in the library.
+   * Measured by grapheme cluster, so one visible character counts once even
+   * when JavaScript represents it with multiple UTF-16 code units.
    *
    * @default 1 — every non-empty query is searched.
    */
@@ -235,6 +242,10 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
 // Styles
 // =============================================================================
 
+const TYPEAHEAD_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
+const TYPEAHEAD_MAX_INLINE_SIZE = `calc(100vi - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
+const TYPEAHEAD_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${TYPEAHEAD_VIEWPORT_GUTTER} - ${TYPEAHEAD_VIEWPORT_GUTTER})`;
+
 const styles = stylex.create({
   input: {
     display: 'block',
@@ -266,7 +277,12 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
   },
   popover: {
+    boxSizing: 'border-box',
     minWidth: 'anchor-size(width)',
+    maxInlineSize: stylex.firstThatWorks(
+      TYPEAHEAD_MAX_INLINE_SIZE,
+      TYPEAHEAD_MAX_INLINE_SIZE_FALLBACK,
+    ),
   },
   popoverCustomWidth: (width: number) => ({
     width: `${width}px`,
@@ -298,6 +314,18 @@ const styles = stylex.create({
   },
   itemHighlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'Highlight',
+    },
+    outlineStyle: {
+      default: null,
+      '@media (forced-colors: active)': 'solid',
+    },
+    outlineWidth: {
+      default: null,
+      '@media (forced-colors: active)': borderVars['--border-width'],
+    },
   },
   itemSelected: {
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -354,7 +382,8 @@ const itemSizeStyles = stylex.create({
  * untouched state, and `hasEntriesOnFocus` owns what happens there.
  */
 function isBelowMinQueryLength(query: string, minQueryLength: number): boolean {
-  return query.length > 0 && query.length < minQueryLength;
+  const length = characterCount(query);
+  return length > 0 && length < minQueryLength;
 }
 
 // =============================================================================
@@ -375,6 +404,7 @@ function isBelowMinQueryLength(query: string, minQueryLength: number): boolean {
  *   searchSource={source}
  *   value={selected}
  *   onChange={setSelected}
+ *   aria-label="Search frameworks"
  *   anchorRef={wrapperRef}
  *   placeholder="Search..."
  * />
@@ -406,7 +436,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   onKeyDown: externalOnKeyDown,
   debounceMs = 150,
   size = 'md',
+  xstyle,
+  className,
+  style,
+  onPointerDown: onPointerDownProp,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
   ref,
+  ...rest
 }: BaseTypeaheadProps<T>) {
   const t = useTranslator();
   const placeholder =
@@ -949,6 +986,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   return (
     <>
       <input
+        {...rest}
         ref={useMergedRefs(ref, inputRef, fallbackAnchorRef)}
         id={inputId}
         type="text"
@@ -970,7 +1008,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         tabIndex={inputTabIndex}
         value={query}
         onChange={handleInputChange}
-        onPointerDown={() => {
+        onPointerDown={composeEventHandlers(() => {
           pointerActiveRef.current = true;
           document.addEventListener(
             'click',
@@ -979,9 +1017,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             },
             {once: true},
           );
-        }}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
+        }, onPointerDownProp)}
+        onFocus={composeEventHandlers(handleFocus, onFocusProp)}
+        onBlur={composeEventHandlers(handleBlur, onBlurProp)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         // When a disabled-reason tooltip is shown the input keeps focusability
@@ -992,10 +1030,15 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         autoComplete="off"
-        {...stylex.props(
-          styles.input,
-          isDisabled && styles.inputDisabled,
-          inputXStyle,
+        {...mergeProps(
+          stylex.props(
+            styles.input,
+            isDisabled && styles.inputDisabled,
+            inputXStyle,
+            xstyle,
+          ),
+          className,
+          style,
         )}
       />
       {isLoading && busyLane == null && (
@@ -1014,6 +1057,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           )}>
           {results.length === 0 && hasSearched ? (
             <div
+              role="option"
+              aria-disabled="true"
               {...mergeProps(
                 themeProps('typeahead-empty-state'),
                 stylex.props(styles.emptyState),
