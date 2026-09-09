@@ -1,0 +1,83 @@
+{
+  "label": "after: BaseTypeahead loading · neutral-light-ltr",
+  "identity": "story",
+  "build": {
+    "root": "<repository>",
+    "expectedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f",
+    "observedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f"
+  },
+  "expected": {
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 900,
+      "height": 620,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 1,
+    "state": {
+      "busyCount": 1,
+      "loadingStatuses": 1
+    },
+    "runningAnimations": 0
+  },
+  "observed": {
+    "storyExpected": "core-basetypeahead--loading",
+    "storyObserved": "core-basetypeahead--loading",
+    "routeObserved": "/iframe.html",
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "surfaceColor": "rgb(255, 255, 255)",
+    "surfaceLuminance": 0.9999999999999999,
+    "surfaceClass": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 900,
+      "height": 620,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 1,
+    "visible": true,
+    "box": {
+      "x": 290,
+      "y": 306.5,
+      "width": 320,
+      "height": 32,
+      "insideViewport": true
+    },
+    "fonts": "loaded",
+    "runningAnimations": 0,
+    "storybookError": null,
+    "state": {
+      "busyCount": 1,
+      "loadingStatuses": 1
+    }
+  },
+  "image": {
+    "path": "<evidence>/after/frames/loading__neutral-light-ltr.png",
+    "bytes": 6779
+  }
+}

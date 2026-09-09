@@ -1,0 +1,51 @@
+
+ RUN  v4.1.10 <repository>
+
+Built pseudo.json — 362 keys
+Built pseudo.json — 362 keys
+(node:76199) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76201) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76197) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76198) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76200) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ |ui| packages/core/src/theme/themingTargets.test.ts (412 tests) 41ms
+ ✓ |ui| packages/core/src/theme/extensibleAxes.test.ts (40 tests) 13ms
+ ✓ |ui| packages/core/src/Typeahead/BaseTypeahead.test.tsx (3 tests) 526ms
+     ✓ forwards supported DOM, styling, and event props to the combobox input  339ms
+ ✓ |ui| packages/core/src/Typeahead/Typeahead.test.tsx (79 tests) 2893ms
+     ✓ shows the reason tooltip on hover when disabled with a reason  312ms
+stderr | packages/core/src/Tokenizer/Tokenizer.test.tsx > Tokenizer > disabledMessage > blocks input while focusable-disabled
+An update to Tokenizer inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to Tokenizer inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ |ui| packages/core/src/Tokenizer/Tokenizer.test.tsx (73 tests) 3582ms
+       ✓ shows the reason tooltip on hover when disabled with a reason  334ms
+
+ Test Files  5 passed (5)
+      Tests  607 passed (607)
+   Start at  05:26:25
+   Duration  11.30s (transform 13.57s, setup 1.99s, import 21.71s, tests 7.06s, environment 5.59s)
+

@@ -1,0 +1,262 @@
+
+ RUN  v4.1.10 <repository>
+
+Built pseudo.json — 362 keys
+Built pseudo.json — 362 keys
+(node:77307) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stderr | packages/core/src/Typeahead/BaseTypeahead.test.tsx > BaseTypeahead > counts grapheme clusters when enforcing minQueryLength
+An update to BaseTypeahead inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to BaseTypeahead inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to BaseTypeahead inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to BaseTypeahead inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ❯ |ui| packages/core/src/Typeahead/BaseTypeahead.test.tsx (3 tests | 3 failed) 1376ms
+     × forwards supported DOM, styling, and event props to the combobox input 244ms
+     × counts grapheme clusters when enforcing minQueryLength 89ms
+     × exposes a completed empty search as a disabled listbox option 1040ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |ui| packages/core/src/Typeahead/BaseTypeahead.test.tsx > BaseTypeahead > forwards supported DOM, styling, and event props to the combobox input
+TestingLibraryElementError: Unable to find an accessible element with the role "combobox" and name "Find a framework"
+
+Here are the accessible roles:
+
+  combobox:
+
+  Name "":
+  <input
+    aria-autocomplete="list"
+    aria-controls="_r_1_"
+    aria-expanded="false"
+    autocomplete="off"
+    class="BaseTypeahead__styles.input x1lliihq x98rzlu xfvyar9 xc342km xng3xce x1717udv x9ynric xjm74w1 x6pjikd xw6l6zx x1tgivj0 xjbqb8w x1a2a7pz xeyghm5"
+    id="_r_0_"
+    placeholder="Search…"
+    role="combobox"
+    style="anchor-name: --astryx-layer-_r_2_;"
+    type="text"
+    value=""
+  />
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style, [data-astryx-live-region]
+<body>
+  <div>
+    <input
+      aria-autocomplete="list"
+      aria-controls="_r_1_"
+      aria-expanded="false"
+      autocomplete="off"
+      class="BaseTypeahead__styles.input x1lliihq x98rzlu xfvyar9 xc342km xng3xce x1717udv x9ynric xjm74w1 x6pjikd xw6l6zx x1tgivj0 xjbqb8w x1a2a7pz xeyghm5"
+      id="_r_0_"
+      placeholder="Search…"
+      role="combobox"
+      style="anchor-name: --astryx-layer-_r_2_;"
+      type="text"
+      value=""
+    />
+    <template />
+    <div
+      class="useLayer__styles.base x1lziwak x14z9mp xexx8yu x18d9i69 x1c1uobl xyri2b xc342km xng3xce x1rea2x4 x9ynric xjm74w1 xw6l6zx xjbqb8w padding__overlayPaddingReset.reset xrhngw9 xjsfl84 x1047aw6 xax9j7h xdt8ak2 x1rs4lu4 x1qfll2g xyvxpqs x1f17rg1 useLayer__styles.offsetBlock x1vhfslr xlm3tn6 BaseTypeahead__styles.popover xrzjruh"
+      id="_r_2_"
+      popover="auto"
+      style="--x-marginBlockStart: var(--spacing-1); --x-marginBlockEnd: var(--spacing-1); position-anchor: --astryx-layer-_r_2_; position-area: self-block-end span-self-inline-end; position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;"
+    >
+      <div
+        class="astryx-popover-surface focusOutline__focusOutlineStyles.focusVisible x1k57tk5 x1vidyx5 x1t137rt x1jhp3zv xx47ajj x1wfwxd8 x1vwwbsn usePopover__styles.contentWrapper x1n2onr6 usePopover__styles.surface x1prclbq xiki222 x11m9jtl x1i5ehqx"
+      >
+        <div
+          aria-label="Search results"
+          class="astryx-typeahead-dropdown BaseTypeahead__styles.dropdown x9f619 xuyqlj2 x1odjw0f x9epnlk"
+          id="_r_1_"
+          role="listbox"
+        />
+      </div>
+    </div>
+  </div>
+</body>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ getByRole node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ packages/core/src/Typeahead/BaseTypeahead.test.tsx:78:26
+     76|     );
+     77|
+     78|     const input = screen.getByRole('combobox', {name: 'Find a framewor…
+       |                          ^
+     79|     expect(input).toHaveAttribute('aria-expanded', 'false');
+     80|     expect(input).toHaveAttribute('data-audit-state', 'forwarded');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  |ui| packages/core/src/Typeahead/BaseTypeahead.test.tsx > BaseTypeahead > counts grapheme clusters when enforcing minQueryLength
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      "😀",
+    ]
+
+
+Number of calls: 1
+
+ ❯ packages/core/src/Typeahead/BaseTypeahead.test.tsx:108:24
+    106|     fireEvent.change(input, {target: {value: '😀'}});
+    107|     await Promise.resolve();
+    108|     expect(search).not.toHaveBeenCalled();
+       |                        ^
+    109|     expect(input).toHaveAttribute('aria-expanded', 'false');
+    110|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  |ui| packages/core/src/Typeahead/BaseTypeahead.test.tsx > BaseTypeahead > exposes a completed empty search as a disabled listbox option
+TestingLibraryElementError: Unable to find role="option" and name "No matching frameworks"
+
+Ignored nodes: comments, script, style, [data-astryx-live-region]
+<body>
+  <div>
+    <input
+      aria-autocomplete="list"
+      aria-controls="_r_8_"
+      aria-expanded="true"
+      autocomplete="off"
+      class="BaseTypeahead__styles.input x1lliihq x98rzlu xfvyar9 xc342km xng3xce x1717udv x9ynric xjm74w1 x6pjikd xw6l6zx x1tgivj0 xjbqb8w x1a2a7pz xeyghm5"
+      id="_r_7_"
+      placeholder="Search…"
+      role="combobox"
+      style="anchor-name: --astryx-layer-_r_9_;"
+      type="text"
+      value="none"
+    />
+    <template />
+    <div
+      class="useLayer__styles.base x1lziwak x14z9mp xexx8yu x18d9i69 x1c1uobl xyri2b xc342km xng3xce x1rea2x4 x9ynric xjm74w1 xw6l6zx xjbqb8w padding__overlayPaddingReset.reset xrhngw9 xjsfl84 x1047aw6 xax9j7h xdt8ak2 x1rs4lu4 x1qfll2g xyvxpqs x1f17rg1 useLayer__styles.offsetBlock x1vhfslr xlm3tn6 BaseTypeahead__styles.popover xrzjruh"
+      id="_r_9_"
+      popover="auto"
+      style="--x-marginBlockStart: var(--spacing-1); --x-marginBlockEnd: var(--spacing-1); position-anchor: --astryx-layer-_r_9_; position-area: self-block-end span-self-inline-end; position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;"
+    >
+      <div
+        class="astryx-popover-surface focusOutline__focusOutlineStyles.focusVisible x1k57tk5 x1vidyx5 x1t137rt x1jhp3zv xx47ajj x1wfwxd8 x1vwwbsn usePopover__styles.contentWrapper x1n2onr6 usePopover__styles.surface x1prclbq xiki222 x11m9jtl x1i5ehqx"
+      >
+        <div
+          aria-label="Search results"
+          class="astryx-typeahead-dropdown BaseTypeahead__styles.dropdown x9f619 xuyqlj2 x1odjw0f x9epnlk"
+          id="_r_8_"
+          role="listbox"
+        >
+          <div
+            class="astryx-typeahead-empty-state BaseTypeahead__styles.emptyState x1b2ylru x2b8uid x141an7d xv1l7n4"
+          >
+            No matching frameworks
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style, [data-astryx-live-region]
+<html>
+  <head />
+  <body>
+    <div>
+      <input
+        aria-autocomplete="list"
+        aria-controls="_r_8_"
+        aria-expanded="true"
+        autocomplete="off"
+        class="BaseTypeahead__styles.input x1lliihq x98rzlu xfvyar9 xc342km xng3xce x1717udv x9ynric xjm74w1 x6pjikd xw6l6zx x1tgivj0 xjbqb8w x1a2a7pz xeyghm5"
+        id="_r_7_"
+        placeholder="Search…"
+        role="combobox"
+        style="anchor-name: --astryx-layer-_r_9_;"
+        type="text"
+        value="none"
+      />
+      <template />
+      <div
+        class="useLayer__styles.base x1lziwak x14z9mp xexx8yu x18d9i69 x1c1uobl xyri2b xc342km xng3xce x1rea2x4 x9ynric xjm74w1 xw6l6zx xjbqb8w padding__overlayPaddingReset.reset xrhngw9 xjsfl84 x1047aw6 xax9j7h xdt8ak2 x1rs4lu4 x1qfll2g xyvxpqs x1f17rg1 useLayer__styles.offsetBlock x1vhfslr xlm3tn6 BaseTypeahead__styles.popover xrzjruh"
+        id="_r_9_"
+        popover="auto"
+        style="--x-marginBlockStart: var(--spacing-1); --x-marginBlockEnd: var(--spacing-1); position-anchor: --astryx-layer-_r_9_; position-area: self-block-end span-self-inline-end; position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;"
+      >
+        <div
+          class="astryx-popover-surface focusOutline__focusOutlineStyles.focusVisible x1k57tk5 x1vidyx5 x1t137rt x1jhp3zv xx47ajj x1wfwxd8 x1vwwbsn usePopover__styles.contentWrapper x1n2onr6 usePopover__styles.surface x1prclbq xiki222 x11m9jtl x1i5ehqx"
+        >
+          <div
+            aria-label="Search results"
+            class="astryx-typeahead-dropdown BaseTypeahead__styles.dropdown x9f619 xuyqlj2 x1odjw0f x9epnlk"
+            id="_r_8_"
+            role="listbox"
+          >
+            <div
+              class="astryx-typeahead-empty-state BaseTypeahead__styles.emptyState x1b2ylru x2b8uid x141an7d xv1l7n4"
+            >
+              No matching frameworks
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+ ❯ waitFor node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ packages/core/src/Typeahead/BaseTypeahead.test.tsx:130:11
+    128|     });
+    129|
+    130|     await waitFor(() => {
+       |           ^
+    131|       expect(
+    132|         screen.getByRole('option', {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed (3)
+   Start at  05:27:43
+   Duration  12.51s (transform 5.96s, setup 787ms, import 6.50s, tests 1.38s, environment 1.94s)
+

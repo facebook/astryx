@@ -1,0 +1,87 @@
+{
+  "label": "before: BaseTypeahead disabled-states · neutral-light-ltr",
+  "identity": "story",
+  "build": {
+    "root": "<repository>",
+    "expectedSha": "53bc34db7c9dd40c3fe0f0e0f419adaea71a73cd",
+    "observedSha": "53bc34db7c9dd40c3fe0f0e0f419adaea71a73cd"
+  },
+  "expected": {
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 900,
+      "height": 620,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 2,
+    "state": {
+      "inputCount": 2,
+      "nativeDisabledCount": 1,
+      "ariaDisabledCount": 1,
+      "readOnlyCount": 1
+    },
+    "runningAnimations": 0
+  },
+  "observed": {
+    "storyExpected": "core-basetypeahead--disabled-states",
+    "storyObserved": "core-basetypeahead--disabled-states",
+    "routeObserved": "/iframe.html",
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "surfaceColor": "rgb(255, 255, 255)",
+    "surfaceLuminance": 0.9999999999999999,
+    "surfaceClass": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 900,
+      "height": 620,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 2,
+    "visible": true,
+    "box": {
+      "x": 290,
+      "y": 268,
+      "width": 320,
+      "height": 32,
+      "insideViewport": true
+    },
+    "fonts": "loaded",
+    "runningAnimations": 0,
+    "storybookError": null,
+    "state": {
+      "inputCount": 2,
+      "nativeDisabledCount": 1,
+      "ariaDisabledCount": 1,
+      "readOnlyCount": 1
+    }
+  },
+  "image": {
+    "path": "<evidence>/before/frames/disabled-states__neutral-light-ltr.png",
+    "bytes": 10057
+  }
+}

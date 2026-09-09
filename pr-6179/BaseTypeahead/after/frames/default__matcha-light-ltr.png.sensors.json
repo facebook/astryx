@@ -1,0 +1,87 @@
+{
+  "label": "after: BaseTypeahead default · matcha-light-ltr",
+  "identity": "story",
+  "build": {
+    "root": "<repository>",
+    "expectedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f",
+    "observedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f"
+  },
+  "expected": {
+    "globals": {
+      "astryxTheme": "matcha",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "themeAttr": "matcha",
+    "colorMode": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 900,
+      "height": 620,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 1,
+    "state": {
+      "inputCount": 1,
+      "labelledCount": 1,
+      "expandedCount": 0,
+      "horizontalOverflow": false
+    },
+    "runningAnimations": 0
+  },
+  "observed": {
+    "storyExpected": "core-basetypeahead--default",
+    "storyObserved": "core-basetypeahead--default",
+    "routeObserved": "/iframe.html",
+    "globals": {
+      "astryxTheme": "matcha",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "themeAttr": "matcha",
+    "colorMode": "light",
+    "surfaceColor": "rgb(255, 255, 255)",
+    "surfaceLuminance": 0.9999999999999999,
+    "surfaceClass": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 900,
+      "height": 620,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 1,
+    "visible": true,
+    "box": {
+      "x": 290,
+      "y": 305,
+      "width": 320,
+      "height": 40,
+      "insideViewport": true
+    },
+    "fonts": "loaded",
+    "runningAnimations": 0,
+    "storybookError": null,
+    "state": {
+      "inputCount": 1,
+      "labelledCount": 1,
+      "expandedCount": 0,
+      "horizontalOverflow": false
+    }
+  },
+  "image": {
+    "path": "<evidence>/after/frames/default__matcha-light-ltr.png",
+    "bytes": 8386
+  }
+}

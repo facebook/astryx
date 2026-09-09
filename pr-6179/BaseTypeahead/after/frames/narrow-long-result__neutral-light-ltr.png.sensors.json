@@ -1,0 +1,89 @@
+{
+  "label": "after: BaseTypeahead narrow-long-result · neutral-light-ltr",
+  "identity": "story",
+  "build": {
+    "root": "<repository>",
+    "expectedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f",
+    "observedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f"
+  },
+  "expected": {
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 320,
+      "height": 680,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 1,
+    "state": {
+      "expandedCount": 1,
+      "visibleOptions": 5,
+      "horizontalOverflow": false,
+      "anchorsInsideViewport": true,
+      "listboxesInsideViewport": true
+    },
+    "runningAnimations": 0
+  },
+  "observed": {
+    "storyExpected": "core-basetypeahead--narrow-long-result",
+    "storyObserved": "core-basetypeahead--narrow-long-result",
+    "routeObserved": "/iframe.html",
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "surfaceColor": "rgb(255, 255, 255)",
+    "surfaceLuminance": 0.9999999999999999,
+    "surfaceClass": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 320,
+      "height": 680,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 1,
+    "visible": true,
+    "box": {
+      "x": 32,
+      "y": 336.5,
+      "width": 256,
+      "height": 32,
+      "insideViewport": true
+    },
+    "fonts": "loaded",
+    "runningAnimations": 0,
+    "storybookError": null,
+    "state": {
+      "expandedCount": 1,
+      "visibleOptions": 5,
+      "horizontalOverflow": false,
+      "anchorsInsideViewport": true,
+      "listboxesInsideViewport": true
+    }
+  },
+  "image": {
+    "path": "<evidence>/after/frames/narrow-long-result__neutral-light-ltr.png",
+    "bytes": 15551
+  }
+}

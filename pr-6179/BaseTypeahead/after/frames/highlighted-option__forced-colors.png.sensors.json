@@ -1,0 +1,54 @@
+{
+  "label": "after: BaseTypeahead highlighted option in forced colors",
+  "identity": "story",
+  "build": {
+    "root": "<repository>",
+    "expectedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f",
+    "observedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f"
+  },
+  "expected": {
+    "story": "core-basetypeahead--logical-dropdown-placement",
+    "viewport": {
+      "width": 900,
+      "height": 620,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": true
+    },
+    "state": {
+      "expanded": "true",
+      "highlightedOutline": true
+    }
+  },
+  "observed": {
+    "story": "core-basetypeahead--logical-dropdown-placement",
+    "errors": [],
+    "state": {
+      "forcedColors": true,
+      "expanded": "true",
+      "rows": [
+        {
+          "text": "React",
+          "backgroundColor": "rgba(255, 255, 255, 0.05)",
+          "color": "rgb(0, 0, 0)",
+          "outlineColor": "rgba(5, 0, 73, 0.8)",
+          "outlineStyle": "solid",
+          "outlineWidth": "1px"
+        },
+        {
+          "text": "Vue",
+          "backgroundColor": "rgba(255, 255, 255, 0)",
+          "color": "rgb(0, 0, 0)",
+          "outlineColor": "rgb(0, 0, 0)",
+          "outlineStyle": "none",
+          "outlineWidth": "3px"
+        }
+      ]
+    }
+  },
+  "result": "pass",
+  "image": {
+    "path": "<evidence>/after/frames/highlighted-option__forced-colors.png"
+  }
+}

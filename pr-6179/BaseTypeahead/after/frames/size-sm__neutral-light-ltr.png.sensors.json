@@ -1,0 +1,85 @@
+{
+  "label": "after: BaseTypeahead size-sm · neutral-light-ltr",
+  "identity": "story",
+  "build": {
+    "root": "<repository>",
+    "expectedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f",
+    "observedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f"
+  },
+  "expected": {
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 900,
+      "height": 620,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 3,
+    "state": {
+      "expandedCount": 1,
+      "visibleOptions": 5,
+      "firstOptionPaddingBlockStart": "4px"
+    },
+    "runningAnimations": 0
+  },
+  "observed": {
+    "storyExpected": "core-basetypeahead--size-variants",
+    "storyObserved": "core-basetypeahead--size-variants",
+    "routeObserved": "/iframe.html",
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "surfaceColor": "rgb(255, 255, 255)",
+    "surfaceLuminance": 0.9999999999999999,
+    "surfaceClass": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 900,
+      "height": 620,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 3,
+    "visible": true,
+    "box": {
+      "x": 290,
+      "y": 229.5,
+      "width": 320,
+      "height": 32,
+      "insideViewport": true
+    },
+    "fonts": "loaded",
+    "runningAnimations": 0,
+    "storybookError": null,
+    "state": {
+      "expandedCount": 1,
+      "visibleOptions": 5,
+      "firstOptionPaddingBlockStart": "4px"
+    }
+  },
+  "image": {
+    "path": "<evidence>/after/frames/size-sm__neutral-light-ltr.png",
+    "bytes": 17776
+  }
+}

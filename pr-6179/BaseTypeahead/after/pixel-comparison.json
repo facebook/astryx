@@ -1,0 +1,106 @@
+{
+  "pairs": [
+    {
+      "name": "consumer-props__neutral-dark-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "consumer-props__neutral-light-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "custom-renderer__neutral-dark-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "custom-renderer__neutral-light-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "default__matcha-light-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "default__neutral-dark-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "default__neutral-light-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "disabled-states__neutral-dark-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "disabled-states__neutral-light-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "empty-results__neutral-dark-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "empty-results__neutral-light-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "focus-visible__neutral-dark-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "focus-visible__neutral-light-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "loading__neutral-dark-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "loading__neutral-light-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "logical-dropdown__neutral-dark-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "logical-dropdown__neutral-light-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "logical-dropdown__neutral-light-rtl.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "selected-result__neutral-dark-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    },
+    {
+      "name": "selected-result__neutral-light-ltr.png",
+      "changedPixels": 0,
+      "totalPixels": 558000
+    }
+  ],
+  "identical": 20,
+  "changed": 0
+}

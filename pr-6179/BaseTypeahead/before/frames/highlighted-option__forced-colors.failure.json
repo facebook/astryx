@@ -1,0 +1,39 @@
+{
+  "label": "before: BaseTypeahead highlighted option in forced colors",
+  "build": "53bc34db7c9dd40c3fe0f0e0f419adaea71a73cd",
+  "story": "core-basetypeahead--logical-dropdown-placement",
+  "viewport": {
+    "width": 900,
+    "height": 620,
+    "dpr": 1
+  },
+  "media": {
+    "forcedColors": true
+  },
+  "errors": [],
+  "state": {
+    "forcedColors": true,
+    "rows": [
+      {
+        "text": "React",
+        "backgroundColor": "rgba(255, 255, 255, 0.05)",
+        "color": "rgb(0, 0, 0)",
+        "borderColor": "rgb(0, 0, 0)",
+        "borderWidth": "0px",
+        "outlineColor": "rgb(0, 0, 0)",
+        "outlineStyle": "none",
+        "outlineWidth": "3px"
+      },
+      {
+        "text": "Vue",
+        "backgroundColor": "rgba(255, 255, 255, 0)",
+        "color": "rgb(0, 0, 0)",
+        "borderColor": "rgb(0, 0, 0)",
+        "borderWidth": "0px",
+        "outlineColor": "rgb(0, 0, 0)",
+        "outlineStyle": "none",
+        "outlineWidth": "3px"
+      }
+    ]
+  }
+}

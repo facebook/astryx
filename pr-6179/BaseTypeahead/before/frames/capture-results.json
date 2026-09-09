@@ -1,0 +1,305 @@
+{
+  "arm": "before",
+  "sha": "53bc34db7c9dd40c3fe0f0e0f419adaea71a73cd",
+  "results": [
+    {
+      "case": "default",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "state": {
+        "inputCount": 1,
+        "labelledCount": 1,
+        "expandedCount": 0,
+        "horizontalOverflow": false
+      }
+    },
+    {
+      "case": "default",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "state": {
+        "inputCount": 1,
+        "labelledCount": 1,
+        "expandedCount": 0,
+        "horizontalOverflow": false
+      }
+    },
+    {
+      "case": "logical-dropdown",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "state": {
+        "expandedCount": 1,
+        "visibleOptions": 5,
+        "visibleGroups": 2,
+        "highlightedOptions": 1,
+        "menuPhysicalSide": "right"
+      }
+    },
+    {
+      "case": "logical-dropdown",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "state": {
+        "expandedCount": 1,
+        "visibleOptions": 5,
+        "visibleGroups": 2,
+        "highlightedOptions": 1,
+        "menuPhysicalSide": "right"
+      }
+    },
+    {
+      "case": "loading",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "state": {
+        "busyCount": 1,
+        "loadingStatuses": 1
+      }
+    },
+    {
+      "case": "loading",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "state": {
+        "busyCount": 1,
+        "loadingStatuses": 1
+      }
+    },
+    {
+      "case": "empty-results",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "state": {
+        "expandedCount": 1,
+        "visibleOptions": 0,
+        "emptyText": "No matching frameworks"
+      }
+    },
+    {
+      "case": "empty-results",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "state": {
+        "expandedCount": 1,
+        "visibleOptions": 0,
+        "emptyText": "No matching frameworks"
+      }
+    },
+    {
+      "case": "selected-result",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "state": {
+        "expandedCount": 1,
+        "visibleOptions": 5,
+        "selectedOptions": 1
+      }
+    },
+    {
+      "case": "selected-result",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "state": {
+        "expandedCount": 1,
+        "visibleOptions": 5,
+        "selectedOptions": 1
+      }
+    },
+    {
+      "case": "custom-renderer",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "state": {
+        "expandedCount": 1,
+        "visibleOptions": 5,
+        "visibleGroups": 2,
+        "customItems": 5
+      }
+    },
+    {
+      "case": "custom-renderer",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "state": {
+        "expandedCount": 1,
+        "visibleOptions": 5,
+        "visibleGroups": 2,
+        "customItems": 5
+      }
+    },
+    {
+      "case": "disabled-states",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "state": {
+        "inputCount": 2,
+        "nativeDisabledCount": 1,
+        "ariaDisabledCount": 1,
+        "readOnlyCount": 1
+      }
+    },
+    {
+      "case": "disabled-states",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "state": {
+        "inputCount": 2,
+        "nativeDisabledCount": 1,
+        "ariaDisabledCount": 1,
+        "readOnlyCount": 1
+      }
+    },
+    {
+      "case": "consumer-props",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "state": {
+        "expandedCount": 1,
+        "visibleOptions": 1,
+        "consumer": {
+          "ariaLabel": null,
+          "classApplied": false,
+          "dataState": null,
+          "inlineLetterSpacing": "",
+          "accentColorApplied": false
+        }
+      }
+    },
+    {
+      "case": "consumer-props",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "state": {
+        "expandedCount": 1,
+        "visibleOptions": 1,
+        "consumer": {
+          "ariaLabel": null,
+          "classApplied": false,
+          "dataState": null,
+          "inlineLetterSpacing": "",
+          "accentColorApplied": false
+        }
+      }
+    },
+    {
+      "case": "focus-visible",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "state": {
+        "focused": true,
+        "focusRing": true
+      }
+    },
+    {
+      "case": "focus-visible",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "state": {
+        "focused": true,
+        "focusRing": true
+      }
+    },
+    {
+      "case": "default",
+      "theme": "matcha",
+      "mode": "light",
+      "direction": "ltr",
+      "state": {
+        "inputCount": 1,
+        "labelledCount": 1,
+        "expandedCount": 0,
+        "horizontalOverflow": false
+      }
+    },
+    {
+      "case": "logical-dropdown",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "rtl",
+      "state": {
+        "expandedCount": 1,
+        "visibleOptions": 5,
+        "visibleGroups": 2,
+        "highlightedOptions": 1,
+        "menuPhysicalSide": "left"
+      }
+    }
+  ],
+  "failures": [
+    {
+      "case": "narrow-long-result",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "error": "State sensor failed: expected {\"expandedCount\":1,\"visibleOptions\":5,\"horizontalOverflow\":false,\"anchorsInsideViewport\":true,\"listboxesInsideViewport\":true}, observed {\"expandedCount\":1,\"visibleOptions\":5,\"horizontalOverflow\":false,\"anchorsInsideViewport\":true,\"listboxesInsideViewport\":false}"
+    },
+    {
+      "case": "narrow-long-result",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "error": "State sensor failed: expected {\"expandedCount\":1,\"visibleOptions\":5,\"horizontalOverflow\":false,\"anchorsInsideViewport\":true,\"listboxesInsideViewport\":true}, observed {\"expandedCount\":1,\"visibleOptions\":5,\"horizontalOverflow\":false,\"anchorsInsideViewport\":true,\"listboxesInsideViewport\":false}"
+    },
+    {
+      "case": "size-sm",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "error": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "case": "size-sm",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "error": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "case": "size-md",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "error": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "case": "size-md",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "error": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "case": "size-lg",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "error": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "case": "size-lg",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "error": "page.waitForFunction: Timeout 30000ms exceeded."
+    }
+  ]
+}

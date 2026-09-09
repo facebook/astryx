@@ -1,0 +1,85 @@
+{
+  "label": "after: BaseTypeahead selected-result · neutral-dark-ltr",
+  "identity": "story",
+  "build": {
+    "root": "<repository>",
+    "expectedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f",
+    "observedSha": "7595c9e54cd3878376f1b624ab852190c9e7050f"
+  },
+  "expected": {
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "dark",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "dark",
+    "direction": "ltr",
+    "viewport": {
+      "width": 900,
+      "height": 620,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 1,
+    "state": {
+      "expandedCount": 1,
+      "visibleOptions": 5,
+      "selectedOptions": 1
+    },
+    "runningAnimations": 0
+  },
+  "observed": {
+    "storyExpected": "core-basetypeahead--selected-result",
+    "storyObserved": "core-basetypeahead--selected-result",
+    "routeObserved": "/iframe.html",
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "dark",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "dark",
+    "surfaceColor": "rgb(38, 38, 38)",
+    "surfaceLuminance": 0.14901960784313725,
+    "surfaceClass": "dark",
+    "direction": "ltr",
+    "viewport": {
+      "width": 900,
+      "height": 620,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 1,
+    "visible": true,
+    "box": {
+      "x": 290,
+      "y": 306.5,
+      "width": 320,
+      "height": 32,
+      "insideViewport": true
+    },
+    "fonts": "loaded",
+    "runningAnimations": 0,
+    "storybookError": null,
+    "state": {
+      "expandedCount": 1,
+      "visibleOptions": 5,
+      "selectedOptions": 1
+    }
+  },
+  "image": {
+    "path": "<evidence>/after/frames/selected-result__neutral-dark-ltr.png",
+    "bytes": 18609
+  }
+}

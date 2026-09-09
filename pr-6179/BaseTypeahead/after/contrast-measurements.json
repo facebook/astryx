@@ -1,0 +1,78 @@
+{
+  "head": "7595c9e54cd3878376f1b624ab852190c9e7050f",
+  "browser": "Chromium",
+  "rows": [
+    {
+      "theme": "neutral",
+      "mode": "light",
+      "pair": "field label / surface",
+      "foreground": "rgb(0, 0, 0)",
+      "background": "rgb(255, 255, 255)",
+      "ratio": 21,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "light",
+      "pair": "option text / option surface",
+      "foreground": "rgb(0, 0, 0)",
+      "background": "rgb(255, 255, 255)",
+      "ratio": 21,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "light",
+      "pair": "focus outline / adjacent surface",
+      "foreground": "rgb(27, 27, 27)",
+      "background": "rgb(255, 255, 255)",
+      "outlineStyle": "solid",
+      "ratio": 17.22,
+      "threshold": 3,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "dark",
+      "pair": "field label / surface",
+      "foreground": "rgb(255, 255, 255)",
+      "background": "rgb(38, 38, 38)",
+      "ratio": 15.13,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "dark",
+      "pair": "option text / option surface",
+      "foreground": "rgb(255, 255, 255)",
+      "background": "rgb(27, 27, 27)",
+      "ratio": 17.22,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "dark",
+      "pair": "focus outline / adjacent surface",
+      "foreground": "rgb(241, 241, 241)",
+      "background": "rgb(38, 38, 38)",
+      "outlineStyle": "solid",
+      "ratio": 13.4,
+      "threshold": 3,
+      "result": "pass"
+    },
+    {
+      "theme": "matcha",
+      "mode": "light",
+      "pair": "field label / surface",
+      "foreground": "rgb(62, 72, 29)",
+      "background": "rgb(255, 255, 255)",
+      "ratio": 9.77,
+      "threshold": 4.5,
+      "result": "pass"
+    }
+  ]
+}

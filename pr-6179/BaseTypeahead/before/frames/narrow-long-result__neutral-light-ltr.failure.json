@@ -1,0 +1,61 @@
+{
+  "label": "before: BaseTypeahead narrow long result",
+  "build": "53bc34db7c9dd40c3fe0f0e0f419adaea71a73cd",
+  "story": "core-basetypeahead--narrow-long-result",
+  "globals": {
+    "astryxTheme": "neutral",
+    "colorMode": "light",
+    "direction": "ltr"
+  },
+  "viewport": {
+    "width": 320,
+    "height": 680,
+    "dpr": 1
+  },
+  "sensorErrors": [],
+  "expected": {
+    "listboxesInsideViewport": true,
+    "viewportWidth": 320
+  },
+  "observed": {
+    "viewport": {
+      "width": 320,
+      "height": 680
+    },
+    "document": {
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    "anchor": {
+      "x": 32,
+      "y": 336.5,
+      "width": 256,
+      "height": 32,
+      "right": 288,
+      "bottom": 368.5,
+      "position": "static",
+      "overflowX": "visible"
+    },
+    "popover": {
+      "x": 0,
+      "y": 372.5,
+      "width": 459.03125,
+      "height": 232,
+      "right": 459.03125,
+      "bottom": 604.5,
+      "position": "fixed",
+      "overflowX": "visible"
+    },
+    "listbox": {
+      "x": 0,
+      "y": 372.5,
+      "width": 459.03125,
+      "height": 232,
+      "right": 459.03125,
+      "bottom": 604.5,
+      "position": "static",
+      "overflowX": "auto"
+    },
+    "listboxesInsideViewport": false
+  }
+}
