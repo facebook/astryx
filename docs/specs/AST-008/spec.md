@@ -3,12 +3,12 @@ schema_version: 1
 template_version: 1
 kind: system-spec
 id: spec:AST-008
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-09-08
+phase: accepted
 owners: [cixzhang, rubyycheung, imdreamrunner]
 affects_architecture:
   [architecture:theme-authoring-contract, architecture:theme-compilation]
@@ -82,8 +82,11 @@ outside Core theme normalization and runtime behavior.
   output-affecting parameter. Astryx tooling SHOULD default family ramps to the
   21-stop `0, 5, …, 100` layout, while accepting any non-empty author-defined
   numeric stop list. Compact and specialized layouts are valid author choices,
-  not exceptions. Stops 0 and 100 resolve to exact black and white in generated
-  families. Authors MAY omit those repeated endpoints with a custom stop list.
+  not exceptions. Every candidate exposes exact standalone black and white
+  values for direct theme authoring. Stops 0 and 100 repeat those values in
+  generated families. Authors MAY omit the repeated endpoints with a custom
+  stop list without losing the standalone values. The family identifiers
+  `black` and `white` are reserved for those standalone values.
 - **FR2a — Custom stop syntax is exact.** Every stop MUST be a finite JSON number
   from 0 through 100 inclusive. Stops MUST be unique and strictly increasing.
   Integer and decimal stops are valid; equivalent numeric spellings such as `5`
@@ -127,11 +130,9 @@ outside Core theme normalization and runtime behavior.
   control. Edited accepted data MUST NOT claim exact regeneration, and ordinary
   theme builds MUST NOT rerun the generator.
 - **FR8 — The selected recipe preserves complete-family evidence.** The first
-  production recipe MUST preserve the intended results of
-  `apps/sandbox/src/app/(sandbox)/pages/palette-generator/generator.ts` at
-  repository commit `d77fd8b43bc3f40dd80e605248fd87c20ccdc03c` rather than
-  reopening the OKLCH-versus-HCT visual decision.
-  Before release, its version-pinned evidence MUST cover complete family sets,
+  production recipe MUST be pinned by its normative algorithm and canonical
+  fixtures rather than another implementation. Before release, its
+  version-pinned evidence MUST cover complete family sets,
   rendered light/dark contexts, hue continuity, luminance and adjacent-stop
   distinction, gamut, family balance, CVD simulations, reproducibility, and
   performance. Fixtures cover blue-to-purple, yellow-to-brown, disproportionate
@@ -181,10 +182,8 @@ outside Core theme normalization and runtime behavior.
 
 ## Implementation contract
 
-1. The implementation PR pins the current Sandbox OKLCH behavior as
-   `astryx-oklch-v1`, copies its constants and transformations into one owned
-   engine, and adds exact regression vectors. The Sandbox remains a prototype,
-   not the production import path.
+1. The implementation PR defines `astryx-oklch-v1` in one owned production
+   engine and pins its constants, transformations, and exact regression vectors.
 2. The pure authoring API and CLI adapter use one deterministic engine and agree
    on recipe semantics. The CLI follows `architecture:cli-surface` for its
    command, response, error, documentation, support, and write contract.
@@ -200,7 +199,7 @@ outside Core theme normalization and runtime behavior.
 
 ### `astryx-oklch-v1` normative recipe
 
-The first production recipe is defined here rather than by mutable Sandbox code:
+The first production recipe is defined here and pinned by canonical fixtures:
 
 - Normalize supported seed and anchor colors to lowercase six-digit sRGB hex.
 - Convert sRGB through the standard D65 OKLab matrices, then express hue and
@@ -238,6 +237,8 @@ The first production recipe is defined here rather than by mutable Sandbox code:
 - Convert final colors to sRGB by rounding each clamped channel to the nearest
   8-bit integer. Emit lowercase `#rrggbb`. Canonical JSON uses two-space
   indentation, insertion-ordered families and stops, and one trailing newline.
+  Candidates expose the requested stop layout as an ordered `stops` array;
+  family ramp objects are lookup maps and do not define iteration order.
 - Invalid requests fail before producing a candidate. Family-local anchor
   conflicts report the family and produce no adoptable output.
 
@@ -245,10 +246,10 @@ The following canonical candidate fixtures use SHA-256 over UTF-8 canonical JSON
 
 | Fixture                | Request summary                                                                                | Candidate bytes | SHA-256                                                            |
 | ---------------------- | ---------------------------------------------------------------------------------------------- | --------------: | ------------------------------------------------------------------ |
-| `default-three-family` | Neutral `#777777`, blue `#0074e2`, orange `#d57113`; both modes; vibrancy 50; 21 default stops |            3527 | `78ca5bd2afe44d448dc7fd2889196c5a562a9d1f1ff8efcccc67aa1d8a94b76c` |
-| `exact-anchor`         | Blue `#0074e2`; light only; stops 20, 50, 80; exact stop-50 anchor `#1682d5`                   |             242 | `e3dbd30b3eb1e4c2a0350e1321ef44bf16c3ae48ac46ada0dad04368cdd6e4a1` |
-| `single-custom-stop`   | Red `#d62830`; dark only; stop 40                                                              |             189 | `d54fe4d202d7bd49f8a286e97eadf9786fe71e21f15e0058975877581b7e025b` |
-| `high-tone-balance`    | Green `#358a3a`, teal `#0c7365`, cyan `#0c6f82`; both modes; stops 60, 80, 95                  |             825 | `991080568a4e1c1a4b1b23e1d9908fcdd688607aac6be4c55cd216b74ebe7c3d` |
+| `default-three-family` | Neutral `#777777`, blue `#0074e2`, orange `#d57113`; both modes; vibrancy 50; 21 default stops |            3755 | `11c40191d508274d89d631bb4e1cb662f70ff0dce6c0dec101c317f9f69d3e25` |
+| `exact-anchor`         | Blue `#0074e2`; light only; stops 20, 50, 80; exact stop-50 anchor `#1682d5`                   |             327 | `c42929be3c4b5cb857cada078f62bb5a2242c1a22cfa4ae7546a18592540f7f3` |
+| `single-custom-stop`   | Red `#d62830`; dark only; stop 40                                                              |             258 | `88d3d69865c74c7fb14347b9967575285a7d44ab893087a08bc842bb66b29bbb` |
+| `high-tone-balance`    | Green `#358a3a`, teal `#0c7365`, cyan `#0c6f82`; both modes; stops 60, 80, 95                  |             910 | `873821574fdbe3357304dbc06986bd2e5ec88af80d0f36305626fd826c3cf07b` |
 
 Exact fixture equality is the release gate for recipe compatibility. Monotonicity,
 adjacent-stop distance, hue drift, family distinction, gamut events, and CVD
@@ -312,10 +313,15 @@ Both use the same `astryx-oklch-v1` engine. Neither enters Core or `defineTheme(
 
 The first production generator defaults each family to the familiar 21-position
 `0, 5, …, 100` layout and accepts any explicit non-empty numeric stop list.
-Stops 0 and 100 repeat exact black and white in each generated family so authors
-can retain a complete coordinate range or remove the endpoints explicitly. The
-generated candidate becomes author-owned after review and acceptance. Generator
-defaults therefore do not become palette-validity rules.
+Every candidate exposes exact black and white as standalone authoring values.
+Stops 0 and 100 repeat them in each generated family so authors can retain a
+complete coordinate range or remove the repeated endpoints explicitly without
+losing access to either solid. Generated TypeScript names the values `black`
+and `white`; theme-owned palette wrappers may expose them alongside families,
+for example as `neutralPalettes.black` and `neutralPalettes.white`. Those names
+are reserved from family identifiers. The generated candidate becomes
+author-owned after review and acceptance. Generator defaults therefore do not
+become palette-validity rules.
 
 Generated palettes are reviewable starting points. Authors may adjust
 family-level inputs and regenerate until the palette matches their intended

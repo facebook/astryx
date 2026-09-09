@@ -10,8 +10,8 @@
  *
  * `docs/specs/AST-021/spec.md` FR8–FR10 govern this file:
  *
- * - a record names the expectation, binding, state, evidence layer, the user
- *   impact, a public issue, and why the migration does not fix it;
+ * - a record names the expectation, binding, state, evidence layer, exact
+ *   failure, user impact, and why the migration does not fix it;
  * - it covers only that exact failure — a different message, another state, or
  *   a wider failure still fails the build;
  * - when the outcome starts passing, the run reports an unexpected pass and the

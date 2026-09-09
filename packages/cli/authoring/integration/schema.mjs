@@ -14,10 +14,66 @@
  */
 
 import {z} from 'zod';
+import {formatZodError} from '../_shared/errors.mjs';
 
 /** @typedef {import('./type').AstryxIntegration} AstryxIntegration */
 
-// Unknown keys are stripped rather than rejected. `.strict()` made a key from a
+const MAX_AGENT_DOC_LINES = 8;
+const MAX_AGENT_DOC_LINE_CODE_POINTS = 240;
+const MANAGED_MARKER_TEXT = /(?:ASTRYX|XDS):(START|END)/u;
+
+/**
+ * @param {string} value
+ * @returns {string|null}
+ */
+function invalidAgentDocLine(value) {
+  if (value.length === 0 || value.trim().length === 0)
+    return 'must not be blank';
+  if (value !== value.trim()) return 'must not have surrounding whitespace';
+  for (const character of value) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (codePoint === 0) return 'must not contain NUL';
+    if (codePoint === 0x2028 || codePoint === 0x2029) {
+      return 'must be a single line';
+    }
+    if (codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f)) {
+      return 'must not contain control characters or line separators';
+    }
+  }
+  if (MANAGED_MARKER_TEXT.test(value))
+    return 'must not contain managed marker text';
+  const codePoints = [...value].length;
+  if (codePoints > MAX_AGENT_DOC_LINE_CODE_POINTS) {
+    return `must contain at most ${MAX_AGENT_DOC_LINE_CODE_POINTS} Unicode code points (received ${codePoints})`;
+  }
+  return null;
+}
+
+const agentDocLineSchema = z.string().superRefine((value, ctx) => {
+  const message = invalidAgentDocLine(value);
+  if (message) ctx.addIssue({code: 'custom', message});
+});
+
+export const agentDocsSchema = z.object({
+  append: z
+    .array(agentDocLineSchema)
+    .max(
+      MAX_AGENT_DOC_LINES,
+      `append may contain at most ${MAX_AGENT_DOC_LINES} lines`,
+    )
+    .readonly()
+    .optional(),
+});
+
+export const integrationBaseSchema = z.object({
+  components: z.string().optional(),
+  templates: z.string().optional(),
+  codemods: z.string().optional(),
+  docs: z.string().optional(),
+  issuesUrl: z.string().url().optional(),
+});
+
+// Unknown top-level keys are stripped rather than rejected. `.strict()` made a key from a
 // newer CLI a hard parse failure, and a manifest that fails to parse
 // contributes NOTHING — an integration that added one field lost its
 // components, templates and codemods too, on every consumer resolving an older
@@ -26,13 +82,34 @@ import {z} from 'zod';
 // still loaded and the unknown key is reported as a warning by
 // `unknownIntegrationKeys`. Known keys stay strictly typed: a `components: 42`
 // IS an authoring mistake and still fails here.
-export const integrationSchema = z.object({
-  components: z.string().optional(),
-  templates: z.string().optional(),
-  codemods: z.string().optional(),
-  docs: z.string().optional(),
-  issuesUrl: z.string().url().optional(),
+export const integrationSchema = integrationBaseSchema.extend({
+  agentDocs: agentDocsSchema.optional(),
 });
+
+/**
+ * Parse every default-manifest field except the independently isolated
+ * `agentDocs` contribution.
+ * @param {unknown} input
+ * @param {string} label
+ * @returns {Omit<AstryxIntegration, 'agentDocs'>}
+ */
+export function parseIntegrationBase(input, label) {
+  const result = integrationBaseSchema.safeParse(input);
+  if (!result.success) throw new Error(formatZodError(label, result.error));
+  return result.data;
+}
+
+/**
+ * Parse only the optional agent-doc contribution.
+ * @param {unknown} input
+ * @param {string} label
+ * @returns {NonNullable<AstryxIntegration['agentDocs']>}
+ */
+export function parseAgentDocsField(input, label) {
+  const result = agentDocsSchema.safeParse(input);
+  if (!result.success) throw new Error(formatZodError(label, result.error));
+  return result.data;
+}
 
 /**
  * Compile-time drift-lock: sealed schema must infer exactly {@link AstryxIntegration}.

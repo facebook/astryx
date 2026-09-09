@@ -45,23 +45,51 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.neutral.dark[10],
       ),
       '--color-text-primary': lightDark(
-        neutralPalettes.neutral.light[5],
+        neutralPalettes.neutral.light[0],
         neutralPalettes.neutral.dark[100],
+      ),
+      '--color-text-secondary': lightDark(
+        neutralPalettes.neutral.light[30],
+        neutralPalettes.neutral.dark[65],
+      ),
+      '--color-text-disabled': lightDark(
+        neutralPalettes.neutral.light[60],
+        neutralPalettes.neutral.dark[35],
+      ),
+      '--color-text-accent': lightDark(
+        neutralPalettes.neutral.light[10],
+        neutralPalettes.neutral.dark[95],
       ),
       '--color-icon-primary': lightDark(
-        neutralPalettes.neutral.light[5],
+        neutralPalettes.neutral.light[0],
         neutralPalettes.neutral.dark[100],
       ),
+      '--color-icon-secondary': lightDark(
+        neutralPalettes.neutral.light[45],
+        neutralPalettes.neutral.dark[65],
+      ),
+      '--color-icon-disabled': lightDark(
+        neutralPalettes.neutral.light[60],
+        neutralPalettes.neutral.dark[35],
+      ),
+      '--color-icon-accent': lightDark(
+        neutralPalettes.neutral.light[10],
+        neutralPalettes.neutral.dark[95],
+      ),
+      '--color-accent': lightDark(
+        neutralPalettes.neutral.light[10],
+        neutralPalettes.neutral.dark[95],
+      ),
       '--color-success': lightDark(
-        neutralPalettes.green.light[40],
+        neutralPalettes.green.light[25],
         neutralPalettes.green.light[80],
       ),
       '--color-warning': lightDark(
-        neutralPalettes.yellow.light[40],
+        neutralPalettes.yellow.light[25],
         neutralPalettes.yellow.light[85],
       ),
       '--color-error': lightDark(
-        neutralPalettes.red.light[35],
+        neutralPalettes.red.light[25],
         neutralPalettes.red.dark[85],
       ),
       '--color-background-red': lightDark(
@@ -73,11 +101,11 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.red.light[65],
       ),
       '--color-icon-red': lightDark(
-        neutralPalettes.red.light[30],
+        neutralPalettes.red.light[25],
         neutralPalettes.red.dark[75],
       ),
       '--color-text-red': lightDark(
-        neutralPalettes.red.light[30],
+        neutralPalettes.red.light[25],
         neutralPalettes.red.dark[80],
       ),
       '--color-background-orange': lightDark(
@@ -89,11 +117,11 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.orange.dark[65],
       ),
       '--color-icon-orange': lightDark(
-        neutralPalettes.orange.light[30],
+        neutralPalettes.orange.light[25],
         neutralPalettes.orange.light[75],
       ),
       '--color-text-orange': lightDark(
-        neutralPalettes.orange.light[30],
+        neutralPalettes.orange.light[25],
         neutralPalettes.orange.dark[80],
       ),
       '--color-background-yellow': lightDark(
@@ -105,11 +133,11 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.yellow.light[65],
       ),
       '--color-icon-yellow': lightDark(
-        neutralPalettes.yellow.light[30],
+        neutralPalettes.yellow.light[25],
         neutralPalettes.yellow.light[75],
       ),
       '--color-text-yellow': lightDark(
-        neutralPalettes.yellow.light[30],
+        neutralPalettes.yellow.light[25],
         neutralPalettes.yellow.light[80],
       ),
       '--color-background-green': lightDark(
@@ -121,11 +149,11 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.green.light[65],
       ),
       '--color-icon-green': lightDark(
-        neutralPalettes.green.light[30],
+        neutralPalettes.green.light[25],
         neutralPalettes.green.light[75],
       ),
       '--color-text-green': lightDark(
-        neutralPalettes.green.light[30],
+        neutralPalettes.green.light[25],
         neutralPalettes.green.light[75],
       ),
       '--color-background-teal': lightDark(
@@ -137,11 +165,11 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.teal.dark[65],
       ),
       '--color-icon-teal': lightDark(
-        neutralPalettes.teal.light[30],
+        neutralPalettes.teal.light[25],
         neutralPalettes.teal.dark[75],
       ),
       '--color-text-teal': lightDark(
-        neutralPalettes.teal.light[30],
+        neutralPalettes.teal.light[25],
         neutralPalettes.teal.light[80],
       ),
       '--color-background-cyan': lightDark(
@@ -153,11 +181,11 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.cyan.dark[65],
       ),
       '--color-icon-cyan': lightDark(
-        neutralPalettes.cyan.light[30],
+        neutralPalettes.cyan.light[25],
         neutralPalettes.cyan.dark[75],
       ),
       '--color-text-cyan': lightDark(
-        neutralPalettes.cyan.light[30],
+        neutralPalettes.cyan.light[25],
         neutralPalettes.cyan.dark[80],
       ),
       '--color-background-blue': lightDark(
@@ -169,11 +197,11 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.blue.dark[65],
       ),
       '--color-icon-blue': lightDark(
-        neutralPalettes.blue.light[30],
+        neutralPalettes.blue.light[25],
         neutralPalettes.blue.dark[75],
       ),
       '--color-text-blue': lightDark(
-        neutralPalettes.blue.light[30],
+        neutralPalettes.blue.light[25],
         neutralPalettes.blue.dark[80],
       ),
       '--color-background-purple': lightDark(
@@ -185,11 +213,11 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.purple.light[70],
       ),
       '--color-icon-purple': lightDark(
-        neutralPalettes.purple.light[30],
+        neutralPalettes.purple.light[25],
         neutralPalettes.purple.light[75],
       ),
       '--color-text-purple': lightDark(
-        neutralPalettes.purple.light[30],
+        neutralPalettes.purple.light[25],
         neutralPalettes.purple.dark[80],
       ),
       '--color-background-pink': lightDark(
@@ -201,11 +229,11 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.pink.light[70],
       ),
       '--color-icon-pink': lightDark(
-        neutralPalettes.pink.light[30],
+        neutralPalettes.pink.light[25],
         neutralPalettes.pink.dark[75],
       ),
       '--color-text-pink': lightDark(
-        neutralPalettes.pink.light[30],
+        neutralPalettes.pink.light[25],
         neutralPalettes.pink.dark[80],
       ),
       '--color-background-gray': lightDark(
@@ -213,8 +241,12 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.neutral.dark[20],
       ),
       '--color-text-gray': lightDark(
-        neutralPalettes.neutral.light[15],
+        neutralPalettes.neutral.light[10],
         neutralPalettes.neutral.dark[85],
+      ),
+      '--color-icon-gray': lightDark(
+        neutralPalettes.neutral.light[30],
+        neutralPalettes.neutral.dark[65],
       ),
     };
 

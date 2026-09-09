@@ -431,17 +431,16 @@ export interface ComponentThemingTarget {
   className: string;
   /** Visual prop names reflected on this element.
    *  These are the props passed to `themeProps()` as the second argument.
-   *  Use these names to derive preferred data selectors: `variant` →
-   *  `[data-variant="secondary"]`, `level` → `[data-level="2"]`. Legacy bare
-   *  classes are still emitted for compatibility but should not be the primary
-   *  documentation surface. Omit if the component has no visual props (class
-   *  name only). */
+   *  Use these names to derive selectors: `variant` →
+   *  `[data-variant="secondary"]`, `level` → `[data-level="2"]`. Values are
+   *  reflected only as data attributes; the stable target class identifies the
+   *  component or part. Omit if the component has no visual props. */
   visualProps?: string[];
-  /** State names that appear on this element based on component state.
+  /** State names reflected on this element based on component state.
    *  Unlike visualProps (driven by props), these reflect runtime state
-   *  (checked, selected, today, on, expanded, etc.). Use these names to derive preferred data selectors such as
-   *  `[data-checked="checked"]`. Legacy state classes are still emitted for
-   *  compatibility. Omit if the element has no state-driven selectors. */
+   *  (checked, selected, today, on, expanded, etc.). Use these names to derive
+   *  selectors such as `[data-checked="checked"]`. Omit if the element has no
+   *  state-driven selectors. */
   states?: string[];
   /** Set when this target has been RENAMED and this entry is the old name.
    *  The component still emits the class (via `themeProps`'s `legacyNames`),

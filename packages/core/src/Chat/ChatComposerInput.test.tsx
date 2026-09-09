@@ -83,6 +83,22 @@ describe('ChatComposerInput', () => {
       const textbox = screen.getByRole('textbox');
       expect(textbox).toHaveAttribute('contenteditable', 'false');
     });
+
+    it('marks the textbox as multiline', () => {
+      render(<ChatComposerInput />);
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'aria-multiline',
+        'true',
+      );
+    });
+
+    // ARIA 1.2 supports aria-multiline on textbox but not on combobox, and
+    // configuring triggers switches the editable element to combobox.
+    it('drops aria-multiline once triggers make it a combobox', () => {
+      render(<ChatComposerInput triggers={[createMentionTrigger()]} />);
+      const combobox = screen.getByRole('combobox');
+      expect(combobox).not.toHaveAttribute('aria-multiline');
+    });
   });
 
   describe('change and submit', () => {

@@ -10,6 +10,9 @@
 import moveImeHelperImport, {
   meta as moveImeHelperImportMeta,
 } from './move-ime-helper-import.mjs';
+import migrateAstryxThemeSelectorsToDataAttrs, {
+  meta as migrateAstryxThemeSelectorsToDataAttrsMeta,
+} from './migrate-astryx-theme-selectors-to-data-attrs.mjs';
 import removeFocusIsrtlOption, {
   meta as removeFocusIsrtlOptionMeta,
 } from './remove-focus-isrtl-option.mjs';
@@ -18,6 +21,11 @@ import renameResizablePixelBounds, {
 } from './rename-resizable-pixel-bounds.mjs';
 
 export default [
+  {
+    name: 'migrate-astryx-theme-selectors-to-data-attrs',
+    transform: migrateAstryxThemeSelectorsToDataAttrs,
+    meta: migrateAstryxThemeSelectorsToDataAttrsMeta,
+  },
   {
     name: 'move-ime-helper-import',
     transform: moveImeHelperImport,

@@ -17,6 +17,7 @@ import {
   discoverAgentDocs,
   resolveAgentPaths,
   parseBlockVersion,
+  renderAgentDocsBlock,
   inspectAgentDocs,
   isAstryxInitialized,
 } from './agent-docs.mjs';
@@ -96,7 +97,7 @@ describe('generateCompressedIndex', () => {
   it('includes upgrade command and migration rule', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).toContain('upgrade --apply');
-    expect(result).toMatch(/after any @astryxdesign\/core bump/);
+    expect(result).toMatch(/after any Astryx or integration dependency bump/);
   });
 
   it('states the invocation once in the CLI header (yarn)', () => {
@@ -154,6 +155,175 @@ describe('generateCompressedIndex', () => {
 
   it('omits the line entirely when the project has no topics', () => {
     expect(topicLine(generateCompressedIndex('1.0.0', {topics: []}))).toBe('');
+  });
+
+  it('is byte-identical when integrations contribute no lines', () => {
+    const options = {
+      invocation: 'npx @astryxdesign/cli',
+      stylingSystem: 'css',
+      topics: ['tokens', 'working-with-ai'],
+    };
+    expect(generateCompressedIndex('1.0.0', {...options, agentDocs: []})).toBe(
+      generateCompressedIndex('1.0.0', options),
+    );
+  });
+
+  it('appends package-labeled lines after core guidance in config order', () => {
+    const result = generateCompressedIndex('1.0.0', {
+      topics: [],
+      agentDocs: [
+        {
+          package: '@acme/second',
+          append: ['second one', 'second two'],
+        },
+        {
+          package: '@acme/first',
+          append: ['first one'],
+        },
+      ],
+    });
+
+    expect(result.indexOf('upgrade --apply')).toBeLessThan(
+      result.indexOf('INTEGRATIONS:'),
+    );
+    expect(result.indexOf('INTEGRATIONS:')).toBeLessThan(
+      result.indexOf('<!-- ASTRYX:END -->'),
+    );
+    expect(result).toContain(
+      'INTEGRATIONS:\n' +
+        '- `@acme/second`: second one\n' +
+        '- `@acme/second`: second two\n' +
+        '- `@acme/first`: first one',
+    );
+  });
+
+  it('caps the configured project at 32 integration lines', () => {
+    const agentDocs = Array.from({length: 5}, (_, packageIndex) => ({
+      package: `@acme/package-${packageIndex}`,
+      append: Array.from(
+        {length: packageIndex === 4 ? 1 : 8},
+        (_, lineIndex) => `line ${lineIndex}`,
+      ),
+    }));
+    expect(() => generateCompressedIndex('1.0.0', {agentDocs})).toThrow(
+      /32-line project limit/,
+    );
+  });
+});
+
+describe('renderAgentDocsBlock', () => {
+  it('produces repeatable target bytes from configured manifests', async () => {
+    const projectDir = fs.mkdtempSync(
+      path.join(process.cwd(), '.astryx-agent-doc-render-'),
+    );
+    try {
+      fs.writeFileSync(
+        path.join(projectDir, 'package.json'),
+        JSON.stringify({name: 'consumer'}),
+      );
+      fs.writeFileSync(
+        path.join(projectDir, 'astryx.config.mjs'),
+        `export default {integrations: ['@acme/second', '@acme/first']};\n`,
+      );
+      const coreDir = path.join(
+        projectDir,
+        'node_modules',
+        '@astryxdesign',
+        'core',
+      );
+      fs.mkdirSync(coreDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(coreDir, 'package.json'),
+        JSON.stringify({name: '@astryxdesign/core', version: '1.0.0'}),
+      );
+      for (const [name, agentDocs] of [
+        ['@acme/second', {append: ['second one', 'second two']}],
+        ['@acme/first', {append: ['first one']}],
+      ]) {
+        const packageDir = path.join(
+          projectDir,
+          'node_modules',
+          ...name.split('/'),
+        );
+        fs.mkdirSync(packageDir, {recursive: true});
+        fs.writeFileSync(
+          path.join(packageDir, 'package.json'),
+          JSON.stringify({name}),
+        );
+        fs.writeFileSync(
+          path.join(packageDir, 'astryx.integration.mjs'),
+          `export default {agentDocs: ${JSON.stringify(agentDocs)}};\n`,
+        );
+      }
+      fs.writeFileSync(path.join(projectDir, 'AGENTS.md'), '# Agents\n');
+      fs.writeFileSync(path.join(projectDir, 'CLAUDE.md'), '# Claude\n');
+
+      const renderedBlock = await renderAgentDocsBlock(projectDir);
+      expect(renderedBlock.indexOf('second one')).toBeLessThan(
+        renderedBlock.indexOf('second two'),
+      );
+      expect(renderedBlock.indexOf('second two')).toBeLessThan(
+        renderedBlock.indexOf('first one'),
+      );
+
+      installAgentDocs(projectDir, {renderedBlock});
+      const firstAgents = fs.readFileSync(
+        path.join(projectDir, 'AGENTS.md'),
+        'utf-8',
+      );
+      const firstClaude = fs.readFileSync(
+        path.join(projectDir, 'CLAUDE.md'),
+        'utf-8',
+      );
+      expect(firstAgents).toContain(renderedBlock);
+      expect(firstClaude).toContain(renderedBlock);
+
+      installAgentDocs(projectDir, {renderedBlock});
+      expect(fs.readFileSync(path.join(projectDir, 'AGENTS.md'), 'utf-8')).toBe(
+        firstAgents,
+      );
+      expect(fs.readFileSync(path.join(projectDir, 'CLAUDE.md'), 'utf-8')).toBe(
+        firstClaude,
+      );
+    } finally {
+      fs.rmSync(projectDir, {recursive: true, force: true});
+    }
+  });
+  it('rejects a package label that could alter managed block structure', async () => {
+    const projectDir = fs.mkdtempSync(
+      path.join(process.cwd(), '.astryx-agent-doc-label-'),
+    );
+    try {
+      fs.writeFileSync(
+        path.join(projectDir, 'package.json'),
+        JSON.stringify({name: 'consumer'}),
+      );
+      fs.writeFileSync(
+        path.join(projectDir, 'astryx.config.mjs'),
+        `export default {integrations: ['@acme/widgets']};\n`,
+      );
+      const packageDir = path.join(
+        projectDir,
+        'node_modules',
+        '@acme',
+        'widgets',
+      );
+      fs.mkdirSync(packageDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(packageDir, 'package.json'),
+        JSON.stringify({name: '@acme/widgets\nASTRYX:END'}),
+      );
+      fs.writeFileSync(
+        path.join(packageDir, 'astryx.integration.mjs'),
+        `export default {agentDocs: {append: ['safe line']}};\n`,
+      );
+
+      await expect(renderAgentDocsBlock(projectDir)).rejects.toThrow(
+        /not safe to render/,
+      );
+    } finally {
+      fs.rmSync(projectDir, {recursive: true, force: true});
+    }
   });
 });
 
@@ -504,6 +674,74 @@ describe('installAgentDocs', () => {
     expect(claudeContent).toContain('<!-- ASTRYX:START -->');
   });
 
+  it('preserves import wrappers while initializing standalone files', () => {
+    setupCorePackage(tmpDir);
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '# Agents\n');
+    fs.mkdirSync(path.join(tmpDir, '.claude'), {recursive: true});
+    const wrapperPath = path.join(tmpDir, '.claude', 'CLAUDE.md');
+    const wrapper = '@../AGENTS.md\n';
+    fs.writeFileSync(wrapperPath, wrapper);
+    fs.writeFileSync(path.join(tmpDir, '.cursorrules'), 'Cursor rules.\n');
+
+    const written = installAgentDocs(tmpDir);
+
+    expect(written).toEqual(['AGENTS.md', '.cursorrules']);
+    expect(fs.readFileSync(wrapperPath, 'utf-8')).toBe(wrapper);
+    expect(fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8')).toContain(
+      '<!-- ASTRYX:START -->',
+    );
+    expect(fs.readFileSync(path.join(tmpDir, '.cursorrules'), 'utf-8')).toContain(
+      '<!-- ASTRYX:START -->',
+    );
+  });
+
+  it('keeps cyclic imports standalone when another file exists', () => {
+    setupCorePackage(tmpDir);
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '@CLAUDE.md\n');
+    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '@AGENTS.md\n');
+    fs.writeFileSync(path.join(tmpDir, '.cursorrules'), 'Cursor rules.\n');
+
+    const written = installAgentDocs(tmpDir);
+
+    expect(written).toEqual(['AGENTS.md', 'CLAUDE.md', '.cursorrules']);
+    for (const rel of written) {
+      expect(fs.readFileSync(path.join(tmpDir, rel), 'utf-8')).toContain(
+        '<!-- ASTRYX:START -->',
+      );
+    }
+  });
+
+  it('removes a managed block previously expanded into an import wrapper', () => {
+    setupCorePackage(tmpDir);
+    installAgentDocs(tmpDir, {agent: 'codex'});
+    fs.mkdirSync(path.join(tmpDir, '.claude'), {recursive: true});
+    const wrapperPath = path.join(tmpDir, '.claude', 'CLAUDE.md');
+    const wrapper = '@../AGENTS.md\n';
+    fs.writeFileSync(wrapperPath, wrapper);
+    installAgentDocs(tmpDir, {agent: 'claude'});
+    expect(fs.readFileSync(wrapperPath, 'utf-8')).toContain(
+      '<!-- ASTRYX:START -->',
+    );
+
+    const written = installAgentDocs(tmpDir, {onlyReplace: true});
+
+    expect(written).toContain('AGENTS.md');
+    expect(written).toContain('.claude/CLAUDE.md');
+    expect(fs.readFileSync(wrapperPath, 'utf-8')).toBe(wrapper);
+  });
+
+  it('refuses a malformed managed block inside an import wrapper', () => {
+    setupCorePackage(tmpDir);
+    installAgentDocs(tmpDir, {agent: 'codex'});
+    fs.mkdirSync(path.join(tmpDir, '.claude'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, '.claude', 'CLAUDE.md'),
+      '@../AGENTS.md\n<!-- ASTRYX:START -->\nincomplete\n',
+    );
+
+    expect(() => installAgentDocs(tmpDir)).toThrow(/malformed|no matching/i);
+  });
+
   it('updates existing .claude/CLAUDE.md', () => {
     setupCorePackage(tmpDir);
     fs.mkdirSync(path.join(tmpDir, '.claude'), {recursive: true});
@@ -723,6 +961,46 @@ describe('inspectAgentDocs', () => {
     expect(res.staleFiles).toEqual([]);
     expect(res.blockVersions).toEqual([]);
   });
+
+  it.each([
+    ['append addition', [], [{package: '@acme/a', append: ['added']}]],
+    ['append removal', [{package: '@acme/a', append: ['removed']}], []],
+    [
+      'integration reorder',
+      [
+        {package: '@acme/a', append: ['a']},
+        {package: '@acme/b', append: ['b']},
+      ],
+      [
+        {package: '@acme/b', append: ['b']},
+        {package: '@acme/a', append: ['a']},
+      ],
+    ],
+    [
+      'line content change',
+      [{package: '@acme/a', append: ['old']}],
+      [{package: '@acme/a', append: ['new']}],
+    ],
+  ])(
+    'reports stale at the same Core version after %s',
+    (_label, current, expected) => {
+      const actualBlock = generateCompressedIndex('1.0.0', {
+        agentDocs: current,
+      });
+      fs.writeFileSync(
+        path.join(tmpDir, 'AGENTS.md'),
+        `# Doc\n\n${actualBlock}\n`,
+      );
+      const expectedBlock = generateCompressedIndex('1.0.0', {
+        agentDocs: expected,
+      });
+
+      expect(inspectAgentDocs(tmpDir, '1.0.0', expectedBlock)).toMatchObject({
+        status: 'stale',
+        staleFiles: ['AGENTS.md'],
+      });
+    },
+  );
 
   it('reports stale (with the old version) when the block is behind', () => {
     writeBlock('AGENTS.md', '1.0.0');

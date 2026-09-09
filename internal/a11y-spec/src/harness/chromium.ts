@@ -2,8 +2,9 @@
 
 /**
  * @file chromium.ts
- * @input Uses a Playwright `Page` and a `Locator` for the subject, and the
- *   Chrome DevTools Protocol accessibility domain behind them
+ * @input Uses a Playwright `Page`, the semantic subject `Locator`, optional
+ *   binding-owned pointer-target and visible-label `Locator`s, and the Chrome
+ *   DevTools Protocol accessibility domain behind them
  * @output `createChromiumHarness` — a harness that observes the DOM,
  *   accessibility-tree, and real-browser layers of a page rendered by a real
  *   shipping engine — plus `holdMotionStill`, the page setup its specs share.
@@ -209,6 +210,10 @@ export interface ChromiumHarnessOptions {
    * expectation under test.
    */
   readonly subject: Locator;
+  /** The surface that receives pointer input when it differs from the semantic node. */
+  readonly pointerTarget?: Locator;
+  /** A binding-owned visible label when it is not the subject's DOM label. */
+  readonly visibleLabel?: Locator;
   /** A CDP session on `page`, reused across expectations. */
   readonly cdp: CDPSession;
 }
@@ -216,7 +221,8 @@ export interface ChromiumHarnessOptions {
 export function createChromiumHarness(
   options: ChromiumHarnessOptions,
 ): Harness {
-  const {page, subject: locator, cdp} = options;
+  const {page, subject: locator, pointerTarget, cdp, visibleLabel} = options;
+  const pointerLocator = pointerTarget ?? locator;
 
   const subject: Subject = {
     attribute: name => locator.getAttribute(name),
@@ -236,163 +242,202 @@ export function createChromiumHarness(
         attribute,
       ),
     computed: () => computedNode(cdp, locator),
-    visibleLabelText: () =>
-      locator.evaluate(element => {
-        // Whether a person can actually read this text. Two questions, because
-        // no single API answers both.
-        //
-        // `checkVisibility` is the platform's own answer to "is this rendered
-        // at all", and it walks ancestors — so a node inside a
-        // `visibility: hidden`, `opacity: 0`, or `display: none` wrapper is
-        // correctly invisible without this code reimplementing the cascade.
-        // What it cannot answer is whether anything of the node LANDS on
-        // screen: every sr-only recipe stays "visible" to it. Hence the box.
-        /**
-         * A wrapper that generates no box of its own and lets its children lay
-         * out as if it were not there. Judging it by its own box would be
-         * wrong twice over: it has none, and its children may be perfectly
-         * readable. Astryx wraps button content in one, so this is not an edge
-         * case — it is the common path.
-         */
-        const isTransparentBox = (node: Element): boolean =>
-          getComputedStyle(node).display === 'contents';
+    visibleLabelText: async () => {
+      const explicitLabel =
+        visibleLabel == null ? null : await visibleLabel.elementHandle();
+      try {
+        return await locator.evaluate((element, explicitLabel) => {
+          // Whether a person can actually read this text. Two questions, because
+          // no single API answers both.
+          //
+          // `checkVisibility` is the platform's own answer to "is this rendered
+          // at all", and it walks ancestors — so a node inside a
+          // `visibility: hidden`, `opacity: 0`, or `display: none` wrapper is
+          // correctly invisible without this code reimplementing the cascade.
+          // What it cannot answer is whether anything of the node LANDS on
+          // screen: every sr-only recipe stays "visible" to it. Hence the box.
+          /**
+           * A wrapper that generates no box of its own and lets its children lay
+           * out as if it were not there. Judging it by its own box would be
+           * wrong twice over: it has none, and its children may be perfectly
+           * readable. Astryx wraps button content in one, so this is not an edge
+           * case — it is the common path.
+           */
+          const isTransparentBox = (node: Element): boolean =>
+            getComputedStyle(node).display === 'contents';
 
-        const rendered = (node: Element): boolean => {
-          if (isTransparentBox(node)) {
-            // Nothing to judge here; each child is judged on its own.
-            return true;
-          }
-          if (
-            !node.checkVisibility({
-              visibilityProperty: true,
-              opacityProperty: true,
-              contentVisibilityAuto: true,
-            })
-          ) {
-            return false;
-          }
-          const box = node.getBoundingClientRect();
-          // The sr-only recipe: clipped to a 1px box, still in the tree.
-          return box.width > 1 && box.height > 1;
-        };
-
-        /**
-         * Whether text sitting directly in this node can be read.
-         *
-         * Separate from `rendered` because `color` inherits but is overridable:
-         * a transparent wrapper whose child re-colours its own text is showing
-         * that child's words, and judging the wrapper would erase them. So this
-         * asks only about the node the text is actually in.
-         *
-         * Astryx dims a button's label with `color: transparent` while it waits
-         * on an action, so this is a real case, not a hypothetical one.
-         */
-        const textIsReadable = (node: Element): boolean =>
-          !/^rgba\(.*,\s*0\)$/.test(getComputedStyle(node).color);
-
-        /**
-         * Whether the label element as a whole paints anywhere.
-         *
-         * Sampling catches the case the box cannot: a FULL-SIZE element clipped
-         * away entirely (`clip-path: inset(100%)`), which keeps its box and
-         * stays "visible" to the platform. If a point over it resolves to the
-         * element, to something inside it, or to something covering it, it
-         * paints there; if every sample resolves to one of its own ancestors,
-         * nothing of it paints.
-         *
-         * Applied only to the element being measured, never to its descendants:
-         * a span inside a button legitimately hit-tests to the button, and
-         * treating that as hidden would erase every nested label.
-         *
-         * Occlusion is deliberately not hiding: a label under an overlay is
-         * still a label a person can read when the overlay moves.
-         */
-        const paints = (node: Element): boolean => {
-          if (!rendered(node)) {
-            return false;
-          }
-          if (isTransparentBox(node)) {
-            // No box to sample; whether anything shows is up to the children.
-            return true;
-          }
-          const box = node.getBoundingClientRect();
-          const samples: ReadonlyArray<readonly [number, number]> = [
-            [box.x + box.width / 2, box.y + box.height / 2],
-            [box.x + 1, box.y + box.height / 2],
-            [box.right - 1, box.y + box.height / 2],
-          ];
-          return samples.some(([x, y]) => {
-            const at = node.ownerDocument.elementFromPoint(x, y);
-            if (at == null) {
-              // Outside the viewport, so nothing is there to read.
+          const rendered = (node: Element): boolean => {
+            if (isTransparentBox(node)) {
+              // Nothing to judge here; each child is judged on its own.
+              return true;
+            }
+            if (
+              !node.checkVisibility({
+                visibilityProperty: true,
+                opacityProperty: true,
+                contentVisibilityAuto: true,
+              })
+            ) {
               return false;
             }
-            return at === node || node.contains(at) || !at.contains(node);
-          });
-        };
+            const box = node.getBoundingClientRect();
+            // The sr-only recipe: clipped to a 1px box, still in the tree.
+            return box.width > 1 && box.height > 1;
+          };
 
-        // The text a person can actually READ inside this node.
-        //
-        // Not `textContent`: a control commonly carries a visually-hidden live
-        // region or an sr-only span inside it, and counting that text would
-        // report words nobody sees — which then reads as a label mismatch
-        // against a name that (correctly) does not contain them. So the walk
-        // descends and drops any subtree that is not rendered.
-        const visibleTextOf = (node: Element): string => {
-          let text = '';
-          for (const child of node.childNodes) {
-            if (child.nodeType === Node.TEXT_NODE) {
-              if (textIsReadable(node)) {
-                text += child.nodeValue ?? '';
+          /**
+           * Whether text sitting directly in this node can be read.
+           *
+           * Separate from `rendered` because `color` inherits but is overridable:
+           * a transparent wrapper whose child re-colours its own text is showing
+           * that child's words, and judging the wrapper would erase them. So this
+           * asks only about the node the text is actually in.
+           *
+           * Astryx dims a button's label with `color: transparent` while it waits
+           * on an action, so this is a real case, not a hypothetical one.
+           */
+          const textIsReadable = (node: Element): boolean =>
+            !/^rgba\(.*,\s*0\)$/.test(getComputedStyle(node).color);
+
+          /**
+           * Whether the label element as a whole paints anywhere.
+           *
+           * Sampling catches the case the box cannot: a FULL-SIZE element clipped
+           * away entirely (`clip-path: inset(100%)`), which keeps its box and
+           * stays "visible" to the platform. If a point over it resolves to the
+           * element, to something inside it, or to something covering it, it
+           * paints there; if every sample resolves to one of its own ancestors,
+           * nothing of it paints.
+           *
+           * Applied only to the element being measured, never to its descendants:
+           * a span inside a button legitimately hit-tests to the button, and
+           * treating that as hidden would erase every nested label.
+           *
+           * Occlusion is deliberately not hiding: a label under an overlay is
+           * still a label a person can read when the overlay moves.
+           */
+          const paints = (node: Element): boolean => {
+            if (!rendered(node)) {
+              return false;
+            }
+            if (isTransparentBox(node)) {
+              // No box to sample; whether anything shows is up to the children.
+              return true;
+            }
+            const box = node.getBoundingClientRect();
+            const inlineStyle = (node as HTMLElement).style;
+            const pointerTransparent =
+              getComputedStyle(node).pointerEvents === 'none';
+            const originalPointerEvents =
+              inlineStyle.getPropertyValue('pointer-events');
+            const originalPriority =
+              inlineStyle.getPropertyPriority('pointer-events');
+            if (pointerTransparent) {
+              // Hit testing normally skips pointer-transparent labels even though
+              // they paint. Temporarily make only this node targetable so the
+              // same paint sampling still distinguishes visible text from a
+              // fully clipped box.
+              inlineStyle.setProperty('pointer-events', 'auto', 'important');
+            }
+            try {
+              const samples: ReadonlyArray<readonly [number, number]> = [
+                [box.x + box.width / 2, box.y + box.height / 2],
+                [box.x + 1, box.y + box.height / 2],
+                [box.right - 1, box.y + box.height / 2],
+              ];
+              return samples.some(([x, y]) => {
+                const at = node.ownerDocument.elementFromPoint(x, y);
+                if (at == null) {
+                  // Outside the viewport, so nothing is there to read.
+                  return false;
+                }
+                return at === node || node.contains(at) || !at.contains(node);
+              });
+            } finally {
+              if (pointerTransparent) {
+                if (originalPointerEvents === '') {
+                  inlineStyle.removeProperty('pointer-events');
+                } else {
+                  inlineStyle.setProperty(
+                    'pointer-events',
+                    originalPointerEvents,
+                    originalPriority,
+                  );
+                }
               }
-            } else if (
-              child.nodeType === Node.ELEMENT_NODE &&
-              rendered(child as Element)
-            ) {
-              text += ` ${visibleTextOf(child as Element)} `;
             }
-          }
-          return text.replace(/\s+/g, ' ').trim();
-        };
-        const textOf = (node: Element): string | null => {
-          if (!paints(node)) {
-            return null;
-          }
-          const text = visibleTextOf(node);
-          return text === '' ? null : text;
-        };
+          };
 
-        // The platform's own labelling order, not any design system's.
-        const labelledBy = element.getAttribute('aria-labelledby');
-        if (labelledBy != null && labelledBy.trim() !== '') {
-          const parts = labelledBy
-            .split(/\s+/)
-            .filter(Boolean)
-            .map(id => element.ownerDocument.getElementById(id))
-            .flatMap(target => (target == null ? [] : [textOf(target)]))
-            .filter((text): text is string => text != null);
-          return parts.length === 0 ? null : parts.join(' ');
-        }
-        const id = element.getAttribute('id');
-        const associated =
-          id == null || id === ''
-            ? null
-            : element.ownerDocument.querySelector(
-                // An id is author-supplied and need not be a bare identifier.
-                `label[for="${CSS.escape(id)}"]`,
-              );
-        const wrapping = element.closest('label');
-        for (const label of [associated, wrapping]) {
-          if (label != null) {
-            const text = textOf(label);
-            if (text != null) {
-              return text;
+          // The text a person can actually READ inside this node.
+          //
+          // Not `textContent`: a control commonly carries a visually-hidden live
+          // region or an sr-only span inside it, and counting that text would
+          // report words nobody sees — which then reads as a label mismatch
+          // against a name that (correctly) does not contain them. So the walk
+          // descends and drops any subtree that is not rendered.
+          const visibleTextOf = (node: Element): string => {
+            let text = '';
+            for (const child of node.childNodes) {
+              if (child.nodeType === Node.TEXT_NODE) {
+                if (textIsReadable(node)) {
+                  text += child.nodeValue ?? '';
+                }
+              } else if (
+                child.nodeType === Node.ELEMENT_NODE &&
+                rendered(child as Element)
+              ) {
+                text += ` ${visibleTextOf(child as Element)} `;
+              }
+            }
+            return text.replace(/\s+/g, ' ').trim();
+          };
+          const textOf = (node: Element): string | null => {
+            if (!paints(node)) {
+              return null;
+            }
+            const text = visibleTextOf(node);
+            return text === '' ? null : text;
+          };
+
+          if (explicitLabel != null) {
+            return textOf(explicitLabel);
+          }
+
+          // The platform's own labelling order, not any design system's.
+          const labelledBy = element.getAttribute('aria-labelledby');
+          if (labelledBy != null && labelledBy.trim() !== '') {
+            const parts = labelledBy
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(id => element.ownerDocument.getElementById(id))
+              .flatMap(target => (target == null ? [] : [textOf(target)]))
+              .filter((text): text is string => text != null);
+            return parts.length === 0 ? null : parts.join(' ');
+          }
+          const id = element.getAttribute('id');
+          const associated =
+            id == null || id === ''
+              ? null
+              : element.ownerDocument.querySelector(
+                  // An id is author-supplied and need not be a bare identifier.
+                  `label[for="${CSS.escape(id)}"]`,
+                );
+          const wrapping = element.closest('label');
+          for (const label of [associated, wrapping]) {
+            if (label != null) {
+              const text = textOf(label);
+              if (text != null) {
+                return text;
+              }
             }
           }
-        }
-        // A control that labels itself, e.g. a div with role=switch.
-        return textOf(element);
-      }),
+          // A control that labels itself, e.g. a div with role=switch.
+          return textOf(element);
+        }, explicitLabel);
+      } finally {
+        await explicitLabel?.dispose();
+      }
+    },
     isFocused: () =>
       locator.evaluate(
         element => element.ownerDocument.activeElement === element,
@@ -412,7 +457,7 @@ export function createChromiumHarness(
       // a control the browser calls unavailable what it does when clicked
       // anyway.
       try {
-        await locator.click({
+        await pointerLocator.click({
           force: options?.ignoreAvailability === true,
           // Bounded, and short. A control a pointer cannot reach — one covered
           // by something else, or clipped to nothing — otherwise sits here
@@ -431,7 +476,7 @@ export function createChromiumHarness(
       }
     },
     abortedPress: async () => {
-      const box = await locator.boundingBox();
+      const box = await pointerLocator.boundingBox();
       if (box == null) {
         throw new Error('the subject has no box to press on');
       }
@@ -439,7 +484,7 @@ export function createChromiumHarness(
       // releasing it elsewhere does. Without this, a control a pointer cannot
       // reach reports a serene pass for pointer cancellation — the exact
       // vacuous green the evidence-layer rules exist to prevent.
-      const reachable = await locator.evaluate(element => {
+      const reachable = await pointerLocator.evaluate(element => {
         const rect = element.getBoundingClientRect();
         const at = element.ownerDocument.elementFromPoint(
           rect.x + rect.width / 2,

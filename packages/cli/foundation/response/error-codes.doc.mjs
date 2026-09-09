@@ -70,6 +70,11 @@ export const doc = {
       description:
         '`@astryxdesign/core` could not be located (not installed / not in a monorepo).',
     },
+    {
+      value: 'ERR_CORE_INCOMPATIBLE',
+      description:
+        'The installed `@astryxdesign/core` loaded but is too old for this input — it lacks a capability the CLI must call to emit correct output (upgrade core).',
+    },
 
     // "Unknown <subject>" lookups
     {
@@ -190,6 +195,11 @@ export const doc = {
       value: 'ERR_THEME_LOAD',
       description:
         'A theme file could not be loaded / parsed into a defineTheme result.',
+    },
+    {
+      value: 'ERR_PALETTE_GENERATION',
+      description:
+        'A palette generation request or one of its constraints was invalid.',
     },
 
     // Upgrade

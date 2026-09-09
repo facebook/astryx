@@ -80,14 +80,14 @@ export interface UseTriggerMenuReturn {
   /** Reset/close the trigger menu */
   reset: () => void;
   /**
-   * ARIA props to spread onto the editable element. When triggers are
-   * configured the element becomes a `combobox` (which is the only role that
-   * permits `aria-expanded`/`aria-haspopup`/`aria-controls`/
-   * `aria-activedescendant`); otherwise it stays a plain `textbox` and no
-   * combobox attributes are emitted.
+   * ARIA props to spread onto the editable element: the role, and every
+   * attribute whose validity depends on it. Emit them as one spread — the
+   * role and its allowed attributes have to be decided together. See the
+   * construction site for which attribute forces which role.
    */
   ariaProps: {
     role: 'combobox' | 'textbox';
+    'aria-multiline'?: 'true';
     'aria-expanded'?: boolean;
     'aria-controls'?: string;
     'aria-activedescendant'?: string;
@@ -606,14 +606,18 @@ export function useTriggerMenu(
     el?.scrollIntoView({block: 'nearest'});
   }, [state.highlightedIndex, popover.isOpen, getItemId]);
 
-  // ARIA props for the editable element. Combobox attributes
-  // (aria-expanded/haspopup/controls/activedescendant) are only valid on
-  // role="combobox", so we only switch to that role — and only emit those
-  // attributes — when triggers are actually configured. With no triggers the
-  // element stays a plain role="textbox".
+  // ARIA props for the editable element. Of the attributes the trigger menu
+  // needs, only aria-expanded forces the role: aria-controls and
+  // aria-haspopup are global, and aria-activedescendant is allowed on
+  // textbox too. So the element becomes a combobox exactly when triggers are
+  // configured and there is an expanded state to report; with no triggers it
+  // stays a plain textbox. aria-multiline runs the other way — ARIA 1.2
+  // supports it on textbox but not on combobox — so it rides the textbox
+  // branch. Emitting it on the combobox branch is a critical
+  // aria-allowed-attr violation (#4681).
   const hasTriggers = (triggers?.length ?? 0) > 0;
   const ariaProps: UseTriggerMenuReturn['ariaProps'] = !hasTriggers
-    ? {role: 'textbox'}
+    ? {role: 'textbox', 'aria-multiline': 'true'}
     : state.isActive && popover.isOpen
       ? {
           role: 'combobox',

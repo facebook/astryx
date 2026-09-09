@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-08-31
+approved_at: 2026-09-09
 owners: [cixzhang, imdreamrunner]
 review_triggers: [behavior, layout, theming, accessibility]
 verified_by:
@@ -69,10 +69,9 @@ form value through a labeled field surface with a content lane. Members use
   DateTimeInput, TimeInput, FileInput, Selector, MultiSelector,
   ComplexSelector, Typeahead, and Tokenizer.
 - **Collaborators:** Field and FieldStatus provide shared field chrome;
-  FormLayout arranges fields; InputGroup groups its documented compatible
-  single-line subset; InputClearButton, Spinner, Tooltip, and BaseTypeahead
-  provide shared affordance or interaction behavior. These collaborators are
-  not members.
+  FormLayout arranges fields; InputGroup groups members that explicitly adopt its
+  capability contract; InputClearButton, Spinner, Tooltip, and BaseTypeahead provide
+  shared affordance or interaction behavior. These collaborators are not members.
 - **Excluded:** CheckboxInput, RadioList, Switch, and Slider use labeled-control
   models without this content/end-lane geometry. PowerSearch and ChatComposer
   are higher-level compositions that consume member behavior rather than define
@@ -92,13 +91,15 @@ another implementation helper.
   the group label and supporting text.
 - `FormLayout` owns outer arrangement, spacing, direction, and form-level
   optionality. It does not redefine a member's internal control geometry.
-- `InputGroup` owns the fixed row height and connected-edge alignment only for
-  its documented compatible subset: TextInput, NumberInput, TimeInput,
-  DateInput, Typeahead, Selector, and MultiSelector on current main.
-- Each member owns the DOM and CSS mechanism that satisfies these requirements.
+- `InputGroup` owns the fixed row height, connected outer surface, edge alignment,
+  and group-level focus presentation for admitted children. Admission follows the
+  capability contract in FR3, not a permanent component allowlist; input-family
+  membership alone does not imply support.
+- Each admitted member owns the grouped adaptation that satisfies FR3. Ungrouped
+  presentation and behavior remain component-owned and unchanged by admission.
   End controls may be ordinary flex items or a component-local lane; this family
-  does not require one shared wrapper, measurement hook, target, or custom
-  property.
+  does not require one shared wrapper, measurement hook, target, custom property,
+  or new public prop.
 - Shared primitives retain their own visual and accessibility ownership. In
   particular, InputClearButton, Spinner, Tooltip, FieldStatus, and Icon do not
   become member-specific APIs when composed into a field.
@@ -115,7 +116,7 @@ another implementation helper.
 | field size        | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                              | approved family rule                       |
 | inline size       | intrinsic, explicit `Field.width`, or containing layout        | A member keeps its available inline size across value and busy-state changes                                         | approved rule; Selector exception below    |
 | end controls      | absent, clear, busy, status, disclosure, or component content  | Every rendered control has non-overlapping space; absent controls leave no unexplained reserve                       | approved family rule                       |
-| grouped row       | standalone or supported InputGroup child                       | InputGroup owns the fixed row height and connected edges                                                             | shipped contract for the compatible subset |
+| grouped row       | standalone or admitted InputGroup child                        | InputGroup owns fixed height, connected edges, and group focus; the child owns its grouped adaptation                | approved capability contract; shipped adoption below |
 | disabled reason   | absent or component-supported `disabledMessage`                | The reason remains keyboard- and assistive-technology-reachable while mutation stays blocked                         | approved family rule where exposed         |
 | input busy        | explicit `isLoading` or pending `changeAction` where exposed   | The field value is resolving or being saved                                                                          | approved by DEC-2 and AST-001              |
 | source busy       | component-owned async search or option loading                 | Supporting data work is separate from input `isLoading`                                                              | component/system-spec owned                |
@@ -136,12 +137,17 @@ another implementation helper.
   content. A lane that is absent MUST NOT leave stale or unexplained space.
   This is an observable requirement, not a mandate for measurement or a shared
   lane primitive.
-- **FR3 — InputGroup owns compatible row geometry.** A documented compatible
-  member MUST fill but not expand the group's fixed-height row. Placeholder,
-  selected, busy, status, and clear states remain one row; long or rich selected
-  content truncates, folds within its own renderer, or clips at the group edge
-  rather than bleeding outside it. Components not documented as compatible do
-  not acquire this behavior by family membership.
+- **FR3 — InputGroup admission requires a complete grouped adaptation.** Any input
+  member MAY participate when its owning component explicitly adopts grouped mode
+  and proves all of the following: it resolves a compatible control height and size
+  from the group; removes or suppresses competing outer Field, border, radius, and
+  surface geometry; delegates the connected outer border, radius, and group-level
+  focus presentation coherently; keeps content within the single-row group geometry
+  through component-owned truncation, folding, clipping, or overflow; and preserves
+  the input's accessible name and description, value semantics, keyboard behavior,
+  focus behavior, and editing or selection model. Admission follows these
+  capabilities rather than a permanent allowlist. Family membership or context
+  consumption alone is insufficient.
 - **FR4 — Disabled reasons remain reachable where supported.** When a member
   exposes `disabledMessage`, the inactive field remains focusable enough to
   expose the reason while editing, selection, and activation stay blocked.
@@ -178,10 +184,14 @@ another implementation helper.
   items or a component-local out-of-flow lane and may render clear, busy,
   status, disclosure, stepper, or documented custom content. The mechanism does
   not weaken FR1 or FR2.
-- **AV3 — Block-axis growth.** TextArea and Tokenizer may grow in the block axis
-  for multiline or multi-token content. That variation does not make their
-  inline size value-dependent. A component must be explicitly adopted by
-  InputGroup before its rich content receives a grouped-row policy.
+- **AV3 — Block-axis growth and grouped adaptation.** TextArea and Tokenizer may
+  grow in the block axis for multiline or multi-token content while ungrouped.
+  InputGroup admission does not change those standalone defaults. In grouped mode,
+  an admitted component owns a presentation that satisfies FR3. Tokenizer is
+  admitted on that basis and, when the caller does not choose another supported
+  overflow mode, MUST default to a component-owned overflow treatment that preserves
+  the group's single-line appearance. This grouped default does not require a new
+  public prop or theme target.
 - **AV4 — Action callback shape.** Text-editing members may pass their change
   event to `changeAction`; structured-value members may pass only the proposed
   value. Component docs own the exact callback type.
@@ -200,9 +210,10 @@ another implementation helper.
 | TextInput / empty, valued, or input-busy               | Stable inline size; in-flow end controls do not overlap text                | Native input and optional clear/status controls                             |
 | Selector / placeholder or selected                     | End controls and grouped row remain bounded                                 | Standalone inline size may follow displayed content under DEC-1             |
 | Typeahead / empty, selected, or source-busy            | Stable inline size and one non-overlapping end area, standalone and grouped | Editable input becomes a selected Token; source busy is BaseTypeahead-owned |
-| Tokenizer / tokens, source-busy, and endContent        | Stable inline size and clear content/end-control separation                 | Standalone tokens may wrap and grow the field in the block axis             |
-| ComplexSelector / placeholder, selected, or input-busy | Stable field surface and non-overlapping Spinner/disclosure                 | Caller owns rich popup content; no InputGroup support                       |
-| Compatible member / InputGroup                         | Group owns row height and connected edges in every field state              | Component owns internal truncation or folding                               |
+| Tokenizer / standalone tokens, source-busy, and endContent | Stable inline size and clear content/end-control separation | Standalone tokens may wrap and grow the field in the block axis |
+| Tokenizer / admitted InputGroup mode                    | Group height, connected surface, semantics, and keyboard behavior remain coherent | Grouped default uses a single-line overflow treatment; caller-selected supported overflow may vary within FR3 |
+| ComplexSelector / placeholder, selected, or input-busy  | Stable field surface and non-overlapping Spinner/disclosure | Caller owns rich popup content; no shipped InputGroup support |
+| Admitted member / InputGroup                            | Compatible size/height, one outer surface/focus owner, one-row geometry, and preserved semantics | Component owns its internal grouped truncation, folding, clipping, or overflow |
 | Member with `disabledMessage`                          | Reason is reachable; mutation remains blocked                               | Component owns the focus target and Tooltip composition                     |
 | Member / validation status                             | Detached and tooltip are available; attached is default only when supported | Component owns whether its control safely satisfies attached eligibility    |
 
@@ -224,7 +235,7 @@ another implementation helper.
 | MultiSelector   | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | trigger-display modes remain component-owned                                       |
 | ComplexSelector | Field, FormLayout, size, width, `isLoading`, `changeAction`, and status                                                    | no InputGroup or disabled-reason API                                               |
 | Typeahead       | Field, FormLayout, InputGroup, size, width, clear, status, disabled reason, and BaseTypeahead source loading               | no family `isLoading` or `changeAction`; search lifecycle is component-owned       |
-| Tokenizer       | Field, FormLayout, size, width, clear, status, disabled reason, BaseTypeahead source loading, and multi-token block growth | not InputGroup-compatible on current main; no family `isLoading` or `changeAction` |
+| Tokenizer       | Field, FormLayout, size, width, clear, status, disabled reason, BaseTypeahead source loading, and multi-token block growth | Not InputGroup-compatible on current main; DEC-5 approves admission after the grouped adaptation lands; no family `isLoading` or `changeAction` |
 
 ### Implementation gaps
 
@@ -239,13 +250,15 @@ another implementation helper.
   implementations and are non-authoritative evidence. Any implementation keeps its
   DOM/CSS mechanism component-owned and must be reviewed against this contract at
   its exact head.
-- **Tokenizer state geometry:** current main positions `endContent` and clear
-  controls out of flow without reserving their rendered width, so narrow input
-  content can pass underneath them. Token count can also change intrinsic
-  inline size. PR #5555 is non-authoritative evidence of an attempted component-
-  local reserve. Tokenizer is not an InputGroup-compatible child on current main;
-  [#4405](https://github.com/facebook/astryx/pull/4405) is separate historical
-  evidence. This family contract does not assign either pull request a verdict.
+- **Tokenizer state geometry and grouped admission:** current main positions
+  `endContent` and clear controls out of flow without reserving their rendered
+  width, so narrow input content can pass underneath them. Token count can also
+  change intrinsic inline size. PR #5555 is non-authoritative evidence of an
+  attempted component-local reserve. Tokenizer is not InputGroup-compatible on
+  current main; DEC-5 admits it once its grouped path satisfies FR3 and defaults to
+  a single-line overflow treatment without changing ungrouped behavior. [#4405](https://github.com/facebook/astryx/pull/4405)
+  is implementation evidence to review against that authority, not a Tokenizer-only
+  exception or authority by itself.
 - **Selector source-state semantics:** Selector and MultiSelector keep provided
   options available while input `isLoading` is true, but current empty/no-result
   presentation still treats that flag as option-source pending and neither
@@ -285,7 +298,7 @@ The exhaustive coverage obligation follows the membership and adoption tables.
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | FR1      | Real-Chromium before/after inline-size measurements in block, flex-item, inline-block, grid auto-track, and explicit-width containers | TextInput baseline; Selector exception; Typeahead empty/selected/source-busy; Tokenizer zero/one/many tokens    | Value or busy state changes the field's outer inline size outside a recorded exception                            |
 | FR2      | Real-Chromium content-box/control-box overlap matrix at narrow supported widths and LTR/RTL                                           | clear, Spinner, status, disclosure, Tokenizer `endContent`; alone and combined                                  | Content, caret, or pointer hit area intersects a rendered end control, or stale reserve remains after it unmounts |
-| FR3      | InputGroup unit tests plus rendered row-height/overflow checks                                                                        | every compatible member; applicable placeholder/selected/busy/clear/status states; mismatched child/group sizes | A child expands the group, wraps controls to another row, or bleeds beyond the connected border                   |
+| FR3      | InputGroup unit tests plus rendered size/height, surface/focus-ownership, overflow, and interaction checks | every admitted member; Tokenizer zero/one/many tokens, focused/unfocused, explicit/default overflow; mismatched child/group sizes | A child keeps competing outer geometry, expands or adds a row, loses connected focus/border ownership, or changes naming, keyboard, focus, editing, or selection semantics |
 | FR4      | Keyboard, pointer, and accessibility-tree tests                                                                                       | each member that exposes `disabledMessage`                                                                      | Reason becomes unreachable, or the disabled control mutates/activates                                             |
 | FR5      | Selector and MultiSelector interaction and announcement tests from AST-001                                                            | populated options while input-busy; explicit source-pending; completed empty                                    | Input busy suppresses supplied options or substitutes for source state                                            |
 | FR6      | Focused callback/order/optimistic/busy tests for every Action-capable mutation path                                                   | typing, selection, calendar/preset, file selection, and clear where exposed                                     | Callback/Action order changes, optimistic feedback disappears, or a clear path bypasses the Action contract       |
@@ -343,6 +356,28 @@ is an input-family composition that Field consumes before rendering FieldStatus.
 Rejected: deriving universal attached overlap from any descendant `data-size`,
 because descendant metadata does not prove the direct surface is opaque,
 bordered, fixed-height, or the owner of that resolved size.
+
+### DEC-5 — InputGroup admission is capability-based
+
+**Decider:** `cixzhang`, `2026-09-09`
+
+InputGroup compatibility is not a closed component allowlist. Any input-family
+member may participate when its component contract and implementation explicitly
+adopt grouped mode and satisfy FR3: compatible resolved size and control height, no
+competing outer Field or surface geometry, coherent connected border/radius/focus
+ownership, single-row group geometry, and unchanged input semantics and keyboard
+behavior.
+
+Tokenizer is admitted under this rule. Its ungrouped wrapping and overflow defaults
+remain unchanged. In grouped mode, when no supported overflow mode is selected by
+the caller, Tokenizer defaults to a component-owned treatment that preserves the
+group's single-line appearance. The implementation may reuse its existing overflow
+surface; this decision adds no public prop, callback, theme target, or generic
+InputGroup branch.
+
+Rejected: a permanent hard-coded allowlist, a Tokenizer-only exception, allowing
+context consumption without a complete grouped adaptation, or forcing standalone
+multiline/multi-token inputs into single-line presentation.
 
 ## Open questions
 

@@ -1,18 +1,21 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file run.ts
+ * @file check.ts
  * @input Uses ./contract (expectations), ./harness (the runtime seam)
- * @output `runBinding` — runs one pattern contract against one component
- *   binding state — plus the known-failure vocabulary it obeys.
+ * @output `checkAccessibilitySpec` — runs one pattern contract against one component binding
+ *   state — plus the known-failure vocabulary and exact-record reconciliation
+ *   helpers it obeys.
  * @position The engine between a pattern and a component. Everything a report
  *   later says about a binding is decided here.
  *
  * The rules come from the accepted migration record,
  * `docs/specs/AST-021/spec.md`:
  *
- * - FR8  a known failure names an expectation, a binding, a state, an evidence
- *        layer, the user impact, a public issue, and why it is not fixed here.
+ * - FR8  a checked-in known failure names an expectation, binding, state,
+ *        evidence layer, exact failure, user impact, standards source, and why
+ *        migration does not fix it. Operational tracking stays outside public
+ *        source.
  * - FR9  a known failure changes only its own exact result. A different error,
  *        another state, a new expectation, or a wider failure still fails, and
  *        an expectation that starts passing is reported as an unexpected pass
@@ -61,15 +64,12 @@ export interface KnownFailure {
   readonly binding: string;
   readonly state: string;
   readonly evidenceLayer: EvidenceLayer;
-  /**
-   * A distinctive fragment of the failure this record covers. A failure whose
-   * message does not contain it is a different failure, and still fails.
-   */
-  readonly failureIncludes: string;
+  /** The exact failure this record covers. Any text change is a different failure. */
+  readonly failureEquals: string;
+  /** Exact standards source for the failed user outcome. */
+  readonly standardsReference: string;
   /** What the person using the component actually experiences. */
   readonly userImpact: string;
-  /** Public issue tracking the fix. */
-  readonly issue: string;
   /** Why this migration records the gap instead of fixing it. */
   readonly reason: string;
 }
@@ -89,7 +89,7 @@ export interface ExpectationResult {
    * unrun because the tree it reads the result from is out of reach.
    */
   readonly missingLayers?: readonly EvidenceLayer[];
-  /** Present when a known-failure record was consulted. */
+  /** Present when an exact known-failure record was consulted. */
   readonly knownFailure?: KnownFailure;
 }
 
@@ -103,8 +103,8 @@ export interface BindingResult {
   readonly results: readonly ExpectationResult[];
 }
 
-export interface RunBindingOptions<Facts> {
-  readonly contract: PatternContract<Facts>;
+export interface CheckAccessibilitySpecOptions<Facts> {
+  readonly spec: PatternContract<Facts>;
   readonly binding: string;
   readonly state: string;
   readonly facts: Facts;
@@ -136,7 +136,7 @@ export interface RunBindingOptions<Facts> {
 /**
  * Thrown when an expectation reads something only the binding can supply and
  * the binding did not supply it. A binding fault, not a contract result: it
- * escapes `runBinding` rather than being recorded as a failure, because the
+ * escapes `checkAccessibilitySpec` rather than being recorded as a failure, because the
  * outcome was never actually tested.
  */
 export class MissingBindingCapability extends Error {
@@ -165,15 +165,31 @@ function findKnownFailure<Facts>(
   );
 }
 
-export async function runBinding<Facts>(
-  options: RunBindingOptions<Facts>,
+export function unmatchedKnownFailures(
+  knownFailures: readonly KnownFailure[],
+  bindings: readonly BindingResult[],
+): readonly string[] {
+  return knownFailures.flatMap(record => {
+    const matches = bindings.flatMap(binding =>
+      binding.results.filter(result => result.knownFailure === record),
+    ).length;
+    return matches === 1
+      ? []
+      : [
+          `${record.binding} [${record.state}] ${record.expectation} at ${record.evidenceLayer} matched ${matches} results; every known-failure record must match exactly one executed result`,
+        ];
+  });
+}
+
+export async function checkAccessibilitySpec<Facts>(
+  options: CheckAccessibilitySpecOptions<Facts>,
 ): Promise<BindingResult> {
-  const {contract, binding, state, facts, mount, unmount} = options;
+  const {spec, binding, state, facts, mount, unmount} = options;
   const knownFailures = options.knownFailures ?? [];
   const results: ExpectationResult[] = [];
   let harnessName = 'unmounted';
 
-  for (const expectation of contract.expectations) {
+  for (const expectation of spec.expectations) {
     if (options.only != null && !options.only.includes(expectation.id)) {
       continue;
     }
@@ -275,13 +291,14 @@ export async function runBinding<Facts>(
               ...base,
               status: 'unexpected-pass',
               knownFailure: record,
-              detail: `the recorded failure no longer happens; remove the known-failure record and let ${record.issue} close`,
+              detail:
+                'the recorded failure no longer happens; remove this stale known-failure record and reconcile its separately owned operational gap record when no other binding still refers to it',
             },
       );
       continue;
     }
 
-    if (record != null && failure.includes(record.failureIncludes)) {
+    if (record != null && failure === record.failureEquals) {
       results.push({
         ...base,
         status: 'known-failure',
@@ -297,13 +314,13 @@ export async function runBinding<Facts>(
       detail:
         record == null
           ? failure
-          : `${failure}\n\nA known failure is recorded for this expectation, binding, and state, but it covers a different failure (${JSON.stringify(record.failureIncludes)}). A known failure never widens to cover a new one.`,
+          : `${failure}\n\nA known failure is recorded for this expectation, binding, and state, but it covers a different failure (${JSON.stringify(record.failureEquals)}). A known failure never widens to cover a new one.`,
       knownFailure: record,
     });
   }
 
   return {
-    pattern: contract.pattern,
+    pattern: spec.pattern,
     binding,
     state,
     harness: harnessName,

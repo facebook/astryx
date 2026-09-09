@@ -31,7 +31,8 @@ src/
 ├── contract.ts    Expectation, PatternContract, definePattern (the schema gate)
 ├── checklist.ts   the completeness dimensions every pattern must answer
 ├── harness.ts     the Harness/Subject seam and the evidence-layer vocabulary
-├── run.ts         runBinding — applicability, unrun layers, known failures
+├── check.ts       checkAccessibilitySpec — low-level result for reports/mutation proof
+├── expect.ts      expectAccessibilitySpec — component-facing render + subject assertion
 ├── report.ts      separate facts, and the gate over them
 ├── harness/
 │   ├── jsdom.ts       observes unit + DOM. Refuses everything above.
@@ -39,19 +40,18 @@ src/
 ├── spoken.ts      how a visible label is compared against a computed name
 ├── storybook.ts   a static server over a built Storybook, for the browser lane
 └── patterns/
-    ├── switch.ts             the switch pattern
-    ├── switch.fixtures.ts    conforming + deliberately violating fixtures
-    ├── switch.jsdom.test.ts  the contract's own proof, DOM layer
-    ├── switch.chromium.spec.ts  the same proof in a real engine
-    └── button.*              the button pattern, same four files
+    ├── checkbox.*           the checkbox pattern, same four files
+    ├── switch.*             the switch pattern, same four files
+    └── button.*             the button pattern, same four files
 ```
 
 ## The patterns
 
-| Pattern  | Adopted from                                                   | Bound by                                                                 |
-| -------- | -------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `switch` | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/) | Switch                                                                   |
-| `button` | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/) | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton |
+| Pattern    | Adopted from                                                       | Bound by                                                                  |
+| ---------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| `checkbox` | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/) | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard |
+| `switch`   | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)     | Switch                                                                    |
+| `button`   | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)     | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton  |
 
 The button pattern covers the ordinary command button. A toggle button carries
 `aria-pressed` and is its own pattern; anything that adopts link semantics — an
@@ -154,14 +154,42 @@ exactly the expectation under test instead of making the subject unfindable.
 Component-specific behaviour does not move: callbacks, form data, composition,
 and styling stay in the component's own suite (AST-021 FR5).
 
+The fast component lane uses the assertion API directly, so the test visibly names
+the accessibility specification, the component render, and its role-bearing subject:
+
+```tsx
+await expectAccessibilitySpec({
+  spec: BUTTON_PATTERN,
+  binding: state.binding,
+  state: state.id,
+  facts: state.facts,
+  render: () => render(<Button label="Save" />),
+  subject: () => screen.getByRole('button'),
+  cleanup,
+});
+```
+
+`expectAccessibilitySpec` fails the test on required failures and unexpected passes.
+Lower-level contract fixtures, Chromium bindings, report generation, and mutation
+proof use `checkAccessibilitySpec`, which returns the complete factual result without
+asserting it.
+
 ## Known failures
 
 A known failure names one expectation, one binding, one state, one evidence
-layer, the user impact, a public issue, and why the migration is not the place
-to fix it. It still runs, it still fails, and it is reported as debt. A
-different message, another state, or a wider failure fails the build anyway, and
-an expectation that starts passing is reported as an unexpected pass so the
-stale record is deleted (AST-021 FR8–FR10).
+layer, the exact standards reference, the exact failure, the user impact, and why
+the migration is not the place to fix it. It still runs, it still fails, and is
+reported as debt. Operational ownership stays in the project's durable gap
+registry rather than in public source. The record matches the complete failure
+message, not a
+substring; a different message, another state, or a wider failure remains a
+`fail` rather than being absorbed by the record. Required failures gate;
+advisory failures remain report-only under AST-020 FR9. A full binding sweep
+also requires every record to match exactly one executed result, so deleted
+states and renamed expectations cannot orphan debt. An expectation that starts
+passing is reported as an unexpected pass so that exact stale record is deleted;
+the separately owned operational gap is reconciled only when no remaining record
+refers to it (AST-021 FR8–FR10).
 
 ## Running
 

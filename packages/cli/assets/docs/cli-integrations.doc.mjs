@@ -148,6 +148,29 @@ export const docs = {
       ],
     },
     {
+      title: 'Agent Docs',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'An integration can append a small amount of static package guidance to the end of the managed agent block through `agentDocs.append` in its default manifest. The CLI owns the section heading, package-labeled bullets, placement, markers, target files, and writes.',
+        },
+        {
+          type: 'code',
+          lang: 'typescript',
+          code: "// astryx.integration.ts\nimport type {AstryxIntegration} from '@astryxdesign/cli/authoring';\n\nexport default {\n  components: './components',\n  agentDocs: {\n    append: ['Run acme verify before finishing.'],\n  },\n} satisfies AstryxIntegration;",
+        },
+        {
+          type: 'prose',
+          text: '`append` is optional and may contain at most 8 lines per integration. A line is a trimmed, non-blank plain string of at most 240 Unicode code points with no line separators, control characters, NUL, or Astryx/XDS managed-marker text. A configured project may render at most 32 integration lines total.',
+        },
+        {
+          type: 'prose',
+          text: '`astryx init` renders the installed manifests. `astryx upgrade` compares the same expected block even when the Core version is unchanged, so a line addition, removal, reorder, or edit appears in dry-run and is written with `--apply`. When codemods or post-codemod hooks run, the block is refreshed only after they succeed; no integration codemod is required for guidance changes.',
+        },
+      ],
+    },
+    {
       title: 'Codemods',
       category: 'guide',
       content: [

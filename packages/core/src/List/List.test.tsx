@@ -229,7 +229,7 @@ describe('List', () => {
     );
     const item = container.querySelector('li');
     expect(item).toBeInTheDocument();
-    expect(item?.className).toContain('compact');
+    expect(item).toHaveAttribute('data-density', 'compact');
   });
 
   it('renders with balanced density (default)', () => {
@@ -240,8 +240,8 @@ describe('List', () => {
     );
     const item = container.querySelector('li');
     expect(item).toBeInTheDocument();
-    expect(item?.className).toContain('balanced');
-    expect(item?.className).not.toContain('spacious');
+    expect(item).toHaveAttribute('data-density', 'balanced');
+    expect(item).not.toHaveAttribute('data-density', 'spacious');
   });
 
   it('renders with spacious density', () => {
@@ -252,7 +252,7 @@ describe('List', () => {
     );
     const item = container.querySelector('li');
     expect(item).toBeInTheDocument();
-    expect(item?.className).toContain('spacious');
+    expect(item).toHaveAttribute('data-density', 'spacious');
   });
 
   // ===========================================================================

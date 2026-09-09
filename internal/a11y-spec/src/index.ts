@@ -51,13 +51,19 @@ export {
 
 export {
   MissingBindingCapability,
-  runBinding,
+  checkAccessibilitySpec,
+  unmatchedKnownFailures,
   type BindingResult,
+  type CheckAccessibilitySpecOptions,
   type ExpectationResult,
   type KnownFailure,
   type ResultStatus,
-  type RunBindingOptions,
-} from './run';
+} from './check';
+
+export {
+  expectAccessibilitySpec,
+  type ExpectAccessibilitySpecOptions,
+} from './expect';
 
 export {
   blockingResults,
@@ -70,6 +76,8 @@ export {
 } from './report';
 
 export {createJsdomHarness, type JsdomHarnessOptions} from './harness/jsdom';
+
+export {CHECKBOX_PATTERN, type CheckboxStateFacts} from './patterns/checkbox';
 
 export {SWITCH_PATTERN, type SwitchStateFacts} from './patterns/switch';
 

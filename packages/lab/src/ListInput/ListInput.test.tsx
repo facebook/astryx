@@ -240,7 +240,7 @@ describe('ListInput', () => {
       '.astryx-empty-state',
     );
     expect(emptyState).toBeInTheDocument();
-    expect(emptyState).toHaveClass('astryx-empty-state', 'compact');
+    expect(emptyState).toHaveClass('astryx-empty-state');
     expect(emptyState).toHaveAttribute('data-variant', 'compact');
     expect(getComputedStyle(emptyState!).alignItems).toBe('center');
     expect(getComputedStyle(emptyState!).justifyContent).toBe('center');

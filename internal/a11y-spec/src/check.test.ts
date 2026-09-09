@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file run.test.ts
- * @input Uses ./contract, ./run, ./report and a stub harness
+ * @file check.test.ts
+ * @input Uses ./contract, ./check, ./report and a stub harness
  * @output Proof that a known failure changes only its own exact result, that an
  *   unobservable layer is reported rather than passed, and that the report
  *   keeps its facts apart.
@@ -23,7 +23,11 @@ import {
   neverExercised,
   summarize,
 } from './report';
-import {runBinding, type KnownFailure} from './run';
+import {
+  checkAccessibilitySpec,
+  unmatchedKnownFailures,
+  type KnownFailure,
+} from './check';
 
 interface Facts {
   readonly applicable: boolean;
@@ -93,16 +97,16 @@ function knownFailure(overrides: Partial<KnownFailure> = {}): KnownFailure {
     binding: 'Stub',
     state: 'default',
     evidenceLayer: 'dom',
-    failureIncludes: 'the stub outcome is missing',
+    failureEquals: 'the stub outcome is missing entirely',
+    standardsReference: 'WCAG 2.2 4.1.2 Name, Role, Value (Level A)',
     userImpact: 'The stub does nothing for the user.',
-    issue: 'https://github.com/facebook/astryx/issues/1',
     reason: 'Recorded by the migration; the fix is its own change.',
     ...overrides,
   };
 }
 
 async function run(
-  contract: PatternContract<Facts>,
+  spec: PatternContract<Facts>,
   options: {
     facts?: Facts;
     knownFailures?: readonly KnownFailure[];
@@ -110,8 +114,8 @@ async function run(
     state?: string;
   } = {},
 ) {
-  return runBinding({
-    contract,
+  return checkAccessibilitySpec({
+    spec,
     binding: 'Stub',
     state: options.state ?? 'default',
     facts: options.facts ?? {applicable: true},
@@ -124,7 +128,7 @@ const missing = () => {
   throw new Error('the stub outcome is missing entirely');
 };
 
-describe('runBinding', () => {
+describe('checkAccessibilitySpec', () => {
   it('passes when the outcome happens', async () => {
     const result = await run(contractThat(() => {}));
     expect(result.results[0]?.status).toBe('pass');
@@ -252,7 +256,13 @@ describe('runBinding', () => {
         knownFailures: [knownFailure()],
       });
       expect(result.results[0]?.status).toBe('known-failure');
-      expect(result.results[0]?.knownFailure?.issue).toContain('issues/1');
+      expect(result.results[0]?.knownFailure).toEqual(
+        expect.objectContaining({
+          expectation: 'probe.outcome.observed',
+          binding: 'Stub',
+          state: 'default',
+        }),
+      );
       expect(blockingResults([result])).toEqual([]);
     });
 
@@ -270,12 +280,16 @@ describe('runBinding', () => {
       expect(blockingResults([result])).toHaveLength(1);
     });
 
-    it('fails in a state the record does not name', async () => {
-      const result = await run(contractThat(missing), {
-        state: 'another-state',
-        knownFailures: [knownFailure()],
-      });
+    it('reports an advisory failure in a state the record does not name', async () => {
+      const result = await run(
+        contractThat(missing, {enforcement: 'advisory'}),
+        {
+          state: 'another-state',
+          knownFailures: [knownFailure()],
+        },
+      );
       expect(result.results[0]?.status).toBe('fail');
+      expect(blockingResults([result])).toEqual([]);
     });
 
     it('fails at an evidence layer the record does not name', async () => {
@@ -283,6 +297,52 @@ describe('runBinding', () => {
         knownFailures: [knownFailure({evidenceLayer: 'real-browser'})],
       });
       expect(result.results[0]?.status).toBe('fail');
+    });
+
+    it('fails when only a substring of the recorded failure matches', async () => {
+      const result = await run(contractThat(missing), {
+        knownFailures: [
+          knownFailure({failureEquals: 'the stub outcome is missing'}),
+        ],
+      });
+      expect(result.results[0]?.status).toBe('fail');
+      expect(blockingResults([result])).toHaveLength(1);
+    });
+
+    it('reports a different advisory failure when a known record was consulted', async () => {
+      const result = await run(
+        contractThat(
+          () => {
+            throw new Error('the stub outcome broke differently');
+          },
+          {enforcement: 'advisory'},
+        ),
+        {knownFailures: [knownFailure()]},
+      );
+      expect(result.results[0]?.status).toBe('fail');
+      expect(result.results[0]?.knownFailure).toBeDefined();
+      expect(blockingResults([result])).toEqual([]);
+    });
+
+    it('accepts a record matched by exactly one executed result', async () => {
+      const record = knownFailure();
+      const result = await run(contractThat(missing), {
+        knownFailures: [record],
+      });
+      expect(unmatchedKnownFailures([record], [result])).toEqual([]);
+    });
+
+    it('reports a record orphaned by a missing state or expectation', async () => {
+      const orphan = knownFailure({state: 'deleted-state'});
+      const result = await run(
+        contractThat(() => {}),
+        {
+          knownFailures: [orphan],
+        },
+      );
+      expect(unmatchedKnownFailures([orphan], [result])).toEqual([
+        expect.stringContaining('matched 0 results'),
+      ]);
     });
 
     it('reports an unexpected pass when the recorded failure stops happening', async () => {
@@ -293,15 +353,20 @@ describe('runBinding', () => {
         },
       );
       expect(result.results[0]?.status).toBe('unexpected-pass');
-      expect(result.results[0]?.detail).toContain('remove the known-failure');
+      expect(result.results[0]?.detail).toContain(
+        'remove this stale known-failure',
+      );
+      expect(result.results[0]?.detail).toContain(
+        'reconcile its separately owned operational gap record',
+      );
       expect(blockingResults([result])).toHaveLength(1);
     });
   });
 
   it('lets a broken mount surface instead of absorbing it as a result', async () => {
     await expect(
-      runBinding({
-        contract: contractThat(() => {}),
+      checkAccessibilitySpec({
+        spec: contractThat(() => {}),
         binding: 'Stub',
         state: 'default',
         facts: {applicable: true},
@@ -315,6 +380,16 @@ describe('runBinding', () => {
 });
 
 describe('the report keeps its facts apart', () => {
+  it('prints the source and failure detail for a report-only advisory result', async () => {
+    const result = await run(contractThat(missing, {enforcement: 'advisory'}));
+    const text = formatReport(
+      summarize(contractThat(missing, {enforcement: 'advisory'}), [result]),
+    );
+    expect(text).toContain('WCAG 2.2 4.1.2 Name, Role, Value (A)');
+    expect(text).toContain('the stub outcome is missing entirely');
+    expect(blockingResults([result])).toEqual([]);
+  });
+
   it('counts each status separately and quotes no score', async () => {
     const contract = contractThat(missing);
     const failing = await run(contract);

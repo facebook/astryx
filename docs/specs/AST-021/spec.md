@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-03
+approved_at: 2026-09-08
 phase: accepted
 owners: [cixzhang]
 affects_architecture: []
@@ -90,11 +90,18 @@ implementation-specific regression coverage.
 
 ### Known failures and regression gates
 
-- **FR8 — Every known failure is exact and actionable.** A known-failure record MUST
-  name the expectation id, component binding and state, observed user impact,
-  standards reference, evidence layer, public tracking issue, and reason the
-  migration does not fix it. Wildcards, whole-pattern suppression, and unowned text
-  reasons are prohibited.
+- **FR8 — Every known failure is exact and actionable.** A checked-in
+  known-failure record MUST name the expectation id, component binding and state,
+  observed user impact, standards reference, evidence layer, exact failure, and
+  reason the migration does not fix it. Wildcards, whole-pattern suppression, and
+  unowned text reasons are prohibited. Operational tracking MUST keep one durable,
+  owned gap record for that exact expectation/binding/state tuple. That gap record
+  MUST state whether current authority or an objective standard settles the required
+  outcome, or whether API, behavior, ownership, compatibility, or design direction
+  remains a human decision. Recording a gap does not approve remediation. Unsettled
+  direction stops implementation and routes one exact owner question. A private
+  tracker identifier or URL MUST NOT be copied into public source, commits, or
+  pull-request text; the operational registry maintains that external mapping.
 - **FR9 — A known failure changes only its exact gate result.** A binding with a
   known failure still runs the expectation and reports `known-failure`, never
   `pass`. Only that exact expected result stops gating the first migration. A
@@ -106,7 +113,7 @@ implementation-specific regression coverage.
   failures remain visibly failing debt but do not prevent the first migration.
   New components and newly supported states MUST NOT add a required known failure.
   Adding or widening a known failure after the baseline requires an explicit owner
-  decision and linked defect; it is not a routine test update.
+  decision and a durable owned gap record; it is not a routine test update.
 - **FR11 — Reports show facts, not one quality score.** Coverage output MUST report
   patterns, bindings, applicable expectations, passes, known failures, unrun layers,
   and exemptions separately. It MUST NOT collapse those states into one percentage
@@ -127,9 +134,10 @@ implementation-specific regression coverage.
   review the contract before relying on local tests.
 - **FR14 — The migration pull request is a readable ledger.** Its description MUST
   name the affected users and pattern, component parts and states bound, assertions
-  moved, local tests retained and why, exact known failures and linked issues,
-  evidence layers run, and mutation or before/after evidence. The description MUST
-  distinguish test migration from component remediation.
+  moved, local tests retained and why, exact known failures and their authority
+  classification, evidence layers run, and mutation or before/after evidence. The
+  description MUST distinguish test migration from component remediation and MUST
+  NOT expose a private operational tracker.
 - **FR15 — Progress is ordered by user leverage.** The first binding remains the
   Switch reference proven by the prototype. Later work prioritizes widely reused
   interactive patterns, components with known keyboard/focus/semantic failures, and
@@ -157,17 +165,16 @@ Switch pattern can own only the standards-derived role, name, state, focusabilit
 and activation outcomes. Form data, callback payloads, tooltip composition, and
 component styling remain Switch-owned.
 
-[Issue #4112](https://github.com/facebook/astryx/issues/4112) and the closed
-[Switch prototype](https://github.com/facebook/astryx/pull/4113) prove that an
-existing component can bind to one reusable contract in jsdom and Chromium. The
-prototype's `expectedFailures` mechanism is retained only with FR8–FR10's exactness:
-a known failure is visible debt, never a pass or a broad skip.
+The first implementation proved that an existing component can bind to one reusable
+contract in jsdom and Chromium. Its expected-failure mechanism is retained only with
+FR8–FR10's exactness: a known failure is visible debt, never a pass or a broad skip.
 
-The accessibility program tracker
-[#4475](https://github.com/facebook/astryx/issues/4475) remains the public place to
-order pattern migrations and component defects. Migration pull requests add newly
-found defects there or to focused public issues. They do not depend on a private
-backlog or private review link.
+Operational gap tracking is separate from the public contract source. The public
+known-failure record remains self-contained and reviewable, while the project's
+configured gap registry maps the same expectation, binding, and state to its owner,
+triage, and later remediation. Migration work MUST NOT create a public issue solely
+to carry known-failure debt, and private tracker references MUST NOT enter this
+public repository.
 
 ### Progressive rollout
 
@@ -190,15 +197,15 @@ gate. Those changes follow in implementation work governed by this record.
 
 ## Verification
 
-| Contract  | Verification                                                               | Representative states                                                                         | Mutation or failure expectation                                                                                                        |
-| --------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR4   | Migration inventory schema and review                                      | one control; component with trigger and popup; controlled/disabled/error/RTL states           | Migration starts without an applicable current contract, treats a whole component as one part, or omits a state that changes semantics |
-| FR5–FR7   | Before/after assertion ownership review and unchanged component suites     | shared role/state check; callback payload; form data; style rule; discovered component defect | Shared assertion remains duplicated, component-specific proof is deleted, or migration silently changes behavior                       |
-| FR8–FR10  | Runner tests for exact known failures, new failures, and unexpected passes | one historical gap; wrong error; second state; fixed expectation                              | A wildcard masks regression, a stale gap remains, or new work adds debt without decision                                               |
-| FR11      | Coverage-report snapshot and assertions                                    | pass; known failure; exemption; unrun browser layer                                           | One percentage hides a required failure or reports an unrun layer as pass                                                              |
-| FR12–FR14 | Knowledge validation, component verification map, and PR-template check    | current component record; component with no record; first new adopter                         | Backlink points to deleted local tests, parallel ad hoc assertions appear, or the PR hides migration/remediation scope                 |
-| FR15      | Public tracker review                                                      | high-use control; known keyboard defect; easy low-impact component                            | Work is ordered only to maximize migrated counts                                                                                       |
-| Platform  | Existing unit/axe/browser checks plus AST-009 classification               | jsdom behavior; real focus; tree exposure; spoken announcement                                | A lower layer clears browser pixels or real-AT output it cannot observe                                                                |
+| Contract  | Verification                                                               | Representative states                                                                         | Mutation or failure expectation                                                                                                             |
+| --------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR4   | Migration inventory schema and review                                      | one control; component with trigger and popup; controlled/disabled/error/RTL states           | Migration starts without an applicable current contract, treats a whole component as one part, or omits a state that changes semantics      |
+| FR5–FR7   | Before/after assertion ownership review and unchanged component suites     | shared role/state check; callback payload; form data; style rule; discovered component defect | Shared assertion remains duplicated, component-specific proof is deleted, or migration silently changes behavior                            |
+| FR8–FR10  | Runner tests for exact known failures, new failures, and unexpected passes | one historical gap; wrong error; second state; fixed expectation                              | A wildcard masks regression, a stale gap remains, or new work adds debt without decision                                                    |
+| FR11      | Coverage-report snapshot and assertions                                    | pass; known failure; exemption; unrun browser layer                                           | One percentage hides a required failure or reports an unrun layer as pass                                                                   |
+| FR12–FR14 | Knowledge validation, component verification map, and PR-template check    | current component record; component with no record; first new adopter                         | Backlink points to deleted local tests, parallel ad hoc assertions appear, or the PR hides migration/remediation scope                      |
+| FR15      | Durable gap-registry review                                                | high-use control; known keyboard defect; easy low-impact component                            | Work is ordered only to maximize migrated counts, duplicate gap records are created, or unresolved direction is treated as an automatic fix |
+| Platform  | Existing unit/axe/browser checks plus AST-009 classification               | jsdom behavior; real focus; tree exposure; spoken announcement                                | A lower layer clears browser pixels or real-AT output it cannot observe                                                                     |
 
 ### Completion criteria
 
@@ -209,7 +216,8 @@ A pattern migration is complete only when:
 - every affected component part and relevant state has a binding or an explicit
   ownership reason for exclusion;
 - equivalent shared assertions have one owner and component-specific tests remain;
-- every historical failure has the exact public debt record required by FR8;
+- every historical failure has the exact public-safe known-failure record and the
+  separate durable owned gap record required by FR8;
 - required passing expectations gate regressions and unexpected passes remove stale
   debt;
 - reporting separates passes, known failures, exemptions, and unrun layers;
@@ -229,7 +237,7 @@ pattern applies, and no duplicate ad hoc test remains for a shared expectation.
 **Decider:** `cixzhang`, `2026-09-03`
 
 Apply contracts one pattern and bounded binding set at a time. Preserve historical
-failures as exact, runnable, public debt while immediately gating outcomes that
+failures as exact, runnable known-failure debt while immediately gating outcomes that
 already pass. This adds protection now without pretending existing defects are
 conformant or waiting for a repository-wide remediation.
 
@@ -244,9 +252,10 @@ suite that cannot stop regressions.
 Keep test migration separate from component remediation. Move only reusable
 standards-derived outcomes into pattern contracts; retain component-specific API,
 composition, form, styling, and callback tests with the component. Existing defects
-stay as exact runnable `known-failure` results tied to one expectation, binding,
-state, and public issue. They never count as passing, cannot mask a different or
-wider failure, and become unexpected passes when fixed so stale debt is removed.
+stay as exact runnable `known-failure` results tied to one expectation, binding, and
+state, with a separate durable owned gap record. They never count as passing, cannot
+mask a different or wider failure, and become unexpected passes when fixed so stale
+debt is removed.
 
 Report passes, known failures, exemptions, and unrun layers as separate facts rather
 than averaging them into one accessibility score.
@@ -254,6 +263,21 @@ than averaging them into one accessibility score.
 Rejected: changing component behavior inside migration work, deleting
 component-owned tests, broad skips, and a percentage that can make a required
 failure look conformant.
+
+### DEC-3 — Gap tracking does not turn every mismatch into an approved fix
+
+**Reference:** `spec:AST-021/DEC-3`
+**Decider:** `cixzhang`, `2026-09-08`
+
+Keep the checked-in known-failure record public-safe and self-contained. Track its
+operational ownership separately in the project's durable gap registry. The gap
+records the current authority result: an objective requirement may settle the
+outcome, while a new API, behavior, ownership, compatibility, or design choice
+remains a human decision. Recording the mismatch does not authorize remediation.
+
+Rejected: creating public issues only to carry test debt, exposing private tracker
+identifiers in the public repository, and treating every accessibility finding as an
+obvious bug fix.
 
 ## Open questions
 

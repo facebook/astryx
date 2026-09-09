@@ -271,8 +271,6 @@ describe('Button', () => {
     render(<Button label="Test" variant="secondary" size="sm" />);
     const button = screen.getByRole('button');
     expect(button.className).toContain('astryx-button');
-    expect(button.className).toContain('secondary');
-    expect(button.className).toContain('sm');
     expect(button).toHaveAttribute('data-variant', 'secondary');
     expect(button).toHaveAttribute('data-size', 'sm');
   });

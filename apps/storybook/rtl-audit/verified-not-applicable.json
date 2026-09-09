@@ -1,10 +1,10 @@
 [
   {
     "component": "core/Banner",
-    "reason": "Banner renders a single wrap-capable flex header row — status icon, title/description column, and an end area pushed over with `marginInlineStart: 'auto'` — above an optional content panel. Its status, close and expand glyphs (`info`, `warning`, `error`, `success`, `close`, `chevronDown`) are all radially symmetric or vertical, and the expanded state rotates the chevron 180° about the block axis. Every inset, corner radius and border it draws is a logical property, so the whole banner mirrors under RTL with nothing positioned, ordered or animated along the inline axis for the audit to assert.",
+    "reason": "Banner renders a single wrap-capable flex header row \u2014 status icon, title/description column, and an end area pushed over with `marginInlineStart: 'auto'` \u2014 above an optional content panel. Its status, close and expand glyphs (`info`, `warning`, `error`, `success`, `close`, `chevronDown`) are all radially symmetric or vertical, and the expanded state rotates the chevron 180\u00b0 about the block axis. Every inset, corner radius and border it draws is a logical property, so the whole banner mirrors under RTL with nothing positioned, ordered or animated along the inline axis for the audit to assert.",
     "evidence": {
       "apps/storybook/stories/Banner.stories.tsx": "sha256:15792a91bf7a7df1d6e15085cc42b9fc7f4df05135d09b6360b2a24ca2a6db5d",
-      "packages/core/src/Banner/Banner.tsx": "sha256:a17ff3f61b7ee40a407373486366877684c650e7d08ae9fc2d8606c0bae9de66",
+      "packages/core/src/Banner/Banner.tsx": "sha256:d69e58bc792b8c8802311aacd7b629c890915424f5b575d3bb3f71645db9c77f",
       "packages/core/src/Banner/index.ts": "sha256:64591b4c3a37ae382a910fc9314300c3045bf8d602b28cc60a681d7b8f3a17f6"
     }
   },
@@ -63,5 +63,78 @@
   {
     "component": "core/IconButton",
     "reason": "IconButton is a thin wrapper that renders Button with `isIconOnly`, adding no layout, no positioning, and no directional affordance of its own, so it inherits `core/Button`'s verification above exactly. Its single icon is centred in a square control, which has no reading direction to mirror."
+  },
+  {
+    "component": "core/SelectableCard",
+    "reason": "SelectableCard renders content in normal flow inside a symmetric Card. Its hover overlay and selected ring cover all four edges equally, its source uses no physical left/right positioning or directional glyphs, and its checkbox interaction uses only pointer, Space, Enter, and Tab rather than inline-direction keys. Every current story therefore has no component-owned visual or behavioral RTL difference for the audit to measure.",
+    "evidence": {
+      "apps/storybook/stories/SelectableCard.stories.tsx": "sha256:35704da575bb80fc580309a5d4182ab4569abbd1449c665f69f1f00767b5790b",
+      "packages/core/src/SelectableCard/SelectableCard.tsx": "sha256:5fa8fcf087296e33415a2696b91e478608b737506f26775715132a3a63e9218e",
+      "packages/core/src/SelectableCard/index.ts": "sha256:9cf677856807a09ee444ce68b21118bca9729592485f892da7e0bb64ee1d7501"
+    }
+  },
+  {
+    "component": "core/AspectRatio",
+    "reason": "AspectRatio only establishes a symmetric aspect-ratio box and sizes its single child to fill that box. It has no inline-axis placement, ordering, directional glyph, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/Badge",
+    "reason": "Badge is a symmetric inline-flex pill. Its text and optional caller-owned content follow normal document direction with logical gap and padding; the component owns no directional glyph, physical inset, transform, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/Card",
+    "reason": "Card is a block container with symmetric radius, border, shadow, and logical padding. It owns no directional glyph, inline-axis ordering, physical positioning, scrolling action, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/Code",
+    "reason": "Code is an inline typographic treatment with a monospace font, symmetric background/radius, and logical padding. The code string owns its own bidi content; the component adds no directional visual, positioning, ordering, interaction, or overlay."
+  },
+  {
+    "component": "core/Divider",
+    "reason": "Divider renders a symmetric horizontal or vertical rule. Optional label content follows normal document direction; there is no directional glyph, side-specific placement, transform, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/FormLayout",
+    "reason": "FormLayout arranges caller-owned fields with grid/block flow, logical gaps, and responsive columns. It owns no directional glyph, physical inline placement, transform, scrolling action, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/Item",
+    "reason": "Item places start content, text, and end content in normal flex flow using logical padding, text-align:start, and margin-inline-start:auto. Those slots mirror through CSS direction without component branching; Item owns no directional glyph or directional keyboard behavior."
+  },
+  {
+    "component": "core/Link",
+    "reason": "Link is inline text in normal document flow with a logical gap for optional decoration. It owns no left/right glyph, physical inline placement, ordering algorithm, scrolling, dragging, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "core/List",
+    "reason": "List delegates marker placement and bidi ordering to semantic ol/ul elements and uses logical indentation and spacing. Item content is caller-owned; the component adds no directional controls, physical positioning, transforms, scrolling, dragging, or overlays."
+  },
+  {
+    "component": "core/Markdown",
+    "reason": "Markdown delegates bidi text, semantic list markers, links, and caller-authored content to browser semantics and shared components. Its own prose styling uses logical block/inline properties and it owns no directional control, physical placement, drag, scroll action, or overlay."
+  },
+  {
+    "component": "core/Section",
+    "reason": "Section is a block-flow surface with symmetric decoration and logical padding/insets. It owns no directional glyph, inline-axis ordering, physical transform, scrolling action, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/TextInput",
+    "reason": "TextInput composes a native input and optional start/end affordances in logical flex flow. Padding and status placement use logical properties; owned status, clear, and visibility glyphs are non-directional, and horizontal editing behavior remains native to the input."
+  },
+  {
+    "component": "core/TimeInput",
+    "reason": "TimeInput uses a native or typed text field with logical flex layout and non-directional clock/status glyphs. Its custom stepping uses only ArrowUp and ArrowDown, so it has no locale-dependent horizontal keyboard behavior, physical inline positioning, dragging, or scrolling action."
+  },
+  {
+    "component": "core/Token",
+    "reason": "Token is a symmetric inline-flex pill with logical padding/gap. Its optional remove control uses a non-directional close glyph, and the component owns no side-specific positioning, ordering algorithm, scrolling, dragging, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "core/Toolbar",
+    "reason": "Toolbar start, center, and end slots use CSS flex/grid flow, margin-inline-start, and logical container padding, so visual placement follows document direction without component branching. Its horizontal ArrowLeft/ArrowRight handling means previous/next control in the ARIA toolbar pattern rather than locale-specific content direction; owned glyphs are caller content."
+  },
+  {
+    "component": "lab/ListInput",
+    "reason": "ListInput is a vertical record editor. Keyboard reordering uses ArrowUp/ArrowDown/Home/End, pointer dragging follows the physical pointer while preserving source direction in the preview, and add/remove motion is block-axis. Its grid and controls follow CSS direction with no component-owned horizontal semantic to mirror."
   }
 ]
