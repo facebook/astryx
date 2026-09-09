@@ -36,7 +36,7 @@ const anatomy = [
     name: 'Spinner',
     required: false,
     description:
-      'Loading indicator shown at the end of the input surface while a search is in flight.',
+      'Busy indicator at the end of the input surface while a search is in flight, or while the field value is loading or a changeAction is pending.',
   },
   {
     name: 'Clear button',
@@ -135,6 +135,12 @@ export const docs = {
       required: true,
     },
     {
+      name: 'changeAction',
+      type: '(item: T | null) => void | Promise<void>',
+      description:
+        'Async action after onChange, called with the same proposed item. Runs in a transition: the item shows optimistically and the field is busy (spinner and aria-busy) until value catches up. Selection and clear both go through it.',
+    },
+    {
       name: 'placeholder',
       type: 'string',
       description: 'Input placeholder text.',
@@ -162,6 +168,13 @@ export const docs = {
       type: 'string',
       description:
         'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled Typeahead in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        'Marks the field value as resolving or being saved: shows the busy spinner and sets aria-busy on the combobox. Search results are unaffected; a search in flight has its own busy state and shares the indicator.',
+      default: 'false',
     },
     {
       name: 'maxMenuItems',
