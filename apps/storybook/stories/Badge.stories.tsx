@@ -92,3 +92,67 @@ export const NonSemanticColors: Story = {
     </div>
   ),
 };
+
+// A badge is one line, so a label wider than the space it has is cut short
+// with an ellipsis rather than escaping the container. The full text rides in
+// the badge's `title`, so hovering a truncated one shows it — a pointer-only
+// affordance for now; the focus- and touch-reachable tooltip needs runtime
+// measurement and is tracked in #5585.
+export const LongLabels: Story = {
+  name: 'Long labels in tight space',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: 20}}>
+      <div>
+        <div style={{font: '600 12px system-ui', marginBottom: 6}}>
+          In a 100px column
+        </div>
+        <div
+          style={{
+            width: 100,
+            outline: '1px dashed var(--color-border)',
+            padding: 4,
+          }}>
+          <Badge variant="pink" label="Awaiting security review" />
+        </div>
+      </div>
+      <div>
+        <div style={{font: '600 12px system-ui', marginBottom: 6}}>
+          With an icon — the icon holds its place, the label gives way
+        </div>
+        <div
+          style={{
+            width: 140,
+            outline: '1px dashed var(--color-border)',
+            padding: 4,
+          }}>
+          <Badge
+            variant="warning"
+            icon={<span aria-hidden="true">⚠</span>}
+            label="Awaiting security review"
+          />
+        </div>
+      </div>
+      <div>
+        <div style={{font: '600 12px system-ui', marginBottom: 6}}>
+          Room to spare — unchanged
+        </div>
+        <div
+          style={{
+            width: 300,
+            outline: '1px dashed var(--color-border)',
+            padding: 4,
+          }}>
+          <Badge variant="success" label="Active" />
+        </div>
+      </div>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A badge has a fixed height and never wraps, so a label wider than its container is truncated with an ellipsis rather than escaping the container. A badge that fits is untouched — the clamp only ever changes the case that would otherwise overflow.',
+      },
+    },
+  },
+};

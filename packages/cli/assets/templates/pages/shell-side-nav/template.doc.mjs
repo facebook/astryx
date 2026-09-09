@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Side Nav',
   displayName: 'Side Nav',
-  description:
-    'A side-nav app shell with a collapsible, resizable SideNav (new chat, search, library, and workspace-grouped conversations with status dots) over static grey-card conversation and composer placeholders.',
+  description: 'Application frame with a single collapsible, resizable left rail carrying grouped history and search, wrapping the main content. Vertical navigation only, no top bar. Shell, chrome, layout frame, sidebar, drawer, left rail, or navigation.',
   isReady: true,
   category: 'Shell - Left Sidebar',
 };

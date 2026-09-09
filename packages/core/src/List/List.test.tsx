@@ -229,7 +229,7 @@ describe('List', () => {
     );
     const item = container.querySelector('li');
     expect(item).toBeInTheDocument();
-    expect(item?.className).toContain('compact');
+    expect(item).toHaveAttribute('data-density', 'compact');
   });
 
   it('renders with balanced density (default)', () => {
@@ -240,8 +240,8 @@ describe('List', () => {
     );
     const item = container.querySelector('li');
     expect(item).toBeInTheDocument();
-    expect(item?.className).toContain('balanced');
-    expect(item?.className).not.toContain('spacious');
+    expect(item).toHaveAttribute('data-density', 'balanced');
+    expect(item).not.toHaveAttribute('data-density', 'spacious');
   });
 
   it('renders with spacious density', () => {
@@ -252,7 +252,7 @@ describe('List', () => {
     );
     const item = container.querySelector('li');
     expect(item).toBeInTheDocument();
-    expect(item?.className).toContain('spacious');
+    expect(item).toHaveAttribute('data-density', 'spacious');
   });
 
   // ===========================================================================
@@ -679,6 +679,44 @@ describe('List', () => {
       </List>,
     );
     expect(screen.getByText('Simple text')).toBeInTheDocument();
+  });
+
+  it('forwards data and aria attributes onto the list element', () => {
+    // BaseProps keeps data-*/aria-*; the list element dropped them.
+    const {container} = render(
+      <List listStyle="decimal" data-delimiter=")" aria-label="Steps">
+        <ListItem label="First" />
+      </List>,
+    );
+    const list = container.querySelector('ol')!;
+    expect(list.getAttribute('data-delimiter')).toBe(')');
+    expect(list.getAttribute('aria-label')).toBe('Steps');
+  });
+
+  it('keeps an aria-labelledby pointing outside the component', () => {
+    // With no header of its own there is nothing to associate, so the
+    // consumer's label must survive.
+    const {container} = render(
+      <List aria-labelledby="external-heading">
+        <ListItem label="First" />
+      </List>,
+    );
+    expect(container.querySelector('ul')!.getAttribute('aria-labelledby')).toBe(
+      'external-heading',
+    );
+  });
+
+  it('keeps its own list role and header association', () => {
+    // The rest spread comes first so a consumer prop cannot drop the
+    // Safari/VoiceOver role workaround or the generated header association.
+    const {container} = render(
+      <List header="Steps" role="presentation" aria-labelledby="elsewhere">
+        <ListItem label="First" />
+      </List>,
+    );
+    const list = container.querySelector('ul')!;
+    expect(list.getAttribute('role')).toBe('list');
+    expect(list.getAttribute('aria-labelledby')).not.toBe('elsewhere');
   });
 
   it('accepts number as description (ReactNode)', () => {

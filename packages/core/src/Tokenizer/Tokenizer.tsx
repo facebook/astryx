@@ -25,6 +25,12 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {
+  BusyIndicatorLaneProvider,
+  createBusyIndicatorLane,
+  useIsBusy,
+  type BusyIndicatorLane,
+} from '../Typeahead/busyIndicatorLane';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {BaseTypeahead} from '../Typeahead/BaseTypeahead';
@@ -40,6 +46,8 @@ import {
   type FieldStatusVariant,
 } from '../Field';
 import {Token} from '../Token';
+import {Spinner} from '../Spinner';
+import {useEndLaneReserve} from './useEndLaneReserve';
 import {renderIconSlot, type IconType} from '../Icon';
 import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
@@ -158,6 +166,17 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   maxMenuItems?: number;
   /** Fixed dropdown width in pixels. Never shrinks below the input width. */
   menuWidth?: number;
+  /**
+   * Minimum query length before the search source is queried. Below it no
+   * search runs and the menu stays closed — useful for remote sources where
+   * one or two characters match too much to be worth fetching.
+   *
+   * With `hasCreate`, the "Create" entry rides on the search results, so it
+   * also waits for the threshold.
+   *
+   * @default 1
+   */
+  minQueryLength?: number;
   /** Text shown when no results found. @default 'No results found' */
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
@@ -221,6 +240,10 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
 // Styles
 // =============================================================================
 
+// How far the end lane sits from the field's inline-end border, named once
+// because the input's reserve is derived from the same value.
+const END_LANE_INSET = spacingVars['--spacing-2'];
+
 const styles = stylex.create({
   wrapper: {
     position: 'relative',
@@ -256,7 +279,7 @@ const styles = stylex.create({
     // Match the field's inline padding (inputWrapperStyles.base uses
     // spacing-2) so end content (clear button, resultCount) lines up with
     // the text/start-icon inset instead of hugging the border at ~3px.
-    insetInlineEnd: spacingVars['--spacing-2'],
+    insetInlineEnd: END_LANE_INSET,
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
@@ -376,6 +399,45 @@ const CREATABLE_ID_PREFIX = '__xds_create__';
  * />
  * ```
  */
+/**
+ * The field's inline-end lane: the busy Spinner, then `endContent`, then the
+ * clear button — pinned to the field's first row while tokens wrap below it.
+ *
+ * A separate component so that subscribing to the busy state re-renders THIS
+ * and nothing else. Subscribed from `Tokenizer`, a search transition
+ * re-rendered every selected token twice — twenty tokens meant forty renders
+ * per search for one glyph none of them contain.
+ *
+ * Renders nothing when the lane would be empty, so `useEndLaneReserve` sees no
+ * element, publishes no width, and the input keeps its full content box.
+ */
+function EndLane({
+  lane,
+  laneRef,
+  laneXStyle,
+  loadingLabel,
+  hasStaticContent,
+  children,
+}: {
+  lane: BusyIndicatorLane;
+  laneRef: (node: HTMLElement | null) => void;
+  laneXStyle: stylex.StyleXStyles[];
+  loadingLabel: string;
+  hasStaticContent: boolean;
+  children: ReactNode;
+}) {
+  const isBusy = useIsBusy(lane);
+  if (!isBusy && !hasStaticContent) {
+    return null;
+  }
+  return (
+    <div ref={laneRef} {...stylex.props(laneXStyle)}>
+      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {children}
+    </div>
+  );
+}
+
 export function Tokenizer<T extends SearchableItem>({
   label,
   isLabelHidden = false,
@@ -396,6 +458,7 @@ export function Tokenizer<T extends SearchableItem>({
   hasEntriesOnFocus,
   maxMenuItems,
   menuWidth,
+  minQueryLength,
   emptySearchResultsText,
   isDisabled = false,
   htmlName,
@@ -449,6 +512,24 @@ export function Tokenizer<T extends SearchableItem>({
   }));
 
   // Focus-within state for overflow truncation
+  // Reported by BaseTypeahead so the indicator can live in this field's own
+  // end lane, beside endContent and the clear button.
+  // The base owns the busy state; this field only paints it. Held in a store
+  // rather than this component's state — held here, a search transition
+  // re-rendered every selected token twice, for a glyph no token contains.
+  // See busyIndicatorLane.tsx.
+  const busyLane = useMemo(() => createBusyIndicatorLane(), []);
+  // What sits in the end lane varies most here — a spinner, arbitrary
+  // `endContent`, a clear button, or all three — so its width is measured
+  // rather than assumed, and the input reserves it.
+  const [laneRef, laneReserve] = useEndLaneReserve(END_LANE_INSET);
+  // The half of the lane's contents this component knows about. The busy half
+  // is the leaf's own business — folding it in here would mean reading the
+  // busy state during this render, which is exactly the re-render the store
+  // exists to avoid.
+  const hasStaticEndLane = Boolean(
+    endContent || (hasClear && value.length > 0 && !isDisabled),
+  );
   const [isFocusedWithin, setIsFocusedWithin] = useState(false);
   const isTruncated =
     !isFocusedWithin && tokenOverflowBehavior !== 'none' && value.length > 0;
@@ -536,36 +617,47 @@ export function Tokenizer<T extends SearchableItem>({
     () => ({
       search: async (query: string) => {
         const results = await searchSource.search(query);
-        const filtered = results.filter(item => !selectedIds.has(item.id));
-
-        // Append a "Create: X" synthetic item when hasCreate is true,
-        // the user has typed something, and it doesn't exactly match an
-        // existing result.
-        if (hasCreate && query.trim()) {
-          const trimmed = query.trim();
-          const alreadyExists =
-            selectedIds.has(trimmed) ||
-            filtered.some(
-              item => item.label.toLowerCase() === trimmed.toLowerCase(),
-            );
-          if (!alreadyExists) {
-            const creatableItem = {
-              id: `${CREATABLE_ID_PREFIX}${trimmed}`,
-              label: `Create "${trimmed}"`,
-              auxiliaryData: {__createdValue: trimmed},
-            } as unknown as T;
-            filtered.push(creatableItem);
-          }
-        }
-
-        return filtered;
+        return results.filter(item => !selectedIds.has(item.id));
       },
       bootstrap: async () => {
         const results = await searchSource.bootstrap();
         return results.filter(item => !selectedIds.has(item.id));
       },
     }),
-    [searchSource, selectedIds, hasCreate],
+    [searchSource, selectedIds],
+  );
+
+  /**
+   * The "Create X" entry. It is derived from the typed text, not fetched for
+   * it, so it is offered through `__queryEntries` rather than appended to the
+   * search results — which is what keeps it available when the query is too
+   * short to search. `minQueryLength` is there to avoid a fetch too broad to
+   * be worth making; creating `QA` costs no fetch, and a field that can
+   * create it should not stop being able to.
+   */
+  const createEntries = useCallback(
+    (query: string, results: T[]): T[] => {
+      const trimmed = query.trim();
+      if (!hasCreate || trimmed === '') {
+        return [];
+      }
+      const alreadyExists =
+        selectedIds.has(trimmed) ||
+        results.some(
+          item => item.label.toLowerCase() === trimmed.toLowerCase(),
+        );
+      if (alreadyExists) {
+        return [];
+      }
+      return [
+        {
+          id: `${CREATABLE_ID_PREFIX}${trimmed}`,
+          label: `Create "${trimmed}"`,
+          auxiliaryData: {__createdValue: trimmed},
+        } as unknown as T,
+      ];
+    },
+    [hasCreate, selectedIds],
   );
 
   const emptySource: SearchSource<T> = useMemo(
@@ -772,35 +864,48 @@ export function Tokenizer<T extends SearchableItem>({
       ) : (
         tokens
       )}
-      <BaseTypeahead
-        ref={inputRef}
-        searchSource={isAtMax ? emptySource : filteredSource}
-        value={null}
-        onChange={handleAdd}
-        renderItem={renderItem}
-        placeholder={value.length === 0 ? placeholder : ''}
-        hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
-        maxMenuItems={maxMenuItems}
-        menuWidth={menuWidth}
-        emptySearchResultsText={emptySearchResultsText}
-        isDisabled={isDisabled}
-        isFocusableDisabled={showsDisabledMessage}
-        hasAutoFocus={hasAutoFocus}
-        inputId={inputId}
-        ariaDescribedBy={ariaDescribedBy}
-        onChangeQuery={onChangeQuery}
-        debounceMs={debounceMs}
-        onKeyDown={handleKeyDown}
-        anchorRef={wrapperRef}
-        size={size}
-        inputXStyle={
-          isAtMax || isTruncated
-            ? styles.inputAtMax
-            : value.length > 0
-              ? styles.inputCompact
-              : undefined
-        }
-      />
+      {/* The base reports its busy state through this lane, so the
+          indicator lands in the end controls below beside the clear
+          button rather than as a second one inside the base. */}
+      <BusyIndicatorLaneProvider value={busyLane}>
+        <BaseTypeahead
+          ref={inputRef}
+          searchSource={isAtMax ? emptySource : filteredSource}
+          value={null}
+          onChange={handleAdd}
+          renderItem={renderItem}
+          placeholder={value.length === 0 ? placeholder : ''}
+          hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
+          maxMenuItems={maxMenuItems}
+          menuWidth={menuWidth}
+          minQueryLength={minQueryLength}
+          emptySearchResultsText={emptySearchResultsText}
+          isDisabled={isDisabled}
+          isFocusableDisabled={showsDisabledMessage}
+          hasAutoFocus={hasAutoFocus}
+          inputId={inputId}
+          ariaDescribedBy={ariaDescribedBy}
+          onChangeQuery={onChangeQuery}
+          __queryEntries={createEntries}
+          debounceMs={debounceMs}
+          onKeyDown={handleKeyDown}
+          anchorRef={wrapperRef}
+          size={size}
+          inputXStyle={[
+            isAtMax || isTruncated
+              ? styles.inputAtMax
+              : value.length > 0
+                ? styles.inputCompact
+                : undefined,
+            // Not for the collapsed states above: those give the input no width
+            // to pad, and `inputAtMax` zeroes its padding outright.
+            // Applied whether or not a lane is up: the reserve resolves to
+            // zero until the lane publishes a width, so this does not need to
+            // know about the busy state.
+            !(isAtMax || isTruncated) && laneReserve,
+          ]}
+        />
+      </BusyIndicatorLaneProvider>
       {htmlName != null &&
         value.map(item => (
           <input
@@ -813,20 +918,23 @@ export function Tokenizer<T extends SearchableItem>({
             disabled={isDisabled}
           />
         ))}
-      {(endContent || (hasClear && value.length > 0 && !isDisabled)) && (
-        <div {...stylex.props(styles.endSection, endSectionSizeStyles[size])}>
-          {endContent}
-          {hasClear && value.length > 0 && !isDisabled && (
-            <InputClearButton
-              label={t('@astryx.tokenizer.clearAll')}
-              onClick={e => {
-                e.stopPropagation();
-                handleClearAll();
-              }}
-            />
-          )}
-        </div>
-      )}
+      <EndLane
+        lane={busyLane}
+        laneRef={laneRef}
+        laneXStyle={[styles.endSection, endSectionSizeStyles[size]]}
+        loadingLabel={t('@astryx.typeahead.loading')}
+        hasStaticContent={hasStaticEndLane}>
+        {endContent}
+        {hasClear && value.length > 0 && !isDisabled && (
+          <InputClearButton
+            label={t('@astryx.tokenizer.clearAll')}
+            onClick={e => {
+              e.stopPropagation();
+              handleClearAll();
+            }}
+          />
+        )}
+      </EndLane>
     </div>
   );
 

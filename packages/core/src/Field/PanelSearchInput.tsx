@@ -39,14 +39,14 @@
  * that use it, not public API.
  */
 
-import {useCallback, useEffect, useState, type Ref} from 'react';
+import {useCallback, useState, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {InputClearButton} from './InputClearButton';
 import {mergeProps} from '../utils';
 import {
   getInteractionModality,
-  trackInteractionModality,
+  useInteractionModalityTracking,
 } from '../utils/interactionModality';
 import {
   colorVars,
@@ -207,9 +207,7 @@ export function PanelSearchInput({
   // stays `:focus-visible`, this only narrows it.
   const [isKeyboardFocus, setIsKeyboardFocus] = useState(false);
 
-  useEffect(() => {
-    trackInteractionModality();
-  }, []);
+  useInteractionModalityTracking();
 
   const handleFocus = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
@@ -227,17 +225,27 @@ export function PanelSearchInput({
     [onBlur],
   );
 
-  const handleClear = useCallback(() => {
-    onValueChange('');
-    // Clearing puts the caret back where the user was typing, matching
-    // TextInput's built-in clear. Defer focus restoration past the button's
-    // unmount task so touch browsers don't jump page scroll on tap.
-    requestAnimationFrame(() => {
-      if (typeof ref === 'object' && ref?.current) {
-        ref.current.focus({preventScroll: true});
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      onValueChange('');
+      // Clearing puts the caret back where the user was typing, matching
+      // TextInput's built-in clear. Defer focus restoration past the button's
+      // unmount task so touch browsers don't jump page scroll on tap, while
+      // preserving synchronous focus for keyboard users.
+      if (!e || e.detail === 0) {
+        if (typeof ref === 'object' && ref?.current) {
+          ref.current.focus();
+        }
+      } else {
+        requestAnimationFrame(() => {
+          if (typeof ref === 'object' && ref?.current) {
+            ref.current.focus({preventScroll: true});
+          }
+        });
       }
-    });
-  }, [onValueChange, ref]);
+    },
+    [onValueChange, ref],
+  );
 
   return (
     <div

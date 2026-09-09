@@ -27,7 +27,11 @@ export default function DateInputDateRange() {
   const [value, setValue] = useState<DateString | undefined>(undefined);
 
   return (
-    <Stack direction="vertical" gap={4} width="100%" style={{maxWidth: 400}}>
+    <Stack
+      direction="vertical"
+      gap={4}
+      width="100%"
+      style={{minWidth: 240, maxWidth: 400}}>
       <Text type="supporting" color="secondary">
         {value ? `Booked: ${value}` : 'Pick a date in the available range'}
       </Text>
@@ -37,6 +41,7 @@ export default function DateInputDateRange() {
         max={max}
         description={description}
         placeholder="Select a booking date"
+        nativePicker="never"
         value={value}
         onChange={setValue}
       />

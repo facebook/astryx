@@ -32,13 +32,15 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type RefObject,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import {isImeKeyEvent, useDevWarning, useScrollLock} from '../hooks';
+import {useDevWarning, useScrollLock} from '../hooks';
+import {isImeKeyEvent} from '../utils';
 import {
   BottomSheetPanel,
   type BottomSheetPanelMotion,
@@ -162,6 +164,8 @@ interface StandaloneBottomSheetProps extends BottomSheetSharedProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   hasScrim?: boolean;
+  /** Element that receives focus after the sheet closes. */
+  finalFocusRef?: RefObject<HTMLElement | null>;
   sheetId?: never;
 }
 
@@ -221,6 +225,7 @@ function StandaloneBottomSheet({
   height = 'capped',
   snapPoints,
   hasScrim = true,
+  finalFocusRef,
   purpose = 'info',
   xstyle,
   ...props
@@ -298,10 +303,10 @@ function StandaloneBottomSheet({
         dialog.close();
       }
       setIsPresented(false);
-      triggerRef.current?.focus();
+      (finalFocusRef?.current ?? triggerRef.current)?.focus();
       triggerRef.current = null;
     },
-    [isOpen],
+    [finalFocusRef, isOpen],
   );
 
   useScrollLock(shouldPresent && hasScrim);
@@ -385,8 +390,7 @@ function StandaloneBottomSheet({
           {children}
         </BottomSheetPanel>
       </div>
-      {/* A modal sheet's ::backdrop already answers Safari's edge sampler. */}
-      {hasScrim ? null : <BottomSheetEdgeTint />}
+      <BottomSheetEdgeTint />
     </dialog>
   );
 }

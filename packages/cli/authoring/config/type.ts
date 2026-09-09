@@ -9,6 +9,8 @@
  * boundary; there is no factory to call.
  */
 
+import type {DebugEventHandler} from '../debug/type';
+
 /**
  * A command to run as part of a post-codemod hook. Returned by a hook's
  * `buildCommand` and executed after codemods write files.
@@ -50,6 +52,23 @@ export interface XleComponent {
   default?: boolean;
 }
 
+/**
+ * Record every astryx command run in this project.
+ *
+ * A function that receives each run. Setting it is the whole opt-in; leave it
+ * out and nothing is recorded.
+ *
+ * ```
+ * export default {
+ *   debug: event => appendFileSync('runs.ndjson', JSON.stringify(event) + '\n'),
+ * };
+ * ```
+ *
+ * Runs synchronously at process exit — see {@link DebugEventHandler} for what
+ * that rules out.
+ */
+export type DebugConfig = DebugEventHandler;
+
 /** User config exported from astryx.config.{ts,mjs,js}. */
 export interface AstryxConfig {
   /** Integration package names to load. */
@@ -60,6 +79,8 @@ export interface AstryxConfig {
   hooks?: {
     postCodemod?: PostCodemodHook[];
   };
+  /** Record every astryx command run in this project. See {@link DebugConfig}. */
+  debug?: DebugConfig;
   /**
    * EXPERIMENTAL — shape may change and is not part of the stable config
    * contract. Provisional home for features still being proven out.

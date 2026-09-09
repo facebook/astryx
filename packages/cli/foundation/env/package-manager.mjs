@@ -1,10 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Detect the project's package manager from lockfiles.
+ * @file Detect the project's package manager.
  *
- * Returns the correct command prefix for running package binaries
- * (e.g. 'npx astryx', 'yarn astryx', 'pnpm exec astryx').
+ * The order is: the `packageManager` field a project DECLARES, then the
+ * lockfiles it happens to have, then a committed package-manager config, then
+ * the runner that launched us. Returns the correct command prefix for running
+ * package binaries (e.g. 'npx astryx', 'yarn astryx', 'pnpm exec astryx').
  */
 
 import * as fs from 'node:fs';
@@ -27,6 +29,24 @@ import * as path from 'node:path';
 const KNOWN_PMS = ['yarn', 'pnpm', 'bun', 'npm'];
 
 /**
+ * Lockfile names by package manager. Order is the tiebreak of LAST resort —
+ * see {@link explainPackageManager} for why it should rarely decide anything.
+ * @type {readonly [PackageManager, readonly string[]][]}
+ */
+const LOCKFILES = [
+  ['yarn', ['yarn.lock']],
+  ['pnpm', ['pnpm-lock.yaml']],
+  ['bun', ['bun.lockb', 'bun.lock']],
+  ['npm', ['package-lock.json']],
+];
+
+/**
+ * A lockfile found on disk: which package manager owns it, and the file that
+ * was actually there (bun has two spellings), so a caller can name it.
+ * @typedef {{pm: PackageManager, file: string}} FoundLockfile
+ */
+
+/**
  * Narrow an arbitrary string to a known {@link PackageManager}.
  * @param {string} name
  * @returns {name is PackageManager}
@@ -36,50 +56,216 @@ function isKnownPackageManager(name) {
 }
 
 /**
- * Detect the package manager used in a project directory.
- * Walks up from targetDir looking for lockfiles.
+ * The `packageManager` field of a directory's package.json, if it names one we
+ * know. This is the declarative answer (corepack's field), so it outranks any
+ * lockfile sitting next to it.
+ * @param {string} dir
+ * @returns {PackageManager | null}
+ */
+function declaredPackageManager(dir) {
+  const pkgPath = path.join(dir, 'package.json');
+  if (!fs.existsSync(pkgPath)) return null;
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    const name = String(pkg.packageManager ?? '').split('@')[0];
+    return isKnownPackageManager(name) ? name : null;
+  } catch {
+    // Best-effort: unreadable/invalid package.json.
+    return null;
+  }
+}
+
+/**
+ * The package manager currently running us, from the user agent every PM sets
+ * on the scripts and binaries it spawns.
+ * @returns {PackageManager | null}
+ */
+function runningPackageManager() {
+  const name = String(process.env.npm_config_user_agent ?? '').split('/')[0];
+  return isKnownPackageManager(name) ? name : null;
+}
+
+/**
+ * Every lockfile in this directory, with the file that was found.
+ * @param {string} dir
+ * @returns {FoundLockfile[]}
+ */
+function lockfilesIn(dir) {
+  /** @type {FoundLockfile[]} */
+  const found = [];
+  for (const [pm, names] of LOCKFILES) {
+    const file = names.find(name => fs.existsSync(path.join(dir, name)));
+    if (file) found.push({pm, file});
+  }
+  return found;
+}
+
+/**
+ * Files a project COMMITS that name its package manager. A stray `install` in
+ * the wrong tool drops a lockfile; it does not write any of these. That is what
+ * makes them project-owned evidence and a lockfile, on its own, merely a trace.
+ * @type {readonly [PackageManager, readonly string[]][]}
+ */
+const PROJECT_EVIDENCE = [
+  ['pnpm', ['pnpm-workspace.yaml']],
+  ['yarn', ['.yarnrc.yml', '.yarnrc']],
+  ['bun', ['bunfig.toml']],
+];
+
+/**
+ * Every package manager this directory declares through a committed config file.
+ * @param {string} dir
+ * @returns {PackageManager[]}
+ */
+function evidenceIn(dir) {
+  return PROJECT_EVIDENCE.filter(([, names]) =>
+    names.some(name => fs.existsSync(path.join(dir, name))),
+  ).map(([pm]) => pm);
+}
+
+/**
+ * A detection result, with the reasoning a caller needs to report it.
+ * @typedef {object} PackageManagerResolution
+ * @property {DetectedPackageManager} pm - What to use.
+ * @property {boolean} ambiguous - True when several lockfiles sit in one
+ *   directory and nothing the project owns picks between them. `pm` is then the
+ *   neutral `'npx'`: correct under every package manager, wrong under none.
+ * @property {string | null} dir - The directory that answered, if any.
+ * @property {PackageManager[]} candidates - The lockfile owners in `dir`.
+ * @property {PackageManager | null} declared - The `packageManager` field in
+ *   `dir`, when it names one we know. Non-null means the project SAID which
+ *   one, and `pm` is that.
+ * @property {'declared' | 'lockfile' | 'evidence' | 'runner' | 'none'} source -
+ *   What decided `pm`.
+ * @property {FoundLockfile[]} strayLockfiles - Lockfiles in `dir` that the
+ *   declared field contradicts. Detection ignores them; `astryx doctor` reports
+ *   them, because a tool that trusts the lockfile instead will disagree with us.
+ */
+
+/**
+ * Detect the project's package manager, with the reasoning attached.
+ * Walks up from targetDir, taking the first directory that answers.
  *
- * Returns `'npx'` when nothing can be detected — see {@link DetectedPackageManager}.
+ * The order within a directory, strongest first:
+ *
+ * 1. **The declared `packageManager` field.** This is the project saying which
+ *    one it uses — corepack's field, the only signal a person writes on
+ *    purpose — so it decides, whatever lockfiles happen to sit beside it. A
+ *    single `yarn install` in a pnpm project drops a `yarn.lock` that never
+ *    goes away, and letting that trace outrank the declaration made every
+ *    command the CLI printed wrong for the project, including the invocation
+ *    line written into agent docs, which agents copy. The contradicted
+ *    lockfiles come back as `strayLockfiles` so `doctor` can say so.
+ * 2. **A single lockfile**, when nothing is declared. Unambiguous, and the
+ *    long-standing fallback.
+ * 3. **A committed package-manager config** (`pnpm-workspace.yaml`,
+ *    `.yarnrc.yml`, `bunfig.toml`), when several lockfiles tie and nothing is
+ *    declared. A stray `install` drops a lockfile; it does not write one of
+ *    these.
+ * 4. **Nothing project-owned decides it** — then the answer is not a guess, it
+ *    is `'npx'`, which runs correctly under every package manager, plus
+ *    `ambiguous: true` so `astryx doctor` can report the real problem. (Same
+ *    idea as `findConfigPath`, which refuses to choose between coexisting
+ *    configs.)
+ * 5. **The runner**, only once the whole walk found nothing on disk.
+ *    Deliberately last, and never a tiebreak: an agent handed the wrong `yarn
+ *    astryx` line runs the CLI *through yarn*, so the runner agrees with the
+ *    mistake and the wrong line reproduces itself forever.
  *
  * @param {string} [targetDir=process.cwd()]
- * @returns {DetectedPackageManager}
+ * @returns {PackageManagerResolution}
  */
-export function detectPackageManager(targetDir = process.cwd()) {
+export function explainPackageManager(targetDir = process.cwd()) {
   let dir = path.resolve(targetDir);
   const root = path.parse(dir).root;
 
   while (dir !== root) {
-    // 1. Lockfiles (highest priority)
-    if (fs.existsSync(path.join(dir, 'yarn.lock'))) return 'yarn';
-    if (fs.existsSync(path.join(dir, 'pnpm-lock.yaml'))) return 'pnpm';
-    if (fs.existsSync(path.join(dir, 'bun.lockb')) || fs.existsSync(path.join(dir, 'bun.lock'))) return 'bun';
-    if (fs.existsSync(path.join(dir, 'package-lock.json'))) return 'npm';
+    const locks = lockfilesIn(dir);
+    const candidates = locks.map(lock => lock.pm);
+    const declared = declaredPackageManager(dir);
 
-    // 2. packageManager field in package.json
-    const pkgPath = path.join(dir, 'package.json');
-    if (fs.existsSync(pkgPath)) {
-      try {
-        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-        if (pkg.packageManager) {
-          const name = pkg.packageManager.split('@')[0];
-          if (isKnownPackageManager(name)) return name;
-        }
-      } catch {
-        // Best-effort: unreadable/invalid package.json — keep walking up.
+    // 1. The project declared one. Nothing on the filesystem outranks that.
+    if (declared) {
+      return {
+        pm: declared,
+        ambiguous: false,
+        dir,
+        candidates,
+        declared,
+        source: 'declared',
+        strayLockfiles: locks.filter(lock => lock.pm !== declared),
+      };
+    }
+
+    // 2. One lockfile is unambiguous.
+    if (locks.length === 1) {
+      return {
+        pm: locks[0].pm,
+        ambiguous: false,
+        dir,
+        candidates,
+        declared: null,
+        source: 'lockfile',
+        strayLockfiles: [],
+      };
+    }
+
+    // 3. Several lockfiles and no declaration: the filesystem cannot say.
+    //    Only a file the project committed on purpose can.
+    if (locks.length > 1) {
+      const evidence = evidenceIn(dir).filter(pm => candidates.includes(pm));
+      if (evidence.length === 1) {
+        return {
+          pm: evidence[0],
+          ambiguous: false,
+          dir,
+          candidates,
+          declared: null,
+          source: 'evidence',
+          strayLockfiles: [],
+        };
       }
+      return {
+        pm: 'npx',
+        ambiguous: true,
+        dir,
+        candidates,
+        declared: null,
+        source: 'none',
+        strayLockfiles: [],
+      };
     }
 
     dir = path.dirname(dir);
   }
 
-  // 3. npm_config_user_agent env var (set by all PMs when running scripts)
-  const ua = process.env.npm_config_user_agent;
-  if (ua) {
-    const name = ua.split('/')[0];
-    if (isKnownPackageManager(name)) return name;
-  }
+  // 5. Nothing on disk said anything anywhere. With no project evidence to
+  //    contradict, the runner is the only signal there is.
+  const running = runningPackageManager();
+  return {
+    pm: running ?? 'npx',
+    ambiguous: false,
+    dir: null,
+    candidates: [],
+    declared: null,
+    source: running ? 'runner' : 'none',
+    strayLockfiles: [],
+  };
+}
 
-  return 'npx';
+/**
+ * Detect the package manager used in a project directory.
+ *
+ * Returns `'npx'` when nothing can be detected, and also when several lockfiles
+ * tie with nothing project-owned to break them — see
+ * {@link explainPackageManager}, which carries the `ambiguous` flag callers need
+ * to report that second case.
+ *
+ * @param {string} [targetDir=process.cwd()]
+ * @returns {DetectedPackageManager}
+ */
+export function detectPackageManager(targetDir = process.cwd()) {
+  return explainPackageManager(targetDir).pm;
 }
 
 /**

@@ -14,8 +14,10 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import {Table} from './Table';
+import {useTableRowStatus} from './plugins/rowStatus';
+import type {UseTableRowStatusConfig} from './index';
 import type {TableColumn} from './types';
 
 // =============================================================================
@@ -464,6 +466,54 @@ describe('Table render performance', () => {
       // CI runners vary more than local machines, so keep the local budget
       // strict while allowing headroom for shared-runner noise.
       expect(renderTime).toBeLessThan(500 * ciBudgetMultiplier);
+    });
+
+    it('keeps mixed row-status rendering and no-op updates within budget', async () => {
+      const data = createTestData(6);
+      const getStatus = vi.fn<UseTableRowStatusConfig<TestRow>['getStatus']>(
+        row =>
+          row.value % 30 === 0
+            ? {status: 'success', label: 'Complete'}
+            : row.value % 20 === 0
+              ? {color: 'warning', icon: 'clock', label: 'Running'}
+              : {color: 'gray', label: 'Queued'},
+      );
+
+      function TestComponent() {
+        const [items, setItems] = useState(data);
+        const rowStatus = useTableRowStatus<TestRow>({getStatus});
+        const plugins = useMemo(() => ({rowStatus}), [rowStatus]);
+
+        return (
+          <div>
+            <button type="button" onClick={() => setItems(prev => [...prev])}>
+              No-op update
+            </button>
+            <Table
+              data={items}
+              columns={testColumns}
+              idKey="id"
+              plugins={plugins}
+            />
+          </div>
+        );
+      }
+
+      const renderStart = performance.now();
+      render(<TestComponent />);
+      const renderTime = performance.now() - renderStart;
+
+      expect(getStatus).toHaveBeenCalledTimes(6);
+      expect(renderTime).toBeLessThan(1500 * ciBudgetMultiplier);
+
+      const updateStart = performance.now();
+      await act(async () => {
+        screen.getByRole('button', {name: 'No-op update'}).click();
+      });
+      const updateTime = performance.now() - updateStart;
+
+      expect(getStatus).toHaveBeenCalledTimes(6);
+      expect(updateTime).toBeLessThan(1000 * ciBudgetMultiplier);
     });
 
     it('should measure update performance', async () => {

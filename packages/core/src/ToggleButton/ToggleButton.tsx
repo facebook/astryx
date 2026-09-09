@@ -25,6 +25,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
 
 import {Button, type ButtonSize} from '../Button';
+import type {Elevation} from '../utils/types';
 import {useToggleButtonGroup} from './ToggleButtonGroup';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -142,6 +143,16 @@ export interface ToggleButtonProps extends BaseProps<HTMLButtonElement> {
   size?: ButtonSize;
 
   /**
+   * Resting elevation — the shadow depth the button sits at, mirroring
+   * Button's `elevation` for floating (FAB-style) toggle buttons.
+   * `none` is the default flat button. Applies inside a
+   * ToggleButtonGroup as well — grouped children retain their own
+   * elevation.
+   * @default 'none'
+   */
+  elevation?: Elevation;
+
+  /**
    * Whether the button is disabled.
    * When used inside ToggleButtonGroup, the group's isDisabled overrides this.
    * @default false
@@ -231,6 +242,7 @@ export function ToggleButton({
   onPressedChange: onPressedChangeProp,
   pressedChangeAction,
   size: sizeProp,
+  elevation = 'none',
   isDisabled: isDisabledProp = false,
   isLoading = false,
   icon,
@@ -330,6 +342,7 @@ export function ToggleButton({
       label={label}
       variant="ghost"
       size={size}
+      elevation={elevation}
       isDisabled={isDisabled}
       isLoading={isLoading}
       isInterruptible
@@ -339,6 +352,7 @@ export function ToggleButton({
       tooltip={tooltip}
       {...themeProps('toggle-button', {
         isPressed: isPressed ? 'true' : 'false',
+        elevation,
       })}
       xstyle={[isPressed ? pressedStyles.background : undefined, xstyle]}
       style={style}

@@ -18,8 +18,15 @@ import {
   beforeEach,
   afterAll,
 } from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  renderHook,
+  screen,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react';
 import {Tooltip} from './Tooltip';
+import {useTooltip} from './useTooltip';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 // Store original matches to restore later
@@ -52,6 +59,19 @@ beforeAll(() => {
 afterAll(() => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (HTMLElement.prototype as any).matches = originalMatches;
+});
+
+describe('useTooltip identity', () => {
+  it('keeps callback refs stable across unchanged rerenders', () => {
+    const {result, rerender} = renderHook(() => useTooltip());
+    const firstRef = result.current.ref;
+    const firstInteractionRef = result.current.interactionRef;
+
+    rerender();
+
+    expect(result.current.ref).toBe(firstRef);
+    expect(result.current.interactionRef).toBe(firstInteractionRef);
+  });
 });
 
 describe('Tooltip', () => {

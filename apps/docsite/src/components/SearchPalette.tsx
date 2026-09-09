@@ -5,6 +5,7 @@
 import {useMemo, useCallback} from 'react';
 import {useRouter} from 'next/navigation';
 import {CommandPalette} from '@astryxdesign/core/CommandPalette';
+import {Text} from '@astryxdesign/core/Text';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
@@ -77,6 +78,7 @@ export function SearchPalette({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       searchSource={searchSource}
+      renderItem={item => <Text type="inherit">{item.label}</Text>}
       label="Search docs, components, and templates"
       value=""
       onValueChange={handleValueChange}

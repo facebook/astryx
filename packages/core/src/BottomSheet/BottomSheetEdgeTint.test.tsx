@@ -101,15 +101,13 @@ describe('BottomSheetEdgeTint', () => {
     expect(tints()).toHaveLength(1);
   });
 
-  // A modal sheet's ::backdrop is a case WebKit's sampler handles on its own,
-  // so a second sampling target there would only fight it.
-  it('leaves a modal sheet to its ::backdrop', () => {
+  it('gives a modal sheet the same surface-coloured edge tint', () => {
     render(
       <BottomSheet isOpen onOpenChange={() => {}} label="Place details">
         Content
       </BottomSheet>,
     );
-    expect(tints()).toHaveLength(0);
+    expect(tints()).toHaveLength(1);
   });
 
   it('renders the tint inside the dialog, so it unmounts with the sheet', () => {
@@ -148,7 +146,7 @@ describe('BottomSheetEdgeTint', () => {
     expect(tints()).toHaveLength(1);
   });
 
-  it('leaves a modal switcher flow to its ::backdrop', () => {
+  it('gives a modal switcher flow exactly one tint', () => {
     render(
       <BottomSheetSwitcher activeSheet="comment" onActiveSheetChange={() => {}}>
         <BottomSheet sheetId="comment" label="Add a comment">
@@ -156,7 +154,7 @@ describe('BottomSheetEdgeTint', () => {
         </BottomSheet>
       </BottomSheetSwitcher>,
     );
-    expect(tints()).toHaveLength(0);
+    expect(tints()).toHaveLength(1);
   });
 
   it('keeps the tint out of the accessibility tree and out of hit testing', async () => {

@@ -7,7 +7,7 @@
  *   theme layer name is fixed at `astryx-theme`.
  */
 
-import {describe, it, expect, beforeAll, afterAll} from 'vitest';
+import {describe, it, expect, beforeAll, afterAll, vi} from 'vitest';
 import {mkdtempSync, mkdirSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
@@ -50,6 +50,52 @@ describe('astryxStylex layer order (legacy API)', () => {
   it('uses the astryx-* layer names (theme layer is astryx-theme)', () => {
     const order = getLayerOrder(astryxStylex({stylexOptions: {}}));
     expect(order).toBe('@layer reset, astryx-base, astryx-theme, product;');
+  });
+});
+
+/**
+ * A production build had no equivalent of the dev server's split-layer plugin,
+ * so StyleX's `@layer priorityN` blocks sat outside the declared order and
+ * outranked `astryx-theme` — every component override a theme set was dropped.
+ * The first fix WRAPPED those blocks in the library layer instead of splitting
+ * them, which fixed the theme and broke the app: product StyleX landed below
+ * `astryx-theme` too, so a theme could silently restyle code it does not own.
+ *
+ * These pin the plugin's wiring. That the partition is right in a real build is
+ * vite.build.test.ts, and what it means for the cascade is
+ * .github/scripts/theme-layer-cascade.js — unit tests over this hook passed
+ * throughout both bugs.
+ */
+describe('astryxStylex build-time layer split', () => {
+  const find = (plugins: ReturnType<typeof astryxStylex>) =>
+    plugins.find(p => p.name === 'astryx-build-layer-split');
+
+  it('is present on both the modern and the legacy API', () => {
+    expect(find(astryxStylex())).toBeTruthy();
+    expect(find(astryxStylex({stylexOptions: {}}))).toBeTruthy();
+  });
+
+  it('runs on a build only, after the StyleX plugin that emits the CSS', () => {
+    const plugin = find(astryxStylex());
+    expect(plugin?.apply).toBe('build');
+    expect(plugin?.enforce).toBe('post');
+  });
+
+  // The dev middleware and the build hook read the same partition, so a build
+  // that emits nothing is a build where StyleX collected nothing — never a
+  // silent pass-through of unsplit CSS.
+  it('does nothing when StyleX collected no rules', () => {
+    const plugin = find(astryxStylex());
+    const hook = (plugin as any).writeBundle;
+    const fn = typeof hook === 'function' ? hook : hook.handler;
+    const error = vi.fn();
+    expect(() =>
+      fn.call(
+        {error},
+        {dir: mkdtempSync(path.join(tmpdir(), 'astryx-empty-'))},
+      ),
+    ).not.toThrow();
+    expect(error).not.toHaveBeenCalled();
   });
 });
 

@@ -208,6 +208,18 @@ export const categories: SandboxCategory[] = [
         description:
           'Generate and explore color palettes from an accent color or image',
       },
+      {
+        name: 'Palette Generator Lab',
+        href: '/pages/palette-generator/',
+        description:
+          'Compare experimental OKLCH and HCT-like ramps with profiles, anchors, custom stops, and separate dark-mode generation',
+      },
+      {
+        name: 'Mobile Spacing',
+        href: '/pages/mobile-spacing/',
+        description:
+          'Draft mobile semantic spacing preview with real component scale comparisons',
+      },
     ],
   },
   {
@@ -232,6 +244,12 @@ export const categories: SandboxCategory[] = [
         href: '/pages/table-lab/',
         description:
           'Test any combination of Table plugins with live scroll FPS, dropped-frame, and re-render metrics',
+      },
+      {
+        name: 'Motion Lab',
+        href: '/pages/motion-lab/',
+        description:
+          'Every motion proposal as a working before-and-after, with the durations, curves and springs tunable live',
       },
       {
         name: 'Foundations',

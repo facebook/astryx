@@ -2,6 +2,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {createEventFromISO} from './CalendarEvent';
 import {Schedule} from './Schedule';
 import {createScheduleDayView} from './DayView';
@@ -9,6 +10,7 @@ import {createScheduleListView} from './ListView';
 import {createScheduleMonthlyView} from './MonthlyView';
 import {createScheduleWeeklyView} from './WeeklyView';
 import {sortEvents} from './dateMath';
+import {formatWithPlainDate} from './shared';
 import {useScheduleViewSelectorPlugin} from './plugins/ViewSelectorPlugin';
 import type {
   CalendarEvent,
@@ -46,6 +48,41 @@ describe('createEventFromISO', () => {
 
     expect(typeof event.start).toBe('number');
     expect(event.start).toBe(Date.parse('2026-05-13T16:00:00.000Z'));
+  });
+});
+
+describe('Schedule date formatting', () => {
+  it('keeps Gregorian fields when options request another calendar', () => {
+    expect(
+      formatWithPlainDate(
+        {year: 2026, month: 8, day: 22},
+        'UTC',
+        {
+          year: 'numeric',
+          calendar: 'buddhist',
+        },
+        'en',
+      ),
+    ).toBe('2026');
+  });
+
+  it('formats Gregorian dates with the requested locale', () => {
+    const date = {year: 2026, month: 8, day: 22};
+    expect(
+      formatWithPlainDate(
+        date,
+        'UTC',
+        {month: 'long', year: 'numeric'},
+        'th-TH',
+      ),
+    ).toBe(
+      new Intl.DateTimeFormat('th-TH', {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+        calendar: 'gregory',
+      }).format(new Date(Date.UTC(2026, 7, 22, 12))),
+    );
   });
 });
 
@@ -97,6 +134,30 @@ describe('Schedule', () => {
     });
     expect(screen.getByText('Design review')).toBeInTheDocument();
     expect(screen.queryByText('Outside range')).not.toBeInTheDocument();
+  });
+
+  it('renders monthly dates and times with the provider locale', async () => {
+    render(
+      <InternationalizationProvider locale="fr-FR">
+        <Schedule
+          view={createScheduleMonthlyView()}
+          events={events}
+          categories={categories}
+          date={Date.UTC(2026, 4, 13)}
+          focusDate={Date.UTC(2026, 4, 13)}
+          timezoneID="UTC"
+        />
+      </InternationalizationProvider>,
+    );
+
+    expect(screen.getByRole('heading', {name: 'mai 2026'})).toBeInTheDocument();
+    expect(screen.getByRole('grid', {name: 'mai 2026'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', {name: 'mercredi'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Visible sync, Sync, 16:00 - 16:30'),
+    ).toBeInTheDocument();
   });
 
   it('renders monthly weekday headings at the configured headingLevel (default 3)', async () => {

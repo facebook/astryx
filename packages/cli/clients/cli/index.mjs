@@ -25,24 +25,44 @@ import {emit, section, text, records} from './formatters/index.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
+import {markReportsResult} from './lib/define-command.mjs';
 import {isAstryxInitialized} from '../../foundation/agent-docs/agent-docs.mjs';
+import * as debug from '../../foundation/debug/index.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Read version from package.json so it stays in sync
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf-8'));
 
-// Intercept `xds --version --json` (or `-V --json`) before Commander processes
-// the version flag and exits. Commander's built-in version handler prints the
-// raw version string and calls process.exit, bypassing our hooks — so the
-// only correct place to JSON-ify it is here. (Bin-time only: guarded on argv,
-// so importing this module in tests is a no-op.)
-const _argv = process.argv.slice(2);
-if (
-  (_argv.includes('--version') || _argv.includes('-V')) &&
-  _argv.includes('--json')
-) {
+// Start the debug recorder before anything can exit. Allocation only — no
+// filesystem, no environment probe, no config — and it must run ahead of the
+// --version preflight below so even that early exit is recorded. The env
+// probe is deferred to delivery. See foundation/debug.
+debug.begin({cliVersion: pkg.version});
+
+/**
+ * Intercept `astryx --version --json` (or `-V --json`) before Commander
+ * processes the version flag and exits. Commander's built-in version handler
+ * prints the raw version string and calls process.exit, bypassing our hooks —
+ * so the only correct place to JSON-ify it is ahead of the parse.
+ *
+ * The bin calls this AFTER the project's debug handler is loaded, not at import
+ * time: this path exits the process itself, so running it any earlier meant the
+ * one invocation that took it was the only invocation nothing was ever recorded
+ * for. Guarded on argv, so it is a no-op for every other run and for tests that
+ * import this module.
+ *
+ * @param {string[]} [argv] arguments after the binary.
+ * @returns {void}
+ */
+export function handleVersionJsonPreflight(argv = process.argv.slice(2)) {
+  if (!(argv.includes('--version') || argv.includes('-V'))) return;
+  if (!argv.includes('--json')) return;
   process.__xdsJsonHandled = true;
+  // Printing the version is not a lookup — the same answer every time — so it
+  // reports the same shape Commander's own `--version` path does.
+  debug.recordCommandResult(debug.NO_RESULT_SET);
+  debug.setOutcome('ok', {exitCode: 0});
   console.log(JSON.stringify({apiVersion: API_VERSION, type: 'version', data: {version: pkg.version}}, null, 2));
   process.exit(0);
 }
@@ -57,6 +77,7 @@ if (
  * yet support structured output.
  */
 export const JSON_SUPPORTED = new Set([
+  'init',
   'component',
   'docs',
   'blog',
@@ -71,6 +92,7 @@ export const JSON_SUPPORTED = new Set([
   'theme add',
   'theme template',
   'theme targets',
+  'theme palette generate',
   'upgrade',
   'manifest',
   'doctor',
@@ -95,6 +117,132 @@ function fullCommandName(actionCommand, root) {
     cmd = cmd.parent;
   }
   return parts.join(' ');
+}
+
+/**
+ * Load the handlers that will receive this run, before Commander parses.
+ *
+ * Called from the bin BEFORE Commander parses, not from a hook. Most commands
+ * never touch `astryx.config` on their own, and parse errors and `--help`
+ * short-circuit before any hook runs — so anywhere later would leave exactly
+ * the failures you most want reported with nowhere to report them.
+ *
+ * The gate before the load is the point. `Project.load` EVALUATES the config
+ * module and loads every integration it names, and before this feature most
+ * commands did neither: running a project's own code on `astryx --version`,
+ * for a project that never asked for any of this, is not a cost the feature
+ * gets to impose. So the file is read as text first and only loaded if it
+ * mentions something that could produce a handler. A project with no config
+ * pays one `existsSync` walk; a project with a config that mentions neither
+ * pays one small `readFile`.
+ *
+ * TWO words open the gate, because there are two places a handler can come
+ * from. `debug` is the project's own. `integrations` is the other: an
+ * integration contributes a handler as a `debug` named export from its
+ * manifest, so a config that lists integrations may have one even though the
+ * word `debug` appears nowhere in it — which is the shape of essentially every
+ * app that installs an integration. Without the second word this feature would
+ * reach only the commands that happen to load a Project for their own reasons
+ * (`component`, `search`, `docs`, `template`, `doctor`, …) and would miss
+ * `--version`, `--help`, `theme *`, `blog`, and every parse error.
+ *
+ * Measured cost of that second word, on an integration whose manifest is
+ * TypeScript (the expensive case — jiti): ~50ms added to `astryx --version`,
+ * and nothing at all to a command that was going to load the project anyway.
+ * It is paid only by projects that declare integrations.
+ *
+ * The text test is deliberately loose — any occurrence, comments included —
+ * because a false positive costs one config load the CLI used to do anyway,
+ * while a false negative silently records nothing. The one shape it cannot
+ * see is a config that never spells either word, e.g. spreading in an object
+ * from another module; that is documented on the `debug` config key.
+ *
+ * @returns {Promise<void>}
+ */
+export async function loadProjectDebugHandler() {
+  try {
+    const {findConfigPath, Project} = await import(
+      '../../foundation/config/project.mjs'
+    );
+    const configPath = findConfigPath(process.cwd());
+    if (!configPath) return;
+    const text = fs.readFileSync(configPath, 'utf-8');
+    if (!text.includes('debug') && !text.includes('integrations')) {
+      debug.noteConfigGateSkipped();
+      return;
+    }
+    await Project.load(process.cwd());
+  } catch {
+    // A broken config is the command's problem to report, not ours.
+  }
+}
+
+/**
+ * Hand the whole invocation to the debug recorder: which command ran, its
+ * positional arguments by name, its options and where each value came from,
+ * and the root-level flags.
+ *
+ * This lives in a `preAction` hook rather than in `defineCommand` because the
+ * hook fires for EVERY action — including the four commands registered inline
+ * below (root, manifest, postinstall, and the load-failure stub), which never
+ * pass through the converter. One capture point, no coverage gaps.
+ *
+ * @param {import('commander').Command} actionCommand
+ * @param {import('commander').Command} root
+ */
+function captureInvocation(actionCommand, root) {
+  const name = fullCommandName(actionCommand, root);
+  debug.setCommand(name);
+  debug.setGlobalOptions(root.opts());
+
+  // Only pay for these probes when something will actually read them. Both
+  // touch the filesystem, and most commands never load a Project — which is
+  // why recording them here rather than at the config boundary is what makes
+  // them present at all.
+  if (debug.isRecording()) {
+    try {
+      const cwd = process.cwd();
+      debug.setProject({
+        inProject: fs.existsSync(path.join(cwd, 'package.json')),
+        initialized: isAstryxInitialized(cwd),
+      });
+    } catch {
+      // Leave them null rather than failing the command.
+    }
+  }
+
+  // Positional values arrive as a bare array; pair them with the declared
+  // argument names so the log records `{component: 'XDSButton'}` rather than
+  // an anonymous `['XDSButton']` nobody can query. `registeredArguments` is
+  // Commander 12's accessor and `_args` the older internal — read both, as
+  // lib/manifest.mjs does, so a Commander bump degrades to unnamed args
+  // rather than losing them.
+  const declared =
+    /** @type {any} */ (actionCommand).registeredArguments ??
+    /** @type {any} */ (actionCommand)._args ??
+    [];
+  const values = actionCommand.args ?? [];
+  /** @type {Record<string, unknown>} */
+  const args = {};
+  declared.forEach((/** @type {any} */ arg, /** @type {number} */ i) => {
+    const key = typeof arg?.name === 'function' ? arg.name() : `arg${i}`;
+    if (values[i] !== undefined) args[key] = values[i];
+  });
+  // Anything Commander did not have a declaration for (extra positionals on
+  // the root command, which is how an unknown command arrives here).
+  if (values.length > declared.length) {
+    args.extra = values.slice(declared.length);
+  }
+  debug.setArgs(args);
+
+  /** @type {Record<string, string>} */
+  const sources = {};
+  const options = actionCommand.opts();
+  for (const key of Object.keys(options)) {
+    const source = actionCommand.getOptionValueSource?.(key);
+    if (source) sources[key] = source;
+  }
+  debug.setOptions(options, sources);
 }
 
 /**
@@ -231,6 +379,11 @@ export async function createProgram() {
       }
 
       // `xds` (no subcommand) — print help, or emit a JSON envelope when --json.
+      // Either way the run reports what it answered with, as every command
+      // does: the manifest is a list of commands, help is an effect. The rest
+      // of the CLI gets there through its action's return type — see
+      // lib/define-command.mjs; the four commands registered by hand in this
+      // file are the exceptions that report for themselves.
       if (program.opts().json) {
         // Emit the full capability manifest so an agent can drive the entire
         // CLI from one call — no need to scrape `--help` text. We derive this
@@ -261,10 +414,18 @@ export async function createProgram() {
             manifest,
           },
         }, null, 2));
+        debug.recordCommandResult(
+          debug.resultSet({
+            count: manifest.commands.length,
+            resultKind: 'command',
+          }),
+        );
         return;
       }
+      debug.recordCommandResult(debug.NO_RESULT_SET);
       program.help();
     });
+  markReportsResult(program);
 
   /**
    * Pre-action hook: gate --json BEFORE any command body runs.
@@ -278,6 +439,19 @@ export async function createProgram() {
    * action runs with --json, they are responsible for emitting an envelope on
    * every code path.
    */
+  /**
+   * Debug capture. Registered first so the invocation is on record before any
+   * later hook can reject it, and inside a try/catch because a recording bug
+   * must never be the reason a command fails.
+   */
+  program.hook('preAction', (thisCommand, actionCommand) => {
+    try {
+      captureInvocation(actionCommand, program);
+    } catch {
+      // Never let recording break the CLI.
+    }
+  });
+
   program.hook('preAction', (thisCommand, actionCommand) => {
     if (!program.opts().json) return;
     // Engage global JSON mode so humanLog()/humanWarn() across commands become
@@ -289,6 +463,10 @@ export async function createProgram() {
     const fullName = fullCommandName(actionCommand, program);
     if (JSON_SUPPORTED.has(fullName)) return;
     process.__xdsJsonHandled = true;
+    debug.setOutcome('rejected', {
+      exitCode: 1,
+      code: ERROR_CODES.ERR_INVALID_OPTION,
+    });
     console.log(JSON.stringify({
       apiVersion: API_VERSION,
       error: `JSON output is not supported for the '${fullName}' command`,
@@ -376,14 +554,18 @@ export async function createProgram() {
       mod[cmd.register](program);
     } catch (e) {
       // Command fails to load but CLI still works
-      program
+      const stub = program
         .command(cmd.name)
         .description(`(failed to load: ${/** @type {any} */ (e).message})`)
         .action(() => {
+          // Nothing loaded, so nothing was answered — say that rather than
+          // leaving the run's result unreported.
+          debug.recordCommandResult(debug.NO_RESULT_SET);
           console.error(`Command "${cmd.name}" failed to load:`);
           console.error(/** @type {any} */ (e).message);
           process.exit(1);
         });
+      markReportsResult(stub);
     }
   }
 
@@ -394,7 +576,7 @@ export async function createProgram() {
   // Intentionally CLI-special — no `api/manifest`. It introspects the live
   // Commander `program`, so extracting it to `api/` would create the `api → cli`
   // cycle from #4302. `buildManifest(program)` lives in lib/; see its header.
-  program
+  const manifestCommand = program
     .command('manifest')
     .description('Print the full CLI capability manifest (use with --json)')
     .action(() => {
@@ -402,6 +584,13 @@ export async function createProgram() {
         jsonSupported: JSON_SUPPORTED,
         version: pkg.version,
       });
+      // The manifest IS a result set: one entry per command the CLI ships.
+      debug.recordCommandResult(
+        debug.resultSet({
+          count: manifest.commands.length,
+          resultKind: 'command',
+        }),
+      );
       if (program.opts().json) {
         process.__xdsJsonHandled = true;
         console.log(JSON.stringify({apiVersion: API_VERSION, type: 'manifest', data: manifest}, null, 2));
@@ -423,11 +612,14 @@ export async function createProgram() {
         text(`Run \`${getCliInvocation()} manifest --json\` for the full structured manifest.`),
       );
     });
+  markReportsResult(manifestCommand);
 
   // Hidden command used by package.json postinstall scripts
-  program
+  const postinstallCommand = program
     .command('postinstall', {hidden: true})
     .action(() => {
+      // Prints the welcome box. Nothing is looked up.
+      debug.recordCommandResult(debug.NO_RESULT_SET);
       const r = getCliInvocation();
       const pad = (/** @type {string} */ s, /** @type {number} */ len) => s + ' '.repeat(Math.max(0, len - s.length));
       const W = 49; // inner width of the box
@@ -452,6 +644,7 @@ ${line('')}
   ╰${'─'.repeat(W + 2)}╯
 `);
     });
+  markReportsResult(postinstallCommand);
 
   // Install the JSON shim AFTER all commands are registered so we can
   // patch outputHelp on every command (root + subcommands). The shim

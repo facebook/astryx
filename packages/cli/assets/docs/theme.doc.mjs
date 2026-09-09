@@ -12,7 +12,7 @@ export const docs = {
   sections: [
     {
       title: 'Quick Start',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'code',
@@ -63,7 +63,7 @@ function App() {
     },
     {
       title: 'Available Themes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -118,7 +118,7 @@ function App() {
     },
     {
       title: 'Theme Props',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'table',
@@ -138,7 +138,7 @@ function App() {
     },
     {
       title: 'Creating a Custom Theme',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -158,11 +158,11 @@ function App() {
     },
     {
       title: 'defineTheme',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
+          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. Theme maintainers may declare reusable, non-portable roles through localTokens using complete --astryx-theme-<name>-* custom-property names; these roles remain inside that enrolled theme family and do not expand the shared token vocabulary. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
         },
         {
           type: 'code',
@@ -184,8 +184,15 @@ const myTheme = defineTheme({
     // Explicit overrides take precedence over scale-generated values
     '--color-background-body': ['#FFFFFF', '#0A0A0A'],
   },
+  localTokens: {
+    '--astryx-theme-my-theme-color-status-fill-accent': ['#0077B6', '#48CAE4'],
+  },
   components: {
-    button: { 'variant:primary': { color: 'white' } },
+    badge: {
+      'variant:info': {
+        backgroundColor: 'var(--astryx-theme-my-theme-color-status-fill-accent)',
+      },
+    },
   },
 });`,
         },
@@ -224,7 +231,7 @@ const myTheme = defineTheme({
     },
     {
       title: 'Extending a Theme',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -251,23 +258,126 @@ const brandTheme = defineTheme({
           type: 'table',
           headers: ['Field', 'Merge behavior'],
           rows: [
-            ['tokens', 'Base tokens are copied first, then child tokens override on top.'],
-            ['components', 'Deep-merged: child component rules override matching keys from the base.'],
-            ['icons', 'Shallow-merged: child icons override matching names from the base.'],
-            ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
-            ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
-            ['typography, motion, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],
+            [
+              'tokens',
+              'Base tokens are copied first, then child tokens override on top.',
+            ],
+            [
+              'components',
+              'Deep-merged: child component rules override matching keys from the base.',
+            ],
+            [
+              'icons',
+              'Shallow-merged: child icons override matching names from the base.',
+            ],
+            [
+              'indicators',
+              'Shallow-merged: child indicators override matching names from the base.',
+            ],
+            [
+              'onDark, onLight',
+              "Deep-merged per surface: the base's resolved surface first, then the child's overrides.",
+            ],
+            [
+              'typography, motion, radius, color',
+              'Child config replaces base entirely (these are scale inputs, not additive).',
+            ],
+            [
+              'adaptations',
+              'Width-breakpoint overrides merge by fixed name. Inherited ordered rules keep their relative order; child rules append and re-resolve against the child root axes.',
+            ],
           ],
         },
         {
           type: 'prose',
-          text: 'Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme\'s CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) is a build error rather than a theme that silently inherits nothing.',
+          text: "Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme's CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) is a build error rather than a theme that silently inherits nothing.",
+        },
+      ],
+    },
+    {
+      title: 'Theme Adaptations',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Use `adaptations` for opt-in token, theme-local token, and component changes under viewport width, primary-pointer precision, contrast preference, or motion preference. Conditions in one `when` are ANDed. Rules are ordinary ordered objects, and later matching writes win.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Width and pointer adaptations',
+          code: `const acmeTheme = defineTheme({
+  name: 'acme',
+  adaptations: {
+    widthBreakpoints: {
+      sm: 640,
+      md: 768,
+      lg: 1024,
+      xl: 1280,
+      '2xl': 1536,
+    },
+    rules: [
+      {
+        when: {width: {below: 'md'}},
+        value: {tokens: {'--spacing-4': '12px'}},
+      },
+      {
+        when: {pointer: 'coarse'},
+        value: {
+          tokens: {
+            '--size-element-sm': '36px',
+            '--size-element-md': '40px',
+            '--size-element-lg': '44px',
+          },
+        },
+      },
+      {
+        when: {
+          width: {from: 'lg', below: 'xl'},
+          pointer: 'coarse',
+          contrast: 'more',
+        },
+        value: {components: {card: {base: {borderWidth: '2px'}}}},
+      },
+    ],
+  },
+});`,
+        },
+        {
+          type: 'table',
+          headers: ['Condition', 'Values'],
+          rows: [
+            ['width.from / width.below', 'sm | md | lg | xl | 2xl'],
+            ['pointer', 'coarse | fine'],
+            ['contrast', 'more | less | no-preference'],
+            ['motion', 'reduce | no-preference'],
+          ],
+        },
+        {
+          type: 'prose',
+          text: '`widthBreakpoints` are fixed named start points. Defaults are 640 / 768 / 1024 / 1280 / 1536 CSS pixels. `from` includes its point; `below` excludes it. Breakpoint configuration alone emits no CSS.',
+        },
+        {
+          type: 'prose',
+          text: '**Precedence follows rule order.** Root theme values apply first, then every matching rule in declaration order. A later rule may deliberately restore a root value. `onDark` and `onLight` media-surface overrides apply after adaptations and win on the same leaf.',
+        },
+        {
+          type: 'prose',
+          text: "`extends` preserves the base rule order and appends child rules. Inherited conditions use the child's effective breakpoint map, and partial generative axes complete from the child root metadata. An empty child rule is a no-op, not a removal operator.",
+        },
+        {
+          type: 'prose',
+          text: 'A rule may replace a theme-local token only when the exact name is already enrolled by root `localTokens` or an enrolled base. Component writes in a rule are validated exactly like root `components` — same targets, axes, and value domains. The one addition is that a rule may not be the only place a custom value is enrolled: a value that is valid only because a theme enrolls it generates unconditional type augmentation, so declare it on the root theme first and let rules restyle it. Built-in values need no root declaration. When rules can match together, their ordered portable and local token writes are validated as one effective graph; any reachable cycle fails before CSS is emitted.',
+        },
+        {
+          type: 'prose',
+          text: 'Adaptations compile to CSS media queries with no resize listener or styling rerender. Runtime and `astryx theme build` use the same compiler, but only a built theme is present at first paint in an SSR app.',
         },
       ],
     },
     {
       title: 'Component Style Overrides',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -300,7 +410,7 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Run `astryx theme targets` for every themeable key in the system (`astryx theme targets <Name>` to scope it, `--json` to lint a theme against it), and `astryx component <Name>` for one component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
+          text: "Run `astryx theme targets` for every themeable key in the system (`astryx theme targets <Name>` to scope it, `--json` to lint a theme against it), and `astryx component <Name>` for one component's theming targets, public CSS variables, and which standard CSS properties are supported.",
         },
         {
           type: 'list',
@@ -321,11 +431,11 @@ const brandTheme = defineTheme({
     },
     {
       title: 'Custom Variants',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Themes can add new prop values to any component. Any `prop:value` key where the value isn\'t a built-in gets treated as a new variant. Use `astryx theme build` to generate TypeScript augmentations for type safety.',
+          text: "Themes can add new prop values to any component. Any `prop:value` key where the value isn't a built-in gets treated as a new variant. Use `astryx theme build` to generate TypeScript augmentations for type safety.",
         },
         {
           type: 'code',
@@ -364,13 +474,13 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Custom variants only work when the theme that defines them is active. The component\'s variant map is extended via module augmentation, with no changes to the component source needed.',
+          text: "Custom variants only work when the theme that defines them is active. The component's variant map is extended via module augmentation, with no changes to the component source needed.",
         },
       ],
     },
     {
       title: 'Building Themes for Production',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -404,13 +514,17 @@ const brandTheme = defineTheme({
             ],
             [
               'ocean.variants.d.ts',
-              '(Optional) Module augmentations for custom component prop values found in the theme\'s component overrides',
+              "(Optional) Module augmentations for custom component prop values found in the theme's component overrides",
             ],
           ],
         },
         {
           type: 'prose',
           text: 'The `__built: true` flag tells Theme to skip runtime `<style>` injection; the CSS file handles it.',
+        },
+        {
+          type: 'prose',
+          text: 'After upgrading Astryx across a selector-contract change, rerun `astryx theme build <theme-file>` for every custom prebuilt theme. Deploy the regenerated `.css`, `.js`, `.d.ts`, and optional `.variants.d.ts` together. The runtime intentionally trusts `__built: true` and will not repair stale CSS from an older build.',
         },
         {
           type: 'code',
@@ -425,13 +539,13 @@ import './themes/ocean.css';
         },
         {
           type: 'prose',
-          text: 'The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app\'s job. See `astryx docs typography` for the full recipe.',
+          text: "The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app's job. See `astryx docs typography` for the full recipe.",
         },
       ],
     },
     {
       title: 'Runtime vs Built Themes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -443,13 +557,13 @@ import './themes/ocean.css';
           rows: [
             [
               'Import (published theme)',
-              "@astryxdesign/theme-{name}",
-              "@astryxdesign/theme-{name}/built + theme.css",
+              '@astryxdesign/theme-{name}',
+              '@astryxdesign/theme-{name}/built + theme.css',
             ],
             [
               'Import (custom theme)',
               'defineTheme() directly',
-              "Built .js + .css from `astryx theme build`",
+              'Built .js + .css from `astryx theme build`',
             ],
             [
               'How it works',
@@ -487,14 +601,14 @@ import './themes/ocean.css';
           style: 'dont',
           items: [
             'Use runtime themes in production SSR apps; component overrides will flash on hydration.',
-            'Import /built without the CSS file; component overrides won\'t apply.',
+            "Import /built without the CSS file; component overrides won't apply.",
           ],
         },
       ],
     },
     {
       title: 'Light/Dark Mode',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -523,7 +637,7 @@ import './themes/ocean.css';
     },
     {
       title: 'Nesting Themes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -549,7 +663,7 @@ import './themes/ocean.css';
     },
     {
       title: 'Token Utilities',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -592,7 +706,7 @@ const chartTheme = {
     },
     {
       title: 'useTheme Hook',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',

@@ -9,10 +9,12 @@
  * and `integration-warnings` nudges about them on ordinary commands. Keeping
  * them here means those callers no longer reach up into `api/`.
  *
- * The manifest schema is NOT re-validated here — `loadIntegrations` already did
- * that and throws otherwise. What is re-checked is the on-disk contributions
- * (roots + codemods/templates/components), because those regress independently
- * of the manifest: a deleted directory, a template that lost its source file.
+ * The base manifest schema is not re-validated here — `loadIntegrations` already
+ * did that. Optional contributions such as `agentDocs` carry their own error
+ * marker so a bad contribution is reported without withdrawing valid roots.
+ * What is re-checked is the on-disk contributions (roots +
+ * codemods/templates/components), because those regress independently of the
+ * manifest: a deleted directory, a template that lost its source file.
  *
  * @input a loaded-integration-shaped object (absolute contribution roots + identity)
  * @output AstryxIntegrationIssue[]
@@ -30,9 +32,46 @@ import {discoverIntegrationDocs} from '../discovery/docs-discovery.mjs';
  * @typedef {import('./integrations.mjs').LoadedIntegration} LoadedIntegration
  */
 
+/** Stable issue code for an invalid optional agent-doc contribution. */
+export const INVALID_AGENT_DOCS = 'invalid_agent_docs';
+
 /** @param {string} code @param {string} message @returns {Issue} */
 export function issueError(code, message) {
   return {code, severity: 'error', message};
+}
+
+/** @param {string} code @param {string} message @returns {Issue} */
+export function issueWarning(code, message) {
+  return {code, severity: 'warning', message};
+}
+
+/**
+ * Report the manifest keys this CLI does not know.
+ *
+ * A WARNING, deliberately: an integration is published once and installed
+ * against many CLI versions, so a key introduced by a later CLI arrives here
+ * routinely and means only that this CLI cannot act on it. It used to be fatal
+ * — `.strict()` rejected the manifest, and a manifest that fails to parse
+ * contributes nothing at all, so one added field took the package's
+ * components, templates and codemods down with it on every older consumer
+ * (#5119). The fix is upgrading the CLI, which is what the message says.
+ *
+ * @param {LoadedIntegration} integration
+ * @param {Issue[]} issues
+ */
+function checkUnknownKeys(integration, issues) {
+  const keys = integration.__unknownKeys ?? [];
+  if (keys.length === 0) return;
+  issues.push(
+    issueWarning(
+      'unknown_manifest_key',
+      `This CLI does not know the manifest ${keys.length === 1 ? 'key' : 'keys'} ` +
+        `${keys.map(key => `"${key}"`).join(', ')}, so ${keys.length === 1 ? 'it is' : 'they are'} ` +
+        `ignored — everything else in the manifest still applies. This usually ` +
+        `means the integration was published against a newer Astryx CLI than ` +
+        `this project resolves; upgrading @astryxdesign/cli picks it up.`,
+    ),
+  );
 }
 
 /**
@@ -182,6 +221,10 @@ export async function validateLoadedIntegration(loaded) {
   // silently invisible. The load error IS the issue.
   if (loaded.__loadError) {
     return [issueError('integration_error', loaded.__loadError)];
+  }
+  checkUnknownKeys(loaded, issues);
+  if (loaded.__agentDocsError) {
+    issues.push(issueError(INVALID_AGENT_DOCS, loaded.__agentDocsError));
   }
   checkRoots(
     {

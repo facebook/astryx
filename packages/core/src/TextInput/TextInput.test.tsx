@@ -520,6 +520,28 @@ describe('TextInput', () => {
     });
   });
 
+  describe('autoComplete prop (#5638)', () => {
+    it('forwards autoComplete to the native input unchanged', () => {
+      render(
+        <TextInput
+          label="Reason"
+          value=""
+          onChange={() => {}}
+          autoComplete="off"
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'autocomplete',
+        'off',
+      );
+    });
+
+    it('does not set autocomplete when not provided', () => {
+      render(<TextInput label="Name" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('autocomplete');
+    });
+  });
+
   describe('onEnter', () => {
     it('calls onEnter when Enter key is pressed', async () => {
       const user = userEvent.setup();
@@ -969,7 +991,6 @@ describe('TextInput disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-text-input');
     expect(root).toHaveAttribute('data-disabled', 'disabled');
-    expect(root).toHaveClass('disabled');
   });
 
   it('omits data-disabled when enabled, like status does', () => {
@@ -998,3 +1019,53 @@ describe('TextInput readonly theme state', () => {
     expect(root).not.toHaveAttribute('data-readonly');
   });
 });
+
+describe('TextInput clear button focus behavior', () => {
+  it('synchronously restores focus to the input on keyboard activation (detail === 0)', () => {
+    const handleChange = vi.fn();
+    render(
+      <TextInput
+        label="Search"
+        value="test"
+        hasClear
+        onChange={handleChange}
+      />,
+    );
+
+    const input = screen.getByRole('textbox');
+    const clearButton = screen.getByRole('button', {name: /clear/i});
+
+    clearButton.focus();
+    expect(document.activeElement).toBe(clearButton);
+
+    // Keyboard activation (e.g. Enter / Space on focused button yields detail 0)
+    fireEvent.click(clearButton, {detail: 0});
+
+    expect(handleChange).toHaveBeenCalledWith('', expect.any(Object));
+    // Must be synchronously focused without waiting for animation frames
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('defers focus restoration via requestAnimationFrame on pointer activation', () => {
+    const handleChange = vi.fn();
+    const rafSpy = vi.spyOn(window, 'requestAnimationFrame');
+    render(
+      <TextInput
+        label="Search"
+        value="test"
+        hasClear
+        onChange={handleChange}
+      />,
+    );
+
+    const clearButton = screen.getByRole('button', {name: /clear/i});
+
+    // Pointer activation (detail > 0)
+    fireEvent.click(clearButton, {detail: 1});
+
+    expect(handleChange).toHaveBeenCalledWith('', expect.any(Object));
+    expect(rafSpy).toHaveBeenCalled();
+    rafSpy.mockRestore();
+  });
+});
+

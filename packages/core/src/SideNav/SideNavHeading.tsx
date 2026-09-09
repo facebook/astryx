@@ -37,6 +37,7 @@ import {Icon} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useSideNavCollapse} from './SideNavCollapseContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -60,7 +61,7 @@ const styles = stylex.create({
     minHeight: spacingVars['--spacing-8'],
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
-      ':has(.astryx-navicon)': 0,
+      ':has(.astryx-nav-icon)': 0,
     },
     paddingInlineEnd: spacingVars['--spacing-2'],
     paddingBlock: 0,
@@ -212,7 +213,7 @@ const styles = stylex.create({
     minHeight: spacingVars['--spacing-8'],
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
-      ':has(.astryx-navicon)': 0,
+      ':has(.astryx-nav-icon)': 0,
     },
     paddingInlineEnd: spacingVars['--spacing-2'],
     paddingBlock: 0,
@@ -433,6 +434,7 @@ export function SideNavHeading({
             themeProps('side-nav-heading'),
             focusOutlineProps.focusVisible(
               navItemStyles.item,
+              interactionOverlayStyles.backgroundColor,
               styles.rootCollapsed,
               xstyle,
             ),
@@ -456,6 +458,7 @@ export function SideNavHeading({
               themeProps('side-nav-heading'),
               focusOutlineProps.focusVisible(
                 navItemStyles.item,
+                interactionOverlayStyles.backgroundColor,
                 styles.rootCollapsed,
                 styles.menuTrigger,
                 xstyle,

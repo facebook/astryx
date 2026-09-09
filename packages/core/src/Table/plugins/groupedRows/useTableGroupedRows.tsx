@@ -126,15 +126,31 @@ const styles = stylex.create({
   },
   headerCell: {
     paddingBlock: spacingVars['--spacing-2'],
-    // No inline start padding so the chevron aligns with the table's leading
-    // edge (Ernest review #1).
-    paddingInlineStart: spacingVars['--spacing-1'],
+    // The start gutter lives on headerInner instead, so that it travels with
+    // the heading when the heading pins. Left here, the heading would sit one
+    // gutter in at rest and jump flush the moment it stuck.
+    paddingInlineStart: 0,
     paddingInlineEnd: spacingVars['--spacing-3'],
   },
+  // The cell spans every column, so on a table scrolled sideways the heading
+  // would slide out of view while the columns it names stay pinned. Sticking
+  // the inner span to the start edge keeps the chevron and the label together
+  // and on screen.
   headerInner: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
+    insetInlineStart: 0,
+    position: 'sticky',
+    // No inline start padding on the cell, so the chevron aligns with the
+    // table's leading edge (Ernest review #1).
+    paddingInlineStart: spacingVars['--spacing-1'],
+  },
+  // Applied alongside headerInner when using the built-in default heading.
+  // A custom `renderGroupHeader` may need the full column width, so the
+  // shrink-wrap is opt-in rather than unconditional.
+  headerInnerFitContent: {
+    width: 'fit-content',
   },
   // Standalone chevron button with no heavy chrome (transparent, borderless,
   // zero padding) so the icon sits flush with the start of the table
@@ -221,6 +237,32 @@ const styles = stylex.create({
  *   idKey={grouped.idKey}
  *   plugins={{grouped: grouped.plugin}}
  * />;
+ * ```
+ *
+ * ## Pairing with pagination
+ *
+ * Grouping runs on the rows it is handed, so the order is filter, sort, slice,
+ * then group. Sort by the group key first and the reader's own keys second —
+ * the same `ORDER BY group, sort` a backend would run. That keeps a section's
+ * rows contiguous in the result set, so pages fill sections in order and new
+ * rows always land at the bottom of the table. Slice a differently-ordered
+ * list and every page holds a scatter of sections instead, so loading more
+ * splices rows into the middle and new headings appear above the fold.
+ *
+ * @example
+ * ```
+ * const ordered = useMemo(
+ *   () => [...filtered].sort((a, b) => byTeam(a, b) || bySortKeys(a, b)),
+ *   [filtered, sortKeys],
+ * );
+ * const page = ordered.slice(0, loadedCount);
+ *
+ * const grouped = useTableGroupedRows({
+ *   data: page,
+ *   groupBy: r => r.team,
+ *   collapsedGroups,
+ *   onToggleGroup,
+ * });
  * ```
  */
 export function useTableGroupedRows<T extends Record<string, unknown>>(
@@ -342,7 +384,11 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
             // to the actual number of columns, so the header always spans the
             // full width without the plugin knowing the column count.
             <td colSpan={999} {...stylex.props(styles.headerCell)}>
-              <span {...stylex.props(styles.headerInner)}>
+              <span
+                {...stylex.props(
+                  styles.headerInner,
+                  !renderGroupHeader && styles.headerInnerFitContent,
+                )}>
                 {/* Standalone chevron button, flush with the table's start
                     edge (no heavy button chrome) — the keyboard control. */}
                 <button

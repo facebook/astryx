@@ -33,6 +33,7 @@
  * @property {'search'} type
  * @property {object} data
  * @property {string} data.query
+ * @property {number} data.matchCount - How many candidates matched the query in total, before `limit` was applied. `results` is the bounded slice of that set, so `matchCount > results.length` means the answer was capped.
  * @property {SearchResultEntry[]} data.results
  */
 

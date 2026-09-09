@@ -15,8 +15,8 @@ export const doc = {
   description:
     'The astryx.integration.* manifest that sits beside an integration ' +
     "package's package.json. Points the CLI at the package's components, " +
-    'templates, codemods, and doc topics, and where to file issues. Every ' +
-    'field is optional.',
+    'templates, codemods, doc topics, and managed agent guidance, and where to ' +
+    'file issues. Every field is optional.',
   appliesTo: 'astryx.integration.{ts,mjs,js}',
   fields: [
     {
@@ -47,6 +47,13 @@ export const doc = {
       example: "'./docs'",
     },
     {
+      name: 'agentDocs',
+      type: '{ append?: readonly string[] }',
+      description:
+        'Static package guidance appended to the end of the managed agent block. The CLI owns the section heading, package labels, bullets, target files, and writes.',
+      example: "{ append: ['Run acme verify.'] }",
+    },
+    {
       name: 'issuesUrl',
       type: 'string',
       description: 'Where to file issues/feedback for this integration.',
@@ -61,6 +68,9 @@ export const doc = {
   templates: './src/templates',
   codemods: './codemods',
   docs: './docs',
+  agentDocs: {
+    append: ['Run acme verify before finishing.'],
+  },
   issuesUrl: 'https://github.com/acme/widgets/issues',
 };`,
     },
@@ -76,9 +86,21 @@ export const doc = {
     {
       type: 'prose',
       text:
+        '`agentDocs.append` may contain at most eight lines. Each line is a ' +
+        'trimmed, non-blank string of at most 240 Unicode code points with no ' +
+        'line separators, control characters, NUL, or Astryx/XDS managed-marker ' +
+        'text. The configured project may contain at most 32 integration lines ' +
+        'total.',
+    },
+    {
+      type: 'prose',
+      text:
         'Validate a manifest with `astryx validate-integration`. It is checked ' +
-        'at the load boundary with a strict schema (parseIntegration): unknown ' +
-        'keys are errors, and issuesUrl must be a valid URL.',
+        'at the load boundary (parseIntegration): a known field of the wrong ' +
+        'type is an error, and issuesUrl must be a valid URL. A field this CLI ' +
+        'does not know is ignored with a warning rather than rejected, so a ' +
+        'manifest written against a newer CLI still contributes everything ' +
+        'this one understands.',
     },
   ],
 };

@@ -12,8 +12,87 @@
 import {readFileSync} from 'node:fs';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {Dialog, resolveDialogPositionOffsets} from './Dialog';
+import {
+  Dialog,
+  dialogFullscreenSafeAreaPaddingContract,
+  resolveDialogPositionOffsets,
+} from './Dialog';
 import {DialogHeader} from './DialogHeader';
+import {defineTheme, generateThemeCSS} from '../theme';
+
+function generateThemeTestCSS(
+  theme: Parameters<typeof generateThemeCSS>[0],
+): string {
+  return Object.values(generateThemeCSS(theme)).join('\n');
+}
+
+function extractConstDeclaration(source: string, name: string): string {
+  const start = source.indexOf(`const ${name} = stylex.keyframes({`);
+  if (start === -1) {
+    throw new Error(`Missing ${name} keyframes`);
+  }
+
+  const bodyStart = source.indexOf('{', start);
+  let depth = 0;
+  for (let index = bodyStart; index < source.length; index += 1) {
+    const char = source[index];
+    if (char === '{') {
+      depth += 1;
+    } else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(start, index + 3);
+      }
+    }
+  }
+
+  throw new Error(`Unterminated ${name} keyframes`);
+}
+
+function extractThemeVars(css: string): Map<string, string> {
+  const vars = new Map<string, string>();
+  for (const match of css.matchAll(/(--astryx-dialog-[\w-]+):\s*([^;]+);/g)) {
+    vars.set(match[1], match[2].trim());
+  }
+  return vars;
+}
+
+function resolveCSSVarFallback(
+  value: string,
+  vars: ReadonlyMap<string, string>,
+): string {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('var(') || !trimmed.endsWith(')')) {
+    return trimmed;
+  }
+
+  const inner = trimmed.slice(4, -1);
+  let depth = 0;
+  let commaIndex = -1;
+  for (let index = 0; index < inner.length; index += 1) {
+    const char = inner[index];
+    if (char === '(') {
+      depth += 1;
+    } else if (char === ')') {
+      depth -= 1;
+    } else if (char === ',' && depth === 0) {
+      commaIndex = index;
+      break;
+    }
+  }
+
+  const varName = (
+    commaIndex === -1 ? inner : inner.slice(0, commaIndex)
+  ).trim();
+  const fallback = commaIndex === -1 ? '' : inner.slice(commaIndex + 1).trim();
+  return vars.has(varName)
+    ? vars.get(varName)!
+    : resolveCSSVarFallback(fallback, vars);
+}
+
+function normalizeCSSValue(value: string): string {
+  return value.replace(/\s+/g, '');
+}
 
 // Mock showModal and close methods since they're not fully implemented in jsdom
 beforeEach(() => {
@@ -396,36 +475,57 @@ describe('Dialog', () => {
       expect(inlineStyle).toContain('--x-maxHeight: 70dvh');
     });
 
-    it('uses a fullscreen-specific fade animation instead of centered dialog movement', () => {
+    it('uses opacity-only fullscreen keyframes while standard dialogs keep directional movement', () => {
       const source = readFileSync(
         'packages/core/src/Dialog/Dialog.tsx',
         'utf8',
       );
-      const standardOpen = source.slice(
-        source.indexOf('  open: {'),
-        source.indexOf('  // Backdrop using ::backdrop'),
+      const enterDirectional = extractConstDeclaration(
+        source,
+        'enterDirectional',
+      );
+      const enterFullscreen = extractConstDeclaration(
+        source,
+        'enterFullscreen',
       );
       const fullscreenOpen = source.slice(
         source.indexOf('  fullscreenOpen: {'),
         source.indexOf('  fullscreenSafeArea: {'),
       );
-      const modalStyleOrder = source.slice(
-        source.indexOf('focusOutlineProps.focusVisible('),
-        source.indexOf(
-          '          xstyle,',
-          source.indexOf('focusOutlineProps.focusVisible('),
-        ),
-      );
 
-      expect(standardOpen).toContain('enterDirectional');
+      expect(enterDirectional).toContain('transform');
+      expect(enterDirectional).toContain('translate(var(--dialog-dir-x');
+      expect(enterDirectional).toContain('scale(0.95)');
+      expect(enterFullscreen).toContain('opacity');
+      expect(enterFullscreen).not.toContain('transform');
+      expect(enterFullscreen).not.toContain('translate');
+      expect(enterFullscreen).not.toContain('scale(');
       expect(fullscreenOpen).toContain('enterFullscreen');
       expect(fullscreenOpen).not.toContain('enterDirectional');
-      expect(modalStyleOrder.indexOf('styles.open')).toBeLessThan(
-        modalStyleOrder.indexOf('styles.fullscreenOpen'),
+    });
+
+    it('maps fullscreen safe-area insets to logical sides in LTR and RTL', () => {
+      expect(dialogFullscreenSafeAreaPaddingContract.inlineStart.ltr).toContain(
+        'safe-area-inset-left',
+      );
+      expect(dialogFullscreenSafeAreaPaddingContract.inlineEnd.ltr).toContain(
+        'safe-area-inset-right',
+      );
+      expect(dialogFullscreenSafeAreaPaddingContract.inlineStart.rtl).toContain(
+        'safe-area-inset-right',
+      );
+      expect(dialogFullscreenSafeAreaPaddingContract.inlineEnd.rtl).toContain(
+        'safe-area-inset-left',
+      );
+      expect(dialogFullscreenSafeAreaPaddingContract.inlineStart.rtl).not.toBe(
+        dialogFullscreenSafeAreaPaddingContract.inlineStart.ltr,
+      );
+      expect(dialogFullscreenSafeAreaPaddingContract.inlineEnd.rtl).not.toBe(
+        dialogFullscreenSafeAreaPaddingContract.inlineEnd.ltr,
       );
     });
 
-    it('protects fullscreen content with safe-area padding', () => {
+    it('protects default fullscreen content with safe-area padding', () => {
       render(
         <Dialog
           isOpen={true}
@@ -438,9 +538,76 @@ describe('Dialog', () => {
 
       const wrapper = screen.getByTestId('child').parentElement!;
       const computed = window.getComputedStyle(wrapper);
-      expect(computed.paddingInlineStart).toContain('safe-area-inset-left');
-      expect(computed.paddingInlineEnd).toContain('safe-area-inset-right');
+      expect(normalizeCSSValue(computed.paddingInlineStart)).toBe(
+        normalizeCSSValue(
+          dialogFullscreenSafeAreaPaddingContract.inlineStart.ltr,
+        ),
+      );
+      expect(normalizeCSSValue(computed.paddingInlineEnd)).toBe(
+        normalizeCSSValue(
+          dialogFullscreenSafeAreaPaddingContract.inlineEnd.ltr,
+        ),
+      );
       expect(wrapper.parentElement!.tagName).toBe('DIALOG');
+    });
+
+    it('applies RTL fullscreen safe-area padding to the opposite logical edges', () => {
+      render(
+        <div dir="rtl">
+          <Dialog
+            isOpen={true}
+            onOpenChange={() => {}}
+            variant="fullscreen"
+            aria-label="Fullscreen RTL dialog">
+            <div data-testid="rtl-child">Content</div>
+          </Dialog>
+        </div>,
+      );
+
+      const wrapper = screen.getByTestId('rtl-child').parentElement!;
+      const computed = window.getComputedStyle(wrapper);
+      expect(normalizeCSSValue(computed.paddingInlineStart)).toBe(
+        normalizeCSSValue(
+          dialogFullscreenSafeAreaPaddingContract.inlineStart.rtl,
+        ),
+      );
+      expect(normalizeCSSValue(computed.paddingInlineEnd)).toBe(
+        normalizeCSSValue(
+          dialogFullscreenSafeAreaPaddingContract.inlineEnd.rtl,
+        ),
+      );
+    });
+
+    it('resolves theme zero padding before the default fullscreen safe-area fallback', () => {
+      const zeroPaddingTheme = defineTheme({
+        name: 'dialog-zero-padding-test',
+        components: {
+          dialog: {
+            base: {padding: '0'},
+          },
+        },
+      });
+
+      const vars = extractThemeVars(generateThemeTestCSS(zeroPaddingTheme));
+      expect(vars.get('--astryx-dialog-padding')).toBe('0');
+      expect(
+        resolveCSSVarFallback(
+          dialogFullscreenSafeAreaPaddingContract.blockStart,
+          vars,
+        ),
+      ).toBe('0');
+      expect(
+        resolveCSSVarFallback(
+          dialogFullscreenSafeAreaPaddingContract.inlineStart.ltr,
+          vars,
+        ),
+      ).toBe('0');
+      expect(
+        resolveCSSVarFallback(
+          dialogFullscreenSafeAreaPaddingContract.inlineEnd.rtl,
+          vars,
+        ),
+      ).toBe('0');
     });
   });
 

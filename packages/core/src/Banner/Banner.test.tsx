@@ -4,7 +4,8 @@
  * @file Banner.test.tsx
  * @input Uses vitest, @testing-library/react, Banner component
  * @output Unit tests for Banner component behavior, including the
- *   'banner-icon' theme target riding on the status icon glyph (#4166)
+ *   'banner-frame' theme target on the outer elevation/radius painter and the
+ *   'banner-icon' theme target on the status icon glyph (#4166)
  * @position Testing; validates Banner.tsx implementation
  *
  * SYNC: When modified, update this header
@@ -14,7 +15,9 @@ import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Banner} from './Banner';
+import {defineTheme, generateThemeCSS} from '../theme';
 import {registerIcons, resetIcons} from '../Icon';
+import {InternationalizationProvider} from '../i18n';
 
 describe('Banner', () => {
   afterEach(() => {
@@ -97,7 +100,9 @@ describe('Banner', () => {
 
   it('renders dismiss button when isDismissable', () => {
     render(<Banner status="info" title="Dismissable" isDismissable />);
-    expect(screen.getByRole('button', {name: 'Dismiss'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Dismiss Dismissable'}),
+    ).toBeInTheDocument();
   });
 
   it('calls onDismiss when dismiss button is clicked', async () => {
@@ -111,7 +116,7 @@ describe('Banner', () => {
         onDismiss={onDismiss}
       />,
     );
-    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    await user.click(screen.getByRole('button', {name: 'Dismiss Dismissable'}));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
@@ -126,7 +131,9 @@ describe('Banner', () => {
       />,
     );
     expect(screen.getByTestId('banner')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    await user.click(
+      screen.getByRole('button', {name: 'Dismiss Self Dismissing'}),
+    );
     expect(screen.queryByTestId('banner')).not.toBeInTheDocument();
   });
 
@@ -142,16 +149,14 @@ describe('Banner', () => {
         data-testid="banner"
       />,
     );
-    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    await user.click(screen.getByRole('button', {name: 'Dismiss Dismissable'}));
     expect(screen.queryByTestId('banner')).not.toBeInTheDocument();
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
   it('does not render dismiss button when isDismissable is false', () => {
     render(<Banner status="info" title="Not Dismissable" />);
-    expect(
-      screen.queryByRole('button', {name: 'Dismiss'}),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /^Dismiss/})).toBeNull();
   });
 
   it('renders endContent', () => {
@@ -235,7 +240,9 @@ describe('Banner', () => {
     );
     // No toggle exists, so nothing should carry disclosure state, and the
     // region needs no id for a button to point at.
-    const dismiss = screen.getByRole('button', {name: 'Dismiss'});
+    const dismiss = screen.getByRole('button', {
+      name: 'Dismiss Plain content',
+    });
     expect(dismiss).not.toHaveAttribute('aria-expanded');
     expect(dismiss).not.toHaveAttribute('aria-controls');
     expect(
@@ -343,7 +350,7 @@ describe('Banner', () => {
       b => b.getAttribute('aria-label') || b.textContent,
     );
     const expandIndex = buttonNames.indexOf('Expand');
-    const dismissIndex = buttonNames.indexOf('Dismiss');
+    const dismissIndex = buttonNames.indexOf('Dismiss Order Test');
     expect(expandIndex).toBeLessThan(dismissIndex);
   });
 
@@ -423,7 +430,7 @@ describe('Banner', () => {
 
   it("carries the 'banner-icon' theme target on the default status icon glyph", () => {
     // Theme overrides for 'banner-icon' + 'status:X' compile to
-    // '.astryx-banner-icon.<status>' (parseStyleKey). The target must sit on
+    // '.astryx-banner-icon[data-status="<status>"]' (parseStyleKey). The target must sit on
     // the <Icon> span itself so those same-element rules in
     // @layer astryx-theme beat the Icon's own color variant.
     const statuses = ['info', 'warning', 'error', 'success'] as const;
@@ -432,7 +439,7 @@ describe('Banner', () => {
         <Banner status={status} title={`${status} banner`} />,
       );
       const glyph = container.querySelector(
-        `.astryx-icon.astryx-banner-icon.${status}`,
+        `.astryx-icon.astryx-banner-icon[data-status="${status}"]`,
       );
       expect(glyph).not.toBeNull();
       expect(glyph).toHaveAttribute('data-status', status);
@@ -444,12 +451,14 @@ describe('Banner', () => {
   });
 
   it('keeps the color variant on the theme-target element (regression pin for #4166)', () => {
-    // Pre-fix, '.astryx-banner-icon.info' matched the layout wrapper while
+    // Pre-fix, '.astryx-banner-icon[data-status="info"]' matched the layout wrapper while
     // the color variant (data-color="accent") sat on an inner span that a
     // theme override could never reach. Target and paint now share one
     // element.
     const {container} = render(<Banner status="info" title="Info" />);
-    const target = container.querySelector('.astryx-banner-icon.info');
+    const target = container.querySelector(
+      '.astryx-banner-icon[data-status="info"]',
+    );
     expect(target).toHaveAttribute('data-color', 'accent');
   });
 
@@ -506,6 +515,56 @@ describe('Banner', () => {
   });
 
   describe('elevation', () => {
+    it("carries the 'banner-frame' target and its visual axes on the outer painter", () => {
+      const containers = ['card', 'section'] as const;
+      const elevations = ['none', 'low', 'med', 'high'] as const;
+
+      for (const containerType of containers) {
+        for (const elevation of elevations) {
+          const {container, unmount} = render(
+            <Banner
+              status="info"
+              title="Heads up"
+              container={containerType}
+              elevation={elevation}
+            />,
+          );
+          const frame = container.firstElementChild;
+          expect(frame).toHaveClass('astryx-banner-frame');
+          expect(frame).not.toHaveClass(containerType, elevation);
+          expect(frame).toHaveAttribute('data-container', containerType);
+          expect(frame).toHaveAttribute('data-elevation', elevation);
+          expect(frame?.firstElementChild).toHaveClass('astryx-banner');
+          expect(frame?.firstElementChild).not.toHaveClass(
+            'astryx-banner-frame',
+          );
+          unmount();
+        }
+      }
+    });
+
+    it('lets a theme set frame shadow and radius without a structural selector', () => {
+      const theme = defineTheme({
+        name: 'banner-frame-test',
+        components: {
+          'banner-frame': {
+            'container:card+elevation:high': {
+              boxShadow: 'var(--shadow-high)',
+              borderRadius: 'var(--radius-element)',
+            },
+          },
+        },
+      });
+      const {component: css} = generateThemeCSS(theme);
+
+      expect(css).toContain(
+        '.astryx-banner-frame[data-container="card"][data-elevation="high"]',
+      );
+      expect(css).toContain('box-shadow: var(--shadow-high)');
+      expect(css).toContain('border-radius: var(--radius-element)');
+      expect(css).not.toContain(':has(');
+    });
+
     it('renders a distinct root class for each elevation level', () => {
       const classFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
         const {container} = render(
@@ -548,7 +607,9 @@ describe('Banner', () => {
       before.focus();
 
       await user.tab();
-      expect(screen.getByRole('button', {name: 'Dismiss'})).toHaveFocus();
+      expect(
+        screen.getByRole('button', {name: 'Dismiss Heads up'}),
+      ).toHaveFocus();
 
       await user.keyboard('{Enter}');
 
@@ -565,7 +626,7 @@ describe('Banner', () => {
           <Banner status="info" title="Heads up" isDismissable />
         </>,
       );
-      await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+      await user.click(screen.getByRole('button', {name: 'Dismiss Heads up'}));
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
   });
@@ -648,6 +709,64 @@ describe('Banner', () => {
     it('leaves it free for an endContent that renders nothing', () => {
       const {textColumn} = renderBanner(false);
       expect(getComputedStyle(textColumn).flexBasis).not.toBe('8rem');
+    });
+  });
+
+  describe('dismiss control naming', () => {
+    it('names stacked string-title banners distinctly', () => {
+      render(
+        <>
+          <Banner status="error" title="Upload invoice failed" isDismissable />
+          <Banner status="error" title="Delete report failed" isDismissable />
+        </>,
+      );
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual([
+        'Dismiss Upload invoice failed',
+        'Dismiss Delete report failed',
+      ]);
+      for (const button of buttons) {
+        expect(button).toHaveAccessibleDescription('Dismiss');
+      }
+    });
+
+    it('keeps the bare name and tooltip for a rich title', () => {
+      render(
+        <Banner status="info" title={<span>Rich title</span>} isDismissable />,
+      );
+      const button = screen.getByRole('button', {name: 'Dismiss'});
+      expect(button).toHaveAccessibleDescription('Dismiss');
+    });
+
+    it('uses a translated dismissLabel for a rich title and its tooltip', () => {
+      render(
+        <Banner
+          status="info"
+          title={<span>Wartungshinweis</span>}
+          isDismissable
+          dismissLabel="Wartungshinweis schließen"
+        />,
+      );
+      const button = screen.getByRole('button', {
+        name: 'Wartungshinweis schließen',
+      });
+      expect(button).toHaveAccessibleDescription('Wartungshinweis schließen');
+    });
+
+    it('keeps a translated verb when the titled message falls back to English', () => {
+      render(
+        <InternationalizationProvider
+          locale="de-DE"
+          overrides={{
+            'de-DE': {'@astryx.banner.dismiss': 'Schließen'},
+          }}>
+          <Banner status="info" title="Wartungshinweis" isDismissable />
+        </InternationalizationProvider>,
+      );
+      const button = screen.getByRole('button', {
+        name: 'Schließen Wartungshinweis',
+      });
+      expect(button).toHaveAccessibleDescription('Schließen');
     });
   });
 });

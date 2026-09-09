@@ -82,7 +82,7 @@ function resolve(value, theme, modeIndex, seen = new Set()) {
     const args = splitArgs(v.slice('var('.length, -1));
     const [name, fallback] = args;
     if (seen.has(name)) return null; // cycle guard
-    const next = theme.tokens?.[name];
+    const next = theme.localTokens?.[name] ?? theme.tokens?.[name];
     if (next == null) {
       return fallback ? resolve(fallback, theme, modeIndex, seen) : null;
     }

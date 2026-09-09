@@ -11,7 +11,7 @@
 
 import {discoverHooks, findHookDoc} from '../../../foundation/discovery/hook-discovery.mjs';
 import {loadDocs} from '../../../foundation/discovery/component-loader.mjs';
-import {mdCell} from './component-format.mjs';
+import {formatAccessibility, mdCell} from './component-format.mjs';
 
 /**
  * Build a signature string from hook docs.
@@ -111,6 +111,8 @@ export function formatHookFull(docs) {
     sections.push('');
   }
 
+  sections.push(...formatAccessibility(docs.usage?.accessibility));
+
   // Parameters (analogous to ## Props)
   if (docs.params?.length) {
     sections.push('## Parameters\n');
@@ -160,6 +162,8 @@ export function formatHookCompact(docs, importPath) {
     }
     sections.push('');
   }
+
+  sections.push(...formatAccessibility(docs.usage?.accessibility));
 
   // Parameters (matches ## Props in component compact)
   if (docs.params?.length) {

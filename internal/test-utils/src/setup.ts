@@ -78,3 +78,28 @@ if (typeof window.matchMedia === 'undefined') {
     }),
   });
 }
+
+// Polyfill for localStorage (this jsdom build exposes none).
+// Used by useResizable's `autoSaveId` persistence.
+if (typeof window.localStorage === 'undefined') {
+  const store = new Map<string, string>();
+  Object.defineProperty(window, 'localStorage', {
+    writable: true,
+    value: {
+      get length() {
+        return store.size;
+      },
+      key: (index: number) => [...store.keys()][index] ?? null,
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, String(value));
+      },
+      removeItem: (key: string) => {
+        store.delete(key);
+      },
+      clear: () => {
+        store.clear();
+      },
+    } satisfies Storage,
+  });
+}

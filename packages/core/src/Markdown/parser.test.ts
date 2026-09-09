@@ -454,6 +454,14 @@ describe('parseMarkdown', () => {
     }
   });
 
+  it('rejects a standalone image with an unsafe scheme as literal text (XSS prevention)', () => {
+    // Same rule as inline images: the line falls through to the paragraph
+    // path and stays literal text instead of becoming an image node.
+    const result = parseMarkdown('![alt](vbscript:msgbox)');
+    expect(result[0].type).toBe('paragraph');
+    expect(JSON.stringify(result)).not.toContain('"type":"image"');
+  });
+
   it('parses complex AI response', () => {
     const input = [
       '# Analysis',
@@ -1148,6 +1156,31 @@ describe('link reference definitions', () => {
   it('resolves a reference image `![alt][label]`', () => {
     const {links} = paragraphLinks('![logo][l]\n\n[l]: /logo.png');
     expect(links).toEqual([{type: 'image', src: '/logo.png', text: 'logo'}]);
+  });
+
+  it('rejects a reference image whose definition has an unsafe scheme (XSS prevention)', () => {
+    const {links} = paragraphLinks('![logo][l]\n\n[l]: <javascript:alert(1)>');
+    expect(links).toEqual([]);
+  });
+
+  it('rejects a shortcut reference image with an unsafe definition (XSS prevention)', () => {
+    const {links} = paragraphLinks('![logo]\n\n[logo]: <javascript:alert(1)>');
+    expect(links).toEqual([]);
+  });
+
+  it('rejects definitions that hide the scheme behind control chars (XSS prevention)', () => {
+    // isSafeUrl strips control characters before testing; the angle-bracket
+    // destination form is the only definition shape that can contain them.
+    // Both consumers of a definition — reference images and reference links —
+    // must apply it.
+    const {links: imageLinks} = paragraphLinks(
+      '![logo][l]\n\n[l]: <java\tscript:alert(1)>',
+    );
+    expect(imageLinks).toEqual([]);
+    const {links: refLinks} = paragraphLinks(
+      '[click][l]\n\n[l]: <java\tscript:alert(1)>',
+    );
+    expect(refLinks).toEqual([]);
   });
 
   it('does not treat a whitespace-only second label as collapsed', () => {

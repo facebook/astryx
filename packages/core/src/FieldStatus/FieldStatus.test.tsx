@@ -116,20 +116,18 @@ describe('FieldStatus', () => {
     });
   });
 
-  describe('theme class + data attribute reflection', () => {
+  describe('theme target and data-attribute reflection', () => {
     it('renders the stable astryx-field-status class', () => {
       render(<FieldStatus type="error" message="msg" data-testid="fs" />);
       expect(screen.getByTestId('fs')).toHaveClass('astryx-field-status');
     });
 
-    it('reflects the type as a class token and data-type attribute', () => {
+    it('reflects the type as a data-type attribute', () => {
       render(<FieldStatus type="warning" message="msg" data-testid="fs" />);
-      const el = screen.getByTestId('fs');
-      expect(el).toHaveClass('warning');
-      expect(el).toHaveAttribute('data-type', 'warning');
+      expect(screen.getByTestId('fs')).toHaveAttribute('data-type', 'warning');
     });
 
-    it('reflects the variant as a class token and data-variant attribute', () => {
+    it('reflects the variant as a data-variant attribute', () => {
       render(
         <FieldStatus
           type="error"
@@ -139,15 +137,32 @@ describe('FieldStatus', () => {
         />,
       );
       const el = screen.getByTestId('fs');
-      expect(el).toHaveClass('detached');
       expect(el).toHaveAttribute('data-variant', 'detached');
     });
 
     it('defaults data-variant to "attached"', () => {
       render(<FieldStatus type="error" message="msg" data-testid="fs" />);
-      const el = screen.getByTestId('fs');
-      expect(el).toHaveAttribute('data-variant', 'attached');
-      expect(el).toHaveClass('attached');
+      expect(screen.getByTestId('fs')).toHaveAttribute(
+        'data-variant',
+        'attached',
+      );
+    });
+
+    it('extends the attached background by the field-provided overlap', () => {
+      render(<FieldStatus type="warning" message="msg" data-testid="fs" />);
+      const styles = getComputedStyle(screen.getByTestId('fs'));
+
+      expect(styles.marginTop).toBe(
+        'calc(-1 * var(--_field-status-overlap,var(--spacing-1-5)))',
+      );
+    });
+
+    it('does not intercept pointer input over the attached control', () => {
+      render(<FieldStatus type="warning" message="msg" data-testid="fs" />);
+
+      expect(getComputedStyle(screen.getByTestId('fs')).pointerEvents).toBe(
+        'none',
+      );
     });
   });
 

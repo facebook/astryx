@@ -2,12 +2,48 @@
 
 /**
  * @file generateThemeRules.test.ts
- * Tests that generateThemeRules produces correct, consistent CSS rules
- * for both runtime and build paths.
+ * Tests that shared root, adaptation, and media-surface lowering produces
+ * correct, consistently ordered CSS for both runtime and build paths.
  */
 
 import {describe, it, expect} from 'vitest';
-import {defineTheme, generateThemeCSS, generateThemeRules} from './index';
+import {
+  dataTokenDefaults,
+  defineTheme,
+  generateAdaptationCSS,
+  generateThemeCSS,
+  generateOnMediaCSS,
+  generateThemeRules,
+} from './index';
+import {generateDataTokenDefaultsCSS} from './generateThemeRules';
+
+function topLevelCSSBlocks(css: string): string[] {
+  const blocks: string[] = [];
+  let depth = 0;
+  let start = -1;
+
+  for (let index = 0; index < css.length; index++) {
+    const character = css[index];
+    if (start === -1) {
+      if (/\s/.test(character)) {
+        continue;
+      }
+      start = index;
+    }
+
+    if (character === '{') {
+      depth++;
+    } else if (character === '}') {
+      depth--;
+      if (depth === 0) {
+        blocks.push(css.slice(start, index + 1));
+        start = -1;
+      }
+    }
+  }
+
+  return blocks;
+}
 
 const defaultInput = {
   name: 'default',
@@ -116,10 +152,10 @@ describe('generateThemeRules', () => {
 
   // --- Component overrides ---
 
-  it('includes .astryx-heading.level-* rules for all 6 levels', () => {
+  it('includes data-level rules on the stable heading target for all 6 levels', () => {
     for (let level = 1; level <= 6; level++) {
       const rule = rules.find(r =>
-        r.includes(`.astryx-heading.level-${level}`),
+        r.includes(`.astryx-heading[data-level="${level}"]`),
       );
       expect(rule).toBeDefined();
       expect(rule).toContain('font-family');
@@ -131,14 +167,18 @@ describe('generateThemeRules', () => {
 
   it('includes .astryx-text.* rules for all 5 types', () => {
     for (const type of ['body', 'large', 'label', 'code', 'supporting']) {
-      const rule = rules.find(r => r.includes(`.astryx-text.${type}`));
+      const rule = rules.find(r =>
+        r.includes(`.astryx-text[data-type="${type}"]`),
+      );
       expect(rule).toBeDefined();
       expect(rule).toContain(`var(--text-${type}-size)`);
     }
   });
 
   it('includes explicit component overrides', () => {
-    const buttonRule = rules.find(r => r.includes('.astryx-button.secondary'));
+    const buttonRule = rules.find(r =>
+      r.includes('.astryx-button[data-variant="secondary"]'),
+    );
     expect(buttonRule).toBeDefined();
     expect(buttonRule).toContain('light-dark(rgba(5, 54, 89, 0.1)');
   });
@@ -201,14 +241,15 @@ describe('generateThemeRules', () => {
 
   // --- Prose rules ---
 
-  it('includes prose heading rules with computed values', () => {
+  it('includes prose heading rules linked to semantic tokens', () => {
     const h1Rule = rules.find(
       r => r.trimStart().startsWith(':where(h1)') || r.includes(':where(h1)'),
     );
     expect(h1Rule).toBeDefined();
-    // Prose rules use val() helper which resolves to the token value (now a var ref)
-    expect(h1Rule).toContain('var(--font-size-2xl)');
-    expect(h1Rule).toContain('var(--font-weight-semibold)');
+    // Keep prose linked to semantic variables so conditional token writes apply
+    // through CSS without duplicating these selectors inside every media rule.
+    expect(h1Rule).toContain('var(--text-heading-1-size)');
+    expect(h1Rule).toContain('var(--text-heading-1-weight)');
     // Prose defaults intentionally carry NO block margins: reset.css zeroes
     // raw element margins and the Markdown/Heading components own their spacing
     // via StyleX (@layer astryx-base). Emitting margins here would re-introduce
@@ -217,12 +258,12 @@ describe('generateThemeRules', () => {
     expect(h1Rule).not.toContain('margin-block-end');
   });
 
-  it('includes prose p rule with computed values', () => {
+  it('includes prose p rule linked to semantic tokens', () => {
     const pRule = rules.find(
       r => r.trimStart().startsWith(':where(p)') || r.includes(':where(p)'),
     );
     expect(pRule).toBeDefined();
-    expect(pRule).toContain('var(--font-size-base)');
+    expect(pRule).toContain('var(--text-body-size)');
     expect(pRule).toContain('font-family: var(--font-family-body)');
     expect(pRule).toContain('var(--color-text-primary)');
     // No margins on the prose paragraph default (see heading rule note).
@@ -238,12 +279,24 @@ describe('generateThemeRules', () => {
   // --- Prop-level color overrides ---
 
   it('includes color prop overrides for text and heading', () => {
-    expect(rules.some(r => r.includes('.astryx-text.primary'))).toBe(true);
-    expect(rules.some(r => r.includes('.astryx-text.secondary'))).toBe(true);
-    expect(rules.some(r => r.includes('.astryx-heading.primary'))).toBe(true);
-    expect(rules.some(r => r.includes('.astryx-heading.disabled'))).toBe(true);
-    expect(rules.some(r => r.includes('.astryx-text.active'))).toBe(false);
-    expect(rules.some(r => r.includes('.astryx-text.accent'))).toBe(true);
+    expect(
+      rules.some(r => r.includes('.astryx-text[data-color="primary"]')),
+    ).toBe(true);
+    expect(
+      rules.some(r => r.includes('.astryx-text[data-color="secondary"]')),
+    ).toBe(true);
+    expect(
+      rules.some(r => r.includes('.astryx-heading[data-color="primary"]')),
+    ).toBe(true);
+    expect(
+      rules.some(r => r.includes('.astryx-heading[data-color="disabled"]')),
+    ).toBe(true);
+    expect(
+      rules.some(r => r.includes('.astryx-text[data-color="active"]')),
+    ).toBe(false);
+    expect(
+      rules.some(r => r.includes('.astryx-text[data-color="accent"]')),
+    ).toBe(true);
   });
 
   // --- Size-prop overrides (so `size` beats a themed `type`) ---
@@ -251,13 +304,16 @@ describe('generateThemeRules', () => {
   it('emits Text size-prop font-size overrides in the same layer as type rules', () => {
     // Digit-leading sizes are prefixed (size-2xs); word sizes stay bare.
     const sizeRule = rules.find(
-      r => r.includes('.astryx-text.size-2xs') && r.includes('font-size'),
+      r =>
+        r.includes('.astryx-text[data-size="2xs"]') && r.includes('font-size'),
     );
     expect(sizeRule).toBeDefined();
     expect(sizeRule).toContain('var(--font-size-2xs)');
 
     // `xsm` maps to the --font-size-xs token (matches sizeStyles).
-    const xsmRule = rules.find(r => r.includes('.astryx-text.xsm'));
+    const xsmRule = rules.find(r =>
+      r.includes('.astryx-text[data-size="xsm"]'),
+    );
     expect(xsmRule).toBeDefined();
     expect(xsmRule).toContain('var(--font-size-xs)');
 
@@ -282,7 +338,10 @@ describe('generateThemeRules', () => {
     for (const cls of sizes) {
       expect(
         rules.some(
-          r => r.includes(`.astryx-text.${cls}`) && r.includes('font-size'),
+          r =>
+            r.includes(
+              `.astryx-text[data-size="${cls.replace(/^size-/, '')}"]`,
+            ) && r.includes('font-size'),
         ),
       ).toBe(true);
     }
@@ -292,10 +351,13 @@ describe('generateThemeRules', () => {
     // Source order breaks specificity ties within a layer, so the size
     // override must come after the `.astryx-text.<type>` type rule.
     const typeIdx = rules.findIndex(
-      r => r.includes('.astryx-text.supporting') && r.includes('font-size'),
+      r =>
+        r.includes('.astryx-text[data-type="supporting"]') &&
+        r.includes('font-size'),
     );
     const sizeIdx = rules.findIndex(
-      r => r.includes('.astryx-text.size-2xs') && r.includes('font-size'),
+      r =>
+        r.includes('.astryx-text[data-size="2xs"]') && r.includes('font-size'),
     );
     expect(typeIdx).toBeGreaterThanOrEqual(0);
     expect(sizeIdx).toBeGreaterThan(typeIdx);
@@ -319,9 +381,9 @@ describe('generateThemeRules', () => {
     // layer as the type rules (astryx-theme / component block), not the
     // reset-tier prose block.
     const {prose, component} = generateThemeCSS(theme);
-    expect(component).toContain('.astryx-text.size-2xs');
-    expect(component).toContain('.astryx-text.xsm');
-    expect(prose).not.toContain('.astryx-text.size-2xs');
+    expect(component).toContain('.astryx-text[data-size="2xs"]');
+    expect(component).toContain('.astryx-text[data-size="xsm"]');
+    expect(prose).not.toContain('.astryx-text[data-size="2xs"]');
   });
 });
 
@@ -348,12 +410,465 @@ describe('generateThemeRules with weight overrides', () => {
     );
   });
 
-  it('reflects weight override in prose h3', () => {
+  it('keeps prose h3 linked to the semantic weight token', () => {
     const h3Rule = rules.find(
       r => r.trimStart().startsWith(':where(h3)') || r.includes(':where(h3)'),
     );
     expect(h3Rule).toBeDefined();
-    expect(h3Rule).toContain('var(--font-weight-bold)');
+    expect(h3Rule).toContain('var(--text-heading-3-weight)');
+  });
+});
+
+describe('generateThemeRules with an explicit Heading weight prop', () => {
+  const theme = defineTheme({
+    name: 'custom-heading-type',
+    components: {
+      heading: {
+        'type:hero': {
+          fontSize: '4rem',
+          fontWeight: 'var(--font-weight-normal)',
+        },
+      },
+    },
+  });
+  const rules = generateThemeRules(theme);
+
+  it('emits named weight rules after the custom type default', () => {
+    const typeIndex = rules.findIndex(rule =>
+      rule.includes('.astryx-heading[data-type="hero"]'),
+    );
+    const boldIndex = rules.findIndex(rule =>
+      rule.includes('.astryx-heading[data-weight="bold"]'),
+    );
+
+    expect(typeIndex).toBeGreaterThanOrEqual(0);
+    expect(boldIndex).toBeGreaterThan(typeIndex);
+    expect(rules[boldIndex]).toContain('font-weight: var(--font-weight-bold)');
+  });
+
+  it('keeps explicit weight rules in the component theme layer', () => {
+    const {component, prose} = generateThemeCSS(theme);
+    expect(component).toContain('.astryx-heading[data-weight="bold"]');
+    expect(prose).not.toContain('.astryx-heading[data-weight="bold"]');
+  });
+
+  it('keeps a targeted theme weight rule authoritative', () => {
+    const authored = defineTheme({
+      name: 'authored-heading-weight',
+      components: {
+        heading: {
+          'weight:bold': {fontWeight: '900'},
+          'type:hero': {fontWeight: 'var(--font-weight-normal)'},
+        },
+      },
+    });
+    const rules = generateThemeRules(authored);
+    const typeIndex = rules.findIndex(rule =>
+      rule.includes('.astryx-heading[data-type="hero"]'),
+    );
+    const boldRules = rules.filter(rule =>
+      rule.includes('.astryx-heading[data-weight="bold"]'),
+    );
+    const lastBoldIndex = rules.lastIndexOf(boldRules.at(-1) ?? '');
+
+    expect(boldRules.at(-1)).toContain('font-weight: 900');
+    expect(boldRules.at(-1)).not.toContain('var(--font-weight-bold)');
+    expect(lastBoldIndex).toBeGreaterThan(typeIndex);
+  });
+
+  it('does not let a combined selector suppress the generic weight override', () => {
+    const authored = defineTheme({
+      name: 'combined-heading-weight',
+      components: {
+        heading: {
+          'type:hero': {fontWeight: 'var(--font-weight-normal)'},
+          'type:hero+weight:bold': {fontWeight: '900'},
+        },
+      },
+    });
+    const rules = generateThemeRules(authored);
+
+    expect(
+      rules.some(
+        rule =>
+          rule.includes('.astryx-heading[data-weight="bold"]') &&
+          rule.includes('font-weight: var(--font-weight-bold)'),
+      ),
+    ).toBe(true);
+  });
+
+  it('fills in font weight when a standalone weight rule only styles another property', () => {
+    const authored = defineTheme({
+      name: 'partial-heading-weight',
+      components: {
+        heading: {
+          'type:hero': {fontWeight: 'var(--font-weight-normal)'},
+          'weight:bold': {color: 'red'},
+        },
+      },
+    });
+    const rules = generateThemeRules(authored);
+
+    expect(
+      rules.some(
+        rule =>
+          rule.includes('.astryx-heading[data-weight="bold"]') &&
+          rule.includes('font-weight: var(--font-weight-bold)'),
+      ),
+    ).toBe(true);
+  });
+
+  it('re-emits explicit weight overrides after media-specific type rules', () => {
+    const themed = defineTheme({
+      name: 'media-heading-weight',
+      components: {
+        heading: {
+          'weight:bold': {fontWeight: '900'},
+        },
+      },
+      onDark: {
+        components: {
+          heading: {
+            'weight:bold': {fontWeight: '800'},
+            'type:hero': {fontWeight: '350'},
+          },
+        },
+      },
+    });
+    const css = generateOnMediaCSS(themed);
+    const typeIndex = css.indexOf('.astryx-heading[data-type="hero"]');
+    const boldIndex = css.lastIndexOf('.astryx-heading[data-weight="bold"]');
+
+    expect(typeIndex).toBeGreaterThanOrEqual(0);
+    expect(boldIndex).toBeGreaterThan(typeIndex);
+    expect(css.slice(boldIndex)).toContain('font-weight: 800');
+  });
+
+  it('carries an authored main weight past a media-specific type rule', () => {
+    const themed = defineTheme({
+      name: 'inherited-media-heading-weight',
+      components: {
+        heading: {
+          'weight:bold': {fontWeight: '900'},
+        },
+      },
+      onDark: {
+        components: {
+          heading: {
+            'type:hero': {fontWeight: '350'},
+          },
+        },
+      },
+    });
+    const css = generateOnMediaCSS(themed);
+    const typeIndex = css.indexOf('.astryx-heading[data-type="hero"]');
+    const boldIndex = css.lastIndexOf('.astryx-heading[data-weight="bold"]');
+
+    expect(typeIndex).toBeGreaterThanOrEqual(0);
+    expect(boldIndex).toBeGreaterThan(typeIndex);
+    expect(css.slice(boldIndex)).toContain('font-weight: 900');
+  });
+
+  it('scopes Text color and size guards after each media-surface type rule', () => {
+    const themed = defineTheme({
+      name: 'media-text-prop-guards',
+      onDark: {
+        components: {
+          text: {'type:large': {color: '#fff', fontSize: '4rem'}},
+        },
+      },
+      onLight: {
+        components: {
+          text: {'type:body': {color: '#000', fontSize: '0.75rem'}},
+        },
+      },
+    });
+    const css = generateOnMediaCSS(themed);
+
+    for (const [surface, type] of [
+      ['dark', 'large'],
+      ['light', 'body'],
+    ] as const) {
+      const surfacePrefix = `:is([data-astryx-media="${surface}"])`;
+      const typeSelector = `${surfacePrefix} :is(.astryx-text[data-type="${type}"])`;
+      const colorSelector = `${surfacePrefix} :is(.astryx-text[data-color="primary"])`;
+      const sizeSelector = `${surfacePrefix} :is(.astryx-text[data-size="sm"])`;
+      const typeIndex = css.indexOf(typeSelector);
+
+      expect(typeIndex).toBeGreaterThanOrEqual(0);
+      expect(css).toContain(
+        `${colorSelector} { color: var(--color-text-primary); }`,
+      );
+      expect(css).toContain(
+        `${sizeSelector} { font-size: var(--font-size-sm); }`,
+      );
+      expect(css.indexOf(colorSelector)).toBeGreaterThan(typeIndex);
+      expect(css.indexOf(sizeSelector)).toBeGreaterThan(typeIndex);
+    }
+  });
+
+  it('keeps a coarse-only weight out of a later fine-only level block', () => {
+    const themed = defineTheme({
+      name: 'exclusive-adapted-heading-weight',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                heading: {'weight:bold': {fontWeight: '800'}},
+              },
+            },
+          },
+          {
+            when: {pointer: 'fine'},
+            value: {
+              components: {
+                heading: {'level:2': {fontWeight: '300'}},
+              },
+            },
+          },
+        ],
+      },
+    });
+    const blocks = topLevelCSSBlocks(generateAdaptationCSS(themed).component);
+    const fineBlock = blocks.find(block =>
+      block.startsWith('@media (pointer: fine)'),
+    );
+    const rootGuard = blocks.find(block => block.startsWith('@scope '));
+
+    expect(fineBlock).toContain('.astryx-heading[data-level="2"]');
+    expect(fineBlock).not.toContain('font-weight: 800');
+    expect(rootGuard).toContain(
+      '.astryx-heading[data-weight="normal"] { font-weight: var(--font-weight-normal); }',
+    );
+    expect(rootGuard).toContain(
+      '.astryx-heading[data-weight="medium"] { font-weight: var(--font-weight-medium); }',
+    );
+    expect(rootGuard).toContain(
+      '.astryx-heading[data-weight="semibold"] { font-weight: var(--font-weight-semibold); }',
+    );
+    expect(rootGuard).toContain(
+      '.astryx-heading[data-weight="bold"] { font-weight: var(--font-weight-bold); }',
+    );
+    expect(blocks.indexOf(rootGuard!)).toBeGreaterThan(
+      blocks.indexOf(fineBlock!),
+    );
+
+    const weight800Blocks = blocks.filter(block =>
+      block.includes('font-weight: 800'),
+    );
+    expect(weight800Blocks).toHaveLength(2);
+    expect(
+      weight800Blocks.every(block =>
+        block.startsWith('@media (pointer: coarse)'),
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps a coarse weight above a later broad level only when coarse matches', () => {
+    const themed = defineTheme({
+      name: 'broad-adapted-heading-level',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                heading: {'weight:bold': {fontWeight: '800'}},
+              },
+            },
+          },
+          {
+            when: {contrast: 'more'},
+            value: {
+              components: {
+                heading: {'level:2': {fontWeight: '300'}},
+              },
+            },
+          },
+        ],
+      },
+    });
+    const blocks = topLevelCSSBlocks(generateAdaptationCSS(themed).component);
+    const broadLevelBlock = blocks.find(
+      block =>
+        block.startsWith('@media (prefers-contrast: more)') &&
+        block.includes('.astryx-heading[data-level="2"]'),
+    );
+    const rootGuard = blocks.find(block => block.startsWith('@scope '));
+    const coarseGuard = blocks
+      .filter(block => block.startsWith('@media (pointer: coarse)'))
+      .at(-1);
+
+    expect(broadLevelBlock).not.toContain('font-weight: 800');
+    expect(rootGuard).toContain(
+      '.astryx-heading[data-weight="bold"] { font-weight: var(--font-weight-bold); }',
+    );
+    expect(coarseGuard).toContain(
+      '.astryx-heading[data-weight="bold"] { font-weight: 800; }',
+    );
+    expect(blocks.indexOf(rootGuard!)).toBeGreaterThan(
+      blocks.indexOf(broadLevelBlock!),
+    );
+    expect(blocks.indexOf(coarseGuard!)).toBeGreaterThan(
+      blocks.indexOf(rootGuard!),
+    );
+  });
+
+  it('keeps authored order for two co-matching weight writes', () => {
+    const themed = defineTheme({
+      name: 'ordered-adapted-heading-weight',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                heading: {'weight:bold': {fontWeight: '800'}},
+              },
+            },
+          },
+          {
+            when: {contrast: 'more'},
+            value: {
+              components: {
+                heading: {'weight:bold': {fontWeight: '700'}},
+              },
+            },
+          },
+        ],
+      },
+    });
+    const blocks = topLevelCSSBlocks(generateAdaptationCSS(themed).component);
+    const rootGuard = blocks.find(block => block.startsWith('@scope '));
+    const coarseGuard = blocks
+      .filter(block => block.startsWith('@media (pointer: coarse)'))
+      .at(-1);
+    const contrastGuard = blocks
+      .filter(block => block.startsWith('@media (prefers-contrast: more)'))
+      .at(-1);
+
+    expect(coarseGuard).toContain('font-weight: 800');
+    expect(contrastGuard).toContain('font-weight: 700');
+    expect(blocks.indexOf(coarseGuard!)).toBeGreaterThan(
+      blocks.indexOf(rootGuard!),
+    );
+    expect(blocks.indexOf(contrastGuard!)).toBeGreaterThan(
+      blocks.indexOf(coarseGuard!),
+    );
+  });
+
+  it('uses a root-customized weight as the adaptation fallback', () => {
+    const themed = defineTheme({
+      name: 'root-customized-adapted-heading-weight',
+      components: {
+        heading: {'weight:bold': {fontWeight: '900'}},
+      },
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'fine'},
+            value: {
+              components: {
+                heading: {'level:2': {fontWeight: '300'}},
+              },
+            },
+          },
+        ],
+      },
+    });
+    const blocks = topLevelCSSBlocks(generateAdaptationCSS(themed).component);
+    const fineBlock = blocks.find(block =>
+      block.startsWith('@media (pointer: fine)'),
+    );
+    const rootGuard = blocks.find(block => block.startsWith('@scope '));
+
+    expect(fineBlock).toContain('.astryx-heading[data-level="2"]');
+    expect(rootGuard).toContain(
+      '.astryx-heading[data-weight="bold"] { font-weight: 900; }',
+    );
+    expect(blocks.indexOf(rootGuard!)).toBeGreaterThan(
+      blocks.indexOf(fineBlock!),
+    );
+  });
+
+  it('keeps a single rule weight above its own later type write', () => {
+    const themed = defineTheme({
+      name: 'single-adapted-heading-weight',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                heading: {
+                  'weight:bold': {fontWeight: '800'},
+                  'type:hero': {fontWeight: '300'},
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+    const blocks = topLevelCSSBlocks(generateAdaptationCSS(themed).component);
+    const coarseBlocks = blocks.filter(block =>
+      block.startsWith('@media (pointer: coarse)'),
+    );
+    const rootGuard = blocks.find(block => block.startsWith('@scope '));
+
+    expect(coarseBlocks).toHaveLength(2);
+    expect(coarseBlocks[0]).toContain('.astryx-heading[data-type="hero"]');
+    expect(rootGuard).toContain(
+      '.astryx-heading[data-weight="bold"] { font-weight: var(--font-weight-bold); }',
+    );
+    expect(coarseBlocks[1]).toContain(
+      '.astryx-heading[data-weight="bold"] { font-weight: 800; }',
+    );
+    expect(blocks.at(-1)).toBe(coarseBlocks[1]);
+  });
+
+  it('keeps onDark and onLight weight guards after adaptation guards', () => {
+    const themed = defineTheme({
+      name: 'surface-adapted-heading-weight',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              components: {
+                heading: {'weight:bold': {fontWeight: '800'}},
+              },
+            },
+          },
+        ],
+      },
+      onDark: {
+        components: {
+          heading: {'weight:bold': {fontWeight: '700'}},
+        },
+      },
+      onLight: {
+        components: {
+          heading: {'weight:bold': {fontWeight: '600'}},
+        },
+      },
+    });
+    const css = generateThemeCSS(themed).component;
+
+    expect(css.lastIndexOf('font-weight: 800')).toBeLessThan(
+      css.lastIndexOf('font-weight: 700'),
+    );
+    expect(css.lastIndexOf('font-weight: 700')).toBeLessThan(
+      css.lastIndexOf('font-weight: 600'),
+    );
+    expect(css.slice(css.lastIndexOf('font-weight: 700') - 200)).toContain(
+      '[data-astryx-media="dark"]',
+    );
+    expect(css.slice(css.lastIndexOf('font-weight: 600') - 200)).toContain(
+      '[data-astryx-media="light"]',
+    );
   });
 });
 
@@ -476,7 +991,9 @@ describe('derived var expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.astryx-avatar-fallback.sm'));
+    const rule = rules.find(r =>
+      r.includes('.astryx-avatar-fallback[data-size="sm"]'),
+    );
     expect(rule).toBeDefined();
     expect(rule).toContain('font-size: 9px');
     // Direct class target now — no internal derived var.
@@ -526,7 +1043,9 @@ describe('derived var expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.astryx-card.muted'));
+    const rule = rules.find(r =>
+      r.includes('.astryx-card[data-variant="muted"]'),
+    );
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 16px');
     expect(rule).toContain('--_card-radius: 16px');
@@ -551,6 +1070,50 @@ describe('derived var expansion', () => {
     // …and must NOT land on the flush wrapper, which would re-inset the
     // full-bleed textarea and push the native resize grip off the corner.
     expect(rule).not.toContain('padding-inline: var(--eps-input-padding-x)');
+  });
+
+  it('lowers onDark and onLight text-area paddingInline to the adaptation leaf', () => {
+    const theme = defineTheme({
+      name: 'test-media-derived-text-area',
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {
+              components: {
+                'text-area': {base: {paddingInline: '12px'}},
+              },
+            },
+          },
+        ],
+      },
+      onDark: {
+        components: {
+          'text-area': {base: {paddingInline: '24px'}},
+        },
+      },
+      onLight: {
+        components: {
+          'text-area': {base: {paddingInline: '20px'}},
+        },
+      },
+    });
+
+    const adaptationCss = generateAdaptationCSS(theme).component;
+    const surfaceCss = generateOnMediaCSS(theme);
+    expect(adaptationCss).toContain('--_textarea-inline-padding: 12px');
+    expect(surfaceCss).toContain('--_textarea-inline-padding: 24px');
+    expect(surfaceCss).toContain('--_textarea-inline-padding: 20px');
+    expect(surfaceCss).not.toContain('padding-inline: 24px');
+    expect(surfaceCss).not.toContain('padding-inline: 20px');
+
+    const combinedCss = generateThemeCSS(theme).component;
+    expect(
+      combinedCss.indexOf('--_textarea-inline-padding: 12px'),
+    ).toBeLessThan(combinedCss.lastIndexOf('--_textarea-inline-padding: 24px'));
+    expect(
+      combinedCss.indexOf('--_textarea-inline-padding: 12px'),
+    ).toBeLessThan(combinedCss.lastIndexOf('--_textarea-inline-padding: 20px'));
   });
 
   it('replaces progressbar-mark width/height with vars (no raw properties)', () => {
@@ -700,5 +1263,97 @@ describe('physical padding longhands', () => {
     const rule = ruleFor('dropdown-menu', {paddingTop: '14px'});
     expect(rule).toContain('padding-top: 14px');
     expect(rule).not.toContain('--_dropdown-menu-padding');
+  });
+});
+
+describe('renamed theme targets', () => {
+  // The renamed targets emit both classes, so a rule written against either
+  // key selects the element. What is easy to miss is the derived-var half: a
+  // key the registry does not know still emits a rule, minus every var the
+  // component actually reads — the same silent nothing a misspelled key gives.
+  it('expands derived vars for a renamed key and its deprecated spelling', () => {
+    const rules = (component: string, styles: Record<string, string>) =>
+      generateThemeRules(
+        defineTheme({
+          name: `test-renamed-${component}`,
+          components: {[component]: {base: styles}},
+        }),
+      ).join('\n');
+
+    const hoverCard = rules('hover-card', {borderRadius: '9px'});
+    expect(hoverCard).toContain('.astryx-hover-card');
+    expect(hoverCard).toContain('--_hovercard-radius: 9px');
+    expect(rules('hovercard', {borderRadius: '9px'})).toContain(
+      '--_hovercard-radius: 9px',
+    );
+
+    const textArea = rules('text-area', {paddingInline: '11px'});
+    expect(textArea).toContain('.astryx-text-area');
+    expect(textArea).toContain('--_textarea-inline-padding: 11px');
+    expect(rules('textarea', {paddingInline: '11px'})).toContain(
+      '--_textarea-inline-padding: 11px',
+    );
+
+    const mark = rules('progress-bar-mark', {width: '3px'});
+    expect(mark).toContain('.astryx-progress-bar-mark');
+    expect(mark).toContain('--_progressbar-mark-width: 3px');
+    expect(rules('progressbar-mark', {width: '3px'})).toContain(
+      '--_progressbar-mark-width: 3px',
+    );
+  });
+});
+
+describe('data visualization tokens', () => {
+  const scopeBlock = (theme: Parameters<typeof generateThemeRules>[0]) =>
+    generateThemeRules(theme).find(r => r.includes(':scope'));
+
+  it('seeds the whole palette once, at :root', () => {
+    const css = generateDataTokenDefaultsCSS();
+
+    expect(css.startsWith(':root {')).toBe(true);
+    for (const [name, value] of Object.entries(dataTokenDefaults)) {
+      expect(css).toContain(`${name}: ${value};`);
+    }
+  });
+
+  it('leaves the defaults out of a theme scope block', () => {
+    // A scope block that re-declared them would shadow a parent theme's
+    // override in every nested <Theme>, which no other token family does.
+    expect(scopeBlock(defineTheme({name: 'data-bare'}))).toBeUndefined();
+  });
+
+  it("puts only the theme's own data token in its scope block", () => {
+    const block = scopeBlock(
+      defineTheme({
+        name: 'data-override',
+        tokens: {'--color-data-categorical-blue': ['#123456', '#654321']},
+      }),
+    )!;
+
+    expect(block).toContain(
+      '--color-data-categorical-blue: light-dark(#123456, #654321);',
+    );
+    expect(block.match(/--color-data-/g)).toHaveLength(1);
+    expect(block).not.toContain('--color-data-categorical-orange');
+  });
+
+  it('keeps the palette out of the scoped stylesheet', () => {
+    // The palette's own contents are asserted once, against
+    // `dataTokenDefaults`, in `seeds the whole palette once, at :root` above.
+    const {component, prose} = generateThemeCSS(
+      defineTheme({name: 'data-css'}),
+    );
+
+    expect(component).not.toContain('--color-data-');
+    expect(prose).not.toContain('--color-data-');
+  });
+
+  it('keeps generateThemeCSS to its two scoped blocks', () => {
+    // The defaults are theme-independent, so they are not part of the theme
+    // CSS contract: `astryx theme build` formats them from the public
+    // `dataTokenDefaults` export instead.
+    expect(
+      Object.keys(generateThemeCSS(defineTheme({name: 'data-shape'}))).sort(),
+    ).toEqual(['component', 'prose']);
   });
 });

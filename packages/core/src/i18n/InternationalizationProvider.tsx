@@ -23,6 +23,7 @@ import {useMemo, type ReactNode} from 'react';
 import {InternationalizationContext} from './InternationalizationContext';
 import {getLocaleDirection} from './getLocaleDirection';
 import type {Locale, MessagesByLocale, Overrides} from './types';
+import {getResolve} from './resolve';
 
 export interface InternationalizationProviderProps {
   /**
@@ -85,7 +86,13 @@ export function InternationalizationProvider({
 }: InternationalizationProviderProps) {
   const direction = dir ?? getLocaleDirection(locale);
   const value = useMemo(
-    () => ({locale, direction, messages: messages ?? {}, overrides}),
+    () => ({
+      locale,
+      direction,
+      messages: messages ?? {},
+      overrides,
+      translate: getResolve(locale, messages ?? {}, overrides),
+    }),
     [locale, direction, messages, overrides],
   );
   return (

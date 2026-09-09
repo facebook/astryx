@@ -17,6 +17,7 @@ Renders [Vega](https://vega.github.io/vega/) and [Vega-Lite](https://vega.github
 | `tsup.config.ts`    | Config    | Build config: CJS + ESM + `.d.ts` outputs                    |
 | `src/index.ts`      | Barrel    | Public API surface                                           |
 | `src/VegaChart.tsx` | Component | Inspects `$schema`, compiles or renders, owns View lifecycle |
+| `src/viewInputs.ts` | Utility   | Detects value changes in the props that own the View         |
 | `src/schema.ts`     | Utility   | Parses and validates Vega/Vega-Lite `$schema` URLs           |
 | `src/types.ts`      | Types     | Shared TypeScript types for this package                     |
 
@@ -133,9 +134,51 @@ import {VegaChart} from '@astryxdesign/vega';
 | -------------------- | --------- | --------------------------------------------------------- |
 | `ast`                | `boolean` | Retain expression AST in the runtime (useful for tooling) |
 
+### View lifecycle
+
+`<VegaChart>` builds a Vega `View` on mount and finalizes it on unmount. In
+between, it rebuilds the View only when `spec`, `compileOptions`,
+`parseConfig`, `parseOptions`, or `viewOptions` **changes value** — these props
+are compared by value against the values the live View was built from, not by
+reference. Two consequences, and you need neither `useMemo` nor a discipline
+about object identity for either:
+
+- an object literal rebuilt inline on every render does **not** tear the chart
+  down;
+- a spec you edit **in place** — held in a ref, a module constant, or shared
+  between renders — **is** picked up, because the comparison is against a copy
+  taken when the View was built, not against the previous props.
+
+Functions inside those props (a `tooltip` handler, `logger`, `loader`, `expr`,
+or `fieldTitle`) and class instances are compared by reference, since their
+behavior lives in methods a copy cannot capture: replace the value rather than
+mutating it.
+
+Two shapes cannot be copied for comparison: a subtree that re-enters an object
+already on its own path (a reference cycle), and one nested deeper than 100
+levels. Those parts are compared **by reference**, so passing the **same**
+object again is stable — a chart built from a cyclic spec is not rebuilt on
+every render — while passing a **new** object rebuilds the View even when it
+holds equal values.
+
+What that costs differs between the two:
+
+- **A cycle hides nothing.** Its re-entry edge points back at an object the
+  copy already walked, so an in-place edit anywhere in a cyclic spec is still
+  detected normally.
+- **Past 100 levels, an in-place edit is invisible** — the reference did not
+  change and the values below were never copied. Replace the object, or drive
+  the View through `onReady`, to update from down there.
+
+Everything the copy did reach is compared by value either way, so a mutation
+elsewhere in the spec is picked up even when part of it is opaque.
+
+Everything else is inert to the lifecycle: `data`, `className`, `style`,
+`onReady`, and `onError` never rebuild the View.
+
 ### Data loading
 
-`data` maps dataset names to tuple arrays and is applied via `view.data(name, tuples)` during View initialization, before the first render. It is _not reactive_; changes after mount are ignored.
+`data` maps dataset names to tuple arrays and is applied via `view.data(name, tuples)` during View initialization, before the first render. It is _not reactive_; changes after mount are ignored, and a new `data` object never rebuilds the View by itself. (When something else rebuilds the View, the new View loads whatever `data` holds at that moment.)
 
 To update data dynamically after render, use `onReady` to get the live View and drive it yourself:
 
@@ -155,6 +198,43 @@ To update data dynamically after render, use `onReady` to get the live View and 
   }}
 />
 ```
+
+### Untrusted specs
+
+A Vega/Vega-Lite spec is a program, not just data: Vega evaluates the
+expression strings inside it (signals, event streams, encodings, filters)
+and, by default, compiles them to JavaScript with the Function constructor.
+A spec's `data` entries can also name URLs — including signal-built dynamic
+ones — that the default loader will fetch with the page's credentials.
+
+`<VegaChart>` renders the spec you give it with Vega's defaults, so those
+defaults define the trust boundary: **only pass specs you author or
+review.** If specs come from users, stored documents, or model output, wire
+the safe evaluation mode through the existing pass-through options — Vega's
+own guidance for untrusted specs:
+
+```tsx
+import {expressionInterpreter} from 'vega-interpreter';
+import {loader} from 'vega';
+
+<VegaChart
+  spec={untrustedSpec}
+  // Retain the expression AST and evaluate it interpreted (no Function
+  // constructor). Slower, and a small subset of expressions is unsupported —
+  // see the vega-interpreter README.
+  parseOptions={{ast: true}}
+  viewOptions={{
+    expr: expressionInterpreter,
+    // Restrict (or disable) what a spec may load. `mode: 'file'` with no
+    // baseURL rejects everything; supply your own loader to allowlist hosts.
+    loader: loader({mode: 'file'}),
+  }}
+/>;
+```
+
+`vega-interpreter` is a separate package (`npm install vega-interpreter`);
+pair it with a `Content-Security-Policy` that omits `'unsafe-eval'` so the
+boundary is enforced by the platform, not only by configuration.
 
 ### `parseSchema(schema)` (exported utility)
 

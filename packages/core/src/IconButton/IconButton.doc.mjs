@@ -74,6 +74,44 @@ export const docs = {
 
   usage: {
     description: 'A button that shows only an icon with no visible text. Use IconButton in toolbars, table rows, and compact UI where space is tight and the icon is universally understood.',
+    accessibility: [
+      {
+        name: 'Essential icon or spinner arc',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Rest', 'Hover', 'Pointer down', 'Loading'],
+        description:
+          'IconButton has no visible label. Its icon must have at least 3:1 contrast with the button background in Rest, Hover, and Pointer down. The moving spinner arc must also meet 3:1 while loading.',
+      },
+      {
+        name: 'Visible control boundary',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1 if needed',
+        states: ['Rest'],
+        description:
+          'The button edge needs 3:1 contrast only when users need it to see the control.',
+      },
+      {
+        name: 'Keyboard focus indicator',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Focus visible'],
+        description:
+          'The focus outline must have at least 3:1 contrast with the area around the button. Check the red outline on destructive buttons too.',
+      },
+      {
+        name: 'Disabled appearance',
+        category: 'Color contrast',
+        criterion: '1.4.3 and 1.4.11 exceptions',
+        requirement: 'Not required',
+        states: ['Disabled'],
+        description:
+          'Disabled controls do not need to meet these contrast ratios.',
+      },
+    ],
     bestPractices: [
       { guidance: true, description: 'Make the aria-label specific: a trash icon labeled "Delete conversation" is clearer than just "Delete" for screen readers.' },
       { guidance: true, description: 'Add a tooltip: even a gear icon can mean Settings, Preferences, or Configure.' },

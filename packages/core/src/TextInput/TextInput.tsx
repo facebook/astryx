@@ -259,6 +259,13 @@ export interface TextInputProps extends Omit<
    * Callback fired on keydown events on the input.
    */
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  /**
+   * The native `autocomplete` attribute, forwarded to the input unchanged.
+   * The value stays React-controlled regardless — this only hints the
+   * browser/password manager's suggestion behavior (e.g. `'off'` for a
+   * session-scoped field that must not reuse a prior value).
+   */
+  autoComplete?: React.InputHTMLAttributes<HTMLInputElement>['autoComplete'];
 }
 
 /**
@@ -374,14 +381,21 @@ export function TextInput({
   };
 
   // Handle clear button click
-  const handleClear = useCallback(() => {
-    onChange?.('', null as unknown as ChangeEvent<HTMLInputElement>);
-    // Defer focus restoration past the button's unmount task so iOS Safari
-    // and touch browsers don't jump the page scroll to 0 on tap.
-    requestAnimationFrame(() => {
-      inputRef.current?.focus({preventScroll: true});
-    });
-  }, [onChange]);
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      onChange?.('', null as unknown as ChangeEvent<HTMLInputElement>);
+      if (!e || e.detail === 0) {
+        inputRef.current?.focus();
+      } else {
+        // Defer focus restoration past the button's unmount task so iOS Safari
+        // and touch browsers don't jump the page scroll to 0 on tap.
+        requestAnimationFrame(() => {
+          inputRef.current?.focus({preventScroll: true});
+        });
+      }
+    },
+    [onChange],
+  );
 
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =

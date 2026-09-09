@@ -36,6 +36,11 @@ import {findPresentFiles, loadModuleWithParser} from '../fs/module-loader.mjs';
 import {parseConfig} from '../../authoring/config/parse.mjs';
 import {loadIntegrations} from '../integrations/integrations.mjs';
 import {
+  setProject as setDebugProject,
+  setEventHandler as setDebugEventHandler,
+  setIntegrationEventHandlers as setDebugIntegrationEventHandlers,
+} from '../debug/index.mjs';
+import {
   CORE_PACKAGE,
   discoverOwnedComponents,
   discoverIntegrationComponents,
@@ -54,7 +59,10 @@ import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
 } from '../../assets/codemods/integration-discovery.mjs';
-import {validateLoadedIntegration} from '../integrations/validate-contributions.mjs';
+import {
+  INVALID_AGENT_DOCS,
+  validateLoadedIntegration,
+} from '../integrations/validate-contributions.mjs';
 import {
   InMemoryConfigCache,
   cacheKey,
@@ -109,6 +117,39 @@ function findPackageRoot(startDir) {
     dir = parent;
   }
   return null;
+}
+
+/**
+ * Whether this project accepts `debug` handlers contributed by the
+ * integrations it loads.
+ *
+ * On by default: installing an integration is how a project asks for that
+ * package's behaviour, and a handler it contributes is behaviour. A project
+ * that wants none of it says so in its package.json —
+ *
+ *     {"astryx": {"inheritDebug": false}}
+ *
+ * package.json rather than astryx.config because the answer has to survive an
+ * older CLI reading the same project: an unknown config key is a hard config
+ * error, while `astryx` in package.json is inert to every version that does not
+ * look for it. Only `false` opts out; anything else, including a missing file,
+ * leaves inheritance on.
+ *
+ * This governs INHERITED handlers only. A project's own `debug` always runs.
+ *
+ * @param {string|null} configPath
+ * @returns {boolean}
+ */
+function inheritsIntegrationDebug(configPath) {
+  if (!configPath) return true;
+  try {
+    const pkgPath = path.join(path.dirname(configPath), 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    return pkg?.astryx?.inheritDebug !== false;
+  } catch {
+    // No package.json, or unreadable/malformed — not an opt-out.
+    return true;
+  }
 }
 
 /**
@@ -194,11 +235,13 @@ export class Project {
    * lazy and memoized on the returned instance.
    *
    * @param {string} [cwd]
-   * @param {{cache?: import('./config-cache.mjs').ConfigCache}} [options]
+   * @param {{cache?: import('./config-cache.mjs').ConfigCache, fresh?: boolean}} [options]
    * @returns {Promise<Project>}
    */
-  static async load(cwd = process.cwd(), {cache} = {}) {
-    const resolvedCache = cache ?? new InMemoryConfigCache();
+  static async load(cwd = process.cwd(), {cache, fresh = false} = {}) {
+    const resolvedCache = fresh
+      ? new InMemoryConfigCache()
+      : (cache ?? new InMemoryConfigCache());
     const configPath = findConfigPath(cwd);
     const hash = configContentHash(configPath);
 
@@ -212,12 +255,43 @@ export class Project {
     if (configPath) {
       config = await loadModuleWithParser(configPath, parseConfig, {
         label: 'astryx.config',
+        fresh,
       });
       const configDir = path.dirname(configPath);
       integrations = config.integrations ?? [];
       loadedIntegrations = await loadIntegrations(integrations, {
         cwd: configDir,
+        fresh,
       });
+    }
+
+    // The debug recorder resolves its settings synchronously, long before any
+    // command gets here, so this is where a project's `debug` block gets a
+    // turn. The event is not written until process exit, so settings applied
+    // now still shape the record for this same invocation.
+    try {
+      // The `debug` function is the destination for recorded runs. The
+      // recorder collects provisionally until now precisely because the config
+      // could not be read any earlier; it only needs the handler by exit.
+      setDebugEventHandler(config.debug);
+      // Integrations may contribute a handler too, as a `debug` NAMED export
+      // from their manifest module. Both destinations receive the event: an
+      // app that sets `debug` to watch its own runs must not thereby drop out
+      // of an integration's debug logs, and an integration must not silence the
+      // app. Passed as one ordered list rather than appended one at a time,
+      // because Project.load can run more than once in a process and appending
+      // would deliver twice.
+      setDebugIntegrationEventHandlers(
+        inheritsIntegrationDebug(configPath)
+          ? loadedIntegrations.map(integration => integration.__debug)
+          : [],
+      );
+      setDebugProject({
+        hasConfig: Boolean(configPath),
+        integrationCount: integrations.length,
+      });
+    } catch {
+      // Never let recording break config loading.
     }
 
     return new Project({
@@ -311,6 +385,22 @@ export class Project {
   }
 
   /**
+   * Whether this package has an error that invalidates its regular manifest
+   * contributions. Invalid `agentDocs` blocks agent-doc writes only; it must not
+   * withdraw components, templates, docs, or codemods.
+   * @param {string} pkg
+   * @returns {boolean}
+   */
+  #hasBlockingContributionIssue(pkg) {
+    return this.#issues.some(
+      issue =>
+        issue.package === pkg &&
+        issue.severity === 'error' &&
+        issue.code !== INVALID_AGENT_DOCS,
+    );
+  }
+
+  /**
    * Validate one loaded integration and collect any issues. Marks the
    * integration visited so issues() won't redo the work. Best-effort: a
    * validator throwing is itself recorded as an issue, never propagated.
@@ -372,10 +462,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         try {
           // discoverOwnedComponents owns the core+integration record shape;
           // here we add only this integration's records (core is handled
@@ -428,10 +515,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         try {
           const {templates: ts, errors} =
             await discoverIntegrationTemplatesForOne(integration);
@@ -479,10 +563,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         if (!integration?.docs) continue;
         try {
           const {records, errors} = await discoverIntegrationDocs(integration);
@@ -537,10 +618,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         if (!integration?.codemods) continue;
         try {
           // Validate this integration's codemods discover cleanly in

@@ -1,12 +1,98 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Field',
+    required: false,
+    description:
+      'Standalone Field shell that provides the label and optional supporting content; omitted inside InputGroup.',
+  },
+  {
+    name: 'Input surface',
+    required: true,
+    description:
+      'Painted control surface containing the editable input or the selected token.',
+  },
+  {
+    name: 'Icon-rendered start icon',
+    required: false,
+    description:
+      'Optional leading semantic icon or icon component rendered through Icon.',
+  },
+  {
+    name: 'Caller-rendered start content',
+    required: false,
+    description:
+      'Optional arbitrary React content rendered directly at the start of the input surface.',
+  },
+  {
+    name: 'Selected token',
+    required: false,
+    description:
+      'Token that presents the selected item while the control is not in edit mode.',
+  },
+  {
+    name: 'Spinner',
+    required: false,
+    description:
+      'Loading indicator shown at the end of the input surface while a search is in flight.',
+  },
+  {
+    name: 'Clear button',
+    required: false,
+    description:
+      'Shared clear action that removes the selected item when hasClear is enabled.',
+  },
+  {
+    name: 'Dropdown',
+    required: false,
+    description:
+      'Anchored listbox surface containing the current search results.',
+  },
+  {
+    name: 'Empty state',
+    required: false,
+    description: 'Message shown after a completed search returns no results.',
+  },
+  {
+    name: 'Result row',
+    required: false,
+    description:
+      'Stable option wrapper that owns highlight, selection, pointer, and keyboard behavior.',
+  },
+  {
+    name: 'Default item content',
+    required: false,
+    description:
+      'Standard TypeaheadItem label and supporting content rendered inside a result row when renderItem and item.element are absent.',
+  },
+  {
+    name: 'Caller-rendered item content',
+    required: false,
+    description:
+      'Caller-owned result content supplied through renderItem or item.element inside the stable result row.',
+  },
+  {
+    name: 'Result group heading',
+    required: false,
+    description: 'Visible heading for a labeled group of result rows.',
+  },
+  {
+    name: 'Selected result state',
+    required: false,
+    description:
+      'Selected styling and trailing check presented on the current result row.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Typeahead',
   displayName: 'Typeahead',
   group: 'Typeahead',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'typeahead',
     'autocomplete',
@@ -82,6 +168,13 @@ export const docs = {
       type: 'number',
       description: 'Maximum number of dropdown items to display.',
       default: '10',
+    },
+    {
+      name: 'minQueryLength',
+      type: 'number',
+      description:
+        'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
+      default: '1',
     },
     {
       name: 'status',
@@ -193,6 +286,7 @@ export const docs = {
     ],
   },
   usage: {
+    anatomy,
     description:
       'A searchable input for selecting a single item from a large or dynamic dataset. Results appear as the user types, with support for async data sources, debounced search, and custom item rendering. Use it when the option list is too large for a Selector dropdown.',
     bestPractices: [

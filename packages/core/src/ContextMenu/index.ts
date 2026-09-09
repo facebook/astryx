@@ -15,6 +15,7 @@ export {
   type ContextMenuSection,
   type ContextMenuOption,
 } from './ContextMenu';
+export type {AdaptivePresentation as MenuPresentation} from '../hooks/useAdaptivePresentation';
 
 export {
   DropdownMenuItem as ContextMenuItem,

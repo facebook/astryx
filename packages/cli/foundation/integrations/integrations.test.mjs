@@ -102,6 +102,66 @@ describe('configured integrations', () => {
     ]);
   });
 
+  it('loads agentDocs from the default manifest in authored order', async () => {
+    const pkgDir = writeManifestPackage(tmpDir, {
+      body: `export default {
+        agentDocs: {
+          append: ['after one', 'after two'],
+        },
+      };\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+    expect(loaded.agentDocs).toEqual({
+      append: ['after one', 'after two'],
+    });
+    expect(loaded.__unknownKeys).toEqual([]);
+
+    fs.writeFileSync(
+      path.join(pkgDir, 'astryx.integration.mjs'),
+      `export default {agentDocs: {append: ['after rewrite']}};\n`,
+    );
+    const [fresh] = await loadIntegrations(['@acme/widgets'], {
+      cwd: tmpDir,
+      fresh: true,
+    });
+    expect(fresh.agentDocs).toEqual({append: ['after rewrite']});
+  });
+
+  it('ignores an agentDocs named export; the contract is the default manifest field', async () => {
+    writeManifestPackage(tmpDir, {
+      body: `export const agentDocs = {append: ['wrong place']};\nexport default {};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+    expect(loaded.agentDocs).toBeUndefined();
+  });
+
+  it.each([
+    ['wrong outer shape', []],
+    ['wrong append shape', {append: 'not-an-array'}],
+    ['non-string entry', {append: ['ok', 42]}],
+    ['too many lines', {append: Array.from({length: 9}, (_, i) => `line ${i}`)}],
+    ['too many code points', {append: ['😀'.repeat(241)]}],
+    ['control character', {append: ['bad\u0001line']}],
+    ['managed marker', {append: ['ASTRYX:START']}],
+  ])('isolates invalid agentDocs (%s) from valid roots', async (_label, agentDocs) => {
+    const pkgDir = writeManifestPackage(tmpDir, {
+      body: `export default ${JSON.stringify({
+        components: './components',
+        agentDocs,
+      })};\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'components'));
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(loaded.__loadError).toBeUndefined();
+    expect(loaded.components).toBe(path.join(pkgDir, 'components'));
+    expect(loaded.agentDocs).toBeUndefined();
+    expect(loaded.__agentDocsError).toMatch(/agentDocs/i);
+  });
+
   it('errors when the package has no conventional root manifest', async () => {
     const pkgDir = path.join(tmpDir, 'node_modules', '@acme', 'widgets');
     fs.mkdirSync(pkgDir, {recursive: true});
@@ -171,5 +231,51 @@ describe('a broken integration manifest degrades gracefully (skip + warn)', () =
     expect(project.loadedIntegrations.map(i => i.name)).toContain('@good/a');
     const issues = await project.issues();
     expect(issues.some(i => /boom manifest/.test(i.message))).toBe(true);
+  });
+});
+
+describe('the `debug` named export', () => {
+  // A NAMED export, not a manifest key. A key would have to be understood by
+  // every CLI version already installed against the integration, and an older
+  // one rejects an unknown key by discarding the whole manifest — components,
+  // templates and codemods with it (#5119). A named export is simply not read
+  // by a CLI that does not know about it.
+  it('is carried out of the manifest module as __debug', async () => {
+    writeManifestPackage(tmpDir, {
+      body: `export const debug = () => {};\nexport default {issuesUrl: 'https://example.com/i'};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(typeof loaded.__debug).toBe('function');
+    expect(loaded.issuesUrl).toBe('https://example.com/i');
+  });
+
+  it('leaves __debug undefined when the module does not export one', async () => {
+    writeManifestPackage(tmpDir, {body: `export default {};\n`});
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(loaded.__debug).toBeUndefined();
+  });
+
+  it('leaves __debug undefined when the export is not a function', async () => {
+    writeManifestPackage(tmpDir, {
+      body: `export const debug = 'not a function';\nexport default {};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(loaded.__debug).toBeUndefined();
+  });
+
+  it('does not become a manifest key, so it is not reported as an unknown one', async () => {
+    writeManifestPackage(tmpDir, {
+      body: `export const debug = () => {};\nexport default {};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(loaded.__unknownKeys).toEqual([]);
   });
 });

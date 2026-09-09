@@ -590,11 +590,15 @@ export function FileInput({
       if (inputRef.current) {
         inputRef.current.value = '';
         const targetInput = inputRef.current;
-        // Defer focus restoration past the button's unmount task so iOS Safari
-        // and touch browsers don't jump the page scroll to 0 on tap.
-        requestAnimationFrame(() => {
-          targetInput.focus({preventScroll: true});
-        });
+        if (e.detail === 0) {
+          targetInput.focus();
+        } else {
+          // Defer focus restoration past the button's unmount task so iOS Safari
+          // and touch browsers don't jump the page scroll to 0 on tap.
+          requestAnimationFrame(() => {
+            targetInput.focus({preventScroll: true});
+          });
+        }
       }
     },
     [onChange],

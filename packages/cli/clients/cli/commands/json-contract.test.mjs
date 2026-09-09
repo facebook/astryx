@@ -57,35 +57,11 @@ afterEach(() => {
 });
 
 describe('--json contract: rejects before side effects', () => {
-  it('astryx init --json --features agents does not write agent docs', async () => {
-    const before = fs.readdirSync(tmpDir);
-    expect(before).toEqual([]);
-
-    const {status, stdout} = await runCli(['init', '--json', '--features', 'agents'], {cwd: tmpDir});
-
-    // 1. Exit code must be non-zero.
-    expect(status).toBe(1);
-
-    // 2. Stdout must be valid JSON with an error envelope.
-    const parsed = parseJson(stdout);
-    expect(parsed).toHaveProperty('error');
-    expect(parsed.error).toMatch(/json/i);
-    expect(parsed.error).toMatch(/init/i);
-
-    // 3. CRITICAL — no filesystem mutation took place.
-    const after = fs.readdirSync(tmpDir);
-    expect(after).toEqual([]);
-    expect(fs.existsSync(path.join(tmpDir, '.claude'))).toBe(false);
-    expect(fs.existsSync(path.join(tmpDir, '.claude/CLAUDE.md'))).toBe(false);
-    expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(false);
-  });
-
-  it('astryx init --json --all does not write any files', async () => {
-    const {status, stdout} = await runCli(['init', '--json', '--all'], {cwd: tmpDir});
-    expect(status).toBe(1);
-    parseJson(stdout); // valid JSON
-    expect(fs.readdirSync(tmpDir)).toEqual([]);
-  });
+  // init used to be the example here: it was off the allowlist, so the gate
+  // refused it before it could write half a project. It now returns a receipt
+  // of its own, so the side-effect guarantee it demonstrated is covered by the
+  // remaining side-effect-free rejections below, and init's own behaviour is
+  // asserted in init.behavior.test.mjs.
 
   it('astryx theme --json (parent, no subcommand) rejects without printing help', async () => {
     const {status, stdout, stderr} = await runCli(['theme', '--json'], {cwd: tmpDir});
@@ -105,7 +81,7 @@ describe('--json contract: rejects before side effects', () => {
   });
 
   it('error envelope is { error, suggestions? } — never { type, data }', async () => {
-    const {stdout} = await runCli(['init', '--json'], {cwd: tmpDir});
+    const {stdout} = await runCli(['theme', '--json'], {cwd: tmpDir});
     const parsed = parseJson(stdout);
     expect(parsed).toHaveProperty('error');
     expect(parsed).not.toHaveProperty('type');

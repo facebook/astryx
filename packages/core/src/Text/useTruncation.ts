@@ -13,7 +13,7 @@
  */
 
 import {useCallback, useRef, useState, type RefCallback} from 'react';
-import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {observeResize} from '../utils/sharedResizeObserver';
 
 export interface UseTruncationOptions {
   /**
@@ -43,7 +43,7 @@ export interface UseTruncationReturn {
 /**
  * Hook for detecting text overflow/truncation.
  *
- * Uses a shared ResizeObserver singleton (via observeResize/unobserveResize)
+ * Uses a shared ResizeObserver singleton (via observeResize)
  * for efficient detection when content or container changes. A single
  * ResizeObserver instance is shared across all mounted useTruncation hooks,
  * so even hundreds of table cells only create one observer.
@@ -70,6 +70,7 @@ export function useTruncation(
   const [isTruncated, setIsTruncated] = useState(false);
   const [fullText, setFullText] = useState('');
   const elementRef = useRef<HTMLElement | null>(null);
+  const unobserveRef = useRef<(() => void) | null>(null);
 
   const checkTruncation = useCallback(
     (element: HTMLElement) => {
@@ -108,10 +109,10 @@ export function useTruncation(
 
   const ref: RefCallback<HTMLElement> = useCallback(
     (element: HTMLElement | null) => {
-      // Cleanup previous observation
-      if (elementRef.current) {
-        unobserveResize(elementRef.current);
-      }
+      // Cleanup previous observation. Unsubscribing by callback rather than
+      // by element leaves any other observer of the same node untouched.
+      unobserveRef.current?.();
+      unobserveRef.current = null;
 
       elementRef.current = element;
 
@@ -120,7 +121,7 @@ export function useTruncation(
         // observeResize fires the callback once on registration,
         // so no separate initial check is needed.
         if (typeof ResizeObserver !== 'undefined') {
-          observeResize(element, () => {
+          unobserveRef.current = observeResize(element, () => {
             checkTruncation(element);
           });
         } else {

@@ -37,6 +37,7 @@ import {TokenLink} from './TokenLink';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 import type {TokenColorMap} from './index';
 
@@ -143,13 +144,6 @@ const styles = stylex.create({
     transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   disabled: {
     cursor: 'default',
@@ -307,6 +301,7 @@ export function Token({
   style,
   'data-testid': testId,
   ref,
+  ...rest
 }: TokenProps) {
   const t = useTranslator();
   const LinkComponent = useLinkComponent();
@@ -344,8 +339,8 @@ export function Token({
 
   const sharedProps = {
     'data-testid': testId,
-    'aria-label': isLabelHidden ? label : undefined,
-    'aria-description': description,
+    ...(isLabelHidden ? {'aria-label': label} : {}),
+    ...(description != null ? {'aria-description': description} : {}),
   };
 
   if (role === 'link') {
@@ -354,8 +349,6 @@ export function Token({
         <LinkComponent
           ref={ref as React.Ref<HTMLAnchorElement>}
           href={href as string}
-          aria-disabled={isDisabled || undefined}
-          {...sharedProps}
           {...mergeProps(
             themeProps('token', {color, size}),
             focusOutlineProps.focusVisible(
@@ -363,12 +356,16 @@ export function Token({
               sizeStyles[size],
               colorStyles[color],
               styles.interactive,
+              interactionOverlayStyles.backgroundImage,
               isDisabled && styles.disabled,
               xstyle,
             ),
             className,
             style,
-          )}>
+          )}
+          {...rest}
+          {...(isDisabled ? {'aria-disabled': true} : {})}
+          {...sharedProps}>
           {content}
         </LinkComponent>
       );
@@ -400,7 +397,6 @@ export function Token({
             {label}
           </span>
         }
-        {...sharedProps}
         {...mergeProps(
           themeProps('token', {color, size}),
           focusOutlineProps.focusWithin(
@@ -408,12 +404,15 @@ export function Token({
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
+            interactionOverlayStyles.backgroundImage,
             isDisabled && styles.disabled,
             xstyle,
           ),
           className,
           style,
         )}
+        {...rest}
+        {...sharedProps}
       />
     );
   }
@@ -431,7 +430,6 @@ export function Token({
       <span
         ref={ref}
         onClick={isDisabled ? undefined : handleContainerClick}
-        {...sharedProps}
         {...mergeProps(
           themeProps('token', {color, size}),
           focusOutlineProps.focusWithin(
@@ -439,12 +437,15 @@ export function Token({
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
+            interactionOverlayStyles.backgroundImage,
             isDisabled && styles.disabled,
             xstyle,
           ),
           className,
           style,
-        )}>
+        )}
+        {...rest}
+        {...sharedProps}>
         {icon}
         <button
           type="button"
@@ -468,7 +469,6 @@ export function Token({
   return (
     <span
       ref={ref}
-      {...sharedProps}
       {...mergeProps(
         themeProps('token', {color, size}),
         stylex.props(
@@ -480,7 +480,9 @@ export function Token({
         ),
         className,
         style,
-      )}>
+      )}
+      {...rest}
+      {...sharedProps}>
       {content}
     </span>
   );

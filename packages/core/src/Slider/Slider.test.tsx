@@ -13,7 +13,10 @@ import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {Slider} from './Slider';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -854,7 +857,7 @@ describe('Slider', () => {
         />,
       );
       const thumb = screen.getByRole('slider');
-      thumb.focus();
+      act(() => thumb.focus());
       await user.keyboard('{ArrowRight}');
       expect(onChange).not.toHaveBeenCalled();
     });
@@ -900,6 +903,108 @@ describe('Slider', () => {
       expect([
         ...new FormData(container.querySelector('form')!).keys(),
       ]).toEqual([]);
+    });
+  });
+
+  describe('focus ring modality', () => {
+    beforeEach(() => {
+      __resetInteractionModalityForTest();
+    });
+
+    // The ring is a stylex class, so derive it from the same source the
+    // component applies rather than hardcoding a hash.
+    const RING = stylex
+      .props(focusOutlineStyles.focusVisible)
+      .className!.split(' ');
+    const isRinged = (el: HTMLElement) =>
+      RING.every(c => el.classList.contains(c));
+
+    // The track has no layout in jsdom; pointer maths needs a real rect.
+    const grabTrack = (thumb: HTMLElement) => {
+      const track = thumb.parentElement!;
+      track.getBoundingClientRect = () => ({
+        left: 0,
+        top: 0,
+        right: 200,
+        bottom: 20,
+        width: 200,
+        height: 20,
+        x: 0,
+        y: 0,
+        toJSON: () => {},
+      });
+      fireEvent.pointerDown(track, {clientX: 100, clientY: 10, pointerId: 1});
+    };
+
+    it('rings when the thumb is reached with the keyboard', async () => {
+      const user = userEvent.setup();
+      render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+      await user.tab();
+      expect(isRinged(screen.getByRole('slider'))).toBe(true);
+    });
+
+    it('does not ring when the thumb is grabbed with the mouse', () => {
+      render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+      const thumb = screen.getByRole('slider');
+      grabTrack(thumb);
+      expect(thumb).toHaveFocus();
+      expect(isRinged(thumb)).toBe(false);
+    });
+
+    it('drops the ring when the mouse grabs a thumb that already had it', async () => {
+      const user = userEvent.setup();
+      render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+      await user.tab();
+      const thumb = screen.getByRole('slider');
+      expect(isRinged(thumb)).toBe(true);
+      // Already focused, so focus() fires no focus event.
+      grabTrack(thumb);
+      expect(isRinged(thumb)).toBe(false);
+    });
+
+    it('brings the ring back when an arrow key follows a mouse drag', () => {
+      render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+      const thumb = screen.getByRole('slider');
+      grabTrack(thumb);
+      expect(isRinged(thumb)).toBe(false);
+      fireEvent.keyDown(thumb, {key: 'ArrowRight'});
+      expect(isRinged(thumb)).toBe(true);
+    });
+
+    it('leaves the ring off for a modifier chord after a mouse drag', () => {
+      render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+      const thumb = screen.getByRole('slider');
+      grabTrack(thumb);
+      // Copying or reloading is not navigation, and the mouse is still on it.
+      fireEvent.keyDown(thumb, {key: 'c', metaKey: true});
+      expect(isRinged(thumb)).toBe(false);
+    });
+
+    it('drops the ring on blur', async () => {
+      const user = userEvent.setup();
+      render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+      await user.tab();
+      const thumb = screen.getByRole('slider');
+      expect(isRinged(thumb)).toBe(true);
+      act(() => thumb.blur());
+      expect(isRinged(thumb)).toBe(false);
+    });
+
+    it('rings the range thumb the keyboard reached, not its sibling', async () => {
+      const user = userEvent.setup();
+      render(
+        <Slider
+          label="Price"
+          value={[20, 80] as [number, number]}
+          onChange={vi.fn()}
+        />,
+      );
+      await user.tab();
+      await user.tab();
+      const thumbs = screen.getAllByRole('slider');
+      expect(thumbs[1]).toHaveFocus();
+      expect(isRinged(thumbs[1])).toBe(true);
+      expect(isRinged(thumbs[0])).toBe(false);
     });
   });
 });

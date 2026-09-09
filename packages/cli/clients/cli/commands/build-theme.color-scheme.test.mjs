@@ -17,7 +17,9 @@
  *   html[data-theme="dark"] { color-scheme: dark; }
  *
  * Themes that never use `light-dark()` have no `color-scheme` ambiguity to
- * resolve, so none of the three rules should be emitted for them.
+ * resolve, so none of the three rules should be emitted for them — the
+ * generated CSS still carries the `--color-data-*` defaults, which are
+ * `light-dark()` pairs, so the decision reads the theme's own values.
  *
  * Building `astryx theme build` requires a compiled @astryxdesign/core (there is no in-CLI
  * fallback generator), so this suite builds core once in beforeAll via the
@@ -67,10 +69,9 @@ describe('theme build color-scheme output', () => {
     const project = path.join(tmpDir, 'project');
     const themesDir = path.join(project, 'themes');
     // A raw light-dark() token value is what triggers the color-scheme
-    // injection in build-theme.mjs (it checks the generated CSS for the
-    // literal substring). `defineTheme.test.ts` already covers the separate
-    // [light, dark] tuple -> light-dark() conversion; this fixture writes
-    // the string directly so this test stays focused on the CLI's own
+    // injection in build-theme.mjs. `defineTheme.test.ts` already covers the
+    // separate [light, dark] tuple -> light-dark() conversion; this fixture
+    // writes the string directly so this test stays focused on the CLI's own
     // color-scheme decision, not on that conversion.
     const themeFile = writeTheme(themesDir, 'with-light-dark', {
       '--color-accent': 'light-dark(#0077B6, #48CAE4)',
@@ -123,7 +124,7 @@ describe('theme build color-scheme output', () => {
     expect(fs.existsSync(cssPath)).toBe(true);
     const css = fs.readFileSync(cssPath, 'utf-8');
 
-    expect(css).not.toContain('light-dark(');
+    expect(css).toContain('--color-accent: #0077B6');
     expect(css).not.toContain(COLOR_SCHEME_ROOT_DECL);
     expect(css).not.toContain(COLOR_SCHEME_LIGHT_DECL);
     expect(css).not.toContain(COLOR_SCHEME_DARK_DECL);

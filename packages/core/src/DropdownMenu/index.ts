@@ -20,12 +20,14 @@
 export {
   DropdownMenu,
   type DropdownMenuProps,
+  type DropdownMenuPresentation,
   type DropdownMenuButtonProps,
   type DropdownMenuItemData,
   type DropdownMenuDividerData,
   type DropdownMenuSection,
   type DropdownMenuOption,
 } from './DropdownMenu';
+export type {AdaptivePresentation as MenuPresentation} from '../hooks/useAdaptivePresentation';
 
 export {DropdownMenuItem, type DropdownMenuItemProps} from './DropdownMenuItem';
 

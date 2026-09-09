@@ -48,6 +48,7 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 import type {ButtonVariantMap} from './index';
 
@@ -98,17 +99,19 @@ const styles = stylex.create({
   pressable: {
     transform: {
       default: 'scale(1)',
-      ':active': 'scale(0.98)',
+      ':active:where(:not(:disabled,[aria-disabled="true"]))': 'scale(0.98)',
     },
   },
-  disabled: {
+  inactive: {
     cursor: 'default',
-    opacity: 0.5,
     backgroundImage: 'none',
     transform: {
       default: 'none',
       ':active': 'none',
     },
+  },
+  disabled: {
+    opacity: 0.5,
   },
   ariaDisabled: {
     // The variants' hover treatment already steps aside for
@@ -200,35 +203,14 @@ const variants = stylex.create({
   primary: {
     backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-on-accent'],
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   secondary: {
     backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   ghost: {
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   destructive: {
     backgroundColor: colorVars['--color-error'],
@@ -237,13 +219,6 @@ const variants = stylex.create({
     // red button reads as another control's focus. Only the color differs —
     // width, style and offset come from the shared outline.
     outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
 });
 
@@ -297,7 +272,8 @@ export interface ButtonProps extends BaseProps<HTMLButtonElement> {
    */
   isDisabled?: boolean;
   /**
-   * Whether the button is in a loading state.
+   * Whether the button is in a loading state. Loading prevents interaction
+   * without dimming the spinner; explicit disabled states remain dimmed.
    * @default false
    */
   isLoading?: boolean;
@@ -600,6 +576,10 @@ export function Button({
   // not disabled, so clicks keep landing and can interrupt the in-flight action.
   const buttonDisabled =
     isDisabled || groupDisabled || (isLoadingState && !isInterruptible);
+  // A loading button remains non-interactive, but its spinner communicates an
+  // active state and must retain contrast. Only explicitly disabled controls
+  // receive the visually dimmed treatment.
+  const visuallyDisabled = isDisabled || groupDisabled;
   // isIconOnly prop is the source of truth for icon-only rendering.
   // When false (default), label is always rendered as visible text.
 
@@ -665,7 +645,9 @@ export function Button({
     styles.base,
     sizeStyles[size],
     isIconOnly && styles.iconOnly,
-    buttonDisabled && styles.disabled,
+    interactionOverlayStyles.backgroundImage,
+    buttonDisabled && styles.inactive,
+    visuallyDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     renderAsLink && styles.link,
     !buttonGroup && styles.pressable,
@@ -689,7 +671,13 @@ export function Button({
   );
 
   const sharedMergedProps = mergeProps(
-    themeProps('button', {variant, size}),
+    // Inside a group the group owns the surface's elevation, so the button
+    // reflects the tier it actually paints rather than the prop it was handed.
+    themeProps('button', {
+      variant,
+      size,
+      elevation: buttonGroup ? 'none' : elevation,
+    }),
     sharedStylexProps,
     className,
     style,

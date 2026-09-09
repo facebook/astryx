@@ -24,7 +24,7 @@ import {gothicIconRegistry} from './icons';
  * Single values (no tuples) since this is a dark-only theme.
  */
 const gothicSyntax = defineSyntaxTheme({
-  name: 'xds-gothic',
+  name: 'astryx-gothic',
   tokens: {
     keyword: '#c39adb', // Cathedral plum
     string: '#a3c987', // Forest moss

@@ -10,8 +10,15 @@
  */
 
 import React from 'react';
-import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  render,
+  screen,
+  act,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -1012,9 +1019,9 @@ describe('SideNav resizable', () => {
     const hitArea = handle.firstElementChild as HTMLElement;
 
     act(() => {
-      fireEvent.pointerDown(hitArea, {clientX: 260});
-      fireEvent.pointerMove(document, {clientX: 310});
-      fireEvent.pointerUp(document, {clientX: 310});
+      fireEvent.pointerDown(hitArea, {pointerId: 1, clientX: 260});
+      fireEvent.pointerMove(hitArea, {pointerId: 1, clientX: 310});
+      fireEvent.pointerUp(hitArea, {pointerId: 1, clientX: 310});
     });
 
     expect(handleWidthChange).toHaveBeenCalledTimes(1);
@@ -1546,6 +1553,318 @@ describe('SideNavItem — collapsible + href', () => {
   });
 });
 
+// =============================================================================
+// SideNavItem — actions slot (row-level secondary controls, #4988)
+// =============================================================================
+
+describe('SideNavItem — actions slot', () => {
+  const rowAction = (onClick?: (e: React.MouseEvent) => void) => (
+    <button type="button" data-testid="row-action" onClick={onClick}>
+      ⋯
+    </button>
+  );
+
+  it('renders actions outside the primary interactive element', () => {
+    render(
+      <SideNavItem label="Project" href="/project" actions={rowAction()} />,
+    );
+    const action = screen.getByTestId('row-action');
+    const link = screen.getByRole('link', {name: 'Project'});
+    // Sibling, not nested: the action's closest interactive element is itself.
+    expect(within(link).queryByTestId('row-action')).toBeNull();
+    expect(action.closest('a, button')).toBe(action);
+  });
+
+  it('places actions after the primary element and before nested children', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        collapsible
+        actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    const primary = screen.getByRole('link', {name: 'Project'});
+    const action = screen.getByTestId('row-action');
+    const group = screen.getByRole('group');
+    // Compare real node positions, not serialized markup.
+    expect(
+      primary.compareDocumentPosition(action) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      action.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('reaches every row-level control before nested items when tabbing', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        collapsible
+        actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    await user.tab();
+    expect(screen.getByRole('link', {name: 'Project'})).toHaveFocus();
+    await user.tab();
+    expect(
+      screen.getByRole('button', {name: /collapse project/i}),
+    ).toHaveFocus();
+    await user.tab();
+    expect(screen.getByTestId('row-action')).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('link', {name: 'Session'})).toHaveFocus();
+  });
+
+  it('clicking an action does not activate the item', async () => {
+    const user = userEvent.setup();
+    const onItemClick = vi.fn();
+    const onActionClick = vi.fn();
+    render(
+      <SideNavItem
+        label="Project"
+        onClick={onItemClick}
+        actions={rowAction(onActionClick)}
+      />,
+    );
+    await user.click(screen.getByTestId('row-action'));
+    expect(onActionClick).toHaveBeenCalledTimes(1);
+    expect(onItemClick).not.toHaveBeenCalled();
+  });
+
+  it('clicking an action does not toggle collapse of a whole-row toggle item', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Project" collapsible actions={rowAction()}>
+        <SideNavItem label="Session" />
+      </SideNavItem>,
+    );
+    const rowToggle = screen.getByRole('button', {name: 'Project'});
+    expect(rowToggle).toHaveAttribute('aria-expanded', 'true');
+    await user.click(screen.getByTestId('row-action'));
+    expect(rowToggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('whole-row toggle still collapses when actions are present', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Project" collapsible actions={rowAction()}>
+        <SideNavItem label="Session" />
+      </SideNavItem>,
+    );
+    expect(screen.getByTestId('row-action')).toBeInTheDocument();
+    const rowToggle = screen.getByRole('button', {name: 'Project'});
+    await user.click(rowToggle);
+    expect(rowToggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('adds a row wrapper only when actions are present', () => {
+    const {unmount} = render(<SideNavItem label="Project" href="/project" />);
+    // Without actions, the link itself is the styled row element.
+    expect(screen.getByRole('link', {name: 'Project'})).toHaveClass(
+      'astryx-side-nav-item',
+    );
+    unmount();
+
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        data-testid="row"
+        actions={rowAction()}
+      />,
+    );
+    // With actions, a wrapper div is the styled row; the link sits inside it.
+    const link = screen.getByRole('link', {name: 'Project'});
+    expect(link).not.toHaveClass('astryx-side-nav-item');
+    const row = screen.getByTestId('row');
+    expect(row).toHaveClass('astryx-side-nav-item');
+    expect(row).toContainElement(link);
+    expect(row).toContainElement(screen.getByTestId('row-action'));
+  });
+
+  it('adds no row wrapper for a falsy actions value', () => {
+    // `actions={canEdit ? <Menu /> : null}` is the ordinary consumer shape.
+    // A wrapper there would change markup, focus order and the ring's
+    // owner for a row that has no row controls at all.
+    const {rerender} = render(
+      <SideNavItem label="Project" href="/project" actions={null} />,
+    );
+    expect(screen.getByRole('link', {name: 'Project'})).toHaveClass(
+      'astryx-side-nav-item',
+    );
+
+    rerender(<SideNavItem label="Project" href="/project" actions={false} />);
+    expect(screen.getByRole('link', {name: 'Project'})).toHaveClass(
+      'astryx-side-nav-item',
+    );
+  });
+
+  it('keeps aria wiring on the toggle when actions are present', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        collapsible
+        actions={rowAction()}>
+        <SideNavItem label="Session" />
+      </SideNavItem>,
+    );
+    expect(screen.getByTestId('row-action')).toBeInTheDocument();
+    const toggle = screen.getByRole('button', {name: /collapse project/i});
+    const group = screen.getByRole('group');
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(toggle).toHaveAttribute('aria-controls', group.id);
+    expect(screen.getByRole('link', {name: 'Project'})).not.toHaveAttribute(
+      'aria-expanded',
+    );
+  });
+
+  it('keeps endContent inside the primary element when actions are present', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        endContent={<span data-testid="badge">3</span>}
+        actions={rowAction()}
+      />,
+    );
+    const link = screen.getByRole('link', {name: /Project/});
+    expect(within(link).getByTestId('badge')).toBeInTheDocument();
+    expect(within(link).queryByTestId('row-action')).toBeNull();
+    expect(screen.getByTestId('row-action')).toBeInTheDocument();
+  });
+
+  it('keeps collapsed children inert while the action stays in the row', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        collapsible={{defaultIsCollapsed: true}}
+        actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    const rowToggle = screen.getByRole('button', {name: 'Project'});
+    const group = document.getElementById(
+      rowToggle.getAttribute('aria-controls')!,
+    );
+    expect(group).toHaveAttribute('inert');
+    expect(screen.getByTestId('row-action')).toBeInTheDocument();
+  });
+
+  it('does not render actions in the collapsed rail', () => {
+    const {unmount} = renderCollapsed(
+      <SideNavItem
+        label="Project"
+        icon={StubIcon}
+        href="/project"
+        actions={rowAction()}
+      />,
+    );
+    expect(screen.getByLabelText('Project')).toBeInTheDocument();
+    expect(screen.queryByTestId('row-action')).toBeNull();
+    unmount();
+
+    renderCollapsed(
+      <SideNavItem label="Project" icon={StubIcon} actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    expect(screen.getByLabelText('Project')).toBeInTheDocument();
+    expect(screen.queryByTestId('row-action')).toBeNull();
+  });
+
+  it('keeps actions clickable on a disabled item', async () => {
+    const user = userEvent.setup();
+    const onActionClick = vi.fn();
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        isDisabled
+        actions={rowAction(onActionClick)}
+      />,
+    );
+    // The row's disabled styling must not swallow the sibling action:
+    // the action control owns its own disabled state.
+    await user.click(screen.getByTestId('row-action'));
+    expect(onActionClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('places actions after the toggle when endContent is also present', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        collapsible
+        endContent={<span data-testid="badge">3</span>}
+        actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    const link = screen.getByRole('link', {name: /Project/});
+    const toggle = screen.getByRole('button', {name: /collapse project/i});
+    const action = screen.getByTestId('row-action');
+    expect(within(link).getByTestId('badge')).toBeInTheDocument();
+    expect(
+      link.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      toggle.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('reaches the action after the whole-row toggle and before nested items', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Project" collapsible actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'Project'})).toHaveFocus();
+    await user.tab();
+    expect(screen.getByTestId('row-action')).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('link', {name: 'Session'})).toHaveFocus();
+  });
+
+  it('renders the custom link component inside the row wrapper', () => {
+    render(
+      <LinkProvider component={CustomLink}>
+        <SideNavItem label="Project" href="/project" actions={rowAction()} />
+      </LinkProvider>,
+    );
+    const link = screen.getByRole('link', {name: 'Project'});
+    expect(link).toHaveAttribute('data-custom-link');
+    expect(link.parentElement).toHaveClass('astryx-side-nav-item');
+  });
+
+  it('controlled collapse reports toggle intent without flipping until the prop changes', async () => {
+    const user = userEvent.setup();
+    const onCollapsedChange = vi.fn();
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        collapsible={{isCollapsed: false, onCollapsedChange}}
+        actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    const toggle = screen.getByRole('button', {name: /collapse project/i});
+    await user.click(toggle);
+    expect(onCollapsedChange).toHaveBeenCalledWith(true);
+    // Controlled mode: stays expanded until the consumer flips the prop.
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
 import {SideNavRenderContext} from './SideNavRenderContext';
 import {AppShellMobileContext} from '../AppShell/AppShellMobileContext';
 
@@ -1623,6 +1942,28 @@ describe('SideNavItem — mobile drawer close-on-activate', () => {
       </AppShellMobileContext>,
     );
     await user.click(screen.getByTestId('item'));
+    expect(closeMobileNav).not.toHaveBeenCalled();
+  });
+
+  it('does not close the mobile nav when a row action is clicked', async () => {
+    const user = userEvent.setup();
+    const onActionClick = vi.fn();
+    const {closeMobileNav} = renderInDrawer(
+      <SideNavItem
+        label="Home"
+        href="/"
+        actions={
+          <button
+            type="button"
+            data-testid="drawer-row-action"
+            onClick={onActionClick}>
+            ⋯
+          </button>
+        }
+      />,
+    );
+    await user.click(screen.getByTestId('drawer-row-action'));
+    expect(onActionClick).toHaveBeenCalledTimes(1);
     expect(closeMobileNav).not.toHaveBeenCalled();
   });
 });
@@ -1899,10 +2240,18 @@ describe('SideNav audit regressions', () => {
 // =============================================================================
 // A15 — the shared focus ring
 //
-// jsdom does not derive `:focus-visible` from `.focus()` or from Tab, so the
-// painted ring cannot be read back here; the geometry is measured in a real
-// browser instead. These pin the composition — that the focusable element
-// carries the classes `focusOutlineStyles.focusVisible` compiles to.
+// jsdom does not derive `:focus-visible` from `.focus()` for an element
+// matched directly, so the ring a tab stop draws on itself cannot be read
+// back here; the geometry is measured in a real browser instead. These pin
+// the composition — that the focusable element carries the classes
+// `focusOutlineStyles.focusVisible` compiles to.
+//
+// Composition is only proof for a tab stop. A row wrapper is not one, so
+// `:focus-visible` atoms sitting on it can never match, and asserting them
+// there proves nothing: the actions-row tests below passed with the
+// wrapper's ring deleted outright. A wrapper's ring is guarded by `:has()`,
+// which jsdom *does* re-evaluate against live focus, so those rules are read
+// out of the stylesheet and matched against the DOM instead.
 // =============================================================================
 
 const sharedFocusRingClasses = stylex
@@ -1921,6 +2270,120 @@ function expectNoSharedFocusRing(el: Element) {
   for (const c of sharedFocusRingClasses) {
     expect(classes).not.toContain(c);
   }
+}
+
+/** Every style rule in the live sheet, flattened out of any grouping rule. */
+function allStyleRules(): CSSStyleRule[] {
+  const out: CSSStyleRule[] = [];
+  const walk = (rules: CSSRuleList) => {
+    for (const rule of Array.from(rules)) {
+      const nested = (rule as CSSGroupingRule).cssRules;
+      if (nested) {
+        walk(nested);
+      }
+      if ((rule as CSSStyleRule).selectorText) {
+        out.push(rule as CSSStyleRule);
+      }
+    }
+  };
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      walk(sheet.cssRules);
+    } catch {
+      // A sheet we cannot read cannot be one StyleX injected.
+    }
+  }
+  return out;
+}
+
+/**
+ * A rule's declared value for `prop`, read out of its text.
+ *
+ * Not `rule.style`: these values are `var()`s, and jsdom's CSS object model
+ * drops longhands it cannot parse, so they read back as an empty string there.
+ */
+function declaredValue(rule: CSSStyleRule, prop: string): string | undefined {
+  const body = /\{([^}]*)\}/.exec(rule.cssText)?.[1] ?? '';
+  return new RegExp(`(?:^|;)\\s*${prop}:\\s*([^;]+)`).exec(body)?.[1].trim();
+}
+
+/** A rule's `outline-style` — the discriminator for a painting focus ring. */
+function outlineStyleOf(rule: CSSStyleRule): string | undefined {
+  return declaredValue(rule, 'outline-style');
+}
+
+/**
+ * What the live sheet unconditionally declares for `prop` on `el`, gathered
+ * from every bare-class rule the element carries. StyleX emits one atomic
+ * class per property, so a well-formed element yields exactly one value —
+ * comparing those values compares real CSS without pinning a generated hash.
+ */
+function declaredOn(el: Element, prop: string): string[] {
+  const classes = new Set(el.className.split(' '));
+  return allStyleRules()
+    .filter(rule => {
+      const bare = rule.selectorText.replace(/:not\(#\\?#\)/g, '');
+      const owner = /^\.([^:\s]+)$/.exec(bare)?.[1];
+      return owner != null && classes.has(owner);
+    })
+    .map(rule => declaredValue(rule, prop))
+    .filter(value => value != null);
+}
+
+/**
+ * The selectors that actually paint the shared ring on `el`, read out of the
+ * live stylesheet with StyleX's `:not(#\#)` specificity padding stripped so
+ * jsdom can evaluate them.
+ *
+ * `outline-style` is the discriminator: StyleX emits one rule per property,
+ * and no outline paints while that one resolves to `none`.
+ */
+function ringSelectorsFor(el: Element): string[] {
+  const classes = new Set(el.className.split(' '));
+  return allStyleRules()
+    .filter(rule => {
+      const painted = outlineStyleOf(rule);
+      if (!painted || painted === 'none') {
+        return false;
+      }
+      const owner = /^\.([^:\s]+)/.exec(rule.selectorText)?.[1];
+      return owner != null && classes.has(owner);
+    })
+    .map(rule => rule.selectorText.replace(/:not\(#\\?#\)/g, ''));
+}
+
+/**
+ * Whether `el`'s ring is painting for whatever holds focus right now.
+ *
+ * `:focus-visible` is substituted with `:focus` before matching. jsdom
+ * derives `:focus-visible` from a heuristic over the last interaction, so it
+ * answers differently depending on which tests ran before — the same
+ * assertion passes alone and fails in the file. `:focus` is unambiguous, and
+ * the ring's modality is pinned separately, on the selector text, by the
+ * keyboard-only test below.
+ */
+function ringIsPainting(el: Element): boolean {
+  return ringSelectorsFor(el).some(selector =>
+    el.matches(selector.replace(/:focus-visible/g, ':focus')),
+  );
+}
+
+/**
+ * Whether `el` unconditionally declares `outline-style: none`, which is what
+ * keeps the UA's own focus ring off an element whose ring an ancestor paints.
+ * Computed style cannot answer this: `none` is also the CSS initial value.
+ */
+function suppressesOwnOutline(el: Element): boolean {
+  const classes = new Set(el.className.split(' '));
+  return allStyleRules().some(rule => {
+    if (outlineStyleOf(rule) !== 'none') {
+      return false;
+    }
+    // Unconditional only — a bare class once the padding is stripped.
+    const bare = rule.selectorText.replace(/:not\(#\\?#\)/g, '');
+    const owner = /^\.([^:\s]+)$/.exec(bare)?.[1];
+    return owner != null && classes.has(owner);
+  });
 }
 
 describe('SideNav focus ring (A15)', () => {
@@ -1968,6 +2431,173 @@ describe('SideNav focus ring (A15)', () => {
     expect(row.tagName).toBe('DIV');
     expect(row).toContainElement(toggle);
     expectNoSharedFocusRing(row);
+  });
+
+  it('rings the row wrapper of an actions row, not the truncated primary', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        actions={
+          <button type="button" data-testid="row-action">
+            More
+          </button>
+        }
+      />,
+    );
+
+    const link = screen.getByRole('link', {name: 'Project'});
+    const row = link.parentElement!;
+    expect(row.tagName).toBe('DIV');
+    expect(row).toContainElement(screen.getByTestId('row-action'));
+
+    // Same pill as an ordinary row: the ring lives on the wrapper, whose box
+    // includes the actions. Putting it on the primary would clip to the
+    // truncated split-action element (square, not full-row).
+    expect(ringIsPainting(row)).toBe(false);
+    await user.tab();
+    expect(link).toHaveFocus();
+    expect(ringIsPainting(row)).toBe(true);
+    // And exactly one ring: nothing paints a second one on the primary.
+    expect(ringSelectorsFor(link)).toEqual([]);
+  });
+
+  it('leaves the wrapper ring to the primary, not the chevron toggle', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem
+        label="Settings"
+        href="/settings"
+        collapsible
+        actions={
+          <button type="button" data-testid="row-action">
+            More
+          </button>
+        }>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const link = screen.getByRole('link', {name: 'Settings'});
+    const toggle = screen.getByRole('button', {name: 'Collapse Settings'});
+    const row = link.parentElement!;
+    expect(row).toContainElement(screen.getByTestId('row-action'));
+
+    await user.tab();
+    expect(link).toHaveFocus();
+    expect(ringIsPainting(row)).toBe(true);
+
+    // The toggle owns its own ring, as it does in a split-action row with no
+    // actions. Keeping the wrapper lit too would stack a full-row outline
+    // around the chevron's own — two rings for one tab stop.
+    await user.tab();
+    expect(toggle).toHaveFocus();
+    expectSharedFocusRing(toggle);
+    expect(ringIsPainting(row)).toBe(false);
+  });
+
+  it('does not ring the row wrapper when a supplied action takes focus', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        actions={
+          <button type="button" data-testid="row-action">
+            More
+          </button>
+        }
+      />,
+    );
+
+    const row = screen.getByRole('link', {name: 'Project'}).parentElement!;
+    await user.tab();
+    expect(ringIsPainting(row)).toBe(true);
+
+    // An action draws whatever ring its own component draws. Focus is not on
+    // the row, so the row must not light up around it.
+    await user.tab();
+    expect(screen.getByTestId('row-action')).toHaveFocus();
+    expect(ringIsPainting(row)).toBe(false);
+  });
+
+  it('rings the wrapper of a whole-row toggle carrying actions', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem
+        label="Project"
+        collapsible
+        actions={
+          <button type="button" data-testid="row-action">
+            More
+          </button>
+        }>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+
+    // No href and no onClick, so the primary *is* the collapse toggle and
+    // keeps the chevron inside it — a different row shape from the split.
+    const primary = screen.getByRole('button', {name: 'Project'});
+    const row = primary.parentElement!;
+
+    await user.tab();
+    expect(primary).toHaveFocus();
+    expect(ringIsPainting(row)).toBe(true);
+
+    await user.tab();
+    expect(screen.getByTestId('row-action')).toHaveFocus();
+    expect(ringIsPainting(row)).toBe(false);
+  });
+
+  it('keeps the UA focus ring off the primary the wrapper rings for', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        actions={
+          <button type="button" data-testid="row-action">
+            More
+          </button>
+        }
+      />,
+    );
+
+    const link = screen.getByRole('link', {name: 'Project'});
+    // Dropping the shared ring off the primary also drops the
+    // `outline-style: none` default that came with it, and a bare <a> keeps
+    // the browser's own focus ring — which would paint inside the wrapper's.
+    expect(suppressesOwnOutline(link)).toBe(true);
+  });
+
+  it('paints the actions-row ring for keyboard focus only', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        actions={
+          <button type="button" data-testid="row-action">
+            More
+          </button>
+        }
+      />,
+    );
+
+    const link = screen.getByRole('link', {name: 'Project'});
+    const row = link.parentElement!;
+    // The wrapper is not a tab stop, so its ring has to be guarded by a
+    // relational selector. `:focus-within` or `:focus` would light the row
+    // for mouse users too; only `:focus-visible` keeps it to the keyboard.
+    const selectors = ringSelectorsFor(row);
+    expect(selectors.length).toBeGreaterThan(0);
+    for (const selector of selectors) {
+      expect(selector).toContain(':focus-visible');
+    }
+
+    // The guard is scoped to the wrapper's first child. Reordering the row
+    // would hand the ring to the toggle or the actions instead.
+    expect(row.firstElementChild).toBe(link);
   });
 
   it('draws the shared ring on a heading rendered as one link', () => {
@@ -2165,6 +2795,76 @@ describe('SideNav footer icon row sizing', () => {
   });
 });
 
+describe('SideNav row control sizing', () => {
+  /**
+   * The height an icon-only `Button` of this size declares — the box every
+   * control sharing a nav row is measured against.
+   */
+  function iconButtonHeight(size: 'sm' | 'md' | 'lg'): string[] {
+    const {unmount} = render(
+      <Button
+        label="sized reference"
+        size={size}
+        isIconOnly
+        icon={<span />}
+        data-testid="sized-ref"
+      />,
+    );
+    const height = declaredOn(screen.getByTestId('sized-ref'), 'height');
+    unmount();
+    // Guard against a vacuous pass: nothing below means anything if the
+    // reference itself declares no height.
+    expect(height).toHaveLength(1);
+    return height;
+  }
+
+  function collapsibleRow(actions: ReactNode) {
+    return (
+      <SideNavItem
+        label="Project"
+        href="/project"
+        collapsible
+        actions={actions}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>
+    );
+  }
+
+  const iconAction = (props?: {size?: 'sm' | 'md' | 'lg'}) => (
+    <Button
+      label="Project actions"
+      isIconOnly
+      icon={<span />}
+      data-testid="row-action"
+      {...props}
+    />
+  );
+
+  it('sizes the expand toggle like the icon buttons it sits beside', () => {
+    const sm = iconButtonHeight('sm');
+    render(collapsibleRow(iconAction()));
+    const toggle = screen.getByRole('button', {name: /collapse project/i});
+    expect(declaredOn(toggle, 'height')).toEqual(sm);
+    // Square, so its hover pill reads as the same box as the action's.
+    expect(declaredOn(toggle, 'width')).toEqual(sm);
+  });
+
+  it('cascades that size to an action the consumer did not size', () => {
+    const sm = iconButtonHeight('sm');
+    // Without the cascade an unsized Button falls back to `md`; if the two
+    // compiled to one height the assertion below could not fail.
+    expect(sm).not.toEqual(iconButtonHeight('md'));
+    render(collapsibleRow(iconAction()));
+    expect(declaredOn(screen.getByTestId('row-action'), 'height')).toEqual(sm);
+  });
+
+  it('lets an explicit size on an action win over the cascade', () => {
+    const lg = iconButtonHeight('lg');
+    render(collapsibleRow(iconAction({size: 'lg'})));
+    expect(declaredOn(screen.getByTestId('row-action'), 'height')).toEqual(lg);
+  });
+});
+
 describe('SideNavHeading hover/click guard', () => {
   // tabIndex={-1} matches real menu items; a bare role=menuitem div is not
   // focusable.
@@ -2247,5 +2947,368 @@ describe('SideNavHeading hover/click guard', () => {
     await user.keyboard('{Escape}');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(trigger).toHaveFocus();
+  });
+});
+
+// =============================================================================
+// Collapse ownership — collapsible + resizable (#4790, #5073)
+// =============================================================================
+
+const AUTO_SAVE_ID = 'sidenav-collapse-owner';
+const STORAGE_KEY = `astryx-resizable:${AUTO_SAVE_ID}`;
+
+function expectCollapsed(isCollapsed: boolean) {
+  const label = isCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  expect(screen.getByRole('button', {name: label})).toBeInTheDocument();
+}
+
+describe('SideNav collapse ownership', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  // Every row is a configuration that works on origin/main today, with the
+  // collapse state main resolves for it. Normalizing the two props into one
+  // owner must not move any of these — the one case whose outcome does change
+  // is the divergence itself, pinned separately below.
+  const preservedCases: {
+    name: string;
+    persisted?: string;
+    element: React.ReactElement;
+    isCollapsed: boolean;
+  }[] = [
+    {
+      name: 'collapsible alone',
+      element: <SideNav collapsible>Content</SideNav>,
+      isCollapsed: false,
+    },
+    {
+      name: 'collapsible with defaultIsCollapsed',
+      element: (
+        <SideNav collapsible={{defaultIsCollapsed: true}}>Content</SideNav>
+      ),
+      isCollapsed: true,
+    },
+    {
+      name: 'controlled collapsible (collapsed)',
+      element: (
+        <SideNav collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: true,
+    },
+    {
+      name: 'controlled collapsible (expanded)',
+      element: (
+        <SideNav
+          collapsible={{isCollapsed: false, onCollapsedChange: () => {}}}>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: false,
+    },
+    {
+      name: 'collapsible + resizable',
+      element: (
+        <SideNav collapsible resizable>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: false,
+    },
+    {
+      name: 'defaultIsCollapsed + resizable',
+      element: (
+        <SideNav collapsible={{defaultIsCollapsed: true}} resizable>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: true,
+    },
+    {
+      name: 'controlled collapsible + resizable',
+      element: (
+        <SideNav
+          collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}
+          resizable>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: true,
+    },
+    {
+      name: 'defaultIsCollapsed + a persisted legacy width',
+      persisted: '300',
+      element: (
+        <SideNav
+          collapsible={{defaultIsCollapsed: true}}
+          resizable={{autoSaveId: AUTO_SAVE_ID}}>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: true,
+    },
+    {
+      name: 'collapsible + a persisted legacy width',
+      persisted: '300',
+      element: (
+        <SideNav collapsible resizable={{autoSaveId: AUTO_SAVE_ID}}>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: false,
+    },
+  ];
+
+  it.each(preservedCases)(
+    'resolves $name the way main does',
+    ({persisted, element, isCollapsed}) => {
+      if (persisted != null) {
+        localStorage.setItem(STORAGE_KEY, persisted);
+      }
+      render(element);
+      expectCollapsed(isCollapsed);
+    },
+  );
+
+  it('keeps resizable alone free of collapse', () => {
+    render(<SideNav resizable>Content</SideNav>);
+    expect(
+      screen.queryByRole('button', {name: /sidebar/i}),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation').style.width).toBe('260px');
+  });
+
+  it('restores the collapsed rail from a legacy persisted 0 (#4790)', () => {
+    // main renders the expanded layout here while the resize hook restores
+    // collapsed, so the nav paints at width 0 with no way back.
+    localStorage.setItem(STORAGE_KEY, '0');
+    render(
+      <SideNav collapsible resizable={{autoSaveId: AUTO_SAVE_ID}}>
+        Content
+      </SideNav>,
+    );
+
+    expectCollapsed(true);
+    expect(screen.getByRole('navigation').style.width).not.toBe('0px');
+  });
+
+  it('restores the collapsed rail and the pre-collapse width across a reload', async () => {
+    const user = userEvent.setup();
+    const nav = (
+      <SideNav
+        collapsible
+        resizable={{autoSaveId: AUTO_SAVE_ID, defaultWidth: 260}}>
+        Content
+      </SideNav>
+    );
+
+    const first = render(nav);
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expectCollapsed(true);
+    first.unmount();
+
+    render(nav);
+    expectCollapsed(true);
+
+    await user.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+    expect(screen.getByRole('navigation').style.width).toBe('260px');
+  });
+
+  it('expands to the persisted pre-collapse width, not the default', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({size: 320, isCollapsed: true}),
+    );
+    render(
+      <SideNav
+        collapsible
+        resizable={{autoSaveId: AUTO_SAVE_ID, defaultWidth: 260}}>
+        Content
+      </SideNav>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+    expect(screen.getByRole('navigation').style.width).toBe('320px');
+  });
+
+  it('reports one collapse change per toggle', async () => {
+    const user = userEvent.setup();
+    const onCollapsedChange = vi.fn();
+    render(
+      <SideNav collapsible={{onCollapsedChange}} resizable>
+        Content
+      </SideNav>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expect(onCollapsedChange).toHaveBeenCalledExactlyOnceWith(true);
+  });
+
+  it('lets a controlled collapsible drive a resizable nav from outside', async () => {
+    const user = userEvent.setup();
+
+    function Harness() {
+      const [isCollapsed, setIsCollapsed] = useState(false);
+      const collapsible = {isCollapsed, onCollapsedChange: setIsCollapsed};
+      return (
+        <>
+          <SideNavCollapseButton collapsible={collapsible} label="Outside" />
+          <SideNav
+            collapsible={{...collapsible, hasButton: false}}
+            resizable={{autoSaveId: AUTO_SAVE_ID}}>
+            Content
+          </SideNav>
+        </>
+      );
+    }
+
+    render(<Harness />);
+    expect(screen.getByRole('navigation').style.width).toBe('260px');
+
+    await user.click(screen.getByRole('button', {name: 'Outside'}));
+    expect(screen.getByRole('navigation').style.width).toBe('');
+    expect(
+      screen.queryByTestId('astryx-sidenav-resize-handle'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('lets resizable own collapse on its own', async () => {
+    const user = userEvent.setup();
+    const onCollapseChange = vi.fn();
+    render(
+      <SideNav resizable={{defaultIsCollapsed: true, onCollapseChange}}>
+        Content
+      </SideNav>,
+    );
+
+    expectCollapsed(true);
+    await user.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+    expect(onCollapseChange).toHaveBeenCalledExactlyOnceWith(false);
+  });
+
+  it('keeps collapse state when resize is toggled off and on', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(
+      <SideNav collapsible resizable>
+        Content
+      </SideNav>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expectCollapsed(true);
+
+    rerender(<SideNav collapsible>Content</SideNav>);
+    expectCollapsed(true);
+
+    rerender(
+      <SideNav collapsible resizable>
+        Content
+      </SideNav>,
+    );
+    expectCollapsed(true);
+  });
+
+  it('gives resizable the winning value when both set defaultIsCollapsed', () => {
+    render(
+      <SideNav
+        collapsible={{defaultIsCollapsed: false}}
+        resizable={{defaultIsCollapsed: true}}>
+        Content
+      </SideNav>,
+    );
+    expectCollapsed(true);
+  });
+});
+
+describe('SideNav collapse conflict warning', () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    localStorage.clear();
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  it('warns when both props carry defaultIsCollapsed', () => {
+    render(
+      <SideNav
+        collapsible={{defaultIsCollapsed: false}}
+        resizable={{defaultIsCollapsed: true}}>
+        Content
+      </SideNav>,
+    );
+
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('collapsible.defaultIsCollapsed'),
+    );
+    expect(warn.mock.calls[0][0]).toContain('resizable.defaultIsCollapsed');
+    expect(warn.mock.calls[0][0]).toContain('resizable wins');
+  });
+
+  it('warns when a controlled collapsible does not drive collapse', () => {
+    render(
+      <SideNav
+        collapsible={{isCollapsed: false, onCollapsedChange: () => {}}}
+        resizable={{isCollapsed: true, onCollapseChange: () => {}}}>
+        Content
+      </SideNav>,
+    );
+
+    const message = String(warn.mock.calls[0][0]);
+    expect(message).toContain('collapsible.isCollapsed');
+    expect(message).toContain('collapsible.onCollapsedChange');
+    expect(message).toContain('resizable.isCollapsed');
+    expect(message).toContain('resizable wins');
+    // The winner is the state that actually renders.
+    expectCollapsed(true);
+  });
+
+  it('does not split state and callback ownership across props', async () => {
+    const user = userEvent.setup();
+    const collapsibleChange = vi.fn();
+    const resizableChange = vi.fn();
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: collapsibleChange,
+        }}
+        resizable={{onCollapseChange: resizableChange}}>
+        Content
+      </SideNav>,
+    );
+
+    expectCollapsed(false);
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expect(resizableChange).toHaveBeenCalledExactlyOnceWith(true);
+    expect(collapsibleChange).not.toHaveBeenCalled();
+  });
+
+  it('stays silent for collapsible alongside a resize config', () => {
+    render(
+      <SideNav
+        collapsible
+        resizable={{autoSaveId: AUTO_SAVE_ID, defaultWidth: 300}}>
+        Content
+      </SideNav>,
+    );
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('stays silent for a controlled collapsible with a plain resize config', () => {
+    render(
+      <SideNav
+        collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}
+        resizable={{defaultWidth: 300}}>
+        Content
+      </SideNav>,
+    );
+    expect(warn).not.toHaveBeenCalled();
   });
 });

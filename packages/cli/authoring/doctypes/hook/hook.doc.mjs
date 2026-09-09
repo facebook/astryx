@@ -134,6 +134,12 @@ export const doc = {
             "3-4 do/don't design-guidance items ({guidance: boolean, description: string}).",
         },
         {
+          name: 'usage.accessibility',
+          type: 'ComponentAccessibilityRequirement[]',
+          description:
+            'Accessibility requirements specific to using the hook ({name, description}).',
+        },
+        {
           name: 'usage.anatomy',
           type: 'ComponentAnatomyElement[]',
           description:

@@ -17,7 +17,6 @@
  */
 
 import {
-  use,
   useId,
   useState,
   useCallback,
@@ -62,6 +61,7 @@ import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {usePopover} from '../Popover';
+import {NativeDateField} from './NativeDateField';
 import {TouchDateField} from './TouchDateField';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA, isImeKeyEvent, parseDateInput} from '../utils';
@@ -150,6 +150,17 @@ export type DateInputSize = keyof typeof sizeStyles;
  * types stay in compile-time lockstep: renaming or removing one of these
  * members from `TimestampFormat` breaks this type at build time.
  */
+/**
+ * When DateInput hands date picking to the browser/OS instead of its own
+ * surfaces.
+ *
+ * - `'touch'`: native on touch devices (coarse pointer), Astryx's calendar
+ *   popover on mouse-driven ones
+ * - `'always'`: native wherever the browser supports `<input type="date">`
+ * - `'never'`: Astryx's own pickers everywhere
+ */
+export type DateInputNativePicker = 'touch' | 'always' | 'never';
+
 export type DateInputFormat = Extract<
   TimestampFormat,
   'date' | 'date_long' | 'date_weekday' | 'system_date'
@@ -167,7 +178,7 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {stableClassName} from '../naming';
-import {useTranslator, InternationalizationContext} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface DateInputProps extends Omit<
@@ -361,6 +372,40 @@ export interface DateInputProps extends Omit<
    * ```
    */
   format?: DateInputFormat | ((value: ISODateString) => string);
+
+  /**
+   * When date picking is handed to the browser/OS instead of Astryx's own
+   * surfaces: the field becomes an `<input type="date">` and the platform
+   * draws the picker — the iOS wheel, the Android calendar dialog — with the
+   * OS's own hit areas, momentum scrolling, locale and accessibility
+   * settings.
+   *
+   * - `'touch'` (default): native on touch devices (coarse pointer), the text
+   *   field and calendar popover on mouse-driven ones
+   * - `'always'`: native wherever the browser supports `<input type="date">`
+   * - `'never'`: Astryx's own pickers everywhere — the touch picker on a
+   *   finger, the calendar popover on a mouse
+   *
+   * `format` and `placeholder` still apply in native mode: DateInput paints
+   * the closed field's text itself, over the control. `numberOfMonths` and
+   * `weekStartsOn` do not — they describe a calendar grid the native picker
+   * does not have — so a field that needs either should pass `'never'`.
+   *
+   * `min` and `max` are forwarded, but note that a native picker may not
+   * *show* them: on iOS they are constraint-validation flags rather than
+   * clamps, so an out-of-range date can be selected and is refused on commit
+   * (announced to assistive technology) rather than being greyed out in the
+   * picker. `dateConstraints` is enforced the same way, on commit, and is
+   * reason enough to prefer `'never'` on a field that uses it.
+   *
+   * @default 'touch'
+   * @example
+   * ```
+   * // Astryx's own touch picker instead of the platform's
+   * <DateInput label="Event date" value={date} onChange={setDate} nativePicker="never" />
+   * ```
+   */
+  nativePicker?: DateInputNativePicker;
 }
 
 /**
@@ -419,8 +464,8 @@ function PointerDateField({
   ...rest
 }: DateInputProps) {
   const t = useTranslator();
+  const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
-  const {locale} = use(InternationalizationContext);
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateInput.placeholder');
   const size = useSize(sizeProp, 'md');
@@ -574,14 +619,21 @@ function PointerDateField({
   );
 
   // Handle clear button click
-  const handleClear = useCallback(() => {
-    fireChange(undefined);
-    // Defer focus restoration past the button's unmount task so iOS Safari
-    // and touch browsers don't jump the page scroll to 0 on tap.
-    requestAnimationFrame(() => {
-      inputRef.current?.focus({preventScroll: true});
-    });
-  }, [fireChange]);
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      fireChange(undefined);
+      if (!e || e.detail === 0) {
+        inputRef.current?.focus();
+      } else {
+        // Defer focus restoration past the button's unmount task so iOS Safari
+        // and touch browsers don't jump the page scroll to 0 on tap.
+        requestAnimationFrame(() => {
+          inputRef.current?.focus({preventScroll: true});
+        });
+      }
+    },
+    [fireChange],
+  );
 
   // Handle date selection from calendar
   const handleDateSelect = useCallback(
@@ -891,7 +943,13 @@ PointerDateField.displayName = 'PointerDateField';
  */
 export function DateInput(props: DateInputProps) {
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
+  const nativePicker = props.nativePicker ?? 'touch';
 
+  // The platform's picker, where the consumer asked for it — see the
+  // `nativePicker` prop for what that trades away.
+  if (nativePicker === 'always' || (nativePicker === 'touch' && isTouch)) {
+    return <NativeDateField {...props} />;
+  }
   return isTouch ? (
     <TouchDateField {...props} />
   ) : (

@@ -35,6 +35,7 @@ import {useClickableContainer} from '../hooks/useClickableContainer';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 // =============================================================================
 // Types
@@ -224,13 +225,6 @@ const styles = stylex.create({
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast-min'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundColor: {
-      default: 'transparent',
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
   },
   highlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],
@@ -603,6 +597,7 @@ export function Item({
           densityStyles[density],
           align === 'start' && styles.alignStart,
           isInteractive && styles.interactive,
+          isInteractive && interactionOverlayStyles.backgroundColor,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
           isDisabled && !hasParentRole && styles.disabled,

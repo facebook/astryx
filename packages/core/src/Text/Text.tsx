@@ -313,7 +313,6 @@ export function Text({
           className,
           {...style, ...inlineStyle},
         )}
-        title={tooltipEnabled ? truncation.fullText : undefined}
         {...props}>
         {children}
       </Component>

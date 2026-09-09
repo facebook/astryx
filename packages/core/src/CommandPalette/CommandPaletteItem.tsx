@@ -26,9 +26,9 @@ import {
 import {useCommandPaletteContext} from './CommandPaletteContext';
 import {useDialogContext} from '../Dialog/DialogContext';
 import {themeProps} from '../utils/themeProps';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
-const HOVER_HOVER = '@media (hover: hover)';
 
 const styles = stylex.create({
   item: {
@@ -51,16 +51,6 @@ const styles = stylex.create({
     textAlign: 'start' as const,
     outline: 'none',
     userSelect: 'none',
-  },
-  itemHover: {
-    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-      [HOVER_HOVER]: {
-        backgroundColor: colorVars['--color-overlay-hover'],
-      },
-    },
-    ':active': {
-      backgroundColor: colorVars['--color-overlay-pressed'],
-    },
   },
   itemHighlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],
@@ -205,7 +195,7 @@ export function CommandPaletteItem({
         themeProps('command-palette-item'),
         stylex.props(
           styles.item,
-          !isDisabled && styles.itemHover,
+          !isDisabled && interactionOverlayStyles.backgroundColor,
           isHighlighted && styles.itemHighlighted,
           isSelected && styles.itemSelected,
           isDisabled && styles.itemDisabled,

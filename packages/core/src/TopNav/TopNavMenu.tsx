@@ -29,7 +29,7 @@ import {useMenuHover} from '../hooks/useMenuHover';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {Icon} from '../Icon';
-import {mergeProps} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
@@ -39,6 +39,7 @@ import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {
   colorVars,
   spacingVars,
@@ -332,6 +333,13 @@ export function TopNavMenu({
   items,
   delay = 150,
   hideDelay = 200,
+  xstyle,
+  className,
+  style,
+  onClick: onClickProp,
+  onMouseEnter: onMouseEnterProp,
+  onMouseLeave: onMouseLeaveProp,
+  ...rest
 }: TopNavMenuProps) {
   const renderMode = useTopNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
@@ -440,12 +448,23 @@ export function TopNavMenu({
       <div {...stylex.props(drawerStyles.section)}>
         <button
           type="button"
-          onClick={() => setDrawerExpanded(v => !v)}
+          {...rest}
+          onMouseEnter={onMouseEnterProp}
+          onMouseLeave={onMouseLeaveProp}
+          onClick={composeEventHandlers(onClickProp, () =>
+            setDrawerExpanded(v => !v),
+          )}
           aria-expanded={drawerExpanded}
           aria-controls={`${menuId}-items`}
-          {...focusOutlineProps.focusVisible(
-            navItemStyles.item,
-            drawerStyles.header,
+          {...mergeProps(
+            focusOutlineProps.focusVisible(
+              navItemStyles.item,
+              interactionOverlayStyles.backgroundColor,
+              drawerStyles.header,
+              xstyle,
+            ),
+            className,
+            style,
           )}>
           {label}
           <Icon
@@ -475,6 +494,7 @@ export function TopNavMenu({
                 }}
                 {...focusOutlineProps.focusVisible(
                   navItemStyles.item,
+                  interactionOverlayStyles.backgroundColor,
                   drawerStyles.item,
                 )}>
                 {item.icon && (
@@ -504,14 +524,27 @@ export function TopNavMenu({
       <button
         ref={setTriggerRef}
         type="button"
+        {...rest}
         {...popover.triggerProps}
         {...triggerProps}
+        onClick={composeEventHandlers(onClickProp, triggerProps.onClick)}
+        onMouseEnter={composeEventHandlers(
+          onMouseEnterProp,
+          triggerProps.onMouseEnter,
+        )}
+        onMouseLeave={composeEventHandlers(
+          onMouseLeaveProp,
+          triggerProps.onMouseLeave,
+        )}
         {...mergeProps(
           themeProps('top-nav-menu'),
           focusOutlineProps.focusVisible(
             styles.trigger,
             popover.isOpen && styles.triggerOpen,
+            xstyle,
           ),
+          className,
+          style,
         )}>
         {label}
         <Icon

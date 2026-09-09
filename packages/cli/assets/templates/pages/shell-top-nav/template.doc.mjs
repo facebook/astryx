@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Top Nav',
   displayName: 'Top Nav',
-  description:
-    'A top-nav app shell with a centered TopNav (Shop and Brands mega menus with a 2x4 item grid plus a featured card each, Sale/Service links, and a Checkout button) over static grey-card hero and category sections.',
+  description: 'Application frame with horizontal navigation only: a centered bar whose items open full-width mega-menu panels, over placeholder content that keeps the entire width. Shell, chrome, layout frame, header, menu, topbar, or navigation.',
   isReady: true,
   category: 'Shell - Top Nav',
 };

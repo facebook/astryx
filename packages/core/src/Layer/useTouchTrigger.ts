@@ -29,7 +29,7 @@
 import {useCallback, useEffect, useRef, type RefObject} from 'react';
 import {
   getInteractionModality,
-  trackInteractionModality,
+  useInteractionModalityTracking,
 } from '../utils/interactionModality';
 
 /**
@@ -235,9 +235,7 @@ export function useTouchTrigger(
     null,
   );
 
-  useEffect(() => {
-    trackInteractionModality();
-  }, []);
+  useInteractionModalityTracking();
 
   const disarmOutsideDismiss = useCallback(() => {
     isTapOpenRef.current = false;

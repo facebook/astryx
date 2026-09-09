@@ -68,6 +68,17 @@ export const Start: Story = {
   },
 };
 
+export const RTLLogicalPlacement: Story = {
+  args: {
+    placement: 'start',
+    content: 'Tooltip on logical start',
+    children: (
+      <Button label="RTL placement target">RTL placement target</Button>
+    ),
+    isDefaultOpen: true,
+  },
+};
+
 export const End: Story = {
   args: {
     placement: 'end',

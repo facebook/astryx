@@ -38,6 +38,10 @@
  * 3. The title is the escape hatch. Tap it and the same box becomes a month
  *    wheel and a year wheel — a flick each to reach 2019 instead of forty.
  *
+ * Reset is chrome, so it sits in the header beside the arrows rather than in
+ * the footer: the footer is where the task ends, and an undo of equal weight
+ * beside Save is a mis-tap that throws away the date just chosen.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DateInput/DateInput.tsx
  * - /packages/core/src/DateInput/DateInput.doc.mjs
@@ -71,7 +75,7 @@ import {useInputStatusIcon, useMergedRefs} from '../hooks';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
-import {useTranslator} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 import {useInputGroup} from '../InputGroup';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {stableClassName} from '../naming';
@@ -106,6 +110,7 @@ import {
   DATE_FORMAT_WEEKDAY_ONLY,
   type ISODateString,
 } from '../utils';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {MonthScroller, type MonthScrollerHandle} from './MonthScroller';
 import {MonthYearWheels} from './MonthYearWheels';
@@ -118,9 +123,8 @@ import {
 import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 
 /**
- * The comfortable minimum tap target on both iOS and Android. Applied as a
- * FLOOR under the size prop rather than replacing it: `size` still means what
- * it means, it just cannot produce a control a thumb misses.
+ * The comfortable minimum tap target on both iOS and Android, honoured by
+ * every target inside the sheet.
  */
 const TOUCH_TARGET = dateInputTouchSizes.daySize;
 
@@ -147,17 +151,14 @@ const sizeStyles = stylex.create({
   sm: {
     height: sizeVars['--size-element-sm'],
     minWidth: 180,
-    minBlockSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET},
   },
   md: {
     height: sizeVars['--size-element-md'],
     minWidth: 180,
-    minBlockSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET},
   },
   lg: {
     height: sizeVars['--size-element-lg'],
     minWidth: 180,
-    minBlockSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET},
   },
 });
 
@@ -282,7 +283,7 @@ const styles = stylex.create({
   /**
    * `Button`'s own sizes top out at 36px, which is fine for a mouse and short
    * of the 44px every other target in this sheet honours. Floor it on a
-   * coarse pointer, the same way the field and the day cells do.
+   * coarse pointer, the same way the day cells do.
    */
   monthArrow: {
     minBlockSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET},
@@ -296,6 +297,34 @@ const styles = stylex.create({
    */
   monthArrowIcon: {
     display: 'inline-flex',
+  },
+  /**
+   * Reset, past the arrows. It fades on their timing for their reason: the
+   * plate starts below the header, so the two of them are what the layer
+   * above cannot cover, and they have to leave together.
+   */
+  headerReset: {
+    display: 'flex',
+    alignItems: 'center',
+    transitionProperty: 'opacity, visibility',
+    transitionDuration: SWAP_DURATION,
+    transitionTimingFunction: 'linear',
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+    },
+  },
+  headerResetHidden: {
+    visibility: 'hidden',
+    opacity: 0,
+    pointerEvents: 'none',
+  },
+  /**
+   * The same 44px floor the arrows take. `Button`'s `sm` is 32px, which is
+   * fine beside a mouse and short of what every other target in this sheet
+   * honours.
+   */
+  resetButton: {
+    minBlockSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET},
   },
   /**
    * The month and year, and the toggle into the wheels. Leading, so it reads
@@ -313,15 +342,7 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     borderRadius: radiusVars['--radius-element'],
-    backgroundColor: {
-      default: 'transparent',
-      '@media (hover: hover)': {
-        default: 'transparent',
-        ':hover:where(:not(:disabled,[aria-disabled="true"]))':
-          colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
+    backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
@@ -330,9 +351,19 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     whiteSpace: 'nowrap',
+    // The header now ends with Reset, so the title is the part that gives:
+    // it ellipses rather than pushing the corner off a narrow screen.
+    minInlineSize: 0,
+    overflow: 'hidden',
+  },
+  titleText: {
+    minInlineSize: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
   titleChevron: {
     display: 'inline-flex',
+    flexShrink: 0,
     // The one part of the swap that keeps `--ease-standard`, because it is
     // the one part that travels: a rotation has a distance to cover, and
     // fast-out-slow-in is what that curve is for. Same duration as the
@@ -479,16 +510,14 @@ const styles = stylex.create({
   },
   /**
    * One footer action. Both occupy the same cell, and the wheels' one is a
-   * layer over the calendar's pair exactly as the panels above are. The row
+   * layer over the calendar's, exactly as the panels above are. The row
    * never changes height either way.
    */
   footerAction: {
     gridArea: '1 / 1',
-    // Side by side and equal: the calendar's cell holds Reset and Save, the
-    // wheels' holds one button. `1fr` each rather than content width, so
-    // neither label's length decides how the row is divided.
+    // One button per surface, filling the row: Save on the calendar, Done on
+    // the wheels.
     display: 'flex',
-    gap: spacingVars['--spacing-2'],
   },
   sheetBody: {
     // One inset on every edge. The block-start is the exception and has to
@@ -545,6 +574,7 @@ export function TouchDateField({
   ...rest
 }: DateInputProps) {
   const t = useTranslator();
+  const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateInput.placeholder');
@@ -670,13 +700,15 @@ export function TouchDateField({
         plainDateFormat(
           {year: 1970, month: 1, day: 4 + ((weekStartsOn + offset) % 7)},
           DATE_FORMAT_WEEKDAY_ONLY,
+          locale,
         ),
       ),
-    [weekStartsOn],
+    [locale, weekStartsOn],
   );
   const monthYearLabel = plainDateFormat(
     {year, month, day: 1},
     DATE_FORMAT_MONTH_YEAR,
+    locale,
   );
 
   // Formats the committed value only. A function format is called with the ISO
@@ -686,7 +718,7 @@ export function TouchDateField({
     optimisticValue != null && /^\d{4}-\d{2}-\d{2}$/.test(optimisticValue)
       ? typeof format === 'function'
         ? format(optimisticValue)
-        : formatSharedDate(plainDateFromISO(optimisticValue), format)
+        : formatSharedDate(plainDateFromISO(optimisticValue), format, locale)
       : '';
 
   const fireChange = useCallback(
@@ -918,8 +950,12 @@ export function TouchDateField({
           // restyle the header button. Adding a target later is additive;
           // withdrawing one is not.
           data-title="month-year"
-          {...stylex.props(styles.title, focusOutlineStyles.focusVisible)}>
-          <span>{monthYearLabel}</span>
+          {...stylex.props(
+            styles.title,
+            interactionOverlayStyles.backgroundColor,
+            focusOutlineStyles.focusVisible,
+          )}>
+          <span {...stylex.props(styles.titleText)}>{monthYearLabel}</span>
           <Icon
             icon="chevronDown"
             size="sm"
@@ -981,6 +1017,27 @@ export function TouchDateField({
                 <Icon icon="chevronRight" size="sm" color="inherit" />
               </span>
             }
+          />
+        </span>
+        {/* Reset, past the arrows, and gone with them on the wheels: the
+            wheels choose a month, and there is no date there to put back.
+            Hidden rather than unmounted, for the arrows' reason — the corner
+            keeps its size, so the header cannot change height mid-swap. */}
+        <span
+          data-action="reset"
+          inert={isWheelOpen ? true : undefined}
+          {...stylex.props(
+            styles.headerReset,
+            isWheelOpen && styles.headerResetHidden,
+          )}>
+          <Button
+            // ghost: a filled button up here would outrank the Save that
+            // finishes the task.
+            variant="ghost"
+            size="sm"
+            xstyle={styles.resetButton}
+            label={t('@astryx.dateInput.resetPicking')}
+            onClick={handleResetInSheet}
           />
         </span>
       </div>
@@ -1077,13 +1134,6 @@ export function TouchDateField({
             styles.panelBeneath,
             isWheelOpen && styles.panelBeneathHidden,
           )}>
-          <Button
-            variant="secondary"
-            size="md"
-            width="100%"
-            label={t('@astryx.dateInput.resetPicking')}
-            onClick={handleResetInSheet}
-          />
           <Button
             variant="primary"
             // md, not sm: it is the action a thumb reaches for, so it gets

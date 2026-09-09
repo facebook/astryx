@@ -45,13 +45,8 @@ import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import {
-  hasActiveFocusTrapEscape,
-  isImeKeyEvent,
-  useFocusTrap,
-  useScrollLock,
-} from '../hooks';
-import {composeEventHandlers, mergeProps} from '../utils';
+import {hasActiveFocusTrapEscape, useFocusTrap, useScrollLock} from '../hooks';
+import {composeEventHandlers, isImeKeyEvent, mergeProps} from '../utils';
 import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
 import {
   BottomSheetSwitcherContext,
@@ -632,8 +627,7 @@ export function BottomSheetSwitcher({
           ? {role: 'alertdialog'}
           : undefined)}>
         {children}
-        {/* A modal flow's ::backdrop already answers Safari's edge sampler. */}
-        {hasScrim ? null : <BottomSheetEdgeTint />}
+        <BottomSheetEdgeTint />
       </dialog>
     </BottomSheetSwitcherContext>
   );

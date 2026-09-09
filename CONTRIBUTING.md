@@ -4,7 +4,7 @@ For the full contribution process — what we accept, how to propose new compone
 
 Key pages:
 
-- **[API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)** — naming, prop patterns, composition rules (read before submitting an RFC)
+- **[API conventions guide](docs/contributing/api-conventions.md)** — practical naming, composition, styling, proposal, and review guidance linked to current owner records
 - **[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** — the design-side bar: tokens, spacing, radius, elevation, type, color, motion, and state representations
 - **[Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
 - **[Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle)** — how components move from lab → core and templates from hidden → visible
@@ -92,9 +92,6 @@ cd astryx
 # Install dependencies
 pnpm install
 
-# Build core package first (required for Storybook)
-pnpm -F @astryxdesign/core build
-
 # Start Storybook for component development
 cd apps/storybook
 pnpm dev
@@ -102,19 +99,9 @@ pnpm dev
 
 ### Running Storybook
 
-Storybook loads pre-built packages from `dist/` folders, so you need to build packages before running Storybook.
-
-**First time setup:**
-
-```bash
-# Build all packages
-pnpm build
-
-# Or build just core
-pnpm -F @astryxdesign/core build
-```
-
-**Start Storybook:**
+Storybook resolves every workspace package to its `src/` directory and compiles
+it itself, so a fresh clone needs no build step first — `pnpm install` then
+`pnpm dev` is enough.
 
 ```bash
 cd apps/storybook
@@ -127,16 +114,8 @@ Storybook will open at http://localhost:6006 with:
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
-**If you make changes to `@astryxdesign/core`:**
-
-```bash
-# Rebuild core package
-pnpm -F @astryxdesign/core build
-
-# Restart Storybook to see changes
-cd apps/storybook
-pnpm dev
-```
+**If you make changes to `@astryxdesign/core`:** nothing extra. The dev server
+serves the edited source, so the story updates on save — no rebuild, no restart.
 
 ### Running the Doc Site
 
@@ -469,13 +448,42 @@ When the audit reports baseline entries as "resolved", delete them from
 > component is accessible — keyboard flows, focus order, screen-reader
 > semantics, and contrast in context still need manual checks.
 
+### Accessibility spec-test contracts
+
+axe finds broad markup violations; it does not know that a switch has to turn
+back off. The reusable **accessibility spec tests** in
+[`internal/a11y-spec/`](internal/a11y-spec/README.md) encode one adopted
+WAI-ARIA APG pattern as a standards-traceable contract, and components bind to
+it. Each expectation names the WCAG success criterion or APG requirement it
+comes from, the evidence layer that can observe it, and whether it gates.
+
+They run in two lanes, and the split is the point: jsdom proves DOM-layer facts
+in `pnpm test`, and everything that needs a computed accessibility tree, real
+focus, or real activation is reported `unrun` there and proven in Chromium.
+
+```bash
+# One-time setup
+pnpm storybook:build
+npx playwright install chromium
+
+pnpm test:a11y-contract      # the Chromium lane (also runs inside pr-a11y)
+```
+
+Adopting the pattern in a new component means binding to the existing contract,
+not copying its assertions — see the package README and
+[`docs/specs/AST-020`](docs/specs/AST-020/spec.md) /
+[`docs/specs/AST-021`](docs/specs/AST-021/spec.md).
+
 ### RTL audits
 
 PRs that touch components also run an RTL audit (`pr-rtl`), scoped to the
 changed components like `pr-a11y`. It is soft-gated — findings show in the job
 summary but don't block. Repro locally with `pnpm rtl:audit -- --filter Avatar`
-(the `--` matters: `pnpm -F` is itself `--filter`). See
-`apps/storybook/rtl-audit/README.md`.
+(the `--` matters: `pnpm -F` is itself `--filter`). The report classifies every
+scoped component as **measured**, **verified N-A**, or a **coverage gap**; an
+unexplained all-N-A result is not a clean RTL result. The weekly unfiltered run
+applies the same contract to the full existing roster, while PR CI applies it
+to new and changed components. See `apps/storybook/rtl-audit/README.md`.
 
 ### Modal close visibility guard
 

@@ -5,6 +5,7 @@ import {
   parseMarkdown,
   parseMarkdownIncremental,
   createIncrementalState,
+  getIncrementalParseWork,
   trimStreamingArtifacts,
 } from './parser';
 import type {BlockNode, InlineNode} from './parser';
@@ -209,6 +210,76 @@ describe('parseMarkdownIncremental', () => {
     expect(state.settledBlocks).toBe(cachedBlocks);
   });
 
+  it('returns a fresh array and leaves earlier snapshots untouched', () => {
+    const state = createIncrementalState();
+    const first = parseMarkdownIncremental(
+      '# Stable\n\nFirst paragraph\n\nTail',
+      state,
+    );
+    const stableHeading = first[0];
+    const snapshot = structuredClone(first);
+
+    const second = parseMarkdownIncremental(
+      '# Stable\n\nFirst paragraph\n\nTail grows',
+      state,
+    );
+
+    // Call 1's return is a stable snapshot: a later call neither replaces it
+    // in place nor edits the block nodes it holds.
+    expect(second).not.toBe(first);
+    expect(first).toEqual(snapshot);
+    // Settled block objects are reused across calls by reference.
+    expect(second[0]).toBe(stableHeading);
+    expect(second).toEqual(
+      parseMarkdown('# Stable\n\nFirst paragraph\n\nTail grows'),
+    );
+  });
+
+  it('re-parses when settled text is replaced at the same length', () => {
+    const state = createIncrementalState();
+    const before = '# Alpha\n\nOld body copy';
+    const after = '# Bravo\n\nNew body copy';
+    expect(after).toHaveLength(before.length);
+
+    parseMarkdownIncremental(before, state);
+    const blocks = parseMarkdownIncremental(after, state);
+
+    expect(blocks).toEqual(parseMarkdown(after));
+  });
+
+  it('re-parses when settled text is replaced by longer content', () => {
+    const state = createIncrementalState();
+    parseMarkdownIncremental('# Alpha\n\nOld body copy', state);
+
+    const after =
+      '# Bravo heading\n\nNew body copy, longer than before\n\nTail';
+    const blocks = parseMarkdownIncremental(after, state);
+
+    expect(blocks).toEqual(parseMarkdown(after));
+  });
+
+  it('keeps the prefix settled while a long fence streams and closes', () => {
+    const state = createIncrementalState();
+    const prefix = '# Stable\n\n';
+    const fence = '```ts\nconst a = 1;\n\nconst b = 2;';
+    let stableHeading: BlockNode | undefined;
+
+    for (let end = 1; end <= fence.length; end++) {
+      const blocks = parseMarkdownIncremental(
+        prefix + fence.slice(0, end),
+        state,
+      );
+      stableHeading ??= blocks[0];
+      expect(blocks[0]).toBe(stableHeading);
+      expect(state.settledText).toBe('# Stable');
+    }
+
+    const complete = `${prefix}${fence}\n\`\`\`\n\nAfter`;
+    const blocks = parseMarkdownIncremental(complete, state);
+    expect(blocks[0]).toBe(stableHeading);
+    expect(blocks).toEqual(parseMarkdown(complete));
+  });
+
   it('tracks settledText correctly', () => {
     const state = createIncrementalState();
     parseMarkdownIncremental('# Hello\n\nWorld', state);
@@ -358,6 +429,164 @@ describe('streaming structural suppression', () => {
     if (table?.type === 'table') {
       expect(table.rows).toHaveLength(1);
     }
+  });
+
+  // A `\|` is literal text, not a cell delimiter, so an unfinished line
+  // carrying only escaped pipes is ordinary prose. Holding it back hid the
+  // text — and when it was the whole document, rendered nothing at all.
+  describe('escaped pipes in the unsettled tail', () => {
+    it('renders an unfinished first line whose only pipes are escaped', () => {
+      const text = 'Costs 5 \\| 10 per unit';
+      const state = createIncrementalState();
+
+      const blocks = parseMarkdownIncremental(text, state);
+
+      expect(blocks).toEqual(parseMarkdown(text));
+      expect(blocks).toHaveLength(1);
+    });
+
+    it('renders an unfinished tail line after a settled block', () => {
+      const text = 'Intro\n\nCosts 5 \\| 10 per unit';
+      const state = createIncrementalState();
+
+      const blocks = parseMarkdownIncremental(text, state);
+
+      expect(blocks).toEqual(parseMarkdown(text));
+      expect(blocks).toHaveLength(2);
+    });
+
+    /** The text a reader would see for one block. */
+    function visibleText(block: BlockNode): string {
+      const fromInline = (nodes: InlineNode[]): string =>
+        nodes
+          .map(node => {
+            switch (node.type) {
+              case 'text':
+              case 'code':
+                return node.content;
+              case 'bold':
+              case 'italic':
+              case 'strikethrough':
+              case 'link':
+                return fromInline(node.children);
+              case 'break':
+                return '\n';
+              case 'image':
+                return node.alt;
+              case 'citation':
+                return '';
+            }
+          })
+          .join('');
+      switch (block.type) {
+        case 'heading':
+        case 'paragraph':
+          return fromInline(block.children);
+        case 'codeblock':
+          return block.content;
+        case 'blockquote':
+          return block.children.map(visibleText).join('\n');
+        case 'list':
+          return block.items
+            .map(item => item.children.map(visibleText).join('\n'))
+            .join('\n');
+        case 'table':
+          return [block.headers, ...block.rows]
+            .map(row => row.map(cell => fromInline(cell.children)).join(' '))
+            .join('\n');
+        case 'image':
+          return block.alt;
+        case 'hr':
+          return '';
+      }
+    }
+
+    /**
+     * What the tail of a streamed prose line should read as once rendered:
+     * every `\|` is one literal pipe, and the parser trims the unsettled
+     * tail's surrounding whitespace.
+     */
+    function expectedTail(source: string): string {
+      return source.replace(/\\\|/g, '|').trim();
+    }
+
+    it('keeps the whole tail visible at every prefix, with no settled text', () => {
+      const text = 'Costs 5 \\| 10 per unit';
+      const state = createIncrementalState();
+
+      for (let length = 1; length <= text.length; length++) {
+        const blocks = parseMarkdownIncremental(text.slice(0, length), state);
+        const tail = expectedTail(text.slice(0, length));
+
+        expect(blocks).toHaveLength(1);
+        expect(visibleText(blocks[0])).toBe(tail);
+      }
+    });
+
+    it('keeps the whole tail visible at every prefix, after a settled block', () => {
+      const settled = 'Intro\n\n';
+      const text = `${settled}Costs 5 \\| 10 per unit`;
+      const state = createIncrementalState();
+
+      for (let length = settled.length + 1; length <= text.length; length++) {
+        const blocks = parseMarkdownIncremental(text.slice(0, length), state);
+        const tail = expectedTail(text.slice(settled.length, length));
+
+        // The settled paragraph stays put and the tail is fully readable.
+        expect(blocks).toHaveLength(2);
+        expect(visibleText(blocks[0])).toBe('Intro');
+        expect(visibleText(blocks[1])).toBe(tail);
+      }
+
+      expect(parseMarkdownIncremental(text, state)).toEqual(
+        parseMarkdown(text),
+      );
+    });
+
+    it('keeps parsing bounded to the tail as the line streams in', () => {
+      const prefix = 'Filler paragraph.\n\n'.repeat(40);
+      const text = `${prefix}Costs 5 \\| 10 per unit`;
+      const state = createIncrementalState();
+      // Prime the cache: the first call has nothing settled yet and reads the
+      // whole snapshot by definition.
+      parseMarkdownIncremental(`${prefix}C`, state);
+      let worstSplitCharacters = 0;
+
+      for (let length = prefix.length + 2; length <= text.length; length++) {
+        parseMarkdownIncremental(text.slice(0, length), state);
+        worstSplitCharacters = Math.max(
+          worstSplitCharacters,
+          getIncrementalParseWork(state).splitCharacters,
+        );
+      }
+
+      // Only the unsettled tail is re-split, never the settled filler.
+      expect(worstSplitCharacters).toBeLessThan(
+        text.length - prefix.length + 5,
+      );
+    });
+
+    it('still holds back a lone header whose pipes are unescaped', () => {
+      const state = createIncrementalState();
+
+      const blocks = parseMarkdownIncremental('Col1 | Col2', state);
+
+      expect(blocks).toHaveLength(0);
+    });
+
+    it('streams table rows containing escaped pipes once the table exists', () => {
+      const text = '| Col1 | Col2 |\n| --- | --- |\n| a \\| b | c |';
+      const state = createIncrementalState();
+
+      const blocks = parseMarkdownIncremental(text, state);
+
+      const table = blocks.find(b => b.type === 'table');
+      expect(table?.type).toBe('table');
+      if (table?.type === 'table') {
+        expect(table.rows).toHaveLength(1);
+        expect(table.rows[0]).toHaveLength(2);
+      }
+    });
   });
 
   it('suppresses ordered list marker without content', () => {
@@ -698,5 +927,18 @@ describe('parseMarkdownIncremental link reference definitions', () => {
       state,
     );
     expect(firstLinkHref(after)).toBe('/docs');
+  });
+
+  it('keeps first-definition-wins when definitions move into the settled prefix', () => {
+    const state = createIncrementalState();
+    const first = 'See [d].\n\n[d]: /first\n\nMiddle paragraph\n\n[d]: /second';
+    expect(firstLinkHref(parseMarkdownIncremental(first, state))).toBe(
+      '/first',
+    );
+
+    const complete = `${first}\n\nAfter`;
+    const blocks = parseMarkdownIncremental(complete, state);
+    expect(blocks).toEqual(parseMarkdown(complete));
+    expect(firstLinkHref(blocks)).toBe('/first');
   });
 });

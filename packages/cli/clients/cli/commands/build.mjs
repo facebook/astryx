@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file build command — thin wrapper around api/build.
+ * @file build command — thin wrapper with a stable result summary.
  *
  *   astryx build                  → the PLAYBOOK (how to build a page)
  *   astryx build "<what>"         → a COMPOSITION KIT (closest page template,
@@ -12,9 +12,20 @@
  * (never in the API payload) via formatCliCommand/getCliInvocation.
  */
 
-import {getCliInvocation, formatCliCommand} from '../../../foundation/env/package-manager.mjs';
+import {
+  getCliInvocation,
+  formatCliCommand,
+} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, text, record, records, ARROW} from '../formatters/index.mjs';
+import {resultSet, resultSetOf} from '../../../foundation/debug/index.mjs';
+import {
+  emit,
+  section,
+  text,
+  record,
+  records,
+  ARROW,
+} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {build as buildApi} from '../../../api/build/build.mjs';
@@ -71,16 +82,26 @@ function printPlaybook(run) {
 export function registerBuild(program) {
   defineCommand(program, buildCommand, {
     fn: buildFn,
-    action: async (/** @type {string | undefined} */ query, /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, verbose?: boolean}} */ options) => {
+    action: async (
+      /** @type {string | undefined} */ query,
+      /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, verbose?: boolean}} */ options,
+    ) => {
       const run = getCliInvocation();
       const json = program.opts().json || false;
 
       // No query → the playbook. Still routed through the API for the envelope.
       if (!query || !String(query).trim()) {
         const result = await buildApi(undefined, {cwd: process.cwd()});
-        if (json) return jsonOut(result);
+        // The playbook is a document, not a lookup: one doc, always the same
+        // one. Counting it as a result keeps "what did this run answer with"
+        // true for the no-argument form too.
+        const playbook = resultSet({count: 1, resultKind: 'doc'});
+        if (json) {
+          jsonOut(result);
+          return playbook;
+        }
         printPlaybook(run);
-        return;
+        return playbook;
       }
 
       // Arg validation stays in the CLI.
@@ -93,33 +114,72 @@ export function registerBuild(program) {
       /** @type {import('../../../api/build/build.type.mjs').BuildKitResponse} */
       let result;
       try {
-        result = /** @type {import('../../../api/build/build.type.mjs').BuildKitResponse} */ (
-          await buildApi(query, {cwd: process.cwd(), type: options.type, limit})
-        );
+        result =
+          /** @type {import('../../../api/build/build.type.mjs').BuildKitResponse} */ (
+            await buildApi(query, {
+              cwd: process.cwd(),
+              type: options.type,
+              limit,
+            })
+          );
       } catch (e) {
-        const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions, code: err.code});
-        return;
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+        return cliError(err.message, {
+          suggestions: err.suggestions,
+          code: err.code,
+        });
       }
 
-      if (json) return jsonOut(result);
+      const {
+        query: q,
+        hasResults,
+        matchCount,
+        directMatch,
+        pages,
+        blocks,
+        domain,
+        frame,
+        foundation,
+        hint,
+      } = result.data;
+      // The kit spans domains, so its kind comes from the pieces themselves.
+      // `frame` and `foundation` are always-on and deliberately excluded: they
+      // are not what the query matched.
+      const answered = resultSetOf([...pages, ...blocks, ...domain], {
+        count: matchCount,
+        empty: !hasResults,
+        directMatch,
+        fallbackKind: options.type ?? 'mixed',
+      });
 
-      const {query: q, hasResults, directMatch, pages, blocks, domain, frame, foundation} =
-        result.data;
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       if (!hasResults) {
         emit(
           text(`No matches for "${q}".`),
           text(`Try a broader term, or browse: ${run} component --list`),
         );
-        return;
+        return answered;
       }
 
       // Same JSON->text projection as search, but leaner: the section header
       // already says the kind, so drop `domain`/`import` by default (they're in
       // --json and under --verbose). Keeps each item to name/displayName/desc/cmd.
       const fields = options.verbose
-        ? ['name', 'domain', 'displayName', 'score', 'reason', 'import', 'description', 'command']
+        ? [
+            'name',
+            'domain',
+            'displayName',
+            'score',
+            'reason',
+            'import',
+            'description',
+            'command',
+          ]
         : ['name', 'displayName', 'description', 'command'];
       /** @type {import('../formatters/index.mjs').RecordOptions} */
       const recordOpts = {fields, format: {command: formatCliCommand}};
@@ -146,6 +206,9 @@ export function registerBuild(program) {
       if (blocks.length) sectionsOrder.push('BLOCKS');
       if (domain.length) sectionsOrder.push('DOMAIN COMPONENTS');
       sectionsOrder.push('FRAME + FOUNDATION');
+      // The legend promises the complete order, so a section emitted after it
+      // has to be in it.
+      if (hint) sectionsOrder.push('FEW MATCHES');
 
       /** @type {import('../formatters/index.mjs').Block[]} */
       const out = [
@@ -184,7 +247,10 @@ export function registerBuild(program) {
       }
 
       out.push(
-        section('FRAME + FOUNDATION', 'Always-available shell + layout/text/action primitives.'),
+        section(
+          'FRAME + FOUNDATION',
+          'Always-available shell + layout/text/action primitives.',
+        ),
         record({
           frame,
           foundation,
@@ -193,7 +259,23 @@ export function registerBuild(program) {
         }),
       );
 
+      // Last, so it is the line the reader leaves with — and only when the kit
+      // was thin enough that "the package has nothing" is the wrong conclusion.
+      // The commands arrive bare and are rendered through the project's own
+      // invocation, so they are runnable as printed.
+      if (hint) {
+        out.push(
+          section(
+            'FEW MATCHES',
+            `${hint.reason}\nBrowse instead:\n${hint.commands
+              .map(c => formatCliCommand(c))
+              .join('\n')}`,
+          ),
+        );
+      }
+
       emit(...out);
+      return answered;
     },
   });
 }

@@ -286,6 +286,93 @@ describe('PowerSearch', () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
+  it('saves the freshly committed numeric value on Enter', () => {
+    const numericConfig: PowerSearchConfig = {
+      name: 'test-number',
+      fields: [
+        {
+          key: 'level',
+          label: 'Level',
+          operators: [
+            {key: 'equals', label: 'equals', value: {type: 'integer'}},
+          ],
+        },
+      ],
+    };
+    const onSave = vi.fn();
+
+    function NumericValueHarness() {
+      const internalConfig = useInternalConfig(numericConfig);
+      return (
+        <PowerSearchEditPopover
+          config={internalConfig}
+          filter={{
+            field: 'level',
+            operator: 'equals',
+            value: {type: 'integer', value: 5},
+          }}
+          mode="edit"
+          onSave={onSave}
+          onCancel={() => {}}
+        />
+      );
+    }
+
+    render(<NumericValueHarness />);
+    const input = screen.getByRole('spinbutton');
+    fireEvent.focus(input);
+    fireEvent.input(input, {target: {value: '42'}});
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    expect(onSave).toHaveBeenCalledWith({
+      field: 'level',
+      operator: 'equals',
+      value: {type: 'integer', value: 42},
+    });
+  });
+
+  it('does not save an invalid numeric draft on Enter', () => {
+    const numericConfig: PowerSearchConfig = {
+      name: 'test-number',
+      fields: [
+        {
+          key: 'level',
+          label: 'Level',
+          operators: [
+            {key: 'equals', label: 'equals', value: {type: 'integer'}},
+          ],
+        },
+      ],
+    };
+    const onSave = vi.fn();
+
+    function NumericValueHarness() {
+      const internalConfig = useInternalConfig(numericConfig);
+      return (
+        <PowerSearchEditPopover
+          config={internalConfig}
+          filter={{
+            field: 'level',
+            operator: 'equals',
+            value: {type: 'integer', value: 5},
+          }}
+          mode="edit"
+          onSave={onSave}
+          onCancel={() => {}}
+        />
+      );
+    }
+
+    render(<NumericValueHarness />);
+    const input = screen.getByRole('spinbutton');
+    fireEvent.focus(input);
+    fireEvent.input(input, {target: {value: '1·234'}});
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(input).toHaveValue('1·234');
+  });
+
   it('does not save/close on a composing Enter while typing a filter value (#4828)', () => {
     const onSave = vi.fn();
     const onCancel = vi.fn();

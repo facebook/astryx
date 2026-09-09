@@ -182,24 +182,28 @@ export function formatInstant(
         ...FULL_OPTIONS,
         timeZoneName: timeZoneNameStyle,
         ...zone,
+        calendar: 'gregory',
       }).format(date);
 
     case 'date':
       return new Intl.DateTimeFormat(locale, {
         ...SHARED_DATE_FORMAT_OPTIONS.date,
         ...zone,
+        calendar: 'gregory',
       }).format(date);
 
     case 'date_long':
       return new Intl.DateTimeFormat(locale, {
         ...SHARED_DATE_FORMAT_OPTIONS.date_long,
         ...zone,
+        calendar: 'gregory',
       }).format(date);
 
     case 'date_weekday':
       return new Intl.DateTimeFormat(locale, {
         ...SHARED_DATE_FORMAT_OPTIONS.date_weekday,
         ...zone,
+        calendar: 'gregory',
       }).format(date);
 
     case 'date_time':
@@ -207,6 +211,7 @@ export function formatInstant(
         ...DATE_TIME_OPTIONS,
         ...zoneName,
         ...zone,
+        calendar: 'gregory',
       }).format(date);
 
     case 'time':

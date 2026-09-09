@@ -67,6 +67,25 @@ describe('chart formatters', () => {
     expect(shortDate(value, 'de-DE')).not.toBe(shortDate(value, 'en-US'));
   });
 
+  it('keeps Gregorian dates for locales that default to another calendar', () => {
+    const value = '2026-08-22';
+    const date = new Date(2026, 7, 22);
+    expect(shortDate(value, 'fa-IR')).toBe(
+      new Intl.DateTimeFormat('fa-IR', {
+        month: 'short',
+        day: 'numeric',
+        calendar: 'gregory',
+      }).format(date),
+    );
+    expect(monthYear(value, 'th-TH')).toBe(
+      new Intl.DateTimeFormat('th-TH', {
+        month: 'short',
+        year: 'numeric',
+        calendar: 'gregory',
+      }).format(date),
+    );
+  });
+
   it('passes through non-finite and unparseable values', () => {
     expect(compactNumber(Infinity, 'en-US')).toBe('Infinity');
     expect(percent('not-a-number', 'en-US')).toBe('not-a-number');

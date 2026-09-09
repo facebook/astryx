@@ -5,8 +5,9 @@
 /**
  * @file BreadcrumbItem.tsx
  * @input Uses React use/useRef/useEffect, stylex, theme tokens, BreadcrumbContext,
- *   and (for the menu trigger) usePopover + the shared DropdownMenu item API
- *   (renderDropdownItems, DropdownMenuContext, MENU_ITEM_SELECTOR, useListFocus)
+ *   rtlStyles for the contextual default slash, and (for the menu trigger)
+ *   usePopover + the shared DropdownMenu item API (renderDropdownItems,
+ *   DropdownMenuContext, MENU_ITEM_SELECTOR, useListFocus)
  * @output Exports BreadcrumbItem component and BreadcrumbItemProps
  * @position Individual breadcrumb item; used inside Breadcrumbs
  *
@@ -43,7 +44,7 @@ import {
 import {BreadcrumbContext, type BreadcrumbsVariant} from './Breadcrumbs';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
-import {mergeProps} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
@@ -221,6 +222,18 @@ const itemStyles = stylex.create({
   },
 });
 
+function BreadcrumbSeparator({separator}: {separator: ReactNode}) {
+  return (
+    <span aria-hidden="true" {...stylex.props(itemStyles.separator)}>
+      {separator === '/' ? (
+        <span {...stylex.props(rtlStyles.mirror)}>/</span>
+      ) : (
+        separator
+      )}
+    </span>
+  );
+}
+
 const menuStyles = stylex.create({
   menu: {
     boxSizing: 'border-box',
@@ -373,9 +386,7 @@ export function BreadcrumbItem({
         )}
         data-testid={testId}
         {...rest}>
-        <span aria-hidden="true" {...stylex.props(itemStyles.separator)}>
-          {ctx.separator}
-        </span>
+        <BreadcrumbSeparator separator={ctx.separator} />
         {hasMenu ? (
           // A current crumb can also open a sibling menu — the trigger keeps
           // both aria-current="page" and aria-haspopup="menu".
@@ -422,9 +433,7 @@ export function BreadcrumbItem({
       )}
       data-testid={testId}
       {...rest}>
-      <span aria-hidden="true" {...stylex.props(itemStyles.separator)}>
-        {ctx.separator}
-      </span>
+      <BreadcrumbSeparator separator={ctx.separator} />
       {hasMenu ? (
         <BreadcrumbMenuTrigger
           ref={contentRef}

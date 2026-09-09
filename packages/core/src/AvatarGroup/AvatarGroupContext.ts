@@ -9,16 +9,18 @@
  */
 
 import {createContext, use} from 'react';
-import type {AvatarSize} from '../Avatar';
+import type {AvatarShape, AvatarSize} from '../Avatar';
 
 export interface AvatarGroupContextValue {
   size: AvatarSize;
+  shape: AvatarShape;
   overlap: number;
   numericSize: number;
 }
 
-export const AvatarGroupContext =
-  createContext<AvatarGroupContextValue | null>(null);
+export const AvatarGroupContext = createContext<AvatarGroupContextValue | null>(
+  null,
+);
 AvatarGroupContext.displayName = 'AvatarGroupContext';
 
 export function useAvatarGroup(): AvatarGroupContextValue | null {

@@ -67,6 +67,12 @@ export const docs = {
       description: 'Callback invoked when the open state changes.',
     },
     {
+      name: 'chevronPosition',
+      type: "'start' | 'end'",
+      description: 'Logical position of Collapsible\'s disclosure chevron. `end` (default) follows the label, pointing down when collapsed and up when expanded. `start` precedes the label, pointing inward toward content when collapsed (mirrored under RTL) and down when expanded. Inside a CollapsibleGroup this defaults to the group\'s chevronPosition.',
+      default: "'end'",
+    },
+    {
       name: 'value',
       type: 'string',
       description: 'Identifier used for group coordination. Required when placed inside an CollapsibleGroup.',
@@ -89,7 +95,7 @@ export const docs = {
     ],
     anatomy: [
       { name: 'Trigger', required: true, description: 'The always-visible button that toggles the content. Shows a label and a chevron indicator.' },
-      { name: 'Chevron', required: false, description: 'Animated arrow that rotates to show open or closed state.' },
+      { name: 'Chevron', required: false, description: 'Animated disclosure arrow. It follows the label by default; chevronPosition="start" moves it ahead of the label, points inward when collapsed (mirrored under RTL), and turns down when expanded.' },
       { name: 'Content', required: false, description: 'The area that hides or reveals when the trigger is clicked.' },
     ],
   },

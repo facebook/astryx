@@ -19,6 +19,7 @@ import {ColorSwatch} from './ColorSwatch';
 import {SelectableCard} from '@astryxdesign/core/SelectableCard';
 import {FONT_OPTIONS, RATIO_OPTIONS, UNIFIED_PRESETS} from './constants';
 import {getConcentricityWarning} from './helpers';
+import {useLiveNumberInput} from '@/lib/useLiveNumberInput';
 
 const styles = stylex.create({
   fullWidthField: {width: '100%'},
@@ -70,6 +71,16 @@ function ScaleControl({
   step,
   units,
 }: ScaleControlProps) {
+  const liveNumber = useLiveNumberInput(
+    numberValue,
+    nextValue => {
+      if (nextValue != null) {
+        onNumber(nextValue);
+      }
+    },
+    {min, max},
+  );
+
   return (
     <VStack gap={1}>
       <HStack gap={1} vAlign="center">
@@ -98,9 +109,13 @@ function ScaleControl({
         <NumberInput
           label={controlLabel}
           isLabelHidden
-          value={numberValue}
+          value={liveNumber.value}
           placeholder="—"
-          onChange={onNumber}
+          onChange={liveNumber.handleChange}
+          onFocus={liveNumber.handleFocus}
+          onInput={liveNumber.handleInput}
+          onBlur={liveNumber.handleBlur}
+          onKeyDown={liveNumber.handleKeyDown}
           min={min}
           max={max}
           step={step}
