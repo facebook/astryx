@@ -49,6 +49,12 @@ export const docs = {
       required: true,
     },
     {
+      name: 'changeAction',
+      type: '(items: T[], change: TokenizerChange<T>) => void | Promise<void>',
+      description:
+        'Async action after onChange, called with the same arguments. Runs in a transition: the proposed tokens show optimistically and the field is busy (spinner and aria-busy) until value catches up.',
+    },
+    {
       name: 'placeholder',
       type: 'string',
       description:
@@ -95,6 +101,13 @@ export const docs = {
       type: 'string',
       description:
         'Explains why the tokenizer is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (input stays blocked). Use this instead of wrapping a disabled Tokenizer in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        'Marks the field value as resolving or being saved: shows the busy spinner and sets aria-busy on the combobox. Search results are unaffected; a search in flight has its own busy state and shares the indicator.',
+      default: 'false',
     },
     {
       name: 'status',
@@ -272,7 +285,7 @@ export const docs = {
       {name: 'Token chips', required: false, description: 'Removable chips representing each selected item. Each chip shows a label and a remove button.'},
       {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Hides when maxEntries is reached.'},
       {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types.'},
-      {name: 'Spinner', required: false, description: 'Loading indicator shown at the end of the field while a search is in flight.'},
+      {name: 'Spinner', required: false, description: 'Busy indicator at the end of the field while a search is in flight, or while the field value is loading or a changeAction is pending.'},
       {name: 'End content', required: false, description: 'A trailing slot after the input for action buttons, counts, or other controls.'},
       {name: 'Clear button', required: false, description: 'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.'},
     ],
@@ -309,6 +322,12 @@ export const docsZh = {
       description:
         "\u9009\u62e9\u53d8\u66f4\u65f6\u8c03\u7528\u3002change \u53c2\u6570\u5305\u542b\u53d7\u5f71\u54cd\u7684\u9879\u76ee\u548c\u7c7b\u578b\uff08'add' | 'create' | 'remove' | 'reorder'\uff09\u3002",
       required: true,
+    },
+    {
+      name: 'changeAction',
+      type: '(items: T[], change: TokenizerChange<T>) => void | Promise<void>',
+      description:
+        '在 onChange 之后以相同参数触发的异步操作。在 transition 中运行：拟定的标记乐观显示，字段处于忙碌状态（旋转器和 aria-busy），直到 value 跟上。',
     },
     {
       name: 'placeholder',
@@ -356,6 +375,13 @@ export const docsZh = {
       type: 'string',
       description:
         'Explains why the tokenizer is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (input stays blocked). Use this instead of wrapping a disabled Tokenizer in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        '标记字段值正在解析或保存：显示忙碌旋转器并在组合框上设置 aria-busy。搜索结果不受影响；进行中的搜索有自己的忙碌状态并共用该指示器。',
+      default: 'false',
     },
     {
       name: 'status',
@@ -498,7 +524,7 @@ export const docsZh = {
       {name: 'Token chips', required: false, description: 'Removable chips representing each selected item. Each chip shows a label and a remove button.'},
       {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Hides when maxEntries is reached.'},
       {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types.'},
-      {name: 'Spinner', required: false, description: 'Loading indicator shown at the end of the field while a search is in flight.'},
+      {name: 'Spinner', required: false, description: '字段末尾的忙碌指示器：搜索进行中，或字段值正在加载、changeAction 挂起时显示。'},
       {name: 'End content', required: false, description: 'A trailing slot after the input for action buttons, counts, or other controls.'},
       {name: 'Clear button', required: false, description: 'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.'},
     ],
@@ -527,6 +553,7 @@ export const docsDense = {
     searchSource: 'Data source w/ search+bootstrap methods for populating dropdown.',
     value: 'Array of currently selected items.',
     onChange: "Fired on selection change. Change arg includes affected item+type ('add'|'create'|'remove'|'reorder').",
+    changeAction: 'async after onChange, same args; optimistic tokens+busy while pending',
     hasCreate: 'Enable free-text token creation. Shows "Create" dropdown option for unmatched typed text.',
     placeholder: 'Input placeholder. Only shown when no tokens selected.',
     maxEntries: 'Max selections allowed. Input hidden at limit.',
@@ -535,6 +562,7 @@ export const docsDense = {
     renderItem: 'Custom dropdown item render. Default renders TypeaheadItem.',
     isDisabled: 'Disables input+all token interactions.',
     htmlName: 'HTML name attr; one hidden input per selected item id.',
+    isLoading: 'value busy: spinner+aria-busy; search unaffected',
     status: 'Validation status w/ type+message for error/warning/success.',
     statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     isLabelHidden: 'Visually hides label; keeps a11y.',

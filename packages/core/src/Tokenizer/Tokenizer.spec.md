@@ -47,9 +47,23 @@ remains evidence for the need, not authority for this record.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`; this pull request changes documentation only.
-- Compatibility class: additive contract with no runtime, DOM, styling, target,
-  declaration, or public API change.
+- Released default preserved: `yes`; `isLoading` defaults to `false` and
+  `changeAction` to unset, which renders and behaves exactly as shipped.
+- Compatibility class: additive; two new public props, `isLoading` and
+  `changeAction`, with no change to existing targets, DOM, styling, or
+  declaration, and no change to behavior without them except the FR4 fix:
+  a field disabled with a reason no longer removes a token (Backspace or a
+  custom token's remove callback) or selects one from the keyboard. The
+  opening-control descriptor stays package-internal.
+- `isLoading` is additive. It marks the value busy — one Spinner in the end
+  lane plus `aria-busy` on the combobox — and never means the option source is
+  pending (`spec:AST-001`). `changeAction` is additive. Before it, an add,
+  remove, or clear only reported through `onChange`. After it, `onChange` still
+  runs first, then the Action runs inside a transition while the proposed
+  token list shows as busy until the controlled `value` accepts it
+  (`family:input-fields` FR5–FR7). The clear-all control follows the
+  accepted `value`, as Selector's clear does, while the tokens follow the
+  proposal.
 - Controlled/uncontrolled behavior: unchanged.
 - Migration decision: none. A later implementation must preserve the public
   Tokenizer API and its existing suggestion-menu sizing behavior.
@@ -85,6 +99,13 @@ Consumer migration instructions belong in consumer docs and release notes.
   boundary needed to identify the control that activated an internal open.
 
 ## Public concepts
+
+`isLoading` and `changeAction` are input-field family concepts adopted from
+`family:input-fields` (FR5–FR7, DEC-2, DEC-3), not Tokenizer-owned concepts.
+Tokenizer owns only the Action's argument shape, which mirrors `onChange`:
+`(items: T[], change: TokenizerChange<T>)`. Search busy stays
+BaseTypeahead-owned; both meanings share the one end-lane Spinner and the
+combobox `aria-busy`.
 
 No public concept is introduced. Existing consumer props and usage remain in
 `Tokenizer.doc.mjs`.
@@ -251,14 +272,15 @@ owns its 400–720 editor states; those dimensions never become Tokenizer policy
 
 ## Verification map
 
-| Contract         | Verification                                                                      | Representative states                                                                 | Mutation or failure expectation                                                                                    | Audit section                    |
-| ---------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| FR1–FR3          | Existing Tokenizer/BaseTypeahead unit tests plus source inspection                | empty, tokens, remove, clear, max, wrapping, both overflow modes                      | Input remounts, suggestion menu changes anchor/width semantics, or overflow ownership is misstated.                | `audit:Tokenizer/current`        |
-| FR4–FR8          | Focused descriptor identity/capture tests when implemented                        | add, default/custom token edit, max, hidden layer, reparent, stale node, unmount, SSR | Descriptor leaks publicly, captures a transient result/pointer, misses custom controls, or uses unusable geometry. | `audit:Tokenizer/opening-anchor` |
-| FR9–FR12         | Layer unit tests and real-Chromium geometry checks when implemented               | full/equal/narrow surface, start/end/tie, LTR/RTL, collision, stale fallback          | Full-width follows inner input, tie is physical, collision runs early, or stale identity flashes.                  | `audit:Tokenizer/placement`      |
-| PR1–PR5          | Instrumented reads, pending-frame cleanup tests, and first-frame Chromium capture | open, close before frame, reopen opposite side, resize while open                     | Render-time/repeated reads, observer/pointer tracking, uncancelled frame, or first-frame jump occurs.              | `audit:Tokenizer/performance`    |
-| AR1–AR4          | Existing interaction suites plus focused pointer/keyboard/browser checks          | add/edit, focus/refocus, overflow, disabled, dismissal                                | Modality changes placement, semantics/focus regress, or visible placement is wrong before fallback.                | `audit:Tokenizer/accessibility`  |
-| Record structure | `scripts/check-knowledge.mjs`                                                     | Template-v3 current record and current-only frontmatter links                         | Invalid metadata, authority, or relationship references fail repository validation.                                | `audit:Tokenizer/knowledge`      |
+| Contract         | Verification                                                                      | Representative states                                                                   | Mutation or failure expectation                                                                                                                               | Audit section                    |
+| ---------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| FR1–FR3          | Existing Tokenizer/BaseTypeahead unit tests plus source inspection                | empty, tokens, remove, clear, max, wrapping, both overflow modes                        | Input remounts, suggestion menu changes anchor/width semantics, or overflow ownership is misstated.                                                           | `audit:Tokenizer/current`        |
+| FR4–FR8          | Focused descriptor identity/capture tests when implemented                        | add, default/custom token edit, max, hidden layer, reparent, stale node, unmount, SSR   | Descriptor leaks publicly, captures a transient result/pointer, misses custom controls, or uses unusable geometry.                                            | `audit:Tokenizer/opening-anchor` |
+| FR9–FR12         | Layer unit tests and real-Chromium geometry checks when implemented               | full/equal/narrow surface, start/end/tie, LTR/RTL, collision, stale fallback            | Full-width follows inner input, tie is physical, collision runs early, or stale identity flashes.                                                             | `audit:Tokenizer/placement`      |
+| PR1–PR5          | Instrumented reads, pending-frame cleanup tests, and first-frame Chromium capture | open, close before frame, reopen opposite side, resize while open                       | Render-time/repeated reads, observer/pointer tracking, uncancelled frame, or first-frame jump occurs.                                                         | `audit:Tokenizer/performance`    |
+| AR1–AR4          | Existing interaction suites plus focused pointer/keyboard/browser checks          | add/edit, focus/refocus, overflow, disabled, dismissal                                  | Modality changes placement, semantics/focus regress, or visible placement is wrong before fallback.                                                           | `audit:Tokenizer/accessibility`  |
+| Record structure | `scripts/check-knowledge.mjs`                                                     | Template-v3 current record and current-only frontmatter links                           | Invalid metadata, authority, or relationship references fail repository validation.                                                                           | `audit:Tokenizer/knowledge`      |
+| Input busy       | `Tokenizer.test.tsx` `input busy: isLoading and changeAction` suite               | `isLoading`; pending add, remove, or clear Action; settled; source-busy plus value-busy | A second Spinner appears, `aria-busy` drops while busy, the Action runs before `onChange`, or the proposed list survives an Action the parent did not accept. | `audit:Tokenizer/accessibility`  |
 
 ## Decision log
 

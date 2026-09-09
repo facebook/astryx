@@ -62,6 +62,7 @@ const meta: Meta<typeof Tokenizer> = {
     isRequired: {control: 'boolean'},
     isOptional: {control: 'boolean'},
     hasClear: {control: 'boolean'},
+    isLoading: {control: 'boolean'},
     maxEntries: {control: 'number'},
     size: {
       control: 'radio',
@@ -548,4 +549,63 @@ export const RtlEndLane: Story = {
     placeholder: 'Search people...',
   },
   name: 'RTL end lane (token + clear)',
+};
+
+/**
+ * The value is busy; the search is idle. `isLoading` means the field's VALUE
+ * is resolving or being saved — here two members the app is still confirming
+ * — so the end-lane Spinner shows and the combobox carries `aria-busy`, while
+ * the search source stays fully usable: type to search and pick a result.
+ */
+export const ValueBusy: Story = {
+  render: args => {
+    const [value, setValue] = useState<SearchableItem[]>([users[0], users[2]]);
+    return (
+      <Tokenizer
+        {...args}
+        searchSource={userSource}
+        value={value}
+        onChange={items => setValue(items)}
+      />
+    );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Search people...',
+    isLoading: true,
+  },
+  name: 'Input busy (isLoading)',
+};
+
+/**
+ * `changeAction` runs after `onChange` in a transition. Each add, remove,
+ * Backspace, and clear-all shows the proposed tokens at once and keeps the
+ * field busy — one Spinner, `aria-busy` on the combobox — until the save
+ * settles (1200 ms here) and the controlled value has caught up.
+ */
+export const TransitionAction: Story = {
+  render: args => {
+    const [value, setValue] = useState<SearchableItem[]>([users[0]]);
+    return (
+      <Tokenizer
+        {...args}
+        searchSource={userSource}
+        value={value}
+        // The app accepts the change only once the save settles, so the
+        // proposed tokens show optimistically and the field stays busy
+        // until then.
+        onChange={() => {}}
+        changeAction={async items => {
+          await new Promise(resolve => setTimeout(resolve, 1200));
+          setValue(items);
+        }}
+        hasClear
+      />
+    );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Search people...',
+  },
+  name: 'Transition action (changeAction)',
 };
