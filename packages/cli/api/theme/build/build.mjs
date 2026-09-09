@@ -12,11 +12,11 @@
  * - A .d.ts (plus an optional .variants.d.ts for custom prop values)
  *
  * It performs the writes and returns a `theme.build` receipt — its `warnings`
- * carry override problems, an `icons:` registry that no import backs (the
- * generated module can only import a registry, so it must omit the key), and
- * any fonts the theme names but does not load (font-warning.mjs) — or `null`
- * when the theme produced no CSS (nothing to build). Errors throw AstryxError
- * (with a stable code). Human progress is emitted through the shared `logger`
+ * carry override problems; `notices` carry fonts the theme names but does not
+ * load (font-warning.mjs) — or `null` when the theme produced no CSS (nothing
+ * to build). An icon registry that cannot be imported fails before output
+ * generation, including in check mode. Errors throw AstryxError (with a stable
+ * code). Human progress is emitted through the shared `logger`
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
  *
@@ -1403,10 +1403,11 @@ function blankComments(source) {
  * comment that quotes an old import line — or a commented-out `icons:` field —
  * must not count as the real thing.
  *
- * Returns null when the theme has no `icons:` field. Returns
- * `{exportName, importPath: null}` when `icons:` names a binding that no
- * import backs (e.g. a registry declared inline as a local const) — the caller
- * warns instead of silently dropping the registry from the built theme.
+ * Returns null when no identifier-valued `icons:` field is found; the caller
+ * also checks the loaded registry for inline object/shorthand declarations.
+ * Returns `{exportName, importPath: null}` when `icons:` names a binding that
+ * no import backs (e.g. a registry declared inline as a local const) — the
+ * caller rejects the build instead of dropping the registry from the theme.
  * @param {string} filePath
  * @returns {{exportName: string, importPath: string | null} | null}
  */
@@ -2000,6 +2001,28 @@ export async function themeBuild(
     throw err;
   }
 
+  // A generated module must preserve the registry through an import: it may
+  // contain React elements, which cannot be serialized. Validate before CSS
+  // generation so neither the no-CSS return nor --check can bypass the error.
+  const iconScan = extractIconInfo(filePath);
+  const iconInfo =
+    iconScan && iconScan.importPath != null
+      ? {exportName: iconScan.exportName, importPath: iconScan.importPath}
+      : null;
+  if (!iconInfo && (iconScan || Object.keys(themeDef.icons ?? {}).length > 0)) {
+    const registry = iconScan
+      ? `\`icons: ${iconScan.exportName}\``
+      : 'an icon registry';
+    throw new AstryxError(
+      `Theme sets ${registry} but no import for the registry was found. ` +
+        'The generated module cannot preserve inline registries because they ' +
+        'may contain React elements, which cannot be serialized. Move the ' +
+        'registry to its own module and import it into the theme file.',
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+
   // Validate component overrides
   const warnings = await validateComponentOverrides(themeDef);
   const warningMessages = [];
@@ -2282,27 +2305,6 @@ export async function themeBuild(
   const outDir = path.dirname(outPath);
   const jsPath = path.join(outDir, `${baseName}.js`);
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
-
-  // Icon registry detection. `importPath: null` means the theme names an
-  // `icons:` binding that no import backs (e.g. a registry declared inline as
-  // a const). The generated module can only *import* a registry — it holds
-  // React elements, which cannot be serialized — so the icons key is omitted;
-  // warn rather than dropping the whole registry silently (#5058).
-  const iconScan = extractIconInfo(filePath);
-  const iconInfo =
-    iconScan && iconScan.importPath != null
-      ? {exportName: iconScan.exportName, importPath: iconScan.importPath}
-      : null;
-  if (iconScan && iconScan.importPath == null) {
-    const msg =
-      `Theme sets \`icons: ${iconScan.exportName}\` but no import of ` +
-      `"${iconScan.exportName}" was found — the generated module can only ` +
-      `import a registry (it holds React elements, which cannot be ` +
-      `serialized), so the built theme will have no icons. Move the registry ` +
-      `to its own module and import it into the theme file.`;
-    warningMessages.push(msg);
-    logger.warn(`  ⚠ ${msg}`);
-  }
 
   // Type augmentation .d.ts if theme has custom prop values. Computed
   // before the main .d.ts so the latter can reference it (see below).
