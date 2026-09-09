@@ -219,6 +219,18 @@ export const TEXT_INPUT_FIXTURES: readonly TextInputFixture[] = [
     html: `<label for="fx">Name</label><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true">`,
   },
   {
+    id: 'violating-hidden-unrelated-error',
+    summary: 'matching hidden text that is not related to the invalid control',
+    facts: facts({invalid: true, errorMessage: 'Enter a valid name.'}),
+    html: `<label for="fx">Name</label><span hidden>Enter a valid name.</span><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true">`,
+  },
+  {
+    id: 'violating-visible-unrelated-error',
+    summary: 'matching visible text that is not related to the invalid control',
+    facts: facts({invalid: true, errorMessage: 'Enter a valid name.'}),
+    html: `<label for="fx">Name</label><span>Enter a valid name.</span><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true">`,
+  },
+  {
     id: 'violating-editing-inert',
     summary: 'an apparently editable text input that refuses keyboard changes',
     facts: facts({value: 'Start'}),
@@ -287,7 +299,11 @@ export const TEXT_INPUT_MUTATIONS: Readonly<Record<string, readonly string[]>> =
     'text-input.required.not-exposed': ['violating-required-overexposed'],
     'text-input.invalid.exposed': ['violating-invalid-unexposed'],
     'text-input.invalid.not-exposed': ['violating-invalid-overexposed'],
-    'text-input.error.identified-in-text': ['violating-error-without-text'],
+    'text-input.error.identified-in-text': [
+      'violating-error-without-text',
+      'violating-hidden-unrelated-error',
+      'violating-visible-unrelated-error',
+    ],
     'text-input.editing.keyboard-round-trip': ['violating-editing-inert'],
     'text-input.focus.reachable-and-escapable': [
       'violating-unreachable',

@@ -72,8 +72,6 @@ export interface Subject {
    * is an id that resolves to nothing — a description the user never gets.
    */
   idReferences(attribute: string): Promise<readonly (string | null)[]>;
-  /** DOM layer: normalized text content of the mounted document. */
-  documentText(): Promise<string>;
   /** DOM layer: persistent author-supplied label text, excluding placeholder. */
   labelText(): Promise<string | null>;
   /** DOM/runtime layer: the live value of a native text control, if this is one. */

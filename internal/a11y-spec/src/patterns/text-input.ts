@@ -549,8 +549,8 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
       {
         id: 'text-input.error.identified-in-text',
         outcome:
-          'An invalid text control renders textual error feedback, so the failure is not conveyed only by color or an icon.',
-        sources: [WCAG_3_3_1],
+          'An invalid text control renders textual error feedback and programmatically connects it to the field.',
+        sources: [WCAG_3_3_1, WCAG_1_3_1],
         covers: ['3.3.1-error-identification'],
         appliesWhen: {
           condition: 'this state is invalid',
@@ -565,10 +565,15 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
               'the binding declares this text control invalid but supplies no textual error description',
             );
           }
-          const documentText = await subject.documentText();
-          if (!saysInOrder(spokenWords(documentText), spokenWords(expected))) {
+          const relatedText = [
+            ...(await subject.idReferences('aria-errormessage')),
+            ...(await subject.idReferences('aria-describedby')),
+          ];
+          if (
+            !relatedText.some(text => text != null && sameWords(text, expected))
+          ) {
             throw new Error(
-              `the binding identifies the error as "${expected}", but that text is not present in the rendered content`,
+              `the binding identifies the error as "${expected}", but no aria-errormessage or aria-describedby target contains that text`,
             );
           }
         },
