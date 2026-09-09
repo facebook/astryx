@@ -4,8 +4,8 @@
  * @file Dialog.a11y.chromium.spec.ts
  * @input Uses the modal-dialog contract, Chromium harness, static Storybook,
  *   dedicated Dialog stories, state inventory, and exact known failures
- * @output Browser-owned Dialog binding evidence for top-layer, accessibility
- *   tree, focus, Tab containment, Escape, restoration, and background inertness
+ * @output Browser-owned Dialog binding evidence for native modality,
+ *   accessibility-tree exposure, focus entry and return, and background inertness
  * @position High-fidelity lane; jsdom binds only DOM semantics.
  */
 
@@ -123,6 +123,42 @@ async function runState(
     },
   });
 }
+
+test('Dialog enters native modality before initial focus moves inside', async ({
+  page,
+}) => {
+  const state = DIALOG_MODAL_BINDING_STATES.find(
+    candidate => candidate.id === 'labelled-described-default-title',
+  );
+  if (state == null) {
+    throw new Error('missing labelled-described-default-title binding state');
+  }
+
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=${state.storyId}&viewMode=story`,
+    {waitUntil: 'load'},
+  );
+  await holdMotionStill(page);
+  const root = page.locator('#storybook-root');
+  const subject = root.locator('dialog');
+
+  await subject.evaluate(dialog => {
+    dialog.setAttribute('data-modal-before-focus', 'unobserved');
+    const recordFirstEntry = (event: FocusEvent) => {
+      if (event.target instanceof Node && dialog.contains(event.target)) {
+        dialog.setAttribute(
+          'data-modal-before-focus',
+          String(dialog.matches(':modal')),
+        );
+        document.removeEventListener('focusin', recordFirstEntry, true);
+      }
+    };
+    document.addEventListener('focusin', recordFirstEntry, true);
+  });
+
+  await root.getByRole('button', {name: DIALOG_CONTRACT_OPEN_LABEL}).click();
+  await expect(subject).toHaveAttribute('data-modal-before-focus', 'true');
+});
 
 test('every expectation is exercised and every known failure matches once', async ({
   page,

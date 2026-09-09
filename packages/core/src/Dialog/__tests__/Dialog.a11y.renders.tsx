@@ -10,7 +10,7 @@
  *   controlled open/close wiring.
  */
 
-import {useState, type ReactNode} from 'react';
+import {useState, type ReactElement, type ReactNode} from 'react';
 import {Dialog} from '../Dialog';
 import {DialogHeader} from '../DialogHeader';
 import {
@@ -29,9 +29,9 @@ function DialogBinding({state}: {state: DialogModalBindingState}) {
       content = (
         <>
           <DialogHeader title="Review changes" />
-          <p id="dialog-contract-description">
+          <div id="dialog-contract-description">
             Confirm the changes before continuing.
-          </p>
+          </div>
           <button type="button">Previous</button>
           <button type="button" onClick={() => setIsOpen(false)}>
             {DIALOG_CONTRACT_CLOSE_LABEL}
@@ -49,7 +49,7 @@ function DialogBinding({state}: {state: DialogModalBindingState}) {
             autoFocus>
             Edit profile
           </h2>
-          <p>Review the profile before saving.</p>
+          <div>Review the profile before saving.</div>
           <button type="button" onClick={() => setIsOpen(false)}>
             {DIALOG_CONTRACT_CLOSE_LABEL}
           </button>
@@ -60,7 +60,7 @@ function DialogBinding({state}: {state: DialogModalBindingState}) {
       content = isOpen ? (
         <>
           <DialogHeader title="Sensitive review" />
-          <p>This content exists only while the task is open.</p>
+          <div>This content exists only while the task is open.</div>
           <button type="button" onClick={() => setIsOpen(false)}>
             {DIALOG_CONTRACT_CLOSE_LABEL}
           </button>
@@ -68,7 +68,7 @@ function DialogBinding({state}: {state: DialogModalBindingState}) {
       ) : null;
       break;
     case 'no-focusable':
-      content = <p>There are no controls in this task.</p>;
+      content = <div>There are no controls in this task.</div>;
       break;
   }
 
@@ -100,6 +100,6 @@ function DialogBinding({state}: {state: DialogModalBindingState}) {
 
 export function renderDialogModalState(
   state: DialogModalBindingState,
-): ReactNode {
+): ReactElement {
   return <DialogBinding state={state} />;
 }

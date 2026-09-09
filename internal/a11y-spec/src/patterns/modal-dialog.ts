@@ -11,6 +11,7 @@
 
 import {
   definePattern,
+  type ApgRequirement,
   type AstryxRecord,
   type PatternContract,
   type WcagCriterion,
@@ -39,6 +40,27 @@ const WCAG_4_1_2: WcagCriterion = {
   name: 'Name, Role, Value',
   level: 'A',
   url: `${UNDERSTANDING}/name-role-value.html`,
+};
+const APG_URL = 'https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/';
+const APG_ROLE: ApgRequirement = {
+  standard: 'apg',
+  pattern: 'dialog-modal',
+  requirement:
+    'The element that serves as the dialog container has a role of dialog.',
+  url: `${APG_URL}#wai-ariaroles,states,andproperties`,
+};
+const APG_NAME: ApgRequirement = {
+  standard: 'apg',
+  pattern: 'dialog-modal',
+  requirement: 'The dialog has either aria-labelledby or aria-label.',
+  url: `${APG_URL}#wai-ariaroles,states,andproperties`,
+};
+const APG_DESCRIPTION: ApgRequirement = {
+  standard: 'apg',
+  pattern: 'dialog-modal',
+  requirement:
+    'Optionally, aria-describedby is set on the element with the dialog role to indicate which element or elements in the dialog contain content that describes the primary purpose or message of the dialog.',
+  url: `${APG_URL}#wai-ariaroles,states,andproperties`,
 };
 
 const DIALOG_FR1: AstryxRecord = {
@@ -90,10 +112,10 @@ const ALWAYS = {
 
 export interface ModalDialogStateFacts {
   readonly labelledBy: boolean;
-  readonly described: boolean;
+  readonly hasDescriptionReference: boolean;
   readonly hasDeclaredInitialTarget: boolean;
   readonly usesNativeFocusFallback: boolean;
-  readonly restoresFocus: boolean;
+  readonly exercisesFocusRestoration: boolean;
   readonly makesBackgroundInert: boolean;
 }
 
@@ -107,8 +129,8 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
       {
         id: 'modal-dialog.modal.in-top-layer',
         outcome:
-          'The dialog is visibly modal before focus enters it, so the active task and blocked background agree.',
-        sources: [DIALOG_FR1],
+          'The active dialog is in the browser’s native modal state, so the background is outside its interaction context.',
+        sources: [LAYER_NATIVE_MODAL],
         covers: ['apg-interaction'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'real-browser',
@@ -170,8 +192,9 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         sources: [DIALOG_FR4],
         covers: ['2.4.3-focus-order'],
         appliesWhen: {
-          condition: 'the invoker remains available after the dialog closes',
-          test: facts => facts.restoresFocus,
+          condition:
+            'the state includes a close action and the invoker remains available',
+          test: facts => facts.exercisesFocusRestoration,
         },
         evidenceLayer: 'real-browser',
         enforcement: 'required',
@@ -179,6 +202,11 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
           const close = await harness.related('close');
           await close.focus();
           await harness.press('Enter');
+          if (await subject.isModal()) {
+            throw new Error(
+              'activating the binding’s close action left the modal dialog open',
+            );
+          }
           const invoker = await harness.related('invoker');
           if (!(await invoker.isFocused())) {
             throw new Error(
@@ -229,7 +257,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         id: 'modal-dialog.role.exposed',
         outcome:
           'The browser accessibility tree exposes the modal task with role dialog.',
-        sources: [WCAG_4_1_2],
+        sources: [WCAG_4_1_2, APG_ROLE],
         covers: ['4.1.2-name-role-value'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'accessibility-tree',
@@ -249,7 +277,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         id: 'modal-dialog.name.exposed',
         outcome:
           'The browser accessibility tree exposes a non-empty name for the dialog.',
-        sources: [WCAG_4_1_2],
+        sources: [WCAG_4_1_2, APG_NAME],
         covers: ['4.1.2-name-role-value'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'accessibility-tree',
@@ -292,7 +320,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         id: 'modal-dialog.name.references-resolve',
         outcome:
           'Every element used to label the dialog exists, so the task name is not silently lost.',
-        sources: [WCAG_1_3_1],
+        sources: [WCAG_1_3_1, APG_NAME],
         covers: ['1.3.1-info-and-relationships'],
         appliesWhen: {
           condition: 'the dialog is named with aria-labelledby',
@@ -321,11 +349,11 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         id: 'modal-dialog.description.references-resolve',
         outcome:
           'Every id in aria-describedby resolves to an existing element, so the authored relationship is complete.',
-        sources: [WCAG_1_3_1],
+        sources: [WCAG_1_3_1, APG_DESCRIPTION],
         covers: ['1.3.1-info-and-relationships'],
         appliesWhen: {
-          condition: 'the dialog has supporting descriptive content',
-          test: facts => facts.described,
+          condition: 'the binding authors an aria-describedby relationship',
+          test: facts => facts.hasDescriptionReference,
         },
         evidenceLayer: 'dom',
         enforcement: 'required',
@@ -334,7 +362,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
           const ids = (attribute ?? '').split(/\s+/).filter(Boolean);
           if (ids.length === 0) {
             throw new Error(
-              'this state renders supporting content, but the dialog has no aria-describedby relationship',
+              'this state declares an aria-describedby relationship, but the dialog has no aria-describedby attribute',
             );
           }
           const targets = await subject.idReferences('aria-describedby');

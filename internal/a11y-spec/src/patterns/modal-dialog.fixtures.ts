@@ -22,17 +22,17 @@ export interface ModalDialogFixture {
 
 const LABELLED_FACTS: ModalDialogStateFacts = {
   labelledBy: true,
-  described: false,
+  hasDescriptionReference: false,
   hasDeclaredInitialTarget: false,
   usesNativeFocusFallback: false,
-  restoresFocus: false,
+  exercisesFocusRestoration: false,
   makesBackgroundInert: false,
 };
 
 const INTERACTIVE_FACTS: ModalDialogStateFacts = {
   ...LABELLED_FACTS,
   hasDeclaredInitialTarget: true,
-  restoresFocus: true,
+  exercisesFocusRestoration: true,
   makesBackgroundInert: true,
 };
 
@@ -46,7 +46,7 @@ export const MODAL_DIALOG_FIXTURES: readonly ModalDialogFixture[] = [
   {
     id: 'conforming-described',
     summary: 'a labelled dialog with attached supporting text',
-    facts: {...LABELLED_FACTS, described: true},
+    facts: {...LABELLED_FACTS, hasDescriptionReference: true},
     html: '<dialog data-a11y-subject aria-labelledby="title" aria-describedby="details"><h2 id="title" data-a11y-visible-label>Review changes</h2><p id="details">Confirm the changes before saving.</p></dialog>',
   },
   {
@@ -63,7 +63,7 @@ export const MODAL_DIALOG_FIXTURES: readonly ModalDialogFixture[] = [
       ...LABELLED_FACTS,
       labelledBy: false,
       usesNativeFocusFallback: true,
-      restoresFocus: false,
+      exercisesFocusRestoration: false,
       makesBackgroundInert: true,
     },
     html: '<dialog data-a11y-subject aria-label="Read terms"><p>There are no controls in this task.</p></dialog>',
@@ -92,7 +92,7 @@ export const MODAL_DIALOG_FIXTURES: readonly ModalDialogFixture[] = [
     summary: 'a non-modal dialog that leaves the background interactive',
     facts: INTERACTIVE_FACTS,
     presentation: 'nonmodal',
-    html: '<dialog data-a11y-subject aria-labelledby="title"><h2 id="title" data-a11y-visible-label>Review changes</h2><button type="button" data-a11y-relation="initial first" autofocus>Confirm</button><button type="button" data-a11y-relation="last">Cancel</button></dialog>',
+    html: '<dialog data-a11y-subject aria-labelledby="title"><h2 id="title" data-a11y-visible-label>Review changes</h2><button type="button" autofocus>Confirm</button><button type="button">Cancel</button></dialog>',
   },
   {
     id: 'violating-focus-not-restored',
@@ -134,7 +134,7 @@ export const MODAL_DIALOG_FIXTURES: readonly ModalDialogFixture[] = [
   {
     id: 'violating-dangling-description',
     summary: 'a dialog described by an id that resolves to nothing',
-    facts: {...LABELLED_FACTS, described: true},
+    facts: {...LABELLED_FACTS, hasDescriptionReference: true},
     html: '<dialog data-a11y-subject aria-labelledby="title" aria-describedby="missing"><h2 id="title" data-a11y-visible-label>Review changes</h2></dialog>',
   },
 ];

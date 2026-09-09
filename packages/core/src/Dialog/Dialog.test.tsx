@@ -9,6 +9,7 @@
  * SYNC: When Dialog.tsx changes, update tests to match new behavior
  */
 
+import {useState} from 'react';
 import {readFileSync} from 'node:fs';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
@@ -410,6 +411,49 @@ describe('Dialog', () => {
       expect(cancelEvent.defaultPrevented).toBe(true);
       expect(onOuterChange).not.toHaveBeenCalled();
       expect(onInnerChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('focus restoration', () => {
+    it('closes without error when the captured invoker is removed', () => {
+      function RemovedInvokerExample() {
+        const [isOpen, setIsOpen] = useState(false);
+        const [showInvoker, setShowInvoker] = useState(true);
+        return (
+          <>
+            {showInvoker && (
+              <button type="button" onClick={() => setIsOpen(true)}>
+                Open dialog
+              </button>
+            )}
+            <Dialog
+              isOpen={isOpen}
+              onOpenChange={setIsOpen}
+              aria-label="Review changes">
+              <button type="button" onClick={() => setShowInvoker(false)}>
+                Remove opener
+              </button>
+              <button type="button" onClick={() => setIsOpen(false)}>
+                Close dialog
+              </button>
+            </Dialog>
+          </>
+        );
+      }
+
+      render(<RemovedInvokerExample />);
+      const invoker = screen.getByRole('button', {name: 'Open dialog'});
+      invoker.focus();
+      fireEvent.click(invoker);
+      const dialog = screen.getByRole('dialog');
+
+      fireEvent.click(screen.getByRole('button', {name: 'Remove opener'}));
+      expect(invoker.isConnected).toBe(false);
+
+      expect(() => {
+        fireEvent.click(screen.getByRole('button', {name: 'Close dialog'}));
+      }).not.toThrow();
+      expect(dialog).not.toHaveAttribute('open');
     });
   });
 

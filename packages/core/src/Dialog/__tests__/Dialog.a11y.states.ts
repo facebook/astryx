@@ -13,7 +13,7 @@
  * existing Dialog component tests.
  *
  * SYNC: Every storyId and label must match the dedicated stories in
- * /apps/storybook/stories/Dialog.stories.tsx.
+ * /apps/storybook/stories/DialogA11y.stories.tsx.
  */
 
 import type {ModalDialogStateFacts} from '@astryxdesign/a11y-spec';
@@ -38,10 +38,10 @@ export interface DialogModalBindingState {
 
 const MODAL_FACTS = {
   labelledBy: true,
-  described: false,
+  hasDescriptionReference: false,
   hasDeclaredInitialTarget: true,
   usesNativeFocusFallback: false,
-  restoresFocus: true,
+  exercisesFocusRestoration: true,
   makesBackgroundInert: true,
 } as const satisfies ModalDialogStateFacts;
 
@@ -57,7 +57,7 @@ export const DIALOG_MODAL_BINDING_STATES: ReadonlyArray<DialogModalBindingState>
       visibleTitle: 'Review changes',
       facts: {
         ...MODAL_FACTS,
-        described: true,
+        hasDescriptionReference: true,
       },
     },
     {
@@ -94,7 +94,7 @@ export const DIALOG_MODAL_BINDING_STATES: ReadonlyArray<DialogModalBindingState>
         labelledBy: false,
         hasDeclaredInitialTarget: false,
         usesNativeFocusFallback: true,
-        restoresFocus: false,
+        exercisesFocusRestoration: false,
       },
     },
   ];
