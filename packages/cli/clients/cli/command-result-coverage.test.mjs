@@ -26,7 +26,7 @@
 
 import {describe, it, expect} from 'vitest';
 import {program} from './index.mjs';
-import {reportsResult} from './lib/define-command.mjs';
+import {reportsResult, reportsResultVia} from './lib/define-command.mjs';
 
 /**
  * Commands with no action of their own: bare `astryx layout` prints its
@@ -38,6 +38,16 @@ import {reportsResult} from './lib/define-command.mjs';
  * subcommands, so it runs, so it reports.)
  */
 const NO_ACTION_OF_THEIR_OWN = ['layout'];
+
+/**
+ * Commands that record for themselves instead of returning a descriptor.
+ *
+ * They cannot come from a CommandDoc — `manifest` introspects the live program,
+ * `postinstall` is a package-script hook — so they carry the mark by hand. The
+ * mark is a hatch, and a hatch nobody watches is a hole: this list is the
+ * watch. The root program is checked separately below.
+ */
+const RECORD_FOR_THEMSELVES = ['manifest', 'postinstall'];
 
 /**
  * Every command in the program, depth first, with its fully qualified name.
@@ -85,6 +95,17 @@ describe('every command reports what it answered with', () => {
     // Bare `astryx` prints help; `astryx --json` prints the manifest. Both are
     // runs, so both are reported.
     expect(reportsResult(program)).toBe(true);
+  });
+
+  it('pins the commands allowed to record for themselves', () => {
+    // Everything else must go through the converter, where the return type is
+    // what makes the report unforgettable. Marking a hand-written command
+    // reporting nothing would otherwise pass every check in this file.
+    const manual = commands
+      .filter(({command}) => reportsResultVia(command) === 'manual')
+      .map(({name}) => name)
+      .sort();
+    expect(manual).toEqual([...RECORD_FOR_THEMSELVES].sort());
   });
 
   it('pins the commands that have no action at all', () => {

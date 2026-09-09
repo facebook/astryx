@@ -193,6 +193,32 @@ describe('DebugEvent result summary', () => {
   );
 
   it(
+    'only claims a direct match when the filter resolved one component',
+    async () => {
+      // The trap: a filter is a substring search, so its mere presence proves
+      // nothing — `theme targets a` matches every target there is. Claiming a
+      // direct match there would make every fuzzy run a false positive in the
+      // one query these fields exist to answer.
+      const loose = await runWithDebug(['theme', 'targets', 'But']);
+      expect(loose.event.output).toMatchObject({
+        resultKind: 'theme',
+        directMatch: false,
+      });
+      expect(loose.event.output.resultCount).toBeGreaterThan(0);
+
+      const exact = await runWithDebug(['theme', 'targets', 'Button']);
+      expect(exact.event.output).toMatchObject({
+        resultKind: 'theme',
+        directMatch: true,
+      });
+
+      const unfiltered = await runWithDebug(['theme', 'targets']);
+      expect(unfiltered.event.output.directMatch).toBe(null);
+    },
+    SLOW,
+  );
+
+  it(
     'reports help as a run with no result set',
     async () => {
       const {event} = await runWithDebug(['--help']);

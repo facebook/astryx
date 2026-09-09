@@ -412,18 +412,32 @@ export function setProject(facts) {
   });
 }
 
-/** Values `resultKind` may carry — mirrors DebugResultKind. */
-const RESULT_KINDS = new Set([
-  'component',
-  'hook',
-  'doc',
-  'template',
-  'theme',
-  'integration',
-  'migration',
-  'command',
-  'mixed',
-]);
+/**
+ * The kinds a result SET may carry — every {@link DebugResultKind} except
+ * `none`, which is the other branch of the union and never labels a set.
+ *
+ * A Record rather than a Set so the TYPE forces completeness: add a kind to the
+ * published union and this object stops compiling until it is listed here too.
+ * The vocabulary necessarily exists twice at runtime — here, and as the sealed
+ * parser's schema in authoring/debug/parse.mjs — and neither copy can be
+ * half-extended: that one is pinned to the same union by the drift-lock beside
+ * it. Without this, adding a kind everywhere it looks obvious would leave this
+ * guard silently nulling it, which is the exact failure this whole change is
+ * about.
+ *
+ * @type {Record<Exclude<import('../../authoring/debug/type').DebugResultKind, 'none'>, true>}
+ */
+const RESULT_SET_KINDS = {
+  component: true,
+  hook: true,
+  doc: true,
+  template: true,
+  theme: true,
+  integration: true,
+  migration: true,
+  command: true,
+  mixed: true,
+};
 
 /**
  * Stamp what the command answered with.
@@ -458,7 +472,10 @@ export function recordCommandResult(result) {
     _event.output.resultCount = count;
     _event.output.emptyResult =
       typeof result.empty === 'boolean' ? result.empty : count === 0;
-    _event.output.resultKind = RESULT_KINDS.has(result.resultKind)
+    _event.output.resultKind = Object.hasOwn(
+      RESULT_SET_KINDS,
+      result.resultKind,
+    )
       ? /** @type {import('../../authoring/debug/type').DebugResultKind} */ (
           result.resultKind
         )

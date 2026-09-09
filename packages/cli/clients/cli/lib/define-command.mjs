@@ -27,10 +27,14 @@
 import {recordCommandResult} from '../../../foundation/debug/index.mjs';
 
 /**
- * Marks a Commander command whose action reports its result through this
- * converter. Read by the coverage test that walks the assembled program, so a
- * command registered by hand — bypassing the contract — is caught in CI rather
- * than discovered as a column of nulls months later.
+ * Marks a Commander command that reports what it answered with, and says HOW:
+ * `converter` for the contract path below (the action's return type), `manual`
+ * for the few hand-registered commands that record for themselves.
+ *
+ * Read by the coverage test that walks the assembled program, so a command
+ * registered by hand — bypassing the contract — is caught in CI rather than
+ * discovered as a column of nulls months later. The two values are what let
+ * that test PIN the hand-registered set instead of trusting the mark.
  */
 export const REPORTS_RESULT = Symbol.for('astryx.command.reportsResult');
 
@@ -40,7 +44,17 @@ export const REPORTS_RESULT = Symbol.for('astryx.command.reportsResult');
  * @returns {boolean}
  */
 export function reportsResult(cmd) {
-  return /** @type {any} */ (cmd)[REPORTS_RESULT] === true;
+  return reportsResultVia(cmd) !== null;
+}
+
+/**
+ * How this command reports, or null if it does not.
+ * @param {import('commander').Command} cmd
+ * @returns {'converter' | 'manual' | null}
+ */
+export function reportsResultVia(cmd) {
+  const via = /** @type {any} */ (cmd)?.[REPORTS_RESULT];
+  return via === 'converter' || via === 'manual' ? via : null;
 }
 
 /**
@@ -50,14 +64,17 @@ export function reportsResult(cmd) {
  * program, `manifest` (it introspects the live program, so it cannot be
  * declared by one), `postinstall`, and the stub left behind when a command
  * module fails to load. They call {@link recordCommandResult} themselves; this
- * says so, so the coverage test can tell a deliberate hand-registration from an
- * accidental one.
+ * says so, and the coverage test pins the set of commands allowed to, so the
+ * mark cannot become a quiet way around the contract.
  *
  * @param {import('commander').Command} cmd
  * @returns {import('commander').Command} the same command, for chaining.
  */
 export function markReportsResult(cmd) {
-  Object.defineProperty(cmd, REPORTS_RESULT, {value: true, configurable: true});
+  Object.defineProperty(cmd, REPORTS_RESULT, {
+    value: 'manual',
+    configurable: true,
+  });
   return cmd;
 }
 
@@ -125,7 +142,10 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
       const result = await action(...args);
       recordCommandResult(result);
     });
-    markReportsResult(cmd);
+    Object.defineProperty(cmd, REPORTS_RESULT, {
+      value: 'converter',
+      configurable: true,
+    });
   }
   return cmd;
 }

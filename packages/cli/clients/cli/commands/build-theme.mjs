@@ -690,10 +690,21 @@ export function registerTheme(program) {
         });
       }
 
+      // A filter is a substring search with an exact-name fast path (see
+      // api/theme/targets), so the mere presence of one proves nothing: `theme
+      // targets a` matches everything. A direct match is the filter naming ONE
+      // component and getting only that component's targets back — which is
+      // exactly the exact-name branch, read off the answer.
+      const matched = new Set(
+        result.data.targets.map(target => target.component.toLowerCase()),
+      );
       const answered = resultSet({
         count: result.data.targets.length,
         resultKind: 'theme',
-        directMatch: filter != null ? true : undefined,
+        directMatch:
+          filter == null
+            ? undefined
+            : matched.size === 1 && matched.has(String(filter).toLowerCase()),
       });
       if (json) {
         jsonOut(result);

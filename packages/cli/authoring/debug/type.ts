@@ -106,6 +106,10 @@ export interface DebugEventOutput {
    * What this run answered with: one result kind, `mixed`, or `none` for a
    * command whose work is an effect rather than a lookup.
    *
+   * `none` says nothing about SUCCESS — a command that failed on its way to an
+   * effect still reports it. Read `outcome` for that; filter to `ok` before
+   * treating a run as an effect that happened.
+   *
    * Null means the run never reported one. On a completed run that is a bug in
    * the CLI, not a property of the command — every command declares its result
    * shape as its return type, and the recorder stamps it centrally. Expect null
