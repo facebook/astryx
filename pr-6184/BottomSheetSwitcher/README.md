@@ -27,7 +27,7 @@ The before browser arm is the untouched baseline. Its audit-only clipping fixtur
 | i18n / RTL | 5 | 4.0 | 5.0 | Source and rendered evidence use logical layout and block-axis-only motion; a checked-in verified-N/A reason closes the previous RTL coverage gap. |
 | Responsive | 5 | 4.5 | 5.0 | Chromium proves the active panel stays within a 320 CSS px viewport; a narrow story now keeps this state reachable to automated checks. |
 
-Weighted score: **71.3 → 80.8**. Three retained BLOCKs cap the final grade at **C**. If those three root causes were fixed and only their section ceilings lifted to the current non-BLOCK anchors, the projection would be **89.4 / B**.
+Weighted score: **71.3 → 80.8**. Three retained BLOCKs cap the final grade at **C**. Sensitivity: closing all three BLOCKs without changing any section score leaves **80.8** and lifts the grade to **B**.
 
 ## Closed public-surface inventory
 
