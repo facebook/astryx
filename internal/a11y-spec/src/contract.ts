@@ -67,6 +67,16 @@ export interface ApgRequirement {
   readonly url: string;
 }
 
+/** An exact requirement from a versioned public web standard. */
+export interface WebStandardRequirement {
+  readonly standard: 'web-standard';
+  /** Specification and version, e.g. `WAI-ARIA 1.2`. */
+  readonly specification: string;
+  /** The requirement, quoted closely enough to find on the page. */
+  readonly requirement: string;
+  readonly url: string;
+}
+
 /** A current Astryx knowledge record that adopts an outcome. */
 export interface AstryxRecord {
   readonly standard: 'astryx';
@@ -88,7 +98,8 @@ export interface AstryxRecord {
   readonly url: string;
 }
 
-export type NormativeSource = WcagCriterion | ApgRequirement | AstryxRecord;
+export type NormativeSource =
+  WcagCriterion | ApgRequirement | WebStandardRequirement | AstryxRecord;
 
 /** One-line citation, used in test names and failure output (AST-020 FR4). */
 export function citeSource(source: NormativeSource): string {
@@ -97,6 +108,8 @@ export function citeSource(source: NormativeSource): string {
       return `WCAG 2.2 ${source.id} ${source.name} (${source.level})`;
     case 'apg':
       return `APG ${source.pattern}: ${source.requirement}`;
+    case 'web-standard':
+      return `${source.specification}: ${source.requirement}`;
     case 'astryx':
       return `Astryx ${source.id} ${source.clause}: ${source.requirement}`;
   }
@@ -205,9 +218,9 @@ export interface Expectation<Facts> {
 }
 
 export interface PatternContract<Facts> {
-  /** APG pattern slug this contract adopts. */
+  /** Stable pattern id, e.g. `switch` or `text-input`. */
   readonly pattern: string;
-  /** The adopted pattern's canonical URL. */
+  /** The pattern's canonical public normative URL. */
   readonly url: string;
   /** What the pattern owns, in one line, for report headers. */
   readonly scope: string;
@@ -271,7 +284,7 @@ export function unansweredDimensions<Facts>(
   );
 }
 
-const ID_SHAPE = /^[a-z][a-z0-9]*(\.[a-z0-9-]+)+$/;
+const ID_SHAPE = /^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+$/;
 const EMPTY_EXEMPTION =
   /^(n\/?a|not applicable|none|unknown|tbd|does not apply)\.?$/i;
 const DIMENSION_IDS: readonly string[] = CHECKLIST_DIMENSIONS.map(

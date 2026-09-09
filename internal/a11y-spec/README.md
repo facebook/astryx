@@ -42,16 +42,18 @@ src/
 └── patterns/
     ├── checkbox.*           the checkbox pattern, same four files
     ├── switch.*             the switch pattern, same four files
-    └── button.*             the button pattern, same four files
+    ├── button.*             the button pattern, same four files
+    └── text-input.*         the native text-input pattern, same four files
 ```
 
 ## The patterns
 
-| Pattern    | Adopted from                                                       | Bound by                                                                  |
-| ---------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| `checkbox` | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/) | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard |
-| `switch`   | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)     | Switch                                                                    |
-| `button`   | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)     | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton  |
+| Pattern      | Adopted from                                                                             | Bound by                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `checkbox`   | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/)                       | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard |
+| `switch`     | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)                           | Switch                                                                    |
+| `button`     | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)                           | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton  |
+| `text-input` | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox) | TextInput, TextArea                                                       |
 
 The button pattern covers the ordinary command button. A toggle button carries
 `aria-pressed` and is its own pattern; anything that adopts link semantics — an
@@ -95,7 +97,8 @@ required failure is not "mostly conformant" (AST-021 FR11).
 
 ## Authoring a pattern
 
-1. Read the APG pattern and the WCAG success criteria it supports.
+1. Read the applicable WCAG criteria and versioned web standards, plus the APG
+   pattern only when a current Astryx record adopts one.
 2. Write the expectations. Each needs a stable id, a user outcome in plain
    language, exact sources, an applicability condition, an evidence layer (plus
    `alsoNeeds` for any further layer its body reads), and an enforcement class.

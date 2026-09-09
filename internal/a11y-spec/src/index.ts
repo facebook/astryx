@@ -30,6 +30,7 @@ export {
   type NormativeSource,
   type PatternContract,
   type WcagCriterion,
+  type WebStandardRequirement,
 } from './contract';
 
 export {
@@ -76,6 +77,11 @@ export {
 } from './report';
 
 export {createJsdomHarness, type JsdomHarnessOptions} from './harness/jsdom';
+
+export {
+  TEXT_INPUT_PATTERN,
+  type TextInputStateFacts,
+} from './patterns/text-input';
 
 export {CHECKBOX_PATTERN, type CheckboxStateFacts} from './patterns/checkbox';
 
