@@ -54,6 +54,13 @@ function createSubject(element: Element): Subject {
           return target == null ? null : (target.textContent ?? '').trim();
         });
     },
+    documentText: async () => {
+      const textOf = (node: Node): string =>
+        node.nodeType === Node.TEXT_NODE
+          ? (node.nodeValue ?? '')
+          : Array.from(node.childNodes).map(textOf).join(' ');
+      return textOf(element.ownerDocument.body).replace(/\s+/g, ' ').trim();
+    },
     labelText: async () => {
       const labelledBy = element.getAttribute('aria-labelledby');
       if (labelledBy != null && labelledBy.trim() !== '') {

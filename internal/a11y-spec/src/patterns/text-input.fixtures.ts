@@ -21,6 +21,7 @@ export interface TextInputFixture {
 }
 
 const DEFAULT_FACTS: TextInputStateFacts = {
+  role: 'textbox',
   multiline: false,
   value: '',
   editable: true,
@@ -105,6 +106,16 @@ export const TEXT_INPUT_FIXTURES: readonly TextInputFixture[] = [
       errorMessage: 'Enter a valid name.',
     }),
     html: `<label for="fx">Name</label><span id="error">Enter a valid name.</span><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true" aria-describedby="error">`,
+  },
+  {
+    id: 'conforming-invalid-aria-errormessage',
+    summary:
+      'an invalid text input using the standards-defined error relationship',
+    facts: facts({
+      invalid: true,
+      errorMessage: 'Enter a valid name.',
+    }),
+    html: `<label for="fx">Name</label><span id="error">Enter a valid name.</span><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true" aria-errormessage="error">`,
   },
   {
     id: 'violating-generic-role',
@@ -233,6 +244,12 @@ export const TEXT_INPUT_FIXTURES: readonly TextInputFixture[] = [
     html: `<label for="fx">Name</label><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" value="Fixed value">`,
   },
   {
+    id: 'violating-focusable-disabled-edits',
+    summary: 'a focusable aria-disabled text input that still accepts text',
+    facts: facts({value: 'Fixed value', editable: false, disabled: true}),
+    html: `<label for="fx">Name</label><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" value="Fixed value" aria-disabled="true">`,
+  },
+  {
     id: 'violating-placeholder-only-label',
     summary:
       'a text input that uses disappearing placeholder text as its only label',
@@ -250,6 +267,7 @@ export const CONFORMING_FIXTURES = [
   'conforming-read-only',
   'conforming-required',
   'conforming-invalid',
+  'conforming-invalid-aria-errormessage',
 ] as const;
 
 export const TEXT_INPUT_MUTATIONS: Readonly<Record<string, readonly string[]>> =
@@ -276,6 +294,9 @@ export const TEXT_INPUT_MUTATIONS: Readonly<Record<string, readonly string[]>> =
       'violating-keyboard-trap',
     ],
     'text-input.editing.inoperable': ['violating-inoperable-edits'],
+    'text-input.editing.disabled-reason-inert': [
+      'violating-focusable-disabled-edits',
+    ],
     'text-input.label.persistently-associated': [
       'violating-placeholder-only-label',
     ],

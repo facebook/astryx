@@ -268,6 +268,14 @@ export function createChromiumHarness(
             }),
         attribute,
       ),
+    documentText: () =>
+      locator.evaluate(element => {
+        const textOf = (node: Node): string =>
+          node.nodeType === Node.TEXT_NODE
+            ? (node.nodeValue ?? '')
+            : Array.from(node.childNodes).map(textOf).join(' ');
+        return textOf(element.ownerDocument.body).replace(/\s+/g, ' ').trim();
+      }),
     labelText: () =>
       locator.evaluate(element => {
         const labelledBy = element.getAttribute('aria-labelledby');

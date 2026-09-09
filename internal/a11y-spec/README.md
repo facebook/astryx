@@ -57,9 +57,9 @@ src/
 
 The `text-input` contract is native rather than APG-derived. It covers the
 role-bearing `<input>` or `<textarea>` only; composed clear and tooltip buttons
-keep their button contract. Password fields bind to the shared role, name,
-state, focus, and editing expectations while their protected value
-representation remains browser-owned.
+keep their button contract. Password fields bind to persistent naming, state,
+focus, and editing expectations, while HTML-AAM defines no corresponding ARIA
+role and leaves their protected value representation platform-specific.
 
 The button pattern covers the ordinary command button. A toggle button carries
 `aria-pressed` and is its own pattern; anything that adopts link semantics — an

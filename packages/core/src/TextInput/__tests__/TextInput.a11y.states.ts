@@ -25,6 +25,7 @@ export interface TextInputBindingState {
 }
 
 const DEFAULT_FACTS: TextInputStateFacts = {
+  role: 'textbox',
   multiline: false,
   value: '',
   editable: true,
@@ -56,7 +57,7 @@ export const TEXT_INPUT_BINDING_EXCLUSIONS = [
   {
     owner: 'TextInput type=password',
     reason:
-      'The password state is bound for role, name, state, focus, and editing. Its protected accessibility-tree value is browser-owned, so the exact-value expectation is explicitly inapplicable there.',
+      'The password state is bound for persistent naming, state, focus, and editing. HTML-AAM defines no corresponding ARIA role and its protected value mapping is platform-specific, so role, multiline, and exact-value expectations are inapplicable.',
   },
   {
     owner: 'TextInput and TextArea loading',
@@ -225,7 +226,7 @@ export const TEXT_INPUT_BINDING_STATES = [
     id: 'input-password',
     binding: 'TextInput',
     summary: 'a password control whose protected value remains browser-owned',
-    facts: facts({value: null}),
+    facts: facts({role: null, value: null}),
     visibleLabel: 'Password',
     storyId: 'a11y-text-input-pattern--input-password',
   },

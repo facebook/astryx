@@ -145,7 +145,7 @@ test('every state declaration matches the browser accessibility node', async ({
     }).subject();
     const computed = await subject.computed();
     const observed = {
-      role: computed.role,
+      role: state.facts.role == null ? null : computed.role,
       value: state.facts.value == null ? null : computed.value,
       multiline: computed.multiline,
       disabled: computed.disabled,
@@ -156,7 +156,7 @@ test('every state declaration matches the browser accessibility node', async ({
         computed.description.trim() === '' ? null : computed.description,
     } as const;
     const expected = {
-      role: 'textbox',
+      role: state.facts.role,
       value: state.facts.value,
       multiline: state.facts.multiline,
       disabled: state.facts.disabled,

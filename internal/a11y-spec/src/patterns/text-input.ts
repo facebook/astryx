@@ -17,6 +17,7 @@ import {
   type WcagCriterion,
   type WebStandardRequirement,
 } from '../contract';
+import type {Harness, Subject} from '../harness';
 import {saysInOrder, spokenWords} from '../spoken';
 
 const WCAG_1_3_1: WcagCriterion = {
@@ -84,11 +85,19 @@ const AST_021_PRESERVE_BEHAVIOR: AstryxRecord = {
   url: 'https://github.com/facebook/astryx/blob/029368bde880cb25a7912523510419285d803a90/docs/specs/AST-021/spec.md#L85-L89',
 };
 
+const INPUT_FIELDS_FR4: AstryxRecord = {
+  standard: 'astryx',
+  id: 'family:input-fields',
+  clause: 'FR4',
+  requirement:
+    'When a member exposes `disabledMessage`, the inactive field remains focusable enough to expose the reason while editing, selection, and activation stay blocked.',
+  url: 'https://github.com/facebook/astryx/blob/029368bde880cb25a7912523510419285d803a90/docs/families/input-fields.md#L151-L154',
+};
+
 const HTML_AAM_INPUT_TEXTBOX: WebStandardRequirement = {
   standard: 'web-standard',
   specification: 'HTML Accessibility API Mappings 1.0',
-  requirement:
-    'input type text, password, email, tel, and url map to the textbox role.',
+  requirement: 'input type text, email, tel, and url map to the textbox role.',
   url: 'https://www.w3.org/TR/html-aam-1.0/#el-input-text',
 };
 
@@ -115,7 +124,34 @@ function sameWords(actual: string, expected: string): boolean {
 
 const TAB_BUDGET = 10;
 
+async function assertKeyboardEditsBlocked(
+  harness: Harness,
+  subject: Subject,
+): Promise<void> {
+  await subject.focus();
+  const initial = await subject.textValue();
+  if (initial == null) {
+    throw new Error(
+      'the role-bearing subject exposes no text value to protect',
+    );
+  }
+  await harness.typeText(subject, 'x');
+  if ((await subject.textValue()) !== initial) {
+    throw new Error(
+      'typing changed a text control the binding declares non-editable',
+    );
+  }
+  await harness.clearText(subject);
+  if ((await subject.textValue()) !== initial) {
+    throw new Error(
+      'keyboard deletion changed a text control the binding declares non-editable',
+    );
+  }
+}
+
 export interface TextInputStateFacts {
+  /** Native role expected from this state; null for protected inputs with no cross-platform ARIA role mapping. */
+  readonly role: 'textbox' | null;
   readonly multiline: boolean;
   readonly value: string | null;
   readonly editable: boolean;
@@ -141,16 +177,20 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
           'The browser exposes the control as a textbox, so the user knows it accepts text.',
         sources: [WCAG_4_1_2, HTML_AAM_INPUT_TEXTBOX, HTML_AAM_TEXTAREA],
         covers: ['4.1.2-name-role-value'],
-        appliesWhen: ALWAYS,
+        appliesWhen: {
+          condition:
+            'the native control has a cross-platform textbox role mapping',
+          test: facts => facts.role != null,
+        },
         evidenceLayer: 'accessibility-tree',
         enforcement: 'required',
-        run: async ({subject}) => {
+        run: async ({subject, facts}) => {
           const {role} = await subject.computed();
-          if (role !== 'textbox') {
+          if (role !== facts.role) {
             throw new Error(
               role == null
                 ? 'the browser exposes no role for this native text control, so the accessibility node does not identify what kind of input it is'
-                : `the browser reports this native text control as "${role}", not as a textbox`,
+                : `the binding expects the ${facts.role} role, but the browser reports "${role}"`,
             );
           }
         },
@@ -187,7 +227,11 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
           'The accessibility node distinguishes a multi-line text area from a single-line text input.',
         sources: [WCAG_4_1_2, HTML_AAM_INPUT_TEXTBOX, HTML_AAM_TEXTAREA],
         covers: ['4.1.2-name-role-value'],
-        appliesWhen: ALWAYS,
+        appliesWhen: {
+          condition:
+            'the native control has a cross-platform textbox role mapping',
+          test: facts => facts.role === 'textbox',
+        },
         evidenceLayer: 'accessibility-tree',
         enforcement: 'required',
         run: async ({subject, facts}) => {
@@ -505,7 +549,7 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
       {
         id: 'text-input.error.identified-in-text',
         outcome:
-          'An invalid text control has textual error feedback attached, so the failure is not conveyed only by color or an icon.',
+          'An invalid text control renders textual error feedback, so the failure is not conveyed only by color or an icon.',
         sources: [WCAG_3_3_1],
         covers: ['3.3.1-error-identification'],
         appliesWhen: {
@@ -521,12 +565,10 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
               'the binding declares this text control invalid but supplies no textual error description',
             );
           }
-          const targets = await subject.idReferences('aria-describedby');
-          if (
-            !targets.some(text => text != null && sameWords(text, expected))
-          ) {
+          const documentText = await subject.documentText();
+          if (!saysInOrder(spokenWords(documentText), spokenWords(expected))) {
             throw new Error(
-              `the binding identifies the error as "${expected}", but no aria-describedby target contains that text`,
+              `the binding identifies the error as "${expected}", but that text is not present in the rendered content`,
             );
           }
         },
@@ -618,39 +660,37 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
         },
       },
       {
+        id: 'text-input.editing.disabled-reason-inert',
+        outcome:
+          'A disabled text control kept focusable for its reason still blocks keyboard editing.',
+        sources: [INPUT_FIELDS_FR4],
+        covers: ['2.1.1-keyboard'],
+        appliesWhen: {
+          condition: 'this state is disabled and kept in the tab sequence',
+          test: facts => facts.disabled && facts.focusable,
+        },
+        evidenceLayer: 'real-browser',
+        enforcement: 'required',
+        run: async ({harness, subject}) => {
+          await assertKeyboardEditsBlocked(harness, subject);
+        },
+      },
+      {
         id: 'text-input.editing.inoperable',
         outcome:
-          'A focusable text control declared read-only or unavailable does not accept keyboard edits.',
+          'A focusable read-only text control does not accept keyboard edits.',
         sources: [AST_021_PRESERVE_BEHAVIOR],
         covers: ['2.1.1-keyboard'],
         appliesWhen: {
-          condition: 'this state is focusable but not editable',
-          test: facts => facts.focusable && !facts.editable,
+          condition: 'this state is read-only, focusable, and not disabled',
+          test: facts => facts.readOnly && facts.focusable && !facts.disabled,
         },
         evidenceLayer: 'real-browser',
         enforcement: 'advisory',
         advisoryBecause:
-          'AST-021 requires migrations to preserve existing behavior, but no current text-input component record makes one universal inertness rule authoritative for every future binding.',
+          'AST-021 requires migrations to preserve existing behavior, but no current text-input component record makes one universal read-only inertness rule authoritative for every future binding.',
         run: async ({harness, subject}) => {
-          await subject.focus();
-          const initial = await subject.textValue();
-          if (initial == null) {
-            throw new Error(
-              'the role-bearing subject exposes no text value to protect',
-            );
-          }
-          await harness.typeText(subject, 'x');
-          if ((await subject.textValue()) !== initial) {
-            throw new Error(
-              'typing changed a text control the binding declares non-editable',
-            );
-          }
-          await harness.clearText(subject);
-          if ((await subject.textValue()) !== initial) {
-            throw new Error(
-              'keyboard deletion changed a text control the binding declares non-editable',
-            );
-          }
+          await assertKeyboardEditsBlocked(harness, subject);
         },
       },
     ],
@@ -675,6 +715,13 @@ export const TEXT_INPUT_PATTERN: PatternContract<TextInputStateFacts> =
         verifiedBy: 'component DOM-order tests and page-level review',
         reason:
           'Reading order includes labels, instructions, status content, and surrounding page content outside one native control node.',
+      },
+      '1.3.5-identify-input-purpose': {
+        owner: 'the binding component and caller content',
+        verifiedBy:
+          'TextInput and TextArea autocomplete passthrough tests plus form-level review that fields collecting information about the user receive the correct standard token',
+        reason:
+          'The components forward the native autocomplete value, but only the caller knows whether a field collects a listed category of information about the user and which purpose applies.',
       },
       '1.4.1-use-of-color': {
         owner: 'the binding component and theme',
