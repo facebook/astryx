@@ -872,6 +872,94 @@ export const NestedDialogs: Story = {
   render: () => <NestedDialogsExample />,
 };
 
+type AccessibilityContractDialogProps = {
+  mode:
+    'labelled-described' | 'explicit-focus' | 'conditional' | 'no-focusable';
+};
+
+function AccessibilityContractDialog({mode}: AccessibilityContractDialogProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const content =
+    mode === 'labelled-described' ? (
+      <>
+        <DialogHeader title="Review changes" />
+        <p id="dialog-contract-description">
+          Confirm the changes before continuing.
+        </p>
+        <Button label="Previous" variant="secondary" />
+        <Button label="Continue" variant="primary" />
+      </>
+    ) : mode === 'explicit-focus' ? (
+      <>
+        <h2
+          id="dialog-contract-explicit-title"
+          tabIndex={-1}
+          data-autofocus
+          autoFocus>
+          Edit profile
+        </h2>
+        <p>Review the profile before saving.</p>
+      </>
+    ) : mode === 'conditional' ? (
+      isOpen ? (
+        <>
+          <DialogHeader title="Sensitive review" />
+          <p>This content exists only while the task is open.</p>
+        </>
+      ) : null
+    ) : (
+      <p>There are no controls in this task.</p>
+    );
+
+  const namingProps =
+    mode === 'labelled-described'
+      ? {'aria-describedby': 'dialog-contract-description'}
+      : mode === 'explicit-focus'
+        ? {'aria-labelledby': 'dialog-contract-explicit-title'}
+        : mode === 'conditional'
+          ? {'aria-label': 'Sensitive review'}
+          : {'aria-label': 'Read terms'};
+
+  return (
+    <>
+      <Button
+        label="Open contract dialog"
+        variant="secondary"
+        onClick={() => setIsOpen(true)}
+      />
+      <Button label="Background action" variant="secondary" />
+      <Dialog
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        purpose={mode === 'explicit-focus' ? 'form' : 'info'}
+        {...namingProps}>
+        {content}
+      </Dialog>
+    </>
+  );
+}
+
+/** Stable browser binding: default title, description, and a two-control tab sequence. */
+export const AccessibilityContractLabelledDescribed: Story = {
+  render: () => <AccessibilityContractDialog mode="labelled-described" />,
+};
+
+/** Stable browser binding: an explicit eligible descendant owns initial focus. */
+export const AccessibilityContractExplicitInitialFocus: Story = {
+  render: () => <AccessibilityContractDialog mode="explicit-focus" />,
+};
+
+/** Stable browser binding: focus-moving content mounts and unmounts with open state. */
+export const AccessibilityContractConditionalContent: Story = {
+  render: () => <AccessibilityContractDialog mode="conditional" />,
+};
+
+/** Stable browser binding: native fallback with no focusable descendants. */
+export const AccessibilityContractNoFocusableContent: Story = {
+  render: () => <AccessibilityContractDialog mode="no-focusable" />,
+};
+
 type ReadinessReferenceProps = {
   frameWidth: number;
   summary: string;

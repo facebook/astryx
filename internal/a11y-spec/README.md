@@ -55,7 +55,7 @@ src/
 | `switch`       | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)                           | Switch                                                                    |
 | `button`       | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)                           | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton  |
 | `text-input`   | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox) | TextInput, TextArea                                                       |
-| `modal-dialog` | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)             | —                                                                         |
+| `modal-dialog` | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)             | Dialog                                                                    |
 
 The `text-input` contract is native rather than APG-derived. It covers the
 role-bearing `<input>` or `<textarea>` only; composed clear and tooltip buttons

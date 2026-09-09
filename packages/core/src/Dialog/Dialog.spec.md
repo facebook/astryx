@@ -14,6 +14,8 @@ verified_by:
   [
     packages/core/src/Dialog/Dialog.test.tsx,
     packages/core/src/Dialog/DialogHeader.test.tsx,
+    packages/core/src/Dialog/__tests__/Dialog.a11y.test.tsx,
+    packages/core/src/Dialog/__tests__/Dialog.a11y.chromium.spec.ts,
   ]
 modules: []
 families: [family:overlay-dismissal]
@@ -25,7 +27,7 @@ architecture:
     architecture:react-component-runtime,
   ]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-013, spec:AST-020, spec:AST-021]
 ---
 
 # Dialog component contract
@@ -134,12 +136,12 @@ component design and theming owners.
 
 ## Verification map
 
-| Contract     | Verification                                                            | Representative states                                     | Mutation or failure expectation                                                                          | Audit section              |
-| ------------ | ----------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------- |
-| FR1–FR3, AR1 | Dialog and DialogHeader focus tests plus native-dialog browser evidence | header default, explicit descendant, no request           | focusing before modal visibility or removing descendant focus leaves focus outside visible modal content | audit:Dialog/accessibility |
-| FR4, AR2     | trigger capture/return regression tests                                 | external trigger, descendant mount focus, removed trigger | descendant focus replaces the return owner or close fails to restore a connected trigger                 | audit:Dialog/behavior      |
-| FR5          | inline Dialog tests                                                     | DialogHeader and focusable children                       | inline preview steals focus or invokes native modal methods                                              | audit:Dialog/behavior      |
-| FR6, AR3     | composed descendant focus fixtures                                      | heading, input, action                                    | focus depends on a private React child type or strips semantics from the target                          | audit:Dialog/public-api    |
+| Contract     | Verification                                                                                                             | Representative states                                     | Mutation or failure expectation                                                                                                                           | Audit section              |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| FR1–FR3, AR1 | shared modal-dialog binding in `Dialog.a11y.test.tsx` and `Dialog.a11y.chromium.spec.ts`; local DialogHeader focus tests | header default, explicit descendant, no request           | the shared contract records exact current failures when focus is applied before native modality, misses the declared target, or escapes the visible modal | audit:Dialog/accessibility |
+| FR4, AR2     | shared modal-dialog browser binding plus local trigger capture/return regression tests                                   | external trigger, descendant mount focus, removed trigger | the shared contract records an exact current failure when descendant focus replaces the return owner; unavailable invokers remain local variation         | audit:Dialog/behavior      |
+| FR5          | inline Dialog tests                                                                                                      | DialogHeader and focusable children                       | inline preview steals focus or invokes native modal methods                                                                                               | audit:Dialog/behavior      |
+| FR6, AR3     | composed descendant focus fixtures                                                                                       | heading, input, action                                    | focus depends on a private React child type or strips semantics from the target                                                                           | audit:Dialog/public-api    |
 
 ## Decision log
 
