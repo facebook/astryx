@@ -17,8 +17,8 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-hover-card'},
-      // Still emitted beside the names above, so themes written against
-      // them keep working. Drop in the next major.
+      // Retained beside the canonical names for backwards compatibility.
+      // New themes use the canonical targets above.
       {className: 'astryx-hovercard', deprecatedFor: 'hover-card'},
     ],
     vars: [
@@ -148,8 +148,8 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-hover-card'},
-      // Still emitted beside the names above, so themes written against
-      // them keep working. Drop in the next major.
+      // Retained beside the canonical names for backwards compatibility.
+      // New themes use the canonical targets above.
       {className: 'astryx-hovercard', deprecatedFor: 'hover-card'},
     ],
     vars: [

@@ -90,6 +90,7 @@
  * @property {string} component
  * @property {string[]} props
  * @property {string[]} states
+ * @property {string} [deprecatedFor] - exact canonical replacement for a deprecated target
  */
 
 /**

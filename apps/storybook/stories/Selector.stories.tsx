@@ -990,8 +990,7 @@ export const StatusVariantComparison: Story = {
  * - `components['input-clear-icon'].base` scopes overrides to the clear icon
  *   itself (via the shared canonical `astryx-input-clear-icon` target), so a
  *   theme can recolor it, morph its color on hover, and resize it — without a
- *   fragile descendant selector or raw CSS. Selector still emits
- *   `astryx-selector-clear-icon` only as a deprecated compatibility alias.
+ *   fragile descendant selector or raw CSS.
  * - `components['selector-indicator-icon']` scopes overrides to the chevron,
  *   and its `state:expanded` restyles the open state, which the icon reflects
  *   as a `data-state` attribute.

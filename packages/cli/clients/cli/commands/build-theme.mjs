@@ -215,7 +215,9 @@ function printThemeList(themes) {
  */
 function formatTargetsTable(targets) {
   const rows = targets.map(t => ({
-    key: t.key,
+    key: t.deprecatedFor
+      ? `${t.key} [deprecated; use ${t.deprecatedFor}]`
+      : t.key,
     component: t.component,
     props: t.props.join(', ') || '-',
     states: t.states.join(', ') || '-',
@@ -299,10 +301,13 @@ export function registerTheme(program) {
           name: command.name(),
           reason: 'available subcommand',
         }));
-        return cliError(`unknown subcommand 'theme palette ${String(extras[0])}'`, {
-          suggestions,
-          code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND,
-        });
+        return cliError(
+          `unknown subcommand 'theme palette ${String(extras[0])}'`,
+          {
+            suggestions,
+            code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND,
+          },
+        );
       }
       palette.help();
       return NO_RESULT_SET;

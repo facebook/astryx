@@ -71,17 +71,16 @@ export function themeDataAttributes(props?: ClassProps): ThemeDataAttributes {
  */
 export type ThemePropsOptions = {
   /**
-   * Stable class names to emit ALONGSIDE the component's own, for targets that
-   * have been renamed.
+   * Stable target names to emit alongside the canonical target for backwards
+   * compatibility.
    *
    * A theme target is public API: renaming one silently breaks every theme
-   * that styles it. Emitting the old name beside the new one keeps those
-   * themes working through a deprecation window, at the cost of one extra
-   * class on the element until the old name is dropped in a major.
+   * that styles it. Keep aliases emitted unless a separate compatibility
+   * decision explicitly retires them.
    *
    * Pass plain string literals — the theming guards scan for them statically.
-   * Document the old name with `deprecated` in the component's
-   * `theming.targets` so the docsite says which to use.
+   * Document each old name with `deprecatedFor` in the component's
+   * `theming.targets` so discovery and diagnostics name the replacement.
    */
   legacyNames?: ReadonlyArray<string>;
 };

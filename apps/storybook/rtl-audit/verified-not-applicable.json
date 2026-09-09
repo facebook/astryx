@@ -136,5 +136,21 @@
   {
     "component": "lab/ListInput",
     "reason": "ListInput is a vertical record editor. Keyboard reordering uses ArrowUp/ArrowDown/Home/End, pointer dragging follows the physical pointer while preserving source direction in the preview, and add/remove motion is block-axis. Its grid and controls follow CSS direction with no component-owned horizontal semantic to mirror."
+  },
+  {
+    "component": "core/HoverCard",
+    "reason": "HoverCard delegates anchor geometry and logical placement to Layer and renders a direction-neutral preview surface. It owns no directional glyph, side-specific content order, horizontal scroll or drag behavior, or directional keyboard interaction."
+  },
+  {
+    "component": "core/Indicator",
+    "reason": "Indicator renders centered checkbox, radio, check, and indeterminate marks. Their geometry and state transitions are intrinsic and direction-neutral; the component has no inline-axis placement, content ordering, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/NavIcon",
+    "reason": "NavIcon is a centered circular container for caller-owned artwork. The container has symmetric geometry and no inline-axis placement, order, transform, scroll, drag, overlay, or keyboard behavior; directional meaning belongs to the supplied icon."
+  },
+  {
+    "component": "core/StatusDot",
+    "reason": "StatusDot is a symmetric painted circle with an optional centered caller-owned icon. Its pulse animation is radial, and it has no inline-axis placement, order, scrolling, dragging, overlay, or directional keyboard behavior."
   }
 ]

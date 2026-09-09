@@ -206,8 +206,8 @@ export function CheckboxIndicator({
                 : null,
             disabled: isDisabled ? 'disabled' : null,
           },
-          // `checkbox` was the target before indicators existed; themes
-          // styling it keep working until the next major.
+          // `checkbox` was the target before indicators existed; keep it
+          // emitted so existing themes continue to work.
           {legacyNames: ['checkbox']},
         ),
         stylex.props(
