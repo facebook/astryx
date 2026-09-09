@@ -11,17 +11,66 @@
  * generic — each command still supplies its own action (the thin wrapper that
  * calls the api function and renders).
  *
- * @input a CommandDoc (+ optional FunctionDoc) + an action
+ * It is also where a run's RESULT is recorded. Every command that ships passes
+ * through here, so an action returns a {@link CommandResult} and this converter
+ * stamps it onto the run's debug event — one place, for all of them. That is
+ * deliberate: reporting used to be a call each command made on its way out, and
+ * a command that forgot simply reported nothing. Now the return type asks the
+ * question at authoring time and the converter answers it at runtime, so a new
+ * command is logged correctly without doing anything at all.
+ *
+ * @input a CommandDoc (+ optional FunctionDoc) + an action returning a result
  * @output a configured commander Command added to the given parent
  * @position packages/cli/clients/cli/lib — CLI command converter
  */
+
+import {recordCommandResult} from '../../../foundation/debug/index.mjs';
+
+/**
+ * Marks a Commander command whose action reports its result through this
+ * converter. Read by the coverage test that walks the assembled program, so a
+ * command registered by hand — bypassing the contract — is caught in CI rather
+ * than discovered as a column of nulls months later.
+ */
+export const REPORTS_RESULT = Symbol.for('astryx.command.reportsResult');
+
+/**
+ * Does this command report what it answered with?
+ * @param {import('commander').Command} cmd
+ * @returns {boolean}
+ */
+export function reportsResult(cmd) {
+  return /** @type {any} */ (cmd)[REPORTS_RESULT] === true;
+}
+
+/**
+ * Mark a hand-registered command as reporting its result.
+ *
+ * For the handful of commands that cannot come from a CommandDoc — the root
+ * program, `manifest` (it introspects the live program, so it cannot be
+ * declared by one), `postinstall`, and the stub left behind when a command
+ * module fails to load. They call {@link recordCommandResult} themselves; this
+ * says so, so the coverage test can tell a deliberate hand-registration from an
+ * accidental one.
+ *
+ * @param {import('commander').Command} cmd
+ * @returns {import('commander').Command} the same command, for chaining.
+ */
+export function markReportsResult(cmd) {
+  Object.defineProperty(cmd, REPORTS_RESULT, {value: true, configurable: true});
+  return cmd;
+}
 
 /**
  * Build a Commander command from a CommandDoc and attach it to `parent`.
  *
  * @param {import('commander').Command} parent - program or a group command.
  * @param {import('@astryxdesign/cli/authoring').CommandDoc} doc
- * @param {{fn?: import('@astryxdesign/cli/authoring').FunctionDoc, action?: (...args: any[]) => unknown}} [impl]
+ * @param {{
+ *   fn?: import('@astryxdesign/cli/authoring').FunctionDoc,
+ *   action?: (...args: any[]) => import('../../../foundation/debug/command-result.mjs').CommandResult
+ *     | Promise<import('../../../foundation/debug/command-result.mjs').CommandResult>,
+ * }} [impl]
  * @returns {import('commander').Command} the created command.
  */
 export function defineCommand(parent, doc, {fn, action} = {}) {
@@ -67,6 +116,16 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
   // help carries no per-command examples epilog. Keeping both out preserves the
   // exact `--help`/manifest surface as registrations migrate to this converter.
 
-  if (action) cmd.action(/** @type {(...args: any[]) => void | Promise<void>} */ (action));
+  if (action) {
+    // The recording seam. An action's job ends at "here is what I answered
+    // with"; getting that onto the event is this converter's job, and doing it
+    // here means every command is covered by construction — including the ones
+    // written next month.
+    cmd.action(async (/** @type {any[]} */ ...args) => {
+      const result = await action(...args);
+      recordCommandResult(result);
+    });
+    markReportsResult(cmd);
+  }
   return cmd;
 }

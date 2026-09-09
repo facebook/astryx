@@ -43,10 +43,15 @@ const optionSourceSchema = z.enum([
 
 const resultKindSchema = z.enum([
   'component',
-  'template',
-  'doc',
   'hook',
+  'doc',
+  'template',
+  'theme',
+  'integration',
+  'migration',
+  'command',
   'mixed',
+  'none',
 ]);
 
 const invocationSourceSchema = z.enum(['human', 'ai', 'automation', 'unknown']);

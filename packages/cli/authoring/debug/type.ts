@@ -46,9 +46,25 @@ export type DebugOutcome =
 export type DebugOptionSource =
   'cli' | 'default' | 'env' | 'config' | 'implied';
 
-/** The kind of content represented by a command's result set. */
+/**
+ * The kind of content represented by a command's result set.
+ *
+ * `mixed` is a set spanning several kinds. `none` is the other thing entirely:
+ * the command answered with an EFFECT — it built, wrote, upgraded, validated,
+ * or diagnosed something — and has no set to count. Reading it as "found
+ * nothing" would be wrong; `emptyResult` is where that lives.
+ */
 export type DebugResultKind =
-  'component' | 'template' | 'doc' | 'hook' | 'mixed';
+  | 'component'
+  | 'hook'
+  | 'doc'
+  | 'template'
+  | 'theme'
+  | 'integration'
+  | 'migration'
+  | 'command'
+  | 'mixed'
+  | 'none';
 
 /** What initiated the CLI invocation, based only on positive evidence. */
 export type DebugInvocationSource = 'human' | 'ai' | 'automation' | 'unknown';
@@ -81,14 +97,27 @@ export interface DebugEventOutput {
    * floor, or presentation grouping was applied. A command that answers with a
    * bounded slice still reports the size of the set it sliced, so a capped
    * answer and an exactly-cap-sized one are distinguishable. Null when the
-   * command has no result set.
+   * command has no result set — `resultKind` says which case that is.
    */
   resultCount: number | null;
-  /** Whether the command's underlying match set was empty. */
+  /** Whether the command's underlying match set was empty. Null when it has none. */
   emptyResult: boolean | null;
-  /** One surfaced result kind, `mixed`, or null when none was surfaced. */
+  /**
+   * What this run answered with: one result kind, `mixed`, or `none` for a
+   * command whose work is an effect rather than a lookup.
+   *
+   * Null means the run never reported one. On a completed run that is a bug in
+   * the CLI, not a property of the command — every command declares its result
+   * shape as its return type, and the recorder stamps it centrally. Expect null
+   * only where a run ended before its command could answer: a parse error, a
+   * rejected `--json`, `--help`, or a failure.
+   */
   resultKind: DebugResultKind | null;
-  /** Whether the command found a confident direct match, when it defines one. */
+  /**
+   * Whether the command resolved the exact thing that was asked for, rather
+   * than listing or suggesting. Null for the commands that define no such
+   * notion (a bare list has nothing to match).
+   */
   directMatch: boolean | null;
   /**
    * Everything the command printed to stdout — the answer the user actually

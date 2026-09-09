@@ -45,6 +45,7 @@ import {
 } from '../../../api/theme/palette/generate/generate.mjs';
 import {themeBuild, importSpecifier} from '../../../api/theme/build/build.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
+import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
 import {doc as themeGroup} from './theme.doc.mjs';
 import {doc as themeBuildCommand} from './theme-build.doc.mjs';
 import {doc as themeListCommand} from './theme-list.doc.mjs';
@@ -264,14 +265,14 @@ export function registerTheme(program) {
           name,
           reason: 'available subcommand',
         }));
-        cliError(`unknown subcommand 'theme ${unknown}'`, {
+        return cliError(`unknown subcommand 'theme ${unknown}'`, {
           suggestions,
           code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND,
         });
-        return;
       }
       // Bare `astryx theme` — show the subcommand list. Exit 0 (help is success).
       theme.help();
+      return NO_RESULT_SET;
     },
   });
 
@@ -298,13 +299,13 @@ export function registerTheme(program) {
           name: command.name(),
           reason: 'available subcommand',
         }));
-        cliError(`unknown subcommand 'theme palette ${String(extras[0])}'`, {
+        return cliError(`unknown subcommand 'theme palette ${String(extras[0])}'`, {
           suggestions,
           code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND,
         });
-        return;
       }
       palette.help();
+      return NO_RESULT_SET;
     },
   });
 
@@ -324,14 +325,18 @@ export function registerTheme(program) {
       } catch (error) {
         const err =
           /** @type {import('../../../api/error.mjs').AstryxError} */ (error);
-        cliError(err.message, {
+        return cliError(err.message, {
           suggestions: err.suggestions || [],
           code: err.code,
         });
-        return;
       }
 
-      if (json) return jsonOut(result);
+      // Generating a palette computes and writes candidate files; the numbers
+      // that matter (families, stops, modes) are the receipt's, not a match set.
+      if (json) {
+        jsonOut(result);
+        return NO_RESULT_SET;
+      }
       if (!result.data.output && !result.data.preview) {
         emit(
           section(
@@ -340,7 +345,7 @@ export function registerTheme(program) {
           ),
           code(serializePaletteCandidate(result.data.candidate).trimEnd()),
         );
-        return;
+        return NO_RESULT_SET;
       }
       if (!result.data.written) {
         emit(
@@ -349,7 +354,7 @@ export function registerTheme(program) {
           ),
           text('Pass --overwrite to replace both generated candidate files.'),
         );
-        return;
+        return NO_RESULT_SET;
       }
       emit(
         ...(result.data.output
@@ -365,6 +370,7 @@ export function registerTheme(program) {
           'Review and edit the candidate before adopting it as theme-owned palette data.',
         ),
       );
+      return NO_RESULT_SET;
     },
   });
 
@@ -385,7 +391,7 @@ export function registerTheme(program) {
         // A quoted glob reaches us unexpanded: say so rather than reporting a
         // literal `themes/*.ts` as a missing file.
         const looksGlobby = /[*?[\]{}]/.test(entry.file);
-        cliError(`File not found: ${entry.filePath}`, {
+        return cliError(`File not found: ${entry.filePath}`, {
           code: ERROR_CODES.ERR_FILE_NOT_FOUND,
           suggestions: looksGlobby
             ? [
@@ -397,29 +403,26 @@ export function registerTheme(program) {
               ]
             : undefined,
         });
-        return;
       }
 
       // --check and --watch are mutually exclusive: check is a one-shot,
       // exit-coded verification; watch is a long-running rebuild loop.
       if (options.check && options.watch) {
-        cliError('--check cannot be combined with --watch', {
+        return cliError('--check cannot be combined with --watch', {
           code: ERROR_CODES.ERR_THEME_INVALID,
         });
-        return;
       }
 
       // --out names one output file, so it cannot describe N themes. Without
       // it each theme writes `<theme name>.css` beside its source, which is
       // what a multi-theme build wants anyway.
       if (options.out && entries.length > 1) {
-        cliError(
+        return cliError(
           `--out takes a single output path and ${entries.length} theme files were given. ` +
             'Build them without --out (each theme writes <name>.css next to its source), ' +
             'or run one invocation per theme.',
           {code: ERROR_CODES.ERR_THEME_INVALID},
         );
-        return;
       }
 
       // Watch mode: run an initial build, then rebuild on every change to the
@@ -427,13 +430,12 @@ export function registerTheme(program) {
       // supported in --json (machine) mode, which expects a single envelope.
       if (options.watch) {
         if (json) {
-          cliError('--watch is not supported with --json', {
+          return cliError('--watch is not supported with --json', {
             code: ERROR_CODES.ERR_THEME_INVALID,
           });
-          return;
         }
         await runThemeBuildWatch(entries, options);
-        return;
+        return NO_RESULT_SET;
       }
 
       // Non-watch: delegate to the API compiler, once per theme, in argument
@@ -471,11 +473,10 @@ export function registerTheme(program) {
           // Stop at the first failure, as a shell loop under `set -e` does.
           // With several themes in flight the message alone rarely says which
           // one broke, so name it.
-          cliError(
+          return cliError(
             entries.length > 1 ? `${entry.file}: ${err.message}` : err.message,
             {suggestions: err.suggestions, code: err.code},
           );
-          return;
         }
       }
 
@@ -508,6 +509,10 @@ export function registerTheme(program) {
       if (options.check && stale) {
         process.exitCode = 1;
       }
+
+      // Compiling a theme writes CSS; `--check` compares what is on disk. Both
+      // are effects — the receipt (and the exit code) carry the outcome.
+      return NO_RESULT_SET;
     },
   });
 
@@ -522,16 +527,23 @@ export function registerTheme(program) {
       } catch (e) {
         const err =
           /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {
+        return cliError(err.message, {
           suggestions: err.suggestions || [],
           code: err.code,
         });
-        return;
       }
 
-      if (json) return jsonOut(result);
+      const answered = resultSet({
+        count: result.data.length,
+        resultKind: 'theme',
+      });
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       printThemeList(result.data);
+      return answered;
     },
   });
 
@@ -562,18 +574,27 @@ export function registerTheme(program) {
       } catch (e) {
         const err =
           /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {
+        return cliError(err.message, {
           suggestions: err.suggestions || [],
           code: err.code,
         });
-        return;
       }
 
-      if (json) return jsonOut(result);
+      // `--list` (or no slug) browses the bundled themes; naming one copies it
+      // into the project, which is an effect with nothing to count.
+      const answered =
+        result.type === 'theme.list'
+          ? resultSet({count: result.data.length, resultKind: 'theme'})
+          : NO_RESULT_SET;
+
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       if (result.type === 'theme.list') {
         printThemeList(result.data);
-        return;
+        return answered;
       }
 
       // theme.add — print where files landed + how to use the theme.
@@ -596,6 +617,7 @@ export function registerTheme(program) {
           `This is your copy of the ${displayName} theme — edit ${entry} to make it your own.`,
         ),
       );
+      return answered;
     },
   });
 
@@ -618,14 +640,17 @@ export function registerTheme(program) {
       } catch (e) {
         const err =
           /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {
+        return cliError(err.message, {
           suggestions: err.suggestions || [],
           code: err.code,
         });
-        return;
       }
 
-      if (json) return jsonOut(result);
+      // Writes a starter theme file, or declines to overwrite one.
+      if (json) {
+        jsonOut(result);
+        return NO_RESULT_SET;
+      }
 
       const invocation = getCliInvocation(process.cwd());
       if (!result.data.written) {
@@ -633,7 +658,7 @@ export function registerTheme(program) {
           text(`[skip] ${result.data.path} already exists — left as is.`),
           text(`Pass --overwrite to replace it with a fresh copy.`),
         );
-        return;
+        return NO_RESULT_SET;
       }
       emit(
         text(`[ok] Wrote ${result.data.path}`),
@@ -643,6 +668,7 @@ export function registerTheme(program) {
         ),
         code(`${invocation} theme build ${result.data.path}`),
       );
+      return NO_RESULT_SET;
     },
   });
 
@@ -658,14 +684,21 @@ export function registerTheme(program) {
       } catch (e) {
         const err =
           /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {
+        return cliError(err.message, {
           suggestions: err.suggestions || [],
           code: err.code,
         });
-        return;
       }
 
-      if (json) return jsonOut(result);
+      const answered = resultSet({
+        count: result.data.targets.length,
+        resultKind: 'theme',
+        directMatch: filter != null ? true : undefined,
+      });
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       const run = getCliInvocation();
       const {targets, componentCount} = result.data;
@@ -683,6 +716,7 @@ export function registerTheme(program) {
           ].join('\n'),
         ),
       );
+      return answered;
     },
   });
 }

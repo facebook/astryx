@@ -3,7 +3,7 @@
 /**
  * @file Contract coverage for DebugEvent result and agent-session fields.
  *
- * @position packages/cli/foundation/debug — telemetry contract coverage
+ * @position packages/cli/foundation/debug — recorded-event contract coverage
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
@@ -11,10 +11,11 @@ import {createHash} from 'node:crypto';
 import {
   begin,
   finish,
-  recordResultSummary,
+  recordCommandResult,
   resetRecorder,
   setEventHandler,
 } from './recorder.mjs';
+import {NO_RESULT_SET, resultSetOf} from './command-result.mjs';
 import {captureEnv} from './event.mjs';
 import {parseDebugEvent} from '../../authoring/debug/parse.mjs';
 
@@ -191,11 +192,14 @@ describe('DebugEvent additive fields', () => {
 
   it('records count, empty, kind, and direct-match facts', () => {
     const event = collectEvent(() => {
-      recordResultSummary([{domain: 'template'}, {domain: 'component'}], {
-        directMatch: true,
-        resultCount: 9,
-        emptyResult: false,
-      });
+      recordCommandResult(
+        resultSetOf([{domain: 'template'}, {domain: 'component'}], {
+          count: 9,
+          empty: false,
+          directMatch: true,
+          fallbackKind: 'mixed',
+        }),
+      );
     });
     expect(event.output).toMatchObject({
       resultCount: 9,
@@ -206,14 +210,52 @@ describe('DebugEvent additive fields', () => {
   });
 
   it('records a successful empty result set', () => {
-    const event = collectEvent(() => recordResultSummary([]));
+    const event = collectEvent(() =>
+      recordCommandResult(
+        resultSetOf([], {count: 0, fallbackKind: 'component'}),
+      ),
+    );
     expect(event.outcome).toBe('ok');
     expect(event.output).toMatchObject({
       resultCount: 0,
       emptyResult: true,
-      resultKind: null,
+      // Nothing matched, so the kind comes from what was looked FOR. A null
+      // here would be indistinguishable from a command that never reported.
+      resultKind: 'component',
       directMatch: null,
     });
+  });
+
+  it('records a command that declares it has no result set', () => {
+    const event = collectEvent(() => recordCommandResult(NO_RESULT_SET));
+    expect(event.output).toMatchObject({
+      resultKind: 'none',
+      resultCount: null,
+      emptyResult: null,
+      directMatch: null,
+    });
+  });
+
+  it('derives one kind, mixed, or the fallback from the results themselves', () => {
+    const of = (/** @type {any[]} */ items, /** @type {any} */ fallback) =>
+      resultSetOf(items, {count: items.length, fallbackKind: fallback})
+        .resultKind;
+    expect(of([{domain: 'component'}, {domain: 'component'}], 'mixed')).toBe(
+      'component',
+    );
+    expect(of([{domain: 'component'}, {domain: 'doc'}], 'mixed')).toBe('mixed');
+    // Nothing to read a kind from — an empty answer, or items that tag
+    // themselves with something this scale does not carry.
+    expect(of([], 'component')).toBe('component');
+    expect(of([{domain: 'sandwich'}], 'mixed')).toBe('mixed');
+  });
+
+  it('leaves resultKind null when a run reports nothing at all', () => {
+    // The whole point of `none`: a run that reported NOTHING still looks
+    // different from one that declared it has nothing, and that difference is
+    // what makes a missed command visible instead of invisible.
+    const event = collectEvent(() => {});
+    expect(event.output.resultKind).toBe(null);
   });
 });
 

@@ -23,6 +23,7 @@ import {
 } from '../../../api/integration/validate-integration.mjs';
 import {doc as validateIntegrationCommand} from './validate-integration.doc.mjs';
 import {doc as validateIntegrationFn} from '../../../api/integration/validateIntegration.doc.mjs';
+import {NO_RESULT_SET} from '../../../foundation/debug/index.mjs';
 
 /**
  * Render a validation result for humans.
@@ -81,6 +82,11 @@ export function registerValidateIntegration(program) {
       if (errors > 0) {
         process.exitCode = 1;
       }
+
+      // A verdict on one integration, like doctor: issues are findings, not
+      // results, and an empty list is the GOOD outcome rather than an empty
+      // answer.
+      return NO_RESULT_SET;
     },
   }).addHelpText(
     'after',

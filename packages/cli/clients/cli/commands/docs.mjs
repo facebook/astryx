@@ -17,6 +17,7 @@ import {jsonOut} from '../../../foundation/response/json.mjs';
 import {emit, section, records, text, code} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
+import {resultSet} from '../../../foundation/debug/index.mjs';
 import {docs as docsApi} from '../../../api/docs/docs.mjs';
 import {doc as docsCommand} from './docs.doc.mjs';
 import {doc as docsFn} from '../../../api/docs/docs.doc.mjs';
@@ -130,6 +131,22 @@ function formatReferenceFull(docs, detail) {
   return `${header}\n\n${sections.join(sep)}`;
 }
 
+/**
+ * What the run answered with. A named topic (or one of its sections) resolves
+ * or throws, so it is always a direct match of one doc; the bare form lists
+ * every topic there is.
+ *
+ * @param {import('../../../api/docs/docs.type.mjs').DocsListResponse
+ *   | import('../../../api/docs/docs.type.mjs').DocsDetailResponse
+ *   | import('../../../api/docs/docs.type.mjs').DocsDetailSectionResponse} result
+ * @returns {import('../../../foundation/debug/command-result.mjs').CommandResult}
+ */
+function summarize(result) {
+  return result.type === 'docs.list'
+    ? resultSet({count: result.data.length, resultKind: 'doc'})
+    : resultSet({count: 1, resultKind: 'doc', directMatch: true});
+}
+
 // ─── Command ─────────────────────────────────────────────────────────────────
 
 /**
@@ -153,11 +170,17 @@ export function registerDocs(program) {
         // docs API throws structured errors with {name, reason} suggestions —
         // pass them through untouched so the CLI envelope matches the API.
         const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
-        return;
+        return cliError(err.message, {
+          suggestions: err.suggestions || [],
+          code: err.code,
+        });
       }
 
-      if (json) return jsonOut(result);
+      const answered = summarize(result);
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       switch (result.type) {
         case 'docs.list': {
@@ -186,6 +209,7 @@ export function registerDocs(program) {
           break;
         }
       }
+      return answered;
     },
   });
 }
