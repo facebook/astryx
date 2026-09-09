@@ -134,7 +134,7 @@ describe('Divider', () => {
     );
     const root = screen.getByTestId('divider');
     expect(root.className).toContain('astryx-divider');
-    expect(root.className).toContain('strong');
-    expect(root.className).toContain('vertical');
+    expect(root).toHaveAttribute('data-variant', 'strong');
+    expect(root).toHaveAttribute('data-orientation', 'vertical');
   });
 });

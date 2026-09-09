@@ -2599,7 +2599,9 @@ describe('MultiSelector indicator (chevron) icon theme target', () => {
     expect(css).toContain('.astryx-multi-selector-indicator-icon {');
     expect(css).toContain('width: 14px');
     expect(css).toContain('height: 14px');
-    expect(css).toContain('.astryx-multi-selector-indicator-icon.expanded');
+    expect(css).toContain(
+      '.astryx-multi-selector-indicator-icon[data-state="expanded"]',
+    );
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -2928,7 +2930,7 @@ describe('MultiSelector disabled state theme target', () => {
     );
     const root = getSelectorRoot(container);
     expect(root).not.toHaveAttribute('data-disabled');
-    expect(root).not.toHaveClass('disabled');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 
   it('exposes the disabled state so a theme can key on it', () => {
@@ -2941,7 +2943,7 @@ describe('MultiSelector disabled state theme target', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-multi-selector.disabled');
+    expect(css).toContain('.astryx-multi-selector[data-disabled="disabled"]');
     expect(css).toContain('opacity: 0.4');
   });
 });
@@ -2965,7 +2967,7 @@ describe('MultiSelector dropdown option theme target', () => {
     expect(options).toHaveLength(3);
     for (const option of options) {
       expect(option).toHaveClass('astryx-multi-selector-option');
-      expect(option).toHaveClass('lg');
+      expect(option).toHaveAttribute('data-size', 'lg');
       expect(option).toHaveAttribute('data-size', 'lg');
     }
   });
@@ -2987,12 +2989,12 @@ describe('MultiSelector dropdown option theme target', () => {
     await user.click(screen.getByRole('combobox'));
     const [selected, plain, disabled] = screen.getAllByRole('option', h);
 
-    expect(selected).toHaveClass('selected');
     expect(selected).toHaveAttribute('data-selected', 'selected');
-    expect(plain).not.toHaveClass('selected');
+    expect(selected).toHaveAttribute('data-selected', 'selected');
+    expect(plain).not.toHaveAttribute('data-selected');
     expect(plain).not.toHaveAttribute('data-selected');
 
-    expect(disabled).toHaveClass('disabled');
+    expect(disabled).toHaveAttribute('data-disabled', 'disabled');
     expect(disabled).toHaveAttribute('data-disabled', 'disabled');
     expect(plain).not.toHaveAttribute('data-disabled');
   });
@@ -3013,7 +3015,7 @@ describe('MultiSelector dropdown option theme target', () => {
     const [selectAllRow, ...regularRows] = screen.getAllByRole('option', h);
     expect(selectAllRow).toHaveTextContent('Select all');
     expect(selectAllRow).toHaveClass('astryx-multi-selector-option');
-    expect(selectAllRow).toHaveClass('select-all');
+    expect(selectAllRow).toHaveAttribute('data-select-all', 'select-all');
     expect(selectAllRow).toHaveAttribute('data-select-all', 'select-all');
 
     for (const row of regularRows) {
@@ -3058,9 +3060,13 @@ describe('MultiSelector dropdown option theme target', () => {
     });
     const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-multi-selector-option {');
-    expect(css).toContain('.astryx-multi-selector-option.selected');
-    expect(css).toContain('.astryx-multi-selector-option.select-all');
-    expect(css).toContain('.astryx-multi-selector-option.lg');
+    expect(css).toContain(
+      '.astryx-multi-selector-option[data-selected="selected"]',
+    );
+    expect(css).toContain(
+      '.astryx-multi-selector-option[data-select-all="select-all"]',
+    );
+    expect(css).toContain('.astryx-multi-selector-option[data-size="lg"]');
   });
 });
 

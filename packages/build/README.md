@@ -18,11 +18,11 @@ StyleX generates atomic CSS: same declaration = same class name. Without separat
 
 ## Packages
 
-| Export               | Purpose                                       | Platform                    |
-| -------------------- | --------------------------------------------- | --------------------------- |
-| `@astryxdesign/build/babel`   | Babel plugin: splits class prefixes per file  | Next.js, any babel pipeline |
-| `@astryxdesign/build/postcss` | PostCSS plugin: compiles + splits CSS layers  | Next.js                     |
-| `@astryxdesign/build/vite`    | Vite plugin: wraps unplugin + splits layers   | Vite, Storybook             |
+| Export                        | Purpose                                      | Platform                    |
+| ----------------------------- | -------------------------------------------- | --------------------------- |
+| `@astryxdesign/build/babel`   | Babel plugin: splits class prefixes per file | Next.js, any babel pipeline |
+| `@astryxdesign/build/postcss` | PostCSS plugin: compiles + splits CSS layers | Next.js                     |
+| `@astryxdesign/build/vite`    | Vite plugin: wraps unplugin + splits layers  | Vite, Storybook             |
 
 ## Install
 
@@ -40,6 +40,27 @@ npm install -D @stylexjs/unplugin
 
 ## Next.js Setup
 
+> **Requires the webpack bundler.** Every step below configures resolution through
+> `nextConfig.webpack`, and Turbopack never calls that hook. Under Turbopack the app
+> resolves `@astryxdesign/*` to `dist` while the PostCSS pass compiles the library from
+> `source` — the two emit disjoint class names, so the build succeeds and the page
+> renders unstyled with nothing logged.
+>
+> Next.js 16 selects Turbopack by default, so name the bundler explicitly:
+>
+> ```bash
+> next dev --webpack
+> next build --webpack
+> ```
+>
+> `withAstryx()` throws when it sees `TURBOPACK` set rather than letting that through.
+> Next 16 also rejects a `webpack` config with no `turbopack` config on its own when no
+> bundler flag is given.
+>
+> If you would rather not pin the bundler, take the pre-built package instead: import
+> `@astryxdesign/core/astryx.css` and skip the babel and PostCSS setup entirely. See
+> [example-nextjs](../../apps/example-nextjs/).
+
 ### 1. babel.config.js
 
 ```js
@@ -56,8 +77,12 @@ module.exports = {
         treeshakeCompensation: true,
         enableInlinedConditionalMerge: true,
         aliases: {
-          '@astryxdesign/core/*': [path.join(__dirname, 'node_modules/@astryxdesign/core/*')],
-          '@astryxdesign/core': [path.join(__dirname, 'node_modules/@astryxdesign/core')],
+          '@astryxdesign/core/*': [
+            path.join(__dirname, 'node_modules/@astryxdesign/core/*'),
+          ],
+          '@astryxdesign/core': [
+            path.join(__dirname, 'node_modules/@astryxdesign/core'),
+          ],
         },
         unstable_moduleResolution: {type: 'commonJS'},
       },
@@ -84,8 +109,12 @@ module.exports = {
             treeshakeCompensation: true,
             enableInlinedConditionalMerge: true,
             aliases: {
-              '@astryxdesign/core/*': [path.join(__dirname, 'node_modules/@astryxdesign/core/*')],
-              '@astryxdesign/core': [path.join(__dirname, 'node_modules/@astryxdesign/core')],
+              '@astryxdesign/core/*': [
+                path.join(__dirname, 'node_modules/@astryxdesign/core/*'),
+              ],
+              '@astryxdesign/core': [
+                path.join(__dirname, 'node_modules/@astryxdesign/core'),
+              ],
             },
             unstable_moduleResolution: {type: 'commonJS'},
           },
@@ -97,6 +126,10 @@ module.exports = {
 ```
 
 ### 3. next.config.mjs
+
+Or `withAstryx()` from `@astryxdesign/build/next`, which sets both of these for you.
+Either way the work happens in the `webpack` hook, so the build has to run with
+`--webpack` — see the note at the top of this section.
 
 ```js
 const nextConfig = {
@@ -164,7 +197,10 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@astryxdesign/core': path.resolve(__dirname, 'node_modules/@astryxdesign/core/src'),
+      '@astryxdesign/core': path.resolve(
+        __dirname,
+        'node_modules/@astryxdesign/core/src',
+      ),
     },
   },
   optimizeDeps: {

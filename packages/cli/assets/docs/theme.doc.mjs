@@ -506,7 +506,7 @@ const brandTheme = defineTheme({
             ],
             [
               'ocean.js',
-              'ES module exporting the theme object with `__built: true` and pre-resolved token values. Also re-exports the icon registry if the source theme declares one.',
+              'ES module exporting the theme object with `__built: true` and pre-resolved token values. Also imports and re-exports an icon registry when the build detects its named import in the source theme (see the limitations below).',
             ],
             [
               'ocean.d.ts',
@@ -520,7 +520,34 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
+          text: "The current `theme build` implementation emits an icon import when it detects a named import used by the theme’s `icons:` field, such as `import {oceanIcons} from './icons'` with `icons: oceanIcons`. It does not compile that registry module. Inline registries, including local constants, are currently omitted from the generated theme even though `defineTheme` accepts them at runtime. Move the registry to a separate module and use a named import for this build flow. For a registry that uses React and lucide-react, the following example compiles it alongside the generated theme:",
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Compiling the icon registry sidecar',
+          code: `# Emit the built theme; point its icon import at the file the next step produces
+astryx theme build ./src/themes/ocean.ts -o dist/theme.css --icons-specifier ./icons.mjs
+
+# Compile the icon registry to a real ES module next to the generated JS
+esbuild src/themes/icons.tsx --bundle --format=esm --outfile=dist/icons.mjs \\
+  --external:react --external:lucide-react --jsx=automatic`,
+        },
+        {
+          type: 'prose',
+          text: 'In the example above, the generated theme imports `./icons.mjs` from `dist`. If the second command is skipped, `theme build` can still succeed, but loading or bundling the generated module fails because `dist/icons.mjs` is missing. `--icons-specifier` changes the emitted import; it does not create or verify the target file. Match the specifier to a module that resolves from the generated JS file. Keep `react` and the icon library external so the registry does not bundle its own copies of those dependencies.',
+        },
+        {
+          type: 'prose',
+          text: 'Without `--icons-specifier`, the detected source import specifier is emitted unchanged. In the default no-`--out` flow, a bundler can resolve an extensionless `./icons` to the neighboring `icons.tsx` source. Node ESM does not perform that lookup and reports `ERR_MODULE_NOT_FOUND`. Moving the output with `--out` also changes where relative imports resolve; the generated module cannot find the original source merely because a bundler is used.',
+        },
+        {
+          type: 'prose',
           text: 'The `__built: true` flag tells Theme to skip runtime `<style>` injection; the CSS file handles it.',
+        },
+        {
+          type: 'prose',
+          text: 'After upgrading Astryx across a selector-contract change, rerun `astryx theme build <theme-file>` for every custom prebuilt theme. Deploy the regenerated `.css`, `.js`, `.d.ts`, and optional `.variants.d.ts` together. The runtime intentionally trusts `__built: true` and will not repair stale CSS from an older build.',
         },
         {
           type: 'code',

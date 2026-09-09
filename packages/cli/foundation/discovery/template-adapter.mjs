@@ -170,7 +170,18 @@ const PLACEHOLDER_IMAGE =
  *
  * @type {Set<string>}
  */
-const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv']);
+const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv', 'm4v']);
+
+const IMAGE_EXTENSIONS = new Set([
+  'svg',
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'avif',
+  'ico',
+]);
 
 /**
  * Demo-asset sources to strip from scaffolded projects. Template demo imagery
@@ -183,7 +194,7 @@ const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv']);
  *
  * @type {RegExp}
  */
-const DEMO_ASSET_PATTERN = /\/template-assets\/[\w-]+\.(\w+)/g;
+const DEMO_ASSET_PATTERN = /\/template-assets\/[\w.-]+\.(\w+)/g;
 
 /**
  * Normalize path into Unix path (using forward slashes) for consistent comparison
@@ -207,9 +218,16 @@ function toPosixPath(p) {
  * @returns {string} Source with demo asset references replaced.
  */
 export function stripTemplateAssetRefs(source) {
-  return source.replace(DEMO_ASSET_PATTERN, (match, extension) =>
-    VIDEO_EXTENSIONS.has(extension.toLowerCase()) ? '' : PLACEHOLDER_IMAGE,
-  );
+  return source.replace(DEMO_ASSET_PATTERN, (match, extension) => {
+    const ext = extension.toLowerCase();
+    if (VIDEO_EXTENSIONS.has(ext)) {
+      return '';
+    }
+    if (IMAGE_EXTENSIONS.has(ext)) {
+      return PLACEHOLDER_IMAGE;
+    }
+    throw new Error(`Unrecognized template asset format ${ext} for ${match}`);
+  });
 }
 /**
  * Load a template-spec module and return its metadata object. Supports both

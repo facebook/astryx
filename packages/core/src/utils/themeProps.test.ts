@@ -4,36 +4,23 @@ import {describe, it, expect} from 'vitest';
 import {themeDataAttributes, themeProps} from './themeProps';
 
 describe('themeProps', () => {
-  it('returns base class for component', () => {
+  it('returns the stable target class for a component', () => {
     expect(themeProps('card').className).toBe('astryx-card');
   });
 
-  it('adds variant classes', () => {
+  it('does not emit bare prop-value classes', () => {
     expect(
       themeProps('button', {variant: 'secondary', size: 'sm'}).className,
-    ).toBe('astryx-button secondary sm');
+    ).toBe('astryx-button');
+    expect(themeProps('heading', {level: 1}).className).toBe('astryx-heading');
   });
 
-  it('prefixes numeric values with prop name', () => {
-    expect(themeProps('heading', {level: 1}).className).toBe(
-      'astryx-heading level-1',
-    );
-  });
-
-  it('skips null and undefined props', () => {
+  it('continues to emit deprecated target-name aliases when requested', () => {
     expect(
-      themeProps('button', {variant: 'primary', size: undefined}).className,
-    ).toBe('astryx-button primary');
-  });
-
-  it('works with no props', () => {
-    expect(themeProps('divider').className).toBe('astryx-divider');
-  });
-
-  it('handles string numeric values', () => {
-    expect(themeProps('heading', {level: '3'}).className).toBe(
-      'astryx-heading level-3',
-    );
+      themeProps('progress-bar', undefined, {
+        legacyNames: ['progressbar'],
+      }).className,
+    ).toBe('astryx-progress-bar astryx-progressbar');
   });
 
   it('reflects visual props as data attributes', () => {
@@ -58,9 +45,9 @@ describe('themeProps', () => {
     });
   });
 
-  it('returns class and data attributes together', () => {
+  it('returns the target class and data attributes together', () => {
     expect(themeProps('button', {variant: 'primary', size: 'sm'})).toEqual({
-      className: 'astryx-button primary sm',
+      className: 'astryx-button',
       'data-variant': 'primary',
       'data-size': 'sm',
     });

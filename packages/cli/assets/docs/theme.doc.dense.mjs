@@ -110,6 +110,21 @@ export const docsDense = {
         null,
         null,
         null,
+        {
+          type: 'prose',
+          text: 'current build detects named imports used by icons:. registry module is not compiled. inline/local registries accepted by defineTheme are omitted from built output; move them to a separate module and import by name.',
+        },
+        null,
+        {
+          type: 'prose',
+          text: '--out dist/theme.css --icons-specifier ./icons.mjs requires dist/icons.mjs. skipping its compilation can leave theme build successful but breaks loading and bundling. flag changes the import; it does not create/verify the file. keep react + icon library external.',
+        },
+        {
+          type: 'prose',
+          text: 'without --icons-specifier, source import is copied unchanged. default flow without --out: bundlers can resolve ./icons to neighboring icons.tsx; Node ESM fails with ERR_MODULE_NOT_FOUND. moving output changes relative import resolution.',
+        },
+        null,
+        null,
         null,
       ],
     },

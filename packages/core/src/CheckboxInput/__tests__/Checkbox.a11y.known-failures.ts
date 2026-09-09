@@ -39,19 +39,6 @@ export const CHECKBOX_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
       'This is the accessibility-tree face of the missing relationship recorded above. It is separate because each known failure names exactly one expectation and layer.',
   },
   {
-    expectation: 'checkbox.name.matches-visible-label',
-    binding: 'CheckboxListItem',
-    state: 'list-item-rich-label-missing-name',
-    evidenceLayer: 'accessibility-tree',
-    failureEquals:
-      'the visible label reads "Pro plan" but the browser computes the accessible name as "Checkbox", so speaking the visible label does not reach this control',
-    standardsReference: 'WCAG 2.2 2.5.3 Label in Name (Level A)',
-    userImpact:
-      'The browser exposes every rich-label item without an aria-label under the generic name "Checkbox", so speech input cannot address the item by the visible words.',
-    reason:
-      'The public API permits a ReactNode label without an equivalent plain-text name. The migration records that supported branch without changing the component API.',
-  },
-  {
     expectation: 'checkbox.readonly.declared',
     binding: 'CheckboxInput',
     state: 'input-handlerless-read-only',

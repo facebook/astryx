@@ -385,7 +385,7 @@ describe('generateThemeCSS with components', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-button.secondary');
+    expect(css).toContain('.astryx-button[data-variant="secondary"]');
     expect(css).toContain('background-color: rgba(0,0,0,0.06)');
   });
 
@@ -401,7 +401,9 @@ describe('generateThemeCSS with components', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-button.destructive.sm');
+    expect(css).toContain(
+      '.astryx-button[data-variant="destructive"][data-size="sm"]',
+    );
     expect(css).toContain('padding: 2px 6px');
   });
 
@@ -662,8 +664,8 @@ describe('custom status via components', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    // parseStyleKey('status:neutral') → '.neutral', so CSS should have .astryx-banner.neutral
-    expect(css).toContain('.astryx-banner.neutral');
+    // The status axis remains explicit in the generated data-attribute selector.
+    expect(css).toContain('.astryx-banner[data-status="neutral"]');
     expect(css).toContain('background-color: var(--color-background-muted)');
   });
 
@@ -695,7 +697,7 @@ describe('custom status via components', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-button.primary-muted');
+    expect(css).toContain('.astryx-button[data-variant="primary-muted"]');
     expect(css).toContain('background-color: #ECF5FF');
   });
 
@@ -937,13 +939,15 @@ describe('pseudo-class overrides in components', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-button.primary-muted {');
+    expect(css).toContain('.astryx-button[data-variant="primary-muted"] {');
     expect(css).toContain('background-color: #ECF5FF');
     expect(css).toContain(
-      '.astryx-button.primary-muted:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+      '.astryx-button[data-variant="primary-muted"]:hover:where(:not(:disabled,[aria-disabled="true"])) {',
     );
     expect(css).toContain('background-color: #D6EBFF');
-    expect(css).toContain('.astryx-button.primary-muted:focus-visible {');
+    expect(css).toContain(
+      '.astryx-button[data-variant="primary-muted"]:focus-visible {',
+    );
     expect(css).toContain('outline: 2px solid var(--color-accent)');
   });
 

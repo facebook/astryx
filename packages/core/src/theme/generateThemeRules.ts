@@ -153,7 +153,7 @@ export interface ThemeCSSOutput {
    */
   prose: string;
   /**
-   * Token overrides + component .astryx-* overrides scoped to the theme.
+   * Token overrides + component target/data-attribute overrides scoped to the theme.
    * Should be injected into @layer astryx-theme — above StyleX layers so
    * theme component overrides take effect. Empty string if no rules.
    */
@@ -414,8 +414,8 @@ export function generateThemeRules(theme: ThemeRuleSource): string[] {
     parts.push(`  :scope {\n${declarations}\n  }`);
   }
 
-  // 2. Component overrides (.astryx-* class rules; components also emit
-  // data-* prop reflections for external selector migrations)
+  // 2. Component overrides: stable .astryx-* target classes combined with
+  // reflected data-* selectors for visual props and runtime states.
   if (theme.components) {
     generateComponentRules(theme.components, parts);
   }
@@ -532,10 +532,9 @@ interface ComponentRuleOptions {
 }
 
 /**
- * Generate component override rules using the .astryx-* class selector
- * format. Runtime components also emit matching data-* prop reflections for
- * external selector migrations. Handles derived var expansion and container
- * padding mapping for every theme layer.
+ * Generate component override rules using stable `.astryx-*` target classes
+ * and reflected `data-*` selectors for prop/state keys. Handles derived var
+ * expansion and container padding mapping for every theme layer.
  */
 function generateComponentRules(
   components: Record<
@@ -743,17 +742,17 @@ function generateColorOverrides(
     for (const [colorName, colorValue] of Object.entries(TEXT_COLOR_MAP)) {
       if (touchesText) {
         parts.push(
-          `  ${componentSelector('text', `.${colorName}`, surface)} { color: ${colorValue}; }`,
+          `  ${componentSelector('text', parseStyleKey(`color:${colorName}`), surface)} { color: ${colorValue}; }`,
         );
       }
       if (touchesHeading) {
         parts.push(
-          `  ${componentSelector('heading', `.${colorName}`, surface)} { color: ${colorValue}; }`,
+          `  ${componentSelector('heading', parseStyleKey(`color:${colorName}`), surface)} { color: ${colorValue}; }`,
         );
       }
       if (touchesLink) {
         parts.push(
-          `  ${componentSelector('link', `.${colorName}`, surface)} { color: ${colorValue}; }`,
+          `  ${componentSelector('link', parseStyleKey(`color:${colorName}`), surface)} { color: ${colorValue}; }`,
         );
       }
     }
@@ -820,7 +819,7 @@ function generateSizeOverrides(
  * as themed defaults — conceptually the same tier as the CSS reset. They
  * belong in the reset layer so any class-based style wins.
  *
- * Component rules (tokens, .astryx-* overrides) are intentional theme overrides
+ * Component rules (tokens, stable .astryx-* targets plus data-* selectors) are
  * that need to beat StyleX — they stay in astryx-theme (above StyleX layers).
  */
 export function generateThemeRulesSplit(theme: DefinedTheme): ThemeRulesSplit {

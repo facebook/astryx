@@ -69,7 +69,7 @@ describe('AvatarGroup', () => {
     expect(screen.getByTestId('avatar-group')).toBeInTheDocument();
   });
 
-  it('applies size class to the group', () => {
+  it('reflects size on the group', () => {
     render(
       <AvatarGroup size="lg">
         <Avatar name="Alice" />
@@ -78,7 +78,7 @@ describe('AvatarGroup', () => {
 
     const group = screen.getByRole('group');
     expect(group.className).toContain('astryx-avatar-group');
-    expect(group.className).toContain('lg');
+    expect(group).toHaveAttribute('data-size', 'lg');
   });
 
   it('renders empty group when no children', () => {
@@ -215,8 +215,6 @@ describe('AvatarGroup — roving focus + keyboard hint', () => {
 });
 
 describe('AvatarGroup — size cascade', () => {
-  const sizeClasses = (el: HTMLElement) => el.className.split(/\s+/);
-
   it("the group's size overrides a child's own size prop", () => {
     render(
       <AvatarGroup size="lg">
@@ -224,9 +222,7 @@ describe('AvatarGroup — size cascade', () => {
       </AvatarGroup>,
     );
 
-    const classes = sizeClasses(screen.getByTestId('alice'));
-    expect(classes).toContain('lg');
-    expect(classes).not.toContain('xsm');
+    expect(screen.getByTestId('alice')).toHaveAttribute('data-size', 'lg');
   });
 
   it("the group's default size also overrides a child's own size prop", () => {
@@ -239,14 +235,12 @@ describe('AvatarGroup — size cascade', () => {
       </AvatarGroup>,
     );
 
-    const classes = sizeClasses(screen.getByTestId('alice'));
-    expect(classes).toContain('md');
-    expect(classes).not.toContain('xl');
+    expect(screen.getByTestId('alice')).toHaveAttribute('data-size', 'md');
   });
 
   it("outside a group the avatar's own size applies", () => {
     render(<Avatar name="Alice" size="xl" data-testid="alice" />);
 
-    expect(sizeClasses(screen.getByTestId('alice'))).toContain('xl');
+    expect(screen.getByTestId('alice')).toHaveAttribute('data-size', 'xl');
   });
 });

@@ -34,7 +34,7 @@ describe('ChatMessageBubble', () => {
       </ChatMessage>,
     );
     const el = screen.getByTestId('bubble');
-    expect(el.className).toContain('user');
+    expect(el).toHaveAttribute('data-sender', 'user');
   });
 
   it('defaults to assistant when no context', () => {
@@ -42,7 +42,7 @@ describe('ChatMessageBubble', () => {
       <ChatMessageBubble data-testid="bubble">Standalone</ChatMessageBubble>,
     );
     const el = screen.getByTestId('bubble');
-    expect(el.className).toContain('assistant');
+    expect(el).toHaveAttribute('data-sender', 'assistant');
   });
 
   it('applies inherited compact density class', () => {
@@ -54,7 +54,7 @@ describe('ChatMessageBubble', () => {
       </ChatMessageList>,
     );
     const el = screen.getByTestId('bubble');
-    expect(el.className).toContain('compact');
+    expect(el).toHaveAttribute('data-density', 'compact');
   });
 
   it('applies data-testid', () => {

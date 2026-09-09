@@ -260,14 +260,13 @@ export const CHECKBOX_BINDING_STATES = [
     ],
   },
   {
-    id: 'list-item-rich-label-missing-name',
+    id: 'list-item-rich-label-visible-name',
     binding: 'CheckboxListItem',
-    summary:
-      'a rich-label list item with no equivalent plain-text accessible name',
+    summary: 'a rich-label list item named from its visible text',
     facts: facts(),
     visibleLabel: 'Pro plan',
     visibleLabelSelector: '[data-a11y-visible-label]',
-    storyId: 'a11y-checkbox-pattern--list-item-rich-label-missing-name',
+    storyId: 'a11y-checkbox-pattern--list-item-rich-label-visible-name',
   },
   {
     id: 'list-item-disabled',

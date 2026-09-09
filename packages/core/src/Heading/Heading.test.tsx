@@ -206,14 +206,14 @@ describe('Heading', () => {
       expect(element.tagName).toBe('H2');
     });
 
-    it('includes display type in class names', () => {
+    it('reflects a display type as a data attribute', () => {
       render(
         <Heading level={1} type="display-1">
           Display Heading
         </Heading>,
       );
       const element = screen.getByText('Display Heading');
-      expect(element.className).toContain('display-1');
+      expect(element).toHaveAttribute('data-type', 'display-1');
     });
 
     it('reflects a theme-augmented visual type and keeps the level baseline', () => {
@@ -232,7 +232,6 @@ describe('Heading', () => {
       const element = screen.getByText('Custom visual role');
 
       expect(element).toHaveAttribute('data-type', 'hero');
-      expect(element.className).toContain('hero');
       for (const className of baselineClasses) {
         expect(element.className).toContain(className);
       }
@@ -247,7 +246,6 @@ describe('Heading', () => {
       const element = screen.getByText('Bold custom visual role');
 
       expect(element).toHaveAttribute('data-weight', 'bold');
-      expect(element.className).toContain('bold');
       expect(element.tagName).toBe('H2');
     });
   });
@@ -260,16 +258,14 @@ describe('Heading', () => {
     );
     const element = screen.getByText('Themed Heading');
     expect(element.className).toContain('astryx-heading');
-    expect(element.className).toContain('level-2');
-    expect(element.className).toContain('secondary');
     expect(element).toHaveAttribute('data-level', '2');
     expect(element).toHaveAttribute('data-color', 'secondary');
   });
 
-  it('does not include variant in class names', () => {
+  it('does not reflect an omitted visual type', () => {
     render(<Heading level={1}>No Variant</Heading>);
     const element = screen.getByText('No Variant');
-    expect(element.className).not.toContain('default');
-    expect(element.className).not.toContain('editorial');
+    expect(element).not.toHaveAttribute('data-type', 'default');
+    expect(element).not.toHaveAttribute('data-type', 'editorial');
   });
 });

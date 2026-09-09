@@ -3185,7 +3185,9 @@ describe('Selector indicator (chevron) icon theme target', () => {
     expect(css).toContain('.astryx-selector-indicator-icon {');
     expect(css).toContain('width: 14px');
     expect(css).toContain('height: 14px');
-    expect(css).toContain('.astryx-selector-indicator-icon.expanded');
+    expect(css).toContain(
+      '.astryx-selector-indicator-icon[data-state="expanded"]',
+    );
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -3320,6 +3322,35 @@ describe('Selector search focus ring', () => {
     await user.tab();
     await user.keyboard('{Enter}');
     await waitForSearchFocus();
+    expect(field()).toHaveAttribute('data-keyboard-focus', 'true');
+  });
+
+  it('rings when Shift+Tab returns from clear to the search input', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value={undefined}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await waitForSearchFocus();
+    const search = screen.getByRole('combobox', {hidden: true});
+    await user.type(search, 'a');
+
+    await user.tab();
+    expect(
+      screen.getByRole('button', {
+        name: 'Clear Search options',
+        hidden: true,
+      }),
+    ).toHaveFocus();
+
+    await user.tab({shift: true});
+    expect(search).toHaveFocus();
     expect(field()).toHaveAttribute('data-keyboard-focus', 'true');
   });
 });
@@ -3599,7 +3630,7 @@ describe('Selector disabled state theme target', () => {
     );
     const root = getSelectorRoot(container);
     expect(root).not.toHaveAttribute('data-disabled');
-    expect(root).not.toHaveClass('disabled');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 
   it('exposes the disabled state so a theme can key on it', () => {
@@ -3612,7 +3643,7 @@ describe('Selector disabled state theme target', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-selector.disabled');
+    expect(css).toContain('.astryx-selector[data-disabled="disabled"]');
     expect(css).toContain('opacity: 0.4');
   });
 });
@@ -3816,7 +3847,7 @@ describe('Selector option-row theme target', () => {
     expect(options).toHaveLength(3);
     for (const option of options) {
       expect(option).toHaveClass('astryx-selector-option-row');
-      expect(option).toHaveClass('lg');
+      expect(option).toHaveAttribute('data-size', 'lg');
       expect(option).toHaveAttribute('data-size', 'lg');
     }
   });
@@ -3909,9 +3940,13 @@ describe('Selector option-row theme target', () => {
     });
     const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-selector-option-row {');
-    expect(css).toContain('.astryx-selector-option-row.selected');
-    expect(css).toContain('.astryx-selector-option-row.disabled');
-    expect(css).toContain('.astryx-selector-option-row.md');
+    expect(css).toContain(
+      '.astryx-selector-option-row[data-selected="selected"]',
+    );
+    expect(css).toContain(
+      '.astryx-selector-option-row[data-disabled="disabled"]',
+    );
+    expect(css).toContain('.astryx-selector-option-row[data-size="md"]');
   });
 });
 
