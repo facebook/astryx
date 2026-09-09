@@ -23,7 +23,9 @@ export const DIALOG_CONTRACT_BACKGROUND_LABEL = 'Background action';
 export const DIALOG_CONTRACT_CLOSE_LABEL = 'Close';
 
 export type DialogInitialTarget =
-  {readonly kind: 'dialog'} | {readonly kind: 'heading'; readonly name: string};
+  | {readonly kind: 'dialog'}
+  | {readonly kind: 'heading'; readonly name: string}
+  | {readonly kind: 'textbox'; readonly name: string};
 
 export interface DialogModalBindingState {
   readonly id: string;
@@ -66,7 +68,7 @@ export const DIALOG_MODAL_BINDING_STATES: ReadonlyArray<DialogModalBindingState>
         'a form dialog whose programmatically focusable heading explicitly requests initial focus',
       storyId: 'a11y-dialog-modal-pattern--explicit-descendant-focus',
       render: 'explicit-focus',
-      initialTarget: {kind: 'heading', name: 'Edit profile'},
+      initialTarget: {kind: 'textbox', name: 'Name'},
       visibleTitle: 'Edit profile',
       facts: MODAL_FACTS,
     },

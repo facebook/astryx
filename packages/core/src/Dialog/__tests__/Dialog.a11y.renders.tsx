@@ -13,6 +13,7 @@
 import {useState, type ReactElement, type ReactNode} from 'react';
 import {Dialog} from '../Dialog';
 import {DialogHeader} from '../DialogHeader';
+import {TextInput} from '../../TextInput';
 import {
   DIALOG_CONTRACT_BACKGROUND_LABEL,
   DIALOG_CONTRACT_CLOSE_LABEL,
@@ -22,6 +23,7 @@ import {
 
 function DialogBinding({state}: {state: DialogModalBindingState}) {
   const [isOpen, setIsOpen] = useState(false);
+  const [name, setName] = useState('');
 
   let content: ReactNode;
   switch (state.render) {
@@ -42,14 +44,14 @@ function DialogBinding({state}: {state: DialogModalBindingState}) {
     case 'explicit-focus':
       content = (
         <>
-          <h2
-            id="dialog-contract-explicit-title"
-            tabIndex={-1}
-            data-autofocus
-            autoFocus>
-            Edit profile
-          </h2>
-          <div>Review the profile before saving.</div>
+          <DialogHeader title="Edit profile" />
+          <button type="button">Before requested field</button>
+          <TextInput
+            label="Name"
+            value={name}
+            onChange={setName}
+            hasAutoFocus
+          />
           <button type="button" onClick={() => setIsOpen(false)}>
             {DIALOG_CONTRACT_CLOSE_LABEL}
           </button>
@@ -76,7 +78,7 @@ function DialogBinding({state}: {state: DialogModalBindingState}) {
     state.render === 'labelled-described'
       ? {'aria-describedby': 'dialog-contract-description'}
       : state.render === 'explicit-focus'
-        ? {'aria-labelledby': 'dialog-contract-explicit-title'}
+        ? {}
         : state.render === 'conditional'
           ? {'aria-label': 'Sensitive review'}
           : {'aria-label': 'Read terms'};

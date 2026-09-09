@@ -83,9 +83,14 @@ function initialTarget(
   subject: Locator,
   state: DialogModalBindingState,
 ): Locator {
-  return state.initialTarget.kind === 'dialog'
-    ? subject
-    : root.getByRole('heading', {name: state.initialTarget.name});
+  switch (state.initialTarget.kind) {
+    case 'dialog':
+      return subject;
+    case 'heading':
+      return root.getByRole('heading', {name: state.initialTarget.name});
+    case 'textbox':
+      return root.getByRole('textbox', {name: state.initialTarget.name});
+  }
 }
 
 async function runState(

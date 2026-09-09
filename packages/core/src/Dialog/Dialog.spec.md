@@ -141,7 +141,7 @@ component design and theming owners.
 | FR1–FR3, AR1 | shared modal-dialog binding in `Dialog.a11y.test.tsx` and `Dialog.a11y.chromium.spec.ts`; local DialogHeader focus tests | header default, explicit descendant, no request           | the shared contract fails when focus is applied before native modality, misses the declared target, or leaves the visible modal on native fallback          | audit:Dialog/accessibility |
 | FR4, AR2     | shared modal-dialog browser binding plus the local unavailable-invoker close test                                        | external trigger, descendant mount focus, removed trigger | the shared contract records an exact current failure when descendant focus replaces the return owner; the local test keeps close safe after invoker removal | audit:Dialog/behavior      |
 | FR5          | inline Dialog tests                                                                                                      | DialogHeader and focusable children                       | inline preview steals focus or invokes native modal methods                                                                                                 | audit:Dialog/behavior      |
-| FR6, AR3     | composed descendant focus fixtures                                                                                       | heading, input, action                                    | focus depends on a private React child type or strips semantics from the target                                                                             | audit:Dialog/public-api    |
+| FR6, AR3     | composed descendant focus fixtures                                                                                       | DialogHeader heading, TextInput                           | focus depends on a private React child type or strips semantics from the target                                                                             | audit:Dialog/public-api    |
 
 ## Decision log
 
@@ -156,7 +156,10 @@ implementation evidence, not a permanent or newly admitted public API.
 
 ## Open questions
 
-None.
+- **Dialog focus containment.** Should native modal Dialog adopt APG forward and
+  reverse Tab wrapping as a required public behavior? Current authority owns focus
+  entry and return but does not settle this containment mechanic, so the shared
+  contract does not gate it.
 
 ## Content boundary
 

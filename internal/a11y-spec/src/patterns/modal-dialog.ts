@@ -130,7 +130,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         id: 'modal-dialog.modal.in-top-layer',
         outcome:
           'The active dialog is in the browser’s native modal state, so the background is outside its interaction context.',
-        sources: [LAYER_NATIVE_MODAL],
+        sources: [DIALOG_FR1, LAYER_NATIVE_MODAL],
         covers: ['apg-interaction'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'real-browser',
@@ -225,7 +225,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
         id: 'modal-dialog.background.inert',
         outcome:
           'While the modal is active, controls behind it cannot receive focus or pointer interaction.',
-        sources: [LAYER_NATIVE_MODAL],
+        sources: [DIALOG_FR1, LAYER_NATIVE_MODAL],
         covers: ['2.4.3-focus-order', 'apg-interaction'],
         appliesWhen: {
           condition: 'the binding declares a modal background',
@@ -416,7 +416,8 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
           'Control, backdrop, and focus-indicator contrast are rendered-color measurements.',
       },
       '2.1.1-keyboard': {
-        owner: 'the binding component and caller content',
+        owner:
+          'family:overlay-dismissal, the binding component, and caller content',
         verifiedBy:
           'component tests for Escape policy and controls composed inside the dialog, plus integration review of caller-owned commands',
         reason:
@@ -425,7 +426,7 @@ export const MODAL_DIALOG_PATTERN: PatternContract<ModalDialogStateFacts> =
       '2.1.2-no-keyboard-trap': {
         owner: 'the binding component and its current focus contract',
         verifiedBy:
-          'component browser tests after the Dialog owner adopts an exact containment and escape outcome',
+          'current Dialog tests for each supported dismissal path; no Tab-containment claim is verified until the Dialog owner adopts one',
         reason:
           'Current Dialog authority does not adopt APG Tab wrapping as a required outcome, so this contract does not turn that mechanic into policy.',
       },
