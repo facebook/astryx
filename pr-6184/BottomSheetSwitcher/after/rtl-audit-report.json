@@ -1,0 +1,150 @@
+{
+  "generatedAt": "2026-09-09T15:03:19.840Z",
+  "dist": "apps/storybook/dist",
+  "autoDiscovery": {
+    "total": 1,
+    "applicable": 0,
+    "pass": 0,
+    "fail": 0,
+    "na": 1,
+    "surprises": [],
+    "results": [
+      {
+        "component": "core/bottomsheetswitcher",
+        "storyId": "core-bottomsheetswitcher--hug-content",
+        "dim": "D1",
+        "verdict": "N-A",
+        "notes": [
+          "no directional icons"
+        ],
+        "icons": 0
+      }
+    ]
+  },
+  "positionalMirror": {
+    "total": 4,
+    "applicable": 0,
+    "pass": 0,
+    "fail": 0,
+    "na": 4,
+    "tolerancePx": 3,
+    "results": [
+      {
+        "component": "core/bottomsheetswitcher",
+        "storyId": "core-bottomsheetswitcher--hug-content",
+        "dim": "D5-positional",
+        "verdict": "N-A",
+        "notes": [
+          "no logical-anchor + physical-transform candidates in LTR"
+        ],
+        "candidates": 0,
+        "fails": []
+      },
+      {
+        "component": "core/bottomsheetswitcher",
+        "storyId": "core-bottomsheetswitcher--capped",
+        "dim": "D5-positional",
+        "verdict": "N-A",
+        "notes": [
+          "no logical-anchor + physical-transform candidates in LTR"
+        ],
+        "candidates": 0,
+        "fails": []
+      },
+      {
+        "component": "core/bottomsheetswitcher",
+        "storyId": "core-bottomsheetswitcher--no-scrim",
+        "dim": "D5-positional",
+        "verdict": "N-A",
+        "notes": [
+          "no logical-anchor + physical-transform candidates in LTR"
+        ],
+        "candidates": 0,
+        "fails": []
+      },
+      {
+        "component": "core/bottomsheetswitcher",
+        "storyId": "core-bottomsheetswitcher--narrow-viewport",
+        "dim": "D5-positional",
+        "verdict": "N-A",
+        "notes": [
+          "no logical-anchor + physical-transform candidates in LTR"
+        ],
+        "candidates": 0,
+        "fails": []
+      }
+    ]
+  },
+  "directionalDecorations": {
+    "total": 4,
+    "applicable": 0,
+    "pass": 0,
+    "fail": 0,
+    "na": 4,
+    "results": [
+      {
+        "component": "core/bottomsheetswitcher",
+        "storyId": "core-bottomsheetswitcher--hug-content",
+        "dim": "D6-decoration",
+        "verdict": "N-A",
+        "notes": [
+          "no contextual directional decorations"
+        ],
+        "decorations": 0,
+        "results": []
+      },
+      {
+        "component": "core/bottomsheetswitcher",
+        "storyId": "core-bottomsheetswitcher--capped",
+        "dim": "D6-decoration",
+        "verdict": "N-A",
+        "notes": [
+          "no contextual directional decorations"
+        ],
+        "decorations": 0,
+        "results": []
+      },
+      {
+        "component": "core/bottomsheetswitcher",
+        "storyId": "core-bottomsheetswitcher--no-scrim",
+        "dim": "D6-decoration",
+        "verdict": "N-A",
+        "notes": [
+          "no contextual directional decorations"
+        ],
+        "decorations": 0,
+        "results": []
+      },
+      {
+        "component": "core/bottomsheetswitcher",
+        "storyId": "core-bottomsheetswitcher--narrow-viewport",
+        "dim": "D6-decoration",
+        "verdict": "N-A",
+        "notes": [
+          "no contextual directional decorations"
+        ],
+        "decorations": 0,
+        "results": []
+      }
+    ]
+  },
+  "curated": {
+    "results": []
+  },
+  "coverage": {
+    "enforced": true,
+    "total": 1,
+    "measured": 0,
+    "verifiedNa": 1,
+    "gaps": 0,
+    "staleVerifiedNa": 0,
+    "results": [
+      {
+        "component": "core/bottomsheetswitcher",
+        "applicable": [],
+        "status": "verified-na",
+        "reason": "BottomSheetSwitcher owns no direction-sensitive visual or interaction. Its shared dialog spans both axes symmetrically; sheet handoff, close, swipe, and alignment motion use only the block axis; and it owns no directional glyph, inline ordering, horizontal scroll action, or arrow-key behavior. Each child BottomSheet retains its own independently verified logical layout."
+      }
+    ]
+  }
+}

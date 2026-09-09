@@ -1,0 +1,312 @@
+{
+  "compared": 16,
+  "pixelIdentical": 0,
+  "changed": 16,
+  "afterOnly": 0,
+  "rows": [
+    {
+      "file": "capped-overview__neutral-dark-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 13929,
+      "exactPercent": 4.2317,
+      "perceptualChanged": 11207,
+      "perceptualPercent": 3.4047,
+      "maxDelta": 109,
+      "bounds": {
+        "x": 17,
+        "y": 341,
+        "width": 344,
+        "height": 329
+      }
+    },
+    {
+      "file": "capped-overview__neutral-light-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 12302,
+      "exactPercent": 3.7374,
+      "perceptualChanged": 10319,
+      "perceptualPercent": 3.1349,
+      "maxDelta": 112,
+      "bounds": {
+        "x": 17,
+        "y": 341,
+        "width": 356,
+        "height": 338
+      }
+    },
+    {
+      "file": "hug-channels__neutral-dark-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 6622,
+      "exactPercent": 2.0118,
+      "perceptualChanged": 1954,
+      "perceptualPercent": 0.5936,
+      "maxDelta": 30,
+      "bounds": {
+        "x": 18,
+        "y": 560,
+        "width": 355,
+        "height": 264
+      }
+    },
+    {
+      "file": "hug-channels__neutral-light-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 9075,
+      "exactPercent": 2.757,
+      "perceptualChanged": 6127,
+      "perceptualPercent": 1.8614,
+      "maxDelta": 74,
+      "bounds": {
+        "x": 17,
+        "y": 559,
+        "width": 350,
+        "height": 268
+      }
+    },
+    {
+      "file": "hug-frequency__neutral-dark-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 4928,
+      "exactPercent": 1.4971,
+      "perceptualChanged": 2193,
+      "perceptualPercent": 0.6662,
+      "maxDelta": 30,
+      "bounds": {
+        "x": 17,
+        "y": 615,
+        "width": 353,
+        "height": 211
+      }
+    },
+    {
+      "file": "hug-frequency__neutral-light-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 4434,
+      "exactPercent": 1.3471,
+      "perceptualChanged": 2040,
+      "perceptualPercent": 0.6198,
+      "maxDelta": 39,
+      "bounds": {
+        "x": 17,
+        "y": 616,
+        "width": 351,
+        "height": 212
+      }
+    },
+    {
+      "file": "hug-handoff__neutral-dark-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 6404,
+      "exactPercent": 1.9456,
+      "perceptualChanged": 364,
+      "perceptualPercent": 0.1106,
+      "maxDelta": 9,
+      "bounds": {
+        "x": 18,
+        "y": 562,
+        "width": 314,
+        "height": 163
+      }
+    },
+    {
+      "file": "hug-handoff__neutral-light-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 40473,
+      "exactPercent": 12.2958,
+      "perceptualChanged": 27296,
+      "perceptualPercent": 8.2926,
+      "maxDelta": 255,
+      "bounds": {
+        "x": 0,
+        "y": 520,
+        "width": 390,
+        "height": 324
+      }
+    },
+    {
+      "file": "hug-overview__matcha-light-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 13521,
+      "exactPercent": 4.1077,
+      "perceptualChanged": 10895,
+      "perceptualPercent": 3.3099,
+      "maxDelta": 72,
+      "bounds": {
+        "x": 25,
+        "y": 388,
+        "width": 340,
+        "height": 419
+      }
+    },
+    {
+      "file": "hug-overview__neutral-dark-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 8960,
+      "exactPercent": 2.7221,
+      "perceptualChanged": 700,
+      "perceptualPercent": 0.2127,
+      "maxDelta": 7,
+      "bounds": {
+        "x": 18,
+        "y": 492,
+        "width": 342,
+        "height": 326
+      }
+    },
+    {
+      "file": "hug-overview__neutral-light-ltr-320x680.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 320,
+      "height": 680,
+      "pixels": 217600,
+      "exactChanged": 10311,
+      "exactPercent": 4.7385,
+      "perceptualChanged": 5204,
+      "perceptualPercent": 2.3915,
+      "maxDelta": 18,
+      "bounds": {
+        "x": 17,
+        "y": 307,
+        "width": 280,
+        "height": 346
+      }
+    },
+    {
+      "file": "hug-overview__neutral-light-ltr-390x844-reduced.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 12339,
+      "exactPercent": 3.7486,
+      "perceptualChanged": 9260,
+      "perceptualPercent": 2.8132,
+      "maxDelta": 88,
+      "bounds": {
+        "x": 17,
+        "y": 490,
+        "width": 356,
+        "height": 338
+      }
+    },
+    {
+      "file": "hug-overview__neutral-light-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 12053,
+      "exactPercent": 3.6617,
+      "perceptualChanged": 8236,
+      "perceptualPercent": 2.5021,
+      "maxDelta": 47,
+      "bounds": {
+        "x": 17,
+        "y": 492,
+        "width": 356,
+        "height": 327
+      }
+    },
+    {
+      "file": "hug-overview__neutral-light-rtl-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 10185,
+      "exactPercent": 3.0942,
+      "perceptualChanged": 3743,
+      "perceptualPercent": 1.1371,
+      "maxDelta": 12,
+      "bounds": {
+        "x": 30,
+        "y": 492,
+        "width": 343,
+        "height": 326
+      }
+    },
+    {
+      "file": "no-scrim-overview__neutral-dark-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 10802,
+      "exactPercent": 3.2817,
+      "perceptualChanged": 4364,
+      "perceptualPercent": 1.3258,
+      "maxDelta": 10,
+      "bounds": {
+        "x": 48,
+        "y": 48,
+        "width": 152,
+        "height": 32
+      }
+    },
+    {
+      "file": "no-scrim-overview__neutral-light-ltr-390x844.png",
+      "status": "changed",
+      "dimensionsMatch": true,
+      "width": 390,
+      "height": 844,
+      "pixels": 329160,
+      "exactChanged": 16101,
+      "exactPercent": 4.8915,
+      "perceptualChanged": 9753,
+      "perceptualPercent": 2.963,
+      "maxDelta": 18,
+      "bounds": {
+        "x": 17,
+        "y": 48,
+        "width": 343,
+        "height": 770
+      }
+    }
+  ]
+}

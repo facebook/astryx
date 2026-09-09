@@ -1,0 +1,7 @@
+$ node apps/storybook/rtl-audit/rtl-audit.mjs -- --filter BottomSheetSwitcher
+
+WROTE rtl-audit-report.json
+AUTO: 0 pass / 0 fail (0 surprise) / 1 N-A
+PM  : 0 pass / 0 fail / 4 N-A (tol 3px)
+DEC : 0 pass / 0 fail / 4 N-A
+COV : 0 measured / 1 verified N-A / 0 gap / 0 stale

@@ -1,0 +1,101 @@
+{
+  "label": "after: BottomSheetSwitcher hug-channels · neutral-dark-ltr-390x844",
+  "identity": "story",
+  "build": {
+    "root": "<repository>",
+    "expectedSha": "311a003b7af977c375c6b27bb972faf8f39e5c35",
+    "observedSha": "311a003b7af977c375c6b27bb972faf8f39e5c35"
+  },
+  "expected": {
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "dark",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "dark",
+    "direction": "ltr",
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 1,
+    "state": {
+      "openDialogs": 1,
+      "ariaLabel": "Notification channels",
+      "role": null,
+      "ariaModal": "true",
+      "visiblePanels": 1,
+      "inactivePanels": 0,
+      "hiddenPanels": 2,
+      "focusInside": true,
+      "bodyLocked": true,
+      "horizontalOverflow": false,
+      "panelsInsideViewport": true
+    },
+    "runningAnimations": 0
+  },
+  "observed": {
+    "storyExpected": "core-bottomsheetswitcher--hug-content",
+    "storyObserved": "core-bottomsheetswitcher--hug-content",
+    "routeObserved": "/iframe.html",
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "dark",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "dark",
+    "surfaceColor": "rgba(0, 0, 0, 0)",
+    "surfaceLuminance": null,
+    "surfaceClass": "unknown",
+    "direction": "ltr",
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 1,
+    "visible": true,
+    "box": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 844,
+      "insideViewport": true
+    },
+    "fonts": "loaded",
+    "runningAnimations": 0,
+    "storybookError": null,
+    "state": {
+      "openDialogs": 1,
+      "ariaLabel": "Notification channels",
+      "role": null,
+      "ariaModal": "true",
+      "visiblePanels": 1,
+      "inactivePanels": 0,
+      "hiddenPanels": 2,
+      "focusInside": true,
+      "bodyLocked": true,
+      "horizontalOverflow": false,
+      "panelsInsideViewport": true
+    }
+  },
+  "image": {
+    "path": "<audit-workspace>/evidence/after/frames/hug-channels__neutral-dark-ltr-390x844.png",
+    "bytes": 22333
+  }
+}

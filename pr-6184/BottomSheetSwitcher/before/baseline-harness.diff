@@ -1,0 +1,44 @@
+diff --git a/apps/storybook/stories/BottomSheetSwitcher.stories.tsx b/apps/storybook/stories/BottomSheetSwitcher.stories.tsx
+index e912e8196a35..1b5005a288bb 100644
+--- a/apps/storybook/stories/BottomSheetSwitcher.stories.tsx
++++ b/apps/storybook/stories/BottomSheetSwitcher.stories.tsx
+@@ -249,3 +249,39 @@ export const NoScrim: Story = {
+   name: 'No scrim',
+   render: () => <MultiStepSwitcherExample height="hug" hasScrim={false} />,
+ };
++
++function AuditNonModalClippingExample() {
++  return (
++    <div
++      data-audit-clipping-ancestor="true"
++      style={{
++        blockSize: 260,
++        inlineSize: 320,
++        overflow: 'hidden',
++        position: 'relative',
++        transform: 'translateY(80px)',
++      }}>
++      <BottomSheetSwitcher
++        activeSheet="audit-details"
++        onActiveSheetChange={() => {}}
++        hasScrim={false}>
++        <BottomSheet sheetId="audit-details" label="Clipped non-modal sheet">
++          <Section padding={4}>
++            <VStack gap={2}>
++              <Heading level={3}>Clipped non-modal sheet</Heading>
++              <Text type="body">
++                This content should escape the clipping ancestor but currently
++                cannot.
++              </Text>
++            </VStack>
++          </Section>
++        </BottomSheet>
++      </BottomSheetSwitcher>
++    </div>
++  );
++}
++
++export const AuditNonModalClipping: Story = {
++  name: 'Audit non-modal clipping',
++  render: () => <AuditNonModalClippingExample />,
++};

@@ -1,0 +1,8 @@
+$ node apps/storybook/rtl-audit/rtl-audit.mjs -- --filter BottomSheetSwitcher
+
+WROTE rtl-audit-report.json
+AUTO: 0 pass / 0 fail (0 surprise) / 1 N-A
+PM  : 0 pass / 0 fail / 3 N-A (tol 3px)
+DEC : 0 pass / 0 fail / 3 N-A
+COV : 0 measured / 0 verified N-A / 1 gap / 0 stale
+[ELIFECYCLE] Command failed with exit code 1.

@@ -1,0 +1,174 @@
+{
+  "head": "4a31578d288df665a1ceabab296d430f6e361cb5",
+  "browser": "Chromium",
+  "rows": [
+    {
+      "theme": "neutral",
+      "mode": "light",
+      "pair": "heading / panel surface",
+      "applicability": "meaningful text",
+      "foreground": "rgb(0, 0, 0)",
+      "background": "rgb(255, 255, 255)",
+      "ratio": 21,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "light",
+      "pair": "supporting text / panel surface",
+      "applicability": "meaningful text",
+      "foreground": "rgb(71, 71, 71)",
+      "background": "rgb(255, 255, 255)",
+      "ratio": 9.29,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "light",
+      "pair": "handle pill / panel surface",
+      "applicability": "meaningful drag affordance owned by BottomSheetPanel",
+      "foreground": "rgba(0, 0, 0, 0.08)",
+      "compositedForeground": {
+        "r": 234.60000000000002,
+        "g": 234.60000000000002,
+        "b": 234.60000000000002,
+        "a": 1
+      },
+      "background": "rgb(255, 255, 255)",
+      "ratio": 1.2,
+      "threshold": 3,
+      "result": "fail"
+    },
+    {
+      "theme": "neutral",
+      "mode": "light",
+      "pair": "panel surface / scrim composite",
+      "applicability": "informational; panel border and content also identify the surface",
+      "foreground": "rgb(255, 255, 255)",
+      "background": "rgba(0, 0, 0, 0.5)",
+      "compositedBackground": {
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 1
+      },
+      "ratio": 21,
+      "threshold": null,
+      "result": "informational"
+    },
+    {
+      "theme": "neutral",
+      "mode": "dark",
+      "pair": "heading / panel surface",
+      "applicability": "meaningful text",
+      "foreground": "rgb(255, 255, 255)",
+      "background": "rgb(38, 38, 38)",
+      "ratio": 15.13,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "dark",
+      "pair": "supporting text / panel surface",
+      "applicability": "meaningful text",
+      "foreground": "rgb(158, 158, 158)",
+      "background": "rgb(38, 38, 38)",
+      "ratio": 5.65,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "dark",
+      "pair": "handle pill / panel surface",
+      "applicability": "meaningful drag affordance owned by BottomSheetPanel",
+      "foreground": "rgba(255, 255, 255, 0.1)",
+      "compositedForeground": {
+        "r": 59.7,
+        "g": 59.7,
+        "b": 59.7,
+        "a": 1
+      },
+      "background": "rgb(38, 38, 38)",
+      "ratio": 1.37,
+      "threshold": 3,
+      "result": "fail"
+    },
+    {
+      "theme": "neutral",
+      "mode": "dark",
+      "pair": "panel surface / scrim composite",
+      "applicability": "informational; panel border and content also identify the surface",
+      "foreground": "rgb(38, 38, 38)",
+      "background": "rgba(0, 0, 0, 0.8)",
+      "compositedBackground": {
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 1
+      },
+      "ratio": 1.39,
+      "threshold": null,
+      "result": "informational"
+    },
+    {
+      "theme": "matcha",
+      "mode": "light",
+      "pair": "heading / panel surface",
+      "applicability": "meaningful text",
+      "foreground": "rgb(62, 72, 29)",
+      "background": "rgb(255, 255, 255)",
+      "ratio": 9.77,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "matcha",
+      "mode": "light",
+      "pair": "supporting text / panel surface",
+      "applicability": "meaningful text",
+      "foreground": "rgb(112, 126, 70)",
+      "background": "rgb(255, 255, 255)",
+      "ratio": 4.41,
+      "threshold": 4.5,
+      "result": "fail"
+    },
+    {
+      "theme": "matcha",
+      "mode": "light",
+      "pair": "handle pill / panel surface",
+      "applicability": "meaningful drag affordance owned by BottomSheetPanel",
+      "foreground": "rgb(220, 227, 206)",
+      "compositedForeground": {
+        "r": 220,
+        "g": 227,
+        "b": 206,
+        "a": 1
+      },
+      "background": "rgb(255, 255, 255)",
+      "ratio": 1.32,
+      "threshold": 3,
+      "result": "fail"
+    },
+    {
+      "theme": "matcha",
+      "mode": "light",
+      "pair": "panel surface / scrim composite",
+      "applicability": "informational; panel border and content also identify the surface",
+      "foreground": "rgb(255, 255, 255)",
+      "background": "rgba(62, 72, 29, 0.5)",
+      "compositedBackground": {
+        "r": 31,
+        "g": 36,
+        "b": 14.5,
+        "a": 1
+      },
+      "ratio": 15.94,
+      "threshold": null,
+      "result": "informational"
+    }
+  ]
+}

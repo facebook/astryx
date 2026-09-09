@@ -1,0 +1,18 @@
+$ node .github/scripts/accessibility-audit.js --baseline .github/a11y-baseline.json --fail-on-new -- --components BottomSheetSwitcher
+Starting accessibility audit...
+Components to audit: BottomSheetSwitcher
+Storybook server running on http://localhost:6007
+Found 2102 stories
+Auditing 1 components
+✓ Audited: BottomSheetSwitcher / Hug content - 0 issues
+✓ Audited: BottomSheetSwitcher / Capped - 0 issues
+✓ Audited: BottomSheetSwitcher / No scrim - 0 issues
+✓ Audited: BottomSheetSwitcher / Narrow viewport - 0 issues
+
+Audit complete: 0 total violations found
+Report written to a11y-report.json
+
+=== Accessibility baseline gate ===
+0 new, 0 baselined, 0 resolved, 171 baselined for components outside this run
+
+No new accessibility violations. Gate passed.

@@ -1,0 +1,79 @@
+
+ RUN  v4.1.10 <repository>
+
+Built pseudo.json — 362 keys
+Built pseudo.json — 362 keys
+(node:3466) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ |ui| packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx (26 tests | 2 failed | 24 skipped) 96ms
+     ↓ opens only the sheet selected by activeSheet
+     ↓ forwards sheet DOM props and refs to its panel in the shared dialog
+     ↓ forwards switcher DOM props, events, styles, and refs to the shared dialog
+     ↓ resets switcher context for a sheet nested inside item content
+     ↓ keeps the previous sheet stationary until the new entrance finishes, then fades it
+     ↓ moves a taller previous sheet down while the shorter new sheet enters, then waits for both
+     ↓ waits for the incoming entrance when top-edge alignment finishes first
+     ↓ replaces an unfinished outgoing sheet during rapid navigation
+     ↓ ignores late scrim updates from an outgoing sheet gesture
+     ↓ keeps an active handoff when a consumer callback ref changes
+     ↓ dismisses the flow from the one shared scrim
+     ↓ releases the shared modal layer when the closing sheet unmounts immediately
+     ↓ keeps the shared dialog inline and opens it modally
+     ↓ keeps focus in a modal sheet that has no tabbable controls
+     ↓ can coordinate a non-modal flow without rendering a scrim
+     ↓ requests activeSheet=null when the active sheet dismisses
+     ↓ honors purpose=form for a switcher-managed sheet
+     ↓ honors purpose=required for a switcher-managed sheet
+     ↓ restores the active sheet when a context menu interrupts its drag
+     ↓ ignores Escape while an IME composition is active
+     ↓ lets a nested focus trap handle Escape before the switcher
+     × lets a nested registered layer handle Escape before a non-modal switcher 81ms
+     × keeps a non-modal switcher open when a platform close targets it under a nested layer 13ms
+     ↓ returns focus to the original opener after a multi-sheet flow ends
+     ↓ captures a new focus trigger after switching through non-modal mode
+     ↓ does not refocus the panel when an incoming transition completes
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |ui| packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx > BottomSheetSwitcher > lets a nested registered layer handle Escape before a non-modal switcher
+AssertionError: expected "vi.fn()" to be called 1 times, but got 0 times
+ ❯ packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx:828:29
+    826|     fireEvent.keyDown(trigger, {key: 'Escape'});
+    827|
+    828|     expect(onNestedDismiss).toHaveBeenCalledTimes(1);
+       |                             ^
+    829|     expect(onActiveSheetChange).not.toHaveBeenCalled();
+    830|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  |ui| packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx > BottomSheetSwitcher > keeps a non-modal switcher open when a platform close targets it under a nested layer
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      null,
+    ]
+
+
+Number of calls: 1
+
+ ❯ packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx:851:37
+    849|     expect(event.defaultPrevented).toBe(true);
+    850|     expect(onNestedDismiss).not.toHaveBeenCalled();
+    851|     expect(onActiveSheetChange).not.toHaveBeenCalled();
+       |                                     ^
+    852|   });
+    853|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 24 skipped (26)
+   Start at  06:58:27
+   Duration  2.27s (transform 1.11s, setup 191ms, import 1.20s, tests 96ms, environment 433ms)
+

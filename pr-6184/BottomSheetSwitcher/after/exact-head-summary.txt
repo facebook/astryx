@@ -1,0 +1,7 @@
+focused-tests=0
+check-sync=0
+check-knowledge=0
+check-changesets=0
+core-doc-types=0
+a11y-audit=0
+rtl-audit=0

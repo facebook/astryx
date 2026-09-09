@@ -1,0 +1,471 @@
+{
+  "arm": "before",
+  "sha": "4a31578d288df665a1ceabab296d430f6e361cb5",
+  "results": [
+    {
+      "case": "hug-overview",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Set up notifications",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "hug-overview",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Set up notifications",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "hug-frequency",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Notification frequency",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "hug-frequency",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Notification frequency",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "hug-channels",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Notification channels",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "hug-channels",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Notification channels",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "hug-handoff",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Notification frequency",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 2,
+        "inactivePanels": 1,
+        "hiddenPanels": 1,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "hug-handoff",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Notification frequency",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 2,
+        "inactivePanels": 1,
+        "hiddenPanels": 1,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "capped-overview",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Set up notifications",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "capped-overview",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Set up notifications",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "no-scrim-overview",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Set up notifications",
+        "role": null,
+        "ariaModal": null,
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": false,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "no-scrim-overview",
+      "theme": "neutral",
+      "mode": "dark",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Set up notifications",
+        "role": null,
+        "ariaModal": null,
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": false,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "hug-overview",
+      "theme": "matcha",
+      "mode": "light",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Set up notifications",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "hug-overview",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "rtl",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Set up notifications",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "hug-overview",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "viewport": {
+        "width": 320,
+        "height": 680
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": false,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Set up notifications",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    },
+    {
+      "case": "hug-overview",
+      "theme": "neutral",
+      "mode": "light",
+      "direction": "ltr",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "media": {
+        "forcedColors": false,
+        "reducedMotion": true,
+        "coarsePointer": false,
+        "hover": true
+      },
+      "state": {
+        "openDialogs": 1,
+        "ariaLabel": "Set up notifications",
+        "role": null,
+        "ariaModal": "true",
+        "visiblePanels": 1,
+        "inactivePanels": 0,
+        "hiddenPanels": 2,
+        "focusInside": true,
+        "bodyLocked": true,
+        "horizontalOverflow": false,
+        "panelsInsideViewport": true
+      }
+    }
+  ],
+  "failures": []
+}

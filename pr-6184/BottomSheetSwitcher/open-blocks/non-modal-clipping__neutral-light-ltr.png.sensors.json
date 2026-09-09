@@ -1,0 +1,91 @@
+{
+  "label": "before: BottomSheetSwitcher non-modal clipping",
+  "identity": "story",
+  "build": {
+    "root": "<repository>",
+    "expectedSha": "4a31578d288df665a1ceabab296d430f6e361cb5",
+    "observedSha": "4a31578d288df665a1ceabab296d430f6e361cb5"
+  },
+  "expected": {
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 1,
+    "state": {
+      "dialogContained": true,
+      "ariaModal": null,
+      "zIndex": "1000",
+      "bodyLocked": false,
+      "panelVisible": true,
+      "clippedByAncestor": true
+    },
+    "runningAnimations": 0
+  },
+  "observed": {
+    "storyExpected": "core-bottomsheetswitcher--audit-non-modal-clipping",
+    "storyObserved": "core-bottomsheetswitcher--audit-non-modal-clipping",
+    "routeObserved": "/iframe.html",
+    "globals": {
+      "astryxTheme": "neutral",
+      "colorMode": "light",
+      "direction": "ltr"
+    },
+    "themeAttr": "neutral",
+    "colorMode": "light",
+    "surfaceColor": "rgb(255, 255, 255)",
+    "surfaceLuminance": 0.9999999999999999,
+    "surfaceClass": "light",
+    "direction": "ltr",
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": false,
+      "reducedMotion": false,
+      "coarsePointer": false,
+      "hover": true
+    },
+    "targetCount": 1,
+    "visible": true,
+    "box": {
+      "x": 48,
+      "y": 80,
+      "width": 320,
+      "height": 260,
+      "insideViewport": true
+    },
+    "fonts": "loaded",
+    "runningAnimations": 0,
+    "storybookError": null,
+    "state": {
+      "dialogContained": true,
+      "ariaModal": null,
+      "zIndex": "1000",
+      "bodyLocked": false,
+      "panelVisible": true,
+      "clippedByAncestor": true
+    }
+  },
+  "image": {
+    "path": "<audit-workspace>/evidence/before/frames/non-modal-clipping__neutral-light-ltr.png",
+    "bytes": 2859
+  }
+}
