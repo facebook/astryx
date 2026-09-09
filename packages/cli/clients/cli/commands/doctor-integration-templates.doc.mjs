@@ -17,7 +17,15 @@ export const doc = {
     'report recommends renaming and gives the exact --package command required ' +
     'to select the integration template when the overlap is intentional.',
   fn: 'integrationTemplateConflicts',
-  args: [{name: 'package', param: 'pkg', required: false}],
+  args: [
+    {
+      name: 'package',
+      param: 'pkg',
+      required: false,
+      description:
+        'Installed integration package name; omit to check the package in the current directory.',
+    },
+  ],
   examples: [
     {
       label: 'Check the local integration',

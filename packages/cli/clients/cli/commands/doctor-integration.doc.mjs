@@ -25,10 +25,18 @@ export const doc = {
       label: 'Check template ids against Core',
       cli: 'astryx doctor integration templates',
     },
+    {
+      label: 'Check component names against Core',
+      cli: 'astryx doctor integration components',
+    },
+    {
+      label: 'Classify doc overlaps with Core',
+      cli: 'astryx doctor integration docs',
+    },
   ],
   exitCodes: [
     {code: 0, when: 'help is shown or the selected check has no errors'},
     {code: 1, when: 'the selected check reports an error'},
   ],
-  related: ['doctor', 'template'],
+  related: ['doctor', 'component', 'template', 'docs'],
 };

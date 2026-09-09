@@ -16,7 +16,15 @@ export const doc = {
     'installed package resolved by name. It schema-checks the manifest, verifies ' +
     'every declared contribution root, and reports every finding. Safe as a CI gate.',
   fn: 'validateIntegration',
-  args: [{name: 'package', param: 'pkg', required: false}],
+  args: [
+    {
+      name: 'package',
+      param: 'pkg',
+      required: false,
+      description:
+        'Installed integration package name; omit to validate the package in the current directory.',
+    },
+  ],
   examples: [
     {
       label: 'Validate the local package',

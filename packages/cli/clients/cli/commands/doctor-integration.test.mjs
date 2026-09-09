@@ -134,6 +134,23 @@ describe('doctor integration — command', () => {
     expect(process.exitCode).toBeUndefined();
   });
 
+  it('explains the optional package argument in every leaf help', () => {
+    const program = createProgram();
+    const doctor = program.commands.find(command => command.name() === 'doctor');
+    const integration = doctor?.commands.find(
+      command => command.name() === 'integration',
+    );
+
+    for (const leafName of ['validate', 'templates', 'components', 'docs']) {
+      const leaf = integration?.commands.find(
+        command => command.name() === leafName,
+      );
+      expect(leaf?.helpInformation(), leafName).toContain(
+        'Installed integration package name; omit to',
+      );
+    }
+  });
+
   it('templates explains how to check an installed package when no local manifest exists', async () => {
     fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({name: 'plain'}));
     process.chdir(tmpDir);

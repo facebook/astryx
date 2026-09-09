@@ -14,7 +14,15 @@ export const doc = {
     'conflict is allowed and exits successfully, but the report recommends ' +
     'renaming and gives the exact --package command for an intentional overlap.',
   fn: 'integrationComponentConflicts',
-  args: [{name: 'package', param: 'pkg', required: false}],
+  args: [
+    {
+      name: 'package',
+      param: 'pkg',
+      required: false,
+      description:
+        'Installed integration package name; omit to check the package in the current directory.',
+    },
+  ],
   examples: [
     {label: 'Check the local integration', cli: 'astryx doctor integration components'},
     {

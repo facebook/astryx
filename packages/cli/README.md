@@ -65,7 +65,7 @@ Options:
 | `component` | List components or print component docs                                       |
 | `discover`  | Discover external packages and components                                     |
 | `docs`      | Print reference docs                                                          |
-| `doctor`    | Diagnose your XDS setup and report problems with fixes                        |
+| `doctor`    | Diagnose Astryx projects and integration packages                             |
 | `hook`      | List hooks or print hook docs                                                 |
 | `init`      | Initialize the design system in your project                                  |
 | `layout`    | Generate XDS layouts from compressed expressions (XLE/XLO)                    |
@@ -444,51 +444,43 @@ Every response has a `type` discriminant. The full set is below (generated from 
 
 ## Doctor
 
-`astryx doctor` runs a series of health checks against your project and
-environment and reports `PASS` / `WARN` / `FAIL` for each, with an actionable
-fix for anything that isn't passing. It's read-only; it never installs or
-mutates anything, so it's safe to run anywhere, including CI.
+`astryx doctor` runs read-only health checks against your project and
+environment. Each record uses `[ok]`, `[warn]`, `[fail]`, or `[info]`, and
+includes an actionable `fix` when one is available. The exact checks and values
+depend on the project; the output shape is stable:
 
 ```
 $ astryx doctor
-astryx doctor — diagnosing your setup
+astryx doctor - diagnosing your setup
 
-  ✓ Node.js version
-      Node v22.13.0 meets the minimum (>=22.13.0).
-  ✓ @astryxdesign/core installed
-      @astryxdesign/core resolved (v0.0.14).
-  ✓ @astryxdesign/core <-> @astryxdesign/cli alignment
-      @astryxdesign/core v0.0.14 is in step with @astryxdesign/cli v0.0.14.
-  ⚠ Theme packages
-      No @astryxdesign/theme-* packages are installed.
-      → fix: Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then import its CSS or set astryx.theme.
-  ℹ astryx.config.mjs
-      No astryx.config.mjs found — using defaults.
-  ℹ AI agent docs
-      No agent docs (CLAUDE.md / AGENTS.md / .cursorrules) found.
-      → fix: Generate agent docs with `astryx init --features agents`.
-  ✓ @astryxdesign/core peer dependencies
-      All peer dependencies satisfied (react, react-dom).
-  ℹ Package manager
-      Detected package manager: yarn.
+status:  [ok]
+check:   Node.js version
+message: Node v24.18.1 meets the minimum (>=22.13.0).
 
-Summary: 4 passed, 1 warning, 0 failures, 3 info
+status:  [warn]
+check:   Theme packages
+message: No @astryxdesign/theme-* packages are installed.
+fix:     Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then import its CSS or set astryx.theme.
 
-No failures — but review the ⚠ warnings above when you can.
+...
+
+Summary: 4 passed, 2 warnings, 0 failures, 2 info
+
+No failures - but review the [warn] warnings above when you can.
 ```
 
 ### Checks
 
-| Check                        | Status it can return | What it verifies                                                     |
-| ---------------------------- | -------------------- | -------------------------------------------------------------------- |
-| Node.js version              | pass / fail          | Running Node meets the CLI's minimum                                 |
-| @astryxdesign/core installed | pass / fail          | `@astryxdesign/core` is resolvable from the project                  |
-| Version alignment            | pass / warn / info   | Installed `@astryxdesign/core` is in step with `@astryxdesign/cli`   |
-| Theme packages               | pass / warn          | An `@astryxdesign/theme-*` package is installed and a theme is wired |
-| astryx.config.mjs            | pass / fail / info   | Config (if present) loads cleanly with a valid shape                 |
-| AI agent docs                | pass / warn / info   | Agent docs exist and contain the Astryx section markers              |
-| Peer dependencies            | pass / warn / info   | `@astryxdesign/core`'s peer deps (react, …) are installed            |
-| Package manager              | info                 | Reports the detected package manager                                 |
+| Check                        | Status it can return | What it verifies                                                             |
+| ---------------------------- | -------------------- | ---------------------------------------------------------------------------- |
+| Node.js version              | pass / fail          | Running Node meets the CLI's minimum                                         |
+| @astryxdesign/core installed | pass / fail          | `@astryxdesign/core` is resolvable from the project                          |
+| Version alignment            | pass / warn / info   | Installed `@astryxdesign/core` is in step with `@astryxdesign/cli`           |
+| Theme packages               | pass / warn          | An `@astryxdesign/theme-*` package is installed and a theme is wired         |
+| astryx.config.mjs            | pass / fail / info   | Config (if present) loads cleanly with a valid shape                         |
+| AI agent docs                | pass / warn / info   | Agent docs exist and contain the Astryx section markers                      |
+| Peer dependencies            | pass / warn / info   | `@astryxdesign/core`'s peer deps (react, …) are installed                    |
+| Package manager              | info / warn / fail   | Reports the selected package manager and ambiguous or contradictory evidence |
 
 ### CI gate
 
@@ -502,6 +494,24 @@ usable directly as a CI step:
 
 Use `--json` for a structured envelope (`{ apiVersion, type: "doctor",
 data: { checks, summary } }`) that AI agents and scripts can parse.
+
+### Integration authoring
+
+`astryx doctor integration` checks one integration package without changing it.
+Omit `[package]` to inspect the package at the current directory, or pass an
+installed package name:
+
+| Command                                   | What it checks                                               | Exit `1` when                                           |
+| ----------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------- |
+| `doctor integration validate [package]`   | Manifest shape and every declared contribution               | A structural issue has error severity                   |
+| `doctor integration templates [package]`  | Template IDs shared with Core                                | The integration is invalid; ID conflicts are warnings   |
+| `doctor integration components [package]` | Component names shared with Core                             | The integration is invalid; name conflicts are warnings |
+| `doctor integration docs [package]`       | Core topic replacements, extensions, and same-name conflicts | A Core overlap is accidental or the docs are invalid    |
+
+Template and component conflicts include the exact `--package` command needed
+to select the integration contribution. Doc replacements and extensions are
+reported as intentional; a same-name topic without an explicit relationship is
+an error. Every leaf supports `--json`.
 
 ## Configuration
 

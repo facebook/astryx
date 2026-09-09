@@ -95,12 +95,13 @@ export const doc = {
     {
       type: 'prose',
       text:
-        'Validate a manifest with `astryx doctor integration validate`. It is checked ' +
-        'at the load boundary (parseIntegration): a known field of the wrong ' +
-        'type is an error, and issuesUrl must be a valid URL. A field this CLI ' +
-        'does not know is ignored with a warning rather than rejected, so a ' +
-        'manifest written against a newer CLI still contributes everything ' +
-        'this one understands.',
+        'Validate the manifest with `astryx doctor integration validate`. At the ' +
+        'load boundary, a known field of the wrong type is an error, issuesUrl ' +
+        'must be a valid URL, and unknown fields become warnings so an older CLI ' +
+        'can still load the fields it understands. Before publishing, also run ' +
+        '`templates`, `components`, and `docs` under the same `doctor integration` ' +
+        'group. Those leaves compare authored identities with Core and explain ' +
+        'whether an overlap is intentional or needs a rename.',
     },
   ],
 };

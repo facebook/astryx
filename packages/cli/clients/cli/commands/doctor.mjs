@@ -61,7 +61,7 @@ function printHuman(report) {
       ? 'Some checks failed. Address the items marked [fail] above.'
       : warn > 0
         ? 'No failures — but review the [warn] warnings above when you can.'
-        : 'All checks passed. Your XDS setup looks healthy.';
+        : 'All checks passed. Your Astryx setup looks healthy.';
 
   emit(
     section('astryx doctor — diagnosing your setup'),

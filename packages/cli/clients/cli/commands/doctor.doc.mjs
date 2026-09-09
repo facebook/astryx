@@ -13,9 +13,9 @@ export const doc = {
   name: 'doctor',
   displayName: 'astryx doctor',
   namespace: 'cli',
-  summary: 'Diagnose your XDS setup and report problems with fixes',
+  summary: 'Diagnose Astryx projects and integration packages',
   description:
-    'Runs read-only project diagnostics by default: Node version, @astryxdesign/core ' +
+    'Runs read-only project health diagnostics by default: Node version, @astryxdesign/core ' +
     'install and version alignment, themes, config, agent docs, and package manager. ' +
     'The `integration` subcommands provide authoring checks for one integration package.',
   fn: 'doctor',
@@ -30,6 +30,14 @@ export const doc = {
     {
       label: 'Check template ids against Core',
       cli: 'astryx doctor integration templates @acme/widgets',
+    },
+    {
+      label: 'Check component names against Core',
+      cli: 'astryx doctor integration components @acme/widgets',
+    },
+    {
+      label: 'Classify doc overlaps with Core',
+      cli: 'astryx doctor integration docs @acme/widgets',
     },
   ],
   exitCodes: [

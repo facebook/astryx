@@ -14,7 +14,15 @@ export const doc = {
     'A same-name topic without `replaces` or `extends` is an accidental conflict ' +
     'and fails until the author declares the relationship or renames it.',
   fn: 'integrationDocConflicts',
-  args: [{name: 'package', param: 'pkg', required: false}],
+  args: [
+    {
+      name: 'package',
+      param: 'pkg',
+      required: false,
+      description:
+        'Installed integration package name; omit to check the package in the current directory.',
+    },
+  ],
   examples: [
     {label: 'Check the local integration', cli: 'astryx doctor integration docs'},
     {
