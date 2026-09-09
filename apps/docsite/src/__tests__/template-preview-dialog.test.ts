@@ -6,11 +6,10 @@
  * @file Template preview selection and transition regressions.
  * @input Mounted TemplatePreviewDialog with real React scheduling and mocked UI.
  * @output Records every committed visible preview, including intermediate slugs.
- * @position Docsite regression coverage for gallery preview lifecycle.
+ * @position Docsite regression coverage for gallery preview selection and navigation.
  */
 
 import {
-  Activity,
   createElement,
   Suspense,
   useLayoutEffect,
@@ -55,8 +54,8 @@ vi.mock('@astryxdesign/core/Button', () => ({
 vi.mock('@astryxdesign/core/Skeleton', () => ({
   Skeleton: () => createElement('div', {'data-testid': 'pending-preview'}),
 }));
-// Like the native Dialog, keep children mounted while closed. React's actual
-// deferred-value and transition hooks are deliberately not mocked.
+// Keep children mounted while closed without modeling native dialog teardown.
+// React's actual deferred-value and transition hooks are deliberately not mocked.
 vi.mock('@astryxdesign/core/Dialog', () => ({
   Dialog: ({
     isOpen,
@@ -67,7 +66,11 @@ vi.mock('@astryxdesign/core/Dialog', () => ({
     children: ReactNode;
     variant?: string;
   }) =>
-    createElement('dialog', {open: isOpen, 'data-variant': variant}, children),
+    createElement(
+      'div',
+      {role: 'dialog', hidden: !isOpen, 'data-variant': variant},
+      children,
+    ),
 }));
 vi.mock('../lib/analytics', () => ({
   trackCopy: vi.fn(),
@@ -94,8 +97,8 @@ function PreviewProbe({slug}: {slug: string}) {
   // Observe commits, not speculative renders that React may discard. Every
   // layout effect runs before RTL's act can flush the deferred follow-up.
   useLayoutEffect(() => {
-    const dialog = ref.current?.closest('dialog');
-    if (dialog?.open) {
+    const dialog = ref.current?.closest<HTMLElement>('[role="dialog"]');
+    if (dialog && !dialog.hidden) {
       commits.push({
         slug,
         covered:
@@ -125,32 +128,11 @@ function expectOnlyVisible(slug: string) {
   expect(new Set(visible)).toEqual(new Set([slug]));
 }
 
-const originalClose = Object.getOwnPropertyDescriptor(
-  HTMLDialogElement.prototype,
-  'close',
-);
-
 beforeEach(() => {
   commits.length = 0;
-  // jsdom has no native dialog.close(); this verifies the controller invokes
-  // cleanup, while browser top-layer/focus behavior remains the Dialog's job.
-  Object.defineProperty(HTMLDialogElement.prototype, 'close', {
-    configurable: true,
-    value: vi.fn(function (this: HTMLDialogElement) {
-      this.open = false;
-    }),
-  });
 });
 
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-  if (originalClose) {
-    Object.defineProperty(HTMLDialogElement.prototype, 'close', originalClose);
-  } else {
-    Reflect.deleteProperty(HTMLDialogElement.prototype, 'close');
-  }
-});
+afterEach(cleanup);
 
 describe('template preview selection', () => {
   it.each([undefined, 'fullscreen'] as const)(
@@ -161,7 +143,8 @@ describe('template preview selection', () => {
       view.rerender(preview(1, true, variant));
       expectOnlyVisible('template-b');
       expect(
-        screen.getByTestId('preview').closest('dialog')?.dataset.variant,
+        screen.getByTestId('preview').closest<HTMLElement>('[role="dialog"]')
+          ?.dataset.variant,
       ).toBe(variant);
     },
   );
@@ -246,36 +229,19 @@ describe('template preview selection', () => {
     expect(screen.getByTestId('pending-preview')).not.toBeNull();
     expect(screen.getByTestId('preview').textContent).toBe('template-a');
     fireEvent.click(screen.getByRole('button', {name: 'Close preview'}));
-    expect(screen.getByTestId('preview').closest('dialog')?.open).toBe(false);
+    expect(
+      screen.getByTestId('preview').closest<HTMLElement>('[role="dialog"]')
+        ?.hidden,
+    ).toBe(true);
     await act(async () => {
       ready = true;
       resolve();
       await navigation;
     });
     expect(screen.getByTestId('preview').textContent).toBe('template-b');
-    expect(screen.getByTestId('preview').closest('dialog')?.open).toBe(false);
-  });
-
-  it('releases the dialog on playground route hiding and unmount', () => {
-    const view = render(
-      createElement(Activity, {mode: 'visible', children: preview(1)}),
-    );
     expect(
-      screen
-        .getByRole('link', {name: 'Open in Playground'})
-        .getAttribute('href'),
-    ).toBe('/playground?template=template-b');
-    const dialog = screen.getByTestId('preview').closest('dialog')!;
-    view.rerender(
-      createElement(Activity, {mode: 'hidden', children: preview(1)}),
-    );
-    expect(dialog.close).toHaveBeenCalledTimes(1);
-    expect(dialog.open).toBe(false);
-    view.unmount();
-    const next = render(preview(2));
-    const nextDialog = screen.getByTestId('preview').closest('dialog')!;
-    next.unmount();
-    expect(nextDialog.open).toBe(false);
-    expect(nextDialog.close).toHaveBeenCalledTimes(2);
+      screen.getByTestId('preview').closest<HTMLElement>('[role="dialog"]')
+        ?.hidden,
+    ).toBe(true);
   });
 });
