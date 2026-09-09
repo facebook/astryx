@@ -200,7 +200,11 @@ function findActiveTrigger(
   for (let i = textBeforeCursor.length - 1; i >= 0; i--) {
     const char = textBeforeCursor[i];
 
-    if (char === ' ' || char === '\n') {
+    if (char === '\n') {
+      return null;
+    }
+
+    if (char === ' ' && !triggers.some(t => t.allowWhitespace)) {
       return null;
     }
 
@@ -209,6 +213,11 @@ function findActiveTrigger(
         const prevChar = i > 0 ? textBeforeCursor[i - 1] : null;
         if (prevChar === null || prevChar === ' ' || prevChar === '\n') {
           const query = textBeforeCursor.slice(i + 1);
+
+          if (query.includes(' ') && !trigger.allowWhitespace) {
+            continue;
+          }
+
           return {trigger, query, triggerStart: i};
         }
       }
