@@ -96,7 +96,6 @@ function knownFailure(overrides: Partial<KnownFailure> = {}): KnownFailure {
     failureEquals: 'the stub outcome is missing entirely',
     standardsReference: 'WCAG 2.2 4.1.2 Name, Role, Value (Level A)',
     userImpact: 'The stub does nothing for the user.',
-    issue: 'https://github.com/facebook/astryx/issues/1',
     reason: 'Recorded by the migration; the fix is its own change.',
     ...overrides,
   };
@@ -253,7 +252,13 @@ describe('runBinding', () => {
         knownFailures: [knownFailure()],
       });
       expect(result.results[0]?.status).toBe('known-failure');
-      expect(result.results[0]?.knownFailure?.issue).toContain('issues/1');
+      expect(result.results[0]?.knownFailure).toEqual(
+        expect.objectContaining({
+          expectation: 'probe.outcome.observed',
+          binding: 'Stub',
+          state: 'default',
+        }),
+      );
       expect(blockingResults([result])).toEqual([]);
     });
 
@@ -348,7 +353,7 @@ describe('runBinding', () => {
         'remove this stale known-failure',
       );
       expect(result.results[0]?.detail).toContain(
-        'close the issue only when no remaining records refer to it',
+        'reconcile its separately owned operational gap record',
       );
       expect(blockingResults([result])).toHaveLength(1);
     });

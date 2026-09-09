@@ -3,17 +3,19 @@
 /**
  * @file run.ts
  * @input Uses ./contract (expectations), ./harness (the runtime seam)
- * @output `runBinding` — runs one pattern contract against one component
- *   binding state — plus the known-failure vocabulary and exact-record
- *   reconciliation helpers it obeys.
+ * @output `runBinding` — runs one pattern contract against one component binding
+ *   state — plus the known-failure vocabulary and exact-record reconciliation
+ *   helpers it obeys.
  * @position The engine between a pattern and a component. Everything a report
  *   later says about a binding is decided here.
  *
  * The rules come from the accepted migration record,
  * `docs/specs/AST-021/spec.md`:
  *
- * - FR8  a known failure names an expectation, a binding, a state, an evidence
- *        layer, the user impact, a public issue, and why it is not fixed here.
+ * - FR8  a checked-in known failure names an expectation, binding, state,
+ *        evidence layer, exact failure, user impact, standards source, and why
+ *        migration does not fix it. Operational tracking stays outside public
+ *        source.
  * - FR9  a known failure changes only its own exact result. A different error,
  *        another state, a new expectation, or a wider failure still fails, and
  *        an expectation that starts passing is reported as an unexpected pass
@@ -68,8 +70,6 @@ export interface KnownFailure {
   readonly standardsReference: string;
   /** What the person using the component actually experiences. */
   readonly userImpact: string;
-  /** Public issue tracking the fix. */
-  readonly issue: string;
   /** Why this migration records the gap instead of fixing it. */
   readonly reason: string;
 }
@@ -291,7 +291,8 @@ export async function runBinding<Facts>(
               ...base,
               status: 'unexpected-pass',
               knownFailure: record,
-              detail: `the recorded failure no longer happens; remove this stale known-failure record and update ${record.issue}; close the issue only when no remaining records refer to it`,
+              detail:
+                'the recorded failure no longer happens; remove this stale known-failure record and reconcile its separately owned operational gap record when no other binding still refers to it',
             },
       );
       continue;
