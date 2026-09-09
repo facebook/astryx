@@ -119,6 +119,20 @@ describe('FileInput', () => {
     expect(screen.getByText('Drop here')).toBeInTheDocument();
   });
 
+  it.each([
+    {mode: 'input' as const, size: 'sm'},
+    {mode: 'dropzone' as const, size: 'md'},
+  ])('exposes the upload icon as a $mode theme target', ({mode, size}) => {
+    render(
+      <FileInput label="Upload" mode={mode} value={null} onChange={() => {}} />,
+    );
+
+    const icon = document.querySelector('.astryx-file-input-icon');
+    expect(icon).toHaveClass('astryx-icon');
+    expect(icon).toHaveAttribute('data-mode', mode);
+    expect(icon).toHaveAttribute('data-size', size);
+  });
+
   it('displays selected file name', () => {
     const file = createFile('report.pdf', 1024, 'application/pdf');
     render(<FileInput label="Document" value={file} onChange={() => {}} />);

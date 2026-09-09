@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  274 targets, 885 selectors (generated from the docs)
+//   components  277 targets, 894 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -2258,6 +2258,26 @@ export const probeTheme = defineTheme({
         color: 'hsl(141.4 88% 12%)',
         borderColor: 'hsl(176.1 82% 25%)',
         outlineColor: 'hsl(67.1 74% 25%)',
+      },
+    },
+    'file-input-icon': {
+      base: {
+        backgroundColor: 'hsl(351.5 72% 64%)',
+        color: 'hsl(171.1 72% 12%)',
+        borderColor: 'hsl(261.4 81% 25%)',
+        outlineColor: 'hsl(189.9 94% 25%)',
+      },
+      'mode:input': {
+        backgroundColor: 'hsl(133.7 72% 60%)',
+        color: 'hsl(143.1 87% 12%)',
+        borderColor: 'hsl(309.2 92% 25%)',
+        outlineColor: 'hsl(230.1 94% 25%)',
+      },
+      'mode:dropzone': {
+        backgroundColor: 'hsl(118.3 93% 60%)',
+        color: 'hsl(269.0 87% 12%)',
+        borderColor: 'hsl(274.5 79% 25%)',
+        outlineColor: 'hsl(236.1 70% 25%)',
       },
     },
     'form-layout': {
@@ -4585,6 +4605,22 @@ export const probeTheme = defineTheme({
         outlineColor: 'hsl(94.7 77% 25%)',
       },
     },
+    'stepper-frame': {
+      base: {
+        backgroundColor: 'hsl(220.4 78% 60%)',
+        color: 'hsl(124.6 78% 12%)',
+        borderColor: 'hsl(219.2 77% 25%)',
+        outlineColor: 'hsl(209.9 87% 25%)',
+      },
+    },
+    'stepper-summary': {
+      base: {
+        backgroundColor: 'hsl(56.5 79% 47%)',
+        color: 'hsl(163.3 90% 12%)',
+        borderColor: 'hsl(253.4 72% 25%)',
+        outlineColor: 'hsl(238.5 80% 25%)',
+      },
+    },
     switch: {
       base: {
         backgroundColor: 'hsl(355.8 75% 58%)',
@@ -5487,6 +5523,30 @@ export const probeTheme = defineTheme({
         color: 'hsl(114.7 79% 12%)',
         borderColor: 'hsl(260.2 75% 25%)',
         outlineColor: 'hsl(14.9 76% 25%)',
+      },
+      'elevation:none': {
+        backgroundColor: 'hsl(55.4 88% 60%)',
+        color: 'hsl(28.2 76% 12%)',
+        borderColor: 'hsl(276.0 80% 25%)',
+        outlineColor: 'hsl(245.4 91% 25%)',
+      },
+      'elevation:low': {
+        backgroundColor: 'hsl(243.3 91% 61%)',
+        color: 'hsl(328.4 93% 12%)',
+        borderColor: 'hsl(96.5 91% 25%)',
+        outlineColor: 'hsl(237.2 83% 25%)',
+      },
+      'elevation:med': {
+        backgroundColor: 'hsl(98.3 88% 61%)',
+        color: 'hsl(125.6 75% 12%)',
+        borderColor: 'hsl(195.0 93% 25%)',
+        outlineColor: 'hsl(298.1 83% 25%)',
+      },
+      'elevation:high': {
+        backgroundColor: 'hsl(118.2 84% 63%)',
+        color: 'hsl(163.2 82% 12%)',
+        borderColor: 'hsl(50.2 88% 25%)',
+        outlineColor: 'hsl(32.5 75% 25%)',
       },
       isPressed: {
         backgroundColor: 'hsl(134.4 77% 49%)',
