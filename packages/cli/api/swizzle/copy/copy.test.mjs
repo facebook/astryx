@@ -4,12 +4,14 @@
  * @file Colocated tests for the swizzle.copy leaf — path-safety + overwrite +
  * recursive nested-source copy (#3506). The copy leaf writes files, so the
  * output base AND the component name (which becomes a path segment) must both
- * be confined to cwd.
+ * be confined to cwd. Every destination segment, including dangling symlinks,
+ * is checked before any output is written.
  */
 
 import {describe, it, expect, afterEach} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {swizzle} from '../swizzle.mjs';
 
@@ -17,6 +19,59 @@ import {swizzle} from '../swizzle.mjs';
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../..');
 const OUT = 'tmp-swizzle-copy-test';
 const SLOW = 30_000;
+
+describe('swizzle.copy — destination symlinks', () => {
+  let fixture;
+  afterEach(() => {
+    if (fixture) fs.rmSync(fixture, {recursive: true, force: true});
+  });
+
+  it.each([
+    ['out', false],
+    ['out/Table', false],
+    ['out/Table/plugins', false],
+    ['out/Table/plugins/nested.ts', false],
+    ['out/Table/plugins/nested.ts', true],
+  ])('rejects %s (dangling: %s) before writing, with or without overwrite', async (linkPath, dangling) => {
+    fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-swizzle-symlink-'));
+    const cwd = path.join(fixture, 'project');
+    const source = path.join(cwd, 'node_modules/@astryxdesign/core/src/Table');
+    fs.mkdirSync(path.join(source, 'plugins'), {recursive: true});
+    fs.writeFileSync(path.join(source, 'Table.tsx'), 'export const Table = 1;');
+    fs.writeFileSync(path.join(source, 'plugins/nested.ts'), 'export const nested = 1;');
+    fs.writeFileSync(path.join(cwd, 'package.json'), '{"name":"consumer"}');
+    const outside = path.join(fixture, 'outside');
+    fs.mkdirSync(outside);
+    const target = linkPath.endsWith('.ts') ? path.join(outside, 'target.ts') : outside;
+    if (target !== outside && !dangling) fs.writeFileSync(target, '// consumer edit');
+    const link = path.join(cwd, linkPath);
+    fs.mkdirSync(path.dirname(link), {recursive: true});
+    fs.symlinkSync(target, link);
+
+    for (const overwrite of [false, true]) {
+      await expect(swizzle('Table', {cwd, output: './out', overwrite})).rejects.toMatchObject({
+        code: 'ERR_PATH_TRAVERSAL',
+      });
+      expect(fs.existsSync(path.join(cwd, 'out/Table/Table.tsx'))).toBe(false);
+      expect(fs.readdirSync(outside)).toEqual(target !== outside && !dangling ? ['target.ts'] : []);
+      if (target !== outside && !dangling) expect(fs.readFileSync(target, 'utf8')).toBe('// consumer edit');
+    }
+  });
+
+  it('also rejects a destination symlink whose target stays inside the project', async () => {
+    fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-swizzle-symlink-'));
+    const source = path.join(fixture, 'node_modules/@astryxdesign/core/src/Button');
+    fs.mkdirSync(source, {recursive: true});
+    fs.writeFileSync(path.join(source, 'Button.tsx'), 'export const Button = 1;');
+    fs.mkdirSync(path.join(fixture, 'consumer-files'));
+    fs.mkdirSync(path.join(fixture, 'out'));
+    fs.symlinkSync(path.join(fixture, 'consumer-files'), path.join(fixture, 'out/Button'));
+    await expect(swizzle('Button', {cwd: fixture, output: './out'})).rejects.toMatchObject({
+      code: 'ERR_PATH_TRAVERSAL',
+    });
+    expect(fs.readdirSync(path.join(fixture, 'consumer-files'))).toEqual([]);
+  });
+});
 
 describe('swizzle.copy — path safety', () => {
   afterEach(() => {

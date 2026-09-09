@@ -3,10 +3,13 @@
 /**
  * @file swizzle.copy leaf — copy a component's source into the consumer project
  * for customization, rewriting escaping relative imports to the OWNER package's
- * subpaths. The copy walks the component directory recursively, so nested
+ * subpaths. The copy walks core component directories recursively, so nested
  * source subdirectories (e.g. Table/plugins/*) are preserved in the output;
  * the overwrite pre-flight and the reported file list share the same
- * recursive file set.
+ * recursive file set. Every destination segment is checked for symlinks before
+ * any directory or file is written, even when overwrite is enabled. Integration
+ * source directories retain their existing flat copy behavior: their discovery
+ * contract identifies an entry file, not an exclusively owned directory tree.
  *
  * Side-effecting: writes files and returns a `swizzle.copy` receipt describing
  * what it did. Shared core discovery + component listing come from
@@ -209,6 +212,35 @@ function collectSourceFiles(dir, prefix = '') {
 }
 
 /**
+ * Reject symlinks in every destination segment below cwd, including the final
+ * file. lstat also sees dangling links, which existsSync would miss. Check the
+ * complete plan before writing so a bad nested path cannot leave partial output.
+ * The caller has already confined outputDir to cwd with assertWithin.
+ * @param {string} cwd
+ * @param {string} outputDir
+ * @param {string[]} files
+ */
+function checkDestinationPaths(cwd, outputDir, files) {
+  const root = path.resolve(cwd);
+  const checked = new Set();
+  for (const target of [outputDir, ...files.map(file => path.join(outputDir, file))]) {
+    let segment = root;
+    for (const part of path.relative(root, target).split(path.sep)) {
+      segment = path.join(segment, part);
+      if (checked.has(segment)) continue;
+      checked.add(segment);
+      if (fs.lstatSync(segment, {throwIfNoEntry: false})?.isSymbolicLink()) {
+        throw new AstryxError(
+          `Refusing to write through destination symlink "${path.relative(root, segment)}".`,
+          [],
+          ERROR_CODES.ERR_PATH_TRAVERSAL,
+        );
+      }
+    }
+  }
+}
+
+/**
  * Copy one component's source into the consumer project for customization,
  * rewriting escaping relative imports to the owner package's subpaths.
  *
@@ -300,7 +332,12 @@ export async function swizzleCopy(component, options = {}) {
   // Pre-flight overwrite check before any mkdir/writeFile. The same recursive
   // file set drives this check, the copy loop, and the reported files, so
   // nested source (e.g. Table/plugins/*) is visible to all three.
-  const sourceFiles = collectSourceFiles(componentDir);
+  const sourceFiles = owner.package === CORE_PACKAGE
+    ? collectSourceFiles(componentDir)
+    : fs.readdirSync(componentDir).filter(file =>
+      !isExcludedFromCopy(file) && fs.statSync(path.join(componentDir, file)).isFile(),
+    );
+  checkDestinationPaths(cwd, outputDir, sourceFiles);
   const existingFiles = sourceFiles.filter(f =>
     fs.existsSync(path.join(outputDir, f)),
   );
