@@ -70,6 +70,10 @@ export const docs = {
           text: 'Export your components from your library however you like, and consumers still import them from your package. For each component the CLI should document, ship a `.doc.{ts,mjs,js}` file with the same stem, for example `AcmeCarousel.tsx` alongside `AcmeCarousel.doc.ts`.',
         },
         {
+          type: 'prose',
+          text: 'Component names are package-aware. If an integration name matches Core, unqualified lookup fails closed instead of choosing one. Run `astryx doctor integration components <package>` before publishing: it recommends renaming and prints the exact `--package` command when the overlap is intentional.',
+        },
+        {
           type: 'code',
           lang: 'typescript',
           code: "// AcmeCarousel.doc.ts\nexport default {\n  type: 'component',\n  name: 'AcmeCarousel',\n  description: 'A carousel that cycles through slides.',\n  // props, usage, examples, ...\n};",
@@ -83,6 +87,10 @@ export const docs = {
         {
           type: 'prose',
           text: 'Templates are usually not exported from the package directly. Instead, consumers browse them through the CLI and materialize them into their app. Define a template as a plain object stamped with `type: \'page\'` (full pages) or `type: \'block\'` (smaller chunks) in a `.template.{ts,mjs,js}` file next to the source, for example `AcmeLandingPage.tsx` and `AcmeLandingPage.template.ts`.',
+        },
+        {
+          type: 'prose',
+          text: 'A template id is its source-relative path with the metadata suffix removed; the display `name` is not its identity and may repeat. If an integration id matches a Core id, unqualified lookup fails closed instead of choosing one. Run `astryx doctor integration templates <package>` before publishing: it recommends renaming, but an intentional overlap is allowed when callers always pass `--package <package>`.',
         },
         {
           type: 'code',
@@ -143,6 +151,7 @@ export const docs = {
             "A name that collides with an existing topic and declares neither `replaces` nor `extends` is an error, not a silent override; the CLI will not guess which one you meant.",
             '`replaces` and `extends` are exclusive: a topic either takes another\'s place or merges onto it.',
             'Two integrations replacing one topic is a warning, and the one configured later in `astryx.config` wins.',
+            '`astryx doctor integration docs <package>` classifies Core overlaps as intentional replacements, intentional extensions, or accidental same-name conflicts.',
           ],
         },
       ],
@@ -226,7 +235,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'To inspect problems, run `astryx validate-integration <package>` for a detailed report on one package, or `astryx doctor` for an overall health check of the setup.',
+          text: 'To inspect problems, run `astryx doctor integration validate <package>` for structure, then use `templates`, `components`, or `docs` under the same `astryx doctor integration` group to check Core identity overlaps before publishing. Bare `astryx doctor` checks overall project health.',
         },
       ],
     },

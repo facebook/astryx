@@ -27,7 +27,7 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
  * the package's package.json; the `components`/`templates`/`codemods`/`docs`
  * roots are absolute paths resolved from the manifest. The `__`-prefixed fields
- * are internal bookkeeping used by validate-integration and Project.
+ * are internal bookkeeping used by Doctor integration validation and Project.
  * @typedef {object} LoadedIntegration
  * @property {string} name
  * @property {string} [version]
@@ -61,7 +61,7 @@ export const MANIFEST_BASENAMES = [
 /**
  * Return the conventional root manifest paths present in `dir`, in
  * load-precedence order. Unlike {@link resolveManifestPath} this never throws —
- * callers (e.g. validate-integration) decide how to treat zero / multiple.
+ * callers (for example Doctor integration validation) decide how to treat zero / multiple.
  * @param {string} dir
  * @returns {string[]} absolute manifest paths
  */
@@ -134,7 +134,7 @@ export async function loadManifest(
 /**
  * Load and validate a manifest module's default export against the integration
  * schema. Throws if the default export is missing or invalid. Exposed for
- * validate-integration.
+ * Doctor integration validation.
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
  * @param {{fresh?: boolean}} [options]
@@ -268,7 +268,7 @@ export async function loadIntegrations(
       try {
         return assertWithin(value, packageDir, {label: 'contribution root'});
       } catch {
-        // Root escapes the package — skip silently (logged by validate-integration).
+        // Root escapes the package — skip silently (reported by Doctor validation).
         return undefined;
       }
     };

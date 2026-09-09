@@ -4,7 +4,7 @@
  * @file On-disk contribution checks for a LOADED integration.
  *
  * These validators live in foundation rather than beside the
- * `validate-integration` command because foundation itself needs them:
+ * Doctor integration validation because foundation itself needs them:
  * `Project` collects integration issues while assembling components/templates,
  * and `integration-warnings` nudges about them on ordinary commands. Keeping
  * them here means those callers no longer reach up into `api/`.
@@ -205,7 +205,7 @@ async function runContributionChecks(integration, issues) {
  * Validate an already-LOADED integration (as produced by `loadIntegrations` —
  * absolute contribution roots plus identity) and return its issues. This is the
  * reuse seam for everyday commands that have already loaded the configured
- * integrations and want the SAME validators that `validate-integration` runs,
+ * integrations and want the SAME validators that Doctor runs,
  * without re-resolving the manifest from disk.
  *
  * @param {LoadedIntegration} loaded loaded-integration-shaped object

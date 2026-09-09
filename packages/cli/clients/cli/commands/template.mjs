@@ -86,7 +86,7 @@ export function registerTemplate(program) {
 
       // Non-blocking nudge: if any configured integration has validation
       // issues, print one compact line to stderr pointing at
-      // validate-integration. Best-effort; suppressed in --json mode.
+      // doctor integration validate. Best-effort; suppressed in --json mode.
       try {
         const project = await Project.load(process.cwd());
         await warnOnIntegrationIssues(

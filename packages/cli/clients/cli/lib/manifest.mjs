@@ -83,7 +83,10 @@ export const RESPONSE_TYPES = {
   upgrade: ['upgrade.list', 'upgrade.status', 'upgrade.run'],
   manifest: ['manifest'],
   doctor: ['doctor'],
-  'validate-integration': ['integration.validate'],
+  'doctor integration validate': ['integration.validate'],
+  'doctor integration templates': ['integration.template-conflicts'],
+  'doctor integration components': ['integration.component-conflicts'],
+  'doctor integration docs': ['integration.doc-conflicts'],
   'layout expand': ['layout.expand'],
   'layout check': ['layout.check'],
   'layout grammar': ['layout.grammar'],
@@ -134,9 +137,21 @@ const EXAMPLES = {
   upgrade: ['astryx upgrade --json'],
   manifest: ['astryx manifest --json', 'astryx --json'],
   doctor: ['astryx doctor', 'astryx doctor --json'],
-  'validate-integration': [
-    'astryx validate-integration',
-    'astryx validate-integration @acme/widgets --json',
+  'doctor integration validate': [
+    'astryx doctor integration validate',
+    'astryx doctor integration validate @acme/widgets --json',
+  ],
+  'doctor integration templates': [
+    'astryx doctor integration templates',
+    'astryx doctor integration templates @acme/widgets --json',
+  ],
+  'doctor integration components': [
+    'astryx doctor integration components',
+    'astryx doctor integration components @acme/widgets --json',
+  ],
+  'doctor integration docs': [
+    'astryx doctor integration docs',
+    'astryx doctor integration docs @acme/widgets --json',
   ],
   init: ['astryx init', 'astryx init --all --json'],
   'layout expand': [
