@@ -269,31 +269,98 @@ export function createChromiumHarness(
         attribute,
       ),
     visibleIdReferences: attribute =>
-      locator.evaluate(
-        (element, name) =>
-          (element.getAttribute(name) ?? '')
-            .split(/\s+/)
-            .filter(Boolean)
-            .map(id => {
-              const target = element.ownerDocument.getElementById(id);
-              if (
-                target == null ||
-                !target.checkVisibility({
-                  visibilityProperty: true,
-                  opacityProperty: true,
-                  contentVisibilityAuto: true,
-                })
-              ) {
-                return null;
+      locator.evaluate((element, name) => {
+        const isTransparentBox = (node: Element): boolean =>
+          getComputedStyle(node).display === 'contents';
+        const rendered = (node: Element): boolean => {
+          if (isTransparentBox(node)) {
+            return true;
+          }
+          if (
+            !node.checkVisibility({
+              visibilityProperty: true,
+              opacityProperty: true,
+              contentVisibilityAuto: true,
+            })
+          ) {
+            return false;
+          }
+          const box = node.getBoundingClientRect();
+          return box.width > 1 && box.height > 1;
+        };
+        const textIsReadable = (node: Element): boolean =>
+          !/^rgba\(.*,\s*0\)$/.test(getComputedStyle(node).color);
+        const paints = (node: Element): boolean => {
+          if (!rendered(node)) {
+            return false;
+          }
+          if (isTransparentBox(node)) {
+            return true;
+          }
+          const box = node.getBoundingClientRect();
+          const inlineStyle = (node as HTMLElement).style;
+          const pointerTransparent =
+            getComputedStyle(node).pointerEvents === 'none';
+          const originalPointerEvents =
+            inlineStyle.getPropertyValue('pointer-events');
+          const originalPriority =
+            inlineStyle.getPropertyPriority('pointer-events');
+          if (pointerTransparent) {
+            inlineStyle.setProperty('pointer-events', 'auto', 'important');
+          }
+          try {
+            const samples: ReadonlyArray<readonly [number, number]> = [
+              [box.x + box.width / 2, box.y + box.height / 2],
+              [box.x + 1, box.y + box.height / 2],
+              [box.right - 1, box.y + box.height / 2],
+            ];
+            return samples.some(([x, y]) => {
+              const at = node.ownerDocument.elementFromPoint(x, y);
+              return at != null && (at === node || node.contains(at));
+            });
+          } finally {
+            if (pointerTransparent) {
+              if (originalPointerEvents === '') {
+                inlineStyle.removeProperty('pointer-events');
+              } else {
+                inlineStyle.setProperty(
+                  'pointer-events',
+                  originalPointerEvents,
+                  originalPriority,
+                );
               }
-              const box = target.getBoundingClientRect();
-              if (box.width <= 1 || box.height <= 1) {
-                return null;
+            }
+          }
+        };
+        const visibleTextOf = (node: Element): string => {
+          if (!paints(node)) {
+            return '';
+          }
+          let value = '';
+          for (const child of node.childNodes) {
+            if (child.nodeType === Node.TEXT_NODE) {
+              if (textIsReadable(node)) {
+                value += child.nodeValue ?? '';
               }
-              return (target.textContent ?? '').trim();
-            }),
-        attribute,
-      ),
+            } else if (child.nodeType === Node.ELEMENT_NODE) {
+              value += ` ${visibleTextOf(child as Element)} `;
+            }
+          }
+          return value.replace(/\s+/g, ' ').trim();
+        };
+
+        return (element.getAttribute(name) ?? '')
+          .split(/\s+/)
+          .filter(Boolean)
+          .map(id => {
+            const target = element.ownerDocument.getElementById(id);
+            if (target == null) {
+              return null;
+            }
+            const text = visibleTextOf(target);
+            return text === '' ? null : text;
+          });
+      }, attribute),
     labelText: () =>
       locator.evaluate(element => {
         const labelledBy = element.getAttribute('aria-labelledby');

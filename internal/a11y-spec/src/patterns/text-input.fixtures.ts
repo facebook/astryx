@@ -237,6 +237,25 @@ export const TEXT_INPUT_FIXTURES: readonly TextInputFixture[] = [
     html: `<label for="fx">Name</label><span id="error" hidden>Enter a valid name.</span><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true" aria-errormessage="error">`,
   },
   {
+    id: 'violating-transparent-related-error',
+    summary: 'a related error whose text is painted transparent',
+    facts: facts({invalid: true, errorMessage: 'Enter a valid name.'}),
+    html: `<label for="fx">Name</label><span id="error" style="color: transparent">Enter a valid name.</span><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true" aria-errormessage="error">`,
+  },
+  {
+    id: 'violating-clipped-related-error',
+    summary: 'a related error clipped completely out of view',
+    facts: facts({invalid: true, errorMessage: 'Enter a valid name.'}),
+    html: `<label for="fx">Name</label><span id="error" style="position: absolute; clip-path: inset(100%)">Enter a valid name.</span><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true" aria-errormessage="error">`,
+  },
+  {
+    id: 'violating-hidden-descendant-related-error',
+    summary:
+      'a visible relationship target whose expected error words are hidden in a descendant',
+    facts: facts({invalid: true, errorMessage: 'Enter a valid name.'}),
+    html: `<label for="fx">Name</label><div id="error"><span>General guidance</span><span hidden>Enter a valid name.</span></div><input id="fx" ${SUBJECT_ATTRIBUTE} type="text" aria-invalid="true" aria-errormessage="error">`,
+  },
+  {
     id: 'violating-editing-inert',
     summary: 'an apparently editable text input that refuses keyboard changes',
     facts: facts({value: 'Start'}),
@@ -310,7 +329,12 @@ export const TEXT_INPUT_MUTATIONS: Readonly<Record<string, readonly string[]>> =
       'violating-hidden-unrelated-error',
       'violating-visible-unrelated-error',
     ],
-    'text-input.error.related-text-visible': ['violating-hidden-related-error'],
+    'text-input.error.related-text-visible': [
+      'violating-hidden-related-error',
+      'violating-transparent-related-error',
+      'violating-clipped-related-error',
+      'violating-hidden-descendant-related-error',
+    ],
     'text-input.editing.keyboard-round-trip': ['violating-editing-inert'],
     'text-input.focus.reachable-and-escapable': [
       'violating-unreachable',
