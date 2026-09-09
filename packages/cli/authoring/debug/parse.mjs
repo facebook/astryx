@@ -43,10 +43,15 @@ const optionSourceSchema = z.enum([
 
 const resultKindSchema = z.enum([
   'component',
-  'template',
-  'doc',
   'hook',
+  'doc',
+  'template',
+  'theme',
+  'integration',
+  'migration',
+  'command',
   'mixed',
+  'none',
 ]);
 
 const invocationSourceSchema = z.enum(['human', 'ai', 'automation', 'unknown']);
@@ -118,7 +123,7 @@ const eventSchema = z
     // records before the raw session id was retired, and refusing to read them
     // back would make the privacy change look like data loss. What each version
     // is ALLOWED to contain differs — see the refinement below.
-    schemaVersion: z.union([z.literal(1), z.literal(2)]),
+    schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
     id: z.string(),
     startedAt: z.string(),
     endedAt: z.string(),

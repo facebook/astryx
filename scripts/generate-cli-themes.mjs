@@ -105,6 +105,10 @@ function main() {
         output: `${id}Palettes.generated.ts`,
       },
       {
+        source: path.join(srcDir, `${id}PaletteRefs.generated.ts`),
+        output: `${id}PaletteRefs.generated.ts`,
+      },
+      {
         source: path.join(srcDir, `${id}Palettes.generated.receipt.json`),
         output: `${id}Palettes.generated.receipt.json`,
       },

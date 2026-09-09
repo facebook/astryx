@@ -102,6 +102,66 @@ describe('configured integrations', () => {
     ]);
   });
 
+  it('loads agentDocs from the default manifest in authored order', async () => {
+    const pkgDir = writeManifestPackage(tmpDir, {
+      body: `export default {
+        agentDocs: {
+          append: ['after one', 'after two'],
+        },
+      };\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+    expect(loaded.agentDocs).toEqual({
+      append: ['after one', 'after two'],
+    });
+    expect(loaded.__unknownKeys).toEqual([]);
+
+    fs.writeFileSync(
+      path.join(pkgDir, 'astryx.integration.mjs'),
+      `export default {agentDocs: {append: ['after rewrite']}};\n`,
+    );
+    const [fresh] = await loadIntegrations(['@acme/widgets'], {
+      cwd: tmpDir,
+      fresh: true,
+    });
+    expect(fresh.agentDocs).toEqual({append: ['after rewrite']});
+  });
+
+  it('ignores an agentDocs named export; the contract is the default manifest field', async () => {
+    writeManifestPackage(tmpDir, {
+      body: `export const agentDocs = {append: ['wrong place']};\nexport default {};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+    expect(loaded.agentDocs).toBeUndefined();
+  });
+
+  it.each([
+    ['wrong outer shape', []],
+    ['wrong append shape', {append: 'not-an-array'}],
+    ['non-string entry', {append: ['ok', 42]}],
+    ['too many lines', {append: Array.from({length: 9}, (_, i) => `line ${i}`)}],
+    ['too many code points', {append: ['😀'.repeat(241)]}],
+    ['control character', {append: ['bad\u0001line']}],
+    ['managed marker', {append: ['ASTRYX:START']}],
+  ])('isolates invalid agentDocs (%s) from valid roots', async (_label, agentDocs) => {
+    const pkgDir = writeManifestPackage(tmpDir, {
+      body: `export default ${JSON.stringify({
+        components: './components',
+        agentDocs,
+      })};\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'components'));
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(loaded.__loadError).toBeUndefined();
+    expect(loaded.components).toBe(path.join(pkgDir, 'components'));
+    expect(loaded.agentDocs).toBeUndefined();
+    expect(loaded.__agentDocsError).toMatch(/agentDocs/i);
+  });
+
   it('errors when the package has no conventional root manifest', async () => {
     const pkgDir = path.join(tmpDir, 'node_modules', '@acme', 'widgets');
     fs.mkdirSync(pkgDir, {recursive: true});

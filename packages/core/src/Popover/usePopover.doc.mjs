@@ -50,7 +50,7 @@ export const docs = {
       name: 'hasAutoFocus',
       type: 'boolean',
       description:
-        'Whether to automatically focus the first focusable element when opened.',
+        'Whether to focus the first genuine content control when opened. Dialogs with none fall back to the labeled surface; the generated close control is excluded from initial focus.',
       default: 'true',
     },
     {
@@ -205,7 +205,8 @@ export const docsDense = {
     hasLightDismiss: 'whether outside click dismisses popover.',
     hasEscapeDismiss:
       'whether Escape dismisses; full effect only w/ hasLightDismiss false.',
-    hasAutoFocus: 'whether first focusable element receives focus on open.',
+    hasAutoFocus:
+      'focus genuine content on open; dialog surface fallback; generated close excluded.',
     hasCloseButton: 'whether hidden keyboard close button is included.',
     closeButtonLabel: 'label for hidden close button.',
     dialogLabel: 'accessible label for popover dialog (role="dialog" only).',

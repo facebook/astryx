@@ -50,6 +50,7 @@
         "icons.tsx",
         "neutralPalettes.ts",
         "neutralPalettes.generated.ts",
+        "neutralPaletteRefs.generated.ts",
         "neutralPalettes.generated.receipt.json",
         "palette.config.json"
       ]

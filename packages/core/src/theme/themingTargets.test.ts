@@ -281,11 +281,11 @@ describe('extractThemeTargets', () => {
   });
 
   it('reads the keys of a conditional spread', () => {
-    // Heading's real call site: `{level, color, ...(type && {type})}`.
+    // Heading's reflected visual props, including conditional type/weight.
     const [site] = extractThemeTargets(
-      `themeProps('heading', {level, color, ...(type && {type})})`,
+      `themeProps('heading', {level, color, ...(type && {type}), ...(weight && {weight})})`,
     );
-    expect(site.propKeys).toEqual(['level', 'color', 'type']);
+    expect(site.propKeys).toEqual(['level', 'color', 'type', 'weight']);
     expect(site.isOpaque).toBe(false);
   });
 

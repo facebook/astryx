@@ -46,6 +46,7 @@
  *   | 'ERR_INVALID_DETAIL'
  *   | 'ERR_NODE_VERSION'
  *   | 'ERR_CORE_NOT_FOUND'
+ *   | 'ERR_CORE_INCOMPATIBLE'
  *   | 'ERR_UNKNOWN_COMPONENT'
  *   | 'ERR_UNKNOWN_HOOK'
  *   | 'ERR_UNKNOWN_TOPIC'
@@ -59,7 +60,7 @@
  *   | 'ERR_UNKNOWN_AGENT'
  *   | 'ERR_UNKNOWN_FEATURE'
  *   | 'ERR_UNKNOWN_CODEMOD'
-   | 'ERR_CODEMOD_FAILED'
+ *   | 'ERR_CODEMOD_FAILED'
  *   | 'ERR_NOT_FOUND'
  *   | 'ERR_NO_DOC'
  *   | 'ERR_NO_SHOWCASE'
@@ -71,6 +72,7 @@
  *   | 'ERR_WRITE_FAILED'
  *   | 'ERR_THEME_INVALID'
  *   | 'ERR_THEME_LOAD'
+ *   | 'ERR_PALETTE_GENERATION'
  *   | 'ERR_VERSION_DETECT'
  *   | 'ERR_INVALID_VERSION'
  *   | 'ERR_DEP_MISSING'
@@ -114,6 +116,12 @@ export const ERROR_CODES = Object.freeze({
   ERR_NODE_VERSION: 'ERR_NODE_VERSION',
   /** `@astryxdesign/core` could not be located (not installed / not in a monorepo). */
   ERR_CORE_NOT_FOUND: 'ERR_CORE_NOT_FOUND',
+  /**
+   * The installed `@astryxdesign/core` was found and loaded, but it is too old
+   * for what this input needs: it does not expose a capability the CLI would
+   * have to call to produce correct output. Upgrading core is the fix.
+   */
+  ERR_CORE_INCOMPATIBLE: 'ERR_CORE_INCOMPATIBLE',
 
   // ── "Unknown <subject>" lookups ──────────────────────────────────
   /** No component matched the requested name. */
@@ -172,6 +180,10 @@ export const ERROR_CODES = Object.freeze({
   ERR_THEME_INVALID: 'ERR_THEME_INVALID',
   /** A theme file could not be loaded / parsed into a defineTheme result. */
   ERR_THEME_LOAD: 'ERR_THEME_LOAD',
+
+  // ── Palette generation ──────────────────────────────────────────
+  /** A palette generation request or its constraints were invalid. */
+  ERR_PALETTE_GENERATION: 'ERR_PALETTE_GENERATION',
 
   // ── Upgrade ──────────────────────────────────────────────────────
   /** The current `@astryxdesign/core` version could not be detected. */

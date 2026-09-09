@@ -333,7 +333,7 @@ const styles = stylex.create({
 // What each named `size` and `shade` resolve to. Both groups DECLARE the four
 // public vars, on the element that carries the `spinner` theme target, and
 // everything downstream reads them — so a theme's `@layer astryx-theme` rule
-// against `.astryx-spinner.xl` overrides the default the same way it does for
+// against `.astryx-spinner[data-size="xl"]` overrides the default the same way it does for
 // `--tree-list-indent` or `--button-focus-offset`, e.g.
 // spinner: { 'size:xl': { '--spinner-diameter': '40px' } }.
 //

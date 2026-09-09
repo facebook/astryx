@@ -41,7 +41,26 @@ describe('parseTemplate (load boundary)', () => {
       preview: {image: './preview.png', aspectRatio: '16 / 9'},
     });
     expect(parsed.name).toBe('Hero');
-    expect(parsed.preview).toEqual({image: './preview.png', aspectRatio: '16 / 9'});
+    expect(parsed.preview).toEqual({
+      image: './preview.png',
+      aspectRatio: '16 / 9',
+    });
+  });
+
+  it('accepts the shared readiness fields', () => {
+    const parsed = parseTemplate({
+      type: 'page',
+      name: 'Draft',
+      description: 'A draft page.',
+      isReady: false,
+      scaffold: true,
+      isHiddenFromOverview: true,
+    });
+    expect(parsed).toMatchObject({
+      isReady: false,
+      scaffold: true,
+      isHiddenFromOverview: true,
+    });
   });
 
   it('rejects a missing name', () => {
@@ -53,7 +72,9 @@ describe('parseTemplate (load boundary)', () => {
   });
 
   it('rejects an empty-string name', () => {
-    expect(reason({type: 'page', name: '', description: 'x'})).toContain('name');
+    expect(reason({type: 'page', name: '', description: 'x'})).toContain(
+      'name',
+    );
   });
 
   it('rejects a missing/invalid type', () => {

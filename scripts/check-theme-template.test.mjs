@@ -52,6 +52,10 @@ const NEUTRAL_GENERATED_PALETTE = path.join(
   REPO_ROOT,
   'packages/themes/neutral/src/neutralPalettes.generated.ts',
 );
+const NEUTRAL_PALETTE_REFS = path.join(
+  REPO_ROOT,
+  'packages/themes/neutral/src/neutralPaletteRefs.generated.ts',
+);
 const NEUTRAL_GENERATED_RECEIPT = path.join(
   REPO_ROOT,
   'packages/themes/neutral/src/neutralPalettes.generated.receipt.json',
@@ -170,15 +174,16 @@ function docTopics() {
 // ---------------------------------------------------------------------------
 
 /**
- * Top-level keys the template sets, plus the optional ones it shows commented
- * out (`// syntax: dracula,`). A commented field must carry a value, so an
- * ordinary prose comment is not mistaken for one.
+ * Top-level keys the template sets, plus optional fields shown commented out.
+ * A commented field must carry either a same-line value (`// syntax: dracula,`)
+ * or open a commented object block (`// adaptations: {`), so ordinary prose is
+ * not mistaken for a field.
  */
 function templateFields() {
   const set = [...template.matchAll(/^ {2}(\w+):/gm)].map(m => m[1]);
-  const commented = [...template.matchAll(/^ {2}\/\/ (\w+): .+,$/gm)].map(
-    m => m[1],
-  );
+  const commented = [
+    ...template.matchAll(/^ {2}\/\/ (\w+): (?:.+,|\{)$/gm),
+  ].map(m => m[1]);
   return [...new Set([...set, ...commented])];
 }
 
@@ -248,6 +253,10 @@ describe('theme template stays in sync with the theme system', () => {
       [
         NEUTRAL_GENERATED_PALETTE,
         path.join(NEUTRAL_TEMPLATE_DIR, 'neutralPalettes.generated.ts'),
+      ],
+      [
+        NEUTRAL_PALETTE_REFS,
+        path.join(NEUTRAL_TEMPLATE_DIR, 'neutralPaletteRefs.generated.ts'),
       ],
       [
         NEUTRAL_GENERATED_RECEIPT,

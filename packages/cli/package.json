@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/cli",
-  "version": "0.5.2",
+  "version": "0.5.4",
   "displayName": "CLI",
   "description": "Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line.",
   "author": "Meta Open Source",
@@ -102,6 +102,8 @@
     "commander": "^12.1.0",
     "jiti": "^2.7.0",
     "jscodeshift": "^17.3.0",
+    "postcss": "^8.5.23",
+    "postcss-selector-parser": "^7.1.5",
     "zod": "^4.4.3"
   },
   "peerDependencies": {

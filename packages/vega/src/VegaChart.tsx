@@ -6,7 +6,9 @@
  * @output A React component that renders the spec via the Vega runtime
  * @position Primary component in @astryxdesign/vega; owns the Vega View lifecycle
  *
- * SYNC: When modified, update /packages/vega/README.md
+ * SYNC: When modified, update:
+ * - /packages/vega/src/VegaChart.doc.mjs
+ * - /packages/vega/README.md
  */
 
 import React, {useEffect, useEffectEvent, useRef, useState} from 'react';

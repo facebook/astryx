@@ -5,7 +5,7 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, Field, Tooltip, useTooltip, VisuallyHidden
- * @output Exports Slider component, SliderProps, SliderSingleProps, SliderRangeProps, SliderBaseProps
+ * @output Exports Slider and its props; modifier-only key presses do not restore the thumb focus ring
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -756,9 +756,17 @@ export function Slider({ref, ...props}: SliderProps) {
       }
       // Unlike a text field, a thumb has no caret to show where input is
       // going, so a keypress after a mouse drag must bring the ring back.
-      // Ask the utility rather than assuming: a modifier chord (⌘R, ⌃C) is
-      // not navigation and must not re-ring a thumb the mouse is holding.
-      if (getInteractionModality() === 'keyboard') {
+      // Bare Shift changes shared modality to keyboard, but is not itself
+      // navigation for the thumb. Check this event's modifier flags too: a
+      // later chord must not restore the ring using that keyboard history.
+      // Shift+Tab and Shift+Arrow still count because their key is not Shift.
+      if (
+        e.key !== 'Shift' &&
+        !e.metaKey &&
+        !e.altKey &&
+        !e.ctrlKey &&
+        getInteractionModality() === 'keyboard'
+      ) {
         setKeyboardFocusThumb(thumbIndex);
       }
       const currentVal = values[thumbIndex];

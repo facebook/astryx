@@ -40,6 +40,19 @@ theme-local import. Neutral currently uses 21 numbered stops in each light and
 dark ramp, but that layout is a Neutral decision rather than a requirement for
 other themes.
 
+Exact solid endpoints use the same stable palette namespace as the tonal
+families: `neutralPalettes.black` and `neutralPalettes.white`. Theme definitions
+can assign those values directly to semantic tokens without treating a neutral
+ramp endpoint as the named color.
+
+```ts
+import {neutralPalettes} from '@astryxdesign/theme-neutral';
+
+const tokens = {
+  '--color-background-inverted': [neutralPalettes.black, neutralPalettes.white],
+};
+```
+
 Neutral opts into a muted dark edge for chromatic families. Stops 5 through 25
 use 50% of their realized chroma, then recover smoothly to the standard dark
 recipe at stop 60. Yellow uses a gentler 65% edge multiplier. Light ramps,
@@ -49,10 +62,10 @@ Neutral is the reference implementation for palette-aware theme templates.
 Templates may follow its ownership, review, and alignment workflow without
 copying its colors or stop layout.
 
-Use semantic theme tokens in components. Neutral's runtime theme does not import
-the complete authoring palette. Mapping semantic tokens to reviewed stops is a
-separate change, so palette generation and token adoption can be reviewed
-independently.
+Use semantic theme tokens in components. Neutral's theme source maps those roles
+to named palette stops, while the prebuilt theme and CSS contain their resolved
+values. Changing the generated palette must include the regenerated receipt,
+token diff, tests, and visual review.
 
 The committed request and receipt preserve the generation inputs and provenance.
 CLI regeneration is not yet a supported release workflow; until that tooling

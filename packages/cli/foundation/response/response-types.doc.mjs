@@ -214,6 +214,11 @@ export const doc = {
       description:
         'The whole themeable surface: the echoed filter, the component count, and one entry per theming target — {key, className, component, props, states}, where props and states are its legal override keys.',
     },
+    {
+      value: 'theme.palette.generate',
+      description:
+        'An author-reviewable OKLCH palette candidate, its reproducibility receipt, summary counts, and optional candidate/receipt file-write result.',
+    },
 
     // upgrade
     {

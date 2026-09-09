@@ -4,6 +4,8 @@
  * @file DropdownMenuSelectable.test.tsx
  * @input vitest, @testing-library/react, DropdownMenu + selectable items
  * @output Unit tests for DropdownMenuCheckboxItem / RadioGroup / RadioItem (#3829)
+ * @position Component-local callback and composition coverage; shared checkbox
+ *   role, name, state, and interaction outcomes live in the reusable contract.
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
@@ -41,22 +43,6 @@ beforeEach(() => {
 });
 
 describe('DropdownMenuCheckboxItem', () => {
-  it('renders role menuitemcheckbox and reflects checked state', async () => {
-    const user = userEvent.setup();
-    render(
-      <DropdownMenu button={{label: 'View'}}>
-        <DropdownMenuCheckboxItem label="Show archived" value={true} />
-      </DropdownMenu>,
-    );
-    await user.click(screen.getByRole('button', {name: /View/}));
-    expect(
-      screen.getByRole('menuitemcheckbox', {
-        name: /Show archived/,
-        hidden: true,
-      }),
-    ).toHaveAttribute('aria-checked', 'true');
-  });
-
   it('calls onChange with the toggled value on click', async () => {
     const user = userEvent.setup();
     const onChangeSpy = vi.fn();

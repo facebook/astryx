@@ -25,6 +25,7 @@ import {emit, section, text, records} from './formatters/index.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
+import {markReportsResult} from './lib/define-command.mjs';
 import {isAstryxInitialized} from '../../foundation/agent-docs/agent-docs.mjs';
 import * as debug from '../../foundation/debug/index.mjs';
 
@@ -39,17 +40,29 @@ const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package
 // probe is deferred to delivery. See foundation/debug.
 debug.begin({cliVersion: pkg.version});
 
-// Intercept `xds --version --json` (or `-V --json`) before Commander processes
-// the version flag and exits. Commander's built-in version handler prints the
-// raw version string and calls process.exit, bypassing our hooks — so the
-// only correct place to JSON-ify it is here. (Bin-time only: guarded on argv,
-// so importing this module in tests is a no-op.)
-const _argv = process.argv.slice(2);
-if (
-  (_argv.includes('--version') || _argv.includes('-V')) &&
-  _argv.includes('--json')
-) {
+/**
+ * Intercept `astryx --version --json` (or `-V --json`) before Commander
+ * processes the version flag and exits. Commander's built-in version handler
+ * prints the raw version string and calls process.exit, bypassing our hooks —
+ * so the only correct place to JSON-ify it is ahead of the parse.
+ *
+ * The bin calls this AFTER the project's debug handler is loaded, not at import
+ * time: this path exits the process itself, so running it any earlier meant the
+ * one invocation that took it was the only invocation nothing was ever recorded
+ * for. Guarded on argv, so it is a no-op for every other run and for tests that
+ * import this module.
+ *
+ * @param {string[]} [argv] arguments after the binary.
+ * @returns {void}
+ */
+export function handleVersionJsonPreflight(argv = process.argv.slice(2)) {
+  if (!(argv.includes('--version') || argv.includes('-V'))) return;
+  if (!argv.includes('--json')) return;
   process.__xdsJsonHandled = true;
+  // Printing the version is not a lookup — the same answer every time — so it
+  // reports the same shape Commander's own `--version` path does.
+  debug.recordCommandResult(debug.NO_RESULT_SET);
+  debug.setOutcome('ok', {exitCode: 0});
   console.log(JSON.stringify({apiVersion: API_VERSION, type: 'version', data: {version: pkg.version}}, null, 2));
   process.exit(0);
 }
@@ -79,6 +92,7 @@ export const JSON_SUPPORTED = new Set([
   'theme add',
   'theme template',
   'theme targets',
+  'theme palette generate',
   'upgrade',
   'manifest',
   'doctor',
@@ -365,6 +379,11 @@ export async function createProgram() {
       }
 
       // `xds` (no subcommand) — print help, or emit a JSON envelope when --json.
+      // Either way the run reports what it answered with, as every command
+      // does: the manifest is a list of commands, help is an effect. The rest
+      // of the CLI gets there through its action's return type — see
+      // lib/define-command.mjs; the four commands registered by hand in this
+      // file are the exceptions that report for themselves.
       if (program.opts().json) {
         // Emit the full capability manifest so an agent can drive the entire
         // CLI from one call — no need to scrape `--help` text. We derive this
@@ -395,10 +414,18 @@ export async function createProgram() {
             manifest,
           },
         }, null, 2));
+        debug.recordCommandResult(
+          debug.resultSet({
+            count: manifest.commands.length,
+            resultKind: 'command',
+          }),
+        );
         return;
       }
+      debug.recordCommandResult(debug.NO_RESULT_SET);
       program.help();
     });
+  markReportsResult(program);
 
   /**
    * Pre-action hook: gate --json BEFORE any command body runs.
@@ -527,14 +554,18 @@ export async function createProgram() {
       mod[cmd.register](program);
     } catch (e) {
       // Command fails to load but CLI still works
-      program
+      const stub = program
         .command(cmd.name)
         .description(`(failed to load: ${/** @type {any} */ (e).message})`)
         .action(() => {
+          // Nothing loaded, so nothing was answered — say that rather than
+          // leaving the run's result unreported.
+          debug.recordCommandResult(debug.NO_RESULT_SET);
           console.error(`Command "${cmd.name}" failed to load:`);
           console.error(/** @type {any} */ (e).message);
           process.exit(1);
         });
+      markReportsResult(stub);
     }
   }
 
@@ -545,7 +576,7 @@ export async function createProgram() {
   // Intentionally CLI-special — no `api/manifest`. It introspects the live
   // Commander `program`, so extracting it to `api/` would create the `api → cli`
   // cycle from #4302. `buildManifest(program)` lives in lib/; see its header.
-  program
+  const manifestCommand = program
     .command('manifest')
     .description('Print the full CLI capability manifest (use with --json)')
     .action(() => {
@@ -553,6 +584,13 @@ export async function createProgram() {
         jsonSupported: JSON_SUPPORTED,
         version: pkg.version,
       });
+      // The manifest IS a result set: one entry per command the CLI ships.
+      debug.recordCommandResult(
+        debug.resultSet({
+          count: manifest.commands.length,
+          resultKind: 'command',
+        }),
+      );
       if (program.opts().json) {
         process.__xdsJsonHandled = true;
         console.log(JSON.stringify({apiVersion: API_VERSION, type: 'manifest', data: manifest}, null, 2));
@@ -574,11 +612,14 @@ export async function createProgram() {
         text(`Run \`${getCliInvocation()} manifest --json\` for the full structured manifest.`),
       );
     });
+  markReportsResult(manifestCommand);
 
   // Hidden command used by package.json postinstall scripts
-  program
+  const postinstallCommand = program
     .command('postinstall', {hidden: true})
     .action(() => {
+      // Prints the welcome box. Nothing is looked up.
+      debug.recordCommandResult(debug.NO_RESULT_SET);
       const r = getCliInvocation();
       const pad = (/** @type {string} */ s, /** @type {number} */ len) => s + ' '.repeat(Math.max(0, len - s.length));
       const W = 49; // inner width of the box
@@ -603,6 +644,7 @@ ${line('')}
   ╰${'─'.repeat(W + 2)}╯
 `);
     });
+  markReportsResult(postinstallCommand);
 
   // Install the JSON shim AFTER all commands are registered so we can
   // patch outputHelp on every command (root + subcommands). The shim

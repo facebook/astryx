@@ -349,6 +349,13 @@ export interface TextAreaProps extends Omit<
    * Callback fired when the textarea loses focus.
    */
   onBlur?: (e: FocusEvent<HTMLTextAreaElement>) => void;
+  /**
+   * The native `autocomplete` attribute, forwarded to the textarea unchanged.
+   * The value stays React-controlled regardless — this only hints the
+   * browser/password manager's suggestion behavior (e.g. `'off'` for a
+   * session-scoped field that must not reuse a prior value).
+   */
+  autoComplete?: React.TextareaHTMLAttributes<HTMLTextAreaElement>['autoComplete'];
 }
 
 /**

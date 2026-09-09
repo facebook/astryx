@@ -570,7 +570,10 @@ describe('Markdown', () => {
     const {container} = render(
       <Markdown density="compact">{'Hello'}</Markdown>,
     );
-    expect(container.firstElementChild!.className).toContain('compact');
+    expect(container.firstElementChild).toHaveAttribute(
+      'data-density',
+      'compact',
+    );
   });
 
   it('supports data-testid', () => {

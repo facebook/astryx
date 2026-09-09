@@ -113,7 +113,7 @@ describe('useGridFocus roving tabindex (hasRovingTabIndex)', () => {
   });
 
   it('flips ArrowLeft/ArrowRight under RTL', () => {
-    render(<Grid seed={1} isRtl />);
+    render(<Grid seed={1} dir="rtl" />);
     const grid = screen.getByRole('grid');
     screen.getByTestId('cell-1').focus();
     // In RTL, ArrowLeft is "forward" (moves to the next cell in DOM order).
@@ -161,13 +161,5 @@ describe('useGridFocus RTL auto-detection (WCAG 1.3.2)', () => {
     screen.getByTestId('cell-0').focus();
     fireEvent.keyDown(grid, {key: 'ArrowDown'});
     expect(screen.getByTestId('cell-3')).toHaveFocus();
-  });
-
-  it('explicit isRtl={false} overrides a dir="rtl" container', () => {
-    render(<Grid seed={1} dir="rtl" isRtl={false} />);
-    const grid = screen.getByRole('grid');
-    screen.getByTestId('cell-1').focus();
-    fireEvent.keyDown(grid, {key: 'ArrowRight'});
-    expect(screen.getByTestId('cell-2')).toHaveFocus();
   });
 });

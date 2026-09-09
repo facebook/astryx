@@ -109,7 +109,6 @@ export const RichDescriptions: Story = {
               Analytics <Link href="#analytics-details">details</Link>
             </>
           }
-          aria-label="Analytics"
           value="analytics"
           description={
             <>

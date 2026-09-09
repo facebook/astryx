@@ -19,11 +19,46 @@ import {Project} from '../../../foundation/config/project.mjs';
 import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
+import {resultSet} from '../../../foundation/debug/index.mjs';
 import {doc as discoverCommand} from './discover.doc.mjs';
 import {doc as discoverFn} from '../../../api/discover/discover.doc.mjs';
 
 // Max components to list inline per package before summarizing with "+N more".
 const MAX_COMPONENTS_SHOWN = 10;
+
+/**
+ * What the run answered with. `discover` browses the integration packages a
+ * project has configured, so the top two views count PACKAGES; naming a
+ * component inside one answers with that component instead.
+ *
+ * @param {import('../../../api/discover/discover.type.mjs').DiscoverListResponse
+ *   | import('../../../api/discover/discover.type.mjs').DiscoverDetailResponse
+ *   | import('../../../api/discover/discover.type.mjs').DiscoverDetailDocResponse
+ *   | import('../../../api/discover/discover.type.mjs').DiscoverSearchResponse} result
+ * @returns {import('../../../foundation/debug/command-result.mjs').CommandResult}
+ */
+function summarize(result) {
+  switch (result.type) {
+    case 'discover.list':
+      return resultSet({
+        count: result.data.length,
+        resultKind: 'integration',
+      });
+    case 'discover.detail':
+      return resultSet({
+        count: 1,
+        resultKind: 'integration',
+        directMatch: true,
+      });
+    case 'discover.detail.doc':
+      return resultSet({count: 1, resultKind: 'component', directMatch: true});
+    case 'discover.search':
+      return resultSet({
+        count: result.data.matches.length,
+        resultKind: 'component',
+      });
+  }
+}
 
 /**
  * @param {import('commander').Command} program
@@ -58,15 +93,16 @@ export function registerDiscover(program) {
         result = await discoverApi(query, {components: options.components, lang, zh});
       } catch (e) {
         const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions, code: err.code});
-        return;
+        return cliError(err.message, {suggestions: err.suggestions, code: err.code});
       }
 
+      const answered = summarize(result);
       if (json) {
         // Forward optional meta (e.g. configured flag for discover.list) as a
         // sibling of data via jsonOut, so the envelope still carries
         // apiVersion and goes through the single sanctioned emit path.
-        return jsonOut(result);
+        jsonOut(result);
+        return answered;
       }
 
       switch (result.type) {
@@ -146,6 +182,7 @@ export function registerDiscover(program) {
           break;
         }
       }
+      return answered;
     },
   });
 }

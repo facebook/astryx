@@ -3,7 +3,7 @@
 /**
  * @file Slider.test.tsx
  * @input Uses vitest, @testing-library/react, userEvent, Slider component
- * @output Unit tests for Slider component behavior
+ * @output Unit tests for Slider behavior and modifier-only focus-ring suppression
  * @position Testing; validates Slider.tsx implementation
  *
  * SYNC: When Slider.tsx changes, update tests to match new behavior
@@ -16,7 +16,10 @@ import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {Slider} from './Slider';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {__resetInteractionModalityForTest} from '../utils/interactionModality';
+import {
+  __resetInteractionModalityForTest,
+  getInteractionModality,
+} from '../utils/interactionModality';
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -978,6 +981,78 @@ describe('Slider', () => {
       // Copying or reloading is not navigation, and the mouse is still on it.
       fireEvent.keyDown(thumb, {key: 'c', metaKey: true});
       expect(isRinged(thumb)).toBe(false);
+    });
+
+    it('leaves the ring off for a bare Shift press after a mouse drag', () => {
+      render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+      const thumb = screen.getByRole('slider');
+      grabTrack(thumb);
+      fireEvent.keyDown(thumb, {key: 'Shift', shiftKey: true});
+      expect(getInteractionModality()).toBe('keyboard');
+      expect(isRinged(thumb)).toBe(false);
+    });
+
+    it.each([
+      ['Meta', {metaKey: true}],
+      ['Alt', {altKey: true}],
+      ['Control', {ctrlKey: true}],
+    ])(
+      'leaves the ring off for %s and its chord after bare Shift',
+      (key, flags) => {
+        render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+        const thumb = screen.getByRole('slider');
+        grabTrack(thumb);
+        fireEvent.keyDown(thumb, {key: 'Shift', shiftKey: true});
+        fireEvent.keyUp(thumb, {key: 'Shift'});
+        fireEvent.keyDown(thumb, {key, ...flags});
+        expect(isRinged(thumb)).toBe(false);
+        fireEvent.keyDown(thumb, {key: 'c', ...flags});
+        expect(getInteractionModality()).toBe('keyboard');
+        expect(isRinged(thumb)).toBe(false);
+      },
+    );
+
+    it('restores the ring and changes value for Shift+Arrow after bare Shift', () => {
+      const onChange = vi.fn();
+      render(<Slider label="Volume" value={50} onChange={onChange} />);
+      const thumb = screen.getByRole('slider');
+      grabTrack(thumb);
+      onChange.mockClear();
+      fireEvent.keyDown(thumb, {key: 'Shift', shiftKey: true});
+      expect(isRinged(thumb)).toBe(false);
+      expect(onChange).not.toHaveBeenCalled();
+
+      fireEvent.keyDown(thumb, {key: 'ArrowRight', shiftKey: true});
+      expect(isRinged(thumb)).toBe(true);
+      expect(onChange).toHaveBeenCalledWith(51);
+    });
+
+    it('preserves an existing keyboard ring when Shift is pressed', async () => {
+      const user = userEvent.setup();
+      render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+      await user.tab();
+      const thumb = screen.getByRole('slider');
+
+      fireEvent.keyDown(thumb, {key: 'Shift', shiftKey: true});
+      expect(isRinged(thumb)).toBe(true);
+    });
+
+    it('rings when Shift+Tab returns to a mouse-focused thumb', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <Slider label="Volume" value={50} onChange={vi.fn()} />
+          <button type="button">After slider</button>
+        </>,
+      );
+      const thumb = screen.getByRole('slider');
+      grabTrack(thumb);
+      expect(isRinged(thumb)).toBe(false);
+      await user.click(screen.getByRole('button', {name: 'After slider'}));
+
+      await user.tab({shift: true});
+      expect(thumb).toHaveFocus();
+      expect(isRinged(thumb)).toBe(true);
     });
 
     it('drops the ring on blur', async () => {

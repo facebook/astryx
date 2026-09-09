@@ -18,9 +18,11 @@ verified_by:
     clients/cli/cli-exit-codes.test.mjs,
     clients/cli/error-envelope-code.test.mjs,
     foundation/response/error-codes.test.mjs,
+    foundation/agent-docs/agent-docs.test.mjs,
+    clients/cli/commands/upgrade.integration-policy.test.mjs,
     clients/cli/formatters/index.test.mjs,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-017/DEC-4]
 ---
 
 # CLI surface architecture
@@ -66,6 +68,9 @@ integrations named in `astryx.config`. Each integration is loaded
 independently, so one broken package degrades that package's contribution and
 never fails the run.
 
+AST-017 DEC-4 owns stable response-entry fields and requires their complete type,
+test, applicable text, and consumer-documentation projections.
+
 ## Boundaries and invariants
 
 - **INV1 — The CLI never asks a question.** No prompt, no TTY detection, no
@@ -107,6 +112,10 @@ never fails the run.
 - **INV12 — Human chatter never touches stdout in JSON mode.** `humanLog` and
   `humanWarn` are the only chatter primitives, and both are no-ops under
   `--json`.
+- **INV13 — Agent docs have one rendered source of truth.** Init and upgrade
+  render configured integration `agentDocs` through the existing `Project`
+  seam. Upgrade compares complete block bytes even when Core is unchanged and,
+  when codemods or hooks run, writes the prepared block only after they succeed.
 
 ## Change coupling
 
@@ -115,7 +124,8 @@ updated in the same pull request when it moves an invariant:
 
 - adding, removing, or renaming a command or subcommand;
 - adding an error code, or changing what an existing code means;
-- adding a field to the JSON envelope, or changing the shape of one;
+- a change to a stable JSON envelope or discriminated response-entry field
+  follows `spec:AST-017/DEC-4`;
 - adding a formatter, or writing to stdout from anywhere other than `emit` and
   `jsonOut`;
 - changing the file layout under `clients/cli/commands`.
@@ -139,13 +149,15 @@ non-interactive guarantee.
 - `foundation/response/error-codes.mjs` — the frozen, append-only code set.
 - `foundation/config` — the `Project` discovery seam and the integration
   manifest loader.
+- `foundation/agent-docs` — the shared expected-block renderer and managed-file
+  writer used by init and upgrade.
 - `api/<subject>/…` — the scriptable functions the commands wrap; each owns the
   `type` on its own envelope.
 
 ## Deciding specs
 
-None yet. This record describes behaviour that is already shipped. A change to
-an invariant above needs a system spec.
+- `spec:AST-017/DEC-4` — stable response fields and their complete projections
+  are current compatibility authority.
 
 ## Verification
 

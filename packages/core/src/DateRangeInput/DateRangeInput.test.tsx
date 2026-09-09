@@ -725,7 +725,6 @@ describe('DateRangeInput disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-date-range-input');
     expect(root).toHaveAttribute('data-disabled', 'disabled');
-    expect(root).toHaveClass('disabled');
   });
 
   it('omits data-disabled when enabled, like status does', () => {

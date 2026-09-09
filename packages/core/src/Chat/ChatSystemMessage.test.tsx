@@ -49,7 +49,7 @@ describe('ChatSystemMessage', () => {
       </ChatSystemMessage>,
     );
     const el = screen.getByTestId('sys');
-    expect(el.className).toContain('divider');
+    expect(el).toHaveAttribute('data-variant', 'divider');
   });
 
   it('applies data-testid', () => {

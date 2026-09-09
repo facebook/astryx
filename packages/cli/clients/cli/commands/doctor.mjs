@@ -16,6 +16,7 @@ import {emit, section, records, text} from '../formatters/index.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as doctorCommand} from './doctor.doc.mjs';
 import {doc as doctorFn} from '../../../api/doctor/doctor.doc.mjs';
+import {NO_RESULT_SET} from '../../../foundation/debug/index.mjs';
 
 /** Status -> ASCII token (plain, matching the rest of the CLI). */
 const STATUS = {
@@ -83,6 +84,11 @@ export function registerDoctor(program) {
       if (hasFailure) {
         process.exitCode = 1;
       }
+
+      // A diagnosis, not a lookup. The checks are a verdict on the project —
+      // counting them would say "doctor found 14 things", which is not what
+      // anyone means by a result. Read the summary counts from the report.
+      return NO_RESULT_SET;
     },
   }).addHelpText(
     'after',

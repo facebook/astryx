@@ -50,11 +50,15 @@ export function pkgOf(t) {
  * @property {'page'|'block'} type
  * @property {string} dirName
  * @property {string} name
+ * @property {string} [displayName]
  * @property {string} description
  * @property {string} [category]
  * @property {boolean} [isReady]
  * @property {boolean} [scaffold]
  * @property {number} [aspectRatio]
+ * @property {string} [exampleFor]
+ * @property {string[]} [alsoExampleFor]
+ * @property {string[]} [alsoShowcaseFor]
  * @property {string[]} [componentsUsed]
  * @property {boolean} [isShowcase]
  * @property {string} filePath
@@ -166,7 +170,18 @@ const PLACEHOLDER_IMAGE =
  *
  * @type {Set<string>}
  */
-const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv']);
+const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv', 'm4v']);
+
+const IMAGE_EXTENSIONS = new Set([
+  'svg',
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'avif',
+  'ico',
+]);
 
 /**
  * Demo-asset sources to strip from scaffolded projects. Template demo imagery
@@ -179,7 +194,7 @@ const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv']);
  *
  * @type {RegExp}
  */
-const DEMO_ASSET_PATTERN = /\/template-assets\/[\w-]+\.(\w+)/g;
+const DEMO_ASSET_PATTERN = /\/template-assets\/[\w.-]+\.(\w+)/g;
 
 /**
  * Normalize path into Unix path (using forward slashes) for consistent comparison
@@ -203,9 +218,16 @@ function toPosixPath(p) {
  * @returns {string} Source with demo asset references replaced.
  */
 export function stripTemplateAssetRefs(source) {
-  return source.replace(DEMO_ASSET_PATTERN, (match, extension) =>
-    VIDEO_EXTENSIONS.has(extension.toLowerCase()) ? '' : PLACEHOLDER_IMAGE,
-  );
+  return source.replace(DEMO_ASSET_PATTERN, (match, extension) => {
+    const ext = extension.toLowerCase();
+    if (VIDEO_EXTENSIONS.has(ext)) {
+      return '';
+    }
+    if (IMAGE_EXTENSIONS.has(ext)) {
+      return PLACEHOLDER_IMAGE;
+    }
+    throw new Error(`Unrecognized template asset format ${ext} for ${match}`);
+  });
 }
 /**
  * Load a template-spec module and return its metadata object. Supports both
@@ -322,7 +344,9 @@ async function discoverBlocks() {
     const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
     if (!fs.existsSync(tsxPath)) continue;
     const doc = await loadDocModule(docPath);
-    const relPath = toPosixPath(path.relative(BLOCKS_DIR, path.dirname(docPath)));
+    const relPath = toPosixPath(
+      path.relative(BLOCKS_DIR, path.dirname(docPath)),
+    );
     blocks.push({
       type: 'block',
       dirName: basename,
@@ -339,7 +363,6 @@ async function discoverBlocks() {
   }
   return blocks;
 }
-
 
 /**
  * Discover blocks from external packages that declare `astryx.blocks` in
@@ -362,7 +385,9 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
       const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
       if (!fs.existsSync(tsxPath)) continue;
       const doc = await loadDocModule(docPath);
-      const relPath = toPosixPath(path.relative(ext.blocksDir, path.dirname(docPath)));
+      const relPath = toPosixPath(
+        path.relative(ext.blocksDir, path.dirname(docPath)),
+      );
       blocks.push({
         type: 'block',
         dirName: basename,
@@ -449,7 +474,9 @@ function findIntegrationDocFiles(root) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
-      } else if (ALL_TEMPLATE_SUFFIXES.some(suffix => entry.name.endsWith(suffix))) {
+      } else if (
+        ALL_TEMPLATE_SUFFIXES.some(suffix => entry.name.endsWith(suffix))
+      ) {
         results.push(full);
       }
     }
@@ -578,10 +605,18 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       type,
       dirName: id,
       name: doc?.name || id,
+      displayName: doc?.displayName,
       description: doc?.description || '',
       category: doc?.category || '',
-      isReady: true,
-      scaffold: false,
+      isReady: doc?.isReady ?? true,
+      scaffold: doc?.scaffold ?? false,
+      aspectRatio: doc?.type === 'block' ? doc.aspectRatio : undefined,
+      exampleFor: doc?.type === 'block' ? doc.exampleFor : undefined,
+      alsoExampleFor:
+        doc?.type === 'block' ? (doc.alsoExampleFor ?? []) : undefined,
+      alsoShowcaseFor:
+        doc?.type === 'block' ? (doc.alsoShowcaseFor ?? []) : undefined,
+      isShowcase: doc?.type === 'block' ? (doc.isShowcase ?? false) : undefined,
       // The integration envelope carries `componentsUsed` for both page and
       // block templates; the rich TemplateDoc union only declares it on blocks,
       // so read it off the envelope shape here.
@@ -604,7 +639,9 @@ export async function discoverIntegrationTemplatesForOne(integration) {
 export async function findRelatedBlocks(componentName, cwd) {
   const blocks = await discoverAllBlocks(cwd);
   return blocks.filter(b =>
-    (b.componentsUsed ?? []).some(c => c.toLowerCase() === componentName.toLowerCase()),
+    (b.componentsUsed ?? []).some(
+      c => c.toLowerCase() === componentName.toLowerCase(),
+    ),
   );
 }
 
