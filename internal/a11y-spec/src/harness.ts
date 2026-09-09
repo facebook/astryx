@@ -99,12 +99,18 @@ export interface Subject {
   visibleLabelText(): Promise<string | null>;
   /** Real-browser layer: whether this node currently holds focus. */
   isFocused(): Promise<boolean>;
+  /** Real-browser layer: whether focus is on this node or one of its descendants. */
+  containsFocus(): Promise<boolean>;
+  /** Real-browser layer: whether this node is an active modal in the top layer. */
+  isModal(): Promise<boolean>;
+  /** Real-browser layer: whether a pointer can currently reach this node. */
+  canReceivePointer(): Promise<boolean>;
   /** Real-browser layer: move focus here the way a user's Tab would leave it. */
   focus(): Promise<void>;
 }
 
 /** A key an expectation can send. Spelled by intent, not by engine syntax. */
-export type Key = 'Space' | 'Enter' | 'Tab';
+export type Key = 'Space' | 'Enter' | 'Tab' | 'Shift+Tab' | 'Escape';
 
 /**
  * A mounted binding, observed at whatever layers this runtime can honestly see.
@@ -116,6 +122,12 @@ export interface Harness {
   readonly observes: readonly EvidenceLayer[];
   /** The element the binding designates as the pattern's control. */
   subject(): Promise<Subject>;
+  /**
+   * Another public-semantic element involved in the outcome, such as the
+   * invoker a modal dialog returns focus to. Bindings name these relations;
+   * contracts never query component-private structure.
+   */
+  related(name: string): Promise<Subject>;
   /**
    * Real-browser layer: click the subject the way a pointer user would,
    * including the browser's own judgement that the control is there to be
@@ -141,6 +153,15 @@ export interface Harness {
   press(key: Key): Promise<void>;
   /** Real-browser layer: park focus at the document body, before the content. */
   resetFocus(): Promise<void>;
+}
+
+export class MissingHarnessRelation extends Error {
+  constructor(harness: string, relation: string) {
+    super(
+      `The ${harness} harness binding supplies no related subject named "${relation}".`,
+    );
+    this.name = 'MissingHarnessRelation';
+  }
 }
 
 /**

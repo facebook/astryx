@@ -31,6 +31,7 @@
 import {errors as playwrightErrors} from '@playwright/test';
 import type {CDPSession, Locator, Page} from '@playwright/test';
 import {
+  MissingHarnessRelation,
   type ComputedNode,
   type EvidenceLayer,
   type Harness,
@@ -64,10 +65,24 @@ function isTimeout(error: unknown): boolean {
   return error instanceof playwrightErrors.TimeoutError;
 }
 
+async function canReceivePointer(locator: Locator): Promise<boolean> {
+  try {
+    await locator.click({trial: true, timeout: POINTER_REACH_BUDGET_MS});
+    return true;
+  } catch (error) {
+    if (isTimeout(error)) {
+      return false;
+    }
+    throw error;
+  }
+}
+
 const KEYS: Record<Key, string> = {
   Space: ' ',
   Enter: 'Enter',
   Tab: 'Tab',
+  'Shift+Tab': 'Shift+Tab',
+  Escape: 'Escape',
 };
 
 interface AxValue {
@@ -239,10 +254,12 @@ export interface ChromiumHarnessOptions {
   readonly subject: Locator;
   /** The surface that receives pointer input when it differs from the semantic node. */
   readonly pointerTarget?: Locator;
-  /** A binding-owned visible label when it is not the subject's DOM label. */
-  readonly visibleLabel?: Locator;
+  /** A binding-owned visible label when it is not the subject's DOM label. Null means this state deliberately has no visible label. */
+  readonly visibleLabel?: Locator | null;
   /** A CDP session on `page`, reused across expectations. */
   readonly cdp: CDPSession;
+  /** Public-semantic elements participating in relationship expectations. */
+  readonly related?: Readonly<Record<string, Locator>>;
 }
 
 export function createChromiumHarness(
@@ -405,8 +422,11 @@ export function createChromiumHarness(
       }),
     computed: () => computedNode(cdp, locator),
     visibleLabelText: async () => {
+      if (visibleLabel === null) {
+        return null;
+      }
       const explicitLabel =
-        visibleLabel == null ? null : await visibleLabel.elementHandle();
+        visibleLabel === undefined ? null : await visibleLabel.elementHandle();
       try {
         return await locator.evaluate((element, explicitLabel) => {
           // Whether a person can actually read this text. Two questions, because
@@ -604,13 +624,66 @@ export function createChromiumHarness(
       locator.evaluate(
         element => element.ownerDocument.activeElement === element,
       ),
+    containsFocus: () =>
+      locator.evaluate(element => {
+        const active = element.ownerDocument.activeElement;
+        return (
+          active != null && (active === element || element.contains(active))
+        );
+      }),
+    isModal: () => locator.evaluate(element => element.matches(':modal')),
+    canReceivePointer: () => canReceivePointer(locator),
     focus: () => locator.focus(),
+  };
+
+  const relatedSubject = (name: string): Subject => {
+    const related = options.related?.[name];
+    if (related == null) {
+      throw new MissingHarnessRelation('chromium', name);
+    }
+    return {
+      attribute: attribute => related.getAttribute(attribute),
+      idReferences: attribute =>
+        related.evaluate(
+          (element, relation) =>
+            (element.getAttribute(relation) ?? '')
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(id => {
+                const target = element.ownerDocument.getElementById(id);
+                return target == null
+                  ? null
+                  : (target.textContent ?? '').trim();
+              }),
+          attribute,
+        ),
+      computed: () => computedNode(cdp, related),
+      visibleLabelText: async () => {
+        const value = (await related.innerText()).trim();
+        return value === '' ? null : value;
+      },
+      isFocused: () =>
+        related.evaluate(
+          element => element.ownerDocument.activeElement === element,
+        ),
+      containsFocus: () =>
+        related.evaluate(element => {
+          const active = element.ownerDocument.activeElement;
+          return (
+            active != null && (active === element || element.contains(active))
+          );
+        }),
+      isModal: () => related.evaluate(element => element.matches(':modal')),
+      canReceivePointer: () => canReceivePointer(related),
+      focus: () => related.focus(),
+    };
   };
 
   return {
     name: 'chromium',
     observes: CHROMIUM_OBSERVES,
     subject: async () => subject,
+    related: async name => relatedSubject(name),
     click: async (_subject, options) => {
       // Without `force`, Playwright first satisfies itself that the control is
       // visible, stable, enabled, and actually receives pointer events — so an

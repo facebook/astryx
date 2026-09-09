@@ -42,6 +42,7 @@ export {
 
 export {
   EVIDENCE_LAYERS,
+  MissingHarnessRelation,
   UnobservableError,
   type ComputedNode,
   type EvidenceLayer,
@@ -86,6 +87,11 @@ export {
 export {CHECKBOX_PATTERN, type CheckboxStateFacts} from './patterns/checkbox';
 
 export {SWITCH_PATTERN, type SwitchStateFacts} from './patterns/switch';
+
+export {
+  MODAL_DIALOG_PATTERN,
+  type ModalDialogStateFacts,
+} from './patterns/modal-dialog';
 
 export {saysInOrder, spokenWords} from './spoken';
 

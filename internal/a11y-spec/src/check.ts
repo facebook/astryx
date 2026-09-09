@@ -39,7 +39,11 @@ import {
   type Expectation,
   type PatternContract,
 } from './contract';
-import type {EvidenceLayer, Harness} from './harness';
+import {
+  MissingHarnessRelation,
+  type EvidenceLayer,
+  type Harness,
+} from './harness';
 
 export type ResultStatus =
   /** The outcome was observed. */
@@ -250,7 +254,10 @@ export async function checkAccessibilitySpec<Facts>(
         },
       });
     } catch (error) {
-      if (error instanceof MissingBindingCapability) {
+      if (
+        error instanceof MissingBindingCapability ||
+        error instanceof MissingHarnessRelation
+      ) {
         // Never a contract result: the outcome was not tested at all.
         throw error;
       }

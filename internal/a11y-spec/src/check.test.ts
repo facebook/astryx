@@ -40,6 +40,7 @@ function harness(observes: readonly EvidenceLayer[]): Harness {
     name: 'stub',
     observes,
     subject: async () => subject,
+    related: async () => subject,
     click: async () => {},
     abortedPress: async () => {},
     typeText: async () => {},
