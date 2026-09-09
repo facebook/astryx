@@ -40,17 +40,29 @@ const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package
 // probe is deferred to delivery. See foundation/debug.
 debug.begin({cliVersion: pkg.version});
 
-// Intercept `xds --version --json` (or `-V --json`) before Commander processes
-// the version flag and exits. Commander's built-in version handler prints the
-// raw version string and calls process.exit, bypassing our hooks — so the
-// only correct place to JSON-ify it is here. (Bin-time only: guarded on argv,
-// so importing this module in tests is a no-op.)
-const _argv = process.argv.slice(2);
-if (
-  (_argv.includes('--version') || _argv.includes('-V')) &&
-  _argv.includes('--json')
-) {
+/**
+ * Intercept `astryx --version --json` (or `-V --json`) before Commander
+ * processes the version flag and exits. Commander's built-in version handler
+ * prints the raw version string and calls process.exit, bypassing our hooks —
+ * so the only correct place to JSON-ify it is ahead of the parse.
+ *
+ * The bin calls this AFTER the project's debug handler is loaded, not at import
+ * time: this path exits the process itself, so running it any earlier meant the
+ * one invocation that took it was the only invocation nothing was ever recorded
+ * for. Guarded on argv, so it is a no-op for every other run and for tests that
+ * import this module.
+ *
+ * @param {string[]} [argv] arguments after the binary.
+ * @returns {void}
+ */
+export function handleVersionJsonPreflight(argv = process.argv.slice(2)) {
+  if (!(argv.includes('--version') || argv.includes('-V'))) return;
+  if (!argv.includes('--json')) return;
   process.__xdsJsonHandled = true;
+  // Printing the version is not a lookup — the same answer every time — so it
+  // reports the same shape Commander's own `--version` path does.
+  debug.recordCommandResult(debug.NO_RESULT_SET);
+  debug.setOutcome('ok', {exitCode: 0});
   console.log(JSON.stringify({apiVersion: API_VERSION, type: 'version', data: {version: pkg.version}}, null, 2));
   process.exit(0);
 }

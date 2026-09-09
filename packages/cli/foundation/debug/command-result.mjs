@@ -102,29 +102,36 @@ const ITEM_KINDS = new Set(['component', 'template', 'doc', 'hook']);
  * Declare a result set whose kind comes from the results themselves — for the
  * commands that answer across domains (`search`, `build`).
  *
- * One domain in the surfaced items wins; several make it `mixed`. An EMPTY
- * answer has no items to read, so it falls back to what the run was looking
- * for: the `--type` filter when one was given, `mixed` when the search was
- * open. "Searched components, found none" is a fact worth keeping; a null there
- * would read as a command that never reported.
+ * The items are only trusted to name the kind when they ARE the whole match
+ * set. A bounded slice is not the answer: `search button --limit 1` surfaces
+ * one component out of 240 mixed matches, and reading the kind off that slice
+ * would file the same query under a different kind at every `--limit` — the
+ * same lie about a cap that `count` refuses to tell.
  *
- * @param {ReadonlyArray<{domain?: unknown}>} items The surfaced results — the
- *   bounded slice is correct here, since only their kinds are read.
+ * So a partial or empty answer falls back to what the run was looking FOR: the
+ * `--type` filter when one was given, `mixed` when the search was open. "Asked
+ * for components, found none" is a fact worth keeping, and "asked across
+ * everything, showed the top 20" is honestly mixed.
+ *
+ * @param {ReadonlyArray<{domain?: unknown}>} items The surfaced results.
  * @param {object} summary
- * @param {number} summary.count
- * @param {ResultSetKind} summary.fallbackKind Used when no item declares a kind.
+ * @param {number} summary.count The total matched, before any cap.
+ * @param {ResultSetKind} summary.fallbackKind What the run was looking for —
+ *   used whenever the items cannot speak for the whole set.
  * @param {boolean} [summary.empty]
  * @param {boolean} [summary.directMatch]
  * @returns {CommandResultSet}
  */
 export function resultSetOf(items, {count, fallbackKind, empty, directMatch}) {
+  const surfaced = Array.isArray(items) ? items : [];
   const kinds = new Set(
-    (Array.isArray(items) ? items : [])
+    surfaced
       .map(item => item?.domain)
       .filter(kind => typeof kind === 'string' && ITEM_KINDS.has(kind)),
   );
+  const whole = surfaced.length >= count;
   const resultKind =
-    kinds.size === 0
+    !whole || kinds.size === 0
       ? fallbackKind
       : kinds.size === 1
         ? /** @type {ResultSetKind} */ (kinds.values().next().value)

@@ -462,12 +462,11 @@ export function recordCommandResult(result) {
     }
     if (result.kind !== 'results') return;
 
-    const count =
-      typeof result.count === 'number' &&
-      Number.isInteger(result.count) &&
-      result.count >= 0
-        ? result.count
-        : 0;
+    // A count that is not a count records NOTHING. Falling back to 0 would
+    // publish "this run found nothing" — a confident, wrong answer — where the
+    // truth is that the descriptor was malformed.
+    const count = result.count;
+    if (!Number.isInteger(count) || count < 0) return;
 
     _event.output.resultCount = count;
     _event.output.emptyResult =

@@ -34,8 +34,10 @@ import {reportsResult, reportsResultVia} from './lib/define-command.mjs';
  *
  * Pinned as a SET rather than skipped silently — if a command joins this list,
  * that is a real change to what the CLI does and it should be read, not
- * absorbed. (`theme` is deliberately NOT here: its group action rejects unknown
- * subcommands, so it runs, so it reports.)
+ * absorbed. (`theme` is deliberately NOT here: it HAS an action — the one that
+ * rejects an unknown subcommand — so it goes through the converter like any
+ * other. Its bare form prints help and never returns from that action, which
+ * the recorder covers where help is recorded, not here.)
  */
 const NO_ACTION_OF_THEIR_OWN = ['layout'];
 

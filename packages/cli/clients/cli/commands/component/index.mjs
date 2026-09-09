@@ -51,8 +51,10 @@ import {doc as componentFn} from '../../../../api/component/component.doc.mjs';
  * What the run answered with, read off the response the api returned.
  *
  * Naming a component resolves it or fails, so every detail view is a direct
- * match of exactly one component. `--blocks` is the exception: it answers with
- * the block templates that use the component, so the set it reports is theirs.
+ * match of exactly one component. `--blocks` is the exception, twice over: it
+ * answers with the block templates that USE the component, so the set it
+ * reports is theirs — and a list of those has nothing to direct-match, since
+ * the thing that resolved (the component) is not the thing being counted.
  *
  * @param {ComponentResult} result
  * @returns {import('../../../../foundation/debug/command-result.mjs').CommandResult}
@@ -76,7 +78,6 @@ function summarize(result) {
       return resultSet({
         count: (showcase ? 1 : 0) + examples.length + related.length,
         resultKind: 'template',
-        directMatch: true,
       });
     }
   }

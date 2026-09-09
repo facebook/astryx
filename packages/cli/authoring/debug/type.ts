@@ -22,8 +22,13 @@
  * - `2` — `env.agentSessionId` is always null; `env.agentSessionIdHash` is the
  *   join key, and the environment snapshot is scrubbed like every other
  *   recorded value.
+ * - `3` — every command reports its result. `output.resultKind` gained `none`
+ *   (a command whose work is an effect) and a null now means the run never
+ *   reached an answer, where before it meant "nothing was surfaced" — so a v1
+ *   or v2 null and a v3 null are not the same fact and must not be counted
+ *   together.
  */
-export type DebugSchemaVersion = 1 | 2;
+export type DebugSchemaVersion = 1 | 2 | 3;
 
 /**
  * How an invocation ended.
