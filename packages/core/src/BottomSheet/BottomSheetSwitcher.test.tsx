@@ -133,11 +133,19 @@ function NestedEscapeTrap({onEscape}: {onEscape: () => void}) {
 }
 
 function NestedDismissibleLayer({onDismiss}: {onDismiss: () => void}) {
+  const [isOpen, setIsOpen] = useState(true);
   useLayerDismissal({
-    isActive: true,
-    onDismiss,
+    isActive: isOpen,
+    onDismiss: () => {
+      setIsOpen(false);
+      onDismiss();
+    },
   });
-  return <button type="button">Nested layer trigger</button>;
+  return (
+    <button type="button">
+      {isOpen ? 'Nested layer open' : 'Nested layer closed'}
+    </button>
+  );
 }
 
 const panelRefA = (_element: HTMLDivElement | null) => {};
@@ -821,12 +829,17 @@ describe('BottomSheetSwitcher', () => {
       </BottomSheetSwitcher>,
     );
 
-    const trigger = screen.getByRole('button', {name: 'Nested layer trigger'});
+    const trigger = screen.getByRole('button', {name: 'Nested layer open'});
     trigger.focus();
     fireEvent.keyDown(trigger, {key: 'Escape'});
 
     expect(onNestedDismiss).toHaveBeenCalledTimes(1);
     expect(onActiveSheetChange).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(document, {key: 'Escape'});
+
+    expect(onNestedDismiss).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).toHaveBeenCalledWith(null);
   });
 
   it('keeps a non-modal switcher open when a platform close targets it under a nested layer', () => {
