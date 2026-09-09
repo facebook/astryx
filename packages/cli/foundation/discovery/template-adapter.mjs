@@ -168,7 +168,16 @@ const PLACEHOLDER_IMAGE =
  */
 const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv', 'm4v']);
 
-const IMAGE_EXTENSIONS = new Set(['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'ico']);
+const IMAGE_EXTENSIONS = new Set([
+  'svg',
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'avif',
+  'ico',
+]);
 
 /**
  * Demo-asset sources to strip from scaffolded projects. Template demo imagery
@@ -206,14 +215,14 @@ function toPosixPath(p) {
  */
 export function stripTemplateAssetRefs(source) {
   return source.replace(DEMO_ASSET_PATTERN, (match, extension) => {
-    const ext = extension.toLowerCase()
+    const ext = extension.toLowerCase();
     if (VIDEO_EXTENSIONS.has(ext)) {
-      return ''
+      return '';
     }
     if (IMAGE_EXTENSIONS.has(ext)) {
-      return PLACEHOLDER_IMAGE
+      return PLACEHOLDER_IMAGE;
     }
-    throw new Error(`Unrecognized template asset extension: ${ext}`)
+    throw new Error(`Unrecognized template asset format ${ext} for ${match}`);
   });
 }
 /**
@@ -331,7 +340,9 @@ async function discoverBlocks() {
     const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
     if (!fs.existsSync(tsxPath)) continue;
     const doc = await loadDocModule(docPath);
-    const relPath = toPosixPath(path.relative(BLOCKS_DIR, path.dirname(docPath)));
+    const relPath = toPosixPath(
+      path.relative(BLOCKS_DIR, path.dirname(docPath)),
+    );
     blocks.push({
       type: 'block',
       dirName: basename,
@@ -348,7 +359,6 @@ async function discoverBlocks() {
   }
   return blocks;
 }
-
 
 /**
  * Discover blocks from external packages that declare `astryx.blocks` in
@@ -371,7 +381,9 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
       const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
       if (!fs.existsSync(tsxPath)) continue;
       const doc = await loadDocModule(docPath);
-      const relPath = toPosixPath(path.relative(ext.blocksDir, path.dirname(docPath)));
+      const relPath = toPosixPath(
+        path.relative(ext.blocksDir, path.dirname(docPath)),
+      );
       blocks.push({
         type: 'block',
         dirName: basename,
@@ -458,7 +470,9 @@ function findIntegrationDocFiles(root) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
-      } else if (ALL_TEMPLATE_SUFFIXES.some(suffix => entry.name.endsWith(suffix))) {
+      } else if (
+        ALL_TEMPLATE_SUFFIXES.some(suffix => entry.name.endsWith(suffix))
+      ) {
         results.push(full);
       }
     }
@@ -613,7 +627,9 @@ export async function discoverIntegrationTemplatesForOne(integration) {
 export async function findRelatedBlocks(componentName, cwd) {
   const blocks = await discoverAllBlocks(cwd);
   return blocks.filter(b =>
-    (b.componentsUsed ?? []).some(c => c.toLowerCase() === componentName.toLowerCase()),
+    (b.componentsUsed ?? []).some(
+      c => c.toLowerCase() === componentName.toLowerCase(),
+    ),
   );
 }
 
