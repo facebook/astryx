@@ -98,7 +98,7 @@ const WAI_ARIA_ERROR_MESSAGE: WebStandardRequirement = {
   standard: 'web-standard',
   specification: 'WAI-ARIA 1.2',
   requirement:
-    'When aria-errormessage is pertinent, authors MUST ensure the content is not hidden and is included in a container that meets the requirements for an ARIA live region.',
+    'When the error message is pertinent, authors MUST ensure the content is not hidden, so users can navigate to and examine the error message.',
   url: 'https://www.w3.org/TR/wai-aria-1.2/#aria-errormessage',
 };
 
