@@ -29,7 +29,7 @@ import {
   formatReport,
   neverExercised,
   unmatchedKnownFailures,
-  runBinding,
+  checkAccessibilitySpec,
   spokenWords,
   summarize,
   type BindingResult,
@@ -98,8 +98,8 @@ async function runState(
   cdp: CDPSession,
   state: ButtonBindingRow,
 ): Promise<BindingResult> {
-  return runBinding({
-    contract: BUTTON_PATTERN,
+  return checkAccessibilitySpec({
+    spec: BUTTON_PATTERN,
     binding: state.binding,
     state: state.id,
     facts: state.facts,
@@ -134,7 +134,7 @@ function namesTheSameLabel(rendered: string, claimed: string): boolean {
 
 /**
  * The inventory AST-021 FR2 asks for, checked against the page rather than
- * trusted. Deliberately NOT part of the shared contract: a wrong entry here is a
+ * trusted. Deliberately NOT part of the shared spec: a wrong entry here is a
  * stale inventory, and reporting it as a WCAG 2.5.3 failure would put a metadata
  * typo and a real accessibility defect in the same bucket.
  */
@@ -289,8 +289,8 @@ test('every expectation is exercised by at least one bound state', async ({
     // would turn a ten-second check into a ten-minute one for no extra truth.
     let mounted = false;
     results.push(
-      await runBinding({
-        contract: BUTTON_PATTERN,
+      await checkAccessibilitySpec({
+        spec: BUTTON_PATTERN,
         binding: state.binding,
         state: state.id,
         facts: state.facts,

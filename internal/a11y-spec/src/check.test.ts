@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file run.test.ts
- * @input Uses ./contract, ./run, ./report and a stub harness
+ * @file check.test.ts
+ * @input Uses ./contract, ./check, ./report and a stub harness
  * @output Proof that a known failure changes only its own exact result, that an
  *   unobservable layer is reported rather than passed, and that the report
  *   keeps its facts apart.
@@ -23,7 +23,11 @@ import {
   neverExercised,
   summarize,
 } from './report';
-import {runBinding, unmatchedKnownFailures, type KnownFailure} from './run';
+import {
+  checkAccessibilitySpec,
+  unmatchedKnownFailures,
+  type KnownFailure,
+} from './check';
 
 interface Facts {
   readonly applicable: boolean;
@@ -102,7 +106,7 @@ function knownFailure(overrides: Partial<KnownFailure> = {}): KnownFailure {
 }
 
 async function run(
-  contract: PatternContract<Facts>,
+  spec: PatternContract<Facts>,
   options: {
     facts?: Facts;
     knownFailures?: readonly KnownFailure[];
@@ -110,8 +114,8 @@ async function run(
     state?: string;
   } = {},
 ) {
-  return runBinding({
-    contract,
+  return checkAccessibilitySpec({
+    spec,
     binding: 'Stub',
     state: options.state ?? 'default',
     facts: options.facts ?? {applicable: true},
@@ -124,7 +128,7 @@ const missing = () => {
   throw new Error('the stub outcome is missing entirely');
 };
 
-describe('runBinding', () => {
+describe('checkAccessibilitySpec', () => {
   it('passes when the outcome happens', async () => {
     const result = await run(contractThat(() => {}));
     expect(result.results[0]?.status).toBe('pass');
@@ -361,8 +365,8 @@ describe('runBinding', () => {
 
   it('lets a broken mount surface instead of absorbing it as a result', async () => {
     await expect(
-      runBinding({
-        contract: contractThat(() => {}),
+      checkAccessibilitySpec({
+        spec: contractThat(() => {}),
         binding: 'Stub',
         state: 'default',
         facts: {applicable: true},

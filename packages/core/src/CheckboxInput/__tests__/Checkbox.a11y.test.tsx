@@ -14,10 +14,9 @@ import {describe, expect, it} from 'vitest';
 import {cleanup, render, screen} from '@testing-library/react';
 import {
   CHECKBOX_PATTERN,
-  blockingResults,
+  checkAccessibilitySpec,
   createJsdomHarness,
-  formatFailures,
-  runBinding,
+  expectAccessibilitySpec,
   summarize,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
@@ -33,9 +32,24 @@ function subjectFor(state: CheckboxBindingRow): Element {
   return screen.getByRole(state.facts.role, {hidden: true});
 }
 
-async function runState(state: CheckboxBindingRow): Promise<BindingResult> {
-  return runBinding({
-    contract: CHECKBOX_PATTERN,
+async function expectState(state: CheckboxBindingRow): Promise<void> {
+  await expectAccessibilitySpec({
+    spec: CHECKBOX_PATTERN,
+    binding: state.binding,
+    state: state.id,
+    facts: state.facts,
+    knownFailures: CHECKBOX_KNOWN_FAILURES,
+    render: () => {
+      render(CHECKBOX_STATE_RENDERS[state.id]());
+    },
+    subject: () => subjectFor(state),
+    cleanup,
+  });
+}
+
+async function checkState(state: CheckboxBindingRow): Promise<BindingResult> {
+  return checkAccessibilitySpec({
+    spec: CHECKBOX_PATTERN,
     binding: state.binding,
     state: state.id,
     facts: state.facts,
@@ -55,14 +69,13 @@ describe('the shared checkbox pattern, jsdom lane', () => {
         [`${state.binding} [${state.id}]`, state.summary, state] as const,
     ),
   )('%s — %s', async (_id, _summary, state) => {
-    const result = await runState(state);
-    expect(formatFailures(blockingResults([result]))).toBe('');
+    await expectState(state);
   });
 
   it('runs the DOM layer here and reports higher layers as unrun', async () => {
     const results: BindingResult[] = [];
     for (const state of CHECKBOX_BINDING_STATES) {
-      results.push(await runState(state));
+      results.push(await checkState(state));
     }
     const report = summarize(CHECKBOX_PATTERN, results);
     expect(report.counts.pass).toBeGreaterThan(0);

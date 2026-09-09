@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file run.ts
+ * @file check.ts
  * @input Uses ./contract (expectations), ./harness (the runtime seam)
- * @output `runBinding` — runs one pattern contract against one component binding
+ * @output `checkAccessibilitySpec` — runs one pattern contract against one component binding
  *   state — plus the known-failure vocabulary and exact-record reconciliation
  *   helpers it obeys.
  * @position The engine between a pattern and a component. Everything a report
@@ -103,8 +103,8 @@ export interface BindingResult {
   readonly results: readonly ExpectationResult[];
 }
 
-export interface RunBindingOptions<Facts> {
-  readonly contract: PatternContract<Facts>;
+export interface CheckAccessibilitySpecOptions<Facts> {
+  readonly spec: PatternContract<Facts>;
   readonly binding: string;
   readonly state: string;
   readonly facts: Facts;
@@ -136,7 +136,7 @@ export interface RunBindingOptions<Facts> {
 /**
  * Thrown when an expectation reads something only the binding can supply and
  * the binding did not supply it. A binding fault, not a contract result: it
- * escapes `runBinding` rather than being recorded as a failure, because the
+ * escapes `checkAccessibilitySpec` rather than being recorded as a failure, because the
  * outcome was never actually tested.
  */
 export class MissingBindingCapability extends Error {
@@ -181,15 +181,15 @@ export function unmatchedKnownFailures(
   });
 }
 
-export async function runBinding<Facts>(
-  options: RunBindingOptions<Facts>,
+export async function checkAccessibilitySpec<Facts>(
+  options: CheckAccessibilitySpecOptions<Facts>,
 ): Promise<BindingResult> {
-  const {contract, binding, state, facts, mount, unmount} = options;
+  const {spec, binding, state, facts, mount, unmount} = options;
   const knownFailures = options.knownFailures ?? [];
   const results: ExpectationResult[] = [];
   let harnessName = 'unmounted';
 
-  for (const expectation of contract.expectations) {
+  for (const expectation of spec.expectations) {
     if (options.only != null && !options.only.includes(expectation.id)) {
       continue;
     }
@@ -320,7 +320,7 @@ export async function runBinding<Facts>(
   }
 
   return {
-    pattern: contract.pattern,
+    pattern: spec.pattern,
     binding,
     state,
     harness: harnessName,

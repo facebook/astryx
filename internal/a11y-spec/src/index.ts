@@ -51,14 +51,19 @@ export {
 
 export {
   MissingBindingCapability,
-  runBinding,
+  checkAccessibilitySpec,
   unmatchedKnownFailures,
   type BindingResult,
+  type CheckAccessibilitySpecOptions,
   type ExpectationResult,
   type KnownFailure,
   type ResultStatus,
-  type RunBindingOptions,
-} from './run';
+} from './check';
+
+export {
+  expectAccessibilitySpec,
+  type ExpectAccessibilitySpecOptions,
+} from './expect';
 
 export {
   blockingResults,

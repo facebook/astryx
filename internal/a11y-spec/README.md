@@ -31,7 +31,8 @@ src/
 ├── contract.ts    Expectation, PatternContract, definePattern (the schema gate)
 ├── checklist.ts   the completeness dimensions every pattern must answer
 ├── harness.ts     the Harness/Subject seam and the evidence-layer vocabulary
-├── run.ts         runBinding — applicability, unrun layers, known failures
+├── check.ts       checkAccessibilitySpec — low-level result for reports/mutation proof
+├── expect.ts      expectAccessibilitySpec — component-facing render + subject assertion
 ├── report.ts      separate facts, and the gate over them
 ├── harness/
 │   ├── jsdom.ts       observes unit + DOM. Refuses everything above.
@@ -152,6 +153,26 @@ exactly the expectation under test instead of making the subject unfindable.
 
 Component-specific behaviour does not move: callbacks, form data, composition,
 and styling stay in the component's own suite (AST-021 FR5).
+
+The fast component lane uses the assertion API directly, so the test visibly names
+the accessibility specification, the component render, and its role-bearing subject:
+
+```tsx
+await expectAccessibilitySpec({
+  spec: BUTTON_PATTERN,
+  binding: state.binding,
+  state: state.id,
+  facts: state.facts,
+  render: () => render(<Button label="Save" />),
+  subject: () => screen.getByRole('button'),
+  cleanup,
+});
+```
+
+`expectAccessibilitySpec` fails the test on required failures and unexpected passes.
+Lower-level contract fixtures, Chromium bindings, report generation, and mutation
+proof use `checkAccessibilitySpec`, which returns the complete factual result without
+asserting it.
 
 ## Known failures
 

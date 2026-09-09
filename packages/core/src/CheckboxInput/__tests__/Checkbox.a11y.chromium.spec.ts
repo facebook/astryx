@@ -23,7 +23,7 @@ import {
   formatReport,
   neverExercised,
   unmatchedKnownFailures,
-  runBinding,
+  checkAccessibilitySpec,
   spokenWords,
   summarize,
   type BindingResult,
@@ -101,8 +101,8 @@ async function runState(
   cdp: CDPSession,
   state: CheckboxBindingRow,
 ): Promise<BindingResult> {
-  return runBinding({
-    contract: CHECKBOX_PATTERN,
+  return checkAccessibilitySpec({
+    spec: CHECKBOX_PATTERN,
     binding: state.binding,
     state: state.id,
     facts: state.facts,
@@ -275,8 +275,8 @@ test('every expectation is exercised by at least one bound state', async ({
   for (const state of CHECKBOX_BINDING_STATES) {
     let mounted = false;
     results.push(
-      await runBinding({
-        contract: CHECKBOX_PATTERN,
+      await checkAccessibilitySpec({
+        spec: CHECKBOX_PATTERN,
         binding: state.binding,
         state: state.id,
         facts: state.facts,

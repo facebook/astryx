@@ -26,7 +26,7 @@ import {
   formatFailures,
   formatReport,
   neverExercised,
-  runBinding,
+  checkAccessibilitySpec,
   spokenWords,
   summarize,
   unmatchedKnownFailures,
@@ -91,8 +91,8 @@ async function runState(
   cdp: CDPSession,
   state: SwitchBindingState,
 ): Promise<BindingResult> {
-  return runBinding({
-    contract: SWITCH_PATTERN,
+  return checkAccessibilitySpec({
+    spec: SWITCH_PATTERN,
     binding: 'Switch',
     state: state.id,
     facts: state.facts,
@@ -136,7 +136,7 @@ function namesTheSameLabel(rendered: string, claimed: string): boolean {
 
 /**
  * The inventory AST-021 FR2 asks for, checked against the page rather than
- * trusted. It is deliberately NOT part of the shared contract: a wrong entry
+ * trusted. It is deliberately NOT part of the shared spec: a wrong entry
  * here is a stale inventory, and reporting it as a WCAG 2.5.3 failure would put
  * a metadata typo and a real accessibility defect in the same bucket.
  */

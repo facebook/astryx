@@ -24,11 +24,10 @@ import {describe, expect, it} from 'vitest';
 import {cleanup, fireEvent, render, screen} from '@testing-library/react';
 import {
   SWITCH_PATTERN,
-  blockingResults,
+  checkAccessibilitySpec,
   createJsdomHarness,
-  formatFailures,
+  expectAccessibilitySpec,
   summarize,
-  runBinding,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
 import {Switch, type SwitchProps} from '../Switch';
@@ -71,36 +70,47 @@ function RemotelyToggledSwitch({
   );
 }
 
-async function runState(state: SwitchBindingState): Promise<BindingResult> {
-  return runBinding({
-    contract: SWITCH_PATTERN,
+function renderState(state: SwitchBindingState): void {
+  if (state.arrivesBy === 'controlled-update') {
+    render(
+      <RemotelyToggledSwitch {...state.props} movesTo={state.facts.checked} />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: REMOTE_CONTROL_LABEL}));
+    // A render precondition, not a contract claim: if the owner's change never
+    // reached the control, every expectation would check the wrong state.
+    const control = screen.getByRole('switch', {hidden: true});
+    if ((control as HTMLInputElement).checked !== state.facts.checked) {
+      throw new Error(
+        `rendering "${state.id}" did not reach the declared state: the owner's change left the switch ${(control as HTMLInputElement).checked ? 'on' : 'off'}`,
+      );
+    }
+  } else {
+    render(<ControlledSwitch {...state.props} />);
+  }
+}
+
+async function expectState(state: SwitchBindingState): Promise<void> {
+  await expectAccessibilitySpec({
+    spec: SWITCH_PATTERN,
+    binding: 'Switch',
+    state: state.id,
+    facts: state.facts,
+    knownFailures: SWITCH_KNOWN_FAILURES,
+    render: () => renderState(state),
+    subject: () => screen.getByRole('switch', {hidden: true}),
+    cleanup,
+  });
+}
+
+async function checkState(state: SwitchBindingState): Promise<BindingResult> {
+  return checkAccessibilitySpec({
+    spec: SWITCH_PATTERN,
     binding: 'Switch',
     state: state.id,
     facts: state.facts,
     knownFailures: SWITCH_KNOWN_FAILURES,
     mount: async () => {
-      if (state.arrivesBy === 'controlled-update') {
-        render(
-          <RemotelyToggledSwitch
-            {...state.props}
-            movesTo={state.facts.checked}
-          />,
-        );
-        fireEvent.click(
-          screen.getByRole('button', {name: REMOTE_CONTROL_LABEL}),
-        );
-        // A mount precondition, not a contract claim: if the owner's change
-        // never reached the control, every expectation below would be about a
-        // state this binding is not in.
-        const control = screen.getByRole('switch', {hidden: true});
-        if ((control as HTMLInputElement).checked !== state.facts.checked) {
-          throw new Error(
-            `mounting "${state.id}" did not reach the declared state: the owner's change left the switch ${(control as HTMLInputElement).checked ? 'on' : 'off'}`,
-          );
-        }
-      } else {
-        render(<ControlledSwitch {...state.props} />);
-      }
+      renderState(state);
       return createJsdomHarness({
         subject: screen.getByRole('switch', {hidden: true}),
       });
@@ -115,14 +125,13 @@ describe('Switch — the shared switch pattern, jsdom lane', () => {
       state => [state.id, state.summary, state] as const,
     ),
   )('%s (%s)', async (_id, _summary, state) => {
-    const result = await runState(state);
-    expect(formatFailures(blockingResults([result]))).toBe('');
+    await expectState(state);
   });
 
   it('runs the DOM layer here and reports the higher layers as unrun', async () => {
     const results: BindingResult[] = [];
     for (const state of SWITCH_BINDING_STATES) {
-      results.push(await runState(state));
+      results.push(await checkState(state));
     }
     const report = summarize(SWITCH_PATTERN, results);
 
