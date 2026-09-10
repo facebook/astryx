@@ -63,6 +63,7 @@ import {
   FlipVertical2,
   FoldVertical,
   Frame,
+  PenTool,
   Grip,
   Group,
   Image as ImageIcon,
@@ -276,13 +277,15 @@ interface DocumentTabData {
   icon: IconType;
 }
 
-// Every document here is an artboard, so every tab carries the artboard mark.
-// Varying the icon per document would imply a distinction the editor does not
-// make, and a strip of mixed glyphs is harder to scan than a strip of one.
+// Every document here is an editable drawing, so every tab carries the same
+// mark. Varying the icon per document would imply a distinction the editor
+// does not make, and a strip of mixed glyphs is harder to scan than a strip
+// of one. The frame mark moved to the layer groups, where it means the thing
+// it names — a container — leaving the tabs to say "a document you draw in".
 const INITIAL_TABS: DocumentTabData[] = [
-  {id: 'poster', name: 'Salzburg poster', icon: Frame},
-  {id: 'brand', name: 'Brand sheet', icon: Frame},
-  {id: 'draft', name: 'Untitled draft', icon: Frame},
+  {id: 'poster', name: 'Salzburg poster', icon: PenTool},
+  {id: 'brand', name: 'Brand sheet', icon: PenTool},
+  {id: 'draft', name: 'Untitled draft', icon: PenTool},
 ];
 
 const INITIAL_LAYERS: Layer[] = [
@@ -837,8 +840,8 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  // The icon is the document's, so it keeps its own colour; only the label
-  // dims on an unselected tab.
+  // Icon and label dim together on an unselected tab: dimming only the label
+  // left the icon at full strength, which read as the row being half-active.
   tabIcon: {display: 'flex', flexShrink: 0},
   // A layer row keeps its lock quiet until the row is the one being pointed
   // at, so the rail reads as a list of names rather than a grid of buttons.
@@ -893,10 +896,13 @@ const styles = stylex.create({
       default: 'transparent',
       ':hover': 'var(--color-neutral)',
     },
+    // Icon tokens, not text ones. The two agree at the theme root but this
+    // editor's theme separates them, and a lock keyed to the text ramp came
+    // out darker than the layer glyphs sitting beside it on the same row.
     color: {
-      default: 'var(--color-text-secondary)',
-      ':hover': 'var(--color-text)',
-      ':disabled': 'var(--color-text-disabled)',
+      default: 'var(--color-icon-secondary)',
+      ':hover': 'var(--color-icon-primary)',
+      ':disabled': 'var(--color-icon-disabled)',
     },
     cursor: {default: 'pointer', ':disabled': 'default'},
   },
@@ -1257,7 +1263,11 @@ function DocumentTab({
         onClick={onSelect}
         {...stylex.props(styles.tabSelect)}>
         <span {...stylex.props(styles.tabIcon)}>
-          <Icon icon={tab.icon} size={ICON} />
+          <Icon
+            icon={tab.icon}
+            size={ICON}
+            color={isActive ? 'primary' : 'secondary'}
+          />
         </span>
         <Text
           type="label"
@@ -1495,7 +1505,12 @@ function layerTree(
     label: layer.name,
     isSelected: layer.id === selectedID,
     onClick: () => onSelect(layer.id),
-    startContent: <Icon icon={LAYER_ICON[layer.kind]} size={ICON} />,
+    // Marks this row so the lock's hover selector scopes to it rather than to
+    // the whole rail — otherwise every lock in the tree reveals at once.
+    className: stylex.props(hoverScope).className,
+    startContent: (
+      <Icon icon={LAYER_ICON[layer.kind]} size={ICON} color="secondary" />
+    ),
     endContent: (
       <ItemAction
         label={layer.isLocked ? `Unlock ${layer.name}` : `Lock ${layer.name}`}
@@ -1518,7 +1533,10 @@ function layerTree(
       id: group.id,
       label: group.label,
       isExpanded: true,
-      startContent: <Icon icon={LAYER_ICON[group.kind]} size={ICON} />,
+      // A group is a frame, not a bigger version of what it holds. Repeating
+      // the child's glyph on the parent says the row is another layer of that
+      // kind; the frame mark says it is the container.
+      startContent: <Icon icon={Frame} size={ICON} color="secondary" />,
       children: layers.filter(l => l.kind === group.kind).map(row),
     }))
     .filter(group => group.children.length > 0);
@@ -1677,7 +1695,7 @@ export default function CanvasEditor() {
     const tab: DocumentTabData = {
       id: `untitled-${untitledCount.current}`,
       name: `Untitled ${untitledCount.current}`,
-      icon: Frame,
+      icon: PenTool,
     };
     setTabs(current => [...current, tab]);
     setActiveTab(tab.id);
@@ -2013,31 +2031,22 @@ export default function CanvasEditor() {
                             />
                           </SegmentedControl>
                           {panel === 'layers' ? (
-                            // TreeList builds its own rows, so there is no
-                            // per-row element left to mark. The marker moves
-                            // up to the rail, which trades one behaviour for
-                            // the grouping: the locks reveal together when the
-                            // pointer is anywhere in the rail, rather than one
-                            // row at a time. Locked layers still show at rest,
-                            // so the state is never hidden.
-                            <div {...stylex.props(hoverScope)}>
-                              <TreeList
-                                density="compact"
-                                items={layerTree(
-                                  layers,
-                                  selectedID,
-                                  setSelectedID,
-                                  id =>
-                                    setLayers(current =>
-                                      current.map(l =>
-                                        l.id === id
-                                          ? {...l, isLocked: !l.isLocked}
-                                          : l,
-                                      ),
+                            <TreeList
+                              density="compact"
+                              items={layerTree(
+                                layers,
+                                selectedID,
+                                setSelectedID,
+                                id =>
+                                  setLayers(current =>
+                                    current.map(l =>
+                                      l.id === id
+                                        ? {...l, isLocked: !l.isLocked}
+                                        : l,
                                     ),
-                                )}
-                              />
-                            </div>
+                                  ),
+                              )}
+                            />
                           ) : (
                             <List>
                               {EFFECT_PRESETS.map(preset => (
@@ -2047,7 +2056,11 @@ export default function CanvasEditor() {
                                   density="compact"
                                   label={preset.label}
                                   startContent={
-                                    <Icon icon={preset.icon} size={ICON} />
+                                    <Icon
+                                      icon={preset.icon}
+                                      size={ICON}
+                                      color="secondary"
+                                    />
                                   }
                                 />
                               ))}
@@ -2740,7 +2753,9 @@ export default function CanvasEditor() {
                                   hidden
                                   onChange={event => {
                                     const file = event.target.files?.[0];
-                                    if (file) {setImageName(file.name);}
+                                    if (file) {
+                                      setImageName(file.name);
+                                    }
                                   }}
                                 />
                                 {/* The trigger shows the picture rather than

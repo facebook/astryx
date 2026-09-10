@@ -272,11 +272,17 @@ composed, so `TreeList` keeps the disclosure state, the guide lines and the
 roving focus that a hand-rolled tree would have to reimplement; the lock still
 arrives through `endContent`.
 
-That data-driven API costs one behaviour. There is no per-row element left to
-carry a hover marker, so the marker moves up to the rail and the locks now
-reveal together on rail hover rather than one row at a time. Locked layers
-still render at full opacity at rest, so the state itself is never hidden —
-only the affordance to change it is progressive.
+The per-row lock reveal survives the move via `TreeListItemData.className`,
+which marks each row so the hover selector scopes to one row rather than to
+the whole rail. Groups take the frame mark rather than repeating a child's
+glyph, since a parent is a container and not another layer of that kind.
+
+**Icons in the rail share one colour, and unselected tabs dim whole.** Every
+rail glyph now resolves to the secondary _icon_ token. That token and its
+text counterpart agree at the theme root but diverge under this editor's
+theme, so a lock keyed to the text ramp came out darker than the layer glyphs
+on its own row. Tabs dim their icon alongside their label; dimming the label
+alone left the icon at full strength and read as half-active.
 
 A note if you wire the Appearance menu to a Theme of your own: a nested Theme
 recolours text but does not repaint the page behind transparent panels, so an
