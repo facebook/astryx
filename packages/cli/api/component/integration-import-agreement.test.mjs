@@ -231,4 +231,60 @@ describe('integration component import specifiers', () => {
     },
     SLOW,
   );
+
+  it(
+    'an exact key still wins where a wildcard would also match',
+    async () => {
+      scaffold({
+        exports: {
+          '.': './src/index.js',
+          './Carousel': './src/Carousel/index.js',
+          './*': './src/*/index.js',
+        },
+      });
+      const {detail, found} = await bothSurfaces();
+
+      expect(detail).toBe('@acme/widgets/Carousel');
+      expect(found).toBe(detail);
+    },
+    SLOW,
+  );
+
+  it(
+    'one matching pattern among several is enough',
+    async () => {
+      scaffold({
+        exports: {
+          '.': './src/index.js',
+          './blocks/*': './src/blocks/*.js',
+          './*': './src/*/index.js',
+          './themes/*': './themes/*.css',
+        },
+      });
+      const {detail, found} = await bothSurfaces();
+
+      expect(detail).toBe('@acme/widgets/Carousel');
+      expect(found).toBe(detail);
+    },
+    SLOW,
+  );
+
+  it(
+    'a conditional export object still counts as published',
+    async () => {
+      // The target may be a conditions object rather than a string; what
+      // matters for a specifier is that the subpath is published at all.
+      scaffold({
+        exports: {
+          '.': './src/index.js',
+          './Carousel': {import: './src/Carousel/index.js', require: './cjs/Carousel.js'},
+        },
+      });
+      const {detail, found} = await bothSurfaces();
+
+      expect(detail).toBe('@acme/widgets/Carousel');
+      expect(found).toBe(detail);
+    },
+    SLOW,
+  );
 });
