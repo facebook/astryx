@@ -12,10 +12,11 @@ export const CHAT_TYPING_STATUS_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     evidenceLayer: 'dom',
     failureEquals:
       'the status region already contains "Ana is typing…" at the pre-update boundary, so it was mounted with its message instead of receiving the status as a later change',
-    standardsReference: 'WCAG 2.2 4.1.3 Status Messages (AA)',
+    standardsReference:
+      'WCAG 2.2 Technique ARIA22 (advisory reliability evidence)',
     userImpact:
-      'A screen reader can miss a typing update when the indicator is conditionally mounted with its message already present.',
+      'This mounted state does not provide ARIA22’s recommended empty-before-update lifecycle; whether assistive technology misses the typing update requires real-AT evidence.',
     reason:
-      'Existing behavior is recorded in https://github.com/facebook/astryx/issues/6212; remediation belongs in a separate focused change.',
+      'This advisory technique mismatch is recorded without a speech claim; remediation requires a separate owner decision and real assistive-technology evidence.',
   },
 ];

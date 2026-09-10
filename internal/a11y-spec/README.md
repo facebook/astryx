@@ -60,14 +60,15 @@ src/
 | `status-message` | [WCAG 2.2 Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html) | Toast, FieldStatus, Spinner, ChatSystemMessage, ChatTypingIndicator, ProgressBar |
 
 The `status-message` contract is WCAG-derived rather than an APG widget
-pattern. It covers the browser-observable mechanics of polite and assertive live
-regions plus progress bars: the channel and whole-message exposure, an empty
-region before a live update, in-place show/replace/clear transitions, a DOM
-change for repeated identical text, preserved focus, and progress role/name/value
-updates. It does **not** claim speech, braille, timing, ordering, cadence, or
-repetition; those outcomes remain real-AT evidence under AST-009. The repeated
-DOM-mutation check is advisory for exactly that reason.
+pattern. Required expectations cover browser-exposed status/alert roles and
+channels, complete exposed text or names, preserved focus, and progressbar
+role/name/value transitions. ARIA22's empty-before-update technique, same-node
+replacement/clearing, and repeated-text DOM mutation remain advisory reliability
+evidence: automation can observe those mechanics, but only real assistive-
+technology evidence can establish announcement timing, order, repetition, or
+omission.
 
+The `text-input` contract is native rather than APG-derived. It covers the
 role-bearing `<input>` or `<textarea>` only; composed clear and tooltip buttons
 keep their button contract. Password fields bind to persistent naming, state,
 focus, and editing expectations, while HTML-AAM defines no corresponding ARIA

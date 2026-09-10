@@ -73,6 +73,12 @@ async function mountState(
   await page.locator('[data-a11y-ready="true"]').waitFor({state: 'attached'});
   await subjectFor(page, state).waitFor({state: 'attached'});
   await expect(subjectFor(page, state)).toHaveCount(1);
+  if ('focusSelector' in state) {
+    await expect(page.locator(state.focusSelector)).toHaveAttribute(
+      'aria-describedby',
+      /\S+/,
+    );
+  }
 }
 
 async function transition(page: Page, name: string): Promise<void> {
@@ -105,7 +111,11 @@ async function runState(
         cdp,
         subject: subjectFor(page, state),
         related: {
-          'focus-anchor': page.locator('[data-a11y-relation="focus-anchor"]'),
+          'focus-anchor': page.locator(
+            'focusSelector' in state
+              ? state.focusSelector
+              : '[data-a11y-relation="focus-anchor"]',
+          ),
         },
       });
     },

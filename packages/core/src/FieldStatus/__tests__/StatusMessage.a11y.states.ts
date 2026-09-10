@@ -23,30 +23,43 @@ export interface CoreStatusMessageBindingDefinition {
   readonly summary: string;
   readonly facts: StatusMessageStateFacts;
   readonly subjectSelector: string;
+  readonly focusSelector?: string;
   readonly storyId: string;
 }
 
 function liveFacts({
+  role,
   politeness,
   message,
   replacement,
+  initialMessage = '',
   messageSource = 'text',
+  semanticTransitions,
+  focusTransition,
   canClear = false,
   canRepeat = false,
 }: {
+  role: 'status' | 'alert' | null;
   politeness: 'polite' | 'assertive';
   message: string;
   replacement: string;
+  initialMessage?: string;
   messageSource?: 'text' | 'accessible-name';
+  semanticTransitions: ReadonlyArray<'show' | 'replace' | 'clear' | 'repeat'>;
+  focusTransition: 'show' | 'replace';
   canClear?: boolean;
   canRepeat?: boolean;
 }): StatusMessageStateFacts {
   return {
     kind: 'live-region',
+    role,
     politeness,
     messageSource,
+    initialMessage,
     message,
     replacement,
+    semanticTransitions,
+    focusTransition,
     canClear,
     canRepeat,
   };
@@ -59,9 +72,12 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
     summary:
       'an info toast dispatch updates and can repeat through the persistent polite channel',
     facts: liveFacts({
+      role: 'status',
       politeness: 'polite',
       message: 'Changes saved',
       replacement: 'Profile updated',
+      semanticTransitions: ['show', 'replace', 'repeat'],
+      focusTransition: 'show',
       canRepeat: true,
     }),
     subjectSelector: '[data-astryx-live-region="polite"]',
@@ -73,9 +89,12 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
     summary:
       'an error toast dispatch updates and can repeat through the persistent assertive channel',
     facts: liveFacts({
+      role: 'alert',
       politeness: 'assertive',
       message: 'Upload failed',
       replacement: 'Connection failed',
+      semanticTransitions: ['show', 'replace', 'repeat'],
+      focusTransition: 'show',
       canRepeat: true,
     }),
     subjectSelector: '[data-astryx-live-region="assertive"]',
@@ -87,9 +106,13 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
     summary:
       'the visible info card is mounted with its polite live-region content',
     facts: liveFacts({
+      role: 'status',
       politeness: 'polite',
+      initialMessage: 'Changes saved',
       message: 'Changes saved',
       replacement: 'Profile updated',
+      semanticTransitions: ['replace'],
+      focusTransition: 'replace',
     }),
     subjectSelector: '.astryx-toast[role="status"]',
     storyId: 'a11y-status-message-pattern--toast-info-card-mounted',
@@ -100,9 +123,13 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
     summary:
       'the visible error card is mounted with its assertive live-region content',
     facts: liveFacts({
+      role: 'alert',
       politeness: 'assertive',
+      initialMessage: 'Upload failed',
       message: 'Upload failed',
       replacement: 'Connection failed',
+      semanticTransitions: ['replace'],
+      focusTransition: 'replace',
     }),
     subjectSelector: '.astryx-toast[role="alert"]',
     storyId: 'a11y-status-message-pattern--toast-error-card-mounted',
@@ -113,9 +140,12 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
     summary:
       'an attached error enters and updates through the persistent assertive channel',
     facts: liveFacts({
+      role: 'alert',
       politeness: 'assertive',
       message: 'This field is required',
       replacement: 'Enter a valid email address',
+      semanticTransitions: ['show', 'replace', 'repeat'],
+      focusTransition: 'show',
       canRepeat: true,
     }),
     subjectSelector: '[data-astryx-live-region="assertive"]',
@@ -127,9 +157,12 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
     summary:
       'a detached warning enters and updates through the persistent polite channel',
     facts: liveFacts({
+      role: 'status',
       politeness: 'polite',
       message: 'Check this value',
       replacement: 'This value may be visible to others',
+      semanticTransitions: ['show', 'replace', 'repeat'],
+      focusTransition: 'show',
       canRepeat: true,
     }),
     subjectSelector: '[data-astryx-live-region="polite"]',
@@ -141,9 +174,12 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
     summary:
       'a detached success enters and updates through the persistent polite channel',
     facts: liveFacts({
+      role: 'status',
       politeness: 'polite',
       message: 'Looks good',
       replacement: 'Changes saved',
+      semanticTransitions: ['show', 'replace', 'repeat'],
+      focusTransition: 'show',
       canRepeat: true,
     }),
     subjectSelector: '[data-astryx-live-region="polite"]',
@@ -155,10 +191,14 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
     summary:
       'a loading spinner is mounted with its default accessible status name',
     facts: liveFacts({
+      role: 'status',
       politeness: 'polite',
+      initialMessage: 'Loading',
       messageSource: 'accessible-name',
       message: 'Loading',
       replacement: 'Saving',
+      semanticTransitions: ['replace'],
+      focusTransition: 'replace',
     }),
     subjectSelector: '[data-a11y-subject]',
     storyId: 'a11y-status-message-pattern--spinner-default-label-mounted',
@@ -169,10 +209,14 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
     summary:
       'a loading spinner is mounted with a visible label that names its status role',
     facts: liveFacts({
+      role: 'status',
       politeness: 'polite',
+      initialMessage: 'Fetching data',
       messageSource: 'accessible-name',
       message: 'Fetching data',
       replacement: 'Saving data',
+      semanticTransitions: ['replace'],
+      focusTransition: 'replace',
     }),
     subjectSelector: '[data-a11y-subject] [role="status"]',
     storyId: 'a11y-status-message-pattern--spinner-visible-label-mounted',
@@ -182,9 +226,13 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
     binding: 'ChatSystemMessage',
     summary: 'a chat status notice is mounted with its live-region content',
     facts: liveFacts({
+      role: 'status',
       politeness: 'polite',
+      initialMessage: 'Conversation started',
       message: 'Conversation started',
       replacement: 'A file was shared',
+      semanticTransitions: ['replace', 'clear'],
+      focusTransition: 'replace',
       canClear: true,
     }),
     subjectSelector: '[data-a11y-subject]',
@@ -199,12 +247,35 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       kind: 'progressbar',
       politeness: null,
       name: 'Upload progress',
+      initialValue: null,
       progressValue: 40,
       completionValue: 100,
+      minValue: 0,
       maxValue: 100,
+      focusTransition: 'progress',
     },
     subjectSelector: '[data-a11y-subject] [role="progressbar"]',
     storyId: 'a11y-status-message-pattern--progress-loading-to-complete',
+  },
+  {
+    id: 'progress-mark-focused-update',
+    binding: 'ProgressBar',
+    summary:
+      'a determinate value update preserves focus on a labeled target mark',
+    facts: {
+      kind: 'progressbar',
+      politeness: null,
+      name: 'Upload progress',
+      initialValue: 20,
+      progressValue: 40,
+      completionValue: 100,
+      minValue: 0,
+      maxValue: 100,
+      focusTransition: 'progress',
+    },
+    subjectSelector: '[data-a11y-subject] [role="progressbar"]',
+    focusSelector: '.astryx-progressbar-mark',
+    storyId: 'a11y-status-message-pattern--progress-mark-focused-update',
   },
 ] as const satisfies ReadonlyArray<CoreStatusMessageBindingDefinition>;
 
@@ -250,8 +321,14 @@ export const CORE_STATUS_MESSAGE_EXCLUSIONS = [
       'The current switch pattern has no busy announcement expectation, and overlapping work is changing this path; it is not silently absorbed into this migration.',
   },
   {
+    owner: 'ProgressBar marks and Tooltip',
+    part: 'focusable target-mark triggers and labels',
+    reason:
+      'The marked progress state above proves that value updates preserve mark focus. ProgressBar and Tooltip local tests own trigger labeling and interaction; ARIA ownership of focusable descendants is tracked separately.',
+  },
+  {
     owner: 'ProgressBar component and theme',
-    part: 'visual fill, track, marks, animation, and status cadence',
+    part: 'visual fill, track, animation, and status cadence',
     reason:
       'The binding covers browser-exposed role, name, values, and focus preservation. Paint stays in visual evidence; spoken cadence and timing stay under AST-009.',
   },

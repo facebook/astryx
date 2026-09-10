@@ -65,13 +65,23 @@ const ARIA_PROGRESSBAR: WebStandardRequirement = {
   url: `${ARIA}/#progressbar`,
 };
 
+export type StatusMessageTransitionName =
+  'show' | 'replace' | 'clear' | 'repeat' | 'progress' | 'complete';
+
 export type StatusMessageStateFacts =
   | {
       readonly kind: 'live-region';
+      readonly role: 'status' | 'alert' | null;
       readonly politeness: 'polite' | 'assertive';
       readonly messageSource: 'text' | 'accessible-name';
+      /** Message exposed before the binding performs any transition. */
+      readonly initialMessage: string;
       readonly message: string;
       readonly replacement: string;
+      /** Every public transition after which role/channel invariants still apply. */
+      readonly semanticTransitions: readonly StatusMessageTransitionName[];
+      /** One transition that demonstrably changes this state for focus proof. */
+      readonly focusTransition: 'show' | 'replace';
       readonly canClear: boolean;
       readonly canRepeat: boolean;
     }
@@ -79,14 +89,23 @@ export type StatusMessageStateFacts =
       readonly kind: 'progressbar';
       readonly politeness: null;
       readonly name: string;
+      readonly initialValue: number | null;
       readonly progressValue: number;
       readonly completionValue: number;
+      readonly minValue: number;
       readonly maxValue: number;
+      readonly focusTransition: 'progress';
     };
 
 const LIVE_REGION = {
   condition: 'this binding uses a live region to expose the status message',
   test: (facts: StatusMessageStateFacts) => facts.kind === 'live-region',
+};
+
+const ROLE_LIVE_REGION = {
+  condition: 'this binding uses a status or alert role for its live region',
+  test: (facts: StatusMessageStateFacts) =>
+    facts.kind === 'live-region' && facts.role != null,
 };
 
 const LIVE_TEXT_REGION = {
@@ -105,6 +124,26 @@ function normalizeText(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
 }
 
+function messageAfterTransition(
+  facts: Extract<StatusMessageStateFacts, {kind: 'live-region'}>,
+  transition: StatusMessageTransitionName,
+): string {
+  switch (transition) {
+    case 'show':
+    case 'repeat':
+      return facts.message;
+    case 'replace':
+      return facts.replacement;
+    case 'clear':
+      return '';
+    case 'progress':
+    case 'complete':
+      throw new Error(
+        `live-region facts cannot use the ${JSON.stringify(transition)} transition`,
+      );
+  }
+}
+
 export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
   definePattern<StatusMessageStateFacts>({
     pattern: 'status-message',
@@ -113,34 +152,83 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
       'One status update that is programmatically exposed without moving focus; announcement output remains real-AT evidence.',
     expectations: [
       {
+        id: 'status-message.role.exposed',
+        outcome:
+          'The browser exposes the live region through the status or alert role selected by the binding.',
+        sources: [WCAG_4_1_3, WCAG_4_1_2, ARIA_STATUS, ARIA_ALERT],
+        covers: ['4.1.3-status-messages', '4.1.2-name-role-value'],
+        appliesWhen: ROLE_LIVE_REGION,
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject, facts, transition}) => {
+          if (facts.kind !== 'live-region' || facts.role == null) {
+            return;
+          }
+          const assertRole = async (phase: string): Promise<void> => {
+            const {role} = await subject.computed();
+            if (role !== facts.role) {
+              throw new Error(
+                `the browser exposes this ${facts.politeness} status as ${JSON.stringify(role)} ${phase}, not as the declared ${JSON.stringify(facts.role)} role`,
+              );
+            }
+          };
+          await assertRole('at the pre-update boundary');
+          for (const name of facts.semanticTransitions) {
+            await transition(name);
+            await assertRole(`after the ${JSON.stringify(name)} transition`);
+          }
+        },
+      },
+      {
         id: 'status-message.channel.exposed',
         outcome:
-          'The browser exposes the status through the intended polite or assertive live channel.',
+          'The browser exposes the status through the intended polite or assertive live channel before and after its public updates.',
         sources: [WCAG_4_1_3, ARIA_STATUS, ARIA_ALERT],
         covers: ['4.1.3-status-messages'],
         appliesWhen: LIVE_REGION,
         evidenceLayer: 'accessibility-tree',
         enforcement: 'required',
-        run: async ({subject, facts}) => {
-          const {live} = await subject.computed();
-          if (live !== facts.politeness) {
-            throw new Error(
-              live == null
-                ? `the browser exposes no live channel for this ${facts.politeness} status message, so assistive technology has no programmatic status update to present without moving focus`
-                : `the browser exposes this status message through the ${live} channel, not the intended ${facts.politeness} channel`,
-            );
+        run: async ({subject, facts, transition}) => {
+          if (facts.kind !== 'live-region') {
+            return;
+          }
+          const assertChannel = async (phase: string): Promise<void> => {
+            const {live} = await subject.computed();
+            if (live !== facts.politeness) {
+              throw new Error(
+                live == null
+                  ? `the browser exposes no live channel ${phase} for this ${facts.politeness} status message, so assistive technology has no programmatic status update to present without moving focus`
+                  : `the browser exposes this status message through the ${live} channel ${phase}, not the intended ${facts.politeness} channel`,
+              );
+            }
+          };
+          await assertChannel('at the pre-update boundary');
+          for (const name of facts.semanticTransitions) {
+            await transition(name);
+            await assertChannel(`after the ${JSON.stringify(name)} transition`);
           }
         },
       },
       {
         id: 'status-message.region.precedes-content',
         outcome:
-          'The live region exists empty before the message occurs, then receives the complete status without being replaced.',
-        sources: [WCAG_4_1_3, WCAG_ARIA22],
+          'The binding follows the ARIA22 reliability technique: a status container exists empty before text is inserted into that same node.',
+        sources: [WCAG_ARIA22, WCAG_4_1_3, ARIA_STATUS],
+        wcagOutcome:
+          'Status information can be programmatically determined without moving focus.',
         covers: ['4.1.3-status-messages'],
-        appliesWhen: LIVE_TEXT_REGION,
+        appliesWhen: {
+          condition:
+            'this binding exposes text through the status role; alerts and accessible-name-only states use different semantics',
+          test: facts =>
+            facts.kind === 'live-region' &&
+            facts.role === 'status' &&
+            facts.messageSource === 'text',
+        },
         evidenceLayer: 'dom',
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          'ARIA22 is a sufficient WCAG technique, not the only conforming implementation; real assistive-technology evidence owns whether another lifecycle is reliably announced.',
         run: async ({subject, facts, transition}) => {
           if (facts.kind !== 'live-region' || facts.messageSource !== 'text') {
             return;
@@ -160,71 +248,55 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
         },
       },
       {
-        id: 'status-message.region.precedes-named-message',
-        outcome:
-          'A named live region exists without a name before the status occurs, then receives the status name without being replaced.',
-        sources: [WCAG_4_1_3, WCAG_ARIA22],
-        covers: ['4.1.3-status-messages'],
-        appliesWhen: {
-          condition:
-            'this binding exposes the status as the live region accessible name',
-          test: facts =>
-            facts.kind === 'live-region' &&
-            facts.messageSource === 'accessible-name',
-        },
-        evidenceLayer: 'accessibility-tree',
-        alsoNeeds: ['dom'],
-        enforcement: 'required',
-        run: async ({subject, facts, transition}) => {
-          if (
-            facts.kind !== 'live-region' ||
-            facts.messageSource !== 'accessible-name'
-          ) {
-            return;
-          }
-          const before = (await subject.computed()).name.trim();
-          if (before !== '') {
-            throw new Error(
-              `the named status region already has the accessible name ${JSON.stringify(before)} at the pre-update boundary, so it was mounted with its message instead of receiving the status as a later change`,
-            );
-          }
-          await subject.isConnected();
-          await transition('show');
-          if (!(await subject.isConnected())) {
-            throw new Error(
-              'the original unnamed status region was replaced when its accessible name appeared, so the message did not update the region that preceded it',
-            );
-          }
-        },
-      },
-      {
         id: 'status-message.message.text-exposed',
         outcome:
-          'The complete status text appears inside the live region when the update occurs.',
-        sources: [WCAG_4_1_3],
+          'The complete status text remains in the browser accessibility subtree before and after the binding’s public update.',
+        sources: [WCAG_4_1_3, ARIA_STATUS, ARIA_ALERT],
         covers: ['4.1.3-status-messages'],
         appliesWhen: LIVE_TEXT_REGION,
-        evidenceLayer: 'dom',
+        evidenceLayer: 'accessibility-tree',
+        alsoNeeds: ['dom'],
         enforcement: 'required',
         run: async ({subject, facts, transition}) => {
           if (facts.kind !== 'live-region' || facts.messageSource !== 'text') {
             return;
           }
-          await transition('show');
-          const message = normalizeText(await subject.textContent());
-          if (message !== normalizeText(facts.message)) {
-            throw new Error(
-              `after the status occurred, the live region contains ${JSON.stringify(message)} instead of the complete message ${JSON.stringify(normalizeText(facts.message))}`,
+          const assertMessage = async (
+            expected: string,
+            phase: string,
+          ): Promise<void> => {
+            const authored = normalizeText(await subject.textContent());
+            if (authored !== normalizeText(expected)) {
+              throw new Error(
+                `the live region contains ${JSON.stringify(authored)} ${phase}, not the complete authored message ${JSON.stringify(normalizeText(expected))}`,
+              );
+            }
+            const exposed = normalizeText(
+              (await subject.computed()).accessibleText,
             );
-          }
+            if (exposed !== normalizeText(expected)) {
+              throw new Error(
+                `the accessibility tree exposes ${JSON.stringify(exposed)} ${phase}, not the complete status text ${JSON.stringify(normalizeText(expected))}`,
+              );
+            }
+          };
+          await assertMessage(
+            facts.initialMessage,
+            'at the pre-update boundary',
+          );
+          await transition(facts.focusTransition);
+          await assertMessage(
+            messageAfterTransition(facts, facts.focusTransition),
+            `after the ${JSON.stringify(facts.focusTransition)} transition`,
+          );
         },
       },
       {
         id: 'status-message.message.name-exposed',
         outcome:
           'The browser exposes the complete status as the live region’s accessible name when that is the chosen message channel.',
-        sources: [WCAG_4_1_3],
-        covers: ['4.1.3-status-messages'],
+        sources: [WCAG_4_1_3, WCAG_4_1_2],
+        covers: ['4.1.3-status-messages', '4.1.2-name-role-value'],
         appliesWhen: {
           condition:
             'this binding exposes the status as the live region accessible name',
@@ -241,13 +313,23 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           ) {
             return;
           }
-          await transition('show');
-          const name = (await subject.computed()).name.trim();
-          if (name !== facts.message.trim()) {
-            throw new Error(
-              `after the status occurred, the browser computes the live region name as ${JSON.stringify(name)} instead of ${JSON.stringify(facts.message.trim())}`,
-            );
-          }
+          const assertName = async (
+            expected: string,
+            phase: string,
+          ): Promise<void> => {
+            const name = (await subject.computed()).name.trim();
+            if (name !== expected.trim()) {
+              throw new Error(
+                `the browser computes the live region name as ${JSON.stringify(name)} ${phase}, not ${JSON.stringify(expected.trim())}`,
+              );
+            }
+          };
+          await assertName(facts.initialMessage, 'at the pre-update boundary');
+          await transition(facts.focusTransition);
+          await assertName(
+            messageAfterTransition(facts, facts.focusTransition),
+            `after the ${JSON.stringify(facts.focusTransition)} transition`,
+          );
         },
       },
       {
@@ -256,44 +338,74 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           'The whole status is exposed as one update, so partial text changes do not lose the context that gives them meaning.',
         sources: [WCAG_4_1_3, ARIA_STATUS, ARIA_ALERT],
         covers: ['4.1.3-status-messages'],
-        appliesWhen: LIVE_REGION,
+        appliesWhen: ROLE_LIVE_REGION,
         evidenceLayer: 'accessibility-tree',
         enforcement: 'required',
-        run: async ({subject}) => {
-          const {atomic} = await subject.computed();
-          if (atomic !== true) {
-            throw new Error(
-              'the browser does not expose this live region as atomic, so a partial text mutation can omit the context needed to understand the status',
-            );
+        run: async ({subject, facts, transition}) => {
+          if (facts.kind !== 'live-region' || facts.role == null) {
+            return;
+          }
+          const assertAtomic = async (phase: string): Promise<void> => {
+            const {atomic} = await subject.computed();
+            if (atomic !== true) {
+              throw new Error(
+                `the browser does not expose this ${facts.role} region as atomic ${phase}, so a partial text mutation can omit the context needed to understand the status`,
+              );
+            }
+          };
+          await assertAtomic('at the pre-update boundary');
+          for (const name of facts.semanticTransitions) {
+            await transition(name);
+            await assertAtomic(`after the ${JSON.stringify(name)} transition`);
           }
         },
       },
       {
         id: 'status-message.message.replaced-in-place',
         outcome:
-          'A later status replaces the earlier message inside the same live region.',
+          'A later status replaces the earlier message inside the same live-region node.',
         sources: [WCAG_4_1_3],
         covers: ['4.1.3-status-messages'],
-        appliesWhen: LIVE_TEXT_REGION,
-        evidenceLayer: 'dom',
-        enforcement: 'required',
+        appliesWhen: LIVE_REGION,
+        evidenceLayer: 'accessibility-tree',
+        alsoNeeds: ['dom'],
+        enforcement: 'advisory',
+        advisoryBecause:
+          'Same-node replacement is a browser-observable reliability mechanism, not the only WCAG-conforming implementation; real assistive-technology evidence owns the resulting announcement.',
         run: async ({subject, facts, transition}) => {
-          if (facts.kind !== 'live-region' || facts.messageSource !== 'text') {
+          if (facts.kind !== 'live-region') {
             return;
           }
           await subject.isConnected();
-          await transition('show');
+          if (facts.initialMessage === '') {
+            await transition('show');
+          }
           await transition('replace');
           if (!(await subject.isConnected())) {
             throw new Error(
               'replacing the status also replaced its live-region node, so the later message was born in a new region instead of updating the existing one',
             );
           }
-          const after = normalizeText(await subject.textContent());
-          if (after !== normalizeText(facts.replacement)) {
-            throw new Error(
-              `after replacement, the live region contains ${JSON.stringify(after)} instead of the complete later status ${JSON.stringify(normalizeText(facts.replacement))}`,
+          if (facts.messageSource === 'text') {
+            const authored = normalizeText(await subject.textContent());
+            const exposed = normalizeText(
+              (await subject.computed()).accessibleText,
             );
+            if (
+              authored !== normalizeText(facts.replacement) ||
+              exposed !== normalizeText(facts.replacement)
+            ) {
+              throw new Error(
+                `after replacement, the live region authors ${JSON.stringify(authored)} and exposes ${JSON.stringify(exposed)} instead of the complete later status ${JSON.stringify(normalizeText(facts.replacement))}`,
+              );
+            }
+          } else {
+            const name = (await subject.computed()).name.trim();
+            if (name !== facts.replacement.trim()) {
+              throw new Error(
+                `after replacement, the browser computes the live region name as ${JSON.stringify(name)} instead of ${JSON.stringify(facts.replacement.trim())}`,
+              );
+            }
           }
         },
       },
@@ -309,7 +421,9 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           test: facts => facts.kind === 'live-region' && facts.canClear,
         },
         evidenceLayer: 'dom',
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          'Clearing stale DOM text in the same channel is a reliability mechanism; WCAG requires the status outcome, not one universal clear lifecycle.',
         run: async ({subject, facts, transition}) => {
           if (
             facts.kind !== 'live-region' ||
@@ -318,6 +432,7 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           ) {
             return;
           }
+          await subject.isConnected();
           await transition('show');
           await transition('clear');
           if (!(await subject.isConnected())) {
@@ -392,7 +507,7 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
         },
         evidenceLayer: 'real-browser',
         enforcement: 'required',
-        run: async ({harness, subject, facts, transition}) => {
+        run: async ({harness, facts, transition}) => {
           const anchor = await harness.related('focus-anchor');
           await anchor.focus();
           if (!(await anchor.isFocused())) {
@@ -400,10 +515,10 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
               'the binding focus anchor could not receive focus before the status transition, so this scenario does not prove the no-focus-change requirement',
             );
           }
-          await transition(facts.kind === 'progressbar' ? 'progress' : 'show');
-          if (!(await anchor.isFocused()) || (await subject.containsFocus())) {
+          await transition(facts.focusTransition);
+          if (!(await anchor.isFocused())) {
             throw new Error(
-              'the status update moved focus away from the user’s current control and into another context instead of remaining passive',
+              'the status update moved focus away from the user’s current control instead of remaining passive',
             );
           }
         },
@@ -417,15 +532,25 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
         appliesWhen: PROGRESSBAR,
         evidenceLayer: 'accessibility-tree',
         enforcement: 'required',
-        run: async ({subject}) => {
-          const {role} = await subject.computed();
-          if (role !== 'progressbar') {
-            throw new Error(
-              role == null
-                ? 'the browser exposes no role for this progress status, so assistive technology cannot identify the changing value as progress'
-                : `the browser exposes this progress status as ${JSON.stringify(role)}, not as a progress bar`,
-            );
+        run: async ({subject, facts, transition}) => {
+          if (facts.kind !== 'progressbar') {
+            return;
           }
+          const assertRole = async (phase: string): Promise<void> => {
+            const {role} = await subject.computed();
+            if (role !== 'progressbar') {
+              throw new Error(
+                role == null
+                  ? `the browser exposes no role for this progress status ${phase}, so assistive technology cannot identify the changing value as progress`
+                  : `the browser exposes this progress status as ${JSON.stringify(role)} ${phase}, not as a progress bar`,
+              );
+            }
+          };
+          await assertRole('at the pre-update boundary');
+          await transition('progress');
+          await assertRole('after the "progress" transition');
+          await transition('complete');
+          await assertRole('after the "complete" transition');
         },
       },
       {
@@ -437,70 +562,108 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
         appliesWhen: PROGRESSBAR,
         evidenceLayer: 'accessibility-tree',
         enforcement: 'required',
-        run: async ({subject, facts}) => {
+        run: async ({subject, facts, transition}) => {
           if (facts.kind !== 'progressbar') {
             return;
           }
-          const {name} = await subject.computed();
-          if (name.trim() === '') {
-            throw new Error(
-              'the browser computes no accessible name for this progress bar, so the changing value does not say which operation it belongs to',
-            );
-          }
-          if (name.trim() !== facts.name.trim()) {
-            throw new Error(
-              `the browser computes the progress name as ${JSON.stringify(name.trim())}, not the binding’s declared operation ${JSON.stringify(facts.name.trim())}`,
-            );
-          }
+          const assertName = async (phase: string): Promise<void> => {
+            const {name} = await subject.computed();
+            if (name.trim() === '') {
+              throw new Error(
+                `the browser computes no accessible name for this progress bar ${phase}, so the changing value does not say which operation it belongs to`,
+              );
+            }
+            if (name.trim() !== facts.name.trim()) {
+              throw new Error(
+                `the browser computes the progress name as ${JSON.stringify(name.trim())} ${phase}, not the binding’s declared operation ${JSON.stringify(facts.name.trim())}`,
+              );
+            }
+          };
+          await assertName('at the pre-update boundary');
+          await transition('progress');
+          await assertName('after the "progress" transition');
+          await transition('complete');
+          await assertName('after the "complete" transition');
         },
       },
       {
-        id: 'status-message.progress.updates-in-place',
+        id: 'status-message.progress.values-exposed',
         outcome:
-          'Indeterminate progress becomes determinate and reaches completion through value updates on the same progress bar.',
+          'The progress bar exposes the binding’s declared starting, in-progress, and completion values and range.',
         sources: [WCAG_4_1_3, WCAG_4_1_2, ARIA_PROGRESSBAR],
         covers: ['4.1.3-status-messages', '4.1.2-name-role-value'],
         appliesWhen: PROGRESSBAR,
         evidenceLayer: 'accessibility-tree',
-        alsoNeeds: ['dom'],
         enforcement: 'required',
         run: async ({subject, facts, transition}) => {
           if (facts.kind !== 'progressbar') {
             return;
           }
           const initial = await subject.computed();
-          if (initial.rangeValue != null) {
+          if (initial.rangeValue !== facts.initialValue) {
             throw new Error(
-              `the binding declares an indeterminate starting state, but the browser already exposes value ${initial.rangeValue}`,
+              `the browser exposes initial progress value ${String(initial.rangeValue)} instead of ${String(facts.initialValue)}`,
             );
+          }
+          if (
+            facts.initialValue != null &&
+            (initial.rangeMin !== facts.minValue ||
+              initial.rangeMax !== facts.maxValue)
+          ) {
+            throw new Error(
+              `the browser exposes the initial progress range as ${String(initial.rangeMin)}..${String(initial.rangeMax)} instead of ${facts.minValue}..${facts.maxValue}`,
+            );
+          }
+          await transition('progress');
+          const progressing = await subject.computed();
+          if (
+            progressing.rangeValue !== facts.progressValue ||
+            progressing.rangeMin !== facts.minValue ||
+            progressing.rangeMax !== facts.maxValue
+          ) {
+            throw new Error(
+              `the browser exposes progress as value=${String(progressing.rangeValue)}, min=${String(progressing.rangeMin)}, max=${String(progressing.rangeMax)} instead of ${facts.progressValue} in ${facts.minValue}..${facts.maxValue}`,
+            );
+          }
+          await transition('complete');
+          const completed = await subject.computed();
+          if (
+            completed.rangeValue !== facts.completionValue ||
+            completed.rangeMin !== facts.minValue ||
+            completed.rangeMax !== facts.maxValue
+          ) {
+            throw new Error(
+              `the browser exposes completion as value=${String(completed.rangeValue)}, min=${String(completed.rangeMin)}, max=${String(completed.rangeMax)} instead of ${facts.completionValue} in ${facts.minValue}..${facts.maxValue}`,
+            );
+          }
+        },
+      },
+      {
+        id: 'status-message.progress.node-persists',
+        outcome:
+          'Progress values update on the same progressbar node so focus and relationships can remain stable.',
+        sources: [WCAG_4_1_3, WCAG_4_1_2, ARIA_PROGRESSBAR],
+        covers: ['4.1.3-status-messages', '4.1.2-name-role-value'],
+        appliesWhen: PROGRESSBAR,
+        evidenceLayer: 'dom',
+        enforcement: 'advisory',
+        advisoryBecause:
+          'Same-node progress updates preserve browser state, but WCAG does not require one universal DOM identity strategy.',
+        run: async ({subject, facts, transition}) => {
+          if (facts.kind !== 'progressbar') {
+            return;
           }
           await subject.isConnected();
           await transition('progress');
           if (!(await subject.isConnected())) {
             throw new Error(
-              'starting determinate progress replaced the progressbar node instead of updating the existing status surface',
-            );
-          }
-          const progressing = await subject.computed();
-          if (
-            progressing.rangeValue !== facts.progressValue ||
-            progressing.rangeMin !== 0 ||
-            progressing.rangeMax !== facts.maxValue
-          ) {
-            throw new Error(
-              `the browser exposes progress as value=${String(progressing.rangeValue)}, min=${String(progressing.rangeMin)}, max=${String(progressing.rangeMax)} instead of ${facts.progressValue} in 0..${facts.maxValue}`,
+              'starting the next progress state replaced the progressbar node instead of updating the existing status surface',
             );
           }
           await transition('complete');
           if (!(await subject.isConnected())) {
             throw new Error(
               'completing progress replaced the progressbar node instead of updating the existing status surface',
-            );
-          }
-          const completed = await subject.computed();
-          if (completed.rangeValue !== facts.completionValue) {
-            throw new Error(
-              `completion leaves the browser-exposed progress value at ${String(completed.rangeValue)} instead of ${facts.completionValue}`,
             );
           }
         },

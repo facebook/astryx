@@ -48,6 +48,8 @@ export interface ComputedNode {
   readonly name: string;
   /** Computed accessible description. */
   readonly description: string;
+  /** Text descendants the engine keeps in this node's accessibility subtree. */
+  readonly accessibleText: string;
   /** Computed live-region channel, or null when this node is not live. */
   readonly live: 'off' | 'polite' | 'assertive' | null;
   /** Whether the accessibility tree exposes the live region as atomic. */

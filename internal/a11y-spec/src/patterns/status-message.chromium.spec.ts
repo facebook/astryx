@@ -31,6 +31,10 @@ async function applyTransition(
     throw new Error(`fixture "${target.id}" supplies no "${name}" transition`);
   }
   const subject = page.locator(STATUS_MESSAGE_SUBJECT_SELECTOR);
+  if (transition.removeSubject === true) {
+    await subject.evaluate(node => node.remove());
+    return;
+  }
   if (transition.replaceSubject === true) {
     await subject.evaluate((node, next) => {
       const replacement = node.cloneNode(false) as Element;
@@ -59,6 +63,25 @@ async function applyTransition(
       () =>
         new Promise<void>(resolve => requestAnimationFrame(() => resolve())),
     );
+  }
+  if (transition.hiddenValue !== undefined) {
+    await subject.evaluate((node, value) => {
+      const hidden = node.ownerDocument.createElement('span');
+      hidden.setAttribute('aria-hidden', 'true');
+      hidden.textContent = value;
+      node.replaceChildren(hidden);
+    }, transition.hiddenValue);
+  }
+  if (transition.attributes != null) {
+    await subject.evaluate((node, attributes) => {
+      for (const [name, value] of Object.entries(attributes)) {
+        if (value == null) {
+          node.removeAttribute(name);
+        } else {
+          node.setAttribute(name, value);
+        }
+      }
+    }, transition.attributes);
   }
   if (transition.value !== undefined) {
     await subject.evaluate((node, next) => {
@@ -137,18 +160,19 @@ test.describe('status-message contract — deliberately violating fixtures', () 
     ) {
       continue;
     }
-    for (const fixtureId of STATUS_MESSAGE_MUTATIONS[expectation.id] ?? []) {
-      test(`${describeExpectation(expectation)} — fails against ${fixtureId}`, async ({
+    for (const mutation of STATUS_MESSAGE_MUTATIONS[expectation.id] ?? []) {
+      test(`${describeExpectation(expectation)} — fails against ${mutation.fixture}`, async ({
         page,
       }) => {
         const cdp = await page.context().newCDPSession(page);
         const [result] = await resultsFor(
           page,
           cdp,
-          statusMessageFixture(fixtureId),
+          statusMessageFixture(mutation.fixture),
           [expectation.id],
         );
         expect(result?.status, result?.detail ?? 'no result').toBe('fail');
+        expect(result?.detail).toContain(mutation.failureIncludes);
       });
     }
   }

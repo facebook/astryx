@@ -63,6 +63,10 @@ async function resultFor(
           `fixture "${target.id}" supplies no "${name}" transition`,
         );
       }
+      if (transition.removeSubject === true) {
+        subjectElement.remove();
+        return;
+      }
       if (transition.replaceSubject === true) {
         const replacement = subjectElement.cloneNode(false) as Element;
         if (transition.attribute != null) {
@@ -84,6 +88,21 @@ async function resultFor(
           subjectElement.setAttribute(transition.attribute, '');
         }
         await Promise.resolve();
+      }
+      if (transition.hiddenValue !== undefined) {
+        const hidden = subjectElement.ownerDocument.createElement('span');
+        hidden.setAttribute('aria-hidden', 'true');
+        hidden.textContent = transition.hiddenValue;
+        subjectElement.replaceChildren(hidden);
+      }
+      if (transition.attributes != null) {
+        for (const [name, value] of Object.entries(transition.attributes)) {
+          if (value == null) {
+            subjectElement.removeAttribute(name);
+          } else {
+            subjectElement.setAttribute(name, value);
+          }
+        }
       }
       if (transition.value !== undefined) {
         if (transition.attribute == null) {
@@ -134,9 +153,9 @@ describe('status-message contract — completeness', () => {
         id => !expectationIds.has(id),
       ),
     ).toEqual([]);
-    for (const fixtureIds of Object.values(STATUS_MESSAGE_MUTATIONS)) {
-      for (const id of fixtureIds) {
-        expect(() => statusMessageFixture(id)).not.toThrow();
+    for (const mutations of Object.values(STATUS_MESSAGE_MUTATIONS)) {
+      for (const mutation of mutations) {
+        expect(() => statusMessageFixture(mutation.fixture)).not.toThrow();
       }
     }
   });
@@ -160,13 +179,22 @@ describe.each(observableHere.map(expectation => [expectation] as const))(
     );
 
     it.each(
-      (STATUS_MESSAGE_MUTATIONS[expectation.id] ?? []).map(id => [id] as const),
-    )('fails against %s, which removes its outcome', async id => {
-      const result = await resultFor(statusMessageFixture(id), expectation.id);
-      expect(
-        result.status,
-        `${describeExpectation(expectation)}: ${result.detail ?? ''}`,
-      ).toBe('fail');
-    });
+      (STATUS_MESSAGE_MUTATIONS[expectation.id] ?? []).map(
+        mutation => [mutation.fixture, mutation.failureIncludes] as const,
+      ),
+    )(
+      'fails against %s with the intended semantic detail',
+      async (id, failureIncludes) => {
+        const result = await resultFor(
+          statusMessageFixture(id),
+          expectation.id,
+        );
+        expect(
+          result.status,
+          `${describeExpectation(expectation)}: ${result.detail ?? ''}`,
+        ).toBe('fail');
+        expect(result.detail).toContain(failureIncludes);
+      },
+    );
   },
 );

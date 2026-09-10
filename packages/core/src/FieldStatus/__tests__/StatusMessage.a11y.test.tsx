@@ -124,7 +124,8 @@ describe('Core status-message binding inventory', () => {
       'role=log transcript updates',
       'composer errors and tool-run states',
       'busy announcement',
-      'visual fill, track, marks, animation, and status cadence',
+      'focusable target-mark triggers and labels',
+      'visual fill, track, animation, and status cadence',
     ]);
     expect(
       CORE_STATUS_MESSAGE_EXCLUSIONS.every(entry => entry.reason.length > 0),

@@ -180,15 +180,17 @@ function FieldStatusHarness({
 }
 
 function SpinnerHarness({visibleLabel}: {visibleLabel: boolean}) {
-  const initial = visibleLabel ? 'Fetching data' : 'Loading';
+  const initial = visibleLabel ? 'Fetching data' : undefined;
   const replacement = visibleLabel ? 'Saving data' : 'Saving';
-  const [label, setLabel] = useState(initial);
+  const [label, setLabel] = useState<string | undefined>(initial);
   return (
     <Frame>
       <TransitionButton name="show" onClick={() => setLabel(initial)} />
       <TransitionButton name="replace" onClick={() => setLabel(replacement)} />
       {visibleLabel ? (
-        <Spinner data-a11y-subject label={label} />
+        <Spinner data-a11y-subject label={label ?? 'Fetching data'} />
+      ) : label == null ? (
+        <Spinner data-a11y-subject />
       ) : (
         <Spinner data-a11y-subject aria-label={label} />
       )}
@@ -212,8 +214,10 @@ function ChatSystemMessageHarness() {
   );
 }
 
-function ProgressHarness() {
-  const [progress, setProgress] = useState<'loading' | number>('loading');
+function ProgressHarness({withMark = false}: {withMark?: boolean}) {
+  const [progress, setProgress] = useState<'loading' | number>(
+    withMark ? 20 : 'loading',
+  );
   return (
     <Frame>
       <TransitionButton name="progress" onClick={() => setProgress(40)} />
@@ -223,6 +227,7 @@ function ProgressHarness() {
         label="Upload progress"
         isIndeterminate={progress === 'loading'}
         value={typeof progress === 'number' ? progress : 0}
+        marks={withMark ? [{value: 75, label: 'Target'}] : undefined}
       />
     </Frame>
   );
@@ -268,6 +273,7 @@ export const CORE_STATUS_MESSAGE_STATE_RENDERS: Record<
   'spinner-visible-label-mounted': () => <SpinnerHarness visibleLabel />,
   'chat-system-status-mounted': () => <ChatSystemMessageHarness />,
   'progress-loading-to-complete': () => <ProgressHarness />,
+  'progress-mark-focused-update': () => <ProgressHarness withMark />,
 };
 
 export {transitionTestId};

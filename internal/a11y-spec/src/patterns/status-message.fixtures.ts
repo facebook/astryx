@@ -17,7 +17,10 @@ export type StatusMessageTransition =
 export interface StatusMessageFixtureTransition {
   readonly value?: string | null;
   readonly attribute?: 'aria-label' | 'aria-valuenow';
+  readonly attributes?: Readonly<Record<string, string | null>>;
+  readonly hiddenValue?: string;
   readonly replaceSubject?: boolean;
+  readonly removeSubject?: boolean;
   readonly pulse?: boolean;
   readonly focusSelector?: string;
 }
@@ -33,16 +36,21 @@ export interface StatusMessageFixture {
 
 const POLITE_FACTS: StatusMessageStateFacts = {
   kind: 'live-region',
+  role: 'status',
   politeness: 'polite',
   messageSource: 'text',
+  initialMessage: '',
   message: 'Changes saved',
   replacement: 'Profile updated',
+  semanticTransitions: ['show', 'replace', 'clear', 'repeat'],
+  focusTransition: 'show',
   canClear: true,
   canRepeat: true,
 };
 
 const ASSERTIVE_FACTS: StatusMessageStateFacts = {
   ...POLITE_FACTS,
+  role: 'alert',
   politeness: 'assertive',
   message: 'Upload failed',
   replacement: 'Connection failed',
@@ -50,7 +58,10 @@ const ASSERTIVE_FACTS: StatusMessageStateFacts = {
 
 const NAMED_FACTS: StatusMessageStateFacts = {
   ...POLITE_FACTS,
+  role: 'status',
   messageSource: 'accessible-name',
+  semanticTransitions: ['show', 'replace'],
+  focusTransition: 'show',
   canClear: false,
   canRepeat: false,
 };
@@ -59,9 +70,12 @@ const PROGRESS_FACTS: StatusMessageStateFacts = {
   kind: 'progressbar',
   politeness: null,
   name: 'Upload progress',
+  initialValue: null,
   progressValue: 40,
   completionValue: 100,
+  minValue: 0,
   maxValue: 100,
+  focusTransition: 'progress',
 };
 
 const POLITE_TRANSITIONS = {
@@ -118,10 +132,40 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
     html: '<div data-a11y-subject role="status"></div>',
   },
   {
+    id: 'violating-loses-channel',
+    facts: POLITE_FACTS,
+    html: '<div data-a11y-subject role="status"></div>',
+    transitions: {
+      show: {value: 'Changes saved', attributes: {'aria-live': 'assertive'}},
+    },
+  },
+  {
+    id: 'violating-wrong-role',
+    facts: POLITE_FACTS,
+    html: '<div data-a11y-subject role="log" aria-live="polite" aria-atomic="true"></div>',
+  },
+  {
+    id: 'violating-loses-role',
+    facts: POLITE_FACTS,
+    html: '<div data-a11y-subject role="status"></div>',
+    transitions: {
+      show: {
+        value: 'Changes saved',
+        attributes: {role: 'log', 'aria-live': 'polite', 'aria-atomic': 'true'},
+      },
+    },
+  },
+  {
     id: 'violating-born-with-content',
     facts: POLITE_FACTS,
     html: '<div data-a11y-subject role="status">Changes saved</div>',
     transitions: {show: {}},
+  },
+  {
+    id: 'violating-replaced-on-show',
+    facts: POLITE_FACTS,
+    html: '<div data-a11y-subject role="status"></div>',
+    transitions: {show: {value: 'Changes saved', replaceSubject: true}},
   },
   {
     id: 'violating-missing-message',
@@ -130,9 +174,23 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
     transitions: {show: {}},
   },
   {
+    id: 'violating-hidden-message',
+    facts: POLITE_FACTS,
+    html: '<div data-a11y-subject role="status"></div>',
+    transitions: {show: {hiddenValue: 'Changes saved'}},
+  },
+  {
     id: 'violating-non-atomic',
     facts: POLITE_FACTS,
-    html: '<div data-a11y-subject aria-live="polite"></div>',
+    html: '<div data-a11y-subject role="status" aria-atomic="false"></div>',
+  },
+  {
+    id: 'violating-loses-atomicity',
+    facts: POLITE_FACTS,
+    html: '<div data-a11y-subject role="status"></div>',
+    transitions: {
+      show: {value: 'Changes saved', attributes: {'aria-atomic': 'false'}},
+    },
   },
   {
     id: 'violating-replaced-region',
@@ -141,6 +199,15 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
     transitions: {
       show: {value: 'Changes saved'},
       replace: {value: 'Profile updated', replaceSubject: true},
+    },
+  },
+  {
+    id: 'violating-wrong-replacement',
+    facts: POLITE_FACTS,
+    html: '<div data-a11y-subject role="status"></div>',
+    transitions: {
+      show: {value: 'Changes saved'},
+      replace: {value: 'Changes saved'},
     },
   },
   {
@@ -153,6 +220,15 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
     },
   },
   {
+    id: 'violating-removed-on-clear',
+    facts: POLITE_FACTS,
+    html: '<div data-a11y-subject role="status"></div>',
+    transitions: {
+      show: {value: 'Changes saved'},
+      clear: {removeSubject: true},
+    },
+  },
+  {
     id: 'violating-repeat-without-change',
     facts: POLITE_FACTS,
     html: '<div data-a11y-subject role="status"></div>',
@@ -162,10 +238,13 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
     },
   },
   {
-    id: 'violating-named-born-with-content',
-    facts: NAMED_FACTS,
-    html: '<div data-a11y-subject role="status" aria-label="Changes saved"></div>',
-    transitions: {show: {}},
+    id: 'violating-replaced-on-repeat',
+    facts: POLITE_FACTS,
+    html: '<div data-a11y-subject role="status"></div>',
+    transitions: {
+      show: {value: 'Changes saved'},
+      repeat: {value: 'Changes saved', replaceSubject: true},
+    },
   },
   {
     id: 'violating-named-never-updates',
@@ -190,15 +269,85 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
     html: '<div data-a11y-subject aria-label="Upload progress"></div>',
   },
   {
+    id: 'violating-progress-loses-role',
+    facts: PROGRESS_FACTS,
+    html: '<div data-a11y-subject role="progressbar" aria-label="Upload progress"></div>',
+    transitions: {
+      progress: {
+        attribute: 'aria-valuenow',
+        value: '40',
+        attributes: {role: 'group'},
+      },
+      complete: {attribute: 'aria-valuenow', value: '100'},
+    },
+  },
+  {
     id: 'violating-progress-name',
     facts: PROGRESS_FACTS,
     html: '<div data-a11y-subject role="progressbar"></div>',
+  },
+  {
+    id: 'violating-progress-loses-name',
+    facts: PROGRESS_FACTS,
+    html: '<div data-a11y-subject role="progressbar" aria-label="Upload progress"></div>',
+    transitions: {
+      progress: {
+        attribute: 'aria-valuenow',
+        value: '40',
+        attributes: {'aria-label': null},
+      },
+      complete: {attribute: 'aria-valuenow', value: '100'},
+    },
+  },
+  {
+    id: 'violating-progress-initial-value',
+    facts: PROGRESS_FACTS,
+    html: '<button data-a11y-relation="focus-anchor">Start upload</button><div data-a11y-subject role="progressbar" aria-label="Upload progress" aria-valuenow="5"></div>',
+    transitions: {
+      progress: {attribute: 'aria-valuenow', value: '40'},
+      complete: {attribute: 'aria-valuenow', value: '100'},
+    },
   },
   {
     id: 'violating-frozen-progress',
     facts: PROGRESS_FACTS,
     html: '<button data-a11y-relation="focus-anchor">Start upload</button><div data-a11y-subject role="progressbar" aria-label="Upload progress"></div>',
     transitions: {progress: {}, complete: {}},
+  },
+  {
+    id: 'violating-incomplete-progress',
+    facts: PROGRESS_FACTS,
+    html: '<button data-a11y-relation="focus-anchor">Start upload</button><div data-a11y-subject role="progressbar" aria-label="Upload progress"></div>',
+    transitions: {
+      progress: {attribute: 'aria-valuenow', value: '40'},
+      complete: {attribute: 'aria-valuenow', value: '40'},
+    },
+  },
+  {
+    id: 'violating-replaced-progress',
+    facts: PROGRESS_FACTS,
+    html: '<button data-a11y-relation="focus-anchor">Start upload</button><div data-a11y-subject role="progressbar" aria-label="Upload progress"></div>',
+    transitions: {
+      progress: {
+        attribute: 'aria-valuenow',
+        value: '40',
+        replaceSubject: true,
+      },
+      complete: {attribute: 'aria-valuenow', value: '100'},
+    },
+  },
+  {
+    id: 'violating-replaced-on-complete',
+    facts: PROGRESS_FACTS,
+    html: '<button data-a11y-relation="focus-anchor">Start upload</button><div data-a11y-subject role="progressbar" aria-label="Upload progress"></div>',
+    transitions: {
+      progress: {attribute: 'aria-valuenow', value: '40'},
+      complete: {
+        attribute: 'aria-valuenow',
+        value: '100',
+        replaceSubject: true,
+      },
+    },
   },
 ];
 
@@ -209,29 +358,159 @@ export const STATUS_MESSAGE_CONFORMING_FIXTURES = [
   'conforming-progress',
 ] as const;
 
+export interface StatusMessageMutation {
+  readonly fixture: string;
+  /** Semantic detail that proves the intended branch, not a harness failure, failed. */
+  readonly failureIncludes: string;
+}
+
 export const STATUS_MESSAGE_MUTATIONS: Readonly<
-  Record<string, readonly string[]>
+  Record<string, readonly StatusMessageMutation[]>
 > = {
+  'status-message.role.exposed': [
+    {
+      fixture: 'violating-wrong-role',
+      failureIncludes: 'not as the declared "status" role',
+    },
+    {
+      fixture: 'violating-loses-role',
+      failureIncludes: 'after the "show" transition',
+    },
+  ],
   'status-message.channel.exposed': [
-    'violating-unexposed-channel',
-    'violating-wrong-channel',
+    {
+      fixture: 'violating-unexposed-channel',
+      failureIncludes: 'exposes no live channel at the pre-update boundary',
+    },
+    {
+      fixture: 'violating-wrong-channel',
+      failureIncludes: 'not the intended assertive channel',
+    },
+    {
+      fixture: 'violating-loses-channel',
+      failureIncludes:
+        'after the "show" transition, not the intended polite channel',
+    },
   ],
-  'status-message.region.precedes-content': ['violating-born-with-content'],
-  'status-message.message.text-exposed': ['violating-missing-message'],
-  'status-message.region.precedes-named-message': [
-    'violating-named-born-with-content',
+  'status-message.region.precedes-content': [
+    {
+      fixture: 'violating-born-with-content',
+      failureIncludes: 'already contains "Changes saved"',
+    },
+    {
+      fixture: 'violating-replaced-on-show',
+      failureIncludes: 'original empty status region was replaced',
+    },
   ],
-  'status-message.message.name-exposed': ['violating-named-never-updates'],
-  'status-message.region.atomic': ['violating-non-atomic'],
-  'status-message.message.replaced-in-place': ['violating-replaced-region'],
-  'status-message.message.cleared-in-place': ['violating-stale-clear'],
+  'status-message.message.text-exposed': [
+    {
+      fixture: 'violating-missing-message',
+      failureIncludes: 'not the complete authored message',
+    },
+    {
+      fixture: 'violating-hidden-message',
+      failureIncludes: 'accessibility tree exposes ""',
+    },
+  ],
+  'status-message.message.name-exposed': [
+    {
+      fixture: 'violating-named-never-updates',
+      failureIncludes: 'not "Changes saved"',
+    },
+  ],
+  'status-message.region.atomic': [
+    {
+      fixture: 'violating-non-atomic',
+      failureIncludes:
+        'not expose this status region as atomic at the pre-update boundary',
+    },
+    {
+      fixture: 'violating-loses-atomicity',
+      failureIncludes:
+        'not expose this status region as atomic after the "show" transition',
+    },
+  ],
+  'status-message.message.replaced-in-place': [
+    {
+      fixture: 'violating-replaced-region',
+      failureIncludes:
+        'replacing the status also replaced its live-region node',
+    },
+    {
+      fixture: 'violating-wrong-replacement',
+      failureIncludes: 'instead of the complete later status',
+    },
+  ],
+  'status-message.message.cleared-in-place': [
+    {
+      fixture: 'violating-stale-clear',
+      failureIncludes: 'clearing the status left "Changes saved"',
+    },
+    {
+      fixture: 'violating-removed-on-clear',
+      failureIncludes: 'clearing the status removed its live-region node',
+    },
+  ],
   'status-message.message.repeat-creates-change': [
-    'violating-repeat-without-change',
+    {
+      fixture: 'violating-repeat-without-change',
+      failureIncludes: 'produced text changes []',
+    },
+    {
+      fixture: 'violating-replaced-on-repeat',
+      failureIncludes: 'repeating the status replaced its live-region node',
+    },
   ],
-  'status-message.focus.unchanged': ['violating-moves-focus'],
-  'status-message.progress.role-exposed': ['violating-progress-role'],
-  'status-message.progress.name-exposed': ['violating-progress-name'],
-  'status-message.progress.updates-in-place': ['violating-frozen-progress'],
+  'status-message.focus.unchanged': [
+    {
+      fixture: 'violating-moves-focus',
+      failureIncludes: 'status update moved focus away',
+    },
+  ],
+  'status-message.progress.role-exposed': [
+    {
+      fixture: 'violating-progress-role',
+      failureIncludes: 'not as a progress bar',
+    },
+    {
+      fixture: 'violating-progress-loses-role',
+      failureIncludes: 'after the "progress" transition, not as a progress bar',
+    },
+  ],
+  'status-message.progress.name-exposed': [
+    {
+      fixture: 'violating-progress-name',
+      failureIncludes: 'browser computes no accessible name',
+    },
+    {
+      fixture: 'violating-progress-loses-name',
+      failureIncludes: 'after the "progress" transition',
+    },
+  ],
+  'status-message.progress.values-exposed': [
+    {
+      fixture: 'violating-progress-initial-value',
+      failureIncludes: 'initial progress value 5 instead of null',
+    },
+    {
+      fixture: 'violating-frozen-progress',
+      failureIncludes: 'browser exposes progress as value=',
+    },
+    {
+      fixture: 'violating-incomplete-progress',
+      failureIncludes: 'browser exposes completion as value=',
+    },
+  ],
+  'status-message.progress.node-persists': [
+    {
+      fixture: 'violating-replaced-progress',
+      failureIncludes: 'starting the next progress state replaced',
+    },
+    {
+      fixture: 'violating-replaced-on-complete',
+      failureIncludes: 'completing progress replaced',
+    },
+  ],
 };
 
 export function statusMessageFixture(id: string): StatusMessageFixture {

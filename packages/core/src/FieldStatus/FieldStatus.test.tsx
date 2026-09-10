@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {FieldStatus} from './FieldStatus';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -51,6 +51,55 @@ describe('FieldStatus', () => {
       const el = screen.getByTestId('fs');
       expect(el).not.toHaveAttribute('role');
       expect(el).not.toHaveAttribute('aria-live');
+    });
+
+    // These remain local because they exercise FieldStatus's first-use hook
+    // routing. The shared binding starts from an already established channel.
+    it('announces error messages assertively, including on first mount', async () => {
+      render(<FieldStatus type="error" message="This field is required" />);
+      await waitFor(() => {
+        expect(assertiveRegion()).toHaveTextContent('This field is required');
+      });
+      expect(politeRegion()).toHaveTextContent('');
+    });
+
+    it('announces warning messages politely on first mount', async () => {
+      render(<FieldStatus type="warning" message="Check this value" />);
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Check this value');
+      });
+      expect(assertiveRegion()).toHaveTextContent('');
+    });
+
+    it('announces success messages politely on first mount', async () => {
+      render(<FieldStatus type="success" message="Looks good" />);
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Looks good');
+      });
+    });
+
+    it('announces message changes through the component hook', async () => {
+      const {rerender} = render(<FieldStatus type="error" message="First" />);
+      await waitFor(() => {
+        expect(assertiveRegion()).toHaveTextContent('First');
+      });
+      rerender(<FieldStatus type="error" message="Second" />);
+      await waitFor(() => {
+        expect(assertiveRegion()).toHaveTextContent('Second');
+      });
+    });
+
+    // The generic contract checks each fixed urgency. This local test protects
+    // the component-specific same-instance type reroute.
+    it('re-routes to the polite channel when type changes from error', async () => {
+      const {rerender} = render(<FieldStatus type="error" message="msg" />);
+      await waitFor(() => {
+        expect(assertiveRegion()).toHaveTextContent('msg');
+      });
+      rerender(<FieldStatus type="success" message="msg" />);
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('msg');
+      });
     });
 
     it('does not announce an empty message', () => {
