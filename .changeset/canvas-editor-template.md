@@ -162,17 +162,33 @@ render as `<li>` through `as="li"`, so the rail is still a list to a screen
 reader, and `Item` merges `className`, which is what lets the hover-reveal
 marker keep sitting on the row itself.
 
-**A 28px row cannot hold a button.** Compact density spends 4px above and
-below, which leaves 20px for content — and the smallest `IconButton` is 28px
-on its own, so a rail of `IconButton` rows measures 36px no matter what
-density says. There is no smaller size to reach for; the floor is the
-component's. So the row actions here are bare `<button>`s with an icon
-inside and no painted box: `styles.rowIcon` gives them a 20px hit area, a
-hover wash and a focus ring, and the rail now measures 28px. Note what did
-_not_ change — they are still `<button>` elements, so the lock, the clear and
-the swatch stay keyboard-reachable and stay announced. It was `Button`'s
-minimum that had to go, not the element. Keep `IconButton` where a control
-is meant to look like a control; the floating tool bar still uses it.
+**One height, two rules: beside a field, or inside a row.** Everything here
+aligns to 28px — the menubar, the tool bar, every inspector field, every row
+of the layer rail. Two different things follow from that, and conflating
+them is what makes a panel look untidy.
+
+An action standing _beside_ a field is `IconButton size="sm"`, and its 28px
+box is the whole point: the clear, the rotate pair, the per-side and
+per-corner toggles all end level with the input's top and bottom, so the row
+reads as one band rather than a field with something small floating next to
+it. The colour swatch and the image thumbnail take the same 28px square for
+the same reason — a chip beside a field is still a thing with edges, and its
+edges should be the field's.
+
+An action _inside_ a row is the exception, and the only place anything
+shrinks. A compact row spends 4px above and below, leaving 20px, and the
+smallest `IconButton` is 28px on its own — so a rail built from them
+measures 36px no matter what density says. There is no smaller size to reach
+for; the floor is the component's. The layer rail's lock is therefore a bare
+`<button>` with a 20px hit area (`styles.itemAction`), and the rail measures
+28px. Note what did _not_ change: it is still a `<button>`, so it stays
+keyboard-reachable and announced. It was `Button`'s minimum that had to go,
+not the element.
+
+Sliders are the one control that should _not_ match. A filter row pairs a
+28px number field with a 20px rail, centred — a slider is a line to aim at,
+not a box to stack, and stretching it to the field's height would read as a
+second input.
 
 **Border, Shadow and Fill are pickers, not text fields.** Each row is now a
 value, a chip that opens a picker, and a clear that only lights up once the

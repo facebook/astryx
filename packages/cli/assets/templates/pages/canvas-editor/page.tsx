@@ -734,16 +734,18 @@ const styles = stylex.create({
   // whichever item gives way first and each label ends up a different width —
   // which is exactly the shared left edge the panel is built around.
   labelColumn: {flexShrink: 0},
-  // A row action, sized to its icon instead of to a control.
+  // An action nested *inside* a row, as opposed to one standing beside a
+  // field. This is the only place a control drops below the 28px the rest
+  // of the panel aligns to.
   //
-  // The smallest IconButton is 28px, which is the whole row's height budget
-  // once compact density adds its 4px above and below — a rail of 28px rows
-  // cannot contain a 28px button. So these are bare buttons: no painted box,
-  // no size floor, just a hit area around the icon. They keep <button>
-  // because the lock and the clear are real actions that have to stay
-  // keyboard-reachable; it is the Button *component's* minimum that had to
+  // It has to: the smallest IconButton is 28px, which is the whole row's
+  // height budget once compact density adds its 4px above and below, so a
+  // rail of 28px rows cannot hold a 28px button. Hence a bare button — no
+  // painted box, no size floor, just a hit area around the icon. It stays a
+  // <button> because the lock is a real action that has to remain
+  // keyboard-reachable; it was the Button *component's* minimum that had to
   // go, not the element.
-  rowIcon: {
+  itemAction: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -763,11 +765,11 @@ const styles = stylex.create({
     },
     cursor: {default: 'pointer', ':disabled': 'default'},
   },
-  // The colour chip that opens a picker. Sized to the same 20px as a row
-  // icon so a row holding one still measures 28px.
+  // The colour chip that opens a picker. Square at the field's own height,
+  // so its edges land on the input's rather than floating inside them.
   swatch: {
-    width: 'var(--spacing-5)',
-    height: 'var(--spacing-5)',
+    width: 'var(--spacing-7)',
+    height: 'var(--spacing-7)',
     flexShrink: 0,
     padding: 0,
     borderWidth: '1px',
@@ -810,6 +812,17 @@ const styles = stylex.create({
   // Filter rows put the slider beside the number rather than under it, so
   // nine of them still read as one column.
   filterSlider: {flexShrink: 0, width: 56},
+  // The image trigger is a swatch that happens to hold a picture, so it
+  // takes the swatch's box rather than a nested action's.
+  thumbnailButton: {
+    display: 'inline-flex',
+    width: 'var(--spacing-7)',
+    height: 'var(--spacing-7)',
+    flexShrink: 0,
+    padding: 0,
+    borderRadius: 'var(--radius-inner)',
+    cursor: 'pointer',
+  },
   thumbnail: {
     overflow: 'hidden',
     borderWidth: '1px',
@@ -1024,12 +1037,16 @@ function InspectorSection({
 }
 
 /**
- * A row action: an icon you can click, not a button with an icon in it.
+ * An action nested inside a list row: an icon you can click, not a button
+ * with an icon in it.
  *
- * See `styles.rowIcon` for why these are bare `<button>`s rather than
- * `IconButton`s.
+ * This is the exception, not the pattern. An action standing beside a field
+ * uses `IconButton size="sm"`, so its 28px box lines up with the input's
+ * and the row reads as one band. Only an action *inside* a 28px row shrinks,
+ * because the row has no space for a control its own height. See
+ * `styles.itemAction`.
  */
-function RowIcon({
+function ItemAction({
   label,
   icon,
   isDisabled,
@@ -1049,7 +1066,7 @@ function RowIcon({
       title={label}
       disabled={isDisabled}
       onClick={onClick}
-      {...stylex.props(styles.rowIcon, xstyle)}>
+      {...stylex.props(styles.itemAction, xstyle)}>
       <Icon icon={icon} size={ICON} />
     </button>
   );
@@ -1272,7 +1289,7 @@ function LayerRow({
       className={stylex.props(layerRow).className}
       startContent={<Icon icon={LAYER_ICON[layer.kind]} size={ICON} />}
       endContent={
-        <RowIcon
+        <ItemAction
           label={layer.isLocked ? `Unlock ${layer.name}` : `Lock ${layer.name}`}
           icon={layer.isLocked ? Lock : LockOpen}
           onClick={onToggleLock}
@@ -1332,11 +1349,14 @@ function StyleRow({
       <Swatch label={name} value={value} onChange={onChange}>
         {children}
       </Swatch>
-      <RowIcon
+      <IconButton
         label={`Clear ${name.toLowerCase()}`}
-        icon={X}
+        tooltip="Clear"
+        size="sm"
+        variant="ghost"
         isDisabled={value === undefined}
         onClick={onClear}
+        icon={<Icon icon={X} size={ICON} />}
       />
     </InspectorRow>
   );
@@ -1961,9 +1981,12 @@ export default function CanvasEditor() {
                               value={selected.padding}
                               onChange={next => updateSelected({padding: next})}
                             />
-                            <RowIcon
+                            <IconButton
                               label="Set padding per side"
-                              icon={SquareDashed}
+                              tooltip="Per side"
+                              size="sm"
+                              variant="ghost"
+                              icon={<Icon icon={SquareDashed} size={ICON} />}
                             />
                           </InspectorRow>
                         </InspectorSection>
@@ -2007,9 +2030,14 @@ export default function CanvasEditor() {
                               value={selected.radius}
                               onChange={next => updateSelected({radius: next})}
                             />
-                            <RowIcon
+                            <IconButton
                               label="Set radius per corner"
-                              icon={SquareRoundCorner}
+                              tooltip="Per corner"
+                              size="sm"
+                              variant="ghost"
+                              icon={
+                                <Icon icon={SquareRoundCorner} size={ICON} />
+                              }
                             />
                           </InspectorRow>
                           <StyleRow
@@ -2058,33 +2086,45 @@ export default function CanvasEditor() {
                                 updateSelected({rotation: next})
                               }
                             />
-                            <RowIcon
+                            <IconButton
                               label="Rotate counterclockwise"
-                              icon={RotateCcw}
+                              tooltip="−90°"
+                              size="sm"
+                              variant="ghost"
                               onClick={() =>
                                 updateSelected({
                                   rotation: (selected.rotation + 270) % 360,
                                 })
                               }
+                              icon={<Icon icon={RotateCcw} size={ICON} />}
                             />
-                            <RowIcon
+                            <IconButton
                               label="Rotate clockwise"
-                              icon={RotateCw}
+                              tooltip="+90°"
+                              size="sm"
+                              variant="ghost"
                               onClick={() =>
                                 updateSelected({
                                   rotation: (selected.rotation + 90) % 360,
                                 })
                               }
+                              icon={<Icon icon={RotateCw} size={ICON} />}
                             />
                           </InspectorRow>
                           <InspectorRow label="Flip" hAlign="end">
-                            <RowIcon
+                            <IconButton
                               label="Flip horizontally"
-                              icon={FlipHorizontal2}
+                              tooltip="Flip horizontally"
+                              size="sm"
+                              variant="ghost"
+                              icon={<Icon icon={FlipHorizontal2} size={ICON} />}
                             />
-                            <RowIcon
+                            <IconButton
                               label="Flip vertically"
-                              icon={FlipVertical2}
+                              tooltip="Flip vertically"
+                              size="sm"
+                              variant="ghost"
+                              icon={<Icon icon={FlipVertical2} size={ICON} />}
                             />
                           </InspectorRow>
                         </InspectorSection>
@@ -2328,11 +2368,14 @@ export default function CanvasEditor() {
                                   isWheelEnabled={false}
                                 />
                               </StackItem>
-                              <RowIcon
+                              <IconButton
                                 label="Clear stroke"
-                                icon={X}
+                                tooltip="Clear"
+                                size="sm"
+                                variant="ghost"
                                 isDisabled={!selected.stroke}
                                 onClick={() => updateSelected({stroke: 0})}
+                                icon={<Icon icon={X} size={ICON} />}
                               />
                             </InspectorRow>
                           </InspectorSection>
@@ -2357,7 +2400,7 @@ export default function CanvasEditor() {
                                   aria-label="Replace image"
                                   title="Replace image"
                                   {...stylex.props(
-                                    styles.rowIcon,
+                                    styles.thumbnailButton,
                                     styles.thumbnail,
                                   )}>
                                   <img
