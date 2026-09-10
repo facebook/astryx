@@ -522,11 +522,11 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
         outcome:
           'The progress bar exposes a valid declared range and its starting, in-progress, and completion values.',
         sources: [
+          WCAG_4_1_2,
           ARIA_VALUE_MIN,
           ARIA_VALUE_NOW,
           ARIA_PROGRESSBAR,
           WCAG_4_1_3,
-          WCAG_4_1_2,
         ],
         wcagOutcome:
           'Progress status and its current value can be programmatically determined without moving focus.',
