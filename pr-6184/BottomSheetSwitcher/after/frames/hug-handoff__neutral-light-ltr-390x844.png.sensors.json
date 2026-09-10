@@ -3,8 +3,8 @@
   "identity": "story",
   "build": {
     "root": "<repository>",
-    "expectedSha": "f2076540d03389bc899690582e3fdcb59f4ffc3a",
-    "observedSha": "f2076540d03389bc899690582e3fdcb59f4ffc3a"
+    "expectedSha": "d92a3a1b71f530462d2371f474d879a2712184a7",
+    "observedSha": "d92a3a1b71f530462d2371f474d879a2712184a7"
   },
   "expected": {
     "globals": {
@@ -96,6 +96,6 @@
   },
   "image": {
     "path": "<audit-workspace>/evidence/after/frames/hug-handoff__neutral-light-ltr-390x844.png",
-    "bytes": 24098
+    "bytes": 22017
   }
 }
