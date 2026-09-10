@@ -46,6 +46,12 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  *   such an integration contributes nothing and is surfaced via Project.issues()
  * @property {string[]} [__unknownKeys] manifest keys this CLI does not know —
  *   surfaced as a warning; the rest of the manifest still contributes
+ * @property {boolean} [__autolinked] loaded because the project declares the
+ *   package as a dependency and it ships a manifest, with no astryx.config
+ *   entry naming it — see foundation/integrations/autolink.mjs
+ * @property {string} [__dependencyField] for an autolinked integration, the
+ *   package.json field that declared it (`dependencies`, `devDependencies`,
+ *   `optionalDependencies`)
  * @property {import('../../authoring/debug/type').DebugEventHandler} [__debug]
  *   the manifest module's `debug` NAMED export, when it exported a function.
  *   Not a manifest key — see {@link loadManifest}.

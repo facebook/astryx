@@ -14,7 +14,8 @@
  *   - `Project.load(cwd, {cache})` is the async factory (constructors can't be
  *     async). It does what loadConfig did — find the config sibling-of
  *     package.json, import + validate it, load the configured integrations —
- *     and nothing more. Discovery is LAZY.
+ *     plus autolink the installed ones no config names, and nothing more.
+ *     Discovery is LAZY.
  *   - Discovery methods (components/templates/codemods/docs) are MEMOIZED per
  *     instance (via the pluggable cache) and orchestrate the EXISTING discovery
  *     functions — Project never reimplements discovery.
@@ -35,6 +36,7 @@ import * as path from 'node:path';
 import {findPresentFiles, loadModuleWithParser} from '../fs/module-loader.mjs';
 import {parseConfig} from '../../authoring/config/parse.mjs';
 import {loadIntegrations} from '../integrations/integrations.mjs';
+import {autolinkIntegrations} from '../integrations/autolink.mjs';
 import {
   setProject as setDebugProject,
   setEventHandler as setDebugEventHandler,
@@ -244,6 +246,13 @@ export class Project {
       : (cache ?? new InMemoryConfigCache());
     const configPath = findConfigPath(cwd);
     const hash = configContentHash(configPath);
+    // The project root: the config's directory when there is one (findConfigPath
+    // resolves the config as a sibling of the nearest package.json, so the two
+    // agree), otherwise that package.json's directory. Dependencies are declared
+    // there, and node_modules sits there.
+    const projectDir = configPath
+      ? path.dirname(configPath)
+      : (findPackageRoot(cwd) ?? cwd);
 
     /** @type {import('../../authoring/config/type').AstryxConfig} */
     let config = {integrations: []};
@@ -257,13 +266,28 @@ export class Project {
         label: 'astryx.config',
         fresh,
       });
-      const configDir = path.dirname(configPath);
       integrations = config.integrations ?? [];
       loadedIntegrations = await loadIntegrations(integrations, {
-        cwd: configDir,
+        cwd: projectDir,
         fresh,
       });
     }
+
+    // An installed integration the config does not name is still installed.
+    // This runs whether or not a config exists, because the projects it reaches
+    // are overwhelmingly the ones with no astryx.config at all: a scaffold adds
+    // the dependency and writes no config, and the integration then contributes
+    // nothing for want of a line nobody knew to write. Appended AFTER the
+    // configured ones so an explicit entry keeps its position and its
+    // precedence in every discovery order.
+    loadedIntegrations = [
+      ...loadedIntegrations,
+      ...(await autolinkIntegrations({
+        projectDir,
+        loaded: loadedIntegrations,
+        fresh,
+      })),
+    ];
 
     // The debug recorder resolves its settings synchronously, long before any
     // command gets here, so this is where a project's `debug` block gets a
@@ -314,12 +338,21 @@ export class Project {
     return this.#config;
   }
 
-  /** Configured integration package names. @returns {string[]} */
+  /**
+   * Integration package names the config names. NOT the full set that is
+   * loaded — an autolinked integration is absent here by definition. For
+   * everything in play, read {@link Project.loadedIntegrations}.
+   * @returns {string[]}
+   */
   get integrations() {
     return this.#integrations;
   }
 
-  /** Resolved loaded integrations (lib/integrations.mjs shape). @returns {import('../integrations/integrations.mjs').LoadedIntegration[]} */
+  /**
+   * Every resolved integration (lib/integrations.mjs shape), configured ones
+   * first, then the autolinked ones (`__autolinked`).
+   * @returns {import('../integrations/integrations.mjs').LoadedIntegration[]}
+   */
   get loadedIntegrations() {
     return this.#loadedIntegrations;
   }
