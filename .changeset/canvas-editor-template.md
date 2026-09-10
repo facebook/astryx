@@ -332,6 +332,12 @@ rail follows later, since knowing what is on the canvas outlasts being able
 to adjust it. Each resize handle folds with its panel, or a grip is left
 behind on a seam with nothing on the other side.
 
+**Export is a ghost trigger.** A filled primary put the page's heaviest mark
+on the one control that is not the work — the canvas is, and the bar around
+it should stay chrome. Ghost also lets the toolbar's edge compensation do its
+job: it pulls a ghost trigger out by its own padding, so the icon lands on
+the header's gutter while the hover box still bleeds past it.
+
 **The image row's trigger is a `Thumbnail`, not a button wrapping an `img`.**
 The component already carries what the hand-rolled version was re-deriving:
 button semantics and a hover overlay from `onClick`, an accessible name and

@@ -2122,7 +2122,7 @@ export default function CanvasEditor() {
                   <DropdownMenu
                     button={{
                       label: 'Export',
-                      variant: 'primary',
+                      variant: 'ghost',
                       size: 'sm',
                       icon: <Icon icon={Download} size={ICON} />,
                     }}
