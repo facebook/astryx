@@ -137,8 +137,10 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * When disabled with a reason, keeps the input focusable via `aria-disabled`
    * (instead of the native `disabled` attribute) and `readOnly` so an
    * associated disabled-reason tooltip stays discoverable by keyboard and
-   * assistive technology. Value mutation is still blocked by the `isDisabled`
-   * guards. Consumers (Typeahead) own the tooltip and wrapper.
+   * assistive technology. Query and text mutation are blocked, but an
+   * already-open highlighted option can still be selected with Enter after a
+   * transition into this state. Consumers (Typeahead) own the tooltip and
+   * wrapper.
    * @default false
    */
   isFocusableDisabled?: boolean;
@@ -1036,7 +1038,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         placeholder={placeholder}
         // When a disabled-reason tooltip is shown the input keeps focusability
         // via aria-disabled + readOnly instead of the native disabled
-        // attribute; value mutation stays blocked by the isDisabled guards.
+        // attribute. Query and text mutation are blocked, but an already-open
+        // highlighted option can still be selected with Enter after transition.
         disabled={isDisabled && !isFocusableDisabled}
         readOnly={isFocusableDisabled || undefined}
         autoFocus={hasAutoFocus}
