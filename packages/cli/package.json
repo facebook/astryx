@@ -101,10 +101,10 @@
   "dependencies": {
     "commander": "^12.1.0",
     "jiti": "^2.7.0",
-    "jscodeshift": "^17.3.0",
-    "postcss": "^8.5.23",
+    "jscodeshift": "^17.4.0",
+    "postcss": "^8.5.26",
     "postcss-selector-parser": "^7.1.5",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "peerDependencies": {
     "@astryxdesign/charts": "*",
