@@ -395,6 +395,44 @@ export function resolveImportPath(coreDir, componentName) {
   return '@astryxdesign/core';
 }
 
+/**
+ * Resolve the specifier an integration component is imported from, against the
+ * owning package's `exports` map.
+ *
+ * A component lives in a directory that need not share its name — several
+ * components can be exported from one entry point — so the specifier has to
+ * come from the directory the doc file sits in, checked against `exports`,
+ * rather than from the component name. Falls back to the package root when the
+ * directory is not an exported subpath, matching what a consumer would have to
+ * write by hand.
+ *
+ * Lives here, beside {@link resolveImportPath}, because more than one surface
+ * answers "where is this imported from" and they have to agree: `component`
+ * reports it as ownership metadata and `search` reports it on every hit. When
+ * each resolved it for itself the two disagreed, and an import specifier that
+ * does not resolve is worse than no answer.
+ *
+ * @param {{packageDir?: string, docPath?: string|null, packageName: string}} owner
+ * @param {string} componentName
+ * @returns {string}
+ */
+export function resolveIntegrationImportPath(owner, componentName) {
+  const {packageDir, docPath, packageName} = owner;
+  const directory = docPath ? path.basename(path.dirname(docPath)) : componentName;
+  if (!packageDir) return packageName;
+  try {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
+    );
+    if (manifest.exports?.[`./${directory}`]) {
+      return `${packageName}/${directory}`;
+    }
+  } catch {
+    // An unreadable or malformed manifest is not worth failing a lookup over.
+  }
+  return packageName;
+}
+
 // ── External package discovery ───────────────────────────────────────
 
 /**
