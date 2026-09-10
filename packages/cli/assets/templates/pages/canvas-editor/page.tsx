@@ -166,6 +166,42 @@ const ICON = 'sm' as const;
  */
 const LABEL_COLUMN = 80;
 
+/**
+ * Widest a document tab is allowed to get, in pixels.
+ *
+ * A ceiling rather than a fixed width: it holds the longest seeded name with
+ * its close showing, and tabs fall below it as the strip fills or the window
+ * narrows.
+ */
+const TAB_MAX_WIDTH = 164;
+
+/**
+ * Room the tab strip leaves for the rest of the header, in pixels.
+ *
+ * Covers the menu button ahead of the strip, the save note and Export button
+ * after it, and the bar's own gutters. Generous rather than exact: too small
+ * and the strip crowds Export, too large and it gives up room it could have
+ * spent on tabs.
+ */
+const TAB_STRIP_RESERVE = 320;
+
+/**
+ * Width below which the inspector is folded away.
+ *
+ * It is the wider of the two panels and the one whose absence costs least:
+ * you can still see the artwork and pick layers without it. Set where the
+ * canvas would otherwise be squeezed under the artboard's own width.
+ */
+const HIDE_INSPECTOR = '@media (max-width: 1099.98px)';
+
+/**
+ * Width below which the layer rail folds away too.
+ *
+ * Later than the inspector, since knowing what is on the canvas survives
+ * longer than being able to adjust it.
+ */
+const HIDE_RAIL = '@media (max-width: 839.98px)';
+
 const PHOTO_LAYER_SRC = '/template-assets/moody-scene-vertical-1.png';
 
 type LayerKind = 'text' | 'image';
@@ -775,14 +811,36 @@ const styles = stylex.create({
   // matters: it feeds the toolbar's edge compensation, which pulls ghost
   // triggers back out by their own padding so the menu button's *icon* lines
   // up on the gutter while its hover box still bleeds into it.
-  headerBar: {'--astryx-section-padding-inline': 'var(--spacing-2)'},
+  headerBar: {
+    '--astryx-section-padding-inline': 'var(--spacing-2)',
+    // Named so the tab strip can size against the bar rather than the window:
+    // cqw tracks this element, so it stays right if the bar ever stops being
+    // full-bleed, and it excludes a scrollbar the way vw does not.
+    containerType: 'inline-size',
+    containerName: 'editor-header',
+  },
   // The open-document strip above the menubar. It scrolls rather than wraps:
   // a second row of tabs would move the menubar down, and the whole point of
   // the strip is that the chrome above the canvas has a fixed height.
   tabStrip: {
     display: 'flex',
     alignItems: 'center',
-    gap: 'var(--spacing-1)',
+    // No gap: a flex gap applies on *both* sides of a rule, so it would sit
+    // in a channel of its own rather than on the seam between two tabs. The
+    // tabs carry their own inner padding, so butting them up costs the labels
+    // nothing and the rule lands exactly on the boundary it marks.
+    gap: 0,
+    minWidth: 0,
+    flexShrink: 1,
+    // The strip has to cap itself. It sits in Toolbar's start slot, and that
+    // slot is not the one built to give way — only the centre slot carries
+    // `min-width: 0`, so a start slot grows to its content and pushes the bar
+    // wider instead of squeezing. Widening the start slot in core would
+    // change every toolbar's behaviour to suit one page's tab strip, so the
+    // cap lives here: bar width less the room the menu button and the trailing
+    // save/export group need. Once capped, the tabs inside flex down to their
+    // own floor and the strip scrolls only after that.
+    maxWidth: `calc(100cqw - ${TAB_STRIP_RESERVE}px)`,
     paddingInline: 'var(--spacing-2)',
     paddingBlock: 'var(--spacing-1)',
     overflowX: 'auto',
@@ -790,6 +848,13 @@ const styles = stylex.create({
     // the tabs are draggable-looking targets already.
     scrollbarWidth: 'none',
   },
+  // Folded by width, not by the View menu's toggles. Those record what the
+  // user asked for; this records whether there is room to honour it, so the
+  // panel comes back on its own when the window grows rather than leaving
+  // the toggle switched off. Applied to the handle as well as the panel, or
+  // a grip is left behind on a seam with nothing on the other side.
+  foldsAtRail: {display: {default: null, [HIDE_RAIL]: 'none'}},
+  foldsAtInspector: {display: {default: null, [HIDE_INSPECTOR]: 'none'}},
   // A short rule, not a full-height one: the strip has no columns to divide,
   // it only needs the smallest mark that reads as "these are separate tabs".
   // A vertical Divider takes its height from the row unless given one, and a
@@ -804,14 +869,19 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: 'var(--spacing-1)',
-    flexShrink: 0,
-    // A set width is what lets the close eat into the label instead of
-    // widening the tab. With content sizing there is nothing for the label to
-    // shrink against, so revealing the close would push every tab to its
-    // right — the strip would reflow under the pointer, and the target you
-    // were reaching for would move. Sized to hold the longest seeded name
-    // *with* its close showing, since the active tab never hides one.
-    width: 164,
+    // A width the tab is allowed to shrink under, which makes it a ceiling:
+    // it never grows, so it sits at this size until something squeezes it.
+    // It has to be `width` and not `flexBasis` — a basis does not raise an
+    // item's max-content contribution, so the strip above would size itself
+    // to the tabs' *content* and then squeeze them back under their basis,
+    // leaving every tab short even with the bar half empty.
+    flexGrow: 0,
+    flexShrink: 1,
+    width: TAB_MAX_WIDTH,
+    // A floor, so a crowded strip scrolls instead of grinding every tab down
+    // to an unreadable sliver. Enough for the mark, a few characters and the
+    // close; past it the strip's own overflow takes over.
+    minWidth: 96,
     // The 28px the rest of the editor aligns to.
     height: 'var(--spacing-7)',
     // Tighter on the close end: that side holds a bare 20px icon whose hit
@@ -824,7 +894,6 @@ const styles = stylex.create({
       default: 'transparent',
       ':hover': 'var(--color-background-muted)',
     },
-    maxWidth: 176,
   },
   // The open document is a grey fill and nothing more. A border and shadow
   // would make the tab a raised surface sitting on the bar, which reads as a
@@ -2027,15 +2096,22 @@ export default function CanvasEditor() {
                         </Fragment>
                       );
                     })}
-                    <IconButton
-                      label="New document"
-                      tooltip="New document"
-                      variant="ghost"
-                      size="sm"
-                      onClick={addTab}
-                      icon={<Icon icon={Plus} size={ICON} color="secondary" />}
-                    />
                   </div>
+                  {/*
+                    Outside the strip on both counts: it is not one of the
+                    open documents the group is named for, and inside a strip
+                    that scrolls once the tabs stop fitting it would be the
+                    first thing to scroll out of reach — exactly when adding
+                    a document is most likely to be what you came for.
+                  */}
+                  <IconButton
+                    label="New document"
+                    tooltip="New document"
+                    variant="ghost"
+                    size="sm"
+                    onClick={addTab}
+                    icon={<Icon icon={Plus} size={ICON} color="secondary" />}
+                  />
                 </>
               }
               endContent={
@@ -2068,7 +2144,8 @@ export default function CanvasEditor() {
                         resizable={rail.props}
                         hasDivider
                         padding={2}
-                        label="Layers and assets">
+                        label="Layers and assets"
+                        xstyle={styles.foldsAtRail}>
                         <VStack gap={3}>
                           <SegmentedControl
                             label="Left panel"
@@ -2135,6 +2212,7 @@ export default function CanvasEditor() {
                         // where the drag actually happens.
                         pillPlacement="center"
                         label="Resize layers panel"
+                        xstyle={styles.foldsAtRail}
                       />
                     </>
                   ) : undefined
@@ -2358,13 +2436,15 @@ export default function CanvasEditor() {
                         isAlwaysVisible={false}
                         pillPlacement="center"
                         label="Resize properties panel"
+                        xstyle={styles.foldsAtInspector}
                       />
                       <LayoutPanel
                         resizable={inspector.props}
                         hasDivider
                         padding={0}
                         isScrollable
-                        label={`${selected.name} properties`}>
+                        label={`${selected.name} properties`}
+                        xstyle={styles.foldsAtInspector}>
                         <InspectorSection title="Layout">
                           <InspectorRow label="Padding">
                             <AxisInput

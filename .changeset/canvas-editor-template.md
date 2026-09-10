@@ -299,7 +299,38 @@ is dropped next to the open document: that tab already reads as separate by
 its fill, and a rule running into the fill's rounded edge only crowds it. The
 rule is hidden rather than unmounted, so moving the selection does not add or
 remove a flex item and slide the whole strip sideways under the pointer that
-just clicked it.
+just clicked it. The strip carries no flex gap, since a gap applies on _both_
+sides of a rule and would leave it floating in a channel of its own instead
+of landing on the seam; the tabs have their own inner padding, so butting
+them up costs the labels nothing.
+
+**Tabs have a ceiling, not a fixed width, and the panels fold by width.** A
+tab now sits at its widest and gives ground as documents are added or the
+window narrows, spending the label's slack before truncating and stopping at
+a floor so a crowded strip scrolls rather than grinding every tab down to a
+sliver. The ceiling has to be `width` and not `flex-basis`: a basis does not
+raise an item's max-content contribution, so the strip sizes itself to the
+tabs' _content_ and then squeezes them back under their own basis, leaving
+every tab short even with the bar half empty.
+
+The strip also caps itself, because it sits in `Toolbar`'s start slot and
+that is not the slot built to give way — only the centre slot carries
+`min-width: 0`, so a start slot grows to its content and pushes the bar wider
+instead of squeezing. Widening the start slot in core would change every
+toolbar to suit one page's tab strip, so the cap is local: bar width less the
+room the menu button and the trailing save/export group need, measured in
+`cqw` against the header so it tracks the bar rather than the window. The
+new-document button moved out of the strip on the way — it is not one of the
+open documents the group is named for, and inside a scrolling strip it would
+be the first thing to scroll out of reach.
+
+The two side panels fold away below a width rather than being switched off:
+the View menu's toggles record what the user asked for, so a panel that
+vanished for room comes back on its own when the window grows. The inspector
+goes first, being the wider of the two and the one you can work without; the
+rail follows later, since knowing what is on the canvas outlasts being able
+to adjust it. Each resize handle folds with its panel, or a grip is left
+behind on a seam with nothing on the other side.
 
 **The image row's trigger is a `Thumbnail`, not a button wrapping an `img`.**
 The component already carries what the hand-rolled version was re-deriving:
