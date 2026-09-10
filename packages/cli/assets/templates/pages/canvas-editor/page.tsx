@@ -1634,6 +1634,14 @@ export default function CanvasEditor() {
   const [selectedID, setSelectedID] = useState('headline');
   const [panel, setPanel] = useState('layers');
   const [zoom, setZoom] = useState('0.4');
+
+  // The picker is presentational here: a template has no upload endpoint to
+  // post to, and swapping the artboard for a local object URL would leave the
+  // page showing something the template does not ship. Naming the chosen file
+  // is the honest middle — the control demonstrably works, and nothing
+  // pretends to have been uploaded.
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [imageName, setImageName] = useState('Image');
   // What the View submenu toggles. A design tool trades chrome for canvas, so
   // these drive the real Layout slots rather than standing in for them.
   const [chrome, setChrome] = useState({
@@ -2714,10 +2722,27 @@ export default function CanvasEditor() {
                                     label="Image source"
                                     isLabelHidden
                                     size="sm"
-                                    value="Image"
+                                    value={imageName}
                                     isReadOnly
                                   />
                                 </StackItem>
+                                {/* Astryx's FileInput is fixed at the medium
+                                element height, and this row is built on the
+                                28px rhythm the rest of the inspector keeps,
+                                so the picker is driven from the thumbnail
+                                instead. The input stays in the DOM — hiding
+                                it with the attribute rather than unmounting
+                                it is what lets the button open it. */}
+                                <input
+                                  ref={fileRef}
+                                  type="file"
+                                  accept="image/*"
+                                  hidden
+                                  onChange={event => {
+                                    const file = event.target.files?.[0];
+                                    if (file) {setImageName(file.name);}
+                                  }}
+                                />
                                 {/* The trigger shows the picture rather than
                                 an icon standing in for one: the row is about
                                 which image this is. */}
@@ -2725,6 +2750,7 @@ export default function CanvasEditor() {
                                   type="button"
                                   aria-label="Replace image"
                                   title="Replace image"
+                                  onClick={() => fileRef.current?.click()}
                                   {...stylex.props(
                                     styles.thumbnailButton,
                                     styles.thumbnail,

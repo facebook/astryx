@@ -248,6 +248,14 @@ that all happen to be no-ops still force the image onto its own composited
 layer, so `filterCss` drops the ones sitting at 0 or 100 and returns `none`
 when they all are.
 
+**The image row's thumbnail opens a picker.** `FileInput` would be the
+obvious component, but it is fixed at the medium element height and this
+inspector is built on a 28px rhythm, so the picker is driven from the
+thumbnail instead and the file input itself stays hidden in the DOM. Choosing
+a file names it in the adjacent field and stops there: a template has no
+upload endpoint, and repainting the artboard from a local object URL would
+show something the template does not ship.
+
 **The canvas tool bar's end gutters match.** The trailing zoom control is a
 ghost, so edge compensation pulls it out to the card's edge to optically align
 its label — correct when the control is alone in a container, but here it left
