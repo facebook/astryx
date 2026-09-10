@@ -70,5 +70,6 @@ describe('ChatSystemMessage', () => {
     );
     const el = screen.getByTestId('sys');
     expect(el).toHaveAttribute('data-custom', 'x');
+    expect(el).toHaveAttribute('role', 'status');
   });
 });
