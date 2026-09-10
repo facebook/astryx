@@ -78,6 +78,17 @@
     }
   },
   {
+    "component": "SegmentedControl",
+    "storyId": "core-segmentedcontrol--default",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "button[role=\"radio\"][data-value=\"grid\"]",
+      "next": "button[role=\"radio\"][data-value=\"table\"]"
+    }
+  },
+  {
     "component": "Switch",
     "storyId": "core-switch--default",
     "dims": [
