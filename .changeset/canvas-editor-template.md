@@ -185,6 +185,20 @@ for; the floor is the component's. The layer rail's lock is therefore a bare
 keyboard-reachable and announced. It was `Button`'s minimum that had to go,
 not the element.
 
+**Gutters differ by panel, and the swatch borrows the field's corner.** The
+left rail sits at 8px because its rows are the content — a denser gutter
+lets the list read as a list. The inspector sits at 12px, carried by each
+`InspectorSection` rather than by the panel, which is what keeps the rules
+between sections running edge to edge: pad the panel instead and every
+divider insets by the gutter, turning a full-bleed rule into a floating
+line.
+
+The colour chips round to `--radius-element`, the same token an input
+rounds to, not `--radius-inner`. One step tighter sounds like the safer
+choice for a small square, but at 28px beside a 28px field the two curves
+read as different families; matching them is what makes the chip look like
+another control on the row rather than a tile dropped next to one.
+
 Sliders are the one control that should _not_ match. A filter row pairs a
 28px number field with a 20px rail, centred — a slider is a line to aim at,
 not a box to stack, and stretching it to the field's height would read as a

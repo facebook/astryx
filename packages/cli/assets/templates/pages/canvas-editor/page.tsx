@@ -765,8 +765,11 @@ const styles = stylex.create({
     },
     cursor: {default: 'pointer', ':disabled': 'default'},
   },
-  // The colour chip that opens a picker. Square at the field's own height,
-  // so its edges land on the input's rather than floating inside them.
+  // The colour chip that opens a picker. Square at the field's own height
+  // and rounded to the field's own corner, so it reads as another control
+  // on the row rather than a tile dropped beside one. --radius-element is
+  // the token an input rounds to; --radius-inner is a step tighter and
+  // reads as a different family at this size.
   swatch: {
     width: 'var(--spacing-7)',
     height: 'var(--spacing-7)',
@@ -775,7 +778,7 @@ const styles = stylex.create({
     borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: 'var(--color-border-emphasized)',
-    borderRadius: 'var(--radius-inner)',
+    borderRadius: 'var(--radius-element)',
     cursor: 'pointer',
     // A chip for an unset slot reads as empty rather than as black.
     backgroundImage:
@@ -820,7 +823,7 @@ const styles = stylex.create({
     height: 'var(--spacing-7)',
     flexShrink: 0,
     padding: 0,
-    borderRadius: 'var(--radius-inner)',
+    borderRadius: 'var(--radius-element)',
     cursor: 'pointer',
   },
   thumbnail: {
@@ -1025,7 +1028,11 @@ function InspectorSection({
   children: React.ReactNode;
 }) {
   return (
-    <Section padding={4} dividers={['bottom']}>
+    // The panel itself stays at zero padding and each section carries the
+    // gutter instead. That is what keeps the rules between sections running
+    // edge to edge: pad the panel and every divider insets by the gutter,
+    // turning a full-bleed rule into a floating line.
+    <Section padding={3} dividers={['bottom']}>
       <VStack gap={3}>
         <Text type="label" weight="semibold">
           {title}
@@ -1694,7 +1701,7 @@ export default function CanvasEditor() {
                       <LayoutPanel
                         resizable={rail.props}
                         hasDivider
-                        padding={3}
+                        padding={2}
                         label="Layers and assets">
                         <VStack gap={3}>
                           <SegmentedControl
