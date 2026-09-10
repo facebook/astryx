@@ -396,8 +396,28 @@ export function resolveImportPath(coreDir, componentName) {
 }
 
 /**
+ * Read a package's `exports` map once, so a caller resolving many components
+ * from the same package parses its manifest once rather than per component.
+ *
+ * @param {string|undefined} packageDir
+ * @returns {Record<string, unknown>|null} the map, or null when unreadable
+ */
+export function readPackageExports(packageDir) {
+  if (!packageDir) return null;
+  try {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
+    );
+    return manifest.exports ?? null;
+  } catch {
+    // An unreadable or malformed manifest is not worth failing a lookup over.
+    return null;
+  }
+}
+
+/**
  * Resolve the specifier an integration component is imported from, against the
- * owning package's `exports` map.
+ * owning package's already-parsed `exports` map.
  *
  * A component lives in a directory that need not share its name — several
  * components can be exported from one entry point — so the specifier has to
@@ -412,25 +432,18 @@ export function resolveImportPath(coreDir, componentName) {
  * each resolved it for itself the two disagreed, and an import specifier that
  * does not resolve is worse than no answer.
  *
- * @param {{packageDir?: string, docPath?: string|null, packageName: string}} owner
+ * Takes the parsed map rather than a directory so resolving a package's whole
+ * component set costs one manifest read; see {@link readPackageExports}.
+ *
+ * @param {{exportsMap: Record<string, unknown>|null, docPath?: string|null, packageName: string}} owner
  * @param {string} componentName
  * @returns {string}
  */
 export function resolveIntegrationImportPath(owner, componentName) {
-  const {packageDir, docPath, packageName} = owner;
+  const {exportsMap, docPath, packageName} = owner;
+  if (!exportsMap) return packageName;
   const directory = docPath ? path.basename(path.dirname(docPath)) : componentName;
-  if (!packageDir) return packageName;
-  try {
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
-    );
-    if (manifest.exports?.[`./${directory}`]) {
-      return `${packageName}/${directory}`;
-    }
-  } catch {
-    // An unreadable or malformed manifest is not worth failing a lookup over.
-  }
-  return packageName;
+  return exportsMap[`./${directory}`] ? `${packageName}/${directory}` : packageName;
 }
 
 // ── External package discovery ───────────────────────────────────────

@@ -6,14 +6,16 @@
  *
  * `component` reports it as ownership metadata and `search` reports it on every
  * hit. Each used to resolve it independently, and they disagreed: `component`
- * derived the subpath from the doc's directory against the owning package's
- * `exports`, while `search` handed back the bare package name — a specifier
- * that does not resolve for a package whose components live behind subpaths.
- * An agent that searched and then imported what it was told got a broken file.
+ * honored a doc-authored `import` and otherwise derived the subpath from the
+ * doc's directory against the owning package's `exports`, while `search` handed
+ * back the bare package name — a specifier that does not resolve for a package
+ * whose components live behind subpaths. An agent that searched and then
+ * imported what it was told got a broken file.
  *
- * The two now call one resolver, so the agreement is structural. These tests
- * pin the property rather than the implementation: ask both surfaces about the
- * same component and require the same answer.
+ * The two now share one resolver and one precedence rule, so the agreement is
+ * structural. These tests pin the property rather than the implementation: ask
+ * both surfaces about the same component and require the same answer, across
+ * every shape a real package's `exports` takes.
  *
  * Fixtures live under a repo-local temp dir, not /tmp, because Vite refuses to
  * dynamically import a module from outside the project root.
@@ -35,10 +37,13 @@ let tmpDir;
  * than after the component — the shape real packages use when one entry point
  * exports several components, and the case the bare-package answer got wrong.
  *
- * @param {{exports?: Record<string, string>}} [options] the owning package's
+ * @param {object} [options]
+ * @param {Record<string, string>} [options.exports] the owning package's
  *   `exports` map; omit it for a package that publishes no subpaths.
+ * @param {string} [options.docImport] an `import` the component's doc states
+ *   for itself, which is canonical and must win over any resolved subpath.
  */
-function scaffold({exports: exportsMap} = {}) {
+function scaffold({exports: exportsMap, docImport} = {}) {
   fs.writeFileSync(
     path.join(tmpDir, 'package.json'),
     JSON.stringify({name: 'consumer', version: '1.0.0'}),
@@ -78,6 +83,7 @@ function scaffold({exports: exportsMap} = {}) {
         keywords: ['carousel', 'slides'],
         usage: {description: 'A carousel that cycles through slides.'},
         props: [],
+        ...(docImport ? {import: docImport} : {}),
       },
       null,
       2,
@@ -93,6 +99,13 @@ function searchImportFor(result, name) {
     if (hit) return hit.import ?? null;
   }
   return null;
+}
+
+/** Both surfaces' answer for AcmeCarousel, as `{detail, found}`. */
+async function bothSurfaces() {
+  const detail = await component('AcmeCarousel', {cwd: tmpDir});
+  const found = await search('carousel', {cwd: tmpDir});
+  return {detail: detail.data.import, found: searchImportFor(found, 'AcmeCarousel')};
 }
 
 const SUBPATH_EXPORTS = {
@@ -113,12 +126,10 @@ describe('integration component import specifiers', () => {
     'component and search report the same import for the same component',
     async () => {
       scaffold({exports: SUBPATH_EXPORTS});
+      const {detail, found} = await bothSurfaces();
 
-      const detail = await component('AcmeCarousel', {cwd: tmpDir});
-      const found = await search('carousel', {cwd: tmpDir});
-
-      expect(detail.data.import).toBe('@acme/widgets/Carousel');
-      expect(searchImportFor(found, 'AcmeCarousel')).toBe(detail.data.import);
+      expect(detail).toBe('@acme/widgets/Carousel');
+      expect(found).toBe(detail);
     },
     SLOW,
   );
@@ -127,12 +138,10 @@ describe('integration component import specifiers', () => {
     'neither surface reports the bare package when a subpath is exported',
     async () => {
       scaffold({exports: SUBPATH_EXPORTS});
+      const {detail, found} = await bothSurfaces();
 
-      const detail = await component('AcmeCarousel', {cwd: tmpDir});
-      const found = await search('carousel', {cwd: tmpDir});
-
-      expect(detail.data.import).not.toBe('@acme/widgets');
-      expect(searchImportFor(found, 'AcmeCarousel')).not.toBe('@acme/widgets');
+      expect(detail).not.toBe('@acme/widgets');
+      expect(found).not.toBe('@acme/widgets');
     },
     SLOW,
   );
@@ -141,14 +150,54 @@ describe('integration component import specifiers', () => {
     'both fall back to the package root when it exports no matching subpath',
     async () => {
       scaffold();
-
-      const detail = await component('AcmeCarousel', {cwd: tmpDir});
-      const found = await search('carousel', {cwd: tmpDir});
+      const {detail, found} = await bothSurfaces();
 
       // The bare package is the honest answer here: it is what a consumer
       // would have to write by hand. What matters is that both agree on it.
-      expect(detail.data.import).toBe('@acme/widgets');
-      expect(searchImportFor(found, 'AcmeCarousel')).toBe('@acme/widgets');
+      expect(detail).toBe('@acme/widgets');
+      expect(found).toBe('@acme/widgets');
+    },
+    SLOW,
+  );
+
+  it(
+    'a doc-authored import wins at both surfaces, over any resolved subpath',
+    async () => {
+      // The alias case: the package canonically publishes this component under
+      // a name that is not its directory, and says so in its doc. Resolving the
+      // directory would produce `/Carousel`, which is why the two surfaces have
+      // to share the precedence rule and not just the resolver.
+      scaffold({exports: SUBPATH_EXPORTS, docImport: '@acme/widgets/Alias'});
+      const {detail, found} = await bothSurfaces();
+
+      expect(detail).toBe('@acme/widgets/Alias');
+      expect(found).toBe(detail);
+    },
+    SLOW,
+  );
+
+  it(
+    'a doc-authored import is honored even with no exports map at all',
+    async () => {
+      scaffold({docImport: '@acme/widgets/Alias'});
+      const {detail, found} = await bothSurfaces();
+
+      expect(detail).toBe('@acme/widgets/Alias');
+      expect(found).toBe(detail);
+    },
+    SLOW,
+  );
+
+  it(
+    'a wildcard-only exports map resolves the same way at both surfaces',
+    async () => {
+      // A wildcard is not matched as a literal subpath key, so both fall back
+      // to the package root. Pinned because the two must agree on the
+      // fallback, not only on the hit.
+      scaffold({exports: {'.': './src/index.js', './*': './src/*/index.js'}});
+      const {detail, found} = await bothSurfaces();
+
+      expect(found).toBe(detail);
     },
     SLOW,
   );
