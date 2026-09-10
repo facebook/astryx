@@ -20,6 +20,9 @@ import {
   useMemo,
   useState,
   useCallback,
+  type FocusEvent,
+  type FormEvent,
+  type KeyboardEvent,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -29,6 +32,10 @@ import {Button} from '../../../Button';
 import {Popover} from '../../../Popover';
 import {TextInput} from '../../../TextInput';
 import {NumberInput} from '../../../NumberInput';
+import {
+  parseNumberInput,
+  resolveNumberInputCommit,
+} from '../../../NumberInput/numberInputCommit';
 import {DateInput} from '../../../DateInput';
 import type {ISODateString} from '../../../utils/dateTypes';
 import {TimeInput} from '../../../TimeInput';
@@ -42,7 +49,7 @@ import type {
   HeaderCellRenderProps,
 } from '../../types';
 import {proportional} from '../../columnUtils';
-import {useTranslator} from '../../../i18n';
+import {useLocale, useTranslator} from '../../../i18n';
 import type {
   PowerSearchConfig,
   PowerSearchField,
@@ -362,7 +369,10 @@ const filterStyles = stylex.create({
   triggerButton: {
     background: 'none',
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -442,6 +452,80 @@ function TextFilterControl({
   );
 }
 
+function useLiveNumberFilter({
+  value,
+  min,
+  max,
+  hasClear,
+  onChange,
+}: {
+  value: number | null;
+  min?: number | null;
+  max?: number | null;
+  hasClear: boolean;
+  onChange: (value: number | null) => void;
+}) {
+  const locale = useLocale();
+  const editStartValueRef = useRef(value);
+
+  const handleChange = useCallback(
+    (nextValue: number | null) => {
+      editStartValueRef.current = nextValue;
+      onChange(nextValue);
+    },
+    [onChange],
+  );
+  const handleFocus = useCallback(() => {
+    editStartValueRef.current = value;
+  }, [value]);
+  const handleInput = useCallback(
+    (event: FormEvent<HTMLElement>) => {
+      const nextValue = parseNumberInput(
+        (event.currentTarget as HTMLInputElement).value,
+        {
+          min,
+          max,
+          locale,
+        },
+      );
+      if (nextValue !== null && nextValue !== value) {
+        onChange(nextValue);
+      }
+    },
+    [locale, max, min, onChange, value],
+  );
+  const restoreRejectedDraft = useCallback(
+    (input: HTMLInputElement) => {
+      const decision = resolveNumberInputCommit(input.value, {
+        min,
+        max,
+        locale,
+        hasClear,
+      });
+      if (decision.type === 'revert' && value !== editStartValueRef.current) {
+        onChange(editStartValueRef.current);
+      }
+    },
+    [hasClear, locale, max, min, onChange, value],
+  );
+  const handleBlur = useCallback(
+    (event: FocusEvent<HTMLInputElement>) => {
+      restoreRejectedDraft(event.currentTarget);
+    },
+    [restoreRejectedDraft],
+  );
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Enter') {
+        restoreRejectedDraft(event.currentTarget);
+      }
+    },
+    [restoreRejectedDraft],
+  );
+
+  return {handleBlur, handleChange, handleFocus, handleInput, handleKeyDown};
+}
+
 function NumberFilterControl({
   columnKey,
   header,
@@ -463,12 +547,19 @@ function NumberFilterControl({
 
   const step = operatorValue.type === 'integer' ? 1 : null;
 
-  const handleChange = useCallback(
+  const updateFilter = useCallback(
     (newValue: number | null) => {
       store.getConfig().onFilterChange(columnKey, newValue);
     },
     [store, columnKey],
   );
+  const liveFilter = useLiveNumberFilter({
+    value: numValue,
+    min: operatorValue.minValue,
+    max: operatorValue.maxValue,
+    hasClear: !!hasClear,
+    onChange: updateFilter,
+  });
 
   if (hasClear) {
     return (
@@ -476,7 +567,11 @@ function NumberFilterControl({
         label={t('@astryx.tableFiltering.filterByColumn', {header})}
         isLabelHidden
         value={numValue}
-        onChange={handleChange}
+        onChange={liveFilter.handleChange}
+        onFocus={liveFilter.handleFocus}
+        onInput={liveFilter.handleInput}
+        onBlur={liveFilter.handleBlur}
+        onKeyDown={liveFilter.handleKeyDown}
         placeholder={t('@astryx.tableFiltering.filterByColumn', {header})}
         min={operatorValue.minValue ?? null}
         max={operatorValue.maxValue ?? null}
@@ -492,7 +587,11 @@ function NumberFilterControl({
       label={t('@astryx.tableFiltering.filterByColumn', {header})}
       isLabelHidden
       value={numValue}
-      onChange={handleChange}
+      onChange={liveFilter.handleChange}
+      onFocus={liveFilter.handleFocus}
+      onInput={liveFilter.handleInput}
+      onBlur={liveFilter.handleBlur}
+      onKeyDown={liveFilter.handleKeyDown}
       placeholder={t('@astryx.tableFiltering.filterByColumn', {header})}
       min={operatorValue.minValue ?? null}
       max={operatorValue.maxValue ?? null}

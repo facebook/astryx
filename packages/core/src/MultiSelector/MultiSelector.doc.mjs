@@ -1,12 +1,123 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Field',
+    required: false,
+    description:
+      'Standalone Field shell that provides the label and optional supporting content; omitted inside InputGroup.',
+  },
+  {
+    name: 'Trigger',
+    required: true,
+    description:
+      'Painted control that displays the current selection or placeholder and opens the selection surface when editable.',
+  },
+  {
+    name: 'Icon-rendered start icon',
+    required: false,
+    description:
+      'Optional leading semantic icon or icon component rendered through Icon.',
+  },
+  {
+    name: 'Caller-rendered start content',
+    required: false,
+    description:
+      'Optional arbitrary React content rendered directly at the start of the trigger.',
+  },
+  {
+    name: 'Trigger clear button',
+    required: false,
+    description:
+      'Shared clear action that removes every selected value when hasClear is enabled.',
+  },
+  {
+    name: 'Status icon',
+    required: false,
+    description:
+      'Status glyph shown in place of the disclosure indicator for attached or tooltip status.',
+  },
+  {
+    name: 'Indicator icon',
+    required: false,
+    description:
+      'Trailing chevron shown when status presentation does not replace it; reflects collapsed or expanded state.',
+  },
+  {
+    name: 'Search row',
+    required: false,
+    description:
+      'Panel header with a borderless search input and optional clear action.',
+  },
+  {
+    name: 'Search icon',
+    required: false,
+    description:
+      'Leading magnifier rendered through Icon inside the search row.',
+  },
+  {
+    name: 'Search clear button',
+    required: false,
+    description:
+      'Shared clear action shown in the search row while a query is present.',
+  },
+  {
+    name: 'Option row',
+    required: false,
+    description:
+      'Selectable row for an option or the optional select-all choice.',
+  },
+  {
+    name: 'Option checkbox indicator',
+    required: false,
+    description:
+      'CheckboxInput indicator that presents each row’s selected, unselected, or indeterminate state.',
+  },
+  {
+    name: 'Option divider',
+    required: false,
+    description:
+      'Divider supplied in the public options data to separate adjacent option groups.',
+  },
+  {
+    name: 'Section heading',
+    required: false,
+    description: 'Visible heading for a labeled group of option rows.',
+  },
+  {
+    name: 'Empty state',
+    required: false,
+    description:
+      'Message shown when the shared panel content has no options or no search matches.',
+  },
+  {
+    name: 'Pointer popup',
+    required: false,
+    description:
+      'Anchored painted surface that hosts the shared panel content for popover presentation.',
+  },
+  {
+    name: 'Touch sheet heading',
+    required: false,
+    description:
+      'Heading above the shared panel content in bottom-sheet presentation.',
+  },
+  {
+    name: 'Touch sheet',
+    required: false,
+    description:
+      'BottomSheet surface that hosts the same panel content for bottom-sheet presentation.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'MultiSelector',
   displayName: 'Multi Selector',
   group: 'Selector',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'multiselect',
     'checkbox',
@@ -18,15 +129,31 @@ export const docs = {
     'filter',
     'select',
   ],
+  playground: {
+    defaults: {
+      label: 'Fruit',
+      options: [
+        {value: 'apple', label: 'Apple'},
+        {value: 'orange', label: 'Orange'},
+        {value: 'banana', label: 'Banana'},
+      ],
+      value: [],
+    },
+  },
   theming: {
     targets: [
       {
         className: 'astryx-multi-selector',
         visualProps: ['variant', 'size', 'status'],
-        states: ['disabled'],
+        states: ['disabled', 'readonly'],
       },
-      {className: 'astryx-multi-selector-clear-icon', deprecatedFor: 'input-clear-icon'},
+      {
+        className: 'astryx-multi-selector-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
       {className: 'astryx-multi-selector-empty-state'},
+      {className: 'astryx-multi-selector-search'},
+      {className: 'astryx-multi-selector-section-heading'},
       {
         className: 'astryx-multi-selector-indicator-icon',
         states: ['state'],
@@ -102,6 +229,12 @@ export const docs = {
           default: "'count'",
         },
         {
+          name: 'formatValue',
+          type: '(items: {value: string; label: string}[]) => string',
+          description:
+            'Formats the trigger text when triggerDisplay="count" or "labels". Receives the selected items (value plus resolved label); the count is items.length. Not used by triggerDisplay="badges".',
+        },
+        {
           name: 'maxBadges',
           type: 'number',
           description:
@@ -132,9 +265,30 @@ export const docs = {
           default: "'Search...'",
         },
         {
+          name: 'emptyText',
+          type: 'ReactNode',
+          description:
+            'Content shown in the dropdown panel when there are no options to show, and announced in a polite live region when the panel opens (a string override is announced verbatim; a richer node falls back to the default text). Not shown while isLoading.',
+          default: "'No options'",
+        },
+        {
+          name: 'emptySearchText',
+          type: 'ReactNode',
+          description:
+            'Content shown in the dropdown panel when a search query matches no options, and announced in a polite live region at the same time (a string override is announced verbatim; a richer node falls back to the default text).',
+          default: "'No results found'",
+        },
+        {
           name: 'isDisabled',
           type: 'boolean',
           description: 'Disables the selector.',
+        },
+        {
+          name: 'isReadOnly',
+          type: 'boolean',
+          description:
+            'Makes the selector read-only: the selected values stay visible, focusable, and included in form submission, and retain their combobox identity with aria-readonly. The selection surface, clear action, and disclosure indicator are removed. Unlike isDisabled, the control is not dimmed. isDisabled takes precedence when both are set.',
+          default: 'false',
         },
         {
           name: 'htmlName',
@@ -200,10 +354,34 @@ export const docs = {
           default: "'start'",
         },
         {
+          name: 'presentation',
+          type: "'popover' | 'bottom-sheet' | 'adaptive'",
+          description:
+            'How the option list is presented. adaptive uses a bottom sheet on compact touch screens and an anchored popover otherwise.',
+          default: "'popover'",
+        },
+        {
           name: 'width',
           type: 'SizeValue',
           description:
             'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+        },
+        {
+          name: 'startIcon',
+          type: 'IconType | ReactNode',
+          description: 'Icon displayed at the start of the selector trigger.',
+        },
+        {
+          name: 'hasClear',
+          type: 'boolean',
+          description: 'Shows a clear button when values are selected.',
+          default: 'false',
+        },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: 'Whether the dropdown starts open on mount.',
+          default: 'false',
         },
         {
           name: 'xstyle',
@@ -215,6 +393,7 @@ export const docs = {
     },
   ],
   usage: {
+    anatomy,
     description:
       'A checkbox dropdown for selecting multiple values from a list. Selected items can display as a count, labels, or badges. Use it for filtering or when presenting a finite set of options where multiple choices are needed.',
     bestPractices: [
@@ -247,6 +426,11 @@ export const docs = {
         guidance: true,
         description:
           'Use variant="ghost" when a multi-selector sits in a toolbar with ghost buttons. If validation status is needed there, prefer statusVariant="tooltip" so the toolbar height stays compact.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use presentation="adaptive" when the multi-selector should become a bottom sheet on compact touch screens.',
       },
       {
         guidance: false,
@@ -282,13 +466,19 @@ export const docsZh = {
         placeholder: '未选择值时显示的占位文本。',
         size: '选择器的尺寸变体。',
         triggerDisplay: '在触发器中显示选中项的方式。',
+        formatValue:
+          '格式化 triggerDisplay="count" 或 "labels" 时的触发器文本。接收选中项（value 及解析后的 label），数量为 items.length。triggerDisplay="badges" 不使用此属性。',
         maxBadges:
           '显示"+N"之前的最大徽章数。仅适用于 triggerDisplay="badges"。',
         hasSelectAll: '是否显示全选复选框。',
         selectAllLabel: '全选复选框的标签。',
         hasSearch: '是否显示用于过滤选项的搜索输入。',
         searchPlaceholder: '搜索输入的占位文本。',
+        emptyText: '没有可显示的选项时，下拉面板中显示的内容。',
+        emptySearchText: '搜索查询未匹配到任何选项时，下拉面板中显示的内容。',
         isDisabled: '禁用选择器。',
+        isReadOnly:
+          '将选择器设为只读：保留当前值、焦点顺序和表单提交，但移除选择面板、清除操作和展开指示器。与 isDisabled 不同，只读控件不会变暗；两者同时设置时 isDisabled 优先。',
         htmlName:
           '用于表单提交的 HTML name 属性。为每个已选值渲染一个隐藏输入，类似原生多选。',
         disabledMessage:
@@ -303,6 +493,8 @@ export const docsZh = {
           '状态消息的放置方式：attached 直接叠加在输入框下方；detached 作为独立元素浮于下方并留有间距。',
         renderOption:
           '每个可选选项的自定义渲染函数。不会用于分隔线、分组或全选行。',
+        presentation:
+          '选项列表的呈现方式：锚定弹出框、底部抽屉，或根据紧凑触控屏自适应。',
         xstyle: '布局自定义的 StyleX 样式，必须是 stylex.create() 值。',
       },
     },
@@ -418,12 +610,18 @@ export const docsDense = {
         variant:
           'visual trigger style: input bordered control or ghost toolbar control',
         triggerDisplay: 'how to show selected in trigger',
+        formatValue:
+          'formats count/labels trigger text; receives selected items',
         maxBadges: 'max badges before "+N"; badges mode only',
         hasSelectAll: 'show select-all checkbox',
         selectAllLabel: 'select-all label',
         hasSearch: 'show search input',
         searchPlaceholder: 'search placeholder',
+        emptyText: 'panel content when there are no options',
+        emptySearchText: 'panel content when the query matches nothing',
         isDisabled: 'disables selector',
+        isReadOnly:
+          'read-only: preserves values, focus + form submission; removes menu, clear + disclosure',
         htmlName: 'HTML name attr; one hidden input per selected value.',
         disabledMessage:
           'why disabled; w/ isDisabled shows tooltip on hover/focus, trigger stays focusable via aria-disabled; use instead of Tooltip wrapper',
@@ -437,6 +635,8 @@ export const docsDense = {
           'status message placement; ghost detaches attached by default; use tooltip for compact toolbars.',
         renderOption:
           'custom render fn per selectable option; not dividers/sections/select-all',
+        presentation:
+          'popover, bottom-sheet, or compact-touch adaptive presentation',
         xstyle: 'StyleX layout styles; stylex.create() only',
       },
     },

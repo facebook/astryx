@@ -10,12 +10,9 @@
 'use client';
 
 import {createElement, useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Divider} from '@astryxdesign/core';
-import {Card} from '@astryxdesign/core/Card';
-import {Popover} from '@astryxdesign/core/Popover';
 import {Switch} from '@astryxdesign/core/Switch';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {NumberInput} from '@astryxdesign/core/NumberInput';
@@ -27,11 +24,8 @@ import {Minus, Plus} from 'lucide-react';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {allSyntaxPresets} from '@astryxdesign/core/theme/syntax';
 import {themeObjectsFull} from '../../generated/themeRegistry';
-import {
-  coerceEnumOption,
-  splitTypeRefSegments,
-  type PropControlDescriptor,
-} from './parsePropType';
+import {coerceEnumOption, type PropControlDescriptor} from './parsePropType';
+import {resolveTypeRefs, TypeRefText} from './TypeRefText';
 import type {KnobProp} from './InteractivePreview';
 import {resolveElementDescriptor} from './resolveElements';
 import type {
@@ -39,39 +33,8 @@ import type {
   PropDoc,
   TypeDefinition,
 } from '../../generated/componentRegistry';
-import {CodeExampleBlock} from '../CodeExampleBlock';
 import {MarkdownText} from '../MarkdownText';
-
-const styles = stylex.create({
-  // Inline link treatment for type-name definition triggers, mirroring the
-  // authored-docs link pattern (docs/inlineMarkdown.tsx) on a button element
-  // so the trigger stays keyboard-focusable with a visible focus ring.
-  typeRefTrigger: {
-    backgroundColor: 'transparent',
-    borderStyle: 'none',
-    padding: 0,
-    fontFamily: 'inherit',
-    fontSize: 'inherit',
-    lineHeight: 'inherit',
-    cursor: 'pointer',
-    color: 'var(--color-text-accent)',
-    textDecorationLine: 'underline',
-    textDecorationThickness: '1px',
-    textUnderlineOffset: '0.16em',
-    transition: 'color 120ms ease, text-decoration-color 120ms ease',
-    ':hover': {
-      '@media (hover: hover)': {
-        color: 'var(--color-accent)',
-        textDecorationThickness: '2px',
-      },
-    },
-    ':focus-visible': {
-      borderRadius: 'var(--radius-sm)',
-      outline: '2px solid var(--color-accent)',
-      outlineOffset: 2,
-    },
-  },
-});
+import {useLiveNumberInput} from '@/lib/useLiveNumberInput';
 
 function formatType(type: string, defaultValue?: string): React.ReactNode {
   const parts = type.split(/\s*\|\s*/);
@@ -105,45 +68,9 @@ function formatType(type: string, defaultValue?: string): React.ReactNode {
 }
 
 /**
- * Inline definition trigger for a type name in the type column: the name
- * itself renders as a link-styled button that opens the extracted declaration
- * so readers can inspect the shape without leaving the props table (#2682).
- * The popover mirrors the Popover + Card + CodeExampleBlock pattern used by
- * PackageActions.
- */
-function TypeDefinitionTrigger({def}: {def: TypeDefinition}) {
-  return (
-    <Popover
-      width="min(480px, calc(100vw - 32px))"
-      label={`${def.name} type definition`}
-      content={
-        <VStack gap={1}>
-          <Text type="supporting" color="secondary">
-            {def.sourcePath}
-          </Text>
-          <Card padding={0}>
-            <CodeExampleBlock
-              code={def.definition}
-              language="typescript"
-              size="sm"
-              hasCopyButton
-              maxHeight={320}
-              width="100%"
-            />
-          </Card>
-        </VStack>
-      }>
-      <button type="button" {...stylex.props(styles.typeRefTrigger)}>
-        {def.name}
-      </button>
-    </Popover>
-  );
-}
-
-/**
  * Type-column text for a prop. When the documented type references named
  * types exported from the component's package (e.g. `SearchSource<T>`), each
- * referenced name becomes a {@link TypeDefinitionTrigger}; surrounding type
+ * referenced name becomes an inline definition trigger; surrounding type
  * syntax (generics punctuation, unions) stays plain text. Props with no
  * resolved references keep the plain formatType rendering.
  */
@@ -154,29 +81,14 @@ function PropTypeText({
   prop: PropDoc;
   typeDefs: TypeDefinition[];
 }) {
-  const defs = (prop.typeRefs ?? [])
-    .map(name => typeDefs.find(def => def.name === name))
-    .filter(def => def != null);
+  const defs = resolveTypeRefs(prop.typeRefs, typeDefs);
   if (defs.length === 0) {
     return <>{formatType(prop.type, prop.default)}</>;
   }
 
-  const segments = splitTypeRefSegments(
-    prop.type,
-    defs.map(def => def.name),
-  );
   return (
     <>
-      {segments.map((segment, i) => {
-        const def = segment.isRef
-          ? defs.find(d => d.name === segment.text)
-          : undefined;
-        return def ? (
-          <TypeDefinitionTrigger key={i} def={def} />
-        ) : (
-          <span key={i}>{segment.text}</span>
-        );
-      })}
+      <TypeRefText type={prop.type} defs={defs} />
       {prop.default != null && (
         <span style={{opacity: 0.6}}> (default: {prop.default})</span>
       )}
@@ -467,6 +379,31 @@ function SlotListControl({
   );
 }
 
+function NumberControl({
+  value,
+  isRequired,
+  onChange,
+}: {
+  value: number | null;
+  isRequired: boolean;
+  onChange: (value: number | null) => void;
+}) {
+  const liveNumber = useLiveNumberInput(value, onChange);
+  return (
+    <NumberInput
+      label=""
+      value={liveNumber.value}
+      placeholder={isRequired ? undefined : 'unset'}
+      hasClear={!isRequired}
+      onChange={liveNumber.handleChange}
+      onFocus={liveNumber.handleFocus}
+      onInput={liveNumber.handleInput}
+      onBlur={liveNumber.handleBlur}
+      onKeyDown={liveNumber.handleKeyDown}
+    />
+  );
+}
+
 function InlineControl({
   control,
   value,
@@ -555,12 +492,10 @@ function InlineControl({
       // lets the user return to the original unset render. Required numbers
       // keep their generated fallback and stay non-clearable.
       return (
-        <NumberInput
-          label=""
+        <NumberControl
           value={typeof value === 'number' ? value : null}
-          placeholder={prop.required ? undefined : 'unset'}
-          hasClear={!prop.required}
-          onChange={(next: number | null) => onChange(next ?? undefined)}
+          isRequired={!!prop.required}
+          onChange={next => onChange(next ?? undefined)}
         />
       );
     case 'element':

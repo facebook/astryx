@@ -1,11 +1,27 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import * as stylex from '@stylexjs/stylex';
 import {Blockquote} from '@astryxdesign/core/Blockquote';
 import {Card} from '@astryxdesign/core/Card';
 import {Section} from '@astryxdesign/core/Section';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
+import {
+  spacingVars,
+  typeScaleVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
+
+const styles = stylex.create({
+  pullQuote: {
+    fontSize: typeScaleVars['--text-large-size'],
+    lineHeight: typeScaleVars['--text-large-leading'],
+    marginBlock: spacingVars['--spacing-4'],
+  },
+  narrow: {
+    maxWidth: '280px',
+  },
+});
 
 const meta: Meta<typeof Blockquote> = {
   title: 'Core/Blockquote',
@@ -100,6 +116,58 @@ export const MultipleParagraphs: Story = {
               hardware.
             </Text>
           </VStack>
+        </Blockquote>
+      </Card>
+    </Section>
+  ),
+};
+
+export const PullQuoteWithXstyle: Story = {
+  render: () => (
+    <Section variant="muted">
+      <Card>
+        <VStack gap={3}>
+          <Text type="body">
+            xstyle carries layout and type overrides onto the blockquote itself,
+            with no wrapper element.
+          </Text>
+          <Blockquote cite="Alan Kay" xstyle={styles.pullQuote}>
+            The best way to predict the future is to invent it.
+          </Blockquote>
+        </VStack>
+      </Card>
+    </Section>
+  ),
+};
+
+export const LongContent: Story = {
+  render: () => (
+    <Section variant="muted">
+      <Card>
+        <VStack gap={3}>
+          <Blockquote cite="A source with a notably long attribution line that has to wrap">
+            A long quotation that runs past a single line, so the rule on the
+            inline-start edge and the wrapped text stay aligned all the way
+            down. Long attributions wrap the same way underneath.
+          </Blockquote>
+          <Blockquote>
+            An unbroken token such as
+            https://www.example.com/research/2026/design-systems/the-very-long-report-slug/appendix
+            wraps instead of overflowing.
+          </Blockquote>
+        </VStack>
+      </Card>
+    </Section>
+  ),
+};
+
+export const NarrowContainer: Story = {
+  render: () => (
+    <Section variant="muted">
+      <Card xstyle={styles.narrow}>
+        <Blockquote cite="Steve Jobs">
+          Design is not just what it looks like and feels like. Design is how it
+          works.
         </Blockquote>
       </Card>
     </Section>

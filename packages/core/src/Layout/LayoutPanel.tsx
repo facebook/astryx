@@ -167,7 +167,7 @@ export interface LayoutPanelProps extends BaseProps<HTMLDivElement> {
    *
    * @example
    * ```
-   * const sidebar = useResizable({ defaultSize: 250, minSizePx: 200 });
+   * const sidebar = useResizable({ defaultSize: 250, minSize: 200 });
    * <LayoutPanel resizable={sidebar.props}>
    *   <Navigation />
    * </LayoutPanel>

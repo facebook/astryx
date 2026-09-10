@@ -13,6 +13,22 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Center} from './Center';
 
+/**
+ * The functional class output, as an order-insensitive set. StyleX's dev
+ * runtime also emits readable debug classes naming the style object a
+ * declaration came from ("padding__paddingBlockStyles.2"); those record
+ * provenance rather than applied CSS and survive even when the declaration
+ * they name loses a merge, so they are dropped here.
+ */
+function classSet(el: HTMLElement): Set<string> {
+  return new Set(
+    el.className
+      .split(' ')
+      .filter(Boolean)
+      .filter(c => !c.includes('__') && !c.includes('.')),
+  );
+}
+
 describe('Center', () => {
   it('renders and centers children (both axes by default)', () => {
     render(
@@ -206,5 +222,147 @@ describe('Center', () => {
     );
     const element = screen.getByTestId('center');
     expect(element.tagName).toBe('DIV');
+  });
+
+  it('applies a class when paddingBlockStart is set on its own', () => {
+    const {rerender} = render(
+      <Center data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    const baseline = screen.getByTestId('center').className;
+    rerender(
+      <Center paddingBlockStart={2} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(screen.getByTestId('center').className).not.toBe(baseline);
+  });
+
+  it('lets paddingBlockStart/paddingBlockEnd override only their own edge', () => {
+    // padding={4} + paddingBlockStart={2} must equal spelling every edge out:
+    // both inline edges and the block-end edge stay at 4.
+    const {rerender} = render(
+      <Center padding={4} paddingBlockStart={2} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    const perEdge = classSet(screen.getByTestId('center'));
+    rerender(
+      <Center
+        paddingInline={4}
+        paddingBlockStart={2}
+        paddingBlockEnd={4}
+        data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(perEdge).toEqual(classSet(screen.getByTestId('center')));
+  });
+
+  it('gives paddingBlockEnd precedence over paddingBlock', () => {
+    const {rerender} = render(
+      <Center paddingBlock={6} paddingBlockEnd={0} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    const overridden = classSet(screen.getByTestId('center'));
+    rerender(
+      <Center paddingBlockStart={6} paddingBlockEnd={0} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(overridden).toEqual(classSet(screen.getByTestId('center')));
+  });
+
+  it('leaves padding/paddingBlock output unchanged when no edge prop is set', () => {
+    const {rerender} = render(
+      <Center padding={3} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    const uniform = classSet(screen.getByTestId('center'));
+    rerender(
+      <Center paddingInline={3} paddingBlock={3} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(uniform).toEqual(classSet(screen.getByTestId('center')));
+  });
+
+  it('applies a class when paddingInlineStart is set on its own', () => {
+    const {rerender} = render(
+      <Center data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    const baseline = screen.getByTestId('center').className;
+    rerender(
+      <Center paddingInlineStart={2} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(screen.getByTestId('center').className).not.toBe(baseline);
+  });
+
+  it('lets paddingInlineStart/paddingInlineEnd override only their own edge', () => {
+    const {rerender} = render(
+      <Center padding={4} paddingInlineStart={2} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    const perEdge = classSet(screen.getByTestId('center'));
+    rerender(
+      <Center
+        paddingInlineStart={2}
+        paddingInlineEnd={4}
+        paddingBlock={4}
+        data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(perEdge).toEqual(classSet(screen.getByTestId('center')));
+  });
+
+  it('gives paddingInlineEnd precedence over paddingInline', () => {
+    const {rerender} = render(
+      <Center paddingInline={6} paddingInlineEnd={0} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    const overridden = classSet(screen.getByTestId('center'));
+    rerender(
+      <Center paddingInlineStart={6} paddingInlineEnd={0} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(overridden).toEqual(classSet(screen.getByTestId('center')));
+  });
+
+  it('resolves all four edges independently', () => {
+    // One prop per edge, each a different step: the four-edge spelling and the
+    // shorthand-plus-overrides spelling must agree.
+    const {rerender} = render(
+      <Center
+        paddingInlineStart={1}
+        paddingInlineEnd={2}
+        paddingBlockStart={3}
+        paddingBlockEnd={4}
+        data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    const explicit = classSet(screen.getByTestId('center'));
+    rerender(
+      <Center
+        padding={4}
+        paddingInlineStart={1}
+        paddingInlineEnd={2}
+        paddingBlockStart={3}
+        data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(explicit).toEqual(classSet(screen.getByTestId('center')));
   });
 });

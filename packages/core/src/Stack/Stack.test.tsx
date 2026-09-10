@@ -13,6 +13,22 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Stack} from './Stack';
 
+/**
+ * The functional class output, as an order-insensitive set. StyleX's dev
+ * runtime also emits readable debug classes naming the style object a
+ * declaration came from ("padding__paddingBlockStyles.2"); those record
+ * provenance rather than applied CSS and survive even when the declaration
+ * they name loses a merge, so they are dropped here.
+ */
+function classSet(el: HTMLElement): Set<string> {
+  return new Set(
+    el.className
+      .split(' ')
+      .filter(Boolean)
+      .filter(c => !c.includes('__') && !c.includes('.')),
+  );
+}
+
 describe('Stack', () => {
   it('defaults to vertical direction', () => {
     render(
@@ -313,5 +329,145 @@ describe('Stack', () => {
     );
     const withScroll = screen.getByTestId('stack').className;
     expect(withScroll).not.toBe(withoutScroll);
+  });
+
+  it('applies a class when paddingBlockStart is set on its own', () => {
+    const {rerender} = render(
+      <Stack data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    const baseline = screen.getByTestId('stack').className;
+    rerender(
+      <Stack paddingBlockStart={2} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    expect(screen.getByTestId('stack').className).not.toBe(baseline);
+  });
+
+  it('lets paddingBlockStart/paddingBlockEnd override only their own edge', () => {
+    const {rerender} = render(
+      <Stack padding={4} paddingBlockStart={2} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    const perEdge = classSet(screen.getByTestId('stack'));
+    rerender(
+      <Stack
+        paddingInline={4}
+        paddingBlockStart={2}
+        paddingBlockEnd={4}
+        data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    expect(perEdge).toEqual(classSet(screen.getByTestId('stack')));
+  });
+
+  it('gives paddingBlockEnd precedence over paddingBlock', () => {
+    const {rerender} = render(
+      <Stack paddingBlock={6} paddingBlockEnd={0} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    const overridden = classSet(screen.getByTestId('stack'));
+    rerender(
+      <Stack paddingBlockStart={6} paddingBlockEnd={0} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    expect(overridden).toEqual(classSet(screen.getByTestId('stack')));
+  });
+
+  it('leaves padding/paddingBlock output unchanged when no edge prop is set', () => {
+    const {rerender} = render(
+      <Stack padding={3} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    const uniform = classSet(screen.getByTestId('stack'));
+    rerender(
+      <Stack paddingInline={3} paddingBlock={3} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    expect(uniform).toEqual(classSet(screen.getByTestId('stack')));
+  });
+
+  it('applies a class when paddingInlineStart is set on its own', () => {
+    const {rerender} = render(
+      <Stack data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    const baseline = screen.getByTestId('stack').className;
+    rerender(
+      <Stack paddingInlineStart={2} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    expect(screen.getByTestId('stack').className).not.toBe(baseline);
+  });
+
+  it('lets paddingInlineStart/paddingInlineEnd override only their own edge', () => {
+    const {rerender} = render(
+      <Stack padding={4} paddingInlineStart={2} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    const perEdge = classSet(screen.getByTestId('stack'));
+    rerender(
+      <Stack
+        paddingInlineStart={2}
+        paddingInlineEnd={4}
+        paddingBlock={4}
+        data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    expect(perEdge).toEqual(classSet(screen.getByTestId('stack')));
+  });
+
+  it('gives paddingInlineEnd precedence over paddingInline', () => {
+    const {rerender} = render(
+      <Stack paddingInline={6} paddingInlineEnd={0} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    const overridden = classSet(screen.getByTestId('stack'));
+    rerender(
+      <Stack paddingInlineStart={6} paddingInlineEnd={0} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    expect(overridden).toEqual(classSet(screen.getByTestId('stack')));
+  });
+
+  it('resolves all four edges independently', () => {
+    // One prop per edge, each a different step: the four-edge spelling and the
+    // shorthand-plus-overrides spelling must agree.
+    const {rerender} = render(
+      <Stack
+        paddingInlineStart={1}
+        paddingInlineEnd={2}
+        paddingBlockStart={3}
+        paddingBlockEnd={4}
+        data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    const explicit = classSet(screen.getByTestId('stack'));
+    rerender(
+      <Stack
+        padding={4}
+        paddingInlineStart={1}
+        paddingInlineEnd={2}
+        paddingBlockStart={3}
+        data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    expect(explicit).toEqual(classSet(screen.getByTestId('stack')));
   });
 });

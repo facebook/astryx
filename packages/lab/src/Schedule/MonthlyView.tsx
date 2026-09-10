@@ -57,8 +57,17 @@ export interface ScheduleMonthlyViewOptions {
 function ScheduleMonthlyView(
   _props: ScheduleViewComponentProps<ScheduleMonthlyViewOptions>,
 ) {
-  const {events, categories, date, focusDate, timezoneID, range, isLoading, headingLevel} =
-    useScheduleContext();
+  const {
+    events,
+    categories,
+    date,
+    focusDate,
+    timezoneID,
+    locale,
+    range,
+    isLoading,
+    headingLevel,
+  } = useScheduleContext();
   const rangeDate = date.toPlainDate();
   const highlightedDate = focusDate.toPlainDate();
   const currentTime = useCurrentTime();
@@ -70,19 +79,23 @@ function ScheduleMonthlyView(
   return (
     <ScheduleFrame
       title={<ScheduleMonthTitle date={rangeDate} timezoneID={timezoneID} />}
-      titleLabel={formatMonthTitle(rangeDate, timezoneID)}
+      titleLabel={formatMonthTitle(rangeDate, timezoneID, locale)}
       isLoading={isLoading}>
       <div
         role="grid"
-        aria-label={formatMonthTitle(rangeDate, timezoneID)}
+        aria-label={formatMonthTitle(rangeDate, timezoneID, locale)}
         aria-readonly
+        // The grid scrolls horizontally at narrow viewports and contains no
+        // focusable descendants, so it must be focusable itself for keyboard
+        // scrolling (axe: scrollable-region-focusable).
+        tabIndex={0}
         {...stylex.props(styles.monthGrid)}>
         <div role="row" {...stylex.props(styles.weekHeader)}>
           {days.slice(0, 7).map((day, index) => (
             <div
               key={plainDateToISO(day)}
               role="columnheader"
-              aria-label={formatWeekday(day, timezoneID, 'long')}
+              aria-label={formatWeekday(day, timezoneID, 'long', locale)}
               aria-colindex={index + 1}
               {...stylex.props(styles.weekdayLabel)}>
               <Heading
@@ -90,7 +103,7 @@ function ScheduleMonthlyView(
                 color="secondary"
                 display="block"
                 xstyle={styles.weekdayHeading}>
-                {formatWeekday(day, timezoneID, 'short')}
+                {formatWeekday(day, timezoneID, 'short', locale)}
               </Heading>
             </div>
           ))}
@@ -111,7 +124,7 @@ function ScheduleMonthlyView(
                     <div
                       key={plainDateToISO(day)}
                       role="gridcell"
-                      aria-label={formatFullDate(day, timezoneID)}
+                      aria-label={formatFullDate(day, timezoneID, locale)}
                       aria-colindex={dayIndex + 1}
                       aria-current={
                         plainDateIsEqual(day, highlightedDate)
@@ -135,7 +148,7 @@ function ScheduleMonthlyView(
                           color="inherit"
                           weight="medium"
                           hasTabularNumbers>
-                          {formatDayNumber(day, timezoneID)}
+                          {formatDayNumber(day, timezoneID, locale)}
                         </Text>
                       </div>
                       {dayEvents.length > 0 && (
@@ -147,6 +160,7 @@ function ScheduleMonthlyView(
                                 day,
                                 timezoneID,
                                 categories,
+                                locale,
                               )}
                             </li>
                           ))}

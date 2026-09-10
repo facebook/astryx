@@ -9,8 +9,15 @@
  */
 
 import {describe, expect, test, beforeEach, vi} from 'vitest';
-import {__resetForTests, resolve, resolveLocaleChain} from '../resolve';
+import {__resetForTests, getResolve, resolveLocaleChain} from '../resolve';
 import type {Catalog, MessagesByLocale, Overrides} from '../types';
+
+const resolve = (
+  ...[key, values, locale, messages, overrides]: [
+    ...Parameters<ReturnType<typeof getResolve>>,
+    ...Parameters<typeof getResolve>,
+  ]
+) => getResolve(locale, messages, overrides)(key, values);
 
 // Reset caches between tests so warn-once and formatter cache don't bleed.
 beforeEach(() => {
@@ -208,6 +215,21 @@ describe('resolve — overrides', () => {
     );
     // Should fall through to en since fr has no messages and es override doesn't apply
     expect(out).toBe('Go to next page');
+  });
+
+  test('override `pt` should take precedence over message `pt-BR`', () => {
+    const overrides: Overrides = {
+      pt: {key: 'override'},
+    };
+    const messages: MessagesByLocale = {
+      'pt-BR': {
+        key: {
+          defaultMessage: 'shipped',
+        },
+      },
+    };
+    const out = resolve('key', undefined, 'pt-BR', messages, overrides);
+    expect(out).toBe('override');
   });
 });
 

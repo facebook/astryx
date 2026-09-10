@@ -9,8 +9,9 @@
  * @position Core hook; used by OverflowList and consumers for overflow patterns
  *
  * Measures children rendered in a hidden container to determine how many fit
- * in the available width, without flickering. Uses ResizeObserver to react
- * to container size changes. Supports an optional item cap (`maxVisibleItems`)
+ * in the available width, without flickering. Observes both the visible and
+ * hidden measurement containers so changes to available width or measured child
+ * sizes recalculate the result. Supports an optional item cap (`maxVisibleItems`)
  * and bounded multi-row wrapping (`maxRows`); the fit/clamp/row-packing math
  * lives in the pure `computeOverflow` helper.
  *
@@ -21,7 +22,7 @@
 
 import {useState, useCallback, useRef} from 'react';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
-import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {observeResize} from '../utils/sharedResizeObserver';
 import {computeOverflow} from './computeOverflow';
 import {useDevWarning} from './useDevWarning';
 
@@ -136,6 +137,9 @@ export function useOverflow(
   const containerElRef = useRef<HTMLElement | null>(null);
   const measureElRef = useRef<HTMLElement | null>(null);
   const observedElRef = useRef<HTMLElement | null>(null);
+  const observedMeasureElRef = useRef<HTMLElement | null>(null);
+  const unobserveContainerRef = useRef<(() => void) | null>(null);
+  const unobserveMeasureRef = useRef<(() => void) | null>(null);
 
   const calculate = useCallback(() => {
     const container = containerElRef.current;
@@ -217,15 +221,14 @@ export function useOverflow(
       containerElRef.current = el;
 
       // Clean up previous observation
-      if (observedElRef.current) {
-        unobserveResize(observedElRef.current);
-        observedElRef.current = null;
-      }
+      unobserveContainerRef.current?.();
+      unobserveContainerRef.current = null;
+      observedElRef.current = null;
 
       if (el) {
         const target =
           observeParent && el.parentElement ? el.parentElement : el;
-        observeResize(target, () => {
+        unobserveContainerRef.current = observeResize(target, () => {
           calculate();
         });
         observedElRef.current = target;
@@ -236,10 +239,19 @@ export function useOverflow(
 
   const measureRef = useCallback(
     (el: HTMLElement | null) => {
+      unobserveMeasureRef.current?.();
+      unobserveMeasureRef.current = null;
+      observedMeasureElRef.current = null;
+
       measureElRef.current = el;
-      if (el) {
-        calculate();
+      if (!el) {
+        return;
       }
+
+      unobserveMeasureRef.current = observeResize(el, () => {
+        calculate();
+      });
+      observedMeasureElRef.current = el;
     },
     [calculate],
   );

@@ -479,7 +479,13 @@ export function ProgressBar({
     <div
       ref={ref}
       {...mergeProps(
-        themeProps('progressbar', {variant}),
+        themeProps(
+          'progress-bar',
+          {variant},
+          // `progressbar` ran the compound name together; themes styling it
+          // keep working until the next major.
+          {legacyNames: ['progressbar']},
+        ),
         stylex.props(styles.container, xstyle),
         className,
         style,
@@ -524,13 +530,19 @@ export function ProgressBar({
         aria-labelledby={labelId}
         aria-valuetext={isIndeterminate ? undefined : valueText}
         {...mergeProps(
-          themeProps('progressbar-track'),
+          themeProps('progress-bar-track', undefined, {
+            legacyNames: ['progressbar-track'],
+          }),
           stylex.props(styles.track, isIndeterminate && styles.trackClipped),
         )}>
         {isIndeterminate ? (
           <div
             {...mergeProps(
-              themeProps('progressbar-fill', {variant: fillVariant}),
+              themeProps(
+                'progress-bar-fill',
+                {variant: fillVariant},
+                {legacyNames: ['progressbar-fill']},
+              ),
               stylex.props(
                 styles.indeterminateFill,
                 variantStyles[fillVariant],
@@ -540,7 +552,11 @@ export function ProgressBar({
         ) : (
           <div
             {...mergeProps(
-              themeProps('progressbar-fill', {variant: fillVariant}),
+              themeProps(
+                'progress-bar-fill',
+                {variant: fillVariant},
+                {legacyNames: ['progressbar-fill']},
+              ),
               stylex.props(styles.fill, variantStyles[fillVariant]),
             )}
             style={{width: `${percentage}%`}}
@@ -569,10 +585,14 @@ export function ProgressBar({
             <span
               tabIndex={0}
               {...mergeProps(
-                themeProps('progressbar-mark', {
-                  variant: fillVariant,
-                  placement: mark.isOnFill ? 'fill' : 'track',
-                }),
+                themeProps(
+                  'progress-bar-mark',
+                  {
+                    variant: fillVariant,
+                    placement: mark.isOnFill ? 'fill' : 'track',
+                  },
+                  {legacyNames: ['progressbar-mark']},
+                ),
                 stylex.props(
                   focusOutlineStyles.focusVisible,
                   styles.mark,

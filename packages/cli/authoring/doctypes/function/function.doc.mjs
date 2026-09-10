@@ -191,7 +191,7 @@ export const doc = {
       name: 'usage',
       type: 'UsageDoc',
       description:
-        'Usage documentation (hooks): description, best practices, anatomy. Same shape as HookDoc.usage.',
+        'Usage documentation (hooks): description, best practices, accessibility requirements, and anatomy. Same shape as HookDoc.usage.',
     },
     {
       name: 'command',

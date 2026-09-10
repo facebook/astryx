@@ -45,6 +45,58 @@ function extractMediaRules(css) {
   return rules;
 }
 
+/** Remove one functional pseudo-class, including nested parentheses. */
+function removeFunctionalPseudo(selector, name) {
+  let result = selector;
+  const needle = `:${name}(`;
+  for (;;) {
+    const start = result.indexOf(needle);
+    if (start === -1) return result;
+    let depth = 1;
+    let end = start + needle.length;
+    while (end < result.length && depth > 0) {
+      if (result[end] === '(') depth++;
+      else if (result[end] === ')') depth--;
+      end++;
+    }
+    result = result.slice(0, start) + result.slice(end);
+  }
+}
+
+/** Specificity tuple for the generated selectors used by the state guard. */
+function specificity(selector) {
+  const withoutWhere = removeFunctionalPseudo(selector, 'where');
+  const ids = (withoutWhere.match(/#/g) ?? []).length;
+  const classes = (withoutWhere.match(/\.[a-zA-Z0-9_-]+/g) ?? []).length;
+  const attributes = (withoutWhere.match(/\[[^\]]+\]/g) ?? []).length;
+  const pseudos = (
+    withoutWhere.match(/:(?!:|not\(|is\(|has\()[a-zA-Z-]+/g) ?? []
+  ).length;
+  return [ids, classes + attributes + pseudos, 0];
+}
+
+function stateRule(css, {property, token, state, media}) {
+  const lines = css.split('\n');
+  return lines.find(line => {
+    const inHoverMedia = line.includes('@media (hover: hover)');
+    return (
+      inHoverMedia === media &&
+      line.includes(`:${state}:where(`) &&
+      !line.includes('::') &&
+      line.includes(`${property}:`) &&
+      line.includes(`var(--color-overlay-${token})`)
+    );
+  });
+}
+
+function selectorFromRule(rule) {
+  const declaration = rule.lastIndexOf('{');
+  const mediaBody = rule.indexOf('{');
+  return rule
+    .slice(rule.includes('@media') ? mediaBody + 1 : 0, declaration)
+    .trim();
+}
+
 describe('build-css astryx.css', () => {
   let astryxCss;
 
@@ -71,8 +123,51 @@ describe('build-css astryx.css', () => {
       r.includes('prefers-reduced-motion'),
     );
     expect(motionRules.length).toBeGreaterThan(0);
-    console.log(`astryx.css has ${motionRules.length} prefers-reduced-motion rules`);
+    console.log(
+      `astryx.css has ${motionRules.length} prefers-reduced-motion rules`,
+    );
   });
+
+  it.each(['background-color', 'background-image'])(
+    'emits %s pressed after hover at equal specificity',
+    property => {
+      const hover = stateRule(astryxCss, {
+        property,
+        token: 'hover',
+        state: 'hover',
+        media: true,
+      });
+      const pressed = stateRule(astryxCss, {
+        property,
+        token: 'pressed',
+        state: 'active',
+        media: true,
+      });
+
+      expect(hover).toBeDefined();
+      expect(pressed).toBeDefined();
+      expect(specificity(selectorFromRule(pressed))).toEqual(
+        specificity(selectorFromRule(hover)),
+      );
+      expect(astryxCss.indexOf(pressed)).toBeGreaterThan(
+        astryxCss.indexOf(hover),
+      );
+    },
+  );
+
+  it.each(['background-color', 'background-image'])(
+    'keeps the bare %s pressed rule for touch input',
+    property => {
+      expect(
+        stateRule(astryxCss, {
+          property,
+          token: 'pressed',
+          state: 'active',
+          media: false,
+        }),
+      ).toBeDefined();
+    },
+  );
 
   it('no transition-duration:0s rules appear outside @media blocks', () => {
     const zeroTransitionRegex =
@@ -112,7 +207,10 @@ describe('build-css astryx.css', () => {
   it('does not produce per-component CSS files', async () => {
     // Verify the cleanup — no common.css or per-component styles.css
     await expect(
-      fs.access(path.join(CORE_DIST, 'common.css')).then(() => true, () => false),
+      fs.access(path.join(CORE_DIST, 'common.css')).then(
+        () => true,
+        () => false,
+      ),
     ).resolves.toBe(false);
   });
 });

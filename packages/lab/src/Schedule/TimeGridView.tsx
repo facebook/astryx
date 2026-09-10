@@ -10,6 +10,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
+import type {Locale} from '@astryxdesign/core/i18n';
 import {
   plainDateAddDays,
   plainDateFromInstant,
@@ -65,7 +66,7 @@ export function TimeGridView({
   maxHour: number;
   hourHeight: number;
 }) {
-  const {categories, headingLevel} = useScheduleContext();
+  const {categories, headingLevel, locale} = useScheduleContext();
   const normalizedMinHour = Math.max(0, Math.min(23, Math.floor(minHour)));
   const normalizedMaxHour = Math.max(
     normalizedMinHour + 1,
@@ -89,6 +90,7 @@ export function TimeGridView({
   const timezoneLabel = formatTimezoneAbbreviation(
     days[0] ?? focusDate,
     timezoneID,
+    locale,
   );
 
   return (
@@ -100,6 +102,7 @@ export function TimeGridView({
         events={instantEvents}
         focusDate={focusDate}
         hours={hours}
+        locale={locale}
         timezoneID={timezoneID}
         timezoneLabel={timezoneLabel}
       />
@@ -119,14 +122,14 @@ export function TimeGridView({
                 display="block"
                 xstyle={styles.timeGridHeaderHeading}>
                 <span {...stylex.props(styles.timeGridHeaderHeadingContent)}>
-                  {formatWeekday(day, timezoneID, 'short')}
+                  {formatWeekday(day, timezoneID, 'short', locale)}
                   <span
                     {...stylex.props(
                       styles.timeGridDayNumber,
                       plainDateIsEqual(day, focusDate) &&
                         styles.timeGridCurrentDayPill,
                     )}>
-                    {formatDayNumber(day, timezoneID)}
+                    {formatDayNumber(day, timezoneID, locale)}
                   </span>
                 </span>
               </Heading>
@@ -187,7 +190,7 @@ export function TimeGridView({
                   styles.timeLabel,
                   styles.timeLabelPosition(index + 1, hourHeight),
                 )}>
-                {formatHour(hour)}
+                {formatHour(hour, locale)}
               </div>
             ))}
           </div>
@@ -226,7 +229,12 @@ export function TimeGridView({
                     minHour: normalizedMinHour,
                     maxHour: normalizedMaxHour,
                   }).map(({event, height, level, top}) => {
-                    const timeLabel = formatEventTime(event, day, timezoneID);
+                    const timeLabel = formatEventTime(
+                      event,
+                      day,
+                      timezoneID,
+                      locale,
+                    );
                     const category = getEventCategory(event, categories);
                     return (
                       <div
@@ -284,6 +292,7 @@ function TimeGridAccessibilityGrid({
   events,
   focusDate,
   hours,
+  locale,
   timezoneID,
   timezoneLabel,
 }: {
@@ -293,6 +302,7 @@ function TimeGridAccessibilityGrid({
   events: ReadonlyArray<CalendarInstantEvent>;
   focusDate: PlainDate;
   hours: ReadonlyArray<number>;
+  locale: Locale;
   timezoneID: string;
   timezoneLabel: string;
 }) {
@@ -314,7 +324,7 @@ function TimeGridAccessibilityGrid({
             aria-current={
               plainDateIsEqual(day, focusDate) ? 'date' : undefined
             }>
-            {formatFullDate(day, timezoneID)}
+            {formatFullDate(day, timezoneID, locale)}
           </div>
         ))}
       </div>
@@ -335,7 +345,8 @@ function TimeGridAccessibilityGrid({
                 categories,
                 day,
                 events: cellEvents,
-                label: `${formatFullDate(day, timezoneID)} all day`,
+                label: `${formatFullDate(day, timezoneID, locale)} all day`,
+                locale,
                 timezoneID,
               })}
             />
@@ -345,7 +356,7 @@ function TimeGridAccessibilityGrid({
       {hours.map(hour => (
         <div key={hour} role="row">
           <div role="rowheader" aria-colindex={1}>
-            {formatHour(hour)}
+            {formatHour(hour, locale)}
           </div>
           {days.map((day, index) => {
             const cellEvents = events.filter(event =>
@@ -360,9 +371,11 @@ function TimeGridAccessibilityGrid({
                   categories,
                   day,
                   events: cellEvents,
-                  label: `${formatFullDate(day, timezoneID)} ${formatHour(
+                  label: `${formatFullDate(day, timezoneID, locale)} ${formatHour(
                     hour,
+                    locale,
                   )}`,
+                  locale,
                   timezoneID,
                 })}
               />
@@ -379,19 +392,21 @@ function formatTimeGridAccessibilityCellLabel({
   day,
   events,
   label,
+  locale,
   timezoneID,
 }: {
   categories: ReadonlyArray<ScheduleCategory>;
   day: PlainDate;
   events: ReadonlyArray<CalendarEvent>;
   label: string;
+  locale: Locale;
   timezoneID: string;
 }): string {
   if (events.length === 0) {
     return label;
   }
   const eventLabels = events.map(event =>
-    formatEventAccessibilityLabel(event, day, timezoneID, categories),
+    formatEventAccessibilityLabel(event, day, timezoneID, categories, locale),
   );
   return `${label}. ${eventLabels.join('. ')}`;
 }

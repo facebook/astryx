@@ -11,11 +11,22 @@
  * - A JS module that re-exports the built theme (+ icon registry)
  * - A .d.ts (plus an optional .variants.d.ts for custom prop values)
  *
- * It performs the writes and returns a `theme.build` receipt, or `null` when
- * the theme produced no CSS (nothing to build). Errors throw AstryxError (with
+ * It performs the writes and returns a `theme.build` receipt — its `warnings`
+ * carry override problems and any fonts the theme names but does not load
+ * (font-warning.mjs) — or `null` when the theme produced no CSS (nothing to
+ * build). Errors throw AstryxError (with
  * a stable code). Human progress is emitted through the shared `logger`
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
+ *
+ * The installed `@astryxdesign/core` is an independently versioned optional
+ * peer, so it can be older than the CLI. A theme that uses only baseline
+ * features builds against such a core unchanged; a theme that needs ordered
+ * adaptations (which need core's `generateAdaptationCSS`) fails early with
+ * ERR_CORE_INCOMPATIBLE rather than emitting CSS with those rules quietly
+ * missing. That check is scoped to the adaptation capability — it is not a
+ * general compatibility scheme for every export an arbitrary older core might
+ * lack.
  *
  * With `{check: true}`, it compiles the same outputs in memory but writes
  * nothing: it compares each generated file against what is on disk (ignoring
@@ -28,7 +39,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL, fileURLToPath} from 'node:url';
+import {fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {CLI_ROOT, findCoreDir} from '../../../foundation/fs/paths.mjs';
@@ -41,6 +52,12 @@ import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
 import {loadComponentDoc} from '../../../foundation/discovery/component-loader.mjs';
+import {
+  collectThemingTargets,
+  targetsByKey,
+} from '../../../foundation/discovery/theming-targets.mjs';
+import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
+import {interceptCore} from './core-interception.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -49,15 +66,51 @@ import {loadComponentDoc} from '../../../foundation/discovery/component-loader.m
 // action). A built, resolvable `@astryxdesign/core` is a hard requirement.
 // A built, resolvable `@astryxdesign/core` is a hard requirement. These are
 // populated from a dynamic import (a runtime boundary), so `any` is intentional.
+//
+// The CLI and core are independently versioned optional peers, so this import
+// can succeed against a core OLDER than the CLI. Only the exports every theme
+// build needs are REQUIRED (`defineTheme`, `generateThemeRulesSplit`).
+// `generateAdaptationCSS` (ordered environmental adaptations) is treated as a
+// capability instead, required only by a theme that actually uses it:
+// requiring it unconditionally made every theme build — adaptations or not —
+// fail against an older published core. This is a targeted allowance for that
+// one capability, not a general scheme; the other two optional reads below
+// (`generateOnMediaCSS`, `dataTokenDefaults`) both exist in every core that
+// ships adaptations' predecessor surface.
 /** @type {any} */ let _defineTheme = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
+/** @type {any} */ let _generateAdaptationCSS = null;
+/** @type {any} */ let _dataTokenDefaults = null;
+/**
+ * The whole `@astryxdesign/core/theme` namespace. A theme file handed a
+ * wrapped core must still get every export the installed one has, including
+ * ones this file never names — so interception spreads this rather than
+ * rebuilding a core from the handful of functions below.
+ */
+/** @type {any} */ let _coreThemeModule = null;
+/**
+ * The `@astryxdesign/core` ROOT namespace, imported separately because it
+ * exports far more than the theme subpath. Interception must hand a theme file
+ * that imports a component from the root the root's own exports, not the theme
+ * namespace wearing its name.
+ */
+/** @type {any} */ let _coreRootModule = null;
 /** @type {any} */ let _coreImportError = null;
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
+  _coreThemeModule = coreTheme;
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
+  _generateAdaptationCSS = coreTheme.generateAdaptationCSS;
+  _dataTokenDefaults = coreTheme.dataTokenDefaults;
+  try {
+    _coreRootModule = await import('@astryxdesign/core');
+  } catch {
+    // A core without a usable root entry still builds themes; interception
+    // falls back to the theme namespace for the root specifier.
+  }
 } catch (e) {
   // Capture the reason so the theme action can surface a precise, actionable
   // error. We don't throw here: this module is imported eagerly by the CLI
@@ -192,90 +245,135 @@ function toPascalCase(name) {
     .join('');
 }
 
+/** @type {Promise<Record<string, Record<string, string[]>>> | null} */
+let _knownValuesIndexPromise = null;
+
 /**
- * Load known built-in values for a component's visual props from its .doc.mjs file.
- * Parses the type string (e.g. "'info' | 'warning' | 'error' | 'success'") to extract values.
- * Returns a map of { propName: string[] } for props that are visual (listed in theming targets).
- * @param {string} componentName
- * @returns {Promise<Record<string, string[]>>}
+ * Build one target-keyed index of built-in visual-prop values from every core
+ * component doc. A rendered target often lives in a sibling doc (for example,
+ * `astryx-heading` is documented by Text/Heading.doc.mjs), so directory-name
+ * guessing is not a valid lookup strategy.
  */
-async function loadKnownValues(componentName) {
-  // Resolve core src relative to the CLI package, not cwd (which may be a theme package)
-  const cliDir = path.dirname(fileURLToPath(import.meta.url));
-  const coreSrc = path.resolve(cliDir, '../../../../core/src');
-  if (!fs.existsSync(coreSrc)) return {};
-  // Map component name to directory (e.g. 'banner' → 'Banner',
-  // 'dropdown-menu' → 'DropdownMenu'). Theme keys use the rendered class
-  // token, which hyphenates multi-word names, so strip non-letters from BOTH
-  // sides before comparing.
-  const dirs = fs
-    .readdirSync(coreSrc, {withFileTypes: true})
-    .filter(d => d.isDirectory())
-    .map(d => d.name);
-  const target = componentName.toLowerCase().replace(/[^a-z]/g, '');
-  const dir = dirs.find(d => d.toLowerCase().replace(/[^a-z]/g, '') === target);
-  if (!dir) return {};
+async function loadKnownValuesIndex() {
+  const coreRoot = resolveCoreRoot();
+  const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
+  if (!coreSrc || !fs.existsSync(coreSrc)) return {};
 
-  const docPath = path.join(coreSrc, dir, `${dir}.doc.mjs`);
-  if (!fs.existsSync(docPath)) return {};
-
-  try {
-    const docModule = await import(pathToFileURL(docPath).href);
-    const doc = docModule.docs;
-    if (!doc?.theming?.targets) return {};
-
-    // Collect all props — from doc.props or doc.components[].props
-    const allProps = [];
-    if (doc.props) allProps.push(...doc.props);
-    if (doc.components) {
-      for (const comp of doc.components) {
-        if (comp.props) allProps.push(...comp.props);
+  /** @type {any[]} */
+  const docs = [];
+  /** @param {string} dir */
+  async function scan(dir) {
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules' && entry.name !== '__tests__') {
+          await scan(full);
+        }
+        continue;
+      }
+      if (!entry.name.endsWith('.doc.mjs')) continue;
+      try {
+        docs.push(await loadComponentDoc(full));
+      } catch {
+        // One malformed or optional doc must not erase validation for the rest.
       }
     }
-    if (allProps.length === 0) return {};
+  }
+  await scan(coreSrc);
 
-    // Collect visual prop names from theming targets
-    /** @type {Set<string>} */
-    const visualProps = new Set();
-    for (const target of doc.theming.targets) {
-      if (target.visualProps) {
-        for (const vp of target.visualProps) visualProps.add(vp);
-      }
-    }
-
-    // Extract values from prop type strings
-    /** @type {Record<string, string[]>} */
+  /** @param {string} value */
+  const targetName = value =>
+    value
+      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+      .replace(/\s+/g, '-')
+      .toLowerCase();
+  /**
+   * @param {any[]} props
+   * @returns {Record<string, Set<string>>}
+   */
+  const valuesFromProps = props => {
+    /** @type {Record<string, Set<string>>} */
     const result = {};
-    for (const prop of allProps) {
-      if (!visualProps.has(prop.name)) continue;
-      if (!prop.type || typeof prop.type !== 'string') continue;
+    for (const prop of props ?? []) {
+      if (typeof prop?.name !== 'string' || typeof prop?.type !== 'string') {
+        continue;
+      }
+      /** @type {Set<string>} */
+      const values = new Set();
+      for (const match of prop.type.match(/'([^']+)'/g) ?? []) {
+        values.add(match.slice(1, -1));
+      }
+      for (const part of prop.type
+        .split('|')
+        .map((/** @type {string} */ value) => value.trim())) {
+        if (/^-?\d+(?:\.\d+)?$/.test(part)) values.add(part);
+      }
+      if (values.size > 0) result[prop.name] = values;
+    }
+    return result;
+  };
 
-      // Parse union type: "'info' | 'warning' | 'error' | 'success'" → ['info', 'warning', 'error', 'success']
-      const matches = prop.type.match(/'([^']+)'/g);
-      if (matches) {
-        result[prop.name] = matches.map((/** @type {string} */ m) =>
-          m.replace(/'/g, ''),
+  /** @type {Record<string, Record<string, Set<string>>>} */
+  const valuesByOwner = {};
+  for (const doc of docs) {
+    if (typeof doc?.name === 'string') {
+      valuesByOwner[targetName(doc.name)] = valuesFromProps(doc.props);
+    }
+    for (const component of /** @type {any[]} */ (doc?.components ?? [])) {
+      if (typeof component?.name === 'string') {
+        valuesByOwner[targetName(component.name)] = valuesFromProps(
+          component.props,
         );
       }
     }
-    return result;
-  } catch {
-    return {};
   }
+
+  /** @type {Record<string, Record<string, Set<string>>>} */
+  const collected = {};
+  for (const doc of docs) {
+    const localValues = valuesFromProps([
+      ...(doc?.props ?? []),
+      ...(doc?.components ?? []).flatMap(
+        (/** @type {any} */ component) => component?.props ?? [],
+      ),
+    ]);
+    for (const target of doc?.theming?.targets ?? []) {
+      if (typeof target?.className !== 'string') continue;
+      const componentName = target.className.replace(/^astryx-/, '');
+      const ownerValues = valuesByOwner[componentName] ?? {};
+      if (!collected[componentName]) collected[componentName] = {};
+      for (const prop of target.visualProps ?? []) {
+        if (!collected[componentName][prop]) {
+          collected[componentName][prop] = new Set();
+        }
+        for (const value of [
+          ...(localValues[prop] ?? []),
+          ...(ownerValues[prop] ?? []),
+        ]) {
+          collected[componentName][prop].add(value);
+        }
+      }
+    }
+  }
+
+  return Object.fromEntries(
+    Object.entries(collected).map(([component, props]) => [
+      component,
+      Object.fromEntries(
+        Object.entries(props).map(([prop, values]) => [prop, [...values]]),
+      ),
+    ]),
+  );
 }
 
-// Cache for loaded known values
-/** @type {Map<string, Record<string, string[]>>} */
-const _knownValuesCache = new Map();
 /**
  * @param {string} componentName
  * @returns {Promise<Record<string, string[]>>}
  */
 async function getKnownValues(componentName) {
-  if (!_knownValuesCache.has(componentName)) {
-    _knownValuesCache.set(componentName, await loadKnownValues(componentName));
-  }
-  return _knownValuesCache.get(componentName) ?? {};
+  _knownValuesIndexPromise ??= loadKnownValuesIndex();
+  const index = await _knownValuesIndexPromise;
+  return index[componentName] ?? {};
 }
 
 /**
@@ -342,7 +440,6 @@ function readComponentDeclarations(pascalName, options = {}) {
   return contents;
 }
 
-
 /** @type {Map<string, Array<{moduleName: string, interfacePrefix: string}>>} */
 const _augmentationTargetCache = new Map();
 
@@ -350,8 +447,8 @@ const _augmentationTargetCache = new Map();
  * Resolve a rendered theme class token (the key without `astryx-`) to candidate
  * public core subpaths and interface prefixes that may own its augmentable prop
  * maps. Some tokens are subtargets documented by a parent component
- * (`avatar-status-dot` augments `@astryxdesign/core/Avatar`), and some stable
- * class tokens intentionally omit word separators (`progressbar`, `statusdot`)
+ * (`avatar-status-dot` augments `@astryxdesign/core/Avatar`), and some
+ * deprecated tokens still omit word separators (`progressbar`, `statusdot`)
  * while the public API keeps `ProgressBar`/`StatusDot` casing. Component docs
  * are the source of truth for the target token → owning component relationship.
  *
@@ -401,7 +498,8 @@ async function resolveAugmentationTargetCandidates(componentName) {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+        if (entry.name === 'node_modules' || entry.name === '__tests__')
+          continue;
         await scan(full);
         continue;
       }
@@ -429,8 +527,8 @@ async function resolveAugmentationTargetCandidates(componentName) {
 
       // Try the exact rendered token first for documented subtargets such as
       // avatar-status-dot → AvatarStatusDotVariantMap, then the owning public
-      // component name for unhyphenated public casings such as progressbar →
-      // ProgressBarVariantMap/statusdot → StatusDotVariantMap.
+      // component name for the deprecated unhyphenated tokens such as
+      // progressbar → ProgressBarVariantMap/statusdot → StatusDotVariantMap.
       addCandidate(moduleName, toPascalCase(componentName));
       addCandidate(moduleName, moduleName);
       if (Array.isArray(doc?.components)) {
@@ -444,7 +542,15 @@ async function resolveAugmentationTargetCandidates(componentName) {
   }
 
   await scan(coreSrc);
-  const resolved = matches.length > 0 ? matches : fallback;
+  // A target documented by a parent component may also have its own public
+  // subpath and augmentation interface (Heading is documented under Text but
+  // owns @astryxdesign/core/Heading). Keep the direct-name candidate after
+  // discovered owners so both shapes are reachable without guessing which one
+  // the source tree uses.
+  for (const candidate of fallback) {
+    addCandidate(candidate.moduleName, candidate.interfacePrefix);
+  }
+  const resolved = matches;
   _augmentationTargetCache.set(componentName, resolved);
   return resolved;
 }
@@ -475,18 +581,467 @@ function componentHasAugmentableInterface(pascalName, interfaceName, options) {
 }
 
 /**
- * Override table for component properties whose extensible type map interface
- * does not follow the standard `<Component><Prop>Map` naming convention or sits
- * in a different module from the component itself.
+ * Extension points whose public module and interface do not follow the usual
+ * `<Component><Prop>Map` convention. TextType reads CustomTextTypes from the
+ * theme module, so both classification and declaration emission must resolve
+ * this same public augmentation point.
  *
- * @type {Record<string, {module: string, interface: string}>}
+ * @type {Record<string, {moduleName: string, interfaceName: string, includeTypes?: boolean}>}
  */
 const AUGMENTATION_OVERRIDES = {
   'text.type': {
-    module: 'theme',
-    interface: 'CustomTextTypes',
+    moduleName: 'theme',
+    interfaceName: 'CustomTextTypes',
+    includeTypes: true,
   },
 };
+
+/**
+ * Resolve the public module/interface that can widen a component prop value.
+ * @param {string} component
+ * @param {string} prop
+ * @returns {Promise<{moduleName: string, interfaceName: string}|null>}
+ */
+async function resolveAugmentationTarget(component, prop) {
+  const override = AUGMENTATION_OVERRIDES[`${component}.${prop}`];
+  if (override) {
+    return componentHasAugmentableInterface(
+      override.moduleName,
+      override.interfaceName,
+      {includeTypes: override.includeTypes},
+    )
+      ? {moduleName: override.moduleName, interfaceName: override.interfaceName}
+      : null;
+  }
+
+  const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
+  const target = (await resolveAugmentationTargetCandidates(component)).find(
+    candidate =>
+      componentHasAugmentableInterface(
+        candidate.moduleName,
+        `${candidate.interfacePrefix}${propPascal}Map`,
+      ),
+  );
+  return target
+    ? {
+        moduleName: target.moduleName,
+        interfaceName: `${target.interfacePrefix}${propPascal}Map`,
+      }
+    : null;
+}
+
+/**
+ * Adaptation values from resolved runtime rules, raw input, or normalized built
+ * metadata. Built modules intentionally omit `__adaptationRules`, so every CLI
+ * diagnostic that reads rule intent must also understand `__adaptations`.
+ *
+ * @param {Record<string, any>} themeDef
+ * @returns {Record<string, any>[]}
+ */
+function adaptationRuleValues(themeDef) {
+  if (Array.isArray(themeDef.__adaptationRules)) {
+    return themeDef.__adaptationRules;
+  }
+  const rules = themeDef.adaptations?.rules ?? themeDef.__adaptations?.rules;
+  if (!Array.isArray(rules)) return [];
+  return rules.map((/** @type {any} */ rule) => rule?.value).filter(Boolean);
+}
+
+const ADAPTATION_METADATA_KEYS = new Set(['widthBreakpoints', 'rules']);
+const WIDTH_BREAKPOINT_NAMES = ['sm', 'md', 'lg', 'xl', '2xl'];
+
+/** @param {unknown} value @returns {value is Record<string, any>} */
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * A malformed adaptations block is intent too: an old core erases it before it
+ * can be validated, so treating only valid non-empty arrays/maps as intent
+ * would turn author errors into successful, incomplete builds.
+ *
+ * @param {unknown} adaptations
+ * @returns {boolean}
+ */
+function adaptationMetadataHasIntent(adaptations) {
+  if (adaptations === undefined) return false;
+  if (!isRecord(adaptations)) return true;
+  if (
+    Object.keys(adaptations).some(key => !ADAPTATION_METADATA_KEYS.has(key))
+  ) {
+    return true;
+  }
+
+  if (adaptations.rules !== undefined) {
+    if (!Array.isArray(adaptations.rules)) return true;
+    if (adaptations.rules.length > 0) return true;
+  }
+
+  if (adaptations.widthBreakpoints !== undefined) {
+    if (hasMalformedWidthBreakpoints(adaptations.widthBreakpoints)) return true;
+    if (hasCustomWidthBreakpoints(adaptations.widthBreakpoints)) return true;
+  }
+  return false;
+}
+
+/**
+ * Does this theme carry ordered-adaptation intent the installed core must be
+ * able to compile or validate?
+ *
+ * A theme reaches the build in three shapes and this has to see all of them:
+ * raw `adaptations`, resolved `__adaptationRules`, and a built module's
+ * `__adaptations`. Any rule, custom width map, or malformed present metadata is
+ * intent. Malformed data matters because an old core erases it before its
+ * current-core validation can run; accepting it would turn an author error into
+ * a successful incomplete build.
+ *
+ * The complete default width map with an empty rule list is the one no-op: core
+ * writes that shape onto every resolved theme and every shipped built theme.
+ *
+ * @param {any} themeDef
+ * @returns {boolean}
+ */
+function hasAdaptationIntent(themeDef) {
+  if (!themeDef || typeof themeDef !== 'object') return false;
+
+  if (themeDef.__adaptationRules !== undefined) {
+    if (!Array.isArray(themeDef.__adaptationRules)) return true;
+    if (themeDef.__adaptationRules.length > 0) return true;
+  }
+
+  return (
+    adaptationMetadataHasIntent(themeDef.adaptations) ||
+    adaptationMetadataHasIntent(themeDef.__adaptations)
+  );
+}
+
+/**
+ * The default viewport-width tier start points, in CSS px. A theme whose
+ * effective map is exactly this asked for nothing.
+ * SYNC: packages/core/src/theme/themeAdaptations.ts (DEFAULT_WIDTH_BREAKPOINTS)
+ */
+const DEFAULT_WIDTH_BREAKPOINTS = Object.freeze({
+  sm: 640,
+  md: 768,
+  lg: 1024,
+  xl: 1280,
+  '2xl': 1536,
+});
+
+/**
+ * @param {unknown} widthBreakpoints
+ * @returns {boolean}
+ */
+function hasMalformedWidthBreakpoints(widthBreakpoints) {
+  if (!isRecord(widthBreakpoints)) return true;
+  const names = Object.keys(widthBreakpoints);
+  if (names.some(name => !WIDTH_BREAKPOINT_NAMES.includes(name))) return true;
+  for (const name of names) {
+    const point = widthBreakpoints[name];
+    if (typeof point !== 'number' || !Number.isFinite(point) || point <= 0) {
+      return true;
+    }
+  }
+
+  const effective = /** @type {Record<string, number>} */ ({
+    ...DEFAULT_WIDTH_BREAKPOINTS,
+    ...widthBreakpoints,
+  });
+  for (let index = 1; index < WIDTH_BREAKPOINT_NAMES.length; index++) {
+    if (
+      effective[WIDTH_BREAKPOINT_NAMES[index]] <=
+      effective[WIDTH_BREAKPOINT_NAMES[index - 1]]
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * @param {unknown} widthBreakpoints
+ * @returns {boolean}
+ */
+function hasCustomWidthBreakpoints(widthBreakpoints) {
+  if (!widthBreakpoints || typeof widthBreakpoints !== 'object') return false;
+  const points = /** @type {Record<string, number>} */ (widthBreakpoints);
+  const defaults = /** @type {Record<string, number>} */ (
+    DEFAULT_WIDTH_BREAKPOINTS
+  );
+  const names = Object.keys(points);
+  if (names.length === 0) return false;
+  // Any point that differs from the default is custom. So is a PARTIAL map:
+  // core merges it over the defaults, which is a real, inheritable override
+  // even when every value it names happens to match. A COMPLETE map equal to
+  // the defaults asks for nothing — which is exactly what core writes onto
+  // every theme it resolves, and what every shipped built theme carries.
+  if (names.some(name => points[name] !== defaults[name])) return true;
+  return names.length !== Object.keys(defaults).length;
+}
+
+/**
+ * Fail when a theme needs ordered adaptations and the installed core cannot
+ * compile them.
+ *
+ * The CLI and core are optional peers on independent release trains, so a
+ * newer CLI routinely runs against an older published core. Adaptations are a
+ * capability of core's generator: without `generateAdaptationCSS` the build
+ * could still emit token and component CSS, and every adaptation rule would
+ * vanish from the output with no signal. That is the one outcome this must
+ * never produce — so it stops before anything is generated or written, names
+ * the missing capability, and says what to do about it.
+ *
+ * `lineage` is the selected theme's own ancestry — the raw inputs it and its
+ * bases were resolved from, captured as the file loaded (core-interception).
+ * An older core's `defineTheme()` drops `adaptations` while resolving, so the
+ * resolved object alone cannot answer; the raw input can. Scoping to lineage
+ * is what keeps an unrelated adaptive theme in the same module from failing a
+ * plain theme's build.
+ *
+ * `unobserved`, when non-empty, lists lineage members the recorder never saw
+ * because one or more loader paths could not be intercepted. `degradation`
+ * names those gaps: top-level await forced the async loader, or a CommonJS
+ * source dependency could reach a frozen/non-configurable core namespace.
+ * Those members cannot be proven clean, and unproven must not build.
+ *
+ * Silent for a theme with no adaptation intent and fully observed lineage:
+ * those build against an older core exactly as they always did.
+ *
+ * @param {any} themeDef - Raw or resolved theme; both shapes are understood.
+ * @param {{coreVersion?: string, lineage?: any[], unobserved?: any[], degradation?: {topLevelAwait?: boolean, commonJs?: boolean}}} [context]
+ * @returns {void}
+ */
+function assertAdaptationCapability(
+  themeDef,
+  {coreVersion, lineage, unobserved, degradation} = {},
+) {
+  if (_generateAdaptationCSS) return;
+  // A core that could not be imported at all is ERR_CORE_NOT_FOUND's story —
+  // "upgrade core" would be the wrong advice for "core is missing".
+  if (!_defineTheme || !_generateThemeRulesSplit) return;
+
+  const candidates = lineage?.length ? lineage : [themeDef];
+  const installed =
+    coreVersion && coreVersion !== 'unknown'
+      ? `@astryxdesign/core@${coreVersion}`
+      : 'the installed @astryxdesign/core';
+
+  if (candidates.some(hasAdaptationIntent)) {
+    throw new AstryxError(
+      `This theme declares ordered adaptations, but ${installed} does not ` +
+        'export `generateAdaptationCSS` from @astryxdesign/core/theme, so ' +
+        'its adaptation rules cannot be compiled. Building without them ' +
+        'would silently drop every adaptation rule from the generated CSS. ' +
+        'Upgrade @astryxdesign/core to a version that supports theme ' +
+        'adaptations, or remove `adaptations` from this theme.',
+      undefined,
+      ERROR_CODES.ERR_CORE_INCOMPATIBLE,
+    );
+  }
+
+  if (!unobserved?.length) return;
+
+  // These lineage members carry neither a capture marker nor their own
+  // `__adaptations`: they were never observed, this core would have erased any
+  // adaptations they had, and nothing here can tell whether they had any.
+  // Unproven is not clean.
+  const named = unobserved
+    .map(value => (typeof value?.name === 'string' ? `"${value.name}"` : null))
+    .filter(Boolean);
+  const gaps = [
+    degradation?.topLevelAwait
+      ? 'top-level await forced the fallback loader for installed packages'
+      : null,
+    degradation?.commonJs
+      ? 'a CommonJS source dependency reached a frozen or non-configurable core namespace'
+      : null,
+  ].filter(Boolean);
+  throw new AstryxError(
+    `${installed} cannot compile ordered adaptations, and whether ${
+      named.length > 0 ? named.join(', ') : 'part of this theme'
+    } uses adaptations could not be observed${
+      gaps.length > 0 ? ` because ${gaps.join(' and ')}` : ''
+    }. This core erases adaptations while resolving, so building could emit ` +
+      'CSS with adaptation rules silently missing. Upgrade ' +
+      '@astryxdesign/core to a version that supports theme adaptations, or ' +
+      'use a built theme artifact that retains adaptation metadata.',
+    undefined,
+    ERROR_CODES.ERR_CORE_INCOMPATIBLE,
+  );
+}
+
+/**
+ * Every `[component, rules]` pair a theme may emit, including ordered
+ * adaptation rules. Validators, private-variable checks, and notices must see
+ * rule-only values even though variant augmentation is root-owned.
+ *
+ * @param {Record<string, any>} themeDef
+ * @returns {[string, Record<string, any>][]}
+ */
+function themedComponentEntries(themeDef) {
+  const maps = [
+    themeDef.components,
+    ...adaptationRuleValues(themeDef).map(
+      (/** @type {any} */ value) => value.components,
+    ),
+  ];
+
+  /** @type {[string, Record<string, any>][]} */
+  const entries = [];
+  for (const map of maps) {
+    if (map) entries.push(...Object.entries(map));
+  }
+  return entries;
+}
+
+/**
+ * Root component entries are the only surface allowed to introduce variants.
+ * @param {Record<string, any>} themeDef
+ * @returns {[string, Record<string, any>][]}
+ */
+function rootComponentEntries(themeDef) {
+  return themeDef.components ? Object.entries(themeDef.components) : [];
+}
+
+/**
+ * Component entries written only by adaptation rules.
+ * @param {Record<string, any>} themeDef
+ * @returns {[string, Record<string, any>][]}
+ */
+function adaptationComponentEntries(themeDef) {
+  const maps = adaptationRuleValues(themeDef).map(
+    (/** @type {any} */ value) => value.components,
+  );
+  return maps.flatMap((/** @type {any} */ map) =>
+    map ? Object.entries(map) : [],
+  );
+}
+
+/**
+ * How one `prop:value` pair on a component target is classified — the single
+ * vocabulary both the root and adaptation paths reason in.
+ *
+ * - `builtin` — the value is in the component doc's enumerated domain. Valid
+ *   on its own; no theme has to declare anything for it.
+ * - `enrollment` — the value is not built in AND core exposes an augmentable
+ *   `*Map` interface for the prop, so the value becomes valid only because a
+ *   theme enrolls it (the build generates module augmentation for it).
+ * - `unresolved` — anything else: a closed literal-union axis with no
+ *   augmentation point (Button `size`), or a domain the docs cannot enumerate.
+ *   Root emits no augmentation and accepts it as pass-through.
+ *
+ * SYNC: packages/cli/api/theme/build/build.mjs (generateVariantDeclarationsAsync,
+ * validateAdaptationEnrollment)
+ *
+ * @typedef {'builtin' | 'enrollment' | 'unresolved'} ComponentValueClass
+ */
+
+/**
+ * Classify a component visual-prop value.
+ *
+ * This is the ONE place that decides what a value is, so the root and
+ * adaptation paths cannot drift: per AST-012/DEC-5 an adaptation uses the same
+ * target, axis, value-domain and extension validation as root `components`,
+ * and adds only the rule that enrollment-dependent values may not be enrolled
+ * conditionally. An unresolved result carries into adaptations unchanged, and
+ * tightening root validation tightens adaptations automatically.
+ *
+ * @param {string} component - Rendered target token (without `astryx-`).
+ * @param {string} prop
+ * @param {string} value
+ * @returns {Promise<ComponentValueClass>}
+ */
+async function classifyComponentValue(component, prop, value) {
+  const known = await getKnownValues(component);
+  const knownForProp = known[prop];
+  if (knownForProp && knownForProp.includes(value)) {
+    return 'builtin';
+  }
+
+  const target = await resolveAugmentationTarget(component, prop);
+  return target ? 'enrollment' : 'unresolved';
+}
+
+/**
+ * Every `prop:value` pair a component override key names. A key is `base`, a
+ * bare state name, or `+`-joined `prop:value` pairs.
+ *
+ * @param {string} key
+ * @returns {{prop: string, value: string, pair: string}[]}
+ */
+function componentValuePairs(key) {
+  if (key === 'base') return [];
+  /** @type {{prop: string, value: string, pair: string}[]} */
+  const pairs = [];
+  for (const pair of key.split('+')) {
+    const colon = pair.indexOf(':');
+    if (colon === -1) continue;
+    pairs.push({
+      prop: pair.slice(0, colon),
+      value: pair.slice(colon + 1),
+      pair,
+    });
+  }
+  return pairs;
+}
+
+/**
+ * Reject values whose validity depends on THEME ENROLLMENT when only an
+ * adaptation rule enrolls them.
+ *
+ * Per AST-012/DEC-5 this is the single thing adaptations add to root
+ * validation. Everything else — which targets and axes exist, which values a
+ * domain admits — is the root path's judgement, reached through the shared
+ * classifier, so there is no adaptation-specific resolver, allowlist or
+ * unresolved-domain exception here:
+ *
+ * - `builtin` values are independently valid and need no root declaration;
+ * - `unresolved` values carry root's shared result unchanged (accepting one
+ *   does not make the axis extensible — the conditional-API invariant still
+ *   governs it, and tightening root tightens this automatically);
+ * - `enrollment` values are the exception: generated module augmentation is
+ *   unconditional, so a value that exists only under a media condition would
+ *   widen a component's public type from a conditional surface. Those must
+ *   appear on the effective root `components` surface first.
+ *
+ * @param {Record<string, any>} themeDef
+ * @returns {Promise<string[]>}
+ */
+async function validateAdaptationEnrollment(themeDef) {
+  const adaptationEntries = adaptationComponentEntries(themeDef);
+  if (adaptationEntries.length === 0) {
+    return [];
+  }
+
+  /** @type {Set<string>} */
+  const rootValues = new Set();
+  for (const [component, rules] of rootComponentEntries(themeDef)) {
+    for (const key of Object.keys(rules)) {
+      for (const {pair} of componentValuePairs(key)) {
+        rootValues.add(`${component}:${pair}`);
+      }
+    }
+  }
+
+  /** @type {string[]} */
+  const errors = [];
+  for (const [component, rules] of adaptationEntries) {
+    for (const key of Object.keys(rules)) {
+      for (const {prop, value, pair} of componentValuePairs(key)) {
+        if (rootValues.has(`${component}:${pair}`)) continue;
+        const valueClass = await classifyComponentValue(component, prop, value);
+        if (valueClass !== 'enrollment') continue;
+        errors.push(
+          `Adaptation rule enrolls the custom value "${component}.${prop}:${value}". ` +
+            'A value that is valid only because a theme enrolls it generates ' +
+            'unconditional type augmentation, so it must be declared on the root ' +
+            'theme first; a rule may then restyle it under a condition.',
+        );
+      }
+    }
+  }
+  return [...new Set(errors)];
+}
 
 /**
  * Generate TypeScript declaration content with module augmentation for custom
@@ -507,35 +1062,35 @@ const AUGMENTATION_OVERRIDES = {
  * @returns {Promise<string|null>} TypeScript declaration content, or null if no augmentations needed
  */
 async function generateVariantDeclarationsAsync(themeDef) {
-  if (!themeDef.components || Object.keys(themeDef.components).length === 0) {
+  const componentLayers = getThemeComponentLayers(themeDef);
+  if (componentLayers.length === 0) {
     return null;
   }
 
-  // Collect custom values: { component: { prop: [value, ...] } }
+  // Collect enrollment-dependent values: { component: { prop: [value, ...] } }
+  // Classification is shared with the adaptation check, so "what is a custom
+  // value" has exactly one definition (AST-012/DEC-5).
   /** @type {Record<string, Record<string, Set<string>>>} */
   const customValues = {};
 
-  for (const [component, rules] of Object.entries(themeDef.components)) {
-    const knownForComponent = await getKnownValues(component);
+  for (const {components} of componentLayers) {
+    for (const [component, rules] of Object.entries(components)) {
+      for (const key of Object.keys(rules)) {
+        for (const {prop, value} of componentValuePairs(key)) {
+          // Built-ins need no augmentation; unresolved axes have no
+          // augmentation point to widen, and are passed through untouched.
+          const valueClass = await classifyComponentValue(
+            component,
+            prop,
+            value,
+          );
+          if (valueClass !== 'enrollment') continue;
 
-    for (const key of Object.keys(rules)) {
-      if (key === 'base') continue;
-
-      const pairs = key.split('+');
-      for (const pair of pairs) {
-        const colonIdx = pair.indexOf(':');
-        if (colonIdx === -1) continue;
-        const prop = pair.slice(0, colonIdx);
-        const value = pair.slice(colonIdx + 1);
-
-        // Skip known built-in values
-        const knownForProp = knownForComponent[prop];
-        if (knownForProp && knownForProp.includes(value)) continue;
-
-        if (!customValues[component]) customValues[component] = {};
-        if (!customValues[component][prop])
-          customValues[component][prop] = new Set();
-        customValues[component][prop].add(value);
+          if (!customValues[component]) customValues[component] = {};
+          if (!customValues[component][prop])
+            customValues[component][prop] = new Set();
+          customValues[component][prop].add(value);
+        }
       }
     }
   }
@@ -552,43 +1107,18 @@ async function generateVariantDeclarationsAsync(themeDef) {
     for (const [prop, values] of Object.entries(props)) {
       if (values.size === 0) continue;
 
-      const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      let target;
-      let interfaceName;
+      const target = await resolveAugmentationTarget(component, prop);
 
-      const override = AUGMENTATION_OVERRIDES[`${component}.${prop}`];
-      if (override) {
-        if (
-          componentHasAugmentableInterface(
-            override.module,
-            override.interface,
-            {includeTypes: true},
-          )
-        ) {
-          target = { moduleName: override.module };
-          interfaceName = override.interface;
-        }
-      } else {
-        target = (await resolveAugmentationTargetCandidates(component)).find(
-          candidate =>
-            componentHasAugmentableInterface(
-              candidate.moduleName,
-              `${candidate.interfacePrefix}${propPascal}Map`,
-            ),
-        );
-        if (target) {
-          interfaceName = `${target.interfacePrefix}${propPascal}Map`;
-        }
-      }
-
-      // Only augment interfaces that actually exist as an extension point in
-      // core. Props backed by closed literal-union types (e.g. Button `size`,
-      // Heading `type`/`level`) have no `*Map` interface — a `declare module`
-      // block against a non-existent interface just creates a new, unused
-      // interface and never extends the component's prop union, so skip it.
+      // Resolve the augmentation point again to name it. Classification has
+      // already established that one exists (that is what `enrollment` means),
+      // so this is a lookup, not a filter — but a target that somehow fails to
+      // resolve here must not emit a `declare module` block against a
+      // non-existent interface, which would create a dead sibling interface
+      // rather than widening the component's prop union.
       if (!target) continue;
 
       const modulePath = `@astryxdesign/core/${target.moduleName}`;
+      const {interfaceName} = target;
 
       sections.push(`declare module '${modulePath}' {`);
       sections.push(`  interface ${interfaceName} {`);
@@ -631,24 +1161,118 @@ const themeScopeStart = (/** @type {string} */ name) =>
 const THEME_SCOPE_TO = `[data-astryx-theme]`;
 
 /**
- * Import a theme module using jiti and find the defineTheme() result.
- * Returns the resolved DefinedTheme object.
- * @param {string} filePath
- * @returns {Promise<any>}
+ * Module extensions the theme loader resolves, source before artifact.
+ *
+ * `theme build` writes `<name>.js` next to `<name>.ts`, and jiti's default
+ * order tries `.js` first — so once a base theme had been built, every sibling
+ * theme that `extends` it resolved to that generated artifact instead of the
+ * source. The artifact carries no `components` and exports a different name,
+ * so the inheritance silently evaporated. Resolving source first is also what
+ * the author's TypeScript sees, which is the point: the CSS the build emits
+ * matches the theme they type-checked.
  */
-async function importThemeModule(filePath) {
+const THEME_MODULE_EXTENSIONS = [
+  '.ts',
+  '.tsx',
+  '.mts',
+  '.cts',
+  '.mtsx',
+  '.ctsx',
+  '.mjs',
+  '.cjs',
+  '.js',
+  '.json',
+];
+
+/**
+ * Errors that mean "the synchronous loader cannot evaluate this module", as
+ * opposed to "this module is broken". Only the former may fall back to the
+ * async path: a genuine author error (a throw, a missing import, a real syntax
+ * error) must surface as itself, and must never be quietly downgraded into a
+ * load whose interception no longer reaches installed packages.
+ *
+ * Top-level await is the case that exists in practice — the sync path compiles
+ * the module as a CommonJS function body, where `await` is a SyntaxError with
+ * this exact V8 wording.
+ *
+ * @param {unknown} error
+ * @returns {boolean}
+ */
+function isSyncLoaderLimitation(error) {
+  if (!(error instanceof SyntaxError)) return false;
+  return /await is only valid in async function/i.test(error.message);
+}
+
+/**
+ * Import a theme module using jiti and find the defineTheme() result.
+ * Returns the resolved DefinedTheme object, plus whether interception was
+ * degraded on the way.
+ *
+ * When `interception` is given, the theme file — and everything it imports, at
+ * any depth — is handed that wrapped core instead of resolving its own, so
+ * each theme defined anywhere in the graph is associated with the raw input it
+ * came from. That is the only way to see an `adaptations` block an older core
+ * erases while resolving. It costs no extra execution: the theme is loaded
+ * exactly once, on whichever path succeeds.
+ *
+ * Interception forces jiti's SYNCHRONOUS path. jiti only hands a module's
+ * imports back to itself when it transpiles that module, and it skips
+ * transpiling an ESM file under `import()` — so an installed package whose
+ * SOURCE calls `defineTheme` would resolve its own real core and erase the
+ * author's adaptations unobserved. The sync path transpiles it, so the wrapped
+ * core reaches inside installed packages too.
+ *
+ * A module the sync path cannot evaluate at all (top-level await) still has to
+ * load, so it falls back to the async import — but that fallback is DEGRADED:
+ * package sources on that path resolve their own core again. The caller is
+ * told, and treats anything it could not observe as unproven rather than
+ * assuming it is clean.
+ *
+ * @param {string} filePath
+ * @param {import('./core-interception.mjs').CoreInterception} [interception]
+ * @returns {Promise<{theme: any, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
+ */
+async function importThemeModule(filePath, interception) {
   const jiti = createJiti(import.meta.url, {
     moduleCache: false,
     jsx: true,
+    extensions: THEME_MODULE_EXTENSIONS,
+    ...(interception ? {virtualModules: interception.modules} : {}),
   });
 
-  const mod = await jiti.import(filePath, {default: true});
+  /** @type {any} */
+  let mod;
+  const degraded = {topLevelAwait: false, commonJs: false};
+  if (interception) {
+    // The CommonJS patch covers `.cjs` package source, which jiti always
+    // loads natively; the sync path covers everything else inside packages.
+    // A frozen require(esm) namespace cannot be patched, so retain that gap and
+    // let the selected lineage decide whether it matters.
+    const commonJsPatch = interception.patchCommonJs(filePath);
+    degraded.commonJs = !commonJsPatch.covered;
+    try {
+      try {
+        mod = jiti(filePath);
+      } catch (error) {
+        // Only a sync-loader limitation may fall back. Anything else is the
+        // theme's own failure and belongs to the caller unchanged.
+        if (!isSyncLoaderLimitation(error)) throw error;
+        degraded.topLevelAwait = true;
+        mod = await jiti.import(filePath, {default: true});
+      }
+    } finally {
+      commonJsPatch.undo();
+    }
+  } else {
+    mod = await jiti.import(filePath, {default: true});
+  }
 
-  if (isThemeObject(mod)) return mod;
+  if (isThemeObject(mod)) return {theme: mod, degraded};
 
   if (mod && typeof mod === 'object') {
+    if (isThemeObject(mod.default)) return {theme: mod.default, degraded};
     for (const value of Object.values(mod)) {
-      if (isThemeObject(value)) return value;
+      if (isThemeObject(value)) return {theme: value, degraded};
     }
   }
 
@@ -675,15 +1299,24 @@ function isThemeObject(value) {
 /**
  * Extract the theme definition from a JS/TS file.
  * Tries jiti first (full TS support), falls back to regex+eval.
+ *
+ * The legacy fallback needs no interception: it evaluates the `defineTheme()`
+ * ARGUMENT, so what it returns is raw authored input with `adaptations` still
+ * on it — nothing has erased anything yet. It is therefore never degraded.
+ *
  * @param {string} filePath
- * @returns {Promise<any>}
+ * @param {import('./core-interception.mjs').CoreInterception} [interception]
+ * @returns {Promise<{theme: any, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
  */
-async function extractThemeDefinition(filePath) {
+async function extractThemeDefinition(filePath, interception) {
   try {
-    return await importThemeModule(filePath);
+    return await importThemeModule(filePath, interception);
   } catch (jitiError) {
     try {
-      return extractThemeDefinitionLegacy(filePath);
+      return {
+        theme: extractThemeDefinitionLegacy(filePath),
+        degraded: {topLevelAwait: false, commonJs: false},
+      };
     } catch {
       const je = /** @type {Error} */ (jitiError);
       throw new Error(
@@ -772,6 +1405,13 @@ function extractIconInfo(filePath) {
  * Includes the theme name, marker, and re-exports the icon registry.
  * All styling is in the CSS file.
  *
+ * The module carries the theme's resolved `components` and on-media surfaces
+ * alongside its tokens. They are not needed to apply the theme — the CSS holds
+ * all of that — but a built theme is a legitimate base for `extends` (the
+ * shipped themes expose one as their `./built` subpath), and a base that
+ * carries only tokens makes its children silently lose every component
+ * override it had.
+ *
  * The icon registry is imported rather than inlined because it holds React
  * elements, which cannot be serialized. `extractIconInfo` lifts the specifier
  * out of the TypeScript source, where an extensionless `./icons` is resolved by
@@ -813,6 +1453,49 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
     .map((line, i) => (i === 0 ? line : '  ' + line))
     .join('\n');
 
+  /**
+   * Serialize a resolved theme field as an indented object literal, or '' when
+   * there is nothing to emit.
+   * @param {string} field
+   * @param {unknown} value
+   * @param {boolean} [includeEmpty]
+   * @returns {string}
+   */
+  const serializeField = (field, value, includeEmpty = false) => {
+    if (value == null || (!includeEmpty && Object.keys(value).length === 0))
+      return '';
+    const body = JSON.stringify(value, null, 2)
+      .split('\n')
+      .map((line, i) => (i === 0 ? line : '  ' + line))
+      .join('\n');
+    return `  ${field}: ${body},\n`;
+  };
+
+  // Everything a theme that `extends` this built one has to be able to read
+  // back. A field missing here is silently lost by the extending theme.
+  // SYNC: packages/core/src/theme/defineTheme.ts (DefinedTheme)
+  const inheritableFields =
+    (themeDef.__localTokenLineage !== undefined
+      ? `  localTokens: ${JSON.stringify(themeDef.localTokens ?? {}, null, 2)
+          .split('\n')
+          .map((line, i) => (i === 0 ? line : '  ' + line))
+          .join('\n')},\n` +
+        `  __localTokenOwners: ${JSON.stringify(
+          themeDef.__localTokenOwners ?? {},
+          null,
+          2,
+        )
+          .split('\n')
+          .map((line, i) => (i === 0 ? line : '  ' + line))
+          .join('\n')},\n` +
+        `  __localTokenLineage: ${JSON.stringify(themeDef.__localTokenLineage)},\n`
+      : '') +
+    serializeField('components', themeDef.components) +
+    serializeField('__onDark', themeDef.__onDark) +
+    serializeField('__onLight', themeDef.__onLight) +
+    serializeField('__adaptations', themeDef.__adaptations) +
+    serializeField('__axes', themeDef.__axes ?? {}, true);
+
   return `${iconImport}/**
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
  * Import the CSS file alongside this module:
@@ -824,7 +1507,7 @@ export const ${toIdentifier(themeDef.name)}Theme = {
   name: '${themeDef.name}',
   __built: true,
   tokens: ${tokensStr},
-${iconsField}
+${inheritableFields}${iconsField}
 };
 ${iconReExport}`;
 }
@@ -868,6 +1551,9 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
  * Returns null when docs are unavailable so validation can skip unknown-key
  * warnings rather than guessing from a second registry.
  *
+ * Shares its enumeration with `theme targets`, so what a theme author can list
+ * is exactly what this validator accepts.
+ *
  * @returns {Promise<Record<string, string[]> | null>}
  */
 async function loadKnownComponents() {
@@ -875,44 +1561,7 @@ async function loadKnownComponents() {
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return null;
 
-  /** @type {Record<string, string[]>} */
-  const targets = {};
-
-  /** @param {string} dir */
-  async function scan(dir) {
-    const entries = fs.readdirSync(dir, {withFileTypes: true});
-    for (const entry of entries) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
-        await scan(full);
-        continue;
-      }
-      if (!entry.name.endsWith('.doc.mjs')) continue;
-
-      /** @type {any} */
-      let doc;
-      try {
-        doc = await loadComponentDoc(full);
-      } catch {
-        continue;
-      }
-
-      for (const target of doc?.theming?.targets || []) {
-        const className = target?.className;
-        if (typeof className !== 'string') continue;
-        const key = className.replace(/^astryx-/, '');
-        if (!key) continue;
-        const props = [target.visualProps, target.states]
-          .filter(list => Array.isArray(list))
-          .flat()
-          .filter((/** @type {unknown} */ p) => typeof p === 'string');
-        targets[key] = [...new Set([...(targets[key] || []), ...props])];
-      }
-    }
-  }
-
-  await scan(coreSrc);
+  const targets = targetsByKey(await collectThemingTargets(coreSrc));
   return Object.keys(targets).length > 0 ? targets : null;
 }
 
@@ -939,12 +1588,13 @@ async function getKnownComponents() {
 async function validateComponentOverrides(themeDef) {
   /** @type {string[]} */
   const warnings = [];
-  if (!themeDef.components) return warnings;
+  const componentEntries = themedComponentEntries(themeDef);
+  if (componentEntries.length === 0) return warnings;
 
   const knownComponents = await getKnownComponents();
   if (knownComponents == null) return warnings;
 
-  for (const [component, rules] of Object.entries(themeDef.components)) {
+  for (const [component, rules] of componentEntries) {
     // Check component name
     if (!(component in knownComponents)) {
       const similar = Object.keys(knownComponents)
@@ -995,7 +1645,7 @@ async function validateComponentOverrides(themeDef) {
     }
   }
 
-  return warnings;
+  return [...new Set(warnings)];
 }
 
 /**
@@ -1011,23 +1661,183 @@ async function validateComponentOverrides(themeDef) {
 function validatePrivateVars(themeDef) {
   /** @type {string[]} */
   const errors = [];
-  if (!themeDef.components) return errors;
 
-  for (const [component, rules] of Object.entries(themeDef.components)) {
+  for (const [component, rules] of themedComponentEntries(themeDef)) {
     for (const [key, styles] of Object.entries(rules)) {
-      for (const prop of Object.keys(styles)) {
-        if (typeof prop === 'string' && prop.startsWith('--_')) {
-          errors.push(
-            `Component "${component}" (${key}) sets private var "${prop}". ` +
-              `Private vars (--_*) are internal — use standard CSS properties ` +
-              `(e.g. borderRadius, padding) instead. The pipeline expands them automatically.`,
-          );
+      /**
+       * @param {unknown} value
+       * @param {string[]} [path]
+       */
+      const visit = (value, path = []) => {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+        for (const [prop, nested] of Object.entries(value)) {
+          if (prop.startsWith('--_')) {
+            errors.push(
+              `Component "${component}" (${[key, ...path].join(' ')}) sets private var "${prop}". ` +
+                `Private vars (--_*) are internal — use standard CSS properties ` +
+                `(e.g. borderRadius, padding) instead. The pipeline expands them automatically.`,
+            );
+          }
+          visit(nested, [...path, prop]);
         }
+      };
+      visit(styles);
+    }
+  }
+
+  // One entry per distinct message: a component declared both at the root and
+  // in one or more adaptations would otherwise report the same problem twice.
+  return [...new Set(errors)];
+}
+
+const BUILTIN_HEADING_TYPES = new Set(['display-1', 'display-2', 'display-3']);
+
+/**
+ * Return every component-rule layer that can emit CSS for a theme. Raw theme
+ * input stores media-surface overrides in `onDark`/`onLight`; a theme already
+ * resolved by defineTheme stores them in `__onDark`/`__onLight` instead.
+ *
+ * @param {{components?: Record<string, Record<string, unknown>>, onDark?: {components?: Record<string, Record<string, unknown>>}, onLight?: {components?: Record<string, Record<string, unknown>>}, __onDark?: {components?: Record<string, Record<string, unknown>>}, __onLight?: {components?: Record<string, Record<string, unknown>>}}} themeDef
+ * @returns {{name: 'base'|'onDark'|'onLight', components: Record<string, Record<string, unknown>>}[]}
+ */
+function getThemeComponentLayers(themeDef) {
+  /** @type {{name: 'base'|'onDark'|'onLight', components: Record<string, Record<string, unknown>>}[]} */
+  const layers = [];
+  /**
+   * @param {'base'|'onDark'|'onLight'} name
+   * @param {{components?: Record<string, Record<string, unknown>>}|undefined} surface
+   */
+  const addLayer = (name, surface) => {
+    if (
+      surface?.components &&
+      typeof surface.components === 'object' &&
+      Object.keys(surface.components).length > 0
+    ) {
+      layers.push({name, components: surface.components});
+    }
+  };
+
+  addLayer('base', themeDef);
+  addLayer('onDark', themeDef.__onDark ?? themeDef.onDark);
+  addLayer('onLight', themeDef.__onLight ?? themeDef.onLight);
+  return layers;
+}
+
+/**
+ * A generated type augmentation makes a custom Heading type callable with the
+ * type prop, so that name needs a standalone visual rule of its own. A value
+ * that appears only in a combined selector (or has an empty rule) would
+ * type-check but fall back for ordinary `type="name"` use.
+ *
+ * @param {{components?: Record<string, Record<string, unknown>>}} themeDef
+ * @returns {string[]}
+ */
+function validateCustomHeadingTypes(themeDef) {
+  const layers = getThemeComponentLayers(themeDef);
+  const customTypes = new Set();
+  for (const {components} of layers) {
+    const headingRules = components.heading;
+    if (!headingRules || typeof headingRules !== 'object') continue;
+
+    for (const key of Object.keys(headingRules)) {
+      for (const pair of key.split('+')) {
+        const colon = pair.indexOf(':');
+        if (colon === -1 || pair.slice(0, colon) !== 'type') continue;
+        const value = pair.slice(colon + 1);
+        if (value && !BUILTIN_HEADING_TYPES.has(value)) customTypes.add(value);
       }
     }
   }
 
+  const errors = [];
+  for (const type of customTypes) {
+    const hasStandalone = layers.some(({components}) => {
+      const headingRules = components.heading;
+      if (!headingRules || typeof headingRules !== 'object') return false;
+      const standalone = headingRules[`type:${type}`];
+      return (
+        standalone != null &&
+        typeof standalone === 'object' &&
+        !Array.isArray(standalone) &&
+        hasUsableStyleDeclaration(standalone)
+      );
+    });
+    if (!hasStandalone) {
+      errors.push(
+        `Custom Heading type "${type}" needs a non-empty standalone ` +
+          `components.heading["type:${type}"], ` +
+          `onDark.components.heading["type:${type}"], or ` +
+          `onLight.components.heading["type:${type}"] rule.`,
+      );
+    }
+  }
   return errors;
+}
+
+/**
+ * Return true when a style object contains a declaration that the theme
+ * generator can emit. Empty pseudo blocks do not count: they produce no CSS
+ * and would leave the generated type augmentation without a usable rule.
+ *
+ * @param {unknown} styles
+ * @returns {boolean}
+ */
+function hasUsableStyleDeclaration(styles) {
+  if (!styles || typeof styles !== 'object' || Array.isArray(styles)) {
+    return false;
+  }
+  for (const [property, value] of Object.entries(styles)) {
+    if (property.startsWith(':')) {
+      if (hasUsableStyleDeclaration(value)) return true;
+      continue;
+    }
+    if (value !== undefined && value !== null && typeof value !== 'object') {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Custom Heading types are only useful when the installed Core package exposes
+ * the public map that the generated declaration augments. The CLI and Core
+ * are optional peers and can be upgraded independently, so fail explicitly
+ * instead of emitting CSS that application TypeScript cannot consume.
+ *
+ * @param {{components?: Record<string, Record<string, unknown>>}} themeDef
+ * @returns {string[]}
+ */
+function validateHeadingTypeAugmentationSupport(themeDef) {
+  const hasCustomType = getThemeComponentLayers(themeDef).some(
+    ({components}) => {
+      const headingRules = components.heading;
+      return (
+        headingRules &&
+        typeof headingRules === 'object' &&
+        Object.keys(headingRules).some(key =>
+          key.split('+').some(pair => {
+            const colon = pair.indexOf(':');
+            return (
+              colon !== -1 &&
+              pair.slice(0, colon) === 'type' &&
+              pair.slice(colon + 1) &&
+              !BUILTIN_HEADING_TYPES.has(pair.slice(colon + 1))
+            );
+          }),
+        )
+      );
+    },
+  );
+  if (!hasCustomType) return [];
+
+  if (!componentHasAugmentableInterface('Heading', 'HeadingTypeMap')) {
+    return [
+      'Custom Heading types require an installed @astryxdesign/core that ' +
+        'exports HeadingTypeMap from the public Heading subpath. Upgrade Core ' +
+        'before building this theme.',
+    ];
+  }
+  return [];
 }
 
 /**
@@ -1063,14 +1873,44 @@ export async function themeBuild(
 
   logger.log(`\nBuilding theme from ${path.relative(cwd, filePath)}...`);
 
+  // When the installed core cannot compile adaptations, watch its
+  // `defineTheme` as the theme loads: that core erases `adaptations` while
+  // resolving, so the raw input captured here is the only remaining witness
+  // to what the author wrote. Costs no extra execution — the theme is loaded
+  // once either way — and a core that CAN compile them needs none of it.
+  const interception = _generateAdaptationCSS
+    ? undefined
+    : interceptCore(_coreThemeModule, _coreRootModule);
+
   // Extract theme definition
   let themeDef;
+  /** Paths through the load that interception could not fully observe. */
+  let loadDegradation;
   try {
-    themeDef = await extractThemeDefinition(filePath);
+    const loaded = await extractThemeDefinition(filePath, interception);
+    themeDef = loaded.theme;
+    loadDegradation = loaded.degraded;
   } catch (e) {
     const err = /** @type {Error} */ (e);
     throw new AstryxError(err.message, undefined, ERROR_CODES.ERR_THEME_LOAD);
   }
+
+  // The marker is scoped to that isolated load: drop it before the theme
+  // reaches anything that reads or writes it. (Symbol keys are invisible to
+  // JSON.stringify and Object.keys, so it could not reach output regardless.)
+  // Both reads happen BEFORE the strip, which is what removes the evidence.
+  const adaptationLineage = interception
+    ? interception.lineageOf(themeDef)
+    : undefined;
+  const capturedGenerativeAxes = interception
+    ? interception.capturedAxesOf(themeDef)
+    : undefined;
+  const hasCoverageGap = Boolean(
+    loadDegradation?.topLevelAwait || loadDegradation?.commonJs,
+  );
+  const unobservedLineage =
+    interception && hasCoverageGap ? interception.unobservedIn(themeDef) : [];
+  if (interception) interception.strip(themeDef);
 
   if (!themeDef.name) {
     throw new AstryxError(
@@ -1100,6 +1940,8 @@ export async function themeBuild(
   // Validate component overrides
   const warnings = await validateComponentOverrides(themeDef);
   const warningMessages = [];
+  /** Advisories about a correct theme — see the `notices` note on the receipt. */
+  const noticeMessages = [];
   for (const w of warnings) {
     warningMessages.push(w);
     logger.warn(`  ⚠ ${w}`);
@@ -1117,10 +1959,22 @@ export async function themeBuild(
     );
   }
 
+  const customHeadingErrors = validateCustomHeadingTypes(themeDef);
+  customHeadingErrors.push(...validateHeadingTypeAugmentationSupport(themeDef));
+  if (customHeadingErrors.length > 0) {
+    throw new AstryxError(
+      customHeadingErrors.join('\n'),
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+
   // Generate CSS via core's shared generator — the SINGLE source of truth.
   // `astryx theme build` and the `<Theme>` runtime MUST emit identical CSS, so
   // there is exactly one generation path: @astryxdesign/core/theme. If core could not
   // be imported, fail hard rather than silently producing divergent output.
+  // Only the baseline exports every theme build needs are required here;
+  // capability exports are checked against what the theme actually asks for.
   if (!_defineTheme || !_generateThemeRulesSplit) {
     throw new AstryxError(
       'Could not load @astryxdesign/core/theme — `astryx theme build` requires a ' +
@@ -1135,24 +1989,98 @@ export async function themeBuild(
     );
   }
 
+  // An adaptation theme against a core that cannot compile adaptations stops
+  // here — before any CSS is generated and long before anything is written.
+  // Checked against the SELECTED theme's own lineage: the raw inputs it and
+  // its bases were resolved from, so an unrelated adaptive theme elsewhere in
+  // the import graph cannot fail this build.
+  const coreVersionForCapability = readPkgVersion(findCoreDir(cwd));
+  assertAdaptationCapability(themeDef, {
+    coreVersion: coreVersionForCapability,
+    lineage: adaptationLineage,
+    unobserved: unobservedLineage,
+    degradation: loadDegradation,
+  });
+
   let css;
   let resolvedTheme;
   {
-    // jiti returns an already-resolved theme; legacy eval returns raw input.
-    const isAlreadyResolved =
-      !themeDef.typography && !themeDef.motion && !themeDef.radius;
-    if (isAlreadyResolved) {
-      resolvedTheme = themeDef;
+    // jiti returns an already-resolved theme; a plain object literal (or the
+    // legacy eval path) returns raw defineTheme input, which still has to go
+    // through the resolver. Detect that by the input-only fields — a resolved
+    // theme has none of them — and hand the WHOLE object over: picking fields
+    // by name is how `extends` (and `color`, and `syntax`) used to be dropped
+    // on the way in.
+    // Fields that only ever appear on RAW defineTheme() input, never on an
+    // already-resolved theme. Their presence is how the build tells the two
+    // apart and decides to run defineTheme() itself. A field missing from this
+    // list is dropped without a word, so every new input field belongs here.
+    // SYNC: packages/core/src/theme/defineTheme.ts (DefineThemeInput)
+    const INPUT_ONLY_FIELDS = [
+      'extends',
+      'typography',
+      'motion',
+      'radius',
+      'color',
+      'syntax',
+      'onDark',
+      'onLight',
+      'adaptations',
+    ];
+    const needsResolution =
+      INPUT_ONLY_FIELDS.some(field => themeDef[field] !== undefined) ||
+      ('localTokens' in themeDef && themeDef.__localTokenLineage === undefined);
+    if (needsResolution) {
+      try {
+        resolvedTheme = _defineTheme({...themeDef});
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Theme normalization failed.';
+        throw new AstryxError(
+          message,
+          undefined,
+          ERROR_CODES.ERR_THEME_INVALID,
+        );
+      }
     } else {
-      resolvedTheme = _defineTheme({
-        name: themeDef.name,
-        typography: themeDef.typography,
-        motion: themeDef.motion,
-        radius: themeDef.radius,
-        tokens: themeDef.tokens,
-        components: themeDef.components,
-      });
+      resolvedTheme = themeDef;
     }
+
+    // Cores that predate adaptations can still resolve typography, color,
+    // radius, and motion into root tokens, but they do not retain the raw axis
+    // inputs. Keep the effective metadata captured from the same defineTheme
+    // lineage so a later current-core child can complete a partial adaptation
+    // axis exactly as it would when extending the source theme.
+    if (
+      resolvedTheme.__axes === undefined &&
+      capturedGenerativeAxes &&
+      Object.keys(capturedGenerativeAxes).length > 0
+    ) {
+      resolvedTheme = {...resolvedTheme, __axes: capturedGenerativeAxes};
+    }
+
+    // Re-check after resolution: `extends` can pull adaptation rules in from a
+    // base the entry file never mentions, and a resolver that understands them
+    // surfaces them here.
+    assertAdaptationCapability(resolvedTheme, {
+      coreVersion: coreVersionForCapability,
+      lineage: adaptationLineage,
+      unobserved: unobservedLineage,
+      degradation: loadDegradation,
+    });
+
+    const adaptationEnrollmentErrors =
+      await validateAdaptationEnrollment(resolvedTheme);
+    if (adaptationEnrollmentErrors.length > 0) {
+      throw new AstryxError(
+        adaptationEnrollmentErrors.join('\n'),
+        undefined,
+        ERROR_CODES.ERR_THEME_INVALID,
+      );
+    }
+
     const scopeSelector = themeScopeStart(themeDef.name);
     const scopeTo = THEME_SCOPE_TO;
 
@@ -1168,18 +2096,57 @@ export async function themeBuild(
         `@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}\n}`,
       );
     }
-    if (component.length > 0) {
-      const componentInner = component.join('\n\n');
-      const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
-      // #3658: also emit attribute-specific rules so <Theme mode> can override color-scheme
-      const colorSchemeDecl = componentScope.includes('light-dark(')
+    // Ordered adaptation rules use the same generator as the runtime path.
+    // An older core has no such generator; a theme that needs one never
+    // reaches this line (assertAdaptationCapability above), so the empty
+    // result here belongs to a theme with no adaptation rules to emit.
+    let adaptationCss;
+    try {
+      adaptationCss = _generateAdaptationCSS
+        ? _generateAdaptationCSS(resolvedTheme)
+        : {component: '', prose: ''};
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Theme normalization failed.';
+      throw new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
+    }
+    const componentInner = component.join('\n\n');
+    const componentScope =
+      component.length > 0
+        ? `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`
+        : '';
+
+    // #3658: also emit attribute-specific rules so <Theme mode> can override
+    // color-scheme. Inspect root and rule-owned values, not generated CSS, which
+    // also carries theme-independent data-token defaults with light-dark().
+    const themeOwnValues = JSON.stringify([
+      resolvedTheme.tokens ?? {},
+      resolvedTheme.localTokens ?? {},
+      resolvedTheme.components ?? {},
+      ...(resolvedTheme.__adaptationRules ?? []).flatMap(
+        (
+          /** @type {{tokens?: Record<string, string>, localTokens?: Record<string, string>, components?: object}} */ rule,
+        ) => [rule.tokens ?? {}, rule.localTokens ?? {}, rule.components ?? {}],
+      ),
+    ]);
+    const colorSchemeDecl =
+      themeOwnValues.includes('light-dark(') ||
+      adaptationCss.component.includes('light-dark(')
         ? '  :root { color-scheme: light dark; }\n  html[data-theme="light"] { color-scheme: light; }\n  html[data-theme="dark"] { color-scheme: dark; }\n\n'
         : '';
+    if (colorSchemeDecl || componentScope) {
       cssParts.push(
         `@layer astryx-theme {\n${colorSchemeDecl}${componentScope}\n}`,
       );
     }
-    // On-media rules (MediaTheme dark/light surface overrides)
+    if (adaptationCss.prose) {
+      cssParts.push(`@layer reset {\n${adaptationCss.prose}\n}`);
+    }
+    if (adaptationCss.component) {
+      cssParts.push(`@layer astryx-theme {\n${adaptationCss.component}\n}`);
+    }
+    // Media-surface rules come last so onDark/onLight win over matching
+    // adaptations on the same resolved leaf.
     if (_generateOnMediaCSS) {
       const onMediaCss = _generateOnMediaCSS(resolvedTheme);
       if (onMediaCss) {
@@ -1189,6 +2156,26 @@ export async function themeBuild(
     if (cssParts.length === 0) {
       logger.log('No overrides found — nothing to build.');
       return null;
+    }
+    // The data-token defaults are theme-independent and go in @layer
+    // astryx-base, below the theme's own overrides. Formatted here from the
+    // public `dataTokenDefaults` export, byte for byte as the `<Theme>`
+    // runtime emits it — build-theme.data-tokens.test.mjs is the drift guard.
+    // Placed after the reset block and before the theme block: a layer's order
+    // is fixed by where it is first declared, so emitting it anywhere else in
+    // the file would invert reset < astryx-base < astryx-theme for a consumer
+    // who imports this stylesheet on its own.
+    const baseCss = _dataTokenDefaults
+      ? `:root {\n${Object.entries(_dataTokenDefaults)
+          .map(([name, value]) => `  ${name}: ${value};`)
+          .join('\n')}\n}`
+      : '';
+    if (baseCss) {
+      cssParts.splice(
+        prose.length > 0 ? 1 : 0,
+        0,
+        `@layer astryx-base {\n${baseCss}\n}`,
+      );
     }
     css = cssParts.join('\n\n') + '\n';
   }
@@ -1216,9 +2203,9 @@ export async function themeBuild(
   }
 
   const displayTheme = resolvedTheme || themeDef;
-  const tokenCount = displayTheme.tokens
-    ? Object.keys(displayTheme.tokens).length
-    : 0;
+  const tokenCount =
+    Object.keys(displayTheme.tokens ?? {}).length +
+    Object.keys(displayTheme.localTokens ?? {}).length;
   const componentCount = displayTheme.components
     ? Object.keys(displayTheme.components).length
     : 0;
@@ -1386,16 +2373,33 @@ Or with a <link> tag:
   </Theme>
 `);
 
-  // Print font declaration warnings (derived from typography roles)
-  if (resolvedTheme && resolvedTheme.fonts && resolvedTheme.fonts.length > 0) {
-    logger.log(
-      `\n⚠ Theme "${themeDef.name}" requires fonts not included in the build:`,
-    );
-    for (const font of resolvedTheme.fonts) {
-      logger.log(`  ${font.family} — add to your document <head>:`);
-      logger.log(`  <link rel="stylesheet" href="${font.url}" />`);
-    }
-    logger.log('');
+  // Fonts the theme names but nothing loads (#5015). Resolved tokens and
+  // component overrides carry the final font-family values on both load
+  // paths, so this sees jiti-resolved and legacy themes alike.
+  //
+  // A NOTICE, not a warning: naming a font a theme file cannot load is how
+  // the API is meant to be used — Astryx sets `--font-family-*` and loading
+  // is the app's job, which no theme can do for it. So this fires on any
+  // theme with a webfont, including a perfect one, and as a warning it made
+  // every such build read as defective (it also put the shipped template
+  // permanently in violation of its own "compiles with no warnings" guard).
+  // Adaptation rules are resolved theme writes in their own right, so a family
+  // named only inside one needs the same notice as one named at the root.
+  const unloadedFonts = [
+    ...new Set([
+      ...collectUnloadedFonts(resolvedTheme),
+      ...adaptationRuleValues(resolvedTheme).flatMap(
+        (/** @type {any} */ value) => collectUnloadedFonts(value),
+      ),
+    ]),
+  ];
+  for (const family of unloadedFonts) {
+    const msg = `Font "${family}" is named by this theme but not loaded — add a <link> or @font-face in your app (recipe: astryx docs typography)`;
+    noticeMessages.push(msg);
+    logger.log(`  note: ${msg}`);
+  }
+  if (unloadedFonts.length > 0) {
+    logger.log(formatFontLoadingHelp(themeDef.name, unloadedFonts));
   }
 
   return {
@@ -1414,6 +2418,7 @@ Or with a <link> tag:
           : {}),
       },
       warnings: warningMessages,
+      notices: noticeMessages,
     },
   };
 }

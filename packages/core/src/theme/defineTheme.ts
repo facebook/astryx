@@ -13,7 +13,7 @@
  * - A [light, dark] tuple: converted to light-dark(light, dark)
  *
  * @example
- * ```tsx
+ * ```
  * const oceanTheme = defineTheme({
  *   name: 'ocean',
  *   tokens: {
@@ -28,11 +28,26 @@
  *   <App />
  * </Theme>
  * ```
+ *
+ * SYNC: `DefineThemeInput` is the theme surface. Adding, removing, or renaming
+ * a field means updating:
+ * - /packages/cli/assets/theme.template.ts (documents every field; the
+ *   drift guard is scripts/check-theme-template.test.mjs)
+ * - /packages/cli/assets/docs/theme.doc.mjs (`astryx docs theme`)
  */
 
-import type {IconRegistry} from '../Icon/globalIconRegistry';
+import type {ReactNode} from 'react';
+import type {IconName, NamespacedIconName} from '../Icon/globalIconRegistry';
+
+/**
+ * Icon overrides a theme may declare: any built-in semantic name, plus the
+ * namespaced keys components and libraries own (`'richtext:bold'`).
+ */
+type ThemeIconOverrides = Partial<
+  Record<IconName | NamespacedIconName, ReactNode>
+>;
 import type {IndicatorRegistry} from '../Indicator/types';
-import type {TypographyConfig, FontWeight} from './types';
+import type {TypographyConfig} from './types';
 import {
   resolveOnMedia,
   type OnMediaOverrides,
@@ -42,6 +57,7 @@ import {
   colorDefaults,
   spacingDefaults,
   sizeDefaults,
+  borderDefaults,
   focusDefaults,
   radiusDefaults,
   shadowDefaults,
@@ -52,19 +68,25 @@ import {
   fontWeightDefaults,
   typeScaleDefaults,
 } from './tokens.stylex';
+import type {MotionScaleConfig} from './expandMotionScale';
+import type {RadiusScaleConfig} from './expandRadiusScale';
+import type {ColorScaleConfig} from './expandColorScale';
+import {resolveThemeValues, type ThemeValuesInput} from './resolveThemeValues';
 import {
-  expandTypeScale,
-  generateTypeScaleComponents,
-  type TypeScaleConfig,
-} from './expandTypeScale';
-import {expandMotionScale, type MotionScaleConfig} from './expandMotionScale';
-import {expandRadiusScale, type RadiusScaleConfig} from './expandRadiusScale';
-import {expandColorScale, type ColorScaleConfig} from './expandColorScale';
+  normalizeThemeAdaptations,
+  resolveThemeAdaptationRules,
+  resolveThemeGenerativeAxes,
+  type NormalizedThemeAdaptations,
+  type ResolvedThemeAdaptationRule,
+  type ThemeAdaptations,
+  type ThemeGenerativeAxes,
+} from './themeAdaptations';
 
 import type {DomainTokenName} from './domainTokens';
 import {domainTokenDefaults} from './domainTokens';
 import type {SyntaxThemeDefinition} from './syntax';
 import {registerTheme} from './themeRegistry';
+import {resolveLocalTokenContract} from './localTokens';
 
 // =============================================================================
 // Types
@@ -75,6 +97,7 @@ export type CoreTokenName =
   | keyof typeof colorDefaults
   | keyof typeof spacingDefaults
   | keyof typeof sizeDefaults
+  | keyof typeof borderDefaults
   | keyof typeof focusDefaults
   | keyof typeof radiusDefaults
   | keyof typeof shadowDefaults
@@ -104,6 +127,11 @@ export type TokenValue = string | [light: string, dark: string];
  * to the component selector. Supported pseudo-classes include `:hover`,
  * `:focus-visible`, `:active`, `:checked`, `:disabled`, etc.
  *
+ * A `:hover` override describes the ENABLED control: it is emitted with a
+ * guard that keeps it off disabled and `aria-disabled` elements, which
+ * `:hover` would otherwise still match. Style the disabled state through
+ * `:disabled` instead.
+ *
  * @example
  * ```ts
  * {
@@ -130,7 +158,7 @@ export type StyleOverrides = Record<string, string | Record<string, string>>;
  * to override interaction states without CSS custom property escape hatches.
  *
  * @example
- * ```tsx
+ * ```
  * components: {
  *   button: {
  *     base: { fontWeight: '600' },
@@ -157,15 +185,20 @@ export interface DefineThemeInput {
   name: string;
 
   /**
-   * Base theme to extend. When provided, the new theme starts with the
-   * base theme's tokens, components, and fonts, then applies overrides
-   * from this input on top. The base theme's values have lowest precedence.
+   * Base theme to extend. When provided, the new theme starts with everything
+   * the base resolved to — tokens, component overrides, icons, indicators, and
+   * its `onDark`/`onLight` surfaces — then applies this input on top. The base
+   * theme's values have lowest precedence.
+   *
+   * The result is flat: an extended theme carries its inheritance in its own
+   * resolved output, so `astryx theme build` emits one self-contained
+   * stylesheet and the base's CSS does not need to be loaded alongside it.
    *
    * Use this to create variant themes that customize only a few aspects
    * (e.g. icons, accent color) without re-specifying the full theme.
    *
    * @example
-   * ```tsx
+   * ```
    * import {neutralTheme} from '@astryxdesign/theme-neutral';
    *
    * const myTheme = defineTheme({
@@ -187,7 +220,7 @@ export interface DefineThemeInput {
    * @import for your fonts before rendering the theme.
    *
    * @example
-   * ```tsx
+   * ```
    * typography: {
    *   scale: { base: 14, ratio: 1.2 },
    *   body: { family: 'Geist', fallbacks: '-apple-system, sans-serif' },
@@ -225,7 +258,7 @@ export interface DefineThemeInput {
    * Explicit `tokens` overrides take precedence over radius-generated values.
    *
    * @example
-   * ```tsx
+   * ```
    * radius: { base: 4, multiplier: 1 }
    *
    * // Sharp/brutalist — all radii become 0
@@ -234,19 +267,37 @@ export interface DefineThemeInput {
    */
   radius?: RadiusScaleConfig;
   /**
-   * Color scale configuration. Generates color token overrides from a
-   * single accent color using the HCT perceptual color model.
+   * Color scale configuration. Generates color token overrides from an
+   * accent seed using the HCT perceptual color model.
    *
    * Only generates tokens derivable from the accent — status colors,
    * categorical hues, and fixed tokens (on-dark/on-light) use defaults.
-   * Explicit `tokens` entries always take precedence.
+   *
+   * `accent` accepts a single hex (same seed for both color schemes) or a
+   * `[light, dark]` tuple, matching `TokenValue`. With a tuple, the light
+   * scheme's full palette derives from the light seed and the dark
+   * scheme's from the dark seed.
    *
    * `accent` is optional — omit it for a neutral-only theme, which keeps
    * the default accent tokens and only themes the neutrals.
    *
+   * Precedence vs `tokens`: explicit `tokens` entries win over generated
+   * values, token by token. Because `--color-accent-muted`,
+   * `--color-text-accent` and `--color-icon-accent` are generated as
+   * `var(--color-accent)` references, a `tokens['--color-accent']`
+   * override re-points them at runtime. `--color-on-accent` does NOT
+   * follow: it is baked from the `color.accent` seed (a contrast
+   * computation CSS cannot express), so overriding the accent through
+   * `tokens` without also overriding `--color-on-accent` leaves the two
+   * out of sync. To re-seat the whole palette per scheme, prefer a tuple
+   * `color.accent` over the `tokens['--color-accent']` workaround.
+   *
    * @example
-   * ```tsx
+   * ```
    * color: { accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard' }
+   *
+   * // Per-scheme accents — light palette from the first seed, dark from the second
+   * color: { accent: ['#0064E0', '#48CAE4'] }
    *
    * // Neutral-only — accent tokens stay at their defaults
    * color: { neutralStyle: 'warm' }
@@ -258,6 +309,13 @@ export interface DefineThemeInput {
    *  Only include tokens you want to override; defaults fill the rest. */
   tokens?: Partial<Record<TokenName, TokenValue>>;
   /**
+   * Theme-family-local CSS custom properties. Keys use the complete
+   * `--astryx-theme-${name}-...` spelling and values follow `TokenValue`.
+   * These names are available only to this enrolled theme lineage and do not
+   * become portable `TokenName` values.
+   */
+  localTokens?: Record<string, TokenValue>;
+  /**
    * Component style overrides — keyed by component name (lowercase).
    * Each entry maps style keys to CSS property overrides, scoped under
    * the theme's data-astryx-theme attribute via @scope.
@@ -267,7 +325,7 @@ export interface DefineThemeInput {
    * and generate TypeScript module augmentations for type-safe extensibility.
    *
    * @example
-   * ```tsx
+   * ```
    * components: {
    *   button: {
    *     base: { fontWeight: '600' },
@@ -282,7 +340,7 @@ export interface DefineThemeInput {
    */
   components?: ComponentStyleMap;
   /** Icon registry — maps semantic icon names to React nodes */
-  icons?: Partial<IconRegistry>;
+  icons?: ThemeIconOverrides;
   /**
    * Indicator overrides — replaces the components that draw stateful control
    * visuals with the theme's own, by name.
@@ -302,7 +360,7 @@ export interface DefineThemeInput {
    * per-region (or per-instance) by wrapping in SyntaxTheme.
    *
    * @example
-   * ```tsx
+   * ```
    * import {dracula} from '@astryxdesign/core/theme/syntax';
    * defineTheme({ name: 'my-theme', syntax: dracula, ... })
    * ```
@@ -318,7 +376,7 @@ export interface DefineThemeInput {
    * background.
    *
    * @example
-   * ```tsx
+   * ```
    * onDark: {
    *   tokens: { '--color-accent': '#90CAF9' },
    *   components: {
@@ -333,6 +391,33 @@ export interface DefineThemeInput {
    * but for the inverse case (e.g. dark-mode page with a light popover).
    */
   onLight?: OnMediaOverrides;
+  /**
+   * Ordered environment-conditioned token and component adaptations.
+   *
+   * Width points use the fixed names `sm`, `md`, `lg`, `xl`, and `2xl` and
+   * default to 640, 768, 1024, 1280, and 1536 CSS pixels. Breakpoint
+   * configuration alone emits no CSS. Rules are emitted in declaration order;
+   * fields inside `when` are ANDed and later matching writes win.
+   *
+   * @example
+   * ```
+   * adaptations: {
+   *   widthBreakpoints: {lg: 1024, xl: 1280},
+   *   rules: [
+   *     {
+   *       when: {
+   *         width: {from: 'lg', below: 'xl'},
+   *         pointer: 'coarse',
+   *       },
+   *       value: {
+   *         tokens: {'--size-element-md': '44px'},
+   *       },
+   *     },
+   *   ],
+   * }
+   * ```
+   */
+  adaptations?: ThemeAdaptations;
 }
 
 /** A defined theme — ready to pass to <Theme> */
@@ -341,10 +426,12 @@ export interface DefinedTheme {
   name: string;
   /** Token overrides — only the tokens the consumer specified */
   tokens: Record<string, string>;
+  /** Resolved theme-family-local token declarations. */
+  localTokens?: Record<string, string>;
   /** Component style overrides */
   components?: ComponentStyleMap;
   /** Icon registry */
-  icons?: Partial<IconRegistry>;
+  icons?: ThemeIconOverrides;
   /** Indicator overrides for stateful control visuals, keyed by name */
   indicators?: IndicatorRegistry;
   /** Whether this theme has been pre-compiled by theme build CLI */
@@ -356,6 +443,10 @@ export interface DefinedTheme {
    * @internal
    */
   __inputTokens?: Partial<Record<string, TokenValue>>;
+  /** Exact owner theme for every inherited local-token declaration. @internal */
+  __localTokenOwners?: Record<string, string>;
+  /** Exact enrolled theme lineage; presence marks this theme as enrolled. @internal */
+  __localTokenLineage?: string[];
   /**
    * Resolved on-media token overrides for dark surfaces.
    * Generated by defineTheme from defaults + user onDark overrides.
@@ -368,7 +459,23 @@ export interface DefinedTheme {
    * @internal
    */
   __onLight?: ResolvedOnMedia;
+  /**
+   * Effective breakpoint map and ordered normalized rule inputs retained for
+   * source-equivalent extension, including from a built theme.
+   * @internal
+   */
+  __adaptations?: NormalizedThemeAdaptations;
+  /** Concrete ordered rule writes used by the runtime CSS compiler. @internal */
+  __adaptationRules?: ResolvedThemeAdaptationRule[];
+  /** Effective root generative-axis metadata used to resolve child rules. @internal */
+  __axes?: ThemeGenerativeAxes;
 }
+
+/** A theme produced by the current defineTheme implementation. */
+export type ResolvedDefinedTheme = DefinedTheme & {
+  __adaptations: NormalizedThemeAdaptations;
+  __axes: ThemeGenerativeAxes;
+};
 
 // =============================================================================
 // All defaults merged into a single flat map
@@ -379,6 +486,7 @@ export const tokenDefaults: Record<string, string> = {
   ...colorDefaults,
   ...spacingDefaults,
   ...sizeDefaults,
+  ...borderDefaults,
   ...focusDefaults,
   ...radiusDefaults,
   ...shadowDefaults,
@@ -396,90 +504,21 @@ export const tokenDefaults: Record<string, string> = {
 // =============================================================================
 
 /**
- * Resolve a token value to a CSS string.
- * - String values pass through as-is
- * - [light, dark] tuples become light-dark(light, dark)
+ * Describe a rejected `extends` value for the error message — enough to tell a
+ * missed import (`undefined`) from a module namespace or a plain object.
  */
-function resolveTokenValue(value: TokenValue): string {
-  if (Array.isArray(value)) {
-    return `light-dark(${value[0]}, ${value[1]})`;
+function describeBadBase(value: unknown): string {
+  if (value === undefined) {
+    return 'undefined';
   }
-  return value;
-}
-
-/**
- * Deep-merge two component style maps.
- * Properties in `overrides` take precedence over `base`.
- * This allows typeScale-generated rules to be overridden by explicit components.
- */
-function deepMergeComponents(
-  base?: ComponentStyleMap,
-  overrides?: ComponentStyleMap,
-): ComponentStyleMap | undefined {
-  if (!base && !overrides) {
-    return undefined;
+  if (value === null) {
+    return 'null';
   }
-  if (!base) {
-    return overrides;
+  if (typeof value !== 'object') {
+    return typeof value;
   }
-  if (!overrides) {
-    return base;
-  }
-
-  const result: ComponentStyleMap = {};
-
-  // Start with all base entries
-  for (const [component, rules] of Object.entries(base)) {
-    result[component] = {...rules};
-  }
-
-  // Merge overrides on top
-  for (const [component, rules] of Object.entries(overrides)) {
-    if (!result[component]) {
-      result[component] = {...rules};
-    } else {
-      for (const [key, styles] of Object.entries(rules)) {
-        result[component][key] = {
-          ...result[component][key],
-          ...styles,
-        };
-      }
-    }
-  }
-
-  return result;
-}
-
-/**
- * Resolve a FontWeight name to a var() reference.
- * Named weights map to var(--font-weight-*); raw values pass through.
- */
-function resolveFontWeight(weight: FontWeight): string {
-  const named: Record<string, string> = {
-    normal: 'var(--font-weight-normal)',
-    medium: 'var(--font-weight-medium)',
-    semibold: 'var(--font-weight-semibold)',
-    bold: 'var(--font-weight-bold)',
-  };
-  return named[weight] ?? weight;
-}
-
-/**
- * Build the full CSS font-family value from family + fallbacks.
- * Quotes the family name if it contains spaces.
- */
-function buildFontFamily(
-  family?: string,
-  fallbacks?: string,
-): string | undefined {
-  if (!family) {
-    return undefined;
-  }
-  const quoted = family.includes(' ') ? `"${family}"` : family;
-  if (fallbacks) {
-    return `${quoted}, ${fallbacks}`;
-  }
-  return quoted;
+  const keys = Object.keys(value);
+  return `an object with keys [${keys.slice(0, 4).join(', ')}${keys.length > 4 ? ', …' : ''}]`;
 }
 
 /**
@@ -492,150 +531,79 @@ function buildFontFamily(
  * that are merged into the token map. Explicit `tokens` entries take
  * precedence over generated values.
  */
-export function defineTheme(input: DefineThemeInput): DefinedTheme {
-  const tokens: Record<string, string> = {};
-
-  // 0. Pre-seed from base theme when `extends` is provided (lowest precedence)
+export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
+  // Pre-seed from the base theme when `extends` is provided (lowest precedence).
+  // A base that is not a theme is refused rather than ignored: `extends` used
+  // to inherit nothing when its value was undefined, which is what a named
+  // import silently resolving to the wrong module hands over, and the theme
+  // then built into a plausible-looking stylesheet missing everything it was
+  // supposed to inherit.
+  if ('extends' in input && !isDefinedTheme(input.extends)) {
+    throw new Error(
+      `defineTheme("${input.name}"): \`extends\` must be a theme from defineTheme(), got ${describeBadBase(input.extends)}. ` +
+        `Check that the import naming your base theme resolves to its source and exports that name — ` +
+        `a generated \`<theme>.js\` artifact sitting next to the source exports \`<name>Theme\`, not the source's own export.`,
+    );
+  }
   const base = input.extends;
-  if (base) {
-    for (const [key, value] of Object.entries(base.tokens)) {
-      tokens[key] = value;
-    }
-  }
 
-  // Build typeScale config from typography if present
-  const typo = input.typography;
-  let typeScaleConfig: TypeScaleConfig | undefined;
-  if (typo?.scale) {
-    // Collect weight overrides from typography roles
-    const headingWeights: Partial<Record<1 | 2 | 3 | 4 | 5 | 6, string>> = {};
-    const headingRole = typo.heading;
-    if (headingRole?.weights) {
-      for (const [level, w] of Object.entries(headingRole.weights)) {
-        if (w) {
-          headingWeights[Number(level) as 1 | 2 | 3 | 4 | 5 | 6] =
-            resolveFontWeight(w);
-        }
-      }
-    }
-    // Default heading weight from role
-    const defaultHeadingWeight = headingRole?.weight
-      ? resolveFontWeight(headingRole.weight)
-      : undefined;
-    if (defaultHeadingWeight) {
-      for (let i = 1; i <= 6; i++) {
-        if (!(i in headingWeights)) {
-          headingWeights[i as 1 | 2 | 3 | 4 | 5 | 6] = defaultHeadingWeight;
-        }
-      }
-    }
+  // The theme's own value axes and the resolved base an `extends` supplies.
+  // The same axis metadata is retained so adaptation rules can complete partial
+  // configs without approximating values from unrelated built-in defaults.
+  const ownValues: ThemeValuesInput = {
+    typography: input.typography,
+    color: input.color,
+    radius: input.radius,
+    motion: input.motion,
+    syntax: input.syntax,
+    tokens: input.tokens,
+    components: input.components,
+  };
+  const ownAxes: ThemeGenerativeAxes = {
+    typography: input.typography,
+    color: input.color,
+    radius: input.radius,
+    motion: input.motion,
+  };
+  const seed = base
+    ? {tokens: base.tokens, components: base.components}
+    : undefined;
 
-    // Text weight overrides from roles
-    const textWeights: Partial<Record<string, string>> = {};
-    if (typo.body?.weight) {
-      textWeights.body = resolveFontWeight(typo.body.weight);
-    }
-    if (typo.code?.weight) {
-      textWeights.code = resolveFontWeight(typo.code.weight);
-    }
+  const {tokens, components} = resolveThemeValues(ownValues, seed);
 
-    typeScaleConfig = {
-      base: typo.scale.base,
-      ratio: typo.scale.ratio,
-      weights: {
-        ...(Object.keys(headingWeights).length > 0
-          ? {heading: headingWeights}
-          : {}),
-        ...(Object.keys(textWeights).length > 0 ? {text: textWeights} : {}),
-      },
-    };
-  }
+  // On-media token overrides (base's resolved surface, then defaults, then
+  // this theme's own overrides). They compile after adaptations so the
+  // media-surface value stays more specific in the authored cascade.
+  const __onDark = resolveOnMedia('dark', input.onDark, base?.__onDark);
+  const __onLight = resolveOnMedia('light', input.onLight, base?.__onLight);
 
-  // 1. Apply color-generated tokens (lowest precedence for colors)
-  if (input.color) {
-    const colorTokens = expandColorScale(input.color);
-    for (const [key, value] of Object.entries(colorTokens)) {
-      tokens[key] = value;
-    }
-  }
+  const localTokenContract = resolveLocalTokenContract(
+    input,
+    base,
+    tokens,
+    components,
+    __onDark,
+    __onLight,
+  );
 
-  // 1a. Apply typeScale-generated tokens (lowest precedence for type)
-  if (typeScaleConfig) {
-    const typeScaleTokens = expandTypeScale(typeScaleConfig);
-    for (const [key, value] of Object.entries(typeScaleTokens)) {
-      tokens[key] = value;
-    }
-  }
+  // Adaptations inherit their breakpoint map and ordered rules. Every rule is
+  // re-resolved against this theme's effective root axes, so a child can change
+  // the root scale while preserving the base rule's authored intent.
+  const __axes = resolveThemeGenerativeAxes(base?.__axes, ownAxes);
+  const __adaptations = normalizeThemeAdaptations(
+    input.name,
+    base?.__adaptations,
+    input.adaptations,
+  );
+  const __adaptationRules = resolveThemeAdaptationRules(
+    input.name,
+    __adaptations,
+    __axes,
+    tokens,
+    localTokenContract?.localTokens,
+  );
 
-  // 1b. Apply radius-generated tokens (lowest precedence for radius)
-  if (input.radius) {
-    const radiusTokens = expandRadiusScale(input.radius);
-    for (const [key, value] of Object.entries(radiusTokens)) {
-      tokens[key] = value;
-    }
-  }
-
-  // 1c. Apply motion-generated tokens (same precedence as typeScale)
-  if (input.motion) {
-    const motionTokens = expandMotionScale(input.motion);
-    for (const [key, value] of Object.entries(motionTokens)) {
-      tokens[key] = value;
-    }
-  }
-
-  // 1d. Apply typography font family tokens
-  if (typo) {
-    // Heading inherits from body if not specified
-    const bodyFamily = buildFontFamily(typo.body?.family, typo.body?.fallbacks);
-    const headingFamily =
-      buildFontFamily(typo.heading?.family, typo.heading?.fallbacks) ??
-      bodyFamily;
-    const codeFamily = buildFontFamily(typo.code?.family, typo.code?.fallbacks);
-
-    if (bodyFamily) {
-      tokens['--font-family-body'] = bodyFamily;
-    }
-    if (headingFamily) {
-      tokens['--font-family-heading'] = headingFamily;
-    }
-    if (codeFamily) {
-      tokens['--font-family-code'] = codeFamily;
-    }
-  }
-
-  // 1e. Apply syntax theme tokens (before explicit overrides)
-  if (input.syntax) {
-    const syntaxMap = input.syntax.tokens;
-    const prefix = '--color-syntax-';
-    for (const [key, value] of Object.entries(syntaxMap)) {
-      tokens[prefix + key] = value;
-    }
-  }
-
-  // 2. Apply explicit token overrides (highest precedence — overwrites generated tokens)
-  if (input.tokens) {
-    for (const [key, value] of Object.entries(input.tokens)) {
-      if (value !== undefined) {
-        tokens[key] = resolveTokenValue(value);
-      }
-    }
-  }
-
-  // 3. Generate component overrides: base (lowest) → typeScale → explicit (highest)
-  let components = input.components;
-  if (typeScaleConfig) {
-    const generated = generateTypeScaleComponents(typeScaleConfig);
-    components = deepMergeComponents(generated, input.components);
-  }
-  if (base?.components) {
-    components = deepMergeComponents(base.components, components);
-  }
-
-  // 4. Resolve on-media token overrides (defaults + user overrides)
-  const __onDark = resolveOnMedia('dark', input.onDark);
-  const __onLight = resolveOnMedia('light', input.onLight);
-
-  // 5. Merge icons — input icons override base icons
+  // Icons — input icons override base icons
   const icons =
     input.icons && base?.icons
       ? {...base.icons, ...input.icons}
@@ -648,15 +616,28 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
       ? {...base.indicators, ...input.indicators}
       : (input.indicators ?? base?.indicators);
 
-  const theme: DefinedTheme = {
+  const theme: ResolvedDefinedTheme = {
     name: input.name,
     tokens,
+    ...(localTokenContract
+      ? {
+          localTokens: localTokenContract.localTokens,
+          __localTokenOwners: localTokenContract.owners,
+          __localTokenLineage: localTokenContract.lineage,
+        }
+      : {}),
     components,
     icons,
     indicators,
-    __inputTokens: input.tokens,
+    __inputTokens:
+      base?.__inputTokens || input.tokens
+        ? {...base?.__inputTokens, ...input.tokens}
+        : undefined,
     __onDark,
     __onLight,
+    __adaptations,
+    __adaptationRules,
+    __axes,
   };
 
   registerTheme(theme);
@@ -671,6 +652,7 @@ export {
   generateThemeRules,
   generateThemeRulesSplit,
   generateOnMediaCSS,
+  generateAdaptationCSS,
   generateThemeCSS,
   type ThemeRulesSplit,
   type ThemeCSSOutput,

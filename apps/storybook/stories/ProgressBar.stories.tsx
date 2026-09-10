@@ -324,7 +324,7 @@ export const ThemedMarks: Story = {
     <div style={{width: '320px'}}>
       <style>{`
         @layer astryx-theme {
-          .themed-marks-demo .astryx-progressbar-mark {
+          .themed-marks-demo .astryx-progress-bar-mark {
             background-color: red;
             --_progressbar-mark-width: 3px;
             --_progressbar-mark-height: 14px;

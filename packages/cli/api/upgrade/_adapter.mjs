@@ -26,12 +26,20 @@ import {
   selectIntegrationCodemods,
 } from '../../assets/codemods/integration-discovery.mjs';
 import {runIntegrationCodemods} from '../../assets/codemods/integration-runner.mjs';
-import {installAgentDocs, inspectAgentDocs} from '../../foundation/agent-docs/agent-docs.mjs';
+import {
+  installAgentDocs,
+  inspectAgentDocs,
+  renderAgentDocsBlock,
+} from '../../foundation/agent-docs/agent-docs.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 import {loadIntegrations} from '../../foundation/integrations/integrations.mjs';
 import {warnOnIntegrationIssues} from '../../foundation/integrations/integration-warnings.mjs';
 import {logger} from '../logger.mjs';
+
+// Re-exported for the run leaf's lightweight agent-docs inspection path
+// (config_fixable short-circuit, where the full render cannot load config).
+export { inspectAgentDocs };
 
 const execFileAsync = promisify(execFile);
 
@@ -140,68 +148,103 @@ export async function runPostCodemodHooks(hooks, context) {
 }
 
 /**
- * Refresh (or, in dry-run, report) the managed agent-docs block after a version
- * bump. The block documents the INSTALLED library, so it must be re-synced on
- * EVERY upgrade path, including the no-codemods short-circuits (#4168).
- *
- * @param {{cwd: string, installedVersion: string, apply: boolean}} ctx
- * @returns {import('./upgrade.type.mjs').AgentDocsSummary}
+ * @typedef {object} AgentDocsRefreshPlan
+ * @property {string} cwd
+ * @property {string|null} renderedBlock
+ * @property {import('./upgrade.type.mjs').AgentDocsSummary} summary
  */
-export function refreshAgentDocs({cwd, installedVersion, apply}) {
-  const inspection = inspectAgentDocs(cwd, installedVersion);
+
+/**
+ * Compute the expected managed block and report staleness without writing.
+ * Apply-mode callers commit the prepared bytes only after codemods and hooks
+ * succeed.
+ *
+ * @param {{cwd: string, installedVersion: string, apply: boolean, fresh?: boolean}} ctx
+ * @returns {Promise<AgentDocsRefreshPlan>}
+ */
+export async function prepareAgentDocsRefresh({
+  cwd,
+  installedVersion,
+  apply,
+  fresh = false,
+}) {
+  const initial = inspectAgentDocs(cwd, installedVersion);
   /** @type {import('./upgrade.type.mjs').AgentDocsSummary} */
   const summary = {
-    status: inspection.status,
+    status: initial.status,
     installedVersion,
-    fromVersions: inspection.blockVersions,
+    fromVersions: initial.blockVersions,
     files: [],
     refreshed: false,
     action: 'none',
   };
 
-  // Never initialized — don't silently create docs during an upgrade; nudge.
-  if (inspection.status === 'missing') {
+  if (initial.status === 'missing') {
     summary.action = 'nudge-init';
     logger.warn(
       `No Astryx agent-docs block found — AI agents have no component index. Run \`${formatCliCommand('astryx init --features agents')}\` to install it.`,
     );
-    return summary;
+    return {cwd, renderedBlock: null, summary};
   }
 
-  if (inspection.status === 'current') return summary;
-
-  // Stale.
-  summary.files = inspection.staleFiles;
-  const fromLabel = summary.fromVersions.length
-    ? `v${summary.fromVersions.join(', v')}`
-    : 'an unknown version';
-
-  if (!apply) {
-    summary.action = 'would-refresh';
-    logger.warn(
-      `Agent docs are stale: block is at ${fromLabel}, installed is v${installedVersion}. Re-run with --apply to refresh (${summary.files.join(', ')}).`,
-    );
-    return summary;
-  }
-
-  // Apply: rewrite only files that already carry a marker (onlyReplace).
+  let renderedBlock;
   try {
-    const written = installAgentDocs(cwd, {onlyReplace: true});
+    renderedBlock = await renderAgentDocsBlock(cwd, {
+      installedVersion,
+      fresh,
+    });
+  } catch {
+    summary.action = 'error';
+    summary.files = initial.files.map(file => file.path);
+    logger.warn(
+      `Could not render the expected agent docs. Run \`${formatCliCommand('astryx init --features agents')}\` to update them manually.`,
+    );
+    return {cwd, renderedBlock: null, summary};
+  }
+
+  const inspection = inspectAgentDocs(cwd, installedVersion, renderedBlock);
+  summary.status = inspection.status;
+  summary.fromVersions = inspection.blockVersions;
+  summary.files = inspection.staleFiles;
+  if (inspection.status === 'current') return {cwd, renderedBlock, summary};
+
+  summary.action = 'would-refresh';
+  if (!apply) {
+    logger.warn(
+      `Agent docs differ from the installed Astryx and integration configuration. Re-run with --apply to refresh (${summary.files.join(', ')}).`,
+    );
+  }
+  return {cwd, renderedBlock, summary};
+}
+
+/**
+ * Commit a prepared agent-doc refresh.
+ * @param {AgentDocsRefreshPlan} plan
+ * @returns {import('./upgrade.type.mjs').AgentDocsSummary}
+ */
+export function applyAgentDocsRefresh(plan) {
+  const {cwd, renderedBlock, summary} = plan;
+  if (summary.action !== 'would-refresh' || renderedBlock == null)
+    return summary;
+
+  try {
+    const written = installAgentDocs(cwd, {
+      onlyReplace: true,
+      renderedBlock,
+    });
     summary.refreshed = written.length > 0;
     summary.files = written;
+    summary.action = summary.refreshed ? 'refreshed' : 'error';
     if (summary.refreshed) {
-      summary.action = 'refreshed';
-      logger.log(
-        `✓ Agent docs refreshed → v${installedVersion} (from ${fromLabel}): ${written.join(', ')}`,
-      );
+      logger.log(`✓ Agent docs refreshed → ${written.join(', ')}`);
     } else {
-      summary.action = 'error';
       logger.warn(
-        `Agent docs look stale but couldn't be refreshed — the <!-- ASTRYX:START -->/<!-- ASTRYX:END --> markers may be malformed. Run \`${formatCliCommand('astryx init --features agents')}\` to reinstall the block.`,
+        `Agent docs look stale but couldn't be refreshed. Run \`${formatCliCommand('astryx init --features agents')}\` to reinstall the block.`,
       );
     }
   } catch {
     summary.action = 'error';
+    summary.refreshed = false;
     logger.warn(
       `Could not refresh agent docs. Run \`${formatCliCommand('astryx init --features agents')}\` to update them manually.`,
     );
@@ -272,7 +315,10 @@ export async function runCoreCodemods(versionManifests, {apply, path: srcPath, c
  * @returns {Promise<{postCodemodHooks: import('../../authoring/config/type').PostCodemodHook[], integrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]}>}
  */
 export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
-  const project = await Project.load(cwd);
+  // The CLI debug preflight may already have imported this config before core
+  // CONFIG codemods run. Upgrade needs the bytes now on disk, not that module
+  // cache entry; ordinary Project discovery remains cached by default.
+  const project = await Project.load(cwd, {fresh: true});
   const postCodemodHooks = project.config.hooks?.postCodemod ?? [];
   const integrationSpecs = uniqueFiles([
     ...(project.integrations ?? []),

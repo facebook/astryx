@@ -44,6 +44,24 @@ function listPromotableEntries(nextDir) {
   });
 }
 
+/**
+ * Is `next/` effectively empty?
+ *
+ * Every release re-seeds the folder with an `index.mjs` exporting an empty
+ * array, so "nothing staged" is not "no entries" — it is "nothing but that
+ * placeholder manifest". Without this, a release that ships no codemods
+ * promotes the placeholder into `v{VERSION}/` and registers a tier holding no
+ * transforms.
+ */
+function isEmptyStage(nextDir, entries) {
+  if (entries.length === 0) return true;
+  if (entries.length > 1) return false;
+  const [only] = entries;
+  if (!only.isFile() || only.name !== INDEX) return false;
+  const src = fs.readFileSync(path.join(nextDir, only.name), 'utf8');
+  return /export\s+default\s*\[\s*\]\s*;/.test(src);
+}
+
 function copyRecursive(src, dest) {
   const stat = fs.statSync(src);
   if (stat.isDirectory()) {
@@ -212,7 +230,7 @@ export async function promoteCodemodNext({root = DEFAULT_ROOT} = {}) {
   const nextDir = path.join(transformsDir, 'next');
 
   const entries = listPromotableEntries(nextDir);
-  if (entries.length === 0) {
+  if (isEmptyStage(nextDir, entries)) {
     return {
       promoted: [],
       registryUpdated: false,

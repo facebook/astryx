@@ -1,12 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Templates gallery — extracted from craft.
+ * @file Templates gallery index.
+ * @input Uses generated template metadata, URL preview state, and live template thumbnails.
+ * @output Renders the filterable gallery and query-synced preview dialog.
+ * @position Public `/templates` docsite route.
  */
 
 'use client';
 
-import {Suspense, useCallback, useMemo, useState} from 'react';
+import {Suspense, useCallback, useEffect, useMemo, useState} from 'react';
 import type {CSSProperties} from 'react';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
@@ -21,7 +24,7 @@ import {Overlay} from '@astryxdesign/core/Overlay';
 import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
 import {templates} from '../../../generated/templateRegistry';
 import {TemplateThumbnail} from '../../../components/TemplateThumbnail';
-import {buildPlaygroundHref} from '../../../components/playgroundLink';
+import {buildTemplatePlaygroundHref} from '../../../components/playgroundLink';
 import {TemplatePreviewDialog} from '../../../components/TemplatePreviewDialog';
 import type {TemplatePreviewItem} from '../../../components/TemplatePreviewDialog';
 import {trackOpenPlayground, trackView} from '../../../lib/analytics';
@@ -92,15 +95,35 @@ interface TemplateItem {
   slug: string;
   href: string;
   category: string;
-  source: string;
 }
 
 export default function TemplatesPage() {
-  return (
-    <Suspense fallback={null}>
-      <TemplatesGallery />
-    </Suspense>
-  );
+  return <TemplatesGallery />;
+}
+
+interface TemplatePreviewURLSyncProps {
+  indexBySlug: Map<string, number>;
+  onSlugChange: (slug: string | null) => void;
+}
+
+/**
+ * Keeps `?preview=` authoritative for deep links and soft navigation without
+ * making the visible gallery part of the query-dependent PPR hole.
+ */
+function TemplatePreviewURLSync({
+  indexBySlug,
+  onSlugChange,
+}: TemplatePreviewURLSyncProps) {
+  const searchParams = useSearchParams();
+  const previewSlug = searchParams.get('preview');
+  const openSlug =
+    previewSlug != null && indexBySlug.has(previewSlug) ? previewSlug : null;
+
+  useEffect(() => {
+    onSlugChange(openSlug);
+  }, [onSlugChange, openSlug]);
+
+  return null;
 }
 
 function TemplatesGallery() {
@@ -118,7 +141,6 @@ function TemplatesGallery() {
         slug: t.slug,
         href: `/templates/${t.slug}`,
         category: t.category,
-        source: t.source,
       }))
       .sort((a, b) => {
         const ga = groupOf(a.category);
@@ -157,7 +179,6 @@ function TemplatesGallery() {
         slug: i.slug,
         name: i.name,
         description: i.description,
-        source: i.source,
         category: groupOf(i.category),
       })),
     [filteredItems],
@@ -168,26 +189,26 @@ function TemplatesGallery() {
     return m;
   }, [flatItems]);
 
-  const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-
-  const previewSlug = searchParams.get('preview');
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
   const openIndex =
-    previewSlug != null ? (indexBySlug.get(previewSlug) ?? null) : null;
+    openSlug != null ? (indexBySlug.get(openSlug) ?? null) : null;
 
   const setOpenIndex = useCallback(
     (index: number | null) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (index !== null && flatItems[index]) {
-        params.set('preview', flatItems[index].slug);
+      const nextSlug = index !== null ? (flatItems[index]?.slug ?? null) : null;
+      setOpenSlug(nextSlug);
+      const params = new URLSearchParams(window.location.search);
+      if (nextSlug !== null) {
+        params.set('preview', nextSlug);
       } else {
         params.delete('preview');
       }
       const qs = params.toString();
       router.replace(`${pathname}${qs ? `?${qs}` : ''}`, {scroll: false});
     },
-    [searchParams, flatItems, router, pathname],
+    [flatItems, router, pathname],
   );
 
   const openPreview = useCallback(
@@ -272,21 +293,19 @@ function TemplatesGallery() {
                             variant="secondary"
                             onClick={() => openPreview(item.slug)}
                           />
-                          {item.source && (
-                            <Button
-                              label="Open in Playground"
-                              variant="secondary"
-                              href={buildPlaygroundHref(item.source)}
-                              onClick={e => {
-                                e.stopPropagation();
-                                trackOpenPlayground({
-                                  page: 'templates',
-                                  item: item.slug,
-                                  category: groupOf(item.category),
-                                });
-                              }}
-                            />
-                          )}
+                          <Button
+                            label="Open in Playground"
+                            variant="secondary"
+                            href={buildTemplatePlaygroundHref(item.slug)}
+                            onClick={e => {
+                              e.stopPropagation();
+                              trackOpenPlayground({
+                                page: 'templates',
+                                item: item.slug,
+                                category: groupOf(item.category),
+                              });
+                            }}
+                          />
                         </HStack>
                       </VStack>
                     }>
@@ -298,6 +317,13 @@ function TemplatesGallery() {
           })}
         </Grid>
       </VStack>
+
+      <Suspense fallback={null}>
+        <TemplatePreviewURLSync
+          indexBySlug={indexBySlug}
+          onSlugChange={setOpenSlug}
+        />
+      </Suspense>
 
       <TemplatePreviewDialog
         items={flatItems}

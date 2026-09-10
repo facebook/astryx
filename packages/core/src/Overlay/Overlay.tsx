@@ -17,7 +17,7 @@
 
 import type {ReactNode, Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {useOverlay} from './useOverlay';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayScope, overlayContainerStyles} from './overlay.markers.stylex';
@@ -30,6 +30,7 @@ import type {
   OverlayShowOn,
 } from './OverlayScrim';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface OverlayProps extends Pick<
   BaseProps<HTMLDivElement>,
   'xstyle' | 'className' | 'style'
@@ -113,7 +114,7 @@ export function Overlay({
 
   return (
     <div
-      ref={mergeRefs(ref, overlay.containerRef)}
+      ref={useMergedRefs(ref, overlay.containerRef)}
       {...mergeProps(
         themeProps('overlay'),
         stylex.props(overlayScope, overlayContainerStyles.root, xstyle),

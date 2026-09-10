@@ -1,10 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
 import {Markdown} from './Markdown';
 import type {MarkdownInlinePlugin} from './Markdown';
+import {stubMatchMedia} from '../__tests__/stubMatchMedia';
+import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
 
 describe('Markdown', () => {
   it('renders with role="document"', () => {
@@ -21,6 +23,83 @@ describe('Markdown', () => {
     render(<Markdown>{'# Heading 1\n\n## Heading 2'}</Markdown>);
     expect(screen.getByText('Heading 1').tagName).toBe('H1');
     expect(screen.getByText('Heading 2').tagName).toBe('H2');
+  });
+
+  describe('heading ids', () => {
+    // Outline's documented contract: an outline item id "should match the
+    // target heading element id". Markdown renders the ids that
+    // useOutlineFromMarkdown derives, so hash navigation resolves.
+    it('renders generated id attributes on headings', () => {
+      render(<Markdown>{'# Overview\n\ncontent\n\n# Installation'}</Markdown>);
+      expect(screen.getByText('Overview')).toHaveAttribute('id', 'overview');
+      expect(screen.getByText('Installation')).toHaveAttribute(
+        'id',
+        'installation',
+      );
+    });
+
+    it('disambiguates duplicate headings with numeric suffixes', () => {
+      render(<Markdown>{'# Setup\n\n# Setup\n\n# Setup'}</Markdown>);
+      const ids = screen.getAllByText('Setup').map(el => el.id);
+      expect(ids).toEqual(['setup', 'setup-1', 'setup-2']);
+    });
+
+    it('renders ids matching parseOutlineFromMarkdown for the same source', () => {
+      // Parity invariant: every id the outline derives must resolve to a
+      // rendered heading with that exact id — including slugified formatting,
+      // duplicate numbering, the empty-slug fallback, and code-fence decoys.
+      const source = [
+        '# **Bold** and _italic_ text',
+        '## Setup',
+        '## Setup',
+        '### !!!',
+        '```',
+        '# not a heading',
+        '```',
+        '## The `useState` hook',
+      ].join('\n\n');
+      const {container} = render(<Markdown>{source}</Markdown>);
+      const outline = parseOutlineFromMarkdown(source);
+      expect(outline.length).toBe(5);
+      for (const item of outline) {
+        const target = container.querySelector(`[id="${item.id}"]`);
+        expect(target, `no rendered heading with id "${item.id}"`).not.toBe(
+          null,
+        );
+        expect(target!.tagName).toMatch(/^H[1-6]$/);
+        expect(target!.textContent?.trim()).toBe(item.label);
+      }
+    });
+
+    it('passes the generated id to a custom heading component', () => {
+      const received: (string | undefined)[] = [];
+      render(
+        <Markdown
+          components={{
+            heading: ({children, id}: {children: ReactNode; id?: string}) => {
+              received.push(id);
+              return <h2 id={id}>{children}</h2>;
+            },
+          }}>
+          {'# Overview\n\n# Overview'}
+        </Markdown>,
+      );
+      expect(received).toEqual(['overview', 'overview-1']);
+    });
+
+    it('does not assign ids to headings nested inside blockquotes', () => {
+      // parseOutlineFromMarkdown only lists top-level headings. If nested
+      // headings consumed slugs too, duplicate numbering would drift and
+      // outline links would land on the wrong heading.
+      const source = '> # Quoted\n\n# Quoted';
+      const {container} = render(<Markdown>{source}</Markdown>);
+      const outline = parseOutlineFromMarkdown(source);
+      expect(outline.map(i => i.id)).toEqual(['quoted']);
+      const [nested, topLevel] = screen.getAllByText('Quoted');
+      expect(container.querySelector('blockquote')).toContainElement(nested);
+      expect(nested).not.toHaveAttribute('id');
+      expect(topLevel).toHaveAttribute('id', 'quoted');
+    });
   });
 
   it('renders paragraphs as block <div> (never <p>) for composition safety', () => {
@@ -44,6 +123,43 @@ describe('Markdown', () => {
     // fragile descendant selectors or global spacing tokens.
     expect(first.className).toContain('astryx-markdown-paragraph');
     expect(second.className).toContain('astryx-markdown-paragraph');
+  });
+
+  describe('base props', () => {
+    // BaseProps documents that data-*, aria-* and role are kept; the root
+    // dropped everything but data-testid.
+    it('forwards data and aria attributes to the block root', () => {
+      const {container} = render(
+        <Markdown data-source="turn-7" aria-label="Answer">
+          Hello
+        </Markdown>,
+      );
+      const root = container.firstElementChild!;
+      expect(root.getAttribute('data-source')).toBe('turn-7');
+      expect(root.getAttribute('aria-label')).toBe('Answer');
+    });
+
+    it('keeps its own role when a consumer passes one', () => {
+      // The rest spread comes first precisely so the component's own
+      // semantics survive a consumer prop.
+      const {container} = render(
+        <Markdown role="presentation">Hello</Markdown>,
+      );
+      expect(container.firstElementChild!.getAttribute('role')).toBe(
+        'document',
+      );
+    });
+
+    it('forwards them on the inline root too', () => {
+      const {container} = render(
+        <Markdown display="inline" data-source="turn-7">
+          Hello
+        </Markdown>,
+      );
+      expect(container.firstElementChild!.getAttribute('data-source')).toBe(
+        'turn-7',
+      );
+    });
   });
 
   describe('block spacing theme targets', () => {
@@ -366,11 +482,98 @@ describe('Markdown', () => {
     expect(cursor).not.toBeInTheDocument();
   });
 
+  // A reader watching a reply arrive sees the DOM, not the parsed nodes.
+  // A `\|` is literal text, so the line must stay legible as it streams;
+  // the parser once classified it as an unfinished table header and held
+  // the whole line back, blanking the message.
+  describe('streamed text containing an escaped pipe', () => {
+    // Reduced motion makes the reveal synchronous, so each render shows
+    // exactly the prefix under test rather than a rAF-driven fraction.
+    beforeEach(() => {
+      stubMatchMedia({reduceMotion: true});
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    /** The text of each rendered block, in document order. */
+    function blockTexts(container: HTMLElement): string[] {
+      const doc = container.querySelector('[role="document"]')!;
+      return Array.from(doc.children).map(block =>
+        (block.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      );
+    }
+
+    it('shows every prefix of the line, escaped pipe rendered literally', () => {
+      const text = 'Costs 5 \\| 10 per unit';
+      const {container, rerender} = render(
+        <Markdown isStreaming>{text.slice(0, 1)}</Markdown>,
+      );
+
+      for (let length = 1; length <= text.length; length++) {
+        const prefix = text.slice(0, length);
+        rerender(<Markdown isStreaming>{prefix}</Markdown>);
+
+        // Every `\|` reads as one literal pipe, and no backslash survives.
+        expect(blockTexts(container)).toEqual([
+          prefix.replace(/\\\|/g, '|').trim(),
+        ]);
+      }
+    });
+
+    it('shows every prefix below settled content, both kept on screen', () => {
+      const settled = 'Intro\n\n';
+      const text = `${settled}Costs 5 \\| 10 per unit`;
+      const {container, rerender} = render(
+        <Markdown isStreaming>{settled}</Markdown>,
+      );
+
+      for (let length = settled.length + 1; length <= text.length; length++) {
+        const prefix = text.slice(0, length);
+        rerender(<Markdown isStreaming>{prefix}</Markdown>);
+
+        const tail = text.slice(settled.length, length).replace(/\\\|/g, '|');
+        // The settled paragraph stays on screen and the tail is legible.
+        expect(blockTexts(container)).toEqual(['Intro', tail.trim()]);
+      }
+    });
+
+    it('renders the finished line as one paragraph with the literal pipe', () => {
+      const {container} = render(
+        <Markdown isStreaming>{'Costs 5 \\| 10 per unit'}</Markdown>,
+      );
+
+      const paragraphs = container.querySelectorAll('[role="paragraph"]');
+      expect(paragraphs).toHaveLength(1);
+      expect(paragraphs[0].textContent).toBe('Costs 5 | 10 per unit');
+      // Prose, not a table: no cell was ever split out of it.
+      expect(container.querySelector('table')).toBeNull();
+    });
+
+    it('still renders a real streamed table containing an escaped pipe', () => {
+      const {container} = render(
+        <Markdown isStreaming>
+          {'| Col1 | Col2 |\n| --- | --- |\n| a \\| b | c |'}
+        </Markdown>,
+      );
+
+      const cells = container.querySelectorAll('tbody td');
+      expect(Array.from(cells).map(cell => cell.textContent)).toEqual([
+        'a | b',
+        'c',
+      ]);
+    });
+  });
+
   it('applies compact density', () => {
     const {container} = render(
       <Markdown density="compact">{'Hello'}</Markdown>,
     );
-    expect(container.firstElementChild!.className).toContain('compact');
+    expect(container.firstElementChild).toHaveAttribute(
+      'data-density',
+      'compact',
+    );
   });
 
   it('supports data-testid', () => {

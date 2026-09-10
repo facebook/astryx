@@ -22,6 +22,7 @@ import {
   setCleanSource,
 } from '../propertyEditor/targetingOverlay';
 import {runCode, setTypeScript} from './runner';
+import {isTrustedPreviewMessage, trustedPreviewOrigin} from '../previewChannel';
 import type * as TS from 'typescript';
 
 const FALLBACK_THEME =
@@ -116,7 +117,7 @@ export default function PreviewPage() {
   const theme = customTheme ?? themeByValue[themeName] ?? FALLBACK_THEME;
 
   const postToParent = useCallback((msg: Record<string, unknown>) => {
-    window.parent.postMessage(msg, '*');
+    window.parent.postMessage(msg, trustedPreviewOrigin());
   }, []);
 
   const targetingRef = useRef<ReturnType<
@@ -197,6 +198,13 @@ export default function PreviewPage() {
     }
 
     function onMessage(event: MessageEvent) {
+      // The switch below evaluates attacker-controllable source, so nothing is
+      // read off `event` until the sender is known to be our own playground.
+      if (
+        !isTrustedPreviewMessage(event, trustedPreviewOrigin(), window.parent)
+      ) {
+        return;
+      }
       if (!isPreviewMessage(event.data)) {
         return;
       }

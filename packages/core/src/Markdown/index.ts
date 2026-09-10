@@ -25,6 +25,7 @@ export {
 export type {
   BlockNode,
   InlineNode,
+  SourceRange,
   ListItemNode,
   TableCellNode,
   TableAlignment,

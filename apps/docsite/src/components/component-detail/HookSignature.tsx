@@ -12,12 +12,15 @@ import {useMediaQuery} from '@astryxdesign/core/hooks';
 import type {
   HookParamDoc,
   HookReturnDoc,
+  TypeDefinition,
 } from '../../generated/componentRegistry';
 import {MarkdownText} from '../MarkdownText';
+import {resolveTypeRefs, TypeRefText} from './TypeRefText';
 
 interface HookSignatureProps {
   params: HookParamDoc[];
   returns: HookReturnDoc[];
+  typeDefs: TypeDefinition[];
 }
 
 function formatParamType(type: string, defaultValue?: string): string {
@@ -27,7 +30,43 @@ function formatParamType(type: string, defaultValue?: string): string {
   return type;
 }
 
-function ParamRowMobile({param}: {param: HookParamDoc}) {
+/**
+ * Type text for a hook parameter or return field. When the documented type
+ * references named types exported from the hook's package (e.g.
+ * `ToastOptions`), each referenced name becomes an inline definition trigger
+ * that opens the declaration — the same treatment the component props table
+ * gives prop types (#2682). Rows with no resolved references stay plain text.
+ */
+function HookTypeText({
+  type,
+  typeRefs,
+  defaultValue,
+  typeDefs,
+}: {
+  type: string;
+  typeRefs?: string[];
+  defaultValue?: string;
+  typeDefs: TypeDefinition[];
+}) {
+  const defs = resolveTypeRefs(typeRefs, typeDefs);
+  if (defs.length === 0) {
+    return <>{formatParamType(type, defaultValue)}</>;
+  }
+  return (
+    <>
+      <TypeRefText type={type} defs={defs} />
+      {defaultValue != null && ` (default: ${defaultValue})`}
+    </>
+  );
+}
+
+function ParamRowMobile({
+  param,
+  typeDefs,
+}: {
+  param: HookParamDoc;
+  typeDefs: TypeDefinition[];
+}) {
   return (
     <VStack gap={1} style={{paddingBlock: 8}}>
       <HStack gap={1} vAlign="center">
@@ -37,7 +76,12 @@ function ParamRowMobile({param}: {param: HookParamDoc}) {
         {param.required && <Badge label="required" variant="info" />}
       </HStack>
       <Text type="code" color="secondary">
-        {formatParamType(param.type, param.default)}
+        <HookTypeText
+          type={param.type}
+          typeRefs={param.typeRefs}
+          defaultValue={param.default}
+          typeDefs={typeDefs}
+        />
       </Text>
       {param.description && (
         <MarkdownText type="body" color="secondary">
@@ -48,14 +92,24 @@ function ParamRowMobile({param}: {param: HookParamDoc}) {
   );
 }
 
-function ReturnRowMobile({ret}: {ret: HookReturnDoc}) {
+function ReturnRowMobile({
+  ret,
+  typeDefs,
+}: {
+  ret: HookReturnDoc;
+  typeDefs: TypeDefinition[];
+}) {
   return (
     <VStack gap={1} style={{paddingBlock: 8}}>
       <Text type="code" weight="bold">
         {ret.name}
       </Text>
       <Text type="code" color="secondary">
-        {ret.type}
+        <HookTypeText
+          type={ret.type}
+          typeRefs={ret.typeRefs}
+          typeDefs={typeDefs}
+        />
       </Text>
       {ret.description && (
         <MarkdownText type="body" color="secondary">
@@ -66,19 +120,22 @@ function ReturnRowMobile({ret}: {ret: HookReturnDoc}) {
   );
 }
 
-export function HookSignature({params, returns}: HookSignatureProps) {
+export function HookSignature({params, returns, typeDefs}: HookSignatureProps) {
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   const paramData = params.map(p => ({
     name: p.name as unknown,
     required: p.required as unknown,
-    type: formatParamType(p.type, p.default) as unknown,
+    type: p.type as unknown,
+    typeRefs: p.typeRefs as unknown,
+    default: p.default as unknown,
     description: (p.description ?? '') as unknown,
   })) as Record<string, unknown>[];
 
   const returnData = returns.map(r => ({
     name: r.name as unknown,
     type: r.type as unknown,
+    typeRefs: r.typeRefs as unknown,
     description: (r.description ?? '') as unknown,
   })) as Record<string, unknown>[];
 
@@ -92,7 +149,7 @@ export function HookSignature({params, returns}: HookSignatureProps) {
               params.map(p => (
                 <div key={p.name}>
                   <Divider />
-                  <ParamRowMobile param={p} />
+                  <ParamRowMobile param={p} typeDefs={typeDefs} />
                 </div>
               ))
             ) : (
@@ -123,7 +180,12 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                     width: pixel(240),
                     renderCell: (item: Record<string, unknown>) => (
                       <Text type="code" color="secondary">
-                        {item.type as string}
+                        <HookTypeText
+                          type={item.type as string}
+                          typeRefs={item.typeRefs as string[] | undefined}
+                          defaultValue={item.default as string | undefined}
+                          typeDefs={typeDefs}
+                        />
                       </Text>
                     ),
                   },
@@ -152,7 +214,7 @@ export function HookSignature({params, returns}: HookSignatureProps) {
               returns.map(r => (
                 <div key={r.name}>
                   <Divider />
-                  <ReturnRowMobile ret={r} />
+                  <ReturnRowMobile ret={r} typeDefs={typeDefs} />
                 </div>
               ))
             ) : (
@@ -178,7 +240,11 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                     width: pixel(240),
                     renderCell: (item: Record<string, unknown>) => (
                       <Text type="code" color="secondary">
-                        {item.type as string}
+                        <HookTypeText
+                          type={item.type as string}
+                          typeRefs={item.typeRefs as string[] | undefined}
+                          typeDefs={typeDefs}
+                        />
                       </Text>
                     ),
                   },

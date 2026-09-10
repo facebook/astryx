@@ -84,7 +84,7 @@ else
 fi
 
 # Progress (count files in all dirs)
-done_count=$(ls "$tmp_dir/delete" "$tmp_dir/keep" "$tmp_dir/stale" 2>/dev/null | wc -l | tr -d ' ')
+done_count=$(find "$tmp_dir/delete" "$tmp_dir/keep" "$tmp_dir/stale" -type f 2>/dev/null | wc -l | tr -d ' ')
 printf "\r  %s/%s checked" "$done_count" "$5" >&2
 CHECKER
 chmod +x "$tmp_dir/checker.sh"
@@ -152,13 +152,19 @@ DELETER
 
   echo "" # newline after progress
 
-  deleted=$(grep -rl "ok" "$tmp_dir/results" 2>/dev/null | wc -l | tr -d ' ')
-  failed=$(grep -rl "fail" "$tmp_dir/results" 2>/dev/null | wc -l | tr -d ' ')
+  # grep exits 1 when a class is empty, and under `set -e` + `pipefail` that
+  # aborts the script — on the all-succeeded path, which is the normal one.
+  deleted=$(grep -rl "ok" "$tmp_dir/results" 2>/dev/null | wc -l | tr -d ' ' || true)
+  failed=$(grep -rl "fail" "$tmp_dir/results" 2>/dev/null | wc -l | tr -d ' ' || true)
 
   echo ""
   echo -e "${BOLD}Results:${NC}"
   echo -e "  ${GREEN}Deleted:${NC}   $deleted"
-  [ "$failed" -gt 0 ] && echo -e "  ${RED}Failed:${NC}    $failed"
+  # `[ … ] && echo` would return 1 here when nothing failed, which `set -e`
+  # reads as the script failing.
+  if [ "$failed" -gt 0 ]; then
+    echo -e "  ${RED}Failed:${NC}    $failed"
+  fi
   echo -e "  ${YELLOW}Remaining:${NC} $keep_count + protected"
 else
   echo ""

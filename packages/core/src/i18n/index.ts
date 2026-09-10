@@ -10,12 +10,16 @@
  * The public API is deliberately small:
  *   - InternationalizationProvider — provider component
  *   - useTranslator               — hook returning a translator function
+ *   - useLocale                   — hook returning the provider locale
+ *   - useCollator                 — provider-bound locale-aware comparison
  *   - useDirection                — hook returning the ambient text direction
  *   - getLocaleDirection          — server-safe locale → direction helper
  *   - Translator                  — interface for consumer-injected runtimes
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/index.ts
+ * - /packages/core/src/i18n/useLocale.ts
+ * - /packages/core/src/i18n/useCollator.ts
  * - /packages/core/src/i18n/useDirection.ts
  * - /packages/core/src/i18n/getLocaleDirection.ts
  */
@@ -26,6 +30,8 @@ export {InternationalizationContext} from './InternationalizationContext';
 export type {InternationalizationContextValue} from './InternationalizationContext';
 export {useTranslator} from './useTranslator';
 export type {TranslatorFn} from './useTranslator';
+export {useLocale} from './useLocale';
+export {useCollator} from './useCollator';
 export {useDirection} from './useDirection';
 export {getLocaleDirection} from './getLocaleDirection';
 export type {Translator} from './translator';

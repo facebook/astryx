@@ -12,12 +12,19 @@
  * - /packages/core/src/PowerSearch/index.ts
  */
 
-import React, {useCallback, useMemo} from 'react';
+import React, {
+  useCallback,
+  useMemo,
+  useRef,
+  type FormEvent,
+  type KeyboardEvent,
+} from 'react';
 import type {
   OperatorValue,
   FilterValue,
   EnumItem,
   PowerSearchEntity,
+  DateTimeRangePart,
 } from './types';
 import type {InternalConfig} from './useInternalConfig';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
@@ -27,12 +34,18 @@ import type {ISOTimeString} from '../utils';
 // Lazy import to avoid circular deps — these are all from the same package
 import {TextInput} from '../TextInput';
 import {NumberInput} from '../NumberInput';
+import {
+  resolveNumberInputCommit,
+  type NumberInputCommitDecision,
+} from '../NumberInput/numberInputCommit';
 import {DateInput} from '../DateInput';
+import {DateRangeInput, type DateRange} from '../DateRangeInput';
+import {resolveDateTimeRangePart} from './resolveDateTimeRangePart';
 import {TimeInput} from '../TimeInput';
 import {Selector} from '../Selector';
 import {Tokenizer} from '../Tokenizer';
 import {Typeahead} from '../Typeahead';
-import {useTranslator} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 
 export interface PowerSearchValueEditorProps {
   operatorValue: OperatorValue;
@@ -40,6 +53,8 @@ export interface PowerSearchValueEditorProps {
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
   onEnter?: () => void;
   config: InternalConfig;
+  /** Max suggestions in string and entity value typeaheads. */
+  maxMenuItems?: number;
   isDisabled?: boolean;
   timezoneID?: string;
 }
@@ -71,6 +86,15 @@ function enumItemsToSearchableItems(
   }));
 }
 
+function dateRangePartToISO(
+  part: DateTimeRangePart,
+  nowSeconds: number,
+): ISODateString {
+  return new Date(resolveDateTimeRangePart(part, nowSeconds) * 1000)
+    .toISOString()
+    .split('T')[0] as ISODateString;
+}
+
 // =============================================================================
 // Individual Editors
 // =============================================================================
@@ -80,11 +104,13 @@ function StringEditor({
   filterValue,
   onChange,
   onEnter: _onEnter,
+  maxMenuItems,
 }: {
   operatorValue: OperatorValue & {type: 'string'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
   onEnter?: () => void;
+  maxMenuItems?: number;
 }) {
   const t = useTranslator();
   const currentValue = filterValue?.type === 'string' ? filterValue.value : '';
@@ -111,6 +137,7 @@ function StringEditor({
         }}
         placeholder={t('@astryx.powersearch.valueEditor.searchPlaceholder')}
         debounceMs={150}
+        maxMenuItems={maxMenuItems}
       />
     );
   }
@@ -132,10 +159,12 @@ function StringListEditor({
   operatorValue,
   filterValue,
   onChange,
+  maxMenuItems,
 }: {
   operatorValue: OperatorValue & {type: 'string_list'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
+  maxMenuItems?: number;
 }) {
   const t = useTranslator();
   const currentValue: SearchableItem[] = useMemo(() => {
@@ -176,31 +205,107 @@ function StringListEditor({
       placeholder={t('@astryx.powersearch.valueEditor.addValuesPlaceholder')}
       debounceMs={operatorValue.searchSource ? 150 : 0}
       hasCreate={hasCreate}
+      maxMenuItems={maxMenuItems}
     />
   );
+}
+
+function useNumberEditorHandlers({
+  valueType,
+  min,
+  max,
+  isIntegerOnly,
+  onChange,
+  onEnter,
+}: {
+  valueType: 'integer' | 'float';
+  min?: number;
+  max?: number;
+  isIntegerOnly: boolean;
+  onChange: (value: FilterValue, shouldSave?: boolean) => void;
+  onEnter?: () => void;
+}) {
+  const locale = useLocale();
+  const pendingDecisionRef = useRef<NumberInputCommitDecision | null>(null);
+  const toFilterValue = useCallback(
+    (value: number): FilterValue =>
+      valueType === 'integer'
+        ? {type: 'integer', value}
+        : {type: 'float', value},
+    [valueType],
+  );
+  const handleChange = useCallback(
+    (value: number) => {
+      onChange(toFilterValue(value));
+    },
+    [onChange, toFilterValue],
+  );
+  const handleFocus = useCallback(() => {
+    pendingDecisionRef.current = null;
+  }, []);
+  const handleInput = useCallback(
+    (event: FormEvent<HTMLElement>) => {
+      pendingDecisionRef.current = resolveNumberInputCommit(
+        (event.currentTarget as HTMLInputElement).value,
+        {min, max, isIntegerOnly, locale, hasClear: false},
+      );
+    },
+    [isIntegerOnly, locale, max, min],
+  );
+  const handleEnter = useCallback(() => {
+    const decision = pendingDecisionRef.current;
+    pendingDecisionRef.current = null;
+    if (decision === null) {
+      onEnter?.();
+    } else if (decision.type === 'commit') {
+      onChange(toFilterValue(decision.value), true);
+    }
+  }, [onChange, onEnter, toFilterValue]);
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Enter') {
+        event.stopPropagation();
+      }
+    },
+    [],
+  );
+
+  return {handleChange, handleEnter, handleFocus, handleInput, handleKeyDown};
 }
 
 function IntegerEditor({
   operatorValue,
   filterValue,
   onChange,
+  onEnter,
 }: {
   operatorValue: OperatorValue & {type: 'integer'};
   filterValue: FilterValue | undefined;
-  onChange: (value: FilterValue) => void;
+  onChange: (value: FilterValue, shouldSave?: boolean) => void;
+  onEnter?: () => void;
 }) {
   const t = useTranslator();
   const currentValue =
     filterValue?.type === 'integer' ? filterValue.value : undefined;
+  const handlers = useNumberEditorHandlers({
+    valueType: 'integer',
+    min: operatorValue.minValue,
+    max: operatorValue.maxValue,
+    isIntegerOnly: true,
+    onChange,
+    onEnter,
+  });
 
   return (
     <NumberInput
       label={t('@astryx.powersearch.valueEditor.value')}
       isLabelHidden
       value={currentValue ?? null}
-      onChange={(value: number) => {
-        onChange({type: 'integer', value});
-      }}
+      onChange={handlers.handleChange}
+      onFocus={handlers.handleFocus}
+      onInput={handlers.handleInput}
+      onEnter={handlers.handleEnter}
+      onKeyDown={handlers.handleKeyDown}
       min={operatorValue.minValue}
       max={operatorValue.maxValue}
       units={operatorValue.units}
@@ -214,23 +319,35 @@ function FloatEditor({
   operatorValue,
   filterValue,
   onChange,
+  onEnter,
 }: {
   operatorValue: OperatorValue & {type: 'float'};
   filterValue: FilterValue | undefined;
-  onChange: (value: FilterValue) => void;
+  onChange: (value: FilterValue, shouldSave?: boolean) => void;
+  onEnter?: () => void;
 }) {
   const t = useTranslator();
   const currentValue =
     filterValue?.type === 'float' ? filterValue.value : undefined;
+  const handlers = useNumberEditorHandlers({
+    valueType: 'float',
+    min: operatorValue.minValue,
+    max: operatorValue.maxValue,
+    isIntegerOnly: false,
+    onChange,
+    onEnter,
+  });
 
   return (
     <NumberInput
       label={t('@astryx.powersearch.valueEditor.value')}
       isLabelHidden
       value={currentValue ?? null}
-      onChange={(value: number) => {
-        onChange({type: 'float', value});
-      }}
+      onChange={handlers.handleChange}
+      onFocus={handlers.handleFocus}
+      onInput={handlers.handleInput}
+      onEnter={handlers.handleEnter}
+      onKeyDown={handlers.handleKeyDown}
       min={operatorValue.minValue}
       max={operatorValue.maxValue}
       units={operatorValue.units}
@@ -370,85 +487,58 @@ function DateRangeEditor({
   onChange: (value: FilterValue) => void;
 }) {
   const t = useTranslator();
-  const startValue = useMemo(() => {
+  const currentValue = useMemo<DateRange | null>(() => {
     if (filterValue?.type !== 'date_range') {
-      return undefined;
+      return null;
     }
-    const part = filterValue.value.start;
-    if (part.type === 'ABSOLUTE') {
-      return new Date(part.unixSeconds * 1000)
-        .toISOString()
-        .split('T')[0] as ISODateString;
-    }
-    return undefined;
+    const {start, end} = filterValue.value;
+    const nowSeconds = Date.now() / 1000;
+    return {
+      start: dateRangePartToISO(start, nowSeconds),
+      end: dateRangePartToISO(end, nowSeconds),
+    };
   }, [filterValue]);
 
-  const endValue = useMemo(() => {
-    if (filterValue?.type !== 'date_range') {
-      return undefined;
-    }
-    const part = filterValue.value.end;
-    if (part.type === 'ABSOLUTE') {
-      return new Date(part.unixSeconds * 1000)
-        .toISOString()
-        .split('T')[0] as ISODateString;
-    }
-    return undefined;
-  }, [filterValue]);
-
-  const handleStartChange = useCallback(
-    (value: string | undefined) => {
-      const startUnix = value
-        ? Math.floor(new Date(value).getTime() / 1000)
-        : 0;
-      const existingEnd =
-        filterValue?.type === 'date_range'
-          ? filterValue.value.end
-          : {type: 'NOW' as const};
+  const handleChange = useCallback(
+    (range: DateRange | null) => {
+      if (range == null) {
+        return;
+      }
       onChange({
         type: 'date_range',
         value: {
-          start: {type: 'ABSOLUTE', unixSeconds: startUnix},
-          end: existingEnd,
+          start: {
+            type: 'ABSOLUTE',
+            unixSeconds: Date.parse(`${range.start}T00:00:00Z`) / 1000,
+          },
+          end: {
+            type: 'ABSOLUTE',
+            unixSeconds: Date.parse(`${range.end}T00:00:00Z`) / 1000,
+          },
         },
       });
     },
-    [filterValue, onChange],
+    [onChange],
   );
 
-  const handleEndChange = useCallback(
-    (value: string | undefined) => {
-      const endUnix = value ? Math.floor(new Date(value).getTime() / 1000) : 0;
-      const existingStart =
-        filterValue?.type === 'date_range'
-          ? filterValue.value.start
-          : {type: 'NOW' as const};
-      onChange({
-        type: 'date_range',
-        value: {
-          start: existingStart,
-          end: {type: 'ABSOLUTE', unixSeconds: endUnix},
-        },
-      });
-    },
-    [filterValue, onChange],
-  );
+  const handleKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
+    // DateRangeInput owns an inner popover. Its Enter activation must not reach
+    // the parent PowerSearch shortcut before the focused button's click runs.
+    if (event.key === 'Enter') {
+      event.stopPropagation();
+    }
+  }, []);
 
   return (
-    <>
-      <DateInput
-        label={t('@astryx.powersearch.valueEditor.startDate')}
+    <div onKeyDown={handleKeyDown}>
+      <DateRangeInput
+        label={t('@astryx.powersearch.valueEditor.dateRange')}
         isLabelHidden
-        value={startValue}
-        onChange={handleStartChange}
+        value={currentValue}
+        onChange={handleChange}
+        hasClear={false}
       />
-      <DateInput
-        label={t('@astryx.powersearch.valueEditor.endDate')}
-        isLabelHidden
-        value={endValue}
-        onChange={handleEndChange}
-      />
-    </>
+    </div>
   );
 }
 
@@ -537,10 +627,12 @@ function EntityListEditor({
   operatorValue,
   filterValue,
   onChange,
+  maxMenuItems,
 }: {
   operatorValue: OperatorValue & {type: 'entity_list'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
+  maxMenuItems?: number;
 }) {
   const t = useTranslator();
   const source = useMemo<SearchSource<SearchableItem>>(() => {
@@ -588,6 +680,7 @@ function EntityListEditor({
       renderItem={operatorValue.renderItem}
       placeholder={t('@astryx.powersearch.valueEditor.searchPlaceholder')}
       debounceMs={operatorValue.searchSource ? 150 : 0}
+      maxMenuItems={maxMenuItems}
     />
   );
 }
@@ -631,6 +724,7 @@ export function PowerSearchValueEditor({
   filterValue,
   onChange,
   onEnter,
+  maxMenuItems,
   isDisabled,
 }: PowerSearchValueEditorProps) {
   switch (operatorValue.type) {
@@ -644,6 +738,7 @@ export function PowerSearchValueEditor({
           filterValue={filterValue}
           onChange={onChange}
           onEnter={onEnter}
+          maxMenuItems={maxMenuItems}
         />
       );
 
@@ -653,6 +748,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          maxMenuItems={maxMenuItems}
         />
       );
 
@@ -662,6 +758,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          onEnter={onEnter}
         />
       );
 
@@ -671,6 +768,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          onEnter={onEnter}
         />
       );
 
@@ -734,6 +832,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          maxMenuItems={maxMenuItems}
         />
       );
 

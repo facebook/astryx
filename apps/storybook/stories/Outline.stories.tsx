@@ -312,6 +312,12 @@ export const ScrollSpy: Story = {
         }}>
         <div
           ref={scrollContainerRef}
+          // The pane scrolls but contains nothing focusable, so it needs a
+          // tab stop and a name for keyboard scrolling (axe:
+          // scrollable-region-focusable).
+          tabIndex={0}
+          role="region"
+          aria-label="Article content"
           style={{
             overflowY: 'auto',
             height: 360,

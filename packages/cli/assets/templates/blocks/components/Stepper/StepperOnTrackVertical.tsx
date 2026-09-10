@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Stepper, Step} from '@astryxdesign/lab';
+import {Stepper, Step} from '@astryxdesign/core/Stepper';
 
 export default function StepperOnTrackVertical() {
   const [active, setActive] = useState(2);

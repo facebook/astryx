@@ -54,13 +54,14 @@ export type {
   InputStatus as FileInputStatus,
   InputStatusType as FileInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {TranslatorFn} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
     return `${bytes} B`;
@@ -152,13 +153,16 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
   },
   dropzoneHover: {
     boxShadow: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `inset 0 0 0 2px color-mix(in srgb, ${colorVars['--color-accent']} 20%, transparent)`,
       },
     },
@@ -168,7 +172,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
   },
   dropzoneDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     borderColor: colorVars['--color-border-emphasized'],
   },
@@ -197,16 +201,20 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': `inset 0 0 0 2px color-mix(in srgb, ${colorVars['--color-accent']} 20%, transparent)`,
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': `inset 0 0 0 2px color-mix(in srgb, ${colorVars['--color-accent']} 20%, transparent)`,
+        },
     },
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     height: sizeVars['--size-element-md'],
     outline: 'none',
   },
   compactDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     borderColor: colorVars['--color-border-emphasized'],
   },
@@ -820,7 +828,7 @@ export function FileInput({
         </VisuallyHidden>
         <input
           {...rest}
-          ref={mergeRefs(ref, inputRef)}
+          ref={useMergedRefs(ref, inputRef)}
           id={id}
           type="file"
           accept={accept}

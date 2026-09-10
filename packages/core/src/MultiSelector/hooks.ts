@@ -20,7 +20,7 @@ interface UseMultiComboboxOptions {
   isDisabled?: boolean;
   isOpen: boolean;
   hasSearch?: boolean;
-  onOpen: () => void;
+  onOpen: () => unknown;
   onClose: () => void;
   onToggle: (itemValue: string) => void;
   /**
@@ -93,8 +93,8 @@ export function useMultiCombobox({
     if (isOpen) {
       closeAndReset();
     } else {
-      onOpen();
-      if (!hasSearch) {
+      const didOpen = onOpen() !== false;
+      if (didOpen && !hasSearch) {
         setHighlightedIndex(0);
       }
     }
@@ -121,8 +121,9 @@ export function useMultiCombobox({
         case 'ArrowDown':
           e.preventDefault();
           if (!isOpen) {
-            onOpen();
-            setHighlightedIndex(0);
+            if (onOpen() !== false) {
+              setHighlightedIndex(0);
+            }
           } else {
             const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
             const nextPos = Math.min(
@@ -136,8 +137,9 @@ export function useMultiCombobox({
         case 'ArrowUp':
           e.preventDefault();
           if (!isOpen) {
-            onOpen();
-            setHighlightedIndex(selectableItems.length - 1);
+            if (onOpen() !== false) {
+              setHighlightedIndex(selectableItems.length - 1);
+            }
           } else {
             const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
             const prevPos = Math.max(currentEnabledPos - 1, 0);
@@ -158,8 +160,8 @@ export function useMultiCombobox({
               onToggle(item.value);
             }
           } else if (!isOpen) {
-            onOpen();
-            if (!hasSearch) {
+            const didOpen = onOpen() !== false;
+            if (didOpen && !hasSearch) {
               setHighlightedIndex(0);
             }
           }
@@ -225,25 +227,23 @@ export function useMultiCombobox({
           // Typeahead only when search is not present
           if (!hasSearch && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
             const newTypeahead = typeahead + e.key.toLowerCase();
-            setTypeahead(newTypeahead);
-
-            if (typeaheadTimeoutRef.current) {
-              clearTimeout(typeaheadTimeoutRef.current);
-            }
-            typeaheadTimeoutRef.current = setTimeout(() => {
-              setTypeahead('');
-            }, 500);
-
             const matchIndex = selectableItems.findIndex(
               item =>
                 !item.disabled &&
                 item.label?.toLowerCase().startsWith(newTypeahead),
             );
-            if (matchIndex >= 0) {
-              if (!isOpen) {
-                onOpen();
+            const didOpen = isOpen || matchIndex < 0 || onOpen() !== false;
+            if (didOpen) {
+              setTypeahead(newTypeahead);
+              if (typeaheadTimeoutRef.current) {
+                clearTimeout(typeaheadTimeoutRef.current);
               }
-              setHighlightedIndex(matchIndex);
+              typeaheadTimeoutRef.current = setTimeout(() => {
+                setTypeahead('');
+              }, 500);
+              if (matchIndex >= 0) {
+                setHighlightedIndex(matchIndex);
+              }
             }
           }
           break;

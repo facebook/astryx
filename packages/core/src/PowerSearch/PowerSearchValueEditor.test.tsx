@@ -3,14 +3,18 @@
 /**
  * @file PowerSearchValueEditor.test.tsx
  * @input Uses vitest, @testing-library/react, PowerSearchValueEditor
- * @output Unit tests for PowerSearch editor bugs #1103, #1106, #1107
+ * @output Unit tests for PowerSearch value editors, including date-range ordering
  * @position Testing; validates PowerSearchValueEditor.tsx
  */
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
-import type {FilterValueEntityList, PowerSearchEntity} from './types';
+import type {
+  FilterValueEntityList,
+  OperatorValue,
+  PowerSearchEntity,
+} from './types';
 import type {InternalConfig} from './useInternalConfig';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 
@@ -178,9 +182,189 @@ describe('StringEditor (#1103)', () => {
   });
 });
 
-// =============================================================================
-// #1106 — EntityListEditor drops photo, no renderItem
-// =============================================================================
+describe('numeric editor commit timing', () => {
+  it('saves the committed number when Enter finishes the edit', () => {
+    const onChange = vi.fn();
+    const onEnter = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'integer'}}
+        filterValue={{type: 'integer', value: 5}}
+        onChange={onChange}
+        onEnter={onEnter}
+        config={stubConfig}
+      />,
+    );
+    const input = screen.getByRole('spinbutton');
+    fireEvent.focus(input);
+    fireEvent.input(input, {target: {value: '42'}});
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    expect(onChange).toHaveBeenLastCalledWith(
+      {type: 'integer', value: 42},
+      true,
+    );
+    expect(onEnter).not.toHaveBeenCalled();
+  });
+
+  it('does not save an invalid numeric draft on Enter', () => {
+    const onChange = vi.fn();
+    const onEnter = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'integer'}}
+        filterValue={{type: 'integer', value: 5}}
+        onChange={onChange}
+        onEnter={onEnter}
+        config={stubConfig}
+      />,
+    );
+    const input = screen.getByRole('spinbutton');
+    fireEvent.focus(input);
+    fireEvent.input(input, {target: {value: '1·234'}});
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onEnter).not.toHaveBeenCalled();
+    expect(input).toHaveValue('1·234');
+  });
+
+  it('keeps the existing Enter callback when there is no pending edit', () => {
+    const onEnter = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'float'}}
+        filterValue={{type: 'float', value: 1.5}}
+        onChange={() => {}}
+        onEnter={onEnter}
+        config={stubConfig}
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'Enter'});
+    expect(onEnter).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('DateRangeEditor', () => {
+  it('uses one ordered range picker for reverse endpoint selection', () => {
+    const onChange = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'date_range'}}
+        filterValue={{
+          type: 'date_range',
+          value: {
+            start: {
+              type: 'ABSOLUTE',
+              unixSeconds: Date.parse('2026-01-05T00:00:00Z') / 1000,
+            },
+            end: {
+              type: 'ABSOLUTE',
+              unixSeconds: Date.parse('2026-01-07T00:00:00Z') / 1000,
+            },
+          },
+        }}
+        onChange={onChange}
+        config={stubConfig}
+      />,
+    );
+
+    const calendarTriggers = screen.getAllByRole('button', {
+      name: 'Open calendar',
+    });
+    expect(calendarTriggers).toHaveLength(1);
+    fireEvent.click(calendarTriggers[0]);
+
+    const later = document.querySelector<HTMLButtonElement>(
+      'button[data-date="2026-01-20"]',
+    );
+    const earlier = document.querySelector<HTMLButtonElement>(
+      'button[data-date="2026-01-10"]',
+    );
+    expect(later).not.toBeNull();
+    expect(earlier).not.toBeNull();
+    fireEvent.click(later!);
+    fireEvent.click(earlier!);
+
+    expect(onChange).toHaveBeenCalledWith({
+      type: 'date_range',
+      value: {
+        start: {
+          type: 'ABSOLUTE',
+          unixSeconds: Date.parse('2026-01-10T00:00:00Z') / 1000,
+        },
+        end: {
+          type: 'ABSOLUTE',
+          unixSeconds: Date.parse('2026-01-20T00:00:00Z') / 1000,
+        },
+      },
+    });
+  });
+
+  it('renders an absolute-to-now range without changing the filter', () => {
+    const nowSpy = vi
+      .spyOn(Date, 'now')
+      .mockReturnValue(Date.parse('2026-01-20T12:00:00Z'));
+    const onChange = vi.fn();
+    try {
+      render(
+        <PowerSearchValueEditor
+          operatorValue={{type: 'date_range'}}
+          filterValue={{
+            type: 'date_range',
+            value: {
+              start: {
+                type: 'ABSOLUTE',
+                unixSeconds: Date.parse('2026-01-05T00:00:00Z') / 1000,
+              },
+              end: {type: 'NOW'},
+            },
+          }}
+          onChange={onChange}
+          config={stubConfig}
+        />,
+      );
+
+      expect(
+        screen.getByRole('button', {name: /^date range:/i}),
+      ).toHaveTextContent('Jan 5 – Jan 20');
+      expect(onChange).not.toHaveBeenCalled();
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('renders a relative-to-now range without changing the filter', () => {
+    const nowSpy = vi
+      .spyOn(Date, 'now')
+      .mockReturnValue(Date.parse('2026-01-20T12:00:00Z'));
+    const onChange = vi.fn();
+    try {
+      render(
+        <PowerSearchValueEditor
+          operatorValue={{type: 'date_range'}}
+          filterValue={{
+            type: 'date_range',
+            value: {
+              start: {type: 'RELATIVE', backValue: 10, unit: 'day'},
+              end: {type: 'NOW'},
+            },
+          }}
+          onChange={onChange}
+          config={stubConfig}
+        />,
+      );
+
+      expect(
+        screen.getByRole('button', {name: /^date range:/i}),
+      ).toHaveTextContent('Jan 10 – Jan 20');
+      expect(onChange).not.toHaveBeenCalled();
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+});
 
 describe('EntityListEditor (#1106)', () => {
   const entitiesWithPhoto: PowerSearchEntity[] = [
@@ -402,5 +586,47 @@ describe('StringListEditor (#1107)', () => {
 
     // Should render the tokenizer with a combobox
     expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+});
+
+describe('maxMenuItems', () => {
+  const source = createSearchSource(
+    Array.from({length: 6}, (_, index) => ({
+      id: `option-${index}`,
+      label: `Option ${index}`,
+    })),
+  );
+
+  async function expectCapped(operatorValue: OperatorValue) {
+    render(
+      <PowerSearchValueEditor
+        operatorValue={operatorValue}
+        filterValue={undefined}
+        onChange={vi.fn()}
+        config={stubConfig}
+        maxMenuItems={2}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.change(screen.getByRole('combobox'), {
+        target: {value: 'Option'},
+      });
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    expect(screen.getAllByRole('option', {hidden: true})).toHaveLength(2);
+  }
+
+  it('caps string suggestions', async () => {
+    await expectCapped({type: 'string', searchSource: source});
+  });
+
+  it('caps string-list suggestions', async () => {
+    await expectCapped({type: 'string_list', searchSource: source});
+  });
+
+  it('caps entity-list suggestions', async () => {
+    await expectCapped({type: 'entity_list', searchSource: source});
   });
 });

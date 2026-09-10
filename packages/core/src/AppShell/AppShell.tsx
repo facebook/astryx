@@ -6,9 +6,9 @@ import React from 'react';
 
 /**
  * @file AppShell.tsx
- * @input Uses React, Layout, LayoutHeader, LayoutPanel, LayoutContent, StyleX
- * @output Exports AppShell component and AppShellProps type
- * @position Application-level layout shell — the top-level wrapper for any app.
+ * @input Uses React, Theme-resolved breakpoints, Layout, navigation slots, and StyleX
+ * @output Exports AppShell component and AppShellProps with SSR-safe mobile layout
+ * @position Page shell for an application — the top-level wrapper for any app.
  *   Composes Layout internally to provide header, sideNav, and main content areas.
  *   Use for any app that needs a top nav, side navigation, and scrollable content.
  *
@@ -50,14 +50,20 @@ import {AppShellMobileContext} from './AppShellMobileContext';
 import type {AppShellMobileContextValue} from './AppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs, isRenderable} from '../utils';
+import {mergeProps, isRenderable} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
-import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {observeResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {useThemeDefinition} from '../theme/useTheme';
+import {
+  DEFAULT_WIDTH_BREAKPOINTS,
+  type WidthBreakpointName,
+} from '../theme/themeAdaptations';
 import type {AppShellVariantMap} from './index';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const HasActivity = typeof React.Activity !== 'undefined';
 const ActivityWrapper = HasActivity
   ? ({
@@ -73,13 +79,6 @@ const ActivityWrapper = HasActivity
 // Constants
 // =============================================================================
 
-const BREAKPOINT_VALUES: Record<AppShellBreakpoint, number> = {
-  sm: 640,
-  md: 768,
-  lg: 1024,
-  none: 0,
-};
-
 const MAIN_CONTENT_ID = 'astryx-app-shell-main';
 
 // =============================================================================
@@ -87,13 +86,10 @@ const MAIN_CONTENT_ID = 'astryx-app-shell-main';
 // =============================================================================
 
 /**
- * SideNav breakpoint options.
- * - `sm`: 640px
- * - `md`: 768px
- * - `lg`: 1024px
- * - `none`: Never auto-collapse
+ * SideNav breakpoint options. Named points resolve through the nearest Theme;
+ * without an active theme they use Astryx's default width-breakpoint map.
  */
-export type AppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
+export type AppShellBreakpoint = WidthBreakpointName | 'none';
 
 /**
  * Navigation background style:
@@ -140,7 +136,10 @@ export interface MobileNavConfig {
   content?: ReactNode;
 
   /**
-   * Breakpoint below which mobile nav activates.
+   * Named Theme width point below which mobile nav activates. `sm`, `md`,
+   * `lg`, `xl`, and `2xl` resolve through the nearest Theme's effective
+   * `adaptations.widthBreakpoints`; equality belongs to the wider layout.
+   * Use `none` to disable automatic mobile mode.
    * @default 'md'
    */
   breakpoint?: AppShellBreakpoint;
@@ -148,7 +147,8 @@ export interface MobileNavConfig {
   /**
    * SSR hint: whether the initial render should assume mobile layout.
    * Seeds the breakpoint state so the server-rendered HTML matches
-   * the client on mobile devices, avoiding a layout flash.
+   * the client on mobile devices, avoiding a layout flash. Ignored when
+   * `breakpoint` is `none`, which is always non-mobile.
    *
    * Derive from the User-Agent header or a device-detection cookie
    * in a server component, then pass down.
@@ -268,6 +268,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
+    overflow: 'clip',
   },
   variantWash: {
     backgroundColor: colorVars['--color-background-body'],
@@ -429,7 +430,7 @@ const styles = stylex.create({
 // =============================================================================
 
 /**
- * Application-level layout shell. Provides the structural frame for an app:
+ * Page shell for an application. Provides the structural frame for an app:
  * top navigation, side navigation, and main content area.
  *
  * Slot-based API with `topNav`, `sideNav`, `banner`, and `children`.
@@ -467,6 +468,7 @@ export function AppShell({
   ...rest
 }: AppShellProps) {
   const t = useTranslator();
+  const activeTheme = useThemeDefinition();
   // =========================================================================
   // Parse mobileNav prop — normalize to config, custom element, or disabled
   // =========================================================================
@@ -502,13 +504,17 @@ export function AppShell({
   // =========================================================================
   // Mobile nav open state (controlled + uncontrolled)
   // =========================================================================
+  const activeWidthBreakpoints = activeTheme?.__adaptations?.widthBreakpoints;
   const breakpointQuery =
     sideNavBreakpoint === 'none'
-      ? '(max-width: 0px)'
-      : `(max-width: ${BREAKPOINT_VALUES[sideNavBreakpoint]}px)`;
+      ? '(width < 0px)'
+      : `(width < ${
+          activeWidthBreakpoints?.[sideNavBreakpoint] ??
+          DEFAULT_WIDTH_BREAKPOINTS[sideNavBreakpoint]
+        }px)`;
   const isBelowBreakpoint = useMediaQuery(
     breakpointQuery,
-    mobileNavConfig?.defaultIsMobile,
+    sideNavBreakpoint === 'none' ? false : mobileNavConfig?.defaultIsMobile,
   );
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
   const isMobileNavOpen = mobileNavConfig?.isOpen ?? uncontrolledMobileOpen;
@@ -553,6 +559,11 @@ export function AppShell({
       : variant === 'surface'
         ? styles.navAreaSurface
         : undefined;
+  // Section normally inherits the shell's surface background. Its auto-height
+  // header needs to paint that surface itself while content scrolls beneath it.
+  const headerAreaStyle =
+    navAreaStyle ??
+    (isAuto && variant === 'section' ? styles.navAreaSurface : undefined);
   const contentAreaStyle =
     variant === 'wash'
       ? styles.contentBgWash
@@ -586,8 +597,7 @@ export function AppShell({
       shellEl.style.setProperty('--_app-shell-header-height', `${height}px`);
     };
 
-    observeResize(headerEl, () => updateHeight());
-    return () => unobserveResize(headerEl);
+    return observeResize(headerEl, () => updateHeight());
   }, [isAuto]);
 
   // =========================================================================
@@ -683,7 +693,7 @@ export function AppShell({
       role="banner"
       {...mergeProps(
         themeProps('app-shell-header', {variant}),
-        stylex.props(navAreaStyle, isAuto && styles.headerSticky),
+        stylex.props(headerAreaStyle, isAuto && styles.headerSticky),
       )}>
       {headerInner}
     </div>
@@ -772,7 +782,7 @@ export function AppShell({
         role={headerContent == null ? 'banner' : undefined}
         {...mergeProps(
           themeProps('app-shell-header', {variant}),
-          stylex.props(navAreaStyle, isAuto && styles.headerSticky),
+          stylex.props(headerAreaStyle, isAuto && styles.headerSticky),
         )}>
         <LayoutHeader padding={0} hasDivider={navHasDividers}>
           <div
@@ -792,7 +802,7 @@ export function AppShell({
     <AppShellMobileContext value={mobileContextValue}>
       <div
         {...rest}
-        ref={mergeRefs(ref, shellRef)}
+        ref={useMergedRefs(ref, shellRef)}
         data-testid={dataTestId}
         {...mergeProps(
           themeProps('app-shell', {variant}),

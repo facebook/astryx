@@ -166,4 +166,68 @@ describe('InfoTip', () => {
     render(<InfoTip content={<span data-testid="rich-content">Rich</span>} />);
     expect(screen.getByTestId('rich-content')).toBeInTheDocument();
   });
+  describe('touch', () => {
+    /** A tap: the pointer sequence a finger produces before hover is faked. */
+    const tap = (element: HTMLElement) => {
+      fireEvent.pointerEnter(element, {pointerType: 'touch'});
+      fireEvent.pointerDown(element, {pointerType: 'touch'});
+      fireEvent.pointerUp(element, {pointerType: 'touch'});
+      fireEvent.mouseEnter(element);
+    };
+
+    it('opens on a tap, though the trigger is a button', async () => {
+      render(<InfoTip content="30-day rolling average." />);
+      const trigger = screen.getByRole('button');
+      const layer = screen.getByRole('tooltip', {hidden: true});
+
+      // Tooltip's `auto` rule would give this tap to the button and suppress
+      // the tooltip; revealing it is the button's whole purpose, so InfoTip
+      // opts in. Without this its content is unreachable on a phone.
+      tap(trigger);
+
+      await waitFor(() => {
+        expect(popoverOpenState.get(layer)).toBe(true);
+      });
+    });
+
+    it('closes on a second tap of the trigger', async () => {
+      render(<InfoTip content="30-day rolling average." />);
+      const trigger = screen.getByRole('button');
+      const layer = screen.getByRole('tooltip', {hidden: true});
+
+      tap(trigger);
+      await waitFor(() => {
+        expect(popoverOpenState.get(layer)).toBe(true);
+      });
+
+      tap(trigger);
+      await waitFor(() => {
+        expect(popoverOpenState.get(layer)).toBe(false);
+      });
+    });
+
+    it('closes on a tap outside', async () => {
+      render(
+        <>
+          <InfoTip content="30-day rolling average." />
+          <button type="button">Elsewhere</button>
+        </>,
+      );
+      const trigger = screen.getByRole('button', {name: 'More information'});
+      const layer = screen.getByRole('tooltip', {hidden: true});
+
+      tap(trigger);
+      await waitFor(() => {
+        expect(popoverOpenState.get(layer)).toBe(true);
+      });
+
+      fireEvent.pointerDown(screen.getByRole('button', {name: 'Elsewhere'}), {
+        pointerType: 'touch',
+      });
+
+      await waitFor(() => {
+        expect(popoverOpenState.get(layer)).toBe(false);
+      });
+    });
+  });
 });

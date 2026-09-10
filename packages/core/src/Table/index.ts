@@ -9,6 +9,24 @@
  * SYNC: When modified, update this header and /packages/core/src/Table/Table.doc.mjs
  */
 
+import type {IconName} from '../Icon';
+import type {TableRowStatusColor} from './plugins/rowStatus/useTableRowStatus';
+
+/** Stable custom row-status marker contract. */
+export interface TableRowStatus {
+  color: TableRowStatusColor | (string & {});
+  icon?: IconName;
+  label: string;
+}
+
+/** Semantic row outcome resolved through the active theme. */
+export interface TableSemanticRowStatus {
+  status: 'success' | 'warning' | 'error';
+  color?: never;
+  icon?: never;
+  label: string;
+}
+
 export {Table} from './Table';
 export {TableRow} from './TableRow';
 export {TableCell} from './TableCell';
@@ -108,10 +126,7 @@ export type {
   UseTableGroupedRowsConfig,
   UseTableGroupedRowsResult,
 } from './plugins/groupedRows';
-export type {
-  UseTableRowStatusConfig,
-  TableRowStatus,
-} from './plugins/rowStatus';
+export type {UseTableRowStatusConfig} from './plugins/rowStatus';
 export type {
   TableTreeRowMeta,
   UseTableTreeDataConfig,

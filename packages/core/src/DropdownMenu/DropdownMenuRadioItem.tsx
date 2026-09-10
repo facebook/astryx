@@ -42,12 +42,15 @@ const styles = stylex.create({
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
     },
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
   },
   disabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   // Rendered in Item's `marker` slot as a raw flex child. On touch it moves to
   // the inline-end of the row via `order`.

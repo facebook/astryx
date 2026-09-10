@@ -10,6 +10,11 @@
 import * as stylex from '@stylexjs/stylex';
 import {radiusVars, borderVars} from '../theme/tokens.stylex';
 
+// A grouped control may be followed by context-layer infrastructure rather
+// than another control. Neither the inert marker nor the popover is a visual
+// group member, so skip both when finding the trailing edge.
+const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template)))';
+
 export const groupStyles = stylex.create({
   inGroup: {
     flex: 1,
@@ -29,17 +34,11 @@ export const groupStyles = stylex.create({
     },
     borderStartEndRadius: {
       default: 0,
-      ':last-child': radiusVars['--radius-element'],
-      ':has(+ [popover]:last-child)': radiusVars['--radius-element'],
-      ':has(+ [popover] + [popover]:last-child)':
-        radiusVars['--radius-element'],
+      [IS_LAST_ITEM]: radiusVars['--radius-element'],
     },
     borderEndEndRadius: {
       default: 0,
-      ':last-child': radiusVars['--radius-element'],
-      ':has(+ [popover]:last-child)': radiusVars['--radius-element'],
-      ':has(+ [popover] + [popover]:last-child)':
-        radiusVars['--radius-element'],
+      [IS_LAST_ITEM]: radiusVars['--radius-element'],
     },
     ':focus-within': {
       zIndex: 1,

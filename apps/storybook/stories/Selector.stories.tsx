@@ -3,10 +3,17 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
+import {InputGroup} from '@astryxdesign/core/InputGroup';
 import {Selector, SelectorOption} from '@astryxdesign/core/Selector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {RadioIndicator} from '@astryxdesign/core/Indicator';
-import {UserIcon, CogIcon, BellIcon} from '@heroicons/react/24/outline';
+import {
+  UserIcon,
+  CogIcon,
+  BellIcon,
+  LockClosedIcon,
+  GlobeAltIcon,
+} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof Selector> = {
   title: 'Core/Selector',
@@ -64,9 +71,19 @@ const meta: Meta<typeof Selector> = {
       description:
         'Explicit menu placement. Leave unset for selected-item overlay behavior.',
     },
+    presentation: {
+      control: 'radio',
+      options: ['popover', 'bottom-sheet', 'adaptive'],
+      description: 'Popover, bottom sheet, or responsive presentation.',
+    },
     isDisabled: {
       control: 'boolean',
       description: 'Whether the selector is disabled',
+    },
+    isReadOnly: {
+      control: 'boolean',
+      description:
+        'Whether the selected value is visible and submittable without selection controls',
     },
     disabledMessage: {
       control: 'text',
@@ -122,6 +139,34 @@ export const Default: Story = {
   },
   args: {
     placeholder: 'Select a fruit...',
+  },
+};
+
+export const ReadOnly: Story = {
+  args: {
+    label: 'Assigned owner',
+    options: ['Alice', 'Bob', 'Charlie'],
+    value: 'Alice',
+    onChange: () => {},
+    hasClear: true,
+    hasSearch: true,
+    htmlName: 'owner',
+    isReadOnly: true,
+  },
+};
+
+export const BottomSheetPresentation: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>();
+    return (
+      <Selector
+        label="Team"
+        options={['Design', 'Engineering', 'Marketing', 'Operations']}
+        value={value}
+        onChange={setValue}
+        presentation="bottom-sheet"
+      />
+    );
   },
 };
 
@@ -367,6 +412,50 @@ export const Searchable: Story = {
   },
 };
 
+// Empty states
+export const EmptyStates: Story = {
+  render: () => {
+    const [a, setA] = useState<string | undefined>(undefined);
+    const [b, setB] = useState<string | undefined>(undefined);
+    const [c, setC] = useState<string | undefined>(undefined);
+    const [d, setD] = useState<string | undefined>(undefined);
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
+        <Selector
+          label="No options (default)"
+          options={[]}
+          value={a}
+          onChange={v => setA(v)}
+        />
+        <Selector
+          label="No options (custom)"
+          options={[]}
+          value={b}
+          onChange={v => setB(v)}
+          emptyText="No fruit in season yet"
+        />
+        <Selector
+          label="Search for xyz (custom)"
+          options={['Apple', 'Banana', 'Cherry']}
+          value={c}
+          onChange={v => setC(v)}
+          hasSearch
+          emptySearchText="Nothing matches that fruit"
+        />
+        <Selector
+          label="Loading (no message)"
+          options={[]}
+          value={d}
+          onChange={v => setD(v)}
+          isLoading
+        />
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
 // Custom render
 export const CustomRender: Story = {
   render: args => {
@@ -399,6 +488,85 @@ export const CustomRender: Story = {
           />
         )}
       />
+    );
+  },
+};
+
+// Two-line options: description on the data, and the trigger seam
+export const OptionDescriptions: Story = {
+  render: () => {
+    const visibility = [
+      {
+        value: 'private',
+        label: 'Private',
+        icon: LockClosedIcon,
+        description: 'Only members can access this space and its content.',
+      },
+      {
+        value: 'public',
+        label: 'Public',
+        icon: GlobeAltIcon,
+        description: 'Anyone at the company can find and join this space.',
+      },
+    ];
+    const [condensed, setCondensed] = useState<string | undefined>('private');
+    const [oneLine, setOneLine] = useState<string | undefined>('private');
+    const [full, setFull] = useState<string | undefined>('private');
+    const [grouped, setGrouped] = useState<string | undefined>('private');
+    return (
+      <div style={{display: 'grid', gap: 24}}>
+        <Selector
+          label="Visibility (default trigger)"
+          options={visibility}
+          value={condensed}
+          onChange={setCondensed}
+          data-testid="condensed"
+        />
+        <Selector
+          label="Visibility (renderValue, one line)"
+          options={visibility}
+          value={oneLine}
+          onChange={setOneLine}
+          data-testid="one-line"
+          renderValue={option => (
+            <SelectorOption
+              icon={option.icon}
+              label={option.label ?? option.value}
+            />
+          )}
+        />
+        <Selector
+          label="Visibility (renderValue)"
+          options={visibility}
+          value={full}
+          onChange={setFull}
+          data-testid="full"
+          renderValue={option => (
+            <SelectorOption
+              icon={option.icon}
+              label={option.label ?? option.value}
+              description={option.description}
+            />
+          )}
+        />
+        <InputGroup label="Visibility">
+          <Selector
+            label="Visibility (in a group)"
+            isLabelHidden
+            options={visibility}
+            value={grouped}
+            onChange={setGrouped}
+            renderValue={option => (
+              <SelectorOption
+                icon={option.icon}
+                label={option.label ?? option.value}
+                description={option.description}
+              />
+            )}
+          />
+          <Button label="Save" />
+        </InputGroup>
+      </div>
     );
   },
 };
@@ -819,10 +987,11 @@ export const StatusVariantComparison: Story = {
 /**
  * Theme the clear and chevron glyphs precisely via `defineTheme`.
  *
- * - `components['selector-clear-icon'].base` scopes overrides to the clear icon
- *   itself (via the `astryx-selector-clear-icon` target), so a theme can
- *   recolor it, morph its color on hover, and resize it — without a fragile
- *   descendant selector or raw CSS.
+ * - `components['input-clear-icon'].base` scopes overrides to the clear icon
+ *   itself (via the shared canonical `astryx-input-clear-icon` target), so a
+ *   theme can recolor it, morph its color on hover, and resize it — without a
+ *   fragile descendant selector or raw CSS. Selector still emits
+ *   `astryx-selector-clear-icon` only as a deprecated compatibility alias.
  * - `components['selector-indicator-icon']` scopes overrides to the chevron,
  *   and its `state:expanded` restyles the open state, which the icon reflects
  *   as a `data-state` attribute.
@@ -833,7 +1002,7 @@ export const StatusVariantComparison: Story = {
 const iconTheme = defineTheme({
   name: 'selector-icon-demo',
   components: {
-    'selector-clear-icon': {
+    'input-clear-icon': {
       base: {
         width: '12px',
         height: '12px',

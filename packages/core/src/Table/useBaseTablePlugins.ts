@@ -46,6 +46,11 @@ import {devWarn} from '../utils/devWarning';
  * Canonical ordering for first-party plugin names.
  * Plugins are sorted by their position in this array.
  * Unknown names are appended after the known set.
+ *
+ * This decides LAYOUT — which column lands left of which, who wraps whom. It
+ * must never decide whether the table works: a plugin that renders in one
+ * order and crashes in the other is broken, and adding it here buys a lucky
+ * order rather than a fix.
  */
 const PLUGIN_ORDER: ReadonlyArray<string> = [
   'columnSettings',

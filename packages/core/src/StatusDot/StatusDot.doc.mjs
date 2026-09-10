@@ -1,5 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Dot',
+    required: true,
+    description: 'Painted status dot that carries the selected semantic variant.',
+  },
+  {
+    name: 'Status icon',
+    required: false,
+    description: 'Optional caller-supplied icon rendered inside the dot.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -34,6 +48,12 @@ export const docs = {
         'Tooltip text shown on hover to explain the status meaning.',
     },
     {
+      name: 'icon',
+      type: 'ReactNode',
+      description:
+        'Optional icon rendered centered inside the dot, painted in currentColor (the variant\'s ink). Gives the status a non-color mark, so use a different icon per status. Booleans and empty strings are ignored, so `cond && <Icon />` is safe. Same contract as AvatarStatusDot.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -42,10 +62,14 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-statusdot', visualProps: ['variant']},
+      {className: 'astryx-status-dot', visualProps: ['variant']},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-statusdot', visualProps: ['variant'], deprecatedFor: 'status-dot'},
     ],
   },
   usage: {
+    anatomy,
     description:
       'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
     bestPractices: [
@@ -85,6 +109,12 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'icon',
+      type: 'ReactNode',
+      description:
+        '可选图标，居中渲染于圆点内，以 currentColor（变体的前景色）着色。为状态提供非颜色标记，请为每个状态使用不同图标。布尔值和空字符串会被忽略，因此 `cond && <Icon />` 是安全的。与 AvatarStatusDot 的契约一致。',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -93,10 +123,14 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-statusdot', visualProps: ['variant']},
+      {className: 'astryx-status-dot', visualProps: ['variant']},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-statusdot', visualProps: ['variant'], deprecatedFor: 'status-dot'},
     ],
   },
   usage: {
+    anatomy,
     description:
       'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
     bestPractices: [
@@ -115,6 +149,7 @@ export const docsZh = {
 export const docsDense = {
   description: 'Small colored dot indicator for status display (online/offline, severity, etc).',
   usage: {
+    anatomy,
     description:
       'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
     bestPractices: [
@@ -132,6 +167,7 @@ export const docsDense = {
     label: 'Accessible label via aria-label.',
     isPulsing: 'Pulse animation; respects prefers-reduced-motion: reduce.',
     tooltip: 'Tooltip text on hover to explain status meaning.',
+    icon: 'Optional ReactNode rendered centered in the dot (currentColor ink); a non-color mark for the status, use a different icon per status. Booleans/empty strings ignored (safe for cond && <Icon/>). Same contract as AvatarStatusDot.',
     xstyle: 'StyleX layout styles; must be stylex.create() value.',
   },
 };

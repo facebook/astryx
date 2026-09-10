@@ -20,7 +20,12 @@ const probe = stylex.create({
   secondaryText: {color: colorVars['--color-text-secondary']},
   accentText: {color: colorVars['--color-text-accent']},
   badgeBackground: {backgroundColor: colorVars['--color-accent-muted']},
-  pointerCursor: {cursor: 'pointer'},
+  pointerCursor: {
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
 });
 
 function atomicClasses(style: (typeof probe)[keyof typeof probe]): string[] {

@@ -16,6 +16,7 @@
 import React, {useSyncExternalStore} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {mergeProps} from '../utils';
+import {isApplePlatform} from '../utils/isApplePlatform';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {
@@ -122,24 +123,6 @@ function getServerPlatformSnapshot(): boolean {
   return false;
 }
 
-/**
- * Detects whether the current platform is macOS/iOS.
- * Prefers the User-Agent Client Hints API when available (modern Chrome/Edge),
- * falls back to navigator.platform (deprecated but universally supported).
- */
-function detectMac(): boolean {
-  if (typeof navigator === 'undefined') {
-    return false;
-  }
-  // Prefer User-Agent Client Hints API (not deprecated)
-  const uaData = 'userAgentData' in navigator ? navigator.userAgentData : null;
-  if (uaData && typeof uaData === 'object' && 'platform' in uaData) {
-    return /mac/i.test((uaData as {platform: string}).platform ?? '');
-  }
-  // Fallback: navigator.platform (deprecated but still shipped everywhere)
-  return /Mac|iPhone|iPad|iPod/.test(navigator.platform ?? '');
-}
-
 export interface KbdProps extends BaseProps<HTMLSpanElement> {
   ref?: React.Ref<HTMLSpanElement>;
   /**
@@ -176,7 +159,7 @@ export interface KbdProps extends BaseProps<HTMLSpanElement> {
 export function Kbd({keys, ref, xstyle, className, style, ...rest}: KbdProps) {
   const isMac = useSyncExternalStore(
     subscribeToPlatformChanges,
-    detectMac,
+    isApplePlatform,
     getServerPlatformSnapshot,
   );
 

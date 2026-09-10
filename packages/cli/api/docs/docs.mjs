@@ -29,6 +29,7 @@ export {list, detail, sectionLeaf as section};
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
+ * @param {string} [options.cwd]
  * @returns {Promise<
  *   import('./docs.type.mjs').DocsListResponse |
  *   import('./docs.type.mjs').DocsDetailResponse |
@@ -36,7 +37,7 @@ export {list, detail, sectionLeaf as section};
  * >}
  */
 export async function docs(topic, section, options = {}) {
-  if (!topic) return list();
+  if (!topic) return list(options);
   if (section) return sectionLeaf(topic, section, options);
   return detail(topic, options);
 }

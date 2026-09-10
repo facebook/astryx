@@ -15,6 +15,7 @@ import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InternationalizationProvider} from '../i18n';
 import {FieldLabel} from './FieldLabel';
+import {themeProps} from '../utils/themeProps';
 
 describe('FieldLabel', () => {
   it('renders label text', () => {
@@ -86,6 +87,21 @@ describe('FieldLabel', () => {
     const ref = vi.fn();
     render(<FieldLabel ref={ref} label="Name" inputID="name-input" />);
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLLabelElement));
+  });
+
+  it('keeps a standalone label as its parent layout item', () => {
+    const {container} = render(
+      <FieldLabel
+        label="Name"
+        inputID="name-input"
+        className="consumer-label"
+        style={{order: 2}}
+      />,
+    );
+    const label = screen.getByText('Name').closest('label');
+    expect(label).toHaveClass('consumer-label');
+    expect(label).toHaveStyle({order: '2'});
+    expect(container.firstElementChild).toBe(label);
   });
 
   it('renders tooltip info icon when labelTooltip prop is provided', () => {
@@ -195,6 +211,34 @@ describe('FieldLabel', () => {
       // The description must not live inside the <label> — nesting it there
       // would fold it into the control's accessible name.
       expect(description.closest('label')).toBeNull();
+    });
+  });
+
+  describe('a control can name its own label target', () => {
+    it('composes a passed target onto the field-label one', () => {
+      // How CheckboxInput and Switch reach their label: the control spreads
+      // its own themeProps in, and both classes end up on the same element,
+      // so a theme can style every label or just this kind.
+      render(
+        <FieldLabel
+          {...themeProps('checkbox-label')}
+          label="Notify me"
+          inputID="notify-input"
+        />,
+      );
+      const label = screen.getByText('Notify me').closest('label');
+      expect(label).toHaveClass('astryx-field-label');
+      expect(label).toHaveClass('astryx-checkbox-label');
+    });
+
+    it('describes no placement of its own', () => {
+      // The label cannot know how its caller arranged it, so it says nothing:
+      // a `data-layout` here would be a claim that is wrong for at least one
+      // caller (Field's horizontal-labels puts a label beside its control),
+      // and a consumer could set it untruthfully.
+      render(<FieldLabel label="Email" inputID="email-input" />);
+      const label = screen.getByText('Email').closest('label');
+      expect(label).not.toHaveAttribute('data-layout');
     });
   });
 });

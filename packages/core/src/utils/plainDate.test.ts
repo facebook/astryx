@@ -13,6 +13,7 @@ import {
   plainDateDayOfWeek,
   plainDateAddMonths,
   plainDateAddDays,
+  plainDateDiffDays,
   plainDateToInstant,
   plainDateFromInstant,
   plainDateIsBefore,
@@ -28,6 +29,7 @@ import {
   plainDateFormat,
   formatSharedDate,
   DATE_FORMAT_WITH_WEEKDAY,
+  DATE_FORMAT_MONTH_YEAR,
 } from './plainDate';
 import type {ISODateString} from './dateTypes';
 
@@ -312,6 +314,55 @@ describe('plainDateAddDays', () => {
   });
 });
 
+describe('plainDateDiffDays', () => {
+  it('counts whole days forward', () => {
+    expect(
+      plainDateDiffDays(
+        {year: 2026, month: 1, day: 10},
+        {year: 2026, month: 1, day: 17},
+      ),
+    ).toBe(7);
+  });
+
+  it('is negative when the second date is earlier', () => {
+    expect(
+      plainDateDiffDays(
+        {year: 2026, month: 1, day: 10},
+        {year: 2026, month: 1, day: 3},
+      ),
+    ).toBe(-7);
+  });
+
+  it('is zero for the same day', () => {
+    expect(
+      plainDateDiffDays(
+        {year: 2026, month: 6, day: 15},
+        {year: 2026, month: 6, day: 15},
+      ),
+    ).toBe(0);
+  });
+
+  it('counts across month and year boundaries', () => {
+    expect(
+      plainDateDiffDays(
+        {year: 2025, month: 12, day: 30},
+        {year: 2026, month: 1, day: 2},
+      ),
+    ).toBe(3);
+  });
+
+  it('ignores DST — every calendar day counts once across a spring-forward', () => {
+    // US DST 2026 begins Mar 8. The gap Mar 7 → Mar 9 is two calendar days
+    // even though one of them is 23 hours long.
+    expect(
+      plainDateDiffDays(
+        {year: 2026, month: 3, day: 7},
+        {year: 2026, month: 3, day: 9},
+      ),
+    ).toBe(2);
+  });
+});
+
 describe('plainDateToInstant / plainDateFromInstant', () => {
   it('converts a PlainDate to midnight in the requested timezone', () => {
     expect(
@@ -539,6 +590,51 @@ describe('plainDateFormat', () => {
     expect(result).toContain('2026');
     expect(result).toContain('25');
   });
+
+  it('defaults to en when the locale is omitted', () => {
+    expect(
+      plainDateFormat({year: 2026, month: 8, day: 22}, DATE_FORMAT_MONTH_YEAR),
+    ).toBe('August 2026');
+  });
+
+  it('honors an explicit locale', () => {
+    expect(
+      plainDateFormat(
+        {year: 2026, month: 8, day: 22},
+        DATE_FORMAT_MONTH_YEAR,
+        'fr',
+      ),
+    ).toBe('août 2026');
+  });
+
+  it('matches an explicit en locale when the locale is omitted', () => {
+    const pd: PlainDate = {year: 2026, month: 8, day: 22};
+    for (const options of [DATE_FORMAT_MONTH_YEAR, DATE_FORMAT_WITH_WEEKDAY]) {
+      expect(plainDateFormat(pd, options)).toBe(
+        plainDateFormat(pd, options, 'en'),
+      );
+    }
+  });
+
+  it('uses Gregorian fields for a non-Gregorian locale extension', () => {
+    expect(
+      plainDateFormat(
+        {year: 2026, month: 8, day: 22},
+        {year: 'numeric'},
+        'en-US-u-ca-buddhist',
+      ),
+    ).toBe('2026');
+  });
+
+  it('honors an explicitly requested calendar for compatibility', () => {
+    expect(
+      plainDateFormat(
+        {year: 2026, month: 8, day: 22},
+        {year: 'numeric', calendar: 'buddhist'},
+        'en-US',
+      ),
+    ).toBe('2569 BE');
+  });
 });
 
 describe('formatSharedDate', () => {
@@ -559,5 +655,11 @@ describe('formatSharedDate', () => {
 
   it('formats the ISO "system_date" shape', () => {
     expect(formatSharedDate(pd, 'system_date')).toBe('2026-01-25');
+  });
+
+  it('follows the passed locale rather than the host locale (#5074)', () => {
+    expect(formatSharedDate(pd, 'date_long', 'es-ES')).toBe(
+      '25 de enero de 2026',
+    );
   });
 });

@@ -14,6 +14,7 @@ import {Button} from '@astryxdesign/core/Button';
 import {ButtonGroup} from '@astryxdesign/core/ButtonGroup';
 import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
+import {rtlStyles} from '@astryxdesign/core/utils';
 import {useScheduleContext} from '../context';
 import type {
   ScheduleHeaderContent,
@@ -37,13 +38,27 @@ function SchedulePaginationControls() {
     <ButtonGroup label="Schedule pagination" size="sm">
       <IconButton
         label={previousDateLabel}
-        icon={<Icon icon="chevronLeft" size="sm" color="inherit" />}
+        icon={
+          <Icon
+            icon="chevronLeft"
+            size="sm"
+            color="inherit"
+            xstyle={rtlStyles.mirror}
+          />
+        }
         onClick={onPreviousDate}
       />
       <Button label="Today" size="sm" onClick={onToday} />
       <IconButton
         label={nextDateLabel}
-        icon={<Icon icon="chevronRight" size="sm" color="inherit" />}
+        icon={
+          <Icon
+            icon="chevronRight"
+            size="sm"
+            color="inherit"
+            xstyle={rtlStyles.mirror}
+          />
+        }
         onClick={onNextDate}
       />
     </ButtonGroup>
@@ -85,14 +100,10 @@ function createSchedulePaginationPlugin({
   };
 }
 
-export const defaultSchedulePaginationPlugin =
-  createSchedulePaginationPlugin();
+export const defaultSchedulePaginationPlugin = createSchedulePaginationPlugin();
 
 export function useSchedulePaginationPlugin({
   position = 'start',
 }: SchedulePaginationPluginOptions = {}): SchedulePlugin {
-  return useMemo(
-    () => createSchedulePaginationPlugin({position}),
-    [position],
-  );
+  return useMemo(() => createSchedulePaginationPlugin({position}), [position]);
 }

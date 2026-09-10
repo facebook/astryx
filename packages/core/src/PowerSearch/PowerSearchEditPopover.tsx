@@ -20,7 +20,7 @@ import {HStack, VStack} from '../Stack';
 import {Icon} from '../Icon';
 import {TreeList, type TreeListItemData} from '../TreeList';
 import {useTranslator} from '../i18n';
-import {isImeKeyEvent} from '../hooks/useFocusTrap';
+import {isImeKeyEvent} from '../utils/ime';
 import {spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
@@ -32,12 +32,22 @@ import type {
   OperatorValue,
 } from './types';
 
+// Below the popover layer's 400px floor (see popoverLayerStyles in
+// PowerSearch.tsx) the chip rows collapse from one line to wrapped lines.
+// A container query, not a viewport one, so the rows track the width the
+// popover actually got (#4761).
+const CHIP_ROW_COLLAPSE = '@container (max-width: 399px)';
+
 const styles = stylex.create({
   container: {
     overflow: 'hidden',
+    containerType: 'inline-size',
   },
   content: {
     padding: spacingVars['--spacing-4'],
+  },
+  chipRow: {
+    flexWrap: {default: 'nowrap', [CHIP_ROW_COLLAPSE]: 'wrap'},
   },
   footer: {
     padding: spacingVars['--spacing-3'],
@@ -51,6 +61,9 @@ const styles = stylex.create({
   operatorSelector: {
     flexGrow: 1,
     flexShrink: 0,
+    // Long translated operator labels truncate in the Selector trigger
+    // instead of pushing the row wider than the popover (#4761).
+    maxWidth: '100%',
   },
   valueEditor: {
     flexGrow: 2,
@@ -63,10 +76,12 @@ const styles = stylex.create({
   nestedFieldSelector: {
     flexShrink: 0,
     width: 200,
+    maxWidth: '100%',
   },
   nestedOperatorSelector: {
     flexShrink: 0,
     width: 180,
+    maxWidth: '100%',
   },
   nestedRow: {
     width: '100%',
@@ -90,6 +105,8 @@ export interface PowerSearchEditPopoverProps {
   onCancel: () => void;
   /** Label for the save button. @default 'Apply' */
   saveButtonLabel?: string;
+  /** Max suggestions in string and entity value typeaheads. */
+  maxMenuItems?: number;
   /** Whether the filter is read-only. */
   isReadOnly?: boolean;
 }
@@ -232,6 +249,7 @@ interface NestedSubFilterRowProps {
   config: InternalConfig;
   subFilter: EditablePartialFilter;
   onChange: (subFilter: EditablePartialFilter) => void;
+  maxMenuItems?: number;
   isReadOnly: boolean;
 }
 
@@ -239,6 +257,7 @@ function NestedSubFilterRow({
   config,
   subFilter,
   onChange,
+  maxMenuItems,
   isReadOnly,
 }: NestedSubFilterRowProps) {
   const t = useTranslator();
@@ -309,7 +328,7 @@ function NestedSubFilterRow({
   );
 
   return (
-    <HStack gap={2} vAlign="center">
+    <HStack gap={2} vAlign="center" xstyle={styles.chipRow}>
       <div {...stylex.props(styles.nestedFieldSelector)}>
         <Selector
           label={t('@astryx.powersearch.editor.field')}
@@ -341,6 +360,7 @@ function NestedSubFilterRow({
             filterValue={subFilter.value}
             onChange={handleValueChange}
             config={config}
+            maxMenuItems={maxMenuItems}
             isDisabled={isReadOnly}
           />
         </div>
@@ -359,6 +379,7 @@ interface NestedEditorProps {
   operatorOptions: {value: string; label: string}[];
   onOperatorChange: (operatorKey: string) => void;
   onPartialFilterChange: (filter: PartialFilter) => void;
+  maxMenuItems?: number;
   isReadOnly: boolean;
 }
 
@@ -368,6 +389,7 @@ function NestedEditor({
   operatorOptions,
   onOperatorChange,
   onPartialFilterChange,
+  maxMenuItems,
   isReadOnly,
 }: NestedEditorProps) {
   const t = useTranslator();
@@ -489,6 +511,7 @@ function NestedEditor({
               config={config}
               subFilter={sf}
               onChange={updated => handleUpdate(itemPath, updated)}
+              maxMenuItems={maxMenuItems}
               isReadOnly={isReadOnly}
             />
           ),
@@ -515,6 +538,7 @@ function NestedEditor({
             config={config}
             subFilter={sf}
             onChange={updated => handleUpdate(itemPath, updated)}
+            maxMenuItems={maxMenuItems}
             isReadOnly={isReadOnly}
           />
         ),
@@ -593,6 +617,7 @@ export function PowerSearchEditPopover({
   onSave,
   onCancel,
   saveButtonLabel: saveButtonLabelFromProps,
+  maxMenuItems,
   isReadOnly = false,
 }: PowerSearchEditPopoverProps) {
   const t = useTranslator();
@@ -762,6 +787,7 @@ export function PowerSearchEditPopover({
               operatorOptions={operatorOptions}
               onOperatorChange={handleOperatorChange}
               onPartialFilterChange={setPartialFilter}
+              maxMenuItems={maxMenuItems}
               isReadOnly={isReadOnly}
             />
           </VStack>
@@ -802,7 +828,7 @@ export function PowerSearchEditPopover({
   return (
     <div {...stylex.props(styles.container)} onKeyDown={handleKeyDown}>
       <div {...stylex.props(styles.content)}>
-        <HStack gap={2}>
+        <HStack gap={2} xstyle={styles.chipRow}>
           <div {...stylex.props(styles.fieldSelector)}>
             <Selector
               label={t('@astryx.powersearch.editor.field')}
@@ -835,6 +861,7 @@ export function PowerSearchEditPopover({
                 onChange={handleValueChange}
                 onEnter={handleSave}
                 config={config}
+                maxMenuItems={maxMenuItems}
                 isDisabled={isReadOnly}
               />
             </div>

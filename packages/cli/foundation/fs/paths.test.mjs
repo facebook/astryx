@@ -4,7 +4,7 @@ import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {findCoreDir, findProjectRoot, listComponents, discoverExternalPackages} from './paths.mjs';
+import {findCoreDir, findProjectRoot, listComponents, discoverExternalPackages, existsCaseExact} from './paths.mjs';
 
 let tmpDir;
 
@@ -207,5 +207,33 @@ describe('listComponents', () => {
 
   it('returns empty array when src dir is missing', () => {
     expect(listComponents(tmpDir)).toEqual([]);
+  });
+});
+
+describe('existsCaseExact', () => {
+  it('accepts the real spelling and rejects a case variant of the file', () => {
+    fs.writeFileSync(path.join(tmpDir, 'Button.doc.mjs'), '');
+
+    expect(existsCaseExact(path.join(tmpDir, 'Button.doc.mjs'), tmpDir)).toBe(true);
+    expect(existsCaseExact(path.join(tmpDir, 'button.doc.mjs'), tmpDir)).toBe(false);
+    expect(existsCaseExact(path.join(tmpDir, 'BUTTON.DOC.MJS'), tmpDir)).toBe(false);
+  });
+
+  it('checks every segment below the root, not just the basename', () => {
+    const dir = path.join(tmpDir, 'src', 'Button');
+    fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(path.join(dir, 'Button.doc.mjs'), '');
+
+    expect(existsCaseExact(path.join(tmpDir, 'src', 'Button', 'Button.doc.mjs'), tmpDir)).toBe(true);
+    expect(existsCaseExact(path.join(tmpDir, 'src', 'button', 'Button.doc.mjs'), tmpDir)).toBe(false);
+  });
+
+  it('returns false for a missing path, and true for the root itself', () => {
+    expect(existsCaseExact(path.join(tmpDir, 'nope.mjs'), tmpDir)).toBe(false);
+    expect(existsCaseExact(tmpDir, tmpDir)).toBe(true);
+  });
+
+  it('refuses a target outside the root', () => {
+    expect(existsCaseExact(os.tmpdir(), tmpDir)).toBe(false);
   });
 });

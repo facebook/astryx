@@ -4,7 +4,7 @@
 export const docs = {
   name: 'useTranslator',
   displayName: 'useTranslator',
-  group: 'Utilities',
+  category: 'utilities',
   keywords: [
     'i18n',
     'internationalization',

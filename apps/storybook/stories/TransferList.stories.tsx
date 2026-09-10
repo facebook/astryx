@@ -2,18 +2,26 @@
 
 /**
  * @file TransferList.stories.tsx
- * @input TransferListSelector option data, commit behavior, and advanced Core selector and table primitives
- * @output Storybook examples for immediate/staged selectors plus advanced TransferList composition
+ * @input TransferList option data plus advanced Core selector and table primitives
+ * @output Storybook examples for the TransferList composition primitive
  * @position Lab Storybook documentation and visual validation
  *
- * SYNC: When selector commit behavior or TransferList interaction changes, update source, docs, and tests.
+ * Covers the primitive directly rather than through TransferListSelector. The
+ * two surfaces are documented separately because a Storybook title maps to one
+ * component, and the accessibility audit derives the component it audits from
+ * that title — a primitive shown only inside the wrapper's stories is never
+ * audited under its own name.
+ *
+ * SYNC: When TransferList interaction or panel copy changes, update source,
+ * docs, and tests.
  */
 
 import {useEffect, useRef, useState, type SVGProps} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {TransferList, TransferListSelector} from '@astryxdesign/lab';
-import type {TransferListOption, TransferListProps} from '@astryxdesign/lab';
+import {TransferList} from '@astryxdesign/lab';
+import type {TransferListOption} from '@astryxdesign/lab';
+import {Theme} from '@astryxdesign/core';
 import {Button} from '@astryxdesign/core/Button';
 import {ComplexSelector} from '@astryxdesign/core/ComplexSelector';
 import {Divider} from '@astryxdesign/core/Divider';
@@ -37,6 +45,8 @@ import {
   radiusVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
+
 function PlusIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -100,22 +110,34 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-3'],
   },
+  stack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-6'],
+  },
+  themePane: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-3'],
+    padding: spacingVars['--spacing-4'],
+    borderRadius: radiusVars['--radius-element'],
+    // Must be a token, not a literal: the pane's whole job is to render the
+    // surface each nested Theme resolves to, so a hardcoded colour would sit
+    // under text that follows the theme and fail contrast in one of the modes.
+    backgroundColor: colorVars['--color-background-body'],
+  },
 });
 
-const meta: Meta<typeof TransferListSelector> = {
-  title: 'Lab/TransferListSelector',
-  component: TransferListSelector,
+const meta: Meta<typeof TransferList> = {
+  title: 'Lab/TransferList',
+  component: TransferList,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
   },
   decorators: [
     Story => (
-      <div
-        style={{
-          width: 'min(900px, calc(100vw - 64px))',
-          minHeight: 480,
-        }}>
+      <div style={{width: 'min(760px, calc(100vw - 64px))'}}>
         <Story />
       </div>
     ),
@@ -136,83 +158,44 @@ const BASIC_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     label: 'Owner',
     description: 'Person responsible for the record',
   },
-  {
-    value: 'status',
-    label: 'Status',
-    description: 'Current workflow state',
-  },
-  {
-    value: 'priority',
-    label: 'Priority',
-    description: 'Relative urgency',
-  },
-  {
-    value: 'team',
-    label: 'Team',
-    description: 'Owning team',
-  },
+  {value: 'status', label: 'Status', description: 'Current workflow state'},
+  {value: 'priority', label: 'Priority', description: 'Relative urgency'},
+  {value: 'team', label: 'Team', description: 'Owning team'},
   {
     value: 'updated',
     label: 'Last updated',
     description: 'Most recent change time',
   },
-  {
-    value: 'created',
-    label: 'Created',
-    description: 'Original creation time',
-  },
+  {value: 'created', label: 'Created', description: 'Original creation time'},
 ];
 
-const BASIC_DESCRIPTION =
-  'Choose which fields appear. Changes take effect immediately, and drag reorder commits on release.';
-
-const BASIC_TRANSFER_LIST_PROPS = {
-  label: 'Visible fields',
-  options: BASIC_OPTIONS,
-  selectedLabel: 'Visible fields',
-  availableLabel: 'Available fields',
-  hasSelectAll: true,
-  hasClear: true,
-} satisfies Omit<TransferListProps<string>, 'value' | 'onChange'>;
-
 function DefaultExample() {
-  const defaults = ['name', 'owner', 'status'];
-  const [value, setValue] = useState<readonly string[]>(defaults);
+  const [value, setValue] = useState<readonly string[]>([
+    'name',
+    'owner',
+    'status',
+  ]);
   return (
-    <TransferListSelector
-      {...BASIC_TRANSFER_LIST_PROPS}
-      description={BASIC_DESCRIPTION}
+    <TransferList
+      label="Visible fields"
+      description="Move fields between the panels. The selected order is the display order."
+      options={BASIC_OPTIONS}
       value={value}
       onChange={setValue}
-      triggerLabel={`${value.length} visible fields`}
+      selectedLabel="Visible fields"
+      availableLabel="Available fields"
+      hasSelectAll
+      hasClear
     />
   );
 }
 
+/** The primitive rendered inline, without the selector's popover. */
 export const Default: Story = {
   render: () => <DefaultExample />,
 };
 
-function StagedChangesExample() {
-  const defaults = ['name', 'owner', 'status'];
-  const [value, setValue] = useState<readonly string[]>(defaults);
-  return (
-    <TransferListSelector
-      {...BASIC_TRANSFER_LIST_PROPS}
-      description="Review the complete field selection before applying it."
-      value={value}
-      onChange={setValue}
-      commitBehavior="staged"
-      triggerLabel={`${value.length} visible fields`}
-    />
-  );
-}
-
-export const StagedChanges: Story = {
-  render: () => <StagedChangesExample />,
-};
-
-const GROUPED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
+const LOCKED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
   {
     value: 'name',
     label: 'Name',
@@ -230,12 +213,7 @@ const GROUPED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     isTransferDisabled: true,
     disabledMessage: 'Owner must remain visible but can be reordered.',
   },
-  {
-    value: 'team',
-    label: 'Team',
-    description: 'Owning team',
-    group: 'Identity',
-  },
+  {value: 'team', label: 'Team', description: 'Owning team', group: 'Identity'},
   {
     value: 'status',
     label: 'Status',
@@ -252,47 +230,42 @@ const GROUPED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     group: 'Planning',
   },
   {
-    value: 'due',
-    label: 'Due date',
-    description: 'Planned completion date',
-    group: 'Planning',
-  },
-  {
     value: 'updated',
     label: 'Last updated',
     description: 'Most recent change time',
     group: 'Activity',
   },
-  {
-    value: 'created',
-    label: 'Created',
-    description: 'Original creation time',
-    group: 'Activity',
-  },
 ];
 
-function GroupedAndLockedExample() {
-  const defaults = ['name', 'owner', 'status', 'updated'];
-  const [value, setValue] = useState<readonly string[]>(defaults);
-
+function LockedExample() {
+  const [value, setValue] = useState<readonly string[]>([
+    'name',
+    'owner',
+    'status',
+    'updated',
+  ]);
   return (
-    <TransferListSelector
+    <TransferList
       label="Record fields"
-      description="Fields are grouped by purpose. Removal and reordering constraints can be applied independently."
-      options={GROUPED_OPTIONS}
+      description="Transfer and reorder are constrained per option, so a field can be locked in place without being locked in the list."
+      options={LOCKED_OPTIONS}
       value={value}
       onChange={setValue}
       selectedLabel="Shown"
       availableLabel="Hidden"
       hasSelectAll
       hasClear
-      triggerLabel={`${value.length} shown fields`}
     />
   );
 }
 
-export const GroupedAndLocked: Story = {
-  render: () => <GroupedAndLockedExample />,
+/**
+ * TransferList has no component-wide disabled state. Availability is decided
+ * per option, and the two constraints are independent: `isTransferDisabled`
+ * pins an option to its panel, `isReorderDisabled` pins it to its position.
+ */
+export const Locked: Story = {
+  render: () => <LockedExample />,
 };
 
 function UnorderedExample() {
@@ -301,11 +274,10 @@ function UnorderedExample() {
     'priority',
     'team',
   ]);
-
   return (
-    <TransferListSelector
+    <TransferList
       label="Included filters"
-      description="Use an unordered transfer list when selection matters but display order does not."
+      description="With reordering off the selected panel loses its drag handles and keyboard reorder."
       options={BASIC_OPTIONS}
       value={value}
       onChange={setValue}
@@ -314,42 +286,13 @@ function UnorderedExample() {
       isReorderable={false}
       hasSelectAll
       hasClear
-      triggerLabel={`${value.length} included filters`}
     />
   );
 }
 
+/** `isReorderable={false}` for selections where order carries no meaning. */
 export const Unordered: Story = {
   render: () => <UnorderedExample />,
-};
-
-function NarrowContainerExample() {
-  const [value, setValue] = useState<readonly string[]>([
-    'name',
-    'owner',
-    'status',
-  ]);
-  return (
-    <TransferListSelector
-      label="Mobile field settings"
-      description="The two panels stack when horizontal space is limited."
-      options={BASIC_OPTIONS}
-      value={value}
-      onChange={setValue}
-      triggerLabel={`${value.length} visible fields`}
-      width="min(360px, calc(100vw - 32px))"
-      placement="below"
-      selectedLabel="Visible"
-      availableLabel="Available"
-      isReorderable={false}
-      hasSelectAll
-      hasClear
-    />
-  );
-}
-
-export const NarrowContainer: Story = {
-  render: () => <NarrowContainerExample />,
 };
 
 const LARGE_POOL_OPTIONS: ReadonlyArray<TransferListOption<string>> =
@@ -363,15 +306,14 @@ const LARGE_POOL_OPTIONS: ReadonlyArray<TransferListOption<string>> =
     };
   });
 
-function LargePoolExample() {
+function SearchableExample() {
   const [value, setValue] = useState<readonly string[]>(
     LARGE_POOL_OPTIONS.slice(0, 12).map(option => option.value),
   );
-
   return (
-    <TransferListSelector
+    <TransferList
       label="Report fields"
-      description="Search a pool of 200 options while preserving the chosen display order."
+      description="One search field filters both panels across a pool of 200 grouped options."
       options={LARGE_POOL_OPTIONS}
       value={value}
       onChange={setValue}
@@ -381,13 +323,99 @@ function LargePoolExample() {
       searchPlaceholder="Search 200 fields"
       hasSelectAll
       hasClear
-      triggerLabel={`${value.length} report fields`}
     />
   );
 }
 
-export const LargePool: Story = {
-  render: () => <LargePoolExample />,
+/** `hasSearch` over a large grouped pool, exercising both panels at volume. */
+export const Searchable: Story = {
+  render: () => <SearchableExample />,
+};
+
+function EmptyExample() {
+  const [value, setValue] = useState<readonly string[]>([]);
+  return (
+    <TransferList
+      label="Visible fields"
+      description="Nothing is selected yet, so the selected panel carries its own empty copy."
+      options={BASIC_OPTIONS}
+      value={value}
+      onChange={setValue}
+      selectedLabel="Visible fields"
+      availableLabel="Available fields"
+      selectedEmptyText="No fields are visible yet. Add one from the right."
+      availableEmptyText="Every field is already visible."
+      hasSelectAll
+      hasClear
+    />
+  );
+}
+
+function NoResultsExample() {
+  const [value, setValue] = useState<readonly string[]>(['name']);
+  return (
+    <TransferList
+      label="Report fields"
+      description="A query that matches nothing replaces both panels with the no-results copy."
+      options={BASIC_OPTIONS}
+      value={value}
+      onChange={setValue}
+      selectedLabel="In report"
+      availableLabel="Available"
+      hasSearch
+      searchLabel="Search report fields"
+      searchPlaceholder="Try a term that matches nothing"
+      noResultsText="No field matches that search."
+    />
+  );
+}
+
+/**
+ * The three empty surfaces are distinct: an empty selection, an exhausted
+ * available pool, and a search that matches nothing each need their own copy.
+ */
+export const Empty: Story = {
+  render: () => (
+    <div {...stylex.props(styles.stack)}>
+      <EmptyExample />
+      <Divider />
+      <NoResultsExample />
+    </div>
+  ),
+};
+
+/** The same list pinned to light and dark, including a nested override. */
+export const ThemeMatrix: Story = {
+  render: () => (
+    <div {...stylex.props(styles.stack)}>
+      <Theme theme={neutralTheme} mode="light">
+        <div {...stylex.props(styles.themePane)}>
+          <Text weight="bold">Light</Text>
+          <DefaultExample />
+        </div>
+      </Theme>
+      <Theme theme={neutralTheme} mode="dark">
+        <div {...stylex.props(styles.themePane)}>
+          <Text weight="bold">Dark</Text>
+          <DefaultExample />
+          <Theme theme={neutralTheme} mode="light">
+            <div {...stylex.props(styles.themePane)}>
+              <Text weight="bold">Light nested inside dark</Text>
+              <LockedExample />
+            </div>
+          </Theme>
+        </div>
+      </Theme>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Pins both modes into one frame so a theme regression is visible without toggling the toolbar, and nests a light theme inside a dark one to confirm the panels read their colours from the nearest provider rather than the document root.',
+      },
+    },
+  },
 };
 
 interface ProjectRow extends Record<string, unknown> {
@@ -738,4 +766,11 @@ function TableColumnSettingsExample() {
 export const TableColumnSettings: Story = {
   name: 'Advanced: Table column settings',
   render: () => <TableColumnSettingsExample />,
+  decorators: [
+    Story => (
+      <div style={{width: 'min(1100px, calc(100vw - 64px))', minHeight: 480}}>
+        <Story />
+      </div>
+    ),
+  ],
 };

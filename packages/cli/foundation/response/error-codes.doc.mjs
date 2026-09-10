@@ -70,6 +70,11 @@ export const doc = {
       description:
         '`@astryxdesign/core` could not be located (not installed / not in a monorepo).',
     },
+    {
+      value: 'ERR_CORE_INCOMPATIBLE',
+      description:
+        'The installed `@astryxdesign/core` loaded but is too old for this input — it lacks a capability the CLI must call to emit correct output (upgrade core).',
+    },
 
     // "Unknown <subject>" lookups
     {
@@ -191,6 +196,11 @@ export const doc = {
       description:
         'A theme file could not be loaded / parsed into a defineTheme result.',
     },
+    {
+      value: 'ERR_PALETTE_GENERATION',
+      description:
+        'A palette generation request or one of its constraints was invalid.',
+    },
 
     // Upgrade
     {
@@ -234,6 +244,16 @@ export const doc = {
       value: 'ERR_LAYOUT_INVALID',
       description:
         'A layout expression parsed but failed validation (unknown component/prop/enum/block).',
+    },
+    {
+      value: 'ERR_UNCLASSIFIED_EXIT',
+      description:
+        'Recorded in the debug log, never printed: a command exited non-zero without going through cliError/jsonError, so no stable code was available.',
+    },
+    {
+      value: 'ERR_SIGNAL_TERMINATED',
+      description:
+        'Recorded in the debug log, never printed: the process was ended by a signal (Ctrl-C, SIGTERM) before the command reached a terminal path.',
     },
   ],
 };

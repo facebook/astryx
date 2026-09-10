@@ -89,10 +89,34 @@ const meta: Meta<typeof Center> = {
       description:
         'Inline (horizontal) padding; overrides padding on that axis',
     },
+    paddingInlineStart: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Inline-start (left in LTR) padding; overrides paddingInline/padding on that edge',
+    },
+    paddingInlineEnd: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Inline-end (right in LTR) padding; overrides paddingInline/padding on that edge',
+    },
     paddingBlock: {
       control: 'select',
       options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
       description: 'Block (vertical) padding; overrides padding on that axis',
+    },
+    paddingBlockStart: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Block-start (top) padding; overrides paddingBlock/padding on that edge',
+    },
+    paddingBlockEnd: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Block-end (bottom) padding; overrides paddingBlock/padding on that edge',
     },
   },
 };
@@ -234,6 +258,27 @@ export const Padding: Story = {
       <Center {...args} xstyle={styles.paddingOutline}>
         <div {...stylex.props(styles.fillArea)}>
           <Box>Inset by padding on the spacing scale</Box>
+        </div>
+      </Center>
+    </Section>
+  ),
+};
+
+export const PaddingPerEdge: Story = {
+  args: {
+    axis: 'both',
+    width: '100%',
+    height: 200,
+    padding: 6,
+    paddingBlockEnd: 0,
+    paddingInlineStart: 2,
+    children: null,
+  },
+  render: args => (
+    <Section variant="muted" width="100%">
+      <Center {...args} xstyle={styles.paddingOutline}>
+        <div {...stylex.props(styles.fillArea)}>
+          <Box>Roomy above, flush below — only the block-end edge moved</Box>
         </div>
       </Center>
     </Section>

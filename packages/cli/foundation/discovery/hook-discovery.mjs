@@ -6,6 +6,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {existsCaseExact} from '../fs/paths.mjs';
 import {levenshteinDistance} from '../text/string-utils.mjs';
 
 const SKIP_DIRS = new Set(['utils', '__tests__', 'node_modules']);
@@ -157,7 +158,7 @@ export function findHookDoc(coreDir, name) {
   // 1. Check src/hooks/{name}.doc.mjs first
   for (const candidate of uniqueCandidates) {
     const direct = path.join(hooksDir, `${candidate}.doc.mjs`);
-    if (fs.existsSync(direct)) return direct;
+    if (existsCaseExact(direct, hooksDir)) return direct;
   }
 
   // 2. Case-insensitive search in hooks directory

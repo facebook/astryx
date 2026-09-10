@@ -9,18 +9,20 @@
  * plus the early up_to_date exit — each delegated to the `status` leaf so the
  * status envelope + its human lines live in one place.
  *
- * Pipeline (--apply): detect installed core → refresh agent-docs (every path) →
- * run CORE codemods (before Project.load, so a core CONFIG codemod can repair an
- * otherwise-invalid config) → load config → discover + run INTEGRATION codemods
- * → post-codemod hooks. Integration DISCOVERY errors skip that integration;
- * EXECUTION errors abort. Errors throw AstryxError (stable code); human progress
- * is emitted through the shared `logger` (silent by default).
+ * Pipeline (--apply): detect installed core → run CORE codemods (before
+ * Project.load, so a core CONFIG codemod can repair an otherwise-invalid
+ * config) → load config → discover + run INTEGRATION codemods → post-codemod
+ * hooks → render + refresh agent docs from final post-upgrade state.
+ * Integration DISCOVERY errors skip that integration; execution errors abort
+ * before the agent-doc write.
  */
 
 import * as path from 'node:path';
 import {
   detectInstalledTargetVersion,
-  refreshAgentDocs,
+  prepareAgentDocsRefresh,
+  applyAgentDocsRefresh,
+  inspectAgentDocs,
   uniqueFiles,
   runPostCodemodHooks,
   getCoreVersionManifests,
@@ -88,12 +90,21 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   logger.log(`From version: ${currentVersion}`);
   logger.log(`Installed target: ${targetVersion} (${installed.packageName})`);
 
-  // Sync the managed agent-docs block FIRST — it documents the installed library
-  // independent of codemods, so refresh on every path (issue #4168).
-  const agentDocs = refreshAgentDocs({cwd, installedVersion: targetVersion, apply: apply || false});
-
+  // Up-to-date check — no codemods will run, safe to render agent docs now.
   if (!options.force && semverGte(currentVersion, targetVersion)) {
-    return statusUpToDate({from: currentVersion, to: targetVersion, agentDocs});
+    const agentDocsPlan = await prepareAgentDocsRefresh({
+      cwd,
+      installedVersion: targetVersion,
+      apply,
+    });
+    const agentDocs = apply
+      ? applyAgentDocsRefresh(agentDocsPlan)
+      : agentDocsPlan.summary;
+    return statusUpToDate({
+      from: currentVersion,
+      to: targetVersion,
+      agentDocs,
+    });
   }
 
   const versionManifests = await getCoreVersionManifests(currentVersion, targetVersion);
@@ -152,13 +163,23 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     // change (the codemod that would repair it).
     const codemodWouldFixConfig = hasCoreConfigCodemod && (coreResult?.totalFilesChanged ?? 0) > 0;
     if (!apply && codemodWouldFixConfig) {
+      // Lightweight inspection — no config/Project load (config is still broken
+      // in dry-run; the codemod previewed a fix but did not write it).
+      const inspection = inspectAgentDocs(cwd, targetVersion);
       return statusConfigFixable(
         {
           from: currentVersion,
           to: targetVersion,
           configError: configErr.message,
           configCodemods: coreConfigCodemodNames,
-          agentDocs,
+          agentDocs: /** @type {import('../upgrade.type.mjs').AgentDocsSummary} */ ({
+            status: inspection.status,
+            installedVersion: targetVersion,
+            fromVersions: inspection.blockVersions,
+            files: inspection.staleFiles,
+            refreshed: false,
+            action: inspection.status === 'missing' ? 'nudge-init' : 'none',
+          }),
         },
       );
     }
@@ -193,7 +214,20 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
 
   if (versionManifests.length === 0 && !hasIntegrationCodemods) {
-    return statusNoCodemods({from: currentVersion, to: targetVersion, agentDocs});
+    // No codemods in range — safe to render agent docs from current state.
+    const agentDocsPlan = await prepareAgentDocsRefresh({
+      cwd,
+      installedVersion: targetVersion,
+      apply,
+    });
+    const agentDocs = apply
+      ? applyAgentDocsRefresh(agentDocsPlan)
+      : agentDocsPlan.summary;
+    return statusNoCodemods({
+      from: currentVersion,
+      to: targetVersion,
+      agentDocs,
+    });
   }
 
   if (totalTransforms === 0 && totalOptional === 0) {
@@ -217,8 +251,11 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     to: targetVersion,
     codemods: totalTransforms,
     integrations: integrations.map(i => i.name ?? i.__spec),
-    agentDocsRefreshed: agentDocs.refreshed,
-    agentDocs,
+    agentDocsRefreshed: false,
+    agentDocs: /** @type {import('../upgrade.type.mjs').AgentDocsSummary} */ ({
+      status: 'current', installedVersion: targetVersion,
+      fromVersions: [], files: [], refreshed: false, action: 'none',
+    }),
   };
 
   let integrationResult = null;
@@ -259,6 +296,19 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     logger.log('Upgrade failed\n');
     throw new AstryxError(msg, undefined, ERROR_CODES.ERR_CODEMOD_FAILED);
   }
+
+  // All codemods + hooks succeeded — render from final post-upgrade state.
+  const agentDocsPlan = await prepareAgentDocsRefresh({
+    cwd,
+    installedVersion: targetVersion,
+    apply,
+    fresh: true,
+  });
+  const completedAgentDocs = apply
+    ? applyAgentDocsRefresh(agentDocsPlan)
+    : agentDocsPlan.summary;
+  receipt.agentDocs = completedAgentDocs;
+  receipt.agentDocsRefreshed = completedAgentDocs.refreshed;
 
   logger.log((apply ? 'Upgrade complete' : 'Dry run complete') + '\n');
   return {

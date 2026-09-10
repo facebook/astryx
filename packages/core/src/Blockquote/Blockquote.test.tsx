@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {renderToString} from 'react-dom/server';
 import {Blockquote} from './Blockquote';
 
 describe('Blockquote', () => {
@@ -31,7 +32,6 @@ describe('Blockquote', () => {
   it('renders without cite by default', () => {
     render(<Blockquote data-testid="bq">Quote</Blockquote>);
     const element = screen.getByTestId('bq');
-    expect(element.querySelector('footer')).toBeNull();
     expect(element.querySelector('cite')).toBeNull();
   });
 
@@ -42,11 +42,32 @@ describe('Blockquote', () => {
       </Blockquote>,
     );
     const element = screen.getByTestId('bq');
-    const footer = element.querySelector('footer');
-    expect(footer).toBeInTheDocument();
     const cite = element.querySelector('cite');
     expect(cite).toBeInTheDocument();
     expect(cite).toHaveTextContent('Steve Jobs');
+  });
+
+  it('never wraps the attribution in a landmark element', () => {
+    render(
+      <Blockquote cite="Steve Jobs" data-testid="bq">
+        Quote
+      </Blockquote>,
+    );
+    const element = screen.getByTestId('bq');
+    expect(element.querySelector('footer')).toBeNull();
+    expect(screen.queryByRole('contentinfo')).toBeNull();
+  });
+
+  it.each([
+    ['false', false],
+    ['an empty string', ''],
+  ])('renders no cite element when cite is %s', (_label, cite) => {
+    render(
+      <Blockquote cite={cite} data-testid="bq">
+        Quote
+      </Blockquote>,
+    );
+    expect(screen.getByTestId('bq').querySelector('cite')).toBeNull();
   });
 
   it('renders cite as ReactNode', () => {
@@ -86,5 +107,15 @@ describe('Blockquote', () => {
       </Blockquote>,
     );
     expect(screen.getByTestId('child-p')).toBeInTheDocument();
+  });
+
+  it('renders on the server', () => {
+    const html = renderToString(
+      <Blockquote cite="Steve Jobs">Design is how it works.</Blockquote>,
+    );
+    expect(html).toContain('<blockquote');
+    expect(html).toContain('astryx-blockquote');
+    expect(html).toContain('<cite');
+    expect(html).toContain('Steve Jobs');
   });
 });

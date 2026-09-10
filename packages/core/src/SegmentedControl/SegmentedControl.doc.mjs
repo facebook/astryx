@@ -1,5 +1,29 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Control',
+    required: true,
+    description: 'Container for the mutually exclusive segment choices.',
+  },
+  {
+    name: 'Segment',
+    required: true,
+    description: 'Individual choice within the control.',
+  },
+  {
+    name: 'Label',
+    required: false,
+    description: 'Visible text identifying a segment when its label is not hidden.',
+  },
+  {
+    name: 'Icon',
+    required: false,
+    description: 'Optional caller-supplied icon shown inside a segment.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -96,8 +120,65 @@ export const docs = {
     {name: 'SegmentedControlItem'},
   ],
   usage: {
+    anatomy,
     description:
       'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation.',
+    accessibility: [
+      {
+        name: 'Text label',
+        category: 'Color contrast',
+        criterion: '1.4.3 Contrast (Minimum)',
+        requirement: '4.5:1',
+        states: ['Rest', 'Hover', 'Selected'],
+        description:
+          'Each label must have at least 4.5:1 contrast with its segment background. Check unselected, Hover, and selected colors as they appear on screen.',
+      },
+      {
+        name: 'Essential icon',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Icon only'],
+        description:
+          'When a segment has no visible label, its icon must have at least 3:1 contrast with the segment background. An icon beside a visible label does not need its own check.',
+      },
+      {
+        name: 'Selected state indicator',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1 if relied upon',
+        states: ['Selected'],
+        description:
+          'The selected background must reach 3:1 only when users need it to tell selected from unselected. Label color and weight also show selection.',
+      },
+      {
+        name: 'Visible control boundary',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1 if needed',
+        states: ['Rest'],
+        description:
+          'The control edge or segment borders need at least 3:1 contrast when users need them to see the choices.',
+      },
+      {
+        name: 'Keyboard focus indicator',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Focus visible'],
+        description:
+          'The focus outline must have at least 3:1 contrast with the area around the segment. Check it on the track and selected background.',
+      },
+      {
+        name: 'Disabled appearance',
+        category: 'Color contrast',
+        criterion: '1.4.3 and 1.4.11 exceptions',
+        requirement: 'Not required',
+        states: ['Disabled'],
+        description:
+          'Disabled controls do not need to meet these contrast ratios.',
+      },
+    ],
     bestPractices: [
       {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
       {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},
@@ -111,6 +192,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
+    anatomy,
     description:
       'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation.',
     bestPractices: [
@@ -126,6 +208,7 @@ export const docsZh = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   usage: {
+    anatomy,
     description:
       'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation.',
     bestPractices: [

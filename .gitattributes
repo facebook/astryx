@@ -1,3 +1,12 @@
+# Normalize line endings to LF on checkout regardless of the client's own
+# core.autocrlf. Without this, a Windows checkout with the (Git-default)
+# core.autocrlf=true gets CRLF line endings, which silently breaks any script
+# that regenerates a checked-in file and diffs it byte-for-byte against the
+# LF content Prettier/Node actually wrote. For example,
+# scripts/generate-cldr-weekdays.mjs --check fails on every Windows machine
+# with default settings, regardless of whether the data is actually stale.
+* text=auto eol=lf
+
 # Vendored shadcn components — treat as binary (no diffs, no linguist stats)
 internal/vibe-tests/.baseline/components/ui/** linguist-generated=true binary
 

@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Theme Showcase',
   displayName: 'Theme Showcase',
-  description:
-    'Real-world product surfaces (store, checkout, chat, inventory) used to preview a theme in the playground',
+  description: 'Several unrelated product surfaces rendered together on one canvas so a token change can be judged across contexts at once. A comparison harness rather than a layout to ship. Theme, tokens, palette, typography, styling, or design system preview.',
   isReady: true,
   // Surfaced via the Themes page "Open in Playground" action, not the
   // Templates gallery, so keep it out of the overview + playground menu.

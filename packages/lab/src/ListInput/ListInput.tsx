@@ -34,8 +34,9 @@ import {EmptyState} from '@astryxdesign/core/EmptyState';
 import {Field, type InputStatus} from '@astryxdesign/core/Field';
 import {FieldStatus} from '@astryxdesign/core/FieldStatus';
 import {Icon} from '@astryxdesign/core/Icon';
-import {useMediaQuery} from '@astryxdesign/core/hooks';
+import {useAnnounce, useMediaQuery} from '@astryxdesign/core/hooks';
 import {IconButton} from '@astryxdesign/core/IconButton';
+import {useTranslator} from '@astryxdesign/core/i18n';
 import {useLayer} from '@astryxdesign/core/Layer';
 import {SizeProvider} from '@astryxdesign/core/SizeContext';
 import type {ColumnWidth} from '@astryxdesign/core/Table';
@@ -662,7 +663,8 @@ export function ListInput<T>({
   const [reorderState, setReorderStateState] = useState<ReorderState<T> | null>(
     null,
   );
-  const [announcement, setAnnouncement] = useState('');
+  const t = useTranslator();
+  const announce = useAnnounce();
   const {tokens: themeTokens} = useTheme();
   const mutationDuration = parseDuration(
     themeTokens['--duration-fast-max'] ?? '',
@@ -762,9 +764,9 @@ export function ListInput<T>({
   useEffect(() => {
     if ((isDisabled || isLoading) && reorderStateRef.current) {
       setReorderState(null);
-      setAnnouncement('Reordering cancelled.');
+      announce(t('@astryx.listInput.announceReorderCancelled'));
     }
-  }, [isDisabled, isLoading]);
+  }, [isDisabled, isLoading, announce, t]);
 
   useEffect(() => {
     const activeAnimations = activeMutationAnimationsRef.current;
@@ -1114,7 +1116,12 @@ export function ListInput<T>({
     addPointerAnchorTopRef.current = null;
     prepareMutationMotion(nextValue);
     onChange(nextValue, {type: 'add', item, index: value.length});
-    setAnnouncement(`Added ${itemName} ${value.length + 1}.`);
+    announce(
+      t('@astryx.listInput.announceAdded', {
+        itemName,
+        position: value.length + 1,
+      }),
+    );
   };
 
   const handleUpdate = (
@@ -1158,7 +1165,9 @@ export function ListInput<T>({
         : {itemKey: String(getItemKey(nextFocusItem)), target: 'remove'};
     prepareMutationMotion(nextValue);
     onChange(nextValue, {type: 'remove', item: removedItem, index});
-    setAnnouncement(`Removed ${itemName} ${index + 1}.`);
+    announce(
+      t('@astryx.listInput.announceRemoved', {itemName, position: index + 1}),
+    );
   };
 
   const startReorder = (
@@ -1191,8 +1200,8 @@ export function ListInput<T>({
       ...pointerGeometry,
       hasPointerMoved: false,
     });
-    setAnnouncement(
-      `${itemName} ${index + 1} grabbed. Use arrow keys to move, Space or Enter to drop, and Escape to cancel.`,
+    announce(
+      t('@astryx.listInput.announceGrabbed', {itemName, position: index + 1}),
     );
   };
 
@@ -1209,8 +1218,12 @@ export function ListInput<T>({
       return;
     }
     setReorderState({...currentState, toIndex: boundedIndex});
-    setAnnouncement(
-      `${itemName} moved to position ${boundedIndex + 1} of ${currentState.originalValue.length}.`,
+    announce(
+      t('@astryx.listInput.announceMovedToPosition', {
+        itemName,
+        position: boundedIndex + 1,
+        total: currentState.originalValue.length,
+      }),
     );
   };
 
@@ -1219,7 +1232,7 @@ export function ListInput<T>({
       return;
     }
     setReorderState(null);
-    setAnnouncement('Reordering cancelled.');
+    announce(t('@astryx.listInput.announceReorderCancelled'));
   };
 
   const commitReorder = () => {
@@ -1245,8 +1258,11 @@ export function ListInput<T>({
       setReorderState(null);
     }
     if (!hasChanged) {
-      setAnnouncement(
-        `${itemName} returned to position ${currentState.fromIndex + 1}.`,
+      announce(
+        t('@astryx.listInput.announceReturnedToPosition', {
+          itemName,
+          position: currentState.fromIndex + 1,
+        }),
       );
       return;
     }
@@ -1262,16 +1278,23 @@ export function ListInput<T>({
     } else {
       commit();
     }
-    setAnnouncement(
-      `${itemName} dropped at position ${currentState.toIndex + 1} of ${currentState.originalValue.length}.`,
+    announce(
+      t('@astryx.listInput.announceDropped', {
+        itemName,
+        position: currentState.toIndex + 1,
+        total: currentState.originalValue.length,
+      }),
     );
   };
   const moveWithArrowKey = (item: T, fromIndex: number, offset: -1 | 1) => {
     cancelMutationAnimations();
     const toIndex = Math.max(0, Math.min(fromIndex + offset, value.length - 1));
     if (toIndex === fromIndex) {
-      setAnnouncement(
-        `This ${itemName} is already ${offset < 0 ? 'first' : 'last'}.`,
+      announce(
+        t('@astryx.listInput.announceAlreadyAtBoundary', {
+          itemName,
+          boundary: offset < 0 ? 'first' : 'last',
+        }),
       );
       return;
     }
@@ -1284,8 +1307,12 @@ export function ListInput<T>({
         toIndex,
       }),
     );
-    setAnnouncement(
-      `${itemName} moved to position ${toIndex + 1} of ${value.length}.`,
+    announce(
+      t('@astryx.listInput.announceMovedToPosition', {
+        itemName,
+        position: toIndex + 1,
+        total: value.length,
+      }),
     );
   };
 
@@ -1394,8 +1421,12 @@ export function ListInput<T>({
     }
     setReorderState(nextState);
     if (hasCrossedThreshold && activeState.toIndex !== targetIndex) {
-      setAnnouncement(
-        `${itemName} moved to position ${targetIndex + 1} of ${activeState.originalValue.length}.`,
+      announce(
+        t('@astryx.listInput.announceMovedToPosition', {
+          itemName,
+          position: targetIndex + 1,
+          total: activeState.originalValue.length,
+        }),
       );
     }
   };
@@ -1450,7 +1481,6 @@ export function ListInput<T>({
           aria-labelledby={labelID}
           aria-describedby={joinIDs(descriptionID, statusID)}
           aria-disabled={isDisabled || undefined}
-          aria-required={isRequired || undefined}
           aria-busy={isLoading || undefined}
           {...mergeProps(
             themeProps('list-input', {
@@ -1473,8 +1503,10 @@ export function ListInput<T>({
                 data-list-input-motion-key="state:empty"
                 {...stylex.props(styles.emptyItem)}>
                 <EmptyState
-                  title={`No ${itemName}s yet`}
-                  description={`Add a ${itemName} to get started.`}
+                  title={t('@astryx.listInput.emptyTitle', {itemName})}
+                  description={t('@astryx.listInput.emptyDescription', {
+                    itemName,
+                  })}
                   isCompact
                 />
               </li>
@@ -1542,7 +1574,12 @@ export function ListInput<T>({
                           );
                           const isRepeatedLabel = index !== 0;
                           const cellLabel = isRepeatedLabel
-                            ? `${column.header}, ${itemName} ${index + 1} of ${displayValue.length}`
+                            ? t('@astryx.listInput.fieldLabelWithPosition', {
+                                header: column.header,
+                                itemName,
+                                position: index + 1,
+                                total: displayValue.length,
+                              })
                             : column.header;
                           const valueContext: ListInputValueContext<T> = {
                             item,
@@ -1597,8 +1634,20 @@ export function ListInput<T>({
                             styles.removeControlCell,
                           )}>
                           <IconButton
-                            label={`Remove ${itemName} ${index + 1}`}
-                            tooltip={`Remove ${itemName} ${index + 1}`}
+                            label={t('@astryx.listInput.removeItem', {
+                              itemName,
+                              position: index + 1,
+                            })}
+                            tooltip={
+                              isDisabled || isLoading
+                                ? t('@astryx.listInput.removeUnavailable', {
+                                    itemName,
+                                  })
+                                : t('@astryx.listInput.removeItem', {
+                                    itemName,
+                                    position: index + 1,
+                                  })
+                            }
                             icon={<Icon icon="close" size="sm" />}
                             variant="ghost"
                             size="md"
@@ -1615,7 +1664,10 @@ export function ListInput<T>({
                             styles.reorderControlCell,
                           )}>
                           <IconButton
-                            label={`Reorder ${itemName} ${index + 1}`}
+                            label={t('@astryx.listInput.reorderItem', {
+                              itemName,
+                              position: index + 1,
+                            })}
                             icon={<Icon icon={GripVerticalIcon} size="sm" />}
                             variant="ghost"
                             size="md"
@@ -1746,7 +1798,7 @@ export function ListInput<T>({
               {...stylex.props(styles.actionContent, contentGridStyle)}>
               <Button
                 ref={addButtonRef}
-                label={`Add ${itemName}`}
+                label={t('@astryx.listInput.addItem', {itemName})}
                 variant="secondary"
                 size="md"
                 width="100%"
@@ -1762,13 +1814,9 @@ export function ListInput<T>({
           </div>
           {showReorderColumn ? (
             <VisuallyHidden as="div" id={reorderInstructionsID}>
-              Use Arrow Up or Arrow Down to move this item one position. Press
-              Space or Enter to pick it up for extended keyboard reordering.
+              {t('@astryx.listInput.reorderInstructions')}
             </VisuallyHidden>
           ) : null}
-          <VisuallyHidden as="div" aria-live="polite" aria-atomic="true">
-            {announcement}
-          </VisuallyHidden>
         </div>
       </Field>
       {dragPreviewPosition != null

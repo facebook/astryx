@@ -27,10 +27,20 @@ describe('iconRegistry (global, RSC-compatible)', () => {
 
   it('returns a default icon registry snapshot', () => {
     const registry = getIconRegistry();
+    const builtInDefaults = Object.fromEntries(
+      Object.entries(defaultIcons).filter(([name]) => !name.includes(':')),
+    );
 
-    expect(Object.keys(registry)).toEqual(Object.keys(defaultIcons));
-    expect(registry).toEqual(defaultIcons);
+    expect(registry).toEqual(builtInDefaults);
     expect(registry).not.toBe(defaultIcons);
+  });
+
+  it('provides a distinct default for the NumberInput stepper icon', () => {
+    const icon = getIcon('numberInput:stepperDown');
+
+    expect(icon).toBe(defaultIcons['numberInput:stepperDown']);
+    expect(icon).toBeDefined();
+    expect(icon).not.toBe(defaultIcons.chevronDown);
   });
 
   it('returns default icons when nothing is registered', () => {
@@ -149,7 +159,10 @@ describe('iconRegistry (global, RSC-compatible)', () => {
       registerIcons({'richtext:bold': 'my-bold'});
       // getIconRegistry() is the built-in IconName snapshot; extension keys
       // are resolved via getIcon/getExtendedIcon, not surfaced here.
-      expect(Object.keys(getIconRegistry())).toEqual(Object.keys(defaultIcons));
+      expect(Object.keys(getIconRegistry())).not.toContain('richtext:bold');
+      expect(Object.keys(getIconRegistry())).not.toContain(
+        'numberInput:stepperDown',
+      );
     });
 
     it('extension keys are cleared by resetIcons', () => {

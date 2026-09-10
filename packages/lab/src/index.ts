@@ -45,9 +45,6 @@ export * from './Chat';
 // Drawer — experimental overlay panel
 export {Drawer, type DrawerProps} from './Drawer';
 
-// BottomSheet — mobile touch sheet on a native modal <dialog>
-export {BottomSheet, type BottomSheetProps} from './BottomSheet';
-
 // Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)
 export {
   Tour,
@@ -243,7 +240,6 @@ export {
 
 // Chart v2 (config model) moved to its own package: @astryxdesign/charts.
 // It is no longer re-exported from @astryxdesign/lab.
-export * from './Stepper';
 export * from './CircularProgress';
 
 // ListInput — compact editor for short collections of simple records

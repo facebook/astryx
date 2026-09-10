@@ -1,5 +1,20 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Shortcut',
+    required: true,
+    description:
+      'Group that presents the complete keyboard shortcut and its accessible name.',
+  },
+  {
+    name: 'Key badge',
+    required: true,
+    description: 'Painted key badge rendered once for each key in the shortcut.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -38,6 +53,7 @@ export const docs = {
     targets: [{className: 'astryx-kbd'}],
   },
   usage: {
+    anatomy,
     description: 'Renders a keyboard shortcut as styled key badges. Use Kbd in tooltips, menus, and help text to show key combinations.',
     bestPractices: [
       { guidance: true, description: 'Place shortcuts near the action they trigger: in a tooltip, menu item, or inline instruction.' },
@@ -82,6 +98,7 @@ export const docsZh = {
     targets: [{className: 'astryx-kbd'}],
   },
   usage: {
+    anatomy,
     description: 'Renders a keyboard shortcut as styled key badges. Use Kbd in tooltips, menus, and help text to show key combinations.',
     bestPractices: [
       { guidance: true, description: 'Place shortcuts near the action they trigger: in a tooltip, menu item, or inline instruction.' },
@@ -96,6 +113,7 @@ export const docsDense = {
   description:
     'Renders keyboard shortcut as styled key badges. Use in tooltips, menus + help text to show key combinations.',
   usage: {
+    anatomy,
     description: 'Renders a keyboard shortcut as styled key badges. Use Kbd in tooltips, menus, and help text to show key combinations.',
     bestPractices: [
       { guidance: true, description: 'Place shortcuts near the action they trigger: in a tooltip, menu item, or inline instruction.' },

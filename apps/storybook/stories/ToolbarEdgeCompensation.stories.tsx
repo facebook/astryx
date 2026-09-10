@@ -46,7 +46,14 @@ function AlignmentGuide({
 }) {
   return (
     <div>
-      <div style={{marginBottom: 8, fontSize: 12, color: '#666'}}>{label}</div>
+      <div
+        style={{
+          marginBottom: 8,
+          fontSize: 12,
+          color: 'var(--color-text-secondary)',
+        }}>
+        {label}
+      </div>
       {children}
     </div>
   );
@@ -1053,9 +1060,7 @@ export const CardLayoutContentWidthToolbar: Story = {
               <LayoutHeader hasDivider padding={0}>
                 <Toolbar
                   label="Card layout header"
-                  startContent={
-                    <Heading level={4}>Notifications</Heading>
-                  }
+                  startContent={<Heading level={4}>Notifications</Heading>}
                 />
               </LayoutHeader>
             }
@@ -1144,7 +1149,10 @@ export const WithTabs: Story = {
                 size={size}
                 dividers={['bottom']}
                 startContent={
-                  <TabList value={tab} onChange={setTab}>
+                  <TabList
+                    value={tab}
+                    onChange={setTab}
+                    aria-label={`Tab toolbar tabs (${size})`}>
                     <Tab value="overview" label="Overview" />
                     <Tab value="analytics" label="Analytics" />
                     <Tab value="settings" label="Settings" />

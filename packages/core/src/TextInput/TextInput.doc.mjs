@@ -5,7 +5,7 @@
 export const docs = {
   name: 'TextInput',
   displayName: 'Text Input',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
   props: [
     {
@@ -70,6 +70,16 @@ export const docs = {
       description:
         'Displays a "Required" indicator next to the label and sets aria-required. Mutually exclusive with isOptional.',
       default: 'false',
+    },
+    {
+      name: 'onEnter',
+      type: '() => void',
+      description: 'Callback fired when the user presses the Enter key.',
+    },
+    {
+      name: 'onKeyDown',
+      type: '(e: KeyboardEvent<HTMLInputElement>) => void',
+      description: 'Callback fired on keydown events on the input.',
     },
     {
       name: 'isDisabled',
@@ -152,6 +162,12 @@ export const docs = {
       type: 'SizeValue',
       description:
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        'The native autocomplete attribute, forwarded to the input unchanged. Does not affect the controlled value.',
     },
   ],
   theming: {
@@ -326,6 +342,12 @@ export const docsZh = {
       description:
         '输入框的 HTML name 属性，用于表单提交。',
     },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        '原生 autocomplete 属性，原样转发给输入框。不影响受控的值。',
+    },
   ],
   theming: {
     targets: [
@@ -408,5 +430,6 @@ export const docsDense = {
     hasClear: 'Shows clear button when input has value. Clears value on click.',
     hasAutoFocus: 'Auto-focus input on mount.',
     htmlName: 'HTML name attr for form submissions.',
+    autoComplete: 'Native autocomplete attr, forwarded unchanged. Does not affect the controlled value.',
   },
 };

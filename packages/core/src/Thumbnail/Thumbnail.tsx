@@ -159,7 +159,10 @@ const styles = stylex.create({
     color: colorVars['--color-icon-secondary'],
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // Hover/pressed overlay — the exact same treatment as ClickableCard and
   // SelectableCard. A transparent `::after` tints on hover/press instead of
@@ -183,14 +186,17 @@ const styles = stylex.create({
   },
   hoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover::after': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
   },
   interactiveButton: {
     all: 'unset',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     display: 'block',
     width: '100%',
     height: '100%',
@@ -207,6 +213,7 @@ const styles = stylex.create({
   },
   removeButtonOverrides: {
     '--_button-radius': `calc(${radiusVars['--radius-element']} - ${spacingVars['--spacing-1']})`,
+    position: 'relative',
     height: 20,
     minWidth: 20,
     // Fixed colors instead of luminance-adapting theme: a translucent scrim
@@ -214,6 +221,15 @@ const styles = stylex.create({
     // without sampling pixel brightness.
     backgroundColor: colorVars['--color-overlay'],
     color: colorVars['--color-on-dark'],
+    '--_thumbnail-hit-inset': {
+      default: '0px',
+      '@media (pointer: coarse)': '-2px',
+    },
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 'var(--_thumbnail-hit-inset)',
+    },
   },
   disabled: {
     opacity: 0.5,

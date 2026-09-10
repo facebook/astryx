@@ -12,7 +12,7 @@
  */
 
 export {TabList} from './TabList';
-export type {TabListProps} from './TabList';
+export type {TabListProps, TabListOverflow} from './TabList';
 
 export {Tab} from './Tab';
 export type {TabProps} from './Tab';
@@ -21,4 +21,8 @@ export {TabMenu} from './TabMenu';
 export type {TabMenuProps, TabMenuOption} from './TabMenu';
 
 export {useTabListContext} from './TabListContext';
-export type {TabListSize, TabListLayout} from './TabListContext';
+export type {
+  TabListSize,
+  TabListLayout,
+  TabListPattern,
+} from './TabListContext';

@@ -32,6 +32,12 @@ const meta: Meta<typeof HoverCard> = {
       control: 'boolean',
       description: 'Enable/disable the hover card',
     },
+    touchTrigger: {
+      control: 'select',
+      options: ['auto', 'tap', 'none'],
+      description:
+        'What a tap does where there is no hover: auto (tap unless the trigger acts), tap, or none',
+    },
   },
 };
 
@@ -91,9 +97,7 @@ export const CustomDelay: Story = {
     delay: 500,
     hideDelay: 300,
     content: <ProfileCard />,
-    children: (
-      <Button label="Slow hover (500ms)">Slow hover (500ms)</Button>
-    ),
+    children: <Button label="Slow hover (500ms)">Slow hover (500ms)</Button>,
   },
 };
 
@@ -207,6 +211,27 @@ export const TextNodeMultiple: Story = {
         </HoverCard>
         , and others.
       </p>
+    </div>
+  ),
+};
+
+/**
+ * Touch has no hover, so a tap decides instead. A tap-opened card is dismissed
+ * by a tap outside it, and a tap on the card's own content leaves it open.
+ */
+export const TouchTriggers: Story = {
+  render: () => (
+    <div style={{padding: 100}}>
+      <HStack gap={4}>
+        {/* Acts on tap: the tap belongs to the button, so no card. */}
+        <HoverCard content={<ProfileCard />} placement="above">
+          <Button label="Open profile">Open profile</Button>
+        </HoverCard>
+        {/* Does nothing on tap: the tap opens the card. */}
+        <HoverCard content={<ProfileCard />} placement="above">
+          Jane Doe
+        </HoverCard>
+      </HStack>
     </div>
   ),
 };

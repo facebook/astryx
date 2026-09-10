@@ -8,6 +8,13 @@
  * @output Exports Dialog component, DialogProps, DialogVariant, DialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by Dialog.test.tsx
  *
+ * The standard variant treats `width` as the preferred surface width, then
+ * clamps it to the dynamic viewport with spacing-token gutters so narrow
+ * viewports keep content and controls on screen without changing the public API.
+ * Fullscreen dialogs add safe-area protection to the default padding fallback
+ * while preserving explicit prop/theme padding overrides, and fade in without
+ * the centered-dialog translate/scale motion.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Dialog/Dialog.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Dialog/Dialog.test.tsx (tests for new/changed behavior)
@@ -27,13 +34,15 @@ import {
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
-import {hasActiveFocusTrapEscape, isImeKeyEvent} from '../hooks/useFocusTrap';
+import {LayerDepthProvider} from '../Layer/LayerDepthContext';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {
   colorVars,
   radiusVars,
   durationVars,
   easeVars,
   shadowVars,
+  spacingVars,
 } from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
@@ -43,15 +52,17 @@ import {
   containerPaddingBlockStartVarStyles,
   containerPaddingBlockEndVarStyles,
   spacingStepToToken,
+  overlayPaddingReset,
 } from '../Layout/padding.stylex';
 import type {SpacingStep} from '../utils/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {devWarn} from '../utils/devWarning';
 import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
 import type {DialogVariantMap} from './index';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 /**
  * Calculate a directional translate offset for dialog entry animation.
  * Returns a normalized vector from the trigger element toward the viewport
@@ -116,6 +127,32 @@ const enterDirectional = stylex.keyframes({
   to: {opacity: 1, transform: 'translate(0, 0) scale(1)'},
 });
 
+const enterFullscreen = stylex.keyframes({
+  from: {opacity: 0},
+  to: {opacity: 1},
+});
+
+const dialogFullscreenSafeAreaBlockStartPadding = `var(--astryx-dialog-padding-block-start, var(--astryx-dialog-padding, max(${spacingVars['--spacing-4']}, env(safe-area-inset-top, 0px))))`;
+const dialogFullscreenSafeAreaBlockEndPadding = `var(--astryx-dialog-padding-block-end, var(--astryx-dialog-padding, max(${spacingVars['--spacing-4']}, env(safe-area-inset-bottom, 0px))))`;
+const dialogFullscreenSafeAreaInlineStartPaddingLtr = `var(--astryx-dialog-padding-inline-start, var(--astryx-dialog-padding-inline, var(--astryx-dialog-padding, max(${spacingVars['--spacing-4']}, env(safe-area-inset-left, 0px)))))`;
+const dialogFullscreenSafeAreaInlineStartPaddingRtl = `var(--astryx-dialog-padding-inline-start, var(--astryx-dialog-padding-inline, var(--astryx-dialog-padding, max(${spacingVars['--spacing-4']}, env(safe-area-inset-right, 0px)))))`;
+const dialogFullscreenSafeAreaInlineEndPaddingLtr = `var(--astryx-dialog-padding-inline-end, var(--astryx-dialog-padding-inline, var(--astryx-dialog-padding, max(${spacingVars['--spacing-4']}, env(safe-area-inset-right, 0px)))))`;
+const dialogFullscreenSafeAreaInlineEndPaddingRtl = `var(--astryx-dialog-padding-inline-end, var(--astryx-dialog-padding-inline, var(--astryx-dialog-padding, max(${spacingVars['--spacing-4']}, env(safe-area-inset-left, 0px)))))`;
+
+/** @internal Verified by Dialog.test.tsx; not re-exported from the package entry point. */
+export const dialogFullscreenSafeAreaPaddingContract = {
+  blockStart: dialogFullscreenSafeAreaBlockStartPadding,
+  blockEnd: dialogFullscreenSafeAreaBlockEndPadding,
+  inlineStart: {
+    ltr: dialogFullscreenSafeAreaInlineStartPaddingLtr,
+    rtl: dialogFullscreenSafeAreaInlineStartPaddingRtl,
+  },
+  inlineEnd: {
+    ltr: dialogFullscreenSafeAreaInlineEndPaddingLtr,
+    rtl: dialogFullscreenSafeAreaInlineEndPaddingRtl,
+  },
+} as const;
+
 /**
  * Dialog styles using native <dialog> element
  * Uses ::backdrop pseudo-element for overlay
@@ -169,6 +206,24 @@ const styles = stylex.create({
     margin: 0,
     inset: 0,
   },
+  fullscreenOpen: {
+    animationName: {
+      default: enterFullscreen,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
+  },
+  fullscreenSafeArea: {
+    paddingBlockStart: dialogFullscreenSafeAreaBlockStartPadding,
+    paddingBlockEnd: dialogFullscreenSafeAreaBlockEndPadding,
+    paddingInlineStart: {
+      default: dialogFullscreenSafeAreaInlineStartPaddingLtr,
+      ':is([dir="rtl"] *)': dialogFullscreenSafeAreaInlineStartPaddingRtl,
+    },
+    paddingInlineEnd: {
+      default: dialogFullscreenSafeAreaInlineEndPaddingLtr,
+      ':is([dir="rtl"] *)': dialogFullscreenSafeAreaInlineEndPaddingRtl,
+    },
+  },
   inner: {
     display: 'flex',
     flexDirection: 'column',
@@ -192,12 +247,30 @@ const styles = stylex.create({
   },
 });
 
-// Dynamic styles for width, maxHeight, and position
+const STANDARD_DIALOG_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
+const STANDARD_DIALOG_VIEWPORT_MAX_WIDTH = `calc(100dvw - ${STANDARD_DIALOG_VIEWPORT_GUTTER} - ${STANDARD_DIALOG_VIEWPORT_GUTTER})`;
+const STANDARD_DIALOG_MAX_WIDTH = `min(100%, ${STANDARD_DIALOG_VIEWPORT_MAX_WIDTH})`;
+
+function formatSizeValue(value: number | string): string {
+  return typeof value === 'number' ? `${value}px` : value;
+}
+
+function resolveDialogSizing(
+  width: number | string,
+  maxHeight: number | string,
+) {
+  return {
+    width: formatSizeValue(width),
+    maxWidth: STANDARD_DIALOG_MAX_WIDTH,
+    maxHeight: formatSizeValue(maxHeight),
+  };
+}
+
 const dynamicStyles = stylex.create({
-  sizing: (width: number | string, maxHeight: number | string) => ({
-    width: typeof width === 'number' ? `${width}px` : width,
-    maxWidth: '90vw',
-    maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
+  sizing: (width: string, maxWidth: string, maxHeight: string) => ({
+    width,
+    maxWidth,
+    maxHeight,
   }),
   position: (
     top: string,
@@ -286,7 +359,7 @@ export interface DialogProps extends BaseProps<HTMLDialogElement> {
    * The actual height will be the height of its content.
    * Numbers are treated as pixels, strings are used as-is.
    * Ignored when variant is 'fullscreen'.
-   * @default '75vh'
+   * @default '75dvh'
    */
   maxHeight?: number | string;
 
@@ -354,7 +427,7 @@ export function Dialog({
   isInline = false,
   onOpenChange,
   width = 400,
-  maxHeight = '75vh',
+  maxHeight = '75dvh',
   position,
   variant = 'standard',
   purpose = 'info',
@@ -372,6 +445,9 @@ export function Dialog({
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
 
   const isFullscreen = variant === 'fullscreen';
+  const standardSizing = isFullscreen
+    ? null
+    : resolveDialogSizing(width, maxHeight);
 
   // Default accessible name: publish a title id through DialogContext so a
   // DialogHeader applies it to its heading (mirrors AlertDialog's explicit
@@ -412,6 +488,8 @@ export function Dialog({
     },
     [titleId, hasConsumerName],
   );
+
+  const mergedDialogRef = useMergedRefs(ref, attachDialog);
 
   // Capture the element that was focused when the dialog opened,
   // for directional animation origin and focus restoration on close.
@@ -472,34 +550,24 @@ export function Dialog({
   // Skip for inline rendering — no modal overlay to compensate for.
   useScrollLock(isOpen && !isInline);
 
-  // Handle Escape key — skip for inline rendering
-  useEffect(() => {
-    if (isInline) {
-      return;
-    }
-    const dialog = dialogRef.current;
-    if (!dialog || !isOpen) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        // Ignore IME composition-cancel, and defer to any popover/menu layered
-        // on top of this dialog so a single Escape closes only the top-most
-        // layer (the popover's own focus trap handles it and stops propagation).
-        if (isImeKeyEvent(event) || hasActiveFocusTrapEscape()) {
-          return;
-        }
-        event.preventDefault();
-        if (allowEscape) {
-          onOpenChange(false);
-        }
-      }
-    };
-
-    dialog.addEventListener('keydown', handleKeyDown);
-    return () => dialog.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isInline, allowEscape, onOpenChange]);
+  // Join the shared layer dismissal stack. The stack owns the Escape listener
+  // and routes each press to the top-most layer, so this dialog does not listen
+  // itself — that is what stops a modal opened from inside another modal (or a
+  // popover opened inside this one) from closing two layers on one press.
+  //
+  // A `required` dialog registers as `block`: it must not be dismissed, and the
+  // press must not fall through and dismiss a layer behind it either.
+  //
+  // Inline mode opts out — it renders dialog content in normal flow, with
+  // nothing layered over anything.
+  const {shouldDismissOnCloseRequest} = useLayerDismissal({
+    isActive: isOpen,
+    isEnabled: !isInline,
+    escapeBehavior: allowEscape ? 'close' : 'block',
+    onDismiss: () => {
+      onOpenChange(false);
+    },
+  });
 
   // Dev-time guardrail: an open modal should always have an accessible name.
   // The header-title check reads the DOM, so this stays in an effect; the ref
@@ -535,12 +603,18 @@ export function Dialog({
     }
   };
 
-  // Handle native cancel event (browser Escape handling)
+  // The native `cancel` event is the browser's own close-watcher firing: an
+  // Android back gesture, or a close request the stack never saw a press for.
+  // Escape presses the stack owns never arrive here — it preventDefault()s
+  // those, which suppresses the close watcher.
+  //
+  // Always preventDefault so the browser cannot close a controlled <dialog>
+  // behind React's back, then answer the request with the stack's own rules:
+  // only the top-most layer dismisses, a `required` dialog swallows it, and
+  // nothing dismisses while an IME composition is in progress.
   const handleCancel = (event: React.SyntheticEvent<HTMLDialogElement>) => {
     event.preventDefault();
-    // Defer to a popover/menu layered on top of this dialog; it will dismiss
-    // itself on the same Escape press.
-    if (hasActiveFocusTrapEscape()) {
+    if (!shouldDismissOnCloseRequest()) {
       return;
     }
     if (allowEscape) {
@@ -548,7 +622,6 @@ export function Dialog({
     }
   };
 
-  // Shared inner content wrapper
   const innerContent = (
     <div
       {...stylex.props(
@@ -557,22 +630,14 @@ export function Dialog({
           useThemeDefault
             ? {
                 useThemeDefault: 'dialog',
-                maxHeight: isFullscreen
-                  ? undefined
-                  : typeof maxHeight === 'number'
-                    ? `${maxHeight}px`
-                    : maxHeight,
+                maxHeight: standardSizing?.maxHeight,
               }
             : {
                 paddingInnerX: paddingToken,
                 paddingInnerY: paddingToken,
                 paddingOuterX: paddingToken,
                 paddingOuterY: paddingToken,
-                maxHeight: isFullscreen
-                  ? undefined
-                  : typeof maxHeight === 'number'
-                    ? `${maxHeight}px`
-                    : maxHeight,
+                maxHeight: standardSizing?.maxHeight,
               },
         ),
         !useThemeDefault &&
@@ -587,6 +652,7 @@ export function Dialog({
         !useThemeDefault &&
           effectivePadding !== 4 &&
           containerPaddingBlockEndVarStyles[effectivePadding],
+        isFullscreen && useThemeDefault && styles.fullscreenSafeArea,
       )}>
       <DialogContext value={dialogContextValue}>{children}</DialogContext>
     </div>
@@ -609,7 +675,13 @@ export function Dialog({
           themeProps('dialog', {variant}),
           stylex.props(
             styles.inlineWrapper,
-            !isFullscreen && dynamicStyles.sizing(width, maxHeight),
+            overlayPaddingReset.reset,
+            standardSizing &&
+              dynamicStyles.sizing(
+                standardSizing.width,
+                standardSizing.maxWidth,
+                standardSizing.maxHeight,
+              ),
             isFullscreen && styles.fullscreen,
             xstyle,
           ),
@@ -620,7 +692,7 @@ export function Dialog({
           (props as Record<string, unknown>)['data-testid'] as
             string | undefined
         }>
-        {innerContent}
+        <LayerDepthProvider>{innerContent}</LayerDepthProvider>
       </div>
     );
   }
@@ -629,15 +701,21 @@ export function Dialog({
 
   return (
     <dialog
-      ref={mergeRefs(ref, attachDialog)}
+      ref={mergedDialogRef}
       {...safeProps}
       {...mergeProps(
         themeProps('dialog', {variant}),
         focusOutlineProps.focusVisible(
           styles.dialog,
+          overlayPaddingReset.reset,
           isOpen && styles.open,
           styles.backdrop,
-          !isFullscreen && dynamicStyles.sizing(width, maxHeight),
+          standardSizing &&
+            dynamicStyles.sizing(
+              standardSizing.width,
+              standardSizing.maxWidth,
+              standardSizing.maxHeight,
+            ),
           hasPosition &&
             (() => {
               const o = resolveDialogPositionOffsets(position);
@@ -649,6 +727,7 @@ export function Dialog({
               );
             })(),
           isFullscreen && styles.fullscreen,
+          isFullscreen && isOpen && styles.fullscreenOpen,
           xstyle,
         ),
         className,
@@ -661,7 +740,7 @@ export function Dialog({
       // imperatively in `attachDialog`; a consumer-provided aria-labelledby
       // flows through {...safeProps} above and wins.
       {...(purpose === 'required' ? {role: 'alertdialog'} : undefined)}>
-      {innerContent}
+      <LayerDepthProvider>{innerContent}</LayerDepthProvider>
     </dialog>
   );
 }

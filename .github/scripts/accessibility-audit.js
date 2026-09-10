@@ -11,7 +11,8 @@
  * @output JSON report with accessibility violations; with --baseline, a gate
  *   summary (new / baselined / resolved) on stdout and a non-zero exit code
  *   when --fail-on-new finds regressions. Diff logic lives in
- *   lib/a11y-baseline.js.
+ *   lib/a11y-baseline.js. Pages are scanned with animations held at their end
+ *   state.
  */
 
 const { chromium } = require('playwright');
@@ -44,6 +45,21 @@ const emptyComponentSet = componentsArg !== null && components.length === 0;
 const baselineFile = getArg('baseline');
 const failOnNew = hasFlag('fail-on-new');
 const updateBaseline = hasFlag('update-baseline');
+
+// Held at the end state before every scan, the way the visual gate does it
+// (visual-gate/lib/capture.mjs). axe blends an element's opacity into the
+// foreground color, so a scan that lands mid-transition measures a frame no
+// user is expected to read: Markdown's streaming fade reported contrast of
+// 1.63 on text whose resting color is #171717, on ~1 run in 6.
+const FREEZE_CSS = `
+*, *::before, *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+`;
 
 // Rules to disable — these are Storybook-context false positives, not component issues
 const DISABLED_RULES = [
@@ -188,6 +204,7 @@ async function runAccessibilityAudit() {
   try {
     const context = await browser.newContext({
       viewport: { width: 1280, height: 720 },
+      reducedMotion: 'reduce',
     });
 
     for (const [component, componentStories] of Object.entries(storyGroups)) {
@@ -200,6 +217,7 @@ async function runAccessibilityAudit() {
           const url = `http://localhost:${port}/iframe.html?id=${story.id}&viewMode=story`;
           // Higher timeout to accommodate axe-core's heavier DOM analysis
           await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 });
+          await page.addStyleTag({ content: FREEZE_CSS }).catch(() => {});
           // Brief wait for any post-load rendering before axe-core scans the DOM
           await page.waitForTimeout(500);
 

@@ -4,18 +4,19 @@
 
 /**
  * @file FieldLabel.tsx
- * @input Uses React, Icon, IconType, useTranslator
+ * @input Uses React, Icon, IconType, useTranslator, FormLayoutContext
  * @output Exports FieldLabel component, FieldLabelProps
  * @position Core label implementation; used by Field, CheckboxInput, Switch
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Field/Field.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Field/index.ts (exports if types change)
+ * - /packages/core/src/FormLayout/FormLayoutContext.ts (defaultOptionality drives the indicator)
  * - /packages/cli/assets/templates/blocks/components/Field/ (showcase blocks)
  * - /packages/core/locales/en.json (@astryx.field.required / @astryx.field.optional)
  */
 
-import {useMemo, useRef, type ReactNode, type RefObject} from 'react';
+import {use, useMemo, useRef, type ReactNode, type RefObject} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
@@ -32,8 +33,25 @@ import {Tooltip} from '../Tooltip';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
 import {useInputContainer} from '../hooks';
+import {FormLayoutContext} from '../FormLayout/FormLayoutContext';
 
 const styles = stylex.create({
+  // The label and its description read as a single block, with no space
+  // between them. They need a wrapper of their own to get that: as bare
+  // siblings they pick up the column gap of whichever caller holds them
+  // (Field, CheckboxInput, Switch), which is the spacing meant to separate
+  // the label group from the control below it.
+  labelGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  // A hidden label group must not take a slot in the caller's layout, or an
+  // empty box would draw the caller's gap around nothing. Dropping the
+  // wrapper box leaves the sr-only children out of flow directly under the
+  // caller, so the group occupies no space at all.
+  labelGroupHidden: {
+    display: 'contents',
+  },
   label: {
     display: 'flex',
     alignItems: 'center',
@@ -43,11 +61,14 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   srOnly: {
     borderStyle: 'none',
@@ -80,7 +101,10 @@ const styles = stylex.create({
   // When the description forwards clicks to a click-activatable control
   // (checkbox/switch), it reads as part of the same hit target as the label.
   descriptionClickable: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
 });
 
@@ -188,9 +212,23 @@ export function FieldLabel({
   ...rest
 }: FieldLabelProps) {
   const t = useTranslator();
-  const statusText = isOptional
+  const {defaultOptionality} = use(FormLayoutContext);
+
+  // A form-level `defaultOptionality` means "only the exception is marked": a
+  // field that merely restates the form's default shows no indicator, and only
+  // a deviation from it does. This is the *visible indicator* only; the
+  // matching `aria-required` is resolved on each control (see
+  // useResolvedRequired) so the unmarked majority is still announced.
+  //
+  //   defaultOptionality  isRequired            isOptional
+  //   'optional'          → required indicator  → (matches default, hidden)
+  //   'required'          → (matches, hidden)   → optional indicator
+  //   unset               → required indicator  → optional indicator
+  const showRequired = isRequired && defaultOptionality !== 'required';
+  const showOptional = isOptional && defaultOptionality !== 'optional';
+  const statusText = showOptional
     ? t('@astryx.field.optional')
-    : isRequired
+    : showRequired
       ? t('@astryx.field.required')
       : null;
 
@@ -253,42 +291,61 @@ export function FieldLabel({
     </>
   );
 
+  const labelElement = (
+    <LabelElement
+      ref={ref}
+      id={labelID}
+      // `htmlFor` only applies to a real `<label>` associating with a single
+      // control; a group label (span) has no `htmlFor`.
+      htmlFor={isGroupLabel ? undefined : inputID}
+      {...rest}
+      {...mergeProps(
+        // A control that knows what kind of label this is passes its own
+        // target down (CheckboxInput's `checkbox-label`, Switch's
+        // `switch-label`); it arrives as `className` and composes onto this
+        // one. The label itself does not describe its own placement — it
+        // cannot know it, and any encoding it guessed would be wrong for a
+        // caller that arranges labels differently (Field's
+        // `horizontal-labels`).
+        themeProps('field-label'),
+        stylex.props(
+          styles.label,
+          isDisabled && styles.labelDisabled,
+          isLabelHidden && styles.srOnly,
+          xstyle,
+        ),
+        className,
+        style,
+      )}>
+      {labelContent}
+    </LabelElement>
+  );
+
+  // Without a description, preserve the original public DOM: the label itself
+  // remains the caller's flex/grid item and its layout overrides apply there.
+  if (!description) {
+    return labelElement;
+  }
+
   return (
-    <>
-      <LabelElement
-        ref={ref}
-        id={labelID}
-        // `htmlFor` only applies to a real `<label>` associating with a single
-        // control; a group label (span) has no `htmlFor`.
-        htmlFor={isGroupLabel ? undefined : inputID}
-        {...rest}
-        {...mergeProps(
-          themeProps('field-label'),
-          stylex.props(
-            styles.label,
-            isDisabled && styles.labelDisabled,
-            isLabelHidden && styles.srOnly,
-            xstyle,
-          ),
-          className,
-          style,
+    <div
+      {...stylex.props(
+        styles.labelGroup,
+        isLabelHidden && styles.labelGroupHidden,
+      )}>
+      {labelElement}
+      <span
+        ref={forwardsDescriptionClick ? descriptionRef : undefined}
+        id={descriptionID}
+        {...(forwardsDescriptionClick ? descriptionClickProps : undefined)}
+        {...stylex.props(
+          styles.description,
+          forwardsDescriptionClick && styles.descriptionClickable,
+          isLabelHidden && styles.srOnly,
         )}>
-        {labelContent}
-      </LabelElement>
-      {description && (
-        <span
-          ref={forwardsDescriptionClick ? descriptionRef : undefined}
-          id={descriptionID}
-          {...(forwardsDescriptionClick ? descriptionClickProps : undefined)}
-          {...stylex.props(
-            styles.description,
-            forwardsDescriptionClick && styles.descriptionClickable,
-            isLabelHidden && styles.srOnly,
-          )}>
-          {description}
-        </span>
-      )}
-    </>
+        {description}
+      </span>
+    </div>
   );
 }
 

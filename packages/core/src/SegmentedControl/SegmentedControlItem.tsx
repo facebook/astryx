@@ -82,7 +82,11 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+    whiteSpace: 'nowrap',
     transitionProperty: 'color, background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -90,7 +94,7 @@ const styles = stylex.create({
   hover: {
     backgroundColor: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
@@ -125,6 +129,7 @@ const styles = stylex.create({
   },
   fill: {
     flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
   },
   icon: {
@@ -132,6 +137,11 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+  labelText: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    minWidth: 0,
   },
 });
 
@@ -244,7 +254,9 @@ export function SegmentedControlItem({
         ),
       )}>
       {iconElement}
-      {!isLabelHidden && <span>{label}</span>}
+      {!isLabelHidden && (
+        <span {...stylex.props(styles.labelText)}>{label}</span>
+      )}
     </button>
   );
 }

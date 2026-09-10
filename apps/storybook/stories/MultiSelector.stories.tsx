@@ -27,11 +27,16 @@ const meta: Meta<typeof MultiSelector> = {
     placeholder: {control: 'text'},
     size: {control: 'radio', options: ['sm', 'md', 'lg']},
     variant: {control: 'radio', options: ['input', 'ghost']},
+    presentation: {
+      control: 'radio',
+      options: ['popover', 'bottom-sheet', 'adaptive'],
+    },
     triggerDisplay: {
       control: 'radio',
       options: ['count', 'labels', 'badges'],
     },
     isDisabled: {control: 'boolean'},
+    isReadOnly: {control: 'boolean'},
     disabledMessage: {control: 'text'},
     isOptional: {control: 'boolean'},
     isRequired: {control: 'boolean'},
@@ -59,6 +64,36 @@ export const Default: Story = {
   },
   args: {
     placeholder: 'Select columns...',
+  },
+};
+
+export const ReadOnly: Story = {
+  args: {
+    label: 'Assigned teams',
+    options: ['Design', 'Engineering', 'Marketing'],
+    value: ['Design', 'Engineering'],
+    onChange: () => {},
+    hasClear: true,
+    hasSearch: true,
+    htmlName: 'teams',
+    triggerDisplay: 'labels',
+    isReadOnly: true,
+  },
+};
+
+export const BottomSheetPresentation: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <MultiSelector
+        label="Teams"
+        options={['Design', 'Engineering', 'Marketing', 'Operations']}
+        value={value}
+        onChange={setValue}
+        hasSelectAll
+        presentation="bottom-sheet"
+      />
+    );
   },
 };
 
@@ -177,6 +212,50 @@ export const Searchable: Story = {
         hasSelectAll
         placeholder="Select countries..."
       />
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+// Empty states
+export const EmptyStates: Story = {
+  render: () => {
+    const [a, setA] = useState<string[]>([]);
+    const [b, setB] = useState<string[]>([]);
+    const [c, setC] = useState<string[]>([]);
+    const [d, setD] = useState<string[]>([]);
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
+        <MultiSelector
+          label="No options (default)"
+          options={[]}
+          value={a}
+          onChange={setA}
+        />
+        <MultiSelector
+          label="No options (custom)"
+          options={[]}
+          value={b}
+          onChange={setB}
+          emptyText="No countries loaded yet"
+        />
+        <MultiSelector
+          label="Search for xyz (custom)"
+          options={['Canada', 'France', 'Japan']}
+          value={c}
+          onChange={setC}
+          hasSearch
+          emptySearchText="Nothing matches that country"
+        />
+        <MultiSelector
+          label="Loading (no message)"
+          options={[]}
+          value={d}
+          onChange={setD}
+          isLoading
+        />
+      </div>
     );
   },
   decorators: [Story => <Story />],

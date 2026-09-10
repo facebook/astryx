@@ -13,7 +13,7 @@ import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {y2kIconRegistry} from './icons';
 
 const y2kSyntax = defineSyntaxTheme({
-  name: 'xds-y2k',
+  name: 'astryx-y2k',
   tokens: {
     keyword: ['#615a7a', '#aea6ca'],
     string: ['#586242', '#a5af8b'],

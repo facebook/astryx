@@ -4,7 +4,7 @@
  * @file Shared template discovery + IO.
  *
  * Owns everything the template leaves (list/show/skeleton/copy) AND other
- * commands (component, layout, search, init, discover, validate-integration)
+ * commands (component, layout, search, init, discover, Doctor integration)
  * share: template discovery across core/external/integration sources, the
  * template-spec loaders, and the cross-command helpers (stripTemplateAssetRefs,
  * findShowcase, findRelatedBlocks, extractComponents, listTemplates). The
@@ -50,11 +50,15 @@ export function pkgOf(t) {
  * @property {'page'|'block'} type
  * @property {string} dirName
  * @property {string} name
+ * @property {string} [displayName]
  * @property {string} description
  * @property {string} [category]
  * @property {boolean} [isReady]
  * @property {boolean} [scaffold]
  * @property {number} [aspectRatio]
+ * @property {string} [exampleFor]
+ * @property {string[]} [alsoExampleFor]
+ * @property {string[]} [alsoShowcaseFor]
  * @property {string[]} [componentsUsed]
  * @property {boolean} [isShowcase]
  * @property {string} filePath
@@ -166,7 +170,18 @@ const PLACEHOLDER_IMAGE =
  *
  * @type {Set<string>}
  */
-const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv']);
+const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv', 'm4v']);
+
+const IMAGE_EXTENSIONS = new Set([
+  'svg',
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'avif',
+  'ico',
+]);
 
 /**
  * Demo-asset sources to strip from scaffolded projects. Template demo imagery
@@ -179,7 +194,7 @@ const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'ogv']);
  *
  * @type {RegExp}
  */
-const DEMO_ASSET_PATTERN = /\/template-assets\/[\w-]+\.(\w+)/g;
+const DEMO_ASSET_PATTERN = /\/template-assets\/[\w.-]+\.(\w+)/g;
 
 /**
  * Normalize path into Unix path (using forward slashes) for consistent comparison
@@ -203,9 +218,16 @@ function toPosixPath(p) {
  * @returns {string} Source with demo asset references replaced.
  */
 export function stripTemplateAssetRefs(source) {
-  return source.replace(DEMO_ASSET_PATTERN, (match, extension) =>
-    VIDEO_EXTENSIONS.has(extension.toLowerCase()) ? '' : PLACEHOLDER_IMAGE,
-  );
+  return source.replace(DEMO_ASSET_PATTERN, (match, extension) => {
+    const ext = extension.toLowerCase();
+    if (VIDEO_EXTENSIONS.has(ext)) {
+      return '';
+    }
+    if (IMAGE_EXTENSIONS.has(ext)) {
+      return PLACEHOLDER_IMAGE;
+    }
+    throw new Error(`Unrecognized template asset format ${ext} for ${match}`);
+  });
 }
 /**
  * Load a template-spec module and return its metadata object. Supports both
@@ -322,7 +344,9 @@ async function discoverBlocks() {
     const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
     if (!fs.existsSync(tsxPath)) continue;
     const doc = await loadDocModule(docPath);
-    const relPath = toPosixPath(path.relative(BLOCKS_DIR, path.dirname(docPath)));
+    const relPath = toPosixPath(
+      path.relative(BLOCKS_DIR, path.dirname(docPath)),
+    );
     blocks.push({
       type: 'block',
       dirName: basename,
@@ -339,7 +363,6 @@ async function discoverBlocks() {
   }
   return blocks;
 }
-
 
 /**
  * Discover blocks from external packages that declare `astryx.blocks` in
@@ -362,7 +385,9 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
       const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
       if (!fs.existsSync(tsxPath)) continue;
       const doc = await loadDocModule(docPath);
-      const relPath = toPosixPath(path.relative(ext.blocksDir, path.dirname(docPath)));
+      const relPath = toPosixPath(
+        path.relative(ext.blocksDir, path.dirname(docPath)),
+      );
       blocks.push({
         type: 'block',
         dirName: basename,
@@ -397,16 +422,30 @@ async function discoverAllBlocks(cwd = process.cwd()) {
 }
 
 /**
+ * Discover only the templates built into @astryxdesign/core. Integration
+ * authoring checks use this narrower surface so a broken project config or a
+ * second integration cannot affect the core-collision result.
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
+export async function discoverCoreTemplates() {
+  const [pages, blocks] = await Promise.all([
+    discoverPages(),
+    discoverBlocks(),
+  ]);
+  return [...pages, ...blocks];
+}
+
+/**
  * @param {string} [cwd]
  * @returns {Promise<DiscoveredTemplate[]>}
  */
 export async function discoverAll(cwd = process.cwd()) {
-  const [pages, blocks, integration] = await Promise.all([
-    discoverPages(),
-    discoverAllBlocks(cwd),
+  const [core, external, integration] = await Promise.all([
+    discoverCoreTemplates(),
+    discoverExternalBlocks(cwd),
     discoverIntegrationTemplates(cwd),
   ]);
-  return [...pages, ...blocks, ...integration.templates].sort((a, b) =>
+  return [...core, ...external, ...integration.templates].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
 }
@@ -449,7 +488,9 @@ function findIntegrationDocFiles(root) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
-      } else if (ALL_TEMPLATE_SUFFIXES.some(suffix => entry.name.endsWith(suffix))) {
+      } else if (
+        ALL_TEMPLATE_SUFFIXES.some(suffix => entry.name.endsWith(suffix))
+      ) {
         results.push(full);
       }
     }
@@ -515,7 +556,7 @@ async function discoverIntegrationTemplates(cwd = process.cwd()) {
  * Discover the templates contributed by a SINGLE integration. Same per-template
  * rules as {@link discoverIntegrationTemplates} (same-stem source required,
  * page|block type required); broken templates are recorded in `errors` rather
- * than thrown. Exposed for `validate-integration`.
+ * than thrown. Exposed for `doctor integration validate` and template authoring checks.
  *
  * @param {{name?: string, __spec?: string, templates?: string}} integration
  * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}
@@ -578,10 +619,18 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       type,
       dirName: id,
       name: doc?.name || id,
+      displayName: doc?.displayName,
       description: doc?.description || '',
       category: doc?.category || '',
-      isReady: true,
-      scaffold: false,
+      isReady: doc?.isReady ?? true,
+      scaffold: doc?.scaffold ?? false,
+      aspectRatio: doc?.type === 'block' ? doc.aspectRatio : undefined,
+      exampleFor: doc?.type === 'block' ? doc.exampleFor : undefined,
+      alsoExampleFor:
+        doc?.type === 'block' ? (doc.alsoExampleFor ?? []) : undefined,
+      alsoShowcaseFor:
+        doc?.type === 'block' ? (doc.alsoShowcaseFor ?? []) : undefined,
+      isShowcase: doc?.type === 'block' ? (doc.isShowcase ?? false) : undefined,
       // The integration envelope carries `componentsUsed` for both page and
       // block templates; the rich TemplateDoc union only declares it on blocks,
       // so read it off the envelope shape here.
@@ -604,7 +653,9 @@ export async function discoverIntegrationTemplatesForOne(integration) {
 export async function findRelatedBlocks(componentName, cwd) {
   const blocks = await discoverAllBlocks(cwd);
   return blocks.filter(b =>
-    (b.componentsUsed ?? []).some(c => c.toLowerCase() === componentName.toLowerCase()),
+    (b.componentsUsed ?? []).some(
+      c => c.toLowerCase() === componentName.toLowerCase(),
+    ),
   );
 }
 
@@ -672,7 +723,15 @@ export function extractComponents(pagePath) {
   // (P2380608025), so the `XDS` prefix is optional. Anchoring on the `<`
   // JSX-tag boundary keeps this precise (avoids matching imports/comments/
   // identifiers) while remaining prefix-agnostic.
-  const tagRegex = /<(XDS)?([A-Z]\w+)/g;
+  //
+  // The lookbehind additionally requires that the `<` NOT follow an identifier
+  // character, which is what separates a JSX tag from a TypeScript generic
+  // argument list. `return <Dialog` and `rows.map(r => <ListItem` match;
+  // `useState<ReadonlySet<string>>`, `ComponentType<SVGProps<SVGSVGElement>>`
+  // and `Record<string, Phase>` no longer do. Those were being indexed as
+  // rendered components, putting type names like `Record`, `SVGProps` and
+  // `ReadonlySet` into template keyword and "components used" output.
+  const tagRegex = /(?<![\w$.])<(XDS)?([A-Z]\w+)/g;
   /** @type {string[]} */
   const matches = [];
   let m;

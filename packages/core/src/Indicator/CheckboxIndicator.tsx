@@ -227,10 +227,13 @@ export function CheckboxIndicator({
         <>
           <svg
             viewBox="0 0 10 10"
-            {...stylex.props(
-              styles.checkmark,
-              checkmarkSizeStyles[size],
-              isChecked && styles.checkmarkVisible,
+            {...mergeProps(
+              themeProps('checkbox-indicator-check', {size}),
+              stylex.props(
+                styles.checkmark,
+                checkmarkSizeStyles[size],
+                isChecked && styles.checkmarkVisible,
+              ),
             )}>
             <path
               d="M8.5 2.5L4 7.5L1.5 5"
@@ -242,10 +245,13 @@ export function CheckboxIndicator({
             />
           </svg>
           <span
-            {...stylex.props(
-              styles.indeterminateMark,
-              indeterminateSizeStyles[size],
-              isIndeterminate && styles.indeterminateMarkVisible,
+            {...mergeProps(
+              themeProps('checkbox-indicator-dash', {size}),
+              stylex.props(
+                styles.indeterminateMark,
+                indeterminateSizeStyles[size],
+                isIndeterminate && styles.indeterminateMarkVisible,
+              ),
             )}
           />
         </>

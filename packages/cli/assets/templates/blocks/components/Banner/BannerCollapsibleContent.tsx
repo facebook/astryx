@@ -16,7 +16,7 @@ export default function BannerCollapsibleContent() {
       description="Review the changes before they take effect."
       endContent={<Button label="Review" variant="secondary" size="sm" />}
       isDismissable
-      defaultIsExpanded>
+      collapsible={{defaultIsOpen: true}}>
       <Stack direction="vertical" gap={2}>
         <Text type="supporting" color="secondary">
           Changed settings:

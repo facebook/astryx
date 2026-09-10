@@ -9,6 +9,19 @@ export const docs = {
   isHiddenFromOverview: true,
   description:
     'A single option in a DropdownMenuRadioGroup (role="menuitemradio"). Must be used inside a DropdownMenuRadioGroup.',
+  playground: {
+    defaults: {
+      value: 'option-1',
+      label: 'Option 1',
+    },
+    wrapper: {
+      component: 'DropdownMenuRadioGroup',
+      props: {
+        value: 'option-1',
+        label: 'Radio group',
+      },
+    },
+  },
   props: [
     {
       name: 'value',

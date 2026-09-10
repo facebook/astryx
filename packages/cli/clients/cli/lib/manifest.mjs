@@ -46,6 +46,7 @@ import {API_VERSION} from '../../../foundation/response/json.mjs';
  * @type {Record<string, string[]>}
  */
 export const RESPONSE_TYPES = {
+  init: ['init.run', 'init.remove'],
   component: [
     'component.list',
     'component.detail',
@@ -70,15 +71,22 @@ export const RESPONSE_TYPES = {
     'template.show',
     'template.skeleton',
     'template.copy',
+    'template.cdn',
   ],
   hook: ['hook.list', 'hook.detail', 'hook.detail.params'],
-  'theme build': ['theme.build', 'theme.build.check'],
+  'theme build': ['theme.build', 'theme.build.check', 'theme.build.batch'],
   'theme list': ['theme.list'],
   'theme add': ['theme.list', 'theme.add'],
+  'theme template': ['theme.template'],
+  'theme targets': ['theme.targets'],
+  'theme palette generate': ['theme.palette.generate'],
   upgrade: ['upgrade.list', 'upgrade.status', 'upgrade.run'],
   manifest: ['manifest'],
   doctor: ['doctor'],
-  'validate-integration': ['integration.validate'],
+  'doctor integration validate': ['integration.validate'],
+  'doctor integration templates': ['integration.template-conflicts'],
+  'doctor integration components': ['integration.component-conflicts'],
+  'doctor integration docs': ['integration.doc-conflicts'],
   'layout expand': ['layout.expand'],
   'layout check': ['layout.check'],
   'layout grammar': ['layout.grammar'],
@@ -102,7 +110,11 @@ const EXAMPLES = {
   ],
   build: ['astryx build', 'astryx build "analytics dashboard" --json'],
   swizzle: ['astryx swizzle XDSButton'],
-  template: ['astryx template --json', 'astryx template dashboard ./src/app'],
+  template: [
+    'astryx template --json',
+    'astryx template dashboard ./src/app',
+    'astryx template --cdn',
+  ],
   hook: ['astryx hook', 'astryx hook useFocusTrap --json'],
   'theme build': [
     'astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css',
@@ -113,14 +125,35 @@ const EXAMPLES = {
     'astryx theme add matcha',
     'astryx theme add matcha ./src/themes/matcha',
   ],
+  'theme template': ['astryx theme template', 'astryx theme template --json'],
+  'theme targets': [
+    'astryx theme targets Switch',
+    'astryx --json theme targets',
+  ],
+  'theme palette generate': [
+    'astryx theme palette generate palette.config.json',
+    'astryx theme palette generate palette.config.json --out ocean.palette.json',
+  ],
   upgrade: ['astryx upgrade --json'],
   manifest: ['astryx manifest --json', 'astryx --json'],
   doctor: ['astryx doctor', 'astryx doctor --json'],
-  'validate-integration': [
-    'astryx validate-integration',
-    'astryx validate-integration @acme/widgets --json',
+  'doctor integration validate': [
+    'astryx doctor integration validate',
+    'astryx doctor integration validate @acme/widgets --json',
   ],
-  init: ['astryx init'],
+  'doctor integration templates': [
+    'astryx doctor integration templates',
+    'astryx doctor integration templates @acme/widgets --json',
+  ],
+  'doctor integration components': [
+    'astryx doctor integration components',
+    'astryx doctor integration components @acme/widgets --json',
+  ],
+  'doctor integration docs': [
+    'astryx doctor integration docs',
+    'astryx doctor integration docs @acme/widgets --json',
+  ],
+  init: ['astryx init', 'astryx init --all --json'],
   'layout expand': [
     `astryx layout expand 'V[g6] > C{card-callout}*4' ./src/Page.tsx`,
   ],

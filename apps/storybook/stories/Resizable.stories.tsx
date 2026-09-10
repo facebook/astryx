@@ -28,7 +28,7 @@ const ps = stylex.create({
 });
 
 const meta: Meta<typeof ResizeHandle> = {
-  title: 'Lab/Resizable',
+  title: 'Core/Resizable',
   component: ResizeHandle,
   tags: ['autodocs'],
   parameters: {
@@ -49,8 +49,8 @@ export const HorizontalSplit: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 250,
-      minSizePx: 150,
-      maxSizePx: 500,
+      minSize: 150,
+      maxSize: 500,
     });
     return (
       <div {...stylex.props(ps.shell)}>
@@ -96,8 +96,9 @@ export const VerticalSplit: Story = {
   render: () => {
     const top = useResizable({
       defaultSize: 250,
-      minSizePx: 100,
-      maxSizePx: 350,
+      minSize: 100,
+      maxSize: 350,
+      direction: 'vertical',
     });
     return (
       <div {...stylex.props(ps.shell)}>
@@ -140,7 +141,7 @@ export const Collapsible: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 260,
-      minSizePx: 180,
+      minSize: 180,
       collapsible: true,
       collapsedSize: 60,
     });
@@ -157,9 +158,7 @@ export const Collapsible: Story = {
                     <Text>
                       <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
                     </Text>
-                    <Text>
-                      Double-click handle or press Enter to collapse.
-                    </Text>
+                    <Text>Double-click handle or press Enter to collapse.</Text>
                   </Stack>
                 </LayoutPanel>
               )}
@@ -199,13 +198,14 @@ export const ThreePanelIDE: Story = {
   render: () => {
     const explorer = useResizable({
       defaultSize: 220,
-      minSizePx: 150,
-      maxSizePx: 400,
+      minSize: 150,
+      maxSize: 400,
     });
     const editor = useResizable({
       defaultSize: 280,
-      minSizePx: 100,
-      maxSizePx: 350,
+      minSize: 100,
+      maxSize: 350,
+      direction: 'vertical',
     });
     return (
       <div {...stylex.props(ps.shell)}>
@@ -268,8 +268,8 @@ export const SnapPoints: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 260,
-      minSizePx: 56,
-      maxSizePx: 600,
+      minSize: 56,
+      maxSize: 600,
       snaps: [56, 160, 260, 400],
     });
     const isRail = sidebar.size <= 60;
@@ -288,9 +288,7 @@ export const SnapPoints: Story = {
                     <Text>
                       <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
                     </Text>
-                    <Text>
-                      Snaps to 56 \u00b7 160 \u00b7 260 \u00b7 400px.
-                    </Text>
+                    <Text>Snaps to 56 \u00b7 160 \u00b7 260 \u00b7 400px.</Text>
                   </Stack>
                 )}
               </LayoutPanel>
@@ -318,8 +316,8 @@ export const HiddenPill: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 250,
-      minSizePx: 150,
-      maxSizePx: 500,
+      minSize: 150,
+      maxSize: 500,
     });
     return (
       <div {...stylex.props(ps.shell)}>
@@ -359,7 +357,7 @@ export const HiddenPill: Story = {
 /** Disabled handle — divider visible but non-interactive. */
 export const Disabled: Story = {
   render: () => {
-    const sidebar = useResizable({defaultSize: 250, minSizePx: 150});
+    const sidebar = useResizable({defaultSize: 250, minSize: 150});
     return (
       <div {...stylex.props(ps.shell)}>
         <Layout
@@ -394,8 +392,8 @@ export const WithLayout: Story = {
   render: () => {
     const sidebar = useResizable({
       defaultSize: 260,
-      minSizePx: 180,
-      maxSizePx: 450,
+      minSize: 180,
+      maxSize: 450,
       collapsible: true,
       collapsedSize: 50,
     });
@@ -465,8 +463,8 @@ export const WithAppShell: Story = {
   render: () => {
     const nav = useResizable({
       defaultSize: 260,
-      minSizePx: 200,
-      maxSizePx: 400,
+      minSize: 200,
+      maxSize: 400,
       collapsible: true,
       collapsedSize: 50,
       snaps: [56, 260],
@@ -504,10 +502,61 @@ export const WithAppShell: Story = {
                   {nav.isCollapsed ? 'Collapsed' : 'Expanded'}
                 </Text>
                 <Text>
-                  SideNav width driven by useResizable. Double-click handle
-                  to collapse.
+                  SideNav width driven by useResizable. Double-click handle to
+                  collapse.
                 </Text>
               </Stack>
+            </LayoutContent>
+          }
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * Panel whose content is an embedded frame. The drag must survive the cursor
+ * crossing the frame: pointer events over a frame are dispatched into the
+ * guest document, so a drag that stays armed only while the host keeps
+ * receiving them dies mid-gesture here.
+ */
+export const WithEmbeddedFrame: Story = {
+  render: () => {
+    const sidebar = useResizable({
+      defaultSize: 200,
+      minSize: 120,
+      maxSize: 520,
+    });
+    return (
+      <div {...stylex.props(ps.shell)}>
+        <Layout
+          height="fill"
+          start={
+            <>
+              <LayoutPanel width={sidebar.size} hasDivider={false}>
+                <Stack gap={2}>
+                  <Heading level={4}>Sidebar</Heading>
+                  <Text>
+                    <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
+                  </Text>
+                  <Text>Drag right, across the preview, and back.</Text>
+                </Stack>
+              </LayoutPanel>
+              <ResizeHandle
+                direction="horizontal"
+                hasDivider
+                resizable={sidebar.props}
+                label="Resize sidebar"
+              />
+            </>
+          }
+          content={
+            <LayoutContent padding={0}>
+              <iframe
+                title="Preview"
+                srcDoc="<!doctype html><body style='margin:0;font:14px system-ui;display:grid;place-items:center;height:100vh;background:#eef'>Embedded preview</body>"
+                style={{width: '100%', height: '100%', border: 0}}
+              />
             </LayoutContent>
           }
         />

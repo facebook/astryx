@@ -24,6 +24,7 @@ import {
 } from '../theme/tokens.stylex';
 import {Kbd} from '../Kbd';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   footer: {
@@ -85,6 +86,8 @@ export function CommandPaletteFooter({
   style,
   ...props
 }: CommandPaletteFooterProps) {
+  const t = useTranslator();
+
   return (
     <div
       ref={ref}
@@ -100,15 +103,15 @@ export function CommandPaletteFooter({
           <span {...stylex.props(styles.hint)}>
             <Kbd keys="up" />
             <Kbd keys="down" />
-            Navigate
+            {t('@astryx.commandPalette.footer.navigate')}
           </span>
           <span {...stylex.props(styles.hint)}>
             <Kbd keys="enter" />
-            Select
+            {t('@astryx.commandPalette.footer.select')}
           </span>
           <span {...stylex.props(styles.hint)}>
             <Kbd keys="escape" />
-            Close
+            {t('@astryx.commandPalette.footer.close')}
           </span>
         </>
       )}

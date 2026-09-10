@@ -159,7 +159,7 @@ interface UseComboboxOptions {
   isDisabled?: boolean;
   isOpen: boolean;
   hasSearch?: boolean;
-  onOpen: () => void;
+  onOpen: () => unknown;
   onClose: () => void;
   onSelect?: (value: string) => void;
   /**
@@ -250,8 +250,8 @@ export function useCombobox({
     if (isOpen) {
       closeAndReset();
     } else {
-      onOpen();
-      if (!hasSearch) {
+      const didOpen = onOpen() !== false;
+      if (didOpen && !hasSearch) {
         const selectedIndex = findSelectedIndex();
         setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
       }
@@ -279,8 +279,9 @@ export function useCombobox({
         case 'ArrowDown':
           e.preventDefault();
           if (!isOpen) {
-            onOpen();
-            setHighlightedIndex(0);
+            if (onOpen() !== false) {
+              setHighlightedIndex(0);
+            }
           } else {
             const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
             const nextPos = Math.min(
@@ -294,8 +295,9 @@ export function useCombobox({
         case 'ArrowUp':
           e.preventDefault();
           if (!isOpen) {
-            onOpen();
-            setHighlightedIndex(selectableItems.length - 1);
+            if (onOpen() !== false) {
+              setHighlightedIndex(selectableItems.length - 1);
+            }
           } else {
             const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
             const prevPos = Math.max(currentEnabledPos - 1, 0);
@@ -318,8 +320,8 @@ export function useCombobox({
               selectItem(item);
             }
           } else if (!isOpen) {
-            onOpen();
-            if (!hasSearch) {
+            const didOpen = onOpen() !== false;
+            if (didOpen && !hasSearch) {
               const selectedIndex = findSelectedIndex();
               setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
             }
@@ -394,10 +396,9 @@ export function useCombobox({
             !e.ctrlKey &&
             !e.metaKey
           ) {
-            if (!isOpen) {
-              onOpen();
+            if (isOpen || onOpen() !== false) {
+              onSearchSeed(e.key);
             }
-            onSearchSeed(e.key);
           }
           break;
       }

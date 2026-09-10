@@ -156,4 +156,71 @@ describe('theme build --watch', () => {
     expect(exited).toBe(true);
     expect(stdout).toMatch(/Stopped watching/);
   }, 30_000);
+
+  it('watches every file it was given and rebuilds only the one that changed', async () => {
+    const first = path.join(tmpDir, 'w1.mjs');
+    const second = path.join(tmpDir, 'w2.mjs');
+    fs.writeFileSync(
+      first,
+      `export default { name: 'w1', tokens: { '--color-bg': '#ffffff' } };\n`,
+    );
+    fs.writeFileSync(
+      second,
+      `export default { name: 'w2', tokens: { '--color-bg': '#eeeeee' } };\n`,
+    );
+
+    const child = spawn(
+      process.execPath,
+      [CLI_BIN, 'theme', 'build', 'w1.mjs', 'w2.mjs', '--watch'],
+      {cwd: tmpDir, env: {...process.env, FORCE_COLOR: '0'}},
+    );
+    let stdout = '';
+    child.stdout.on('data', d => (stdout += d.toString()));
+    child.stderr.on('data', d => (stdout += d.toString()));
+
+    try {
+      const built = await waitFor(
+        () =>
+          fs.existsSync(path.join(tmpDir, 'w1.css')) &&
+          fs.existsSync(path.join(tmpDir, 'w2.css')),
+      );
+      expect(built).toBe(true);
+      await waitFor(() => /Watching w1\.mjs, w2\.mjs/.test(stdout));
+      const firstCssBefore = fs.readFileSync(path.join(tmpDir, 'w1.css'), 'utf-8');
+
+      const changed = `export default { name: 'w2', tokens: { '--color-bg': '#010203' } };\n`;
+      fs.writeFileSync(second, changed);
+
+      const rebuilt = await waitFor(
+        () => {
+          try {
+            if (
+              fs
+                .readFileSync(path.join(tmpDir, 'w2.css'), 'utf-8')
+                .includes('#010203')
+            ) {
+              return true;
+            }
+          } catch {
+            // CSS mid-write; fall through to re-touch.
+          }
+          try {
+            fs.writeFileSync(second, changed);
+          } catch {
+            // Re-touch failed (e.g. dir mid-teardown); the next poll retries.
+          }
+          return false;
+        },
+        {timeout: 20000, interval: 200},
+      );
+      expect(rebuilt).toBe(true);
+      expect(stdout).toMatch(/rebuilding w2\.mjs/);
+      expect(stdout).not.toMatch(/rebuilding w1\.mjs/);
+      expect(fs.readFileSync(path.join(tmpDir, 'w1.css'), 'utf-8')).toBe(
+        firstCssBefore,
+      );
+    } finally {
+      child.kill('SIGINT');
+    }
+  }, 30_000);
 });

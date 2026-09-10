@@ -4,7 +4,7 @@
 
 /**
  * @file Schedule.tsx
- * @input Calendar events, event loader functions, view objects, date/focusDate/timezone props
+ * @input Calendar events, event loader functions, view objects, date/focusDate/timezone props, and provider locale
  * @output Generic read-only schedule shell that renders arbitrary schedule views
  * @position Lab component shell; concrete views live in separate view files
  *
@@ -17,6 +17,7 @@
 import {Suspense, useCallback, useMemo, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
+import {useLocale, type Locale} from '@astryxdesign/core/i18n';
 import {mergeProps, plainDateFromInstant} from '@astryxdesign/core/utils';
 import {eventOverlapsRange, getBrowserTimezoneID, sortEvents} from './dateMath';
 import {ScheduleContext} from './context';
@@ -153,6 +154,7 @@ function ScheduleViewContent<Options extends ScheduleViewOptions>({
   categories,
   date,
   focusDate,
+  locale,
   isLoading,
   onPreviousDate,
   previousDateLabel,
@@ -167,6 +169,7 @@ function ScheduleViewContent<Options extends ScheduleViewOptions>({
   categories: ReadonlyArray<ScheduleCategory>;
   date: ZonedDateTime;
   focusDate: ZonedDateTime;
+  locale: Locale;
   isLoading: boolean;
   onPreviousDate: () => void;
   previousDateLabel: string;
@@ -190,6 +193,7 @@ function ScheduleViewContent<Options extends ScheduleViewOptions>({
         date,
         focusDate,
         timezoneID: date.timezoneID,
+        locale,
         range,
         isLoading,
         onPreviousDate,
@@ -221,6 +225,7 @@ export function Schedule({
   style,
   ...rest
 }: ScheduleProps) {
+  const locale = useLocale();
   const timezoneID = timezoneIDProp ?? getBrowserTimezoneID();
   const [internalFocusDate] = useState<Instant>(() => Date.now() as Instant);
   const focusDate = focusDateProp ?? internalFocusDate;
@@ -284,6 +289,7 @@ export function Schedule({
             categories={categories}
             date={zonedDateTime}
             focusDate={focusZonedDateTime}
+            locale={locale}
             isLoading
             onPreviousDate={onPreviousDate}
             previousDateLabel={previousDateRange.label}
@@ -300,6 +306,7 @@ export function Schedule({
           categories={categories}
           date={zonedDateTime}
           focusDate={focusZonedDateTime}
+          locale={locale}
           isLoading={false}
           onPreviousDate={onPreviousDate}
           previousDateLabel={previousDateRange.label}

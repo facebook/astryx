@@ -43,10 +43,18 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, isImeKeyEvent} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
 import {useChatComposerTokens, isCustomToken} from './useChatComposerTokens';
-import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
+import {
+  ensureCaretInside,
+  insertTextAtCursor,
+  isSelectionAtStart,
+  isSelectionAtEnd,
+  placeCaretAtEnd,
+  getSelectionRangeInside,
+  restoreSelectionRange,
+} from './chatComposerSelection';
 import {ChatPastedTextToken} from './ChatPastedTextToken';
 import {
   useChatPasteAsToken,
@@ -255,6 +263,10 @@ const styles = stylex.create({
     opacity: 0.5,
     pointerEvents: 'none' as const,
   },
+  tokenSpan: {
+    display: 'inline-flex',
+    verticalAlign: 'middle',
+  },
 });
 
 // =============================================================================
@@ -373,11 +385,66 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   // when a parent attaches a ref — without this, paste-as-token would
   // silently no-op whenever `ChatComposerInput` is rendered without
   // a forwarded ref (e.g. inside `ChatComposer`).
+  /**
+   * Focus the editable and put the caret after the draft.
+   *
+   * A bare `focus()` is not enough: Chromium collapses the caret to the
+   * start of the content, which is the one position where ArrowUp means
+   * "recall history" — so focusing a composer that already holds a draft
+   * would arm the next ArrowUp to replace it. Landing after the text is
+   * also what a click on the composer's trailing space means.
+   */
+  /**
+   * Focus the editable, keeping a caret or selection the user already has
+   * inside it.
+   *
+   * A bare `focus()` is not enough on its own: Chromium collapses the caret
+   * to the start of the content, which is the one position where ArrowUp
+   * means "recall history" — so focusing a composer that already holds a
+   * draft would arm the next ArrowUp to replace it. But a consumer calling
+   * `focus()` to return the user to where they were must not have their
+   * caret moved either, so an existing in-editor selection is captured
+   * before focusing and restored after. Only when there is none does the
+   * caret land after the draft.
+   */
+  const focusEditable = useCallback(() => {
+    const editable = editableRef.current;
+    if (!editable) {
+      return;
+    }
+    // Read before focusing: `focus()` itself creates the offset-0 caret, so
+    // asking afterwards cannot tell the user's own caret from the engine's.
+    const existing = getSelectionRangeInside(editable);
+    editable.focus();
+    if (existing) {
+      restoreSelectionRange(existing);
+      return;
+    }
+    placeCaretAtEnd(editable);
+  }, []);
+
+  /**
+   * Focus the editable and put the caret after the draft, whatever the
+   * selection was.
+   *
+   * This is the composer shell's click-to-focus path: clicking the empty
+   * space after a draft means "put me after the text", so it overrides a
+   * stale caret rather than restoring one.
+   */
+  const focusEditableAtEnd = useCallback(() => {
+    const editable = editableRef.current;
+    if (!editable) {
+      return;
+    }
+    editable.focus();
+    placeCaretAtEnd(editable);
+  }, []);
+
   const handle: ChatComposerInputHandle = {
     insertToken: (token: ChatComposerToken) => insertTokenRef.current(token),
     expandToken: (id: string) => tokens.expandToken(id),
     insertText: (text: string) => insertTextRef.current(text),
-    focus: () => editableRef.current?.focus(),
+    focus: focusEditable,
     getValue: () =>
       serialize(editableRef.current ?? document.createElement('div')),
   };
@@ -392,11 +459,11 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     if (!inputControlRef) {
       return;
     }
-    inputControlRef.current = {focus: () => editableRef.current?.focus()};
+    inputControlRef.current = {focus: focusEditableAtEnd};
     return () => {
       inputControlRef.current = null;
     };
-  }, [inputControlRef]);
+  }, [inputControlRef, focusEditableAtEnd]);
 
   useEffect(() => {
     if (controlledValue === undefined || !editableRef.current) {
@@ -559,9 +626,8 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
 
       if (e.key === 'Enter' && !e.shiftKey) {
         // Never submit mid-composition — an IME uses Enter to commit a
-        // candidate (e.g. Japanese/Chinese/Korean input), and browsers may
-        // also surface the legacy keyCode 229 for composing keystrokes.
-        if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) {
+        // candidate. See utils/ime.ts for the full rationale.
+        if (isImeKeyEvent(e.nativeEvent)) {
           return;
         }
 
@@ -587,12 +653,37 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         return;
       }
 
-      // History navigation (only when trigger menu is not active)
+      // History navigation (only when trigger menu is not active).
+      // Recall only at the text boundaries so the caret can still move
+      // between lines in a multi-line draft: ArrowUp recalls the
+      // previous message when the caret is at the very start, ArrowDown
+      // steps forward when it's at the very end. A recalled message is
+      // shown fully selected (see `selectAll` below); that spans both
+      // boundaries at once, so repeated presses keep stepping through
+      // history. Mid-text, we bail before `preventDefault` and let the
+      // browser move the caret up/down a line.
       if (hasHistory && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
         if (!editableRef.current) {
           return;
         }
-        const text = serialize(editableRef.current);
+        const editable = editableRef.current;
+        // Last-resort fallback for a caret we never placed: an engine that
+        // leaves no Range inside the editable on focus, or a consumer that
+        // focused the DOM node directly instead of through our focus
+        // control. Place it where the focus control would have, so a
+        // pending draft is never mistaken for a caret at the start. A no-op
+        // whenever a real caret exists — including one the user moved.
+        ensureCaretInside(editable);
+        const isCollapsed = window.getSelection()?.isCollapsed ?? true;
+        const atStart = isSelectionAtStart(editable);
+        const atEnd = isSelectionAtEnd(editable);
+        const canRecallPrev = atStart && (isCollapsed || atEnd);
+        const canRecallNext = atEnd && (isCollapsed || atStart);
+        if (e.key === 'ArrowUp' ? !canRecallPrev : !canRecallNext) {
+          return;
+        }
+
+        const text = serialize(editable);
         const history = historyRef.current;
         if (history.length === 0) {
           return;
@@ -697,7 +788,6 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       )}
       <div
         ref={editableRef}
-        aria-multiline="true"
         aria-label={label}
         contentEditable={!isDisabled}
         suppressContentEditableWarning
@@ -750,7 +840,7 @@ export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
       data-astryx-token=""
       data-astryx-token-value={token.value}
       contentEditable={false}
-      style={{display: 'inline-flex', verticalAlign: 'baseline'}}>
+      {...stylex.props(styles.tokenSpan)}>
       {isCustomToken(token) ? (
         token.render()
       ) : (

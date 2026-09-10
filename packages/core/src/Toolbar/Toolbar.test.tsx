@@ -72,11 +72,11 @@ describe('Toolbar', () => {
     expect(screen.getByTestId('end')).toBeInTheDocument();
 
     // Three-slot layout produces 3 child divs (plus the aria-hidden
-    // keyboard-hint popover, which is excluded here as an implementation detail)
+    // keyboard-hint layer infrastructure, excluded as an implementation detail)
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.querySelectorAll(':scope > :not([popover])')).toHaveLength(
-      3,
-    );
+    expect(
+      toolbar.querySelectorAll(':scope > :not([popover]):not(template)'),
+    ).toHaveLength(3);
   });
 
   it('renders two-slot layout without centerContent', () => {
@@ -91,11 +91,11 @@ describe('Toolbar', () => {
     expect(screen.getByTestId('end')).toBeInTheDocument();
 
     // Two-slot layout produces 2 child divs (plus the aria-hidden
-    // keyboard-hint popover, excluded here)
+    // keyboard-hint layer infrastructure, excluded here)
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.querySelectorAll(':scope > :not([popover])')).toHaveLength(
-      2,
-    );
+    expect(
+      toolbar.querySelectorAll(':scope > :not([popover]):not(template)'),
+    ).toHaveLength(2);
   });
 
   it('renders start-only layout', () => {
@@ -107,9 +107,9 @@ describe('Toolbar', () => {
     );
     expect(screen.getByTestId('start')).toBeInTheDocument();
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.querySelectorAll(':scope > :not([popover])')).toHaveLength(
-      1,
-    );
+    expect(
+      toolbar.querySelectorAll(':scope > :not([popover]):not(template)'),
+    ).toHaveLength(1);
   });
 
   it('renders end-only layout', () => {
@@ -121,9 +121,9 @@ describe('Toolbar', () => {
     );
     expect(screen.getByTestId('end')).toBeInTheDocument();
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.querySelectorAll(':scope > :not([popover])')).toHaveLength(
-      1,
-    );
+    expect(
+      toolbar.querySelectorAll(':scope > :not([popover]):not(template)'),
+    ).toHaveLength(1);
   });
 
   it('sets aria-orientation to horizontal by default', () => {
@@ -142,22 +142,22 @@ describe('Toolbar', () => {
     );
   });
 
-  it('applies size class', () => {
+  it('reflects the size', () => {
     render(<Toolbar label="Actions" size="sm" />);
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.className).toContain('sm');
+    expect(toolbar).toHaveAttribute('data-size', 'sm');
   });
 
   it('defaults to md size', () => {
     render(<Toolbar label="Actions" />);
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.className).toContain('md');
+    expect(toolbar).toHaveAttribute('data-size', 'md');
   });
 
-  it('applies lg size class', () => {
+  it('reflects lg size', () => {
     render(<Toolbar label="Actions" size="lg" />);
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.className).toContain('lg');
+    expect(toolbar).toHaveAttribute('data-size', 'lg');
   });
 
   it('forwards ref to root element', () => {
@@ -171,14 +171,14 @@ describe('Toolbar', () => {
     // Section renders with astryx-section class containing the variant
     const sectionInner = container.querySelector('.astryx-section');
     expect(sectionInner).toBeInTheDocument();
-    expect(sectionInner?.className).toContain('muted');
+    expect(sectionInner).toHaveAttribute('data-variant', 'muted');
   });
 
   it('defaults to transparent variant', () => {
     const {container} = render(<Toolbar label="Actions" />);
     const sectionInner = container.querySelector('.astryx-section');
     expect(sectionInner).toBeInTheDocument();
-    expect(sectionInner?.className).toContain('transparent');
+    expect(sectionInner).toHaveAttribute('data-variant', 'transparent');
   });
 
   it('navigates with ArrowRight/ArrowLeft in horizontal orientation', async () => {

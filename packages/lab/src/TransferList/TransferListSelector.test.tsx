@@ -420,7 +420,7 @@ describe('TransferListSelector', () => {
     ).toHaveTextContent('3 selected');
   });
 
-  it('disables list controls and Apply while keeping Cancel operable', async () => {
+  it('disables list controls when disabled, but never when merely busy', async () => {
     const view = render(
       <TransferListSelector
         label="Visible fields"
@@ -477,13 +477,56 @@ describe('TransferListSelector', () => {
     await waitFor(() => {
       expect(dialog.querySelector('[aria-busy="true"]')).not.toBeNull();
     });
-    expect(dialog.querySelector('fieldset')).toBeDisabled();
+    // A pending change is announced with aria-busy, never by disabling the
+    // fieldset: `disabled` here would blur the row button the user just
+    // activated and drop focus to <body>.
+    expect(dialog.querySelector('fieldset')).toBeEnabled();
     expect(
       within(dialog).getByRole('button', {name: 'Cancel', hidden: true}),
     ).toBeEnabled();
     expect(
       within(dialog).getByRole('button', {name: 'Apply', hidden: true}),
     ).toBeDisabled();
+  });
+
+  it('keeps focus on the activated row control while a change is pending', async () => {
+    const user = userEvent.setup();
+    const view = render(
+      <TransferListSelector
+        label="Visible fields"
+        options={OPTIONS}
+        value={['name']}
+        onChange={() => {}}
+      />,
+    );
+    await openSelector();
+    const dialog = screen.getByRole('dialog', {
+      name: 'Visible fields',
+      ...hidden,
+    });
+
+    const addStatus = within(dialog).getByRole('button', {
+      name: 'Add Status',
+      hidden: true,
+    });
+    await user.click(addStatus);
+    expect(addStatus).toHaveFocus();
+
+    view.rerender(
+      <TransferListSelector
+        label="Visible fields"
+        options={OPTIONS}
+        value={['name']}
+        onChange={() => {}}
+        isLoading
+      />,
+    );
+
+    await waitFor(() => {
+      expect(dialog.querySelector('[aria-busy="true"]')).not.toBeNull();
+    });
+    expect(addStatus).toHaveFocus();
+    expect(document.body).not.toHaveFocus();
   });
 
   it('forwards intentional selector shell and transfer-list content props', async () => {

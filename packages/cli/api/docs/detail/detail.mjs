@@ -11,17 +11,19 @@
  *   discovery/loading/topic-resolution with the section leaf via _adapter.mjs.
  */
 
-import {pathToFileURL} from 'node:url';
-import {resolveTopicDocs} from '../_adapter.mjs';
+import {loadTopicDoc, resolveTopicDocs} from '../_adapter.mjs';
 
 /**
  * Resolve token-ref blocks by inlining the referenced section's table.
  * This allows section docs to reference token tables without duplicating data.
+ *
+ * The reference is resolved through the catalog, so a topic may point at one
+ * an integration contributed (or replaced) rather than only at a built-in.
  * @param {import('../docs.type.mjs').DocsDetailResponse['data']} docsData
- * @param {Record<string, string>} topics
+ * @param {import('../../../foundation/discovery/docs-discovery.mjs').DocsCatalog} catalog
  * @returns {Promise<import('../docs.type.mjs').DocsDetailResponse['data']>}
  */
-async function resolveTokenRefs(docsData, topics) {
+async function resolveTokenRefs(docsData, catalog) {
   const resolved = {...docsData, sections: [...docsData.sections]};
   for (let si = 0; si < resolved.sections.length; si++) {
     const section = resolved.sections[si];
@@ -29,13 +31,12 @@ async function resolveTokenRefs(docsData, topics) {
     const newContent = [];
     for (const block of section.content) {
       if (block.type === 'token-ref') {
-        const refPath = topics[block.topic];
-        if (!refPath) {
+        const refEntry = catalog.resolve(block.topic);
+        if (!refEntry) {
           newContent.push({type: 'prose', text: `[token-ref: unknown topic "${block.topic}"]`});
           continue;
         }
-        const refMod = await import(pathToFileURL(refPath).href);
-        const refDocs = refMod.docs;
+        const refDocs = await loadTopicDoc(refEntry);
         const refSection = refDocs.sections.find(
           (/** @type {import('@astryxdesign/cli/authoring').ReferenceSection} */ s) =>
             s.title.toLowerCase() === block.section.toLowerCase(),
@@ -72,10 +73,11 @@ async function resolveTokenRefs(docsData, topics) {
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
+ * @param {string} [options.cwd]
  * @returns {Promise<import('../docs.type.mjs').DocsDetailResponse>}
  */
 export async function detail(topic, options = {}) {
-  const {topics, docsData} = await resolveTopicDocs(topic, options);
-  const resolved = await resolveTokenRefs(docsData, topics);
+  const {catalog, docsData} = await resolveTopicDocs(topic, options);
+  const resolved = await resolveTokenRefs(docsData, catalog);
   return {type: 'docs.detail', data: resolved};
 }

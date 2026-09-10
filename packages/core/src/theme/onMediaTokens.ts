@@ -21,6 +21,7 @@
  */
 
 import type {TokenValue, ComponentStyleMap} from './defineTheme';
+import {deepMergeComponents} from './mergeComponents';
 
 /**
  * On-media theme overrides — same shape as the main theme but scoped
@@ -89,15 +90,21 @@ function resolveValue(value: TokenValue): string {
 /**
  * Resolve on-media overrides: merge user tokens with defaults,
  * pass through component overrides.
+ *
+ * `base` is the already-resolved surface of a theme being extended. It sits
+ * between the defaults and this theme's own input, so a child theme inherits
+ * the surface customizations of the theme it extends instead of silently
+ * reverting them to the defaults.
  */
 export function resolveOnMedia(
   surface: 'dark' | 'light',
   input?: OnMediaOverrides,
+  base?: ResolvedOnMedia,
 ): ResolvedOnMedia {
   const defaults =
     surface === 'dark' ? defaultOnDarkTokens : defaultOnLightTokens;
 
-  const tokens = {...defaults};
+  const tokens = {...defaults, ...base?.tokens};
 
   if (input?.tokens) {
     for (const [key, value] of Object.entries(input.tokens)) {
@@ -109,6 +116,6 @@ export function resolveOnMedia(
 
   return {
     tokens,
-    components: input?.components,
+    components: deepMergeComponents(base?.components, input?.components),
   };
 }

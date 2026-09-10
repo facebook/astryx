@@ -21,10 +21,15 @@ import type {
 // Helpers
 // =============================================================================
 
-function createSource(config: PowerSearchConfig) {
+function createSource(
+  config: PowerSearchConfig,
+  // Uncapped by default so these tests exercise matching and ranking rather
+  // than the typed-result cap, which has its own test below.
+  maxTypedResults: number = Number.POSITIVE_INFINITY,
+) {
   const {result} = renderHook(() => {
     const internal = useInternalConfig(config);
-    return usePowerSearchSource(internal);
+    return usePowerSearchSource(internal, maxTypedResults);
   });
   return result.current;
 }
@@ -92,6 +97,27 @@ const configWithContentSearch: PowerSearchConfig = {
   contentSearchFieldKey: 'title',
 };
 
+const groupedConfig: PowerSearchConfig = {
+  name: 'GroupedSearch',
+  fields: [
+    field('team_a', 'Field Team A', 'Team'),
+    field('plain_a', 'Field Plain A'),
+    field('time_a', 'Field Time A', 'Time'),
+    field('team_b', 'Field Team B', 'Team'),
+    field('plain_b', 'Field Plain B'),
+    field('time_b', 'Field Time B', 'Time'),
+  ],
+};
+
+function field(key: string, label: string, group?: string) {
+  return {
+    key,
+    label,
+    group,
+    operators: [{key: 'is', label: 'is', value: {type: 'string'} as const}],
+  };
+}
+
 // =============================================================================
 // Tests
 // =============================================================================
@@ -124,6 +150,21 @@ describe('usePowerSearchSource', () => {
     it('empty search returns same as bootstrap', () => {
       const source = createSource(baseConfig);
       expect(syncSearch(source, '')).toEqual(syncBootstrap(source));
+    });
+
+    it('orders ungrouped fields before named groups', () => {
+      const items = syncBootstrap(createSource(groupedConfig));
+      expect(items.map(item => item.label)).toEqual([
+        'Field Plain A',
+        'Field Plain B',
+        'Field Team A',
+        'Field Team B',
+        'Field Time A',
+        'Field Time B',
+      ]);
+      expect(
+        items.map(item => (item.auxiliaryData as PowerSearchAuxData).group),
+      ).toEqual([undefined, undefined, 'Team', 'Team', 'Time', 'Time']);
     });
   });
 
@@ -175,6 +216,23 @@ describe('usePowerSearchSource', () => {
       const isItem = results.find(r => r.label === 'Title is');
       const aux = isItem?.auxiliaryData as PowerSearchAuxData;
       expect(aux.operatorKey).toBe('is');
+    });
+
+    it('leaves ranked results flat and in relevance order', () => {
+      const results = syncSearch(createSource(groupedConfig), 'field');
+      expect(results.slice(0, 6).map(item => item.label)).toEqual([
+        'Field Team A',
+        'Field Team A is',
+        'Field Plain A',
+        'Field Plain A is',
+        'Field Time A',
+        'Field Time A is',
+      ]);
+      expect(
+        results.every(
+          item => (item.auxiliaryData as PowerSearchAuxData).group == null,
+        ),
+      ).toBe(true);
     });
   });
 
@@ -537,5 +595,27 @@ describe('usePowerSearchSource', () => {
       const aux = valueItem!.auxiliaryData as PowerSearchAuxData;
       expect(aux.filterValue).toEqual({type: 'enum_list', value: ['bug']});
     });
+  });
+});
+
+describe('typed-result cap', () => {
+  const manyFields: PowerSearchConfig = {
+    name: 'many',
+    fields: Array.from({length: 25}, (_, i) => ({
+      key: `field_${i}`,
+      label: `Zebra ${String(i).padStart(2, '0')}`,
+      operators: [{key: 'is', label: 'is', value: {type: 'string'} as const}],
+    })),
+  };
+
+  it('caps results for a typed query', () => {
+    const source = createSource(manyFields, 10);
+    expect(source.search('zebra')).toHaveLength(10);
+  });
+
+  it('never caps the field list for an empty query', () => {
+    const source = createSource(manyFields, 10);
+    expect(syncBootstrap(source)).toHaveLength(25);
+    expect(source.search('')).toHaveLength(25);
   });
 });

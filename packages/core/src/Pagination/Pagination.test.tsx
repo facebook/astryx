@@ -613,7 +613,7 @@ describe('Pagination', () => {
       expect(box).toHaveAttribute('aria-valuemax', '10');
     });
 
-    it('commits a typed page on Enter and rejects an over-range entry', async () => {
+    it('commits a typed page on Enter and clamps an over-range entry', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       render(
@@ -633,9 +633,10 @@ describe('Pagination', () => {
       onChange.mockClear();
       await user.clear(box);
       // The box is a NumberInput bounded to [1, totalPages]: an over-max entry
-      // is rejected and never navigates past the last page.
+      // lands on the last page rather than navigating past it.
       await user.type(box, '99{Enter}');
       expect(onChange).not.toHaveBeenCalledWith(99);
+      expect(onChange).toHaveBeenCalledWith(10);
     });
 
     it('commits on blur', async () => {

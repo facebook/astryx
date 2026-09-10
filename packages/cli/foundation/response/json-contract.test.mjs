@@ -164,10 +164,20 @@ describe('contract: every --json emission is valid JSON with apiVersion', () => 
   });
 
   it('unsupported command error envelope carries apiVersion', () => {
-    const r = runCli(['init', '--json', '--all']);
+    // `theme` is a command group with no output of its own, so it stays off
+    // the --json allowlist. (`init` used to be the example here until it grew
+    // a receipt of its own.)
+    const r = runCli(['theme', '--json']);
     const env = JSON.parse(r.stdout);
     expect(env.apiVersion).toBe(API_VERSION);
-    expect(env.error).toMatch(/init/);
+    expect(env.error).toMatch(/theme/);
+  });
+
+  it('init emits its install receipt', () => {
+    const r = runCli(['init', '--json']);
+    const env = JSON.parse(r.stdout);
+    expect(env.apiVersion).toBe(API_VERSION);
+    expect(env.type).toBe('init.run');
   });
 
   it('supported command (discover) emits clean JSON, no human chatter leak', () => {

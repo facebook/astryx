@@ -10,8 +10,11 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {TopNavRenderContext} from './TopNavRenderContext';
 import {TopNavMenu} from './TopNavMenu';
 
 const mockItems = [
@@ -169,5 +172,175 @@ describe('keyboard navigation (APG menu pattern)', () => {
     const menu = screen.getByRole('menu', {hidden: true});
     fireEvent.keyDown(menu, {key: 'Escape'});
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+// =============================================================================
+// The shared focus ring (#4654) — see the note in SideNav.test.tsx: jsdom will
+// not derive `:focus-visible` here, so what is pinned is that the focusable
+// element composes the shared utility's classes rather than falling back to
+// the browser's own outline.
+// =============================================================================
+
+const sharedFocusRingClasses = stylex
+  .props(focusOutlineStyles.focusVisible)
+  .className!.split(' ');
+
+function expectSharedFocusRing(el: Element) {
+  const classes = el.className.split(' ');
+  for (const c of sharedFocusRingClasses) {
+    expect(classes).toContain(c);
+  }
+}
+
+describe('TopNavMenu — drawer focus ring', () => {
+  it('draws the shared ring on the drawer section header', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMenu label="Products" items={mockItems} />
+      </TopNavRenderContext>,
+    );
+    expectSharedFocusRing(screen.getByRole('button', {name: /Products/}));
+  });
+
+  it('draws the shared ring on a drawer item', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMenu label="Products" items={mockItems} />
+      </TopNavRenderContext>,
+    );
+    expectSharedFocusRing(screen.getByRole('link', {name: /Analytics/}));
+  });
+});
+
+describe('TopNavMenu pass-through props', () => {
+  it('forwards pass-through props to the trigger button', () => {
+    render(
+      <TopNavMenu
+        label="Products"
+        items={mockItems}
+        aria-label="Products menu"
+        id="products-trigger"
+        data-source="nav"
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Products menu'});
+    expect(trigger).toHaveAttribute('id', 'products-trigger');
+    expect(trigger).toHaveAttribute('data-source', 'nav');
+  });
+
+  it('forwards pass-through props to the drawer trigger', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMenu
+          label="Products"
+          items={mockItems}
+          id="products-drawer"
+          data-source="nav"
+        />
+      </TopNavRenderContext>,
+    );
+    const trigger = screen.getByRole('button', {name: /Products/});
+    expect(trigger).toHaveAttribute('id', 'products-drawer');
+    expect(trigger).toHaveAttribute('data-source', 'nav');
+  });
+
+  it('keeps its own popup wiring when a caller passes the same attributes', () => {
+    render(
+      <TopNavMenu
+        label="Products"
+        items={mockItems}
+        aria-haspopup="dialog"
+        aria-expanded
+        data-source="nav"
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    expect({
+      hasPopup: trigger.getAttribute('aria-haspopup'),
+      isExpanded: trigger.getAttribute('aria-expanded'),
+      dataSource: trigger.getAttribute('data-source'),
+    }).toEqual({hasPopup: 'true', isExpanded: 'false', dataSource: 'nav'});
+  });
+});
+
+describe('TopNavMenu — owned handlers on the trigger', () => {
+  it("composes a caller's onClick with the trigger's own open behavior", async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <TopNavMenu label="Products" items={mockItems} onClick={handleClick} />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    await user.click(trigger);
+
+    expect(handleClick).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it("composes a caller's hover handlers with the trigger's hover wiring", async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const handleMouseEnter = vi.fn();
+    const handleMouseLeave = vi.fn();
+    render(
+      <TopNavMenu
+        label="Products"
+        items={mockItems}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(handleMouseEnter).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.unhover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(handleMouseLeave).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    vi.useRealTimers();
+  });
+
+  it("composes a caller's onClick with the drawer section toggle", async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMenu label="Products" items={mockItems} onClick={handleClick} />
+      </TopNavRenderContext>,
+    );
+
+    const trigger = screen.getByRole('button', {name: /Products/});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(handleClick).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('still forwards hover handlers the drawer trigger does not own', async () => {
+    const user = userEvent.setup();
+    const handleMouseEnter = vi.fn();
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMenu
+          label="Products"
+          items={mockItems}
+          onMouseEnter={handleMouseEnter}
+        />
+      </TopNavRenderContext>,
+    );
+
+    await user.hover(screen.getByRole('button', {name: /Products/}));
+    expect(handleMouseEnter).toHaveBeenCalledOnce();
   });
 });

@@ -30,9 +30,12 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
     {code: "announce(t('codeblock.announce.copied'));"},
     // Variables are fine — we can't know their provenance
     {code: 'announce(message);'},
-    // Template literal WITH expressions is allowed (conservative check; the
-    // interpolated-announcement class is handled by the i18n sweep)
-    {code: 'announce(`Added ${item.label}`);'},
+    // Interpolation-only template has no literal chunk to translate
+    {code: 'announce(`${count}`);'},
+    // A ternary between two t() results is the pattern we want
+    {
+      code: "announce(cond ? t('a.b.c') : t('a.b.d'));",
+    },
     // Empty string (used to clear the live region) is not user-facing
     {code: "announce('');"},
     // Identifier-shaped single lowercase word is not user-facing
@@ -86,6 +89,33 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
     {
       code: "notify('Something happened');",
       options: [{callees: ['notify']}],
+      errors: [{messageId: 'hardcodedCallArg'}],
+    },
+    // Ternary branches are walked, like an aria-label expression container
+    {
+      code: "announce(n === 0 ? 'No results found' : 'Results found');",
+      errors: [
+        {messageId: 'hardcodedCallArg'},
+        {messageId: 'hardcodedCallArg'},
+      ],
+    },
+    // Only the offending branch is reported
+    {
+      code: "announce(n === 0 ? t('a.b.empty') : 'Results found');",
+      errors: [{messageId: 'hardcodedCallArg'}],
+    },
+    // Interpolated template: the literal chunks are still English
+    {
+      code: 'announce(`Added ${item.label}`);',
+      errors: [{messageId: 'hardcodedCallArg'}],
+    },
+    {
+      code: 'announce(`${count} of ${total} selected`);',
+      errors: [{messageId: 'hardcodedCallArg'}],
+    },
+    // Fallback on the right of ?? / ||
+    {
+      code: "announce(emptyText ?? 'No results found');",
       errors: [{messageId: 'hardcodedCallArg'}],
     },
     // --- Pre-existing surfaces still behave ---

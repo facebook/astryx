@@ -11,6 +11,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, it, expect} from 'vitest';
+import docsiteConfig from '../../astryx.config.mjs';
 import {packages} from '../generated/packageRegistry';
 import {
   components,
@@ -21,13 +22,25 @@ import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
+import {externalComponentPreviews} from '../generated/componentPreviewRegistry';
+import {eagerShowcases} from '../components/eagerShowcases';
 import {exampleRegistry} from '../generated/exampleRegistry';
+import {normalizeComponentCategory} from '../lib/componentCategories';
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../../../..',
 );
 const CORE_SRC_DIR = path.join(REPO_ROOT, 'packages/core/src');
+const COMPONENT_REGISTRY_PATH = new URL(
+  '../generated/componentRegistry.ts',
+  import.meta.url,
+);
+const COMPONENT_REGISTRY_SOURCE = fs.readFileSync(
+  COMPONENT_REGISTRY_PATH,
+  'utf-8',
+);
+const CONFIGURED_CANARY_PACKAGES = new Set(docsiteConfig.integrations);
 
 function findFiles(dir: string, predicate: (filePath: string) => boolean) {
   const files: string[] = [];
@@ -92,20 +105,26 @@ function getComponentDocCompletenessIssues(
 // ── Package Registry ───────────────────────────────────────────────────
 
 describe('packageRegistry', () => {
-  it('discovers installed packages (private and uninstalled excluded)', () => {
+  it('discovers installed stable packages and canary-only integrations', () => {
     const names = packages.map(p => p.name);
     expect(names).toContain('@astryxdesign/core');
     expect(names).toContain('@astryxdesign/cli');
     expect(names).toContain('@astryxdesign/theme-neutral');
     expect(names).toContain('@astryxdesign/theme-gothic');
     expect(names).toContain('@astryxdesign/theme-stone');
+    expect(names).toContain('@astryxdesign/lab');
+    expect(names).toContain('@astryxdesign/charts');
+    expect(names).toContain('@astryxdesign/richtext');
+    expect(names).toContain('@astryxdesign/vega');
     expect(names).not.toContain('@astryxdesign/theme-default');
     expect(names).not.toContain('@astryxdesign/theme-brutalist');
     expect(names).not.toContain('@astryxdesign/theme-chocolate');
     expect(names).not.toContain('@astryxdesign/theme-daily');
-    expect(names).not.toContain('@astryxdesign/lab');
     expect(names).not.toContain('@astryxdesign/build');
-    expect(packages.length).toBeGreaterThanOrEqual(5);
+    expect(packages.filter(pkg => pkg.canaryOnly).map(pkg => pkg.name)).toEqual(
+      [...CONFIGURED_CANARY_PACKAGES].sort(),
+    );
+    expect(packages.length).toBeGreaterThanOrEqual(9);
   });
 
   it('only includes packages listed in docsite dependencies', () => {
@@ -127,8 +146,33 @@ describe('packageRegistry', () => {
       expect(pkg.displayName).toBeTruthy();
       expect(pkg.version).toMatch(/^\d+\.\d+\.\d+/);
       expect(pkg.packagePath).toBeTruthy();
+      expect(typeof pkg.canaryOnly).toBe('boolean');
       expect(typeof pkg.hasReadme).toBe('boolean');
       expect(typeof pkg.hasChangelog).toBe('boolean');
+    }
+  });
+
+  it('generates CSS imports for every canary component package that exports CSS', () => {
+    const css = fs.readFileSync(
+      path.join(REPO_ROOT, 'apps/docsite/src/generated/package-styles.css'),
+      'utf-8',
+    );
+    const expectedImports = packages
+      .filter(pkg => pkg.canaryOnly && components[pkg.name]?.length > 0)
+      .flatMap(pkg => {
+        const manifest = JSON.parse(
+          fs.readFileSync(
+            path.join(REPO_ROOT, pkg.packagePath, 'package.json'),
+            'utf-8',
+          ),
+        );
+        return Object.keys(manifest.exports ?? {})
+          .filter(subpath => subpath.endsWith('.css'))
+          .map(subpath => `@import "${pkg.name}/${subpath.slice(2)}";`);
+      });
+
+    for (const expectedImport of expectedImports) {
+      expect(css).toContain(expectedImport);
     }
   });
 
@@ -154,7 +198,9 @@ describe('packageRegistry', () => {
       if (pkg.hasChangelog) {
         expect(pkg.changelog).toBeTruthy();
         expect(typeof pkg.changelog).toBe('string');
-        expect(pkg.changelog!.length).toBeGreaterThan(50);
+        expect(pkg.changelog!.length).toBeGreaterThan(
+          pkg.name === '@astryxdesign/richtext' ? 0 : 50,
+        );
       } else {
         expect(pkg.changelog).toBeNull();
       }
@@ -171,9 +217,91 @@ describe('packageRegistry', () => {
 // ── Component Registry ─────────────────────────────────────────────────
 
 describe('componentRegistry', () => {
+  it('derives playground types from the CLI authoring contract', () => {
+    const playground: NonNullable<ComponentEntry['playground']> = {
+      wrapper: {component: 'Layout', slotProp: 'start'},
+    };
+    expect(COMPONENT_REGISTRY_SOURCE).toContain(
+      "from '@astryxdesign/cli/authoring'",
+    );
+    expect(COMPONENT_REGISTRY_SOURCE).toContain(
+      'export type PlaygroundConfig = ComponentPlaygroundConfig;',
+    );
+    expect(playground.wrapper?.slotProp).toBe('start');
+  });
+
   it('discovers components in @astryxdesign/core', () => {
     expect(components['@astryxdesign/core']).toBeDefined();
     expect(components['@astryxdesign/core'].length).toBeGreaterThan(100);
+  });
+
+  it('discovers CLI-configured canary package components', () => {
+    expect(components['@astryxdesign/lab'].length).toBeGreaterThan(30);
+    expect(components['@astryxdesign/charts'].map(comp => comp.name)).toEqual([
+      'Chart',
+      'ChartSwatch',
+    ]);
+    expect(components['@astryxdesign/richtext'].map(comp => comp.name)).toEqual(
+      ['RichTextEditor'],
+    );
+    expect(components['@astryxdesign/vega'].map(comp => comp.name)).toEqual([
+      'VegaChart',
+    ]);
+
+    for (const packageName of [
+      '@astryxdesign/lab',
+      '@astryxdesign/charts',
+      '@astryxdesign/richtext',
+      '@astryxdesign/vega',
+    ]) {
+      expect(
+        components[packageName].every(comp => !comp.isReady),
+        packageName,
+      ).toBe(true);
+    }
+    expect(components['@astryxdesign/core'].every(comp => comp.isReady)).toBe(
+      true,
+    );
+  });
+
+  it('groups every chart-family component under Charts', () => {
+    const chartComponents = [
+      ...(components['@astryxdesign/charts'] ?? []),
+      ...(components['@astryxdesign/lab'] ?? []).filter(comp =>
+        comp.name.startsWith('Chart'),
+      ),
+    ];
+    expect(chartComponents.length).toBeGreaterThan(2);
+    expect(chartComponents.every(comp => comp.group === 'Charts')).toBe(true);
+    expect(
+      chartComponents.every(comp => comp.category === 'Data Visualization'),
+    ).toBe(true);
+  });
+
+  it('keeps every Lab chat component in the Chat family and category', () => {
+    const chatComponents = (components['@astryxdesign/lab'] ?? []).filter(
+      comp => comp.name.startsWith('Chat'),
+    );
+    expect(chatComponents.length).toBeGreaterThan(4);
+    expect(chatComponents.every(comp => comp.group === 'Chat')).toBe(true);
+    expect(chatComponents.every(comp => comp.category === 'Chat')).toBe(true);
+  });
+
+  it('generates lazy previews for every non-core component', () => {
+    const externalNames = Object.entries(components).flatMap(
+      ([packageName, entries]) =>
+        packageName === '@astryxdesign/core'
+          ? []
+          : entries.map(component => component.name),
+    );
+    expect(Object.keys(externalComponentPreviews).sort()).toEqual(
+      externalNames.sort(),
+    );
+    expect(
+      Object.values(externalComponentPreviews).every(
+        component => component != null && typeof component === 'object',
+      ),
+    ).toBe(true);
   });
 
   it('component count matches sum of all packages', () => {
@@ -194,6 +322,7 @@ describe('componentRegistry', () => {
         expect(typeof comp.description).toBe('string');
         expect(Array.isArray(comp.keywords)).toBe(true);
         expect(typeof comp.hidden).toBe('boolean');
+        expect(typeof comp.isReady).toBe('boolean');
         // parentDoc is string | null
         expect(
           comp.parentDoc === null || typeof comp.parentDoc === 'string',
@@ -284,6 +413,38 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('DropdownMenuRadioGroup declares a menu wrapper and radio choices for its preview (#5888)', () => {
+    const core = components['@astryxdesign/core'];
+    const radioGroup = core.find(c => c.name === 'DropdownMenuRadioGroup');
+
+    expect(radioGroup).toBeDefined();
+    // The menu opens on first load so both choices are visible immediately;
+    // the preview bridges DropdownMenu's `onOpenChange` back to this prop so
+    // selecting still closes the menu and the trigger reopens it.
+    expect(radioGroup!.playground?.wrapper).toMatchObject({
+      component: 'DropdownMenu',
+      props: {
+        button: {label: 'Sort'},
+        presentation: 'popover',
+        isMenuOpen: true,
+      },
+    });
+    expect(radioGroup!.playground?.defaults).toMatchObject({
+      value: 'newest',
+      label: 'Sort by',
+      children: [
+        {
+          __element: 'DropdownMenuRadioItem',
+          props: {value: 'newest', label: 'Newest'},
+        },
+        {
+          __element: 'DropdownMenuRadioItem',
+          props: {value: 'oldest', label: 'Oldest'},
+        },
+      ],
+    });
+  });
+
   it('Citation satisfies its required source prop via playground defaults', () => {
     const core = components['@astryxdesign/core'];
     const citation = core.find(c => c.name === 'Citation');
@@ -293,6 +454,57 @@ describe('componentRegistry', () => {
     expect(citation!.playground?.defaults).toMatchObject({
       source: {title: 'Astryx Design', url: 'https://example.com'},
       number: 1,
+    });
+  });
+
+  it('PowerSearch supplies representative config and filters playground defaults', () => {
+    const core = components['@astryxdesign/core'];
+    const powerSearch = core.find(c => c.name === 'PowerSearch');
+    expect(powerSearch).toBeDefined();
+    expect(powerSearch!.playground?.defaults).toMatchObject({
+      config: {
+        name: 'IssueSearch',
+        fields: [
+          {
+            key: 'status',
+            operators: [
+              {
+                key: 'is',
+                value: {
+                  type: 'enum',
+                  values: [
+                    {value: 'open', label: 'Open'},
+                    {value: 'closed', label: 'Closed'},
+                  ],
+                },
+              },
+            ],
+          },
+          {key: 'title'},
+        ],
+      },
+      filters: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: {type: 'enum', value: 'open'},
+        },
+      ],
+    });
+  });
+
+  it('Tokenizer satisfies its required value prop via playground defaults', () => {
+    const core = components['@astryxdesign/core'];
+    const tokenizer = core.find(c => c.name === 'Tokenizer');
+    expect(tokenizer).toBeDefined();
+    // `value` is an array of custom items the preview cannot auto-generate;
+    // without this default the properties tab has no interactive preview.
+    expect(tokenizer!.playground?.defaults).toMatchObject({
+      label: 'Tags',
+      value: [
+        {id: '1', label: 'Design'},
+        {id: '2', label: 'Engineering'},
+      ],
     });
   });
 
@@ -306,6 +518,88 @@ describe('componentRegistry', () => {
     });
     expect(metadataListItem!.playground?.wrapper).toMatchObject({
       component: 'MetadataList',
+    });
+  });
+
+  it('LayoutHeader declares a playground wrapper and default content so preview is not empty', () => {
+    const core = components['@astryxdesign/core'];
+    const layoutHeader = core.find(c => c.name === 'LayoutHeader');
+    expect(layoutHeader).toBeDefined();
+    expect(layoutHeader!.playground?.defaults).toMatchObject({
+      children: expect.any(String),
+    });
+    expect(layoutHeader!.playground?.wrapper).toMatchObject({
+      component: 'Layout',
+    });
+  });
+
+  it('Grid declares playground children so the preview is not empty (#5892)', () => {
+    const core = components['@astryxdesign/core'];
+    const grid = core.find(c => c.name === 'Grid');
+    expect(grid).toBeDefined();
+    expect(grid!.playground?.defaults).toMatchObject({
+      columns: 3,
+      gap: 2,
+      children: expect.arrayContaining([
+        expect.objectContaining({__element: 'Card'}),
+      ]),
+    });
+  });
+
+  it('GridSpan declares a playground wrapper for realistic preview geometry (#5893)', () => {
+    const core = components['@astryxdesign/core'];
+    const gridSpan = core.find(c => c.name === 'GridSpan');
+    expect(gridSpan).toBeDefined();
+    expect(gridSpan!.playground?.wrapper).toMatchObject({
+      component: 'Grid',
+      props: {columns: 3, gap: 2},
+    });
+    expect(gridSpan!.playground?.defaults).toMatchObject({
+      columns: 2,
+      children: expect.any(String),
+    });
+  });
+
+  it.each(['Stack', 'HStack', 'VStack'])(
+    '%s declares playground children so the preview is not empty (#5894, #5898, #5900)',
+    name => {
+      const core = components['@astryxdesign/core'];
+      const entry = core.find(c => c.name === name);
+      expect(entry).toBeDefined();
+      expect(entry!.playground?.defaults).toMatchObject({
+        gap: 2,
+        children: expect.arrayContaining([
+          expect.objectContaining({__element: 'Card'}),
+        ]),
+      });
+    },
+  );
+
+  it('StackItem declares a playground wrapper for realistic preview geometry (#5899)', () => {
+    const core = components['@astryxdesign/core'];
+    const stackItem = core.find(c => c.name === 'StackItem');
+    expect(stackItem).toBeDefined();
+    expect(stackItem!.playground?.wrapper).toMatchObject({
+      component: 'HStack',
+      props: {gap: 2, width: 300},
+    });
+    expect(stackItem!.playground?.defaults).toMatchObject({
+      size: 'fill',
+      children: expect.objectContaining({__element: 'Card'}),
+    });
+  });
+
+  it('LayoutPanel declares a playground wrapper in start slot so hasDivider preview is not 0px (#5897)', () => {
+    const core = components['@astryxdesign/core'];
+    const layoutPanel = core.find(c => c.name === 'LayoutPanel');
+    expect(layoutPanel).toBeDefined();
+    expect(layoutPanel!.playground?.defaults).toMatchObject({
+      children: expect.any(String),
+      hasDivider: true,
+    });
+    expect(layoutPanel!.playground?.wrapper).toMatchObject({
+      component: 'Layout',
+      slotProp: 'start',
     });
   });
 
@@ -323,6 +617,18 @@ describe('componentRegistry', () => {
         alt: expect.any(String),
       },
     });
+  });
+
+  it('MobileNavToggle declares an appShellMobile playground so its preview is not empty (#4983)', () => {
+    const core = components['@astryxdesign/core'];
+    const toggle = core.find(c => c.name === 'MobileNavToggle');
+    expect(toggle).toBeDefined();
+    // The toggle reads AppShell mobile context and renders null without it;
+    // appShellMobile makes the preview provide a simulated mobile context.
+    expect(toggle!.playground?.appShellMobile).toBe(true);
+    // The drawer's overlay playground stays on the MobileNav entry only —
+    // the toggle renders inline and must not inherit the overlay placeholder.
+    expect(toggle!.playground?.overlay).toBeUndefined();
   });
 
   it('dialog-family components keep contained isInline previews, not overlay mode (#3657)', () => {
@@ -451,6 +757,13 @@ describe('componentRegistry', () => {
       const dupes = names.filter((n, i) => names.indexOf(n) !== i);
       expect(dupes).toEqual([]);
     }
+  });
+
+  it('has globally unique component route names', () => {
+    const names = Object.values(components)
+      .flat()
+      .map(component => component.name);
+    expect(new Set(names).size).toBe(names.length);
   });
 
   it('known compound docs are expanded, not emitted as single entries', () => {
@@ -585,6 +898,18 @@ describe('blockRegistry', () => {
       b => b.isShowcase && b.exampleFor === 'Button',
     );
     expect(buttonShowcase).toBeDefined();
+  });
+
+  it('discovers the Charts-owned showcase through its CLI integration', () => {
+    const chartShowcase = blocks.find(
+      block => block.isShowcase && block.exampleFor === 'Chart',
+    );
+    expect(chartShowcase).toMatchObject({
+      displayName: 'Chart',
+      sourcePackage: '@astryxdesign/charts',
+      aspectRatio: 1.6,
+    });
+    expect(chartShowcase?.source).toContain("from '@astryxdesign/charts'");
   });
 
   it('every block has exampleFor set', () => {
@@ -771,6 +1096,9 @@ describe('showcaseRegistry', () => {
     expect(showcaseRegistry['Dialog']).toBeDefined();
     expect(showcaseRegistry['Table']).toBeDefined();
     expect(showcaseRegistry['Card']).toBeDefined();
+    expect(showcaseRegistry['Chart']).toBeDefined();
+    expect(showcaseRegistry['ChartBar']).toBeDefined();
+    expect(showcaseRegistry['RichTextEditor']).toBeDefined();
   });
 
   it('no duplicate keys (one showcase per component)', () => {
@@ -955,6 +1283,137 @@ describe('Card playground defaults', () => {
   });
 });
 
+describe('CheckIndicator playground defaults (#5890)', () => {
+  it('starts the Properties preview in its visible checked state', () => {
+    const checkIndicator = Object.values(components)
+      .flat()
+      .find(component => component.name === 'CheckIndicator');
+
+    expect(checkIndicator).toBeDefined();
+    expect(checkIndicator!.playground?.defaults).toMatchObject({
+      state: 'checked',
+    });
+  });
+});
+
+describe('DropdownMenu adaptive-presentation example', () => {
+  it('documents the presentation choice for the Properties tab', () => {
+    const dropdownMenu = Object.values(components)
+      .flat()
+      .find(component => component.name === 'DropdownMenu');
+    const presentation = dropdownMenu?.props.find(
+      prop => prop.name === 'presentation',
+    );
+
+    expect(presentation?.type).toBe("'popover' | 'bottom-sheet' | 'adaptive'");
+    expect(presentation?.default).toBe("'popover'");
+
+    const defaults = dropdownMenu?.playground?.defaults as
+      Record<string, unknown> | undefined;
+    const items = defaults?.items as
+      Array<{label?: unknown; icon?: unknown}> | undefined;
+    expect(items).toHaveLength(4);
+    expect(items?.every(item => typeof item.icon === 'string')).toBe(true);
+  });
+
+  it('registers the responsive presentation example on the related component pages', () => {
+    const dropdownExamples = exampleRegistry['DropdownMenu'] ?? [];
+    const bottomSheetExample = dropdownExamples.find(example =>
+      /Adaptive presentation/i.test(example.name),
+    );
+
+    expect(bottomSheetExample).toBeDefined();
+    expect(bottomSheetExample!.source).toContain('useMediaQuery');
+    expect(bottomSheetExample!.source).toContain("'bottom-sheet' : 'popover'");
+    expect(bottomSheetExample!.source).toContain('<DropdownMenu');
+
+    const bottomSheetExamples = exampleRegistry['BottomSheet'] ?? [];
+    expect(
+      bottomSheetExamples.some(
+        example => example.source === bottomSheetExample!.source,
+      ),
+    ).toBe(true);
+
+    const mediaQueryExamples = exampleRegistry['useMediaQuery'] ?? [];
+    expect(
+      mediaQueryExamples.some(
+        example => example.source === bottomSheetExample!.source,
+      ),
+    ).toBe(true);
+  });
+
+  it('registers the ContextMenu BottomSheet example', () => {
+    const contextMenuExamples = exampleRegistry['ContextMenu'] ?? [];
+    const bottomSheetExample = contextMenuExamples.find(example =>
+      /Bottom Sheet/i.test(example.name),
+    );
+
+    expect(bottomSheetExample).toBeDefined();
+    expect(bottomSheetExample!.source).toContain('presentation="bottom-sheet"');
+    expect(bottomSheetExample!.source).toContain(
+      'Long-press on touch or right-click',
+    );
+    expect(bottomSheetExample!.source).not.toContain("type: 'divider'");
+  });
+
+  it('uses adaptive presentation in the primary ContextMenu example', () => {
+    const contextMenuExamples = exampleRegistry['ContextMenu'] ?? [];
+    const basicExample = contextMenuExamples.find(example =>
+      /Basic/i.test(example.name),
+    );
+
+    expect(basicExample).toBeDefined();
+    expect(basicExample!.source).toContain('presentation="adaptive"');
+    expect(basicExample!.source).toContain('Long-press or right-click');
+  });
+
+  it('registers the MoreMenu BottomSheet example', () => {
+    const moreMenuExamples = exampleRegistry['MoreMenu'] ?? [];
+    const bottomSheetExample = moreMenuExamples.find(example =>
+      /Bottom Sheet/i.test(example.name),
+    );
+
+    expect(bottomSheetExample).toBeDefined();
+    expect(bottomSheetExample!.source).toContain('presentation="bottom-sheet"');
+    expect(bottomSheetExample!.source).toContain('label="Project actions"');
+    expect(bottomSheetExample!.source).not.toContain("type: 'divider'");
+  });
+});
+
+describe('Selector bottom-sheet examples', () => {
+  it.each(['Selector', 'MultiSelector'])(
+    'documents the %s presentation choice',
+    componentName => {
+      const component = Object.values(components)
+        .flat()
+        .find(entry => entry.name === componentName);
+      const presentation = component?.props.find(
+        prop => prop.name === 'presentation',
+      );
+
+      expect(presentation?.type).toBe(
+        "'popover' | 'bottom-sheet' | 'adaptive'",
+      );
+      expect(presentation?.default).toBe("'popover'");
+    },
+  );
+
+  it.each(['Selector', 'MultiSelector'])(
+    'registers the %s BottomSheet example',
+    componentName => {
+      const examples = exampleRegistry[componentName] ?? [];
+      const bottomSheetExample = examples.find(example =>
+        /Bottom Sheet/i.test(example.name),
+      );
+
+      expect(bottomSheetExample).toBeDefined();
+      expect(bottomSheetExample!.source).toContain(
+        'presentation="bottom-sheet"',
+      );
+    },
+  );
+});
+
 // ── Vertical ToggleButtonGroup example (#2707) ─────────────────────────────
 // ToggleButtonGroup supports orientation="vertical", but no docsite example
 // demonstrated it — the prop was undiscoverable without reading the API
@@ -1011,5 +1470,111 @@ describe('LinkProvider utility page', () => {
     const examples = exampleRegistry['LinkProvider'] ?? [];
     expect(examples.length).toBeGreaterThanOrEqual(1);
     expect(examples[0].source).toContain('<LinkProvider component=');
+  });
+});
+
+// ── Gallery Showcase Registry ──────────────────────────────────────────
+
+/**
+ * The eagerly imported showcases have to stay in step with what the
+ * /components gallery actually renders first — an eager set pointing at
+ * tiles further down the page would ship the chunk cost without removing
+ * any loading state. These tests recompute the gallery's render order from
+ * the same inputs the page uses and pin the eager set to the top of it.
+ */
+describe('galleryEagerShowcases', () => {
+  /**
+   * The gallery's category order lives in the page itself. Reading it back
+   * out of the source keeps this test honest without putting a second copy
+   * of the order anywhere — if the page is reordered, the expectations below
+   * follow it, and the eager list is what has to catch up.
+   */
+  const GALLERY_PAGE = path.join(
+    REPO_ROOT,
+    'apps/docsite/src/app/(docs)/components/page.tsx',
+  );
+  const pageSource = fs.readFileSync(GALLERY_PAGE, 'utf-8');
+  const categories = [
+    ...pageSource
+      .slice(
+        pageSource.indexOf('const CATEGORIES = ['),
+        pageSource.indexOf('] as const;'),
+      )
+      .matchAll(/'([^']+)'/g),
+  ].map(m => m[1]);
+
+  /** Mirrors the tile filtering in the same page. */
+  const isGalleryComponent = (comp: ComponentEntry) =>
+    !comp.isHiddenFromOverview &&
+    !comp.hidden &&
+    !comp.name.startsWith('use') &&
+    Boolean(comp.category) &&
+    comp.group !== 'Utilities';
+
+  /** Gallery render order: categories in display order, then registry order. */
+  const galleryOrder = categories.flatMap(cat =>
+    (components['@astryxdesign/core'] ?? []).filter(
+      c =>
+        normalizeComponentCategory(c.category ?? '') === cat &&
+        isGalleryComponent(c),
+    ),
+  );
+
+  it('reads the gallery category order out of the page', () => {
+    expect(categories.length).toBeGreaterThan(5);
+    expect(categories).toContain('Action');
+    expect(categories).toContain('Form Controls');
+    expect(categories).not.toContain('Data Input');
+    expect(galleryOrder.length).toBeGreaterThan(50);
+  });
+
+  it('renders every category some component declares', () => {
+    const declared = new Set(
+      (components['@astryxdesign/core'] ?? [])
+        .filter(isGalleryComponent)
+        .map(c => normalizeComponentCategory(c.category ?? '')),
+    );
+    for (const cat of declared) {
+      expect(
+        categories,
+        `category "${cat}" has no section on the page`,
+      ).toContain(cat);
+    }
+  });
+
+  /**
+   * The point of the eager set is that those tiles are the ones a visitor
+   * sees first. If the gallery is reordered and this list isn't, the page
+   * pays the chunk cost for tiles that are no longer on top and still shows
+   * a skeleton for the ones that are.
+   */
+  it('eagerly imports exactly the tiles at the top of the gallery', () => {
+    const expected = galleryOrder
+      .filter(c => showcaseRegistry[c.name] != null)
+      .slice(0, Object.keys(eagerShowcases).length)
+      .map(c => c.name);
+    expect(Object.keys(eagerShowcases)).toEqual(expected);
+  });
+
+  it('eager entries are components, not lazy loaders', () => {
+    for (const [name, Component] of Object.entries(eagerShowcases)) {
+      expect(Component, name).toBeTypeOf('function');
+      // A lazy loader would resolve to a promise; an eager showcase is the
+      // component itself and must render synchronously on the server.
+      expect((Component as {$$typeof?: symbol}).$$typeof).toBeUndefined();
+    }
+  });
+
+  it('every eager component also has a lazy loader', () => {
+    for (const name of Object.keys(eagerShowcases)) {
+      expect(showcaseRegistry[name], name).toBeDefined();
+    }
+  });
+
+  it('keeps the eager set small enough to stay off the critical path', () => {
+    // 12 covers a 2560x1440 viewport. Well past that and the page chunk is
+    // carrying components nobody sees before they scroll.
+    expect(Object.keys(eagerShowcases).length).toBeGreaterThanOrEqual(6);
+    expect(Object.keys(eagerShowcases).length).toBeLessThanOrEqual(16);
   });
 });

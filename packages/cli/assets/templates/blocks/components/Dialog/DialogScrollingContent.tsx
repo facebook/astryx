@@ -69,7 +69,7 @@ function Content({onClose}: {onClose: () => void}) {
 
 // Remove isInline for production — dialogs should be modal.
 export default function DialogScrollingContent() {
-  const dialog = useImperativeDialog({maxHeight: '50vh'});
+  const dialog = useImperativeDialog({maxHeight: '50dvh'});
 
   return (
     <>

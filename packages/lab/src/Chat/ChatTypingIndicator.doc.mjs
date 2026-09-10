@@ -5,6 +5,8 @@
 export const docs = {
   name: 'ChatTypingIndicator',
   subComponentOf: 'Chat',
+  group: 'Chat',
+  category: 'Chat',
   displayName: 'Chat Typing Indicator',
   description: 'Animated three-dot typing hint with a grammar-aware label: "Ana is typing...", "Ana and Ben are typing...", or "Ana and 2 others are typing...". Dots bounce with staggered stylex.keyframes delays, disabled under prefers-reduced-motion; the label is announced politely via role="status".',
   props: [

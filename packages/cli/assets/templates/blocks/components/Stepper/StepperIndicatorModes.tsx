@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Stepper, Step} from '@astryxdesign/lab';
+import {Stepper, Step} from '@astryxdesign/core/Stepper';
 import {Text} from '@astryxdesign/core/Text';
 import {Icon} from '@astryxdesign/core/Icon';
 
@@ -11,6 +11,18 @@ export default function StepperIndicatorModes() {
   const [active, setActive] = useState(2);
   return (
     <div style={{display: 'flex', gap: 48, flexWrap: 'wrap'}}>
+      <div style={{maxWidth: 220}}>
+        <Text type="label">None</Text>
+        <Stepper
+          activeStep={active}
+          orientation="vertical"
+          onStepClick={setActive}>
+          <Step step={0} label="Account" indicator="none" />
+          <Step step={1} label="Profile" indicator="none" />
+          <Step step={2} label="Settings" indicator="none" />
+          <Step step={3} label="Review" indicator="none" />
+        </Stepper>
+      </div>
       <div style={{maxWidth: 220}}>
         <Text type="label">Auto</Text>
         <Stepper
@@ -44,22 +56,22 @@ export default function StepperIndicatorModes() {
           <Step
             step={0}
             label="Account"
-            icon={<Icon icon="info" size="sm" />}
+            indicator={<Icon icon="info" size="sm" />}
           />
           <Step
             step={1}
             label="Profile"
-            icon={<Icon icon="search" size="sm" />}
+            indicator={<Icon icon="search" size="sm" />}
           />
           <Step
             step={2}
             label="Settings"
-            icon={<Icon icon="wrench" size="sm" />}
+            indicator={<Icon icon="wrench" size="sm" />}
           />
           <Step
             step={3}
             label="Review"
-            icon={<Icon icon="check" size="sm" />}
+            indicator={<Icon icon="check" size="sm" />}
           />
         </Stepper>
       </div>

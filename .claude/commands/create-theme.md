@@ -2,6 +2,12 @@
 
 Create a new Astryx theme using `defineTheme`.
 
+> Read `packages/cli/assets/theme.template.ts` first (`astryx theme template` writes it into a consumer project). It is the annotated,
+> drift-guarded map of the whole theme surface — every field, the token
+> families, the override syntax — and it names the CLI command that prints the
+> authoritative reference for each. What follows is the packaging around a
+> theme; the template is what goes inside it.
+
 ## Theme Name
 
 $ARGUMENTS
@@ -133,10 +139,10 @@ Component overrides generate scoped CSS:
 
 ```css
 @scope ([data-astryx-theme="{themeName}"]) to ([data-astryx-theme]) {
-  .astryx-button.secondary {
+  .astryx-button[data-variant='secondary'] {
     background-color: ...;
   }
-  .astryx-heading.level-1 {
+  .astryx-heading[data-level='1'] {
     font-size: var(--font-size-2xl);
   }
 }

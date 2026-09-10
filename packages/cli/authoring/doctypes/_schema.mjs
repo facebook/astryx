@@ -94,6 +94,11 @@ export const GenericDocKindSchema = z
   .object({
     ...BaseDocFields,
     type: z.literal('generic'),
+    // Declared rather than left to the passthrough: these two are read by
+    // docs discovery to resolve one topic against another, so a non-string
+    // should fail at the load boundary, not halfway through resolution.
+    replaces: z.string().optional(),
+    extends: z.string().optional(),
   })
   .passthrough();
 

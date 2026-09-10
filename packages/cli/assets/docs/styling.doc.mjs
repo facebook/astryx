@@ -198,7 +198,7 @@ const overrides = stylex.create({
   content: { gap: 'var(--spacing-4)' },
 });
 
-<Dialog isOpen={isOpen} onClose={close} xstyle={overrides.dialog}>
+<Dialog isOpen={isOpen} onOpenChange={close} xstyle={overrides.dialog}>
   <Layout
     header={
       <LayoutHeader hasDivider>
@@ -268,25 +268,29 @@ const overrides = stylex.create({
       ],
     },
     {
-      title: 'Deprecated: Bare Prop and State Classes',
+      title: 'Removed: Bare Prop and State Classes',
   category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Astryx still emits legacy bare prop/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` for compatibility with existing apps and built themes. Do not write new CSS against these bare classes. The stable base component classes (`.astryx-button`, `.astryx-card`, etc.) are not deprecated; only the unprefixed prop/state classes are the legacy surface.',
+          text: 'Astryx no longer emits bare prop/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked`. Run `astryx upgrade --apply` to parse `.css` files and rewrite selectors qualified by a known Astryx target when the 0.5.4 target/value pair has one or more known meanings. Declarations, comments, JavaScript/TypeScript strings, and unqualified classes are never rewritten. Stable base target classes (`.astryx-button`, `.astryx-card`, etc.) remain unchanged.',
         },
         {
           type: 'code',
           lang: 'css',
-          code: `/* Deprecated compatibility selector — avoid in new CSS */
-.my-app .astryx-button.primary {
-  /* use .astryx-button[data-variant="primary"] instead */
+          code: `/* The upgrade preserves old consumer classes and adds the v0.6 prop match */
+.my-app .astryx-button:is(.primary, [data-variant="primary"]) {
+  /* primary buttons or a consumer-supplied .primary class */
 }
 
-/* Deprecated compatibility selector — avoid in new CSS */
-.my-app .astryx-heading.level-2 {
-  /* use .astryx-heading[data-level="2"] instead */
+/* Numeric values stay literal in data attributes */
+.my-app .astryx-heading:is(.level-2, [data-level="2"]) {
+  /* level 2 headings or a consumer-supplied .level-2 class */
 }`,
+        },
+        {
+          type: 'prose',
+          text: 'Each known old value becomes a specificity-preserving `:is(...)` union containing the original class arm plus every v0.5.4 data-attribute arm. The class arm preserves consumer-supplied `className` matches; the attribute arms match v0.6 props and states. Narrow the union later only when class provenance or prop-axis intent is known. Custom/unknown qualified classes and unqualified classes stay unchanged. Search for unqualified old values such as `.primary` or `.sm` and migrate only confirmed Astryx uses manually. Migrate selectors embedded in JavaScript or TypeScript manually with the same rules.',
         },
       ],
     },

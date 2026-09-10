@@ -30,7 +30,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
-import {execSync} from 'node:child_process';
+import {execFileSync} from 'node:child_process';
 import {ensureCoreBuilt} from './ensure-core-built.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 
@@ -55,7 +55,9 @@ beforeAll(() => {
 
 let tmpDir;
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-build-theme-variants-'));
+  tmpDir = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'astryx-build-theme-variants-'),
+  );
 });
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
@@ -92,7 +94,7 @@ describe('theme build custom-variant augmentations', () => {
     expect(dts).not.toMatch(/XDSButtonVariantMap/);
   });
 
-  it('targets the CustomTextTypes interface in core/theme for a custom text type', async () => {
+  it('targets CustomTextTypes in core/theme for a custom text type', async () => {
     const themeFile = writeTheme(
       tmpDir,
       `export default {
@@ -119,7 +121,7 @@ describe('theme build custom-variant augmentations', () => {
     expect(dts).toContain("'customTextType': true;");
   });
 
-  it('skips props with no augmentation point (Button size, Heading type)', async () => {
+  it('emits Heading custom types and skips props with no augmentation point', async () => {
     const themeFile = writeTheme(
       tmpDir,
       `export default {
@@ -130,7 +132,18 @@ describe('theme build custom-variant augmentations', () => {
             'variant:accentOutline': { backgroundColor: 'transparent' },
             'size:jumbo': { paddingBlock: '40px' },
           },
-          heading: { 'type:hero': { fontSize: '80px' } },
+          heading: {
+            'weight:bold': { fontWeight: '900' },
+            'type:hero': { fontSize: '80px', fontWeight: '300' },
+          },
+        },
+        onDark: {
+          components: {
+            heading: {
+              'weight:bold': { fontWeight: '800' },
+              'type:hero': { fontWeight: '350' },
+            },
+          },
         },
       };\n`,
     );
@@ -145,12 +158,133 @@ describe('theme build custom-variant augmentations', () => {
     expect(fs.existsSync(variantsPath)).toBe(true);
     const dts = fs.readFileSync(variantsPath, 'utf-8');
 
-    // The augmentable variant is emitted…
+    // The augmentable values are emitted…
     expect(dts).toMatch(/interface ButtonVariantMap\b/);
-    // …but closed literal-union props get no dead augmentation.
+    expect(dts).toMatch(/interface HeadingTypeMap\b/);
+    expect(dts).toContain("'hero': true;");
+    expect(dts).toContain("declare module '@astryxdesign/core/Heading'");
+    // …but closed literal-union props still get no dead augmentation.
     expect(dts).not.toMatch(/ButtonSizeMap/);
-    expect(dts).not.toMatch(/HeadingTypeMap/);
-    expect(dts).not.toContain("declare module '@astryxdesign/core/Heading'");
+
+    const css = fs.readFileSync(
+      path.join(tmpDir, 'variants-theme.css'),
+      'utf-8',
+    );
+    const mainTypeIndex = css.indexOf(
+      '.astryx-heading[data-type="hero"]',
+    );
+    const mainTypeWeightIndex = css.indexOf('font-weight: 300;', mainTypeIndex);
+    const mainWeightIndex = css.indexOf(
+      '.astryx-heading[data-weight="bold"]',
+    );
+    const mainWeightValueIndex = css.indexOf('font-weight: 900;', mainWeightIndex);
+    const mediaTypeIndex = css.lastIndexOf(
+      '.astryx-heading[data-type="hero"]',
+    );
+    const mediaTypeWeightIndex = css.indexOf('font-weight: 350;', mediaTypeIndex);
+    const mediaWeightIndex = css.lastIndexOf(
+      '.astryx-heading[data-weight="bold"]',
+    );
+    const mediaWeightValueIndex = css.indexOf('font-weight: 800;', mediaWeightIndex);
+    expect(mainTypeWeightIndex).toBeGreaterThan(mainTypeIndex);
+    expect(mainWeightValueIndex).toBeGreaterThan(mainWeightIndex);
+    expect(mediaTypeWeightIndex).toBeGreaterThan(mediaTypeIndex);
+    expect(mediaWeightValueIndex).toBeGreaterThan(mediaWeightIndex);
+  });
+
+  it('unions custom Heading types from onDark and onLight into the public type contract', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          heading: { 'type:shared': { fontWeight: 600 } },
+        },
+        onDark: {
+          components: {
+            heading: {
+              'type:hero': { fontSize: '80px' },
+              'type:shared+level:1': { lineHeight: 1 },
+            },
+          },
+        },
+        onLight: {
+          components: {
+            heading: { 'type:editorial': { letterSpacing: '-0.02em' } },
+          },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(0);
+
+    const variantsPath = path.join(tmpDir, 'variants-theme.variants.d.ts');
+    expect(fs.existsSync(variantsPath)).toBe(true);
+    const variantsDts = fs.readFileSync(variantsPath, 'utf-8');
+    expect(variantsDts).toMatch(/interface HeadingTypeMap\b/);
+    expect(variantsDts).toContain("'hero': true;");
+    expect(variantsDts).toContain("'editorial': true;");
+    expect(variantsDts).toContain("'shared': true;");
+
+    const projectDir = path.join(
+      CLI_ROOT,
+      `.tmp-surface-heading-consumer-${process.pid}`,
+    );
+    fs.rmSync(projectDir, {recursive: true, force: true});
+    fs.mkdirSync(projectDir);
+    fs.copyFileSync(
+      path.join(tmpDir, 'variants-theme.d.ts'),
+      path.join(projectDir, 'variants-theme.d.ts'),
+    );
+    fs.copyFileSync(
+      variantsPath,
+      path.join(projectDir, 'variants-theme.variants.d.ts'),
+    );
+    fs.writeFileSync(
+      path.join(projectDir, 'probe.tsx'),
+      `import './variants-theme';\n` +
+        `import {Heading} from '@astryxdesign/core/Heading';\n\n` +
+        `export const Probe = () => (\n` +
+        `  <>\n` +
+        `    <Heading level={1} type="hero">Hero</Heading>\n` +
+        `    <Heading level={2} type="editorial">Editorial</Heading>\n` +
+        `    <Heading level={3} type="shared">Shared</Heading>\n` +
+        `  </>\n` +
+        `);\n`,
+    );
+    fs.writeFileSync(
+      path.join(projectDir, 'tsconfig.json'),
+      JSON.stringify(
+        {
+          compilerOptions: {
+            module: 'esnext',
+            target: 'es2022',
+            jsx: 'react-jsx',
+            moduleResolution: 'bundler',
+            strict: true,
+            skipLibCheck: true,
+          },
+          include: ['*.tsx', '*.d.ts'],
+        },
+        null,
+        2,
+      ),
+    );
+
+    try {
+      execFileSync(
+        'pnpm',
+        ['exec', 'tsc', '--project', 'tsconfig.json', '--noEmit'],
+        {cwd: projectDir, stdio: 'pipe'},
+      );
+    } finally {
+      fs.rmSync(projectDir, {recursive: true, force: true});
+    }
   });
 
   it('does not emit a .variants.d.ts when every custom value is non-augmentable', async () => {
@@ -175,6 +309,45 @@ describe('theme build custom-variant augmentations', () => {
     ).toBe(false);
   });
 
+  it('rejects an empty or combination-only custom Heading type', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        onDark: {
+          components: {
+            heading: { 'type:hero': { ':hover': {} } },
+          },
+        },
+        onLight: {
+          components: {
+            heading: {
+              'type:eyebrow+color:accent': { letterSpacing: '0.08em' },
+            },
+          },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'Custom Heading type "hero" needs a non-empty standalone',
+    );
+    expect(result.stderr).toContain(
+      'Custom Heading type "eyebrow" needs a non-empty standalone',
+    );
+    expect(result.stderr).toContain('onDark.components.heading["type:hero"]');
+    expect(result.stderr).toContain(
+      'onLight.components.heading["type:eyebrow"]',
+    );
+  });
+
   it('makes generated custom component prop values type-check through public subpaths', async () => {
     const themeFile = writeTheme(
       tmpDir,
@@ -191,6 +364,7 @@ describe('theme build custom-variant augmentations', () => {
           },
           breadcrumbs: { 'variant:customBreadcrumbs': { color: 'currentColor' } },
           button: { 'variant:customButton': { backgroundColor: 'transparent' } },
+          card: { 'variant:customCard': { backgroundColor: 'transparent' } },
           dialog: { 'variant:customDialog': { backgroundColor: 'transparent' } },
           divider: { 'variant:customDivider': { borderColor: 'currentColor' } },
           'field-status': { 'variant:customFieldStatus': { color: 'currentColor' } },
@@ -198,6 +372,7 @@ describe('theme build custom-variant augmentations', () => {
           progressbar: { 'variant:customProgressBar': { backgroundColor: 'transparent' } },
           section: { 'variant:customSection': { backgroundColor: 'transparent' } },
           statusdot: { 'variant:customStatusDot': { backgroundColor: 'transparent' } },
+          heading: { 'type:customHeading': { fontSize: '3rem' } },
           text: {
             'color:customTextColor': { color: 'currentColor' },
             'type:customTextType': { fontSize: '24px' },
@@ -214,7 +389,10 @@ describe('theme build custom-variant augmentations', () => {
     );
     expect(result.code).toBe(0);
 
-    const projectDir = path.join(CLI_ROOT, `.tmp-variant-consumer-${process.pid}`);
+    const projectDir = path.join(
+      CLI_ROOT,
+      `.tmp-variant-consumer-${process.pid}`,
+    );
     fs.rmSync(projectDir, {recursive: true, force: true});
     fs.mkdirSync(projectDir);
     fs.copyFileSync(
@@ -234,6 +412,7 @@ describe('theme build custom-variant augmentations', () => {
         `import {Banner} from '@astryxdesign/core/Banner';\n` +
         `import {Breadcrumbs} from '@astryxdesign/core/Breadcrumbs';\n` +
         `import {Button} from '@astryxdesign/core/Button';\n` +
+        `import {Card} from '@astryxdesign/core/Card';\n` +
         `import {Dialog} from '@astryxdesign/core/Dialog';\n` +
         `import {Divider} from '@astryxdesign/core/Divider';\n` +
         `import {FieldStatus} from '@astryxdesign/core/FieldStatus';\n` +
@@ -241,6 +420,7 @@ describe('theme build custom-variant augmentations', () => {
         `import {ProgressBar} from '@astryxdesign/core/ProgressBar';\n` +
         `import {Section} from '@astryxdesign/core/Section';\n` +
         `import {StatusDot} from '@astryxdesign/core/StatusDot';\n` +
+        `import {Heading} from '@astryxdesign/core/Heading';\n` +
         `import {Text} from '@astryxdesign/core/Text';\n` +
         `import {Token} from '@astryxdesign/core/Token';\n\n` +
         `export function Probe() {\n` +
@@ -252,6 +432,7 @@ describe('theme build custom-variant augmentations', () => {
         `      <Banner title="Banner" status="customBannerStatus" container="customBannerContainer" />\n` +
         `      <Breadcrumbs variant="customBreadcrumbs">Crumbs</Breadcrumbs>\n` +
         `      <Button label="Button" variant="customButton" />\n` +
+        `      <Card variant="customCard">Card</Card>\n` +
         `      <Dialog isOpen onOpenChange={() => {}} variant="customDialog">Body</Dialog>\n` +
         `      <Divider variant="customDivider" />\n` +
         `      <FieldStatus type="success" message="Ok" variant="customFieldStatus" />\n` +
@@ -259,6 +440,7 @@ describe('theme build custom-variant augmentations', () => {
         `      <ProgressBar label="Progress" value={50} variant="customProgressBar" />\n` +
         `      <Section variant="customSection">Section</Section>\n` +
         `      <StatusDot label="Status" variant="customStatusDot" />\n` +
+        `      <Heading level={2} type="customHeading">Heading</Heading>\n` +
         `      <Text color="customTextColor" type="customTextType">Text</Text>\n` +
         `      <Token label="Token" color="customTokenColor" />\n` +
         `    </>\n` +
@@ -285,10 +467,14 @@ describe('theme build custom-variant augmentations', () => {
     );
 
     try {
-      execSync('pnpm exec tsc --project tsconfig.json --noEmit', {
-        cwd: projectDir,
-        stdio: 'pipe',
-      });
+      execFileSync(
+        'pnpm',
+        ['exec', 'tsc', '--project', 'tsconfig.json', '--noEmit'],
+        {
+          cwd: projectDir,
+          stdio: 'pipe',
+        },
+      );
     } finally {
       fs.rmSync(projectDir, {recursive: true, force: true});
     }

@@ -8,7 +8,7 @@
  * active npm session) that prepares every publishable @astryxdesign/* package
  * for npm TRUSTED PUBLISHING: OIDC-based publishing from GitHub Actions with no
  * long-lived npm token. Once configured, the `publish`/`canary` jobs in
- * .github/workflows/deploy.yml can publish with `--provenance` and zero secrets.
+ * .github/workflows/release.yml can publish with `--provenance` and zero secrets.
  *
  * It ports facebook/lexical's scripts/npm/setup-trusted-publishing.mjs to astryx
  * conventions (node:util parseArgs, node:fs, node:child_process, global fetch —
@@ -29,17 +29,19 @@
  * Modes combine: e.g. `--bootstrap --setup-trust` claims then configures in one
  * pass. `--dry-run` prints what would happen without any registry writes.
  *
- * This script does NOT publish real releases — that is deploy.yml's job. Its only
- * purpose is to make the tokenless OIDC publish in CI succeed.
+ * This script does NOT publish real releases — that is release.yml's job. Its
+ * only purpose is to make the tokenless OIDC publish in CI succeed.
  *
- * WHY `deploy.yml` is the default --workflow (the workflow_ref subtlety):
+ * WHY `release.yml` is the default --workflow (the workflow_ref subtlety):
  *   npm validates a trusted publish by matching the trust config's workflow
  *   filename against the OIDC token's `workflow_ref` claim. `workflow_ref` is the
  *   CALLING (entry) workflow — the file that triggered the run — NOT a reusable
  *   workflow that merely contains the publish job (npm does not check
- *   `job_workflow_ref`). astryx's publish runs directly in the non-reusable
- *   .github/workflows/deploy.yml on push to main, so the caller IS the publish
- *   workflow, and the filename to trust is `deploy.yml`.
+ *   `job_workflow_ref`). ALL of astryx's npm publishing (stable and canary) runs
+ *   directly in the non-reusable .github/workflows/release.yml — deploy.yml is
+ *   website-only — so the caller IS the publish workflow, and the filename to
+ *   trust is `release.yml` (see release.yml's own header, which states the same
+ *   single-trusted-publisher constraint).
  *
  * npm also allows only ONE trust config per package: POSTing a second config
  * (even for a different workflow) returns E409, which is why --workflow takes a
@@ -134,9 +136,9 @@ function parseCliArgs(argv) {
       registry: {type: 'string', default: 'https://registry.npmjs.org'},
       'stub-version': {type: 'string', default: '0.0.0-bootstrap.0'},
       // The CALLING workflow filename npm should trust. For astryx this is the
-      // single, non-reusable deploy.yml that runs the publish on push to main
-      // (see the workflow_ref subtlety in the file header).
-      workflow: {type: 'string', default: 'deploy.yml'},
+      // single, non-reusable release.yml that runs ALL npm publishing (see the
+      // workflow_ref subtlety in the file header and release.yml's own header).
+      workflow: {type: 'string', default: 'release.yml'},
       repo: {type: 'string', default: 'facebook/astryx'},
     },
     allowPositionals: false,
@@ -496,7 +498,9 @@ async function addTrustConfig(pkg, {registry, repo, workflow, dryRun}) {
     console.error(`  FAILED ${pkg.name} (npm exit ${code})`);
     return 'failed';
   }
-  console.error(`  FAILED ${pkg.name} (gave up after ${MAX_TRUST_ATTEMPTS} attempts)`);
+  console.error(
+    `  FAILED ${pkg.name} (gave up after ${MAX_TRUST_ATTEMPTS} attempts)`,
+  );
   return 'failed';
 }
 
@@ -557,7 +561,7 @@ async function main() {
   if (typeof workflow !== 'string' || workflow.includes(',')) {
     console.error(
       `Invalid --workflow value "${workflow}". Expected a single workflow ` +
-        `filename, e.g. deploy.yml.`,
+        `filename, e.g. release.yml.`,
     );
     process.exit(1);
   }
@@ -630,7 +634,9 @@ async function main() {
       try {
         await publishStub(pkg, {dryRun, registry, repo, stubVersion});
       } catch (err) {
-        console.error(`  FAILED to bootstrap ${pkg.name}: ${err.message || err}`);
+        console.error(
+          `  FAILED to bootstrap ${pkg.name}: ${err.message || err}`,
+        );
         failures.push(pkg.name);
       }
     }
@@ -671,7 +677,9 @@ async function main() {
   for (const pkg of trustCandidates) {
     const {configs, error} = await fetchTrustConfig(pkg.name, {registry});
     if (error || !configs) {
-      console.log(`  ${pkg.name} ... unable to check (${error}); will try anyway`);
+      console.log(
+        `  ${pkg.name} ... unable to check (${error}); will try anyway`,
+      );
       anyUnknown = true;
       toRegister.push({pkg, existing: []});
     } else if (configs.some(c => configMatches(c, {repo, workflow}))) {

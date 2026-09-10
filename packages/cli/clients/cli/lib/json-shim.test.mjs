@@ -61,7 +61,7 @@ describe('--json shim: --help renders JSON envelope', () => {
     expect(parsed.apiVersion).toBe(1);
     expect(parsed.type).toBe('help');
     expect(parsed.data.command).toBe('astryx theme build');
-    expect(parsed.data.usage).toMatch(/<file>/);
+    expect(parsed.data.usage).toMatch(/<files\.\.\.>/);
   });
 });
 

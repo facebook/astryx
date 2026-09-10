@@ -67,7 +67,7 @@ function ensureDynamicHighlightType(tokenType: string): void {
   const name = `astryx-${tokenType}`;
   const colorVar = `var(--color-syntax-${tokenType}, currentColor)`;
   dynamicStyleSheet.insertRule(
-    `.astryx-codeblock code::highlight(${name}), .astryx-codeeditor code::highlight(${name}) { color: ${colorVar}; }`,
+    `.astryx-code-block code::highlight(${name}), .astryx-codeeditor code::highlight(${name}) { color: ${colorVar}; }`,
   );
 }
 

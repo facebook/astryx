@@ -16,9 +16,11 @@ export const doc = {
     'Run version-migration codemods and refresh the managed agent-docs block.',
   description:
     'Migrates project source from a previous Astryx version to the currently ' +
-    'installed one by running the registered codemods, and refreshes the managed ' +
-    'agent-docs block on every path. Dry-run by default (previews without ' +
-    'writing); pass `apply` to write changes to disk. Core codemods run before ' +
+    'installed one by running the registered codemods, and compares the fully ' +
+    'rendered managed agent-docs block on every path, including same-Core ' +
+    'integration guidance changes. Dry-run previews without writing; `apply` ' +
+    'writes the prepared block only after selected codemods and hooks succeed. ' +
+    'Core codemods run before ' +
     'the config is loaded so a config codemod can repair an otherwise-invalid ' +
     'astryx.config.',
   importPath: '@astryxdesign/cli/api',

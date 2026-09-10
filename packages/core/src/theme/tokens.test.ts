@@ -40,6 +40,18 @@ describe('resolveThemeTokens', () => {
     const tokens = resolveThemeTokens(null, {mode: 'light'});
     expect(tokens['--color-text-primary']).toBe('#0A1317');
     expect(tokens['--spacing-1']).toBe('4px');
+    expect(tokens['--border-width']).toBe('1px');
+  });
+
+  it('resolves --border-width when overridden in defineTheme', () => {
+    const arcadeTheme = defineTheme({
+      name: 'arcade',
+      tokens: {
+        '--border-width': '2px',
+      },
+    });
+    const tokens = resolveThemeTokens(arcadeTheme, {mode: 'light'});
+    expect(tokens['--border-width']).toBe('2px');
   });
 
   it('resolves tuple overrides using original input tokens', () => {

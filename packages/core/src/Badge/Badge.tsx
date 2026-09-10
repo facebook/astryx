@@ -46,6 +46,24 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
+    // A badge is one line by construction — fixed height, `nowrap` — so a
+    // label wider than the space available has to go somewhere. Without these
+    // it went *outside* its container: `nowrap` with nothing to clip it
+    // neither wraps nor truncates, it just escapes, and lands on whatever sits
+    // beside it. `minWidth: 0` matters as much as the max: as a flex item the
+    // automatic minimum size would otherwise hold the badge at its full text
+    // width and push the clamp back out again.
+    maxWidth: '100%',
+    minWidth: 0,
+  },
+  // The ellipsis goes on the label rather than the badge itself, because
+  // `text-overflow` needs a block container and taking the root off
+  // `inline-flex` to get one would cost the icon its centring. The label is a
+  // flex item, so it needs its own `minWidth: 0` for the same reason as above.
+  label: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    minWidth: 0,
   },
 });
 
@@ -163,6 +181,28 @@ export function Badge({
   ref,
   ...props
 }: BadgeProps) {
+  // Clipping a label makes its tail unrecoverable, so the full text has to
+  // stay reachable somewhere. `title` is the half of that answer which costs
+  // nothing: no measurement, no hook, so `Badge` renders the same on the
+  // server and stays usable in a server component. It follows the shape
+  // `BaseTable` already uses for a truncated header cell (BaseTable.tsx) —
+  // string content only, and only when there is something to show.
+  //
+  // A rich label is left alone: it is a subtree whose text would have to be
+  // flattened to a string, and flattening renders a guess — an icon, a
+  // `<strong>`, a nested element all read differently.
+  //
+  // It is set whether or not the label actually fits, because knowing that
+  // requires measuring. The refinement — a tooltip only when the text is
+  // really cut, reachable by hover and by focus — needs that measurement and
+  // a client component, so it is tracked in #5585.
+  const labelTitle =
+    typeof label === 'number'
+      ? String(label)
+      : typeof label === 'string' && label.length > 0
+        ? label
+        : undefined;
+
   return (
     <span
       ref={ref}
@@ -172,9 +212,10 @@ export function Badge({
         className,
         style,
       )}
+      title={labelTitle}
       {...props}>
       {icon}
-      {label}
+      <span {...stylex.props(styles.label)}>{label}</span>
     </span>
   );
 }
