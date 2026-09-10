@@ -332,6 +332,13 @@ rail follows later, since knowing what is on the canvas outlasts being able
 to adjust it. Each resize handle folds with its panel, or a grip is left
 behind on a seam with nothing on the other side.
 
+**The header bar sits at 4px, not 8.** Two paddings were stacking: the
+toolbar's own gutter plus the tab strip's, putting 12px above a 28px tab and
+a 53px bar over the canvas. The bar is app chrome, so it takes the tighter
+gutter and the strip keeps its 4px, which lands the header at 45px. Note the
+floor while you are in here — `Toolbar` sets `min-height: --size-element-sm`
+and a tab is that same 28px, so no padding gets the bar below 37px.
+
 **Export is a ghost trigger.** A filled primary put the page's heaviest mark
 on the one control that is not the work — the canvas is, and the bar around
 it should stay chrome. Ghost also lets the toolbar's edge compensation do its

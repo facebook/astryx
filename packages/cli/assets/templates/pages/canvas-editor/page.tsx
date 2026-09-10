@@ -1846,6 +1846,11 @@ export default function CanvasEditor() {
               label="Document actions"
               size="sm"
               dividers={['bottom']}
+              // Tighter than a toolbar's default, because this one is app
+              // chrome rather than a band of content: the tab strip inside
+              // carries its own 4px, and two 8px gutters on top of that put
+              // 12px above a 28px tab.
+              paddingBlock={1}
               // The app menu sits tight to the tabs; the status text and
               // Export button on the other end need the room.
               gap={0.5}

@@ -120,22 +120,18 @@ const defaultBlockPaddingForSize: Record<ElementSize, SpacingStep> = {
   lg: 2,
 };
 
-const blockPaddingVarForSize: Record<ElementSize, string> = {
-  sm: spacingVars['--spacing-2'],
-  md: spacingVars['--spacing-2'],
-  lg: spacingVars['--spacing-2'],
-};
-
 /**
- * Edge compensation inset amount per toolbar size.
+ * Edge compensation inset amount.
  * Equals container-inline-padding minus the toolbar's block padding,
  * creating even spacing around edge-compensated items (ghost buttons, tabs).
+ *
+ * Derived from the padding in force rather than the size's default, so a
+ * toolbar given a tighter `paddingBlock` insets its ghost triggers to match
+ * instead of leaving them ringed by the spacing of a padding it no longer has.
  */
-const edgeCompInsetForSize: Record<ElementSize, string> = {
-  sm: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-2']})`,
-  md: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-2']})`,
-  lg: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-2']})`,
-};
+function edgeCompInsetFor(blockPaddingVar: string): string {
+  return `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${blockPaddingVar})`;
+}
 
 export type ToolbarSize = ElementSize;
 
@@ -175,6 +171,22 @@ export interface ToolbarProps extends BaseProps<HTMLDivElement> {
    * @default 1
    */
   gap?: SpacingStep;
+  /**
+   * Vertical padding, using the spacing scale.
+   *
+   * Overrides the per-size default. Reach for it when the toolbar is app
+   * chrome rather than a band of content — a tab strip or a dense tool bar
+   * wants to sit tighter than a toolbar heading a card does.
+   *
+   * It has to be a prop: the padding lands on the inner Section element,
+   * while `xstyle` lands on the outer one, so a padding set there wraps the
+   * default rather than replacing it. The `--astryx-section-padding-block-*`
+   * tokens are no way in either — they are the fallback for when no padding
+   * is set, and this component always sets one.
+   *
+   * @default 2
+   */
+  paddingBlock?: SpacingStep;
   /**
    * Orientation of the toolbar for keyboard navigation.
    * Controls which arrow keys navigate between items.
@@ -221,6 +233,7 @@ export function Toolbar({
   label,
   size = 'md',
   gap = 1,
+  paddingBlock,
   orientation = 'horizontal',
   variant = 'transparent',
   dividers,
@@ -242,6 +255,12 @@ export function Toolbar({
   const hasBottomDivider = dividers?.includes('bottom') ?? false;
 
   const gapVar = spacingVars[spacingStepToVar[gap]] as string;
+
+  const blockPaddingStep = paddingBlock ?? defaultBlockPaddingForSize[size];
+  const blockPaddingVar = spacingVars[
+    spacingStepToVar[blockPaddingStep]
+  ] as string;
+  const edgeCompInset = edgeCompInsetFor(blockPaddingVar);
 
   const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
     itemSelector: 'button, input, [tabindex]',
@@ -297,7 +316,7 @@ export function Toolbar({
       <Section
         ref={ref}
         variant={variant}
-        paddingBlock={defaultBlockPaddingForSize[size]}
+        paddingBlock={blockPaddingStep}
         dividers={dividers}
         xstyle={xstyle}
         className={className}
@@ -324,7 +343,7 @@ export function Toolbar({
               // tab) instead of floating down into the toolbar's padding.
               hasBottomDivider &&
                 dynamicStyles.tabIndicatorBottom(
-                  `calc(-1 * (${blockPaddingVarForSize[size]} + 1px))`,
+                  `calc(-1 * (${blockPaddingVar} + 1px))`,
                 ),
             ),
           )}
@@ -335,7 +354,7 @@ export function Toolbar({
               <div
                 {...stylex.props(
                   styles.startSlot,
-                  edgeCompSlot.inset(edgeCompInsetForSize[size]),
+                  edgeCompSlot.inset(edgeCompInset),
                   dynamicStyles.gap(gapVar),
                 )}>
                 {startContent}
@@ -347,7 +366,7 @@ export function Toolbar({
               <div
                 {...stylex.props(
                   styles.endSlot,
-                  edgeCompSlot.inset(edgeCompInsetForSize[size]),
+                  edgeCompSlot.inset(edgeCompInset),
                   dynamicStyles.gap(gapVar),
                 )}>
                 {endContent}
@@ -361,7 +380,7 @@ export function Toolbar({
                   {...stylex.props(
                     styles.startSlot,
                     !hasEndContent && styles.startOnly,
-                    edgeCompSlot.inset(edgeCompInsetForSize[size]),
+                    edgeCompSlot.inset(edgeCompInset),
                     dynamicStyles.gap(gapVar),
                   )}>
                   {startContent}
@@ -372,7 +391,7 @@ export function Toolbar({
                   {...stylex.props(
                     styles.endSlot,
                     !hasStartContent && styles.endOnly,
-                    edgeCompSlot.inset(edgeCompInsetForSize[size]),
+                    edgeCompSlot.inset(edgeCompInset),
                     dynamicStyles.gap(gapVar),
                   )}>
                   {endContent}
