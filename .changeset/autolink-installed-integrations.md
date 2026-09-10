@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] Load an installed integration even when no `astryx.config` names it
+[feat] Load an installed integration even when no `astryx.config` names it (#6202)
 
 A package the project declares as a dependency, and that ships a root
 `astryx.integration.*` manifest, is now loaded on sight — no config entry
