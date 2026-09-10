@@ -713,7 +713,10 @@ export function DateRangeInput({
             <div
               role="group"
               aria-label={t('@astryx.dateRangeInput.presetDateRanges')}
-              {...stylex.props(styles.presetSidebar)}>
+              {...mergeProps(
+                themeProps('date-range-input-presets'),
+                stylex.props(styles.presetSidebar),
+              )}>
               {presets.map(preset => {
                 const presetRange = preset.getRange();
                 const isActive = isRangeEqual(value, presetRange);
@@ -734,11 +737,17 @@ export function DateRangeInput({
                     aria-current={isActive ? 'true' : undefined}
                     disabled={isPresetDisabled}
                     onClick={() => handlePresetClick(preset)}
-                    {...stylex.props(
-                      focusOutlineStyles.focusVisible,
-                      styles.presetButton,
-                      isActive && styles.presetButtonActive,
-                      isPresetDisabled && styles.presetButtonDisabled,
+                    {...mergeProps(
+                      themeProps('date-range-input-preset', {
+                        selected: isActive ? 'selected' : null,
+                        disabled: isPresetDisabled ? 'disabled' : null,
+                      }),
+                      stylex.props(
+                        focusOutlineStyles.focusVisible,
+                        styles.presetButton,
+                        isActive && styles.presetButtonActive,
+                        isPresetDisabled && styles.presetButtonDisabled,
+                      ),
                     )}>
                     {preset.label}
                   </button>

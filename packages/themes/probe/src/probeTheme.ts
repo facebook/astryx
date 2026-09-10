@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  277 targets, 898 selectors (generated from the docs)
+//   components  279 targets, 906 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -1842,6 +1842,34 @@ export const probeTheme = defineTheme({
         outlineColor: 'hsl(139.1 73% 25%)',
       },
     },
+    'date-range-input-preset': {
+      base: {
+        backgroundColor: 'hsl(47.5 89% 45%)',
+        color: 'hsl(70.3 75% 12%)',
+        borderColor: 'hsl(169.6 85% 25%)',
+        outlineColor: 'hsl(321.0 85% 25%)',
+      },
+      selected: {
+        backgroundColor: 'hsl(125.5 76% 49%)',
+        color: 'hsl(111.5 90% 12%)',
+        borderColor: 'hsl(52.9 90% 25%)',
+        outlineColor: 'hsl(215.4 89% 25%)',
+      },
+      disabled: {
+        backgroundColor: 'hsl(198.6 92% 57%)',
+        color: 'hsl(334.4 80% 12%)',
+        borderColor: 'hsl(146.0 80% 25%)',
+        outlineColor: 'hsl(39.7 84% 25%)',
+      },
+    },
+    'date-range-input-presets': {
+      base: {
+        backgroundColor: 'hsl(21.0 84% 45%)',
+        color: 'hsl(301.8 74% 12%)',
+        borderColor: 'hsl(226.5 82% 25%)',
+        outlineColor: 'hsl(24.9 89% 25%)',
+      },
+    },
     'date-range-input-toggle-icon': {
       base: {
         backgroundColor: 'hsl(17.5 87% 54%)',
@@ -2502,6 +2530,30 @@ export const probeTheme = defineTheme({
         color: 'hsl(45.7 82% 12%)',
         borderColor: 'hsl(7.6 84% 25%)',
         outlineColor: 'hsl(104.9 82% 25%)',
+      },
+      'weight:normal': {
+        backgroundColor: 'hsl(152.0 86% 62%)',
+        color: 'hsl(175.8 91% 12%)',
+        borderColor: 'hsl(343.2 81% 25%)',
+        outlineColor: 'hsl(43.4 72% 25%)',
+      },
+      'weight:medium': {
+        backgroundColor: 'hsl(79.7 86% 58%)',
+        color: 'hsl(290.3 72% 12%)',
+        borderColor: 'hsl(214.5 73% 25%)',
+        outlineColor: 'hsl(358.0 74% 25%)',
+      },
+      'weight:semibold': {
+        backgroundColor: 'hsl(359.7 75% 51%)',
+        color: 'hsl(105.3 74% 12%)',
+        borderColor: 'hsl(60.8 74% 25%)',
+        outlineColor: 'hsl(274.4 70% 25%)',
+      },
+      'weight:bold': {
+        backgroundColor: 'hsl(129.8 91% 64%)',
+        color: 'hsl(277.1 87% 12%)',
+        borderColor: 'hsl(266.7 92% 25%)',
+        outlineColor: 'hsl(341.8 86% 25%)',
       },
     },
     'hover-card': {
