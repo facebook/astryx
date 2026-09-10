@@ -81,6 +81,10 @@ const KEYS: Record<Key, string> = {
   Space: ' ',
   Enter: 'Enter',
   Tab: 'Tab',
+  ArrowLeft: 'ArrowLeft',
+  ArrowRight: 'ArrowRight',
+  ArrowUp: 'ArrowUp',
+  ArrowDown: 'ArrowDown',
 };
 
 interface AxValue {
@@ -267,6 +271,7 @@ export function createChromiumHarness(
 ): Harness {
   const {page, subject: locator, pointerTarget, cdp, visibleLabel} = options;
   const pointerLocator = pointerTarget ?? locator;
+  const pointerTargets = new WeakMap<Subject, Locator>();
 
   const subject: Subject = {
     attribute: name => locator.getAttribute(name),
@@ -635,13 +640,14 @@ export function createChromiumHarness(
     canReceivePointer: () => canReceivePointer(locator),
     focus: () => locator.focus(),
   };
+  pointerTargets.set(subject, pointerLocator);
 
   const relatedSubject = (name: string): Subject => {
     const related = options.related?.[name];
     if (related == null) {
       throw new MissingHarnessRelation('chromium', name);
     }
-    return {
+    const result: Subject = {
       attribute: attribute => related.getAttribute(attribute),
       idReferences: attribute =>
         related.evaluate(
@@ -738,6 +744,8 @@ export function createChromiumHarness(
       canReceivePointer: () => canReceivePointer(related),
       focus: () => related.focus(),
     };
+    pointerTargets.set(result, related);
+    return result;
   };
 
   return {
@@ -745,7 +753,13 @@ export function createChromiumHarness(
     observes: CHROMIUM_OBSERVES,
     subject: async () => subject,
     related: async name => relatedSubject(name),
-    click: async (_subject, options) => {
+    click: async (targetSubject, options) => {
+      const target = pointerTargets.get(targetSubject);
+      if (target == null) {
+        throw new Error(
+          'the Chromium harness was asked to click a subject it did not create',
+        );
+      }
       // Without `force`, Playwright first satisfies itself that the control is
       // visible, stable, enabled, and actually receives pointer events — so an
       // ordinary click here also proves a pointer could reach the control.
@@ -753,7 +767,7 @@ export function createChromiumHarness(
       // a control the browser calls unavailable what it does when clicked
       // anyway.
       try {
-        await pointerLocator.click({
+        await target.click({
           force: options?.ignoreAvailability === true,
           // Bounded, and short. A control a pointer cannot reach — one covered
           // by something else, or clipped to nothing — otherwise sits here

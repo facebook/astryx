@@ -59,6 +59,13 @@ src/
 | `text-input`   | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox) | TextInput, TextArea                                                          |
 | `modal-dialog` | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)             | Dialog                                                                       |
 
+The `radio-group` contract owns direct-group Tab entry/exit, Space, and adopted
+directional selection, including zero-selection entry. DropdownMenu radio roles
+and selection state are bound here, while its composite keyboard movement stays
+with Menu. Home and End remain component-local because the current APG radio
+pattern does not require them and no current Astryx record adopts them as shared
+behavior.
+
 The `text-input` contract is native rather than APG-derived. It covers the
 role-bearing `<input>` or `<textarea>` only; composed clear and tooltip buttons
 keep their button contract. Password fields bind to persistent naming, state,
