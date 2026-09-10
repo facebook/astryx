@@ -248,6 +248,13 @@ that all happen to be no-ops still force the image onto its own composited
 layer, so `filterCss` drops the ones sitting at 0 or 100 and returns `none`
 when they all are.
 
+**The canvas tool bar's end gutters match.** The trailing zoom control is a
+ghost, so edge compensation pulls it out to the card's edge to optically align
+its label — correct when the control is alone in a container, but here it left
+8px on the leading end and nothing on the trailing one. The step goes back via
+a wrapper rather than the control's own `xstyle`, because `Selector` passes
+`xstyle` to an inner node and a margin there does not move the field.
+
 **The layer rail is a `TreeList`, grouped by layer kind.** A poster's layers
 are not a flat list — the two text layers belong together and the images
 belong together — and a tree says so structurally instead of relying on sort

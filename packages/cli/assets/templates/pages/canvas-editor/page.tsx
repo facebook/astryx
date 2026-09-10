@@ -737,6 +737,14 @@ const styles = stylex.create({
   toolBarControl: {
     borderRadius: 'calc(var(--radius-container) - var(--spacing-1))',
   },
+  // The trailing control is a ghost, so edge compensation pulls it out to the
+  // card's edge to optically align its label. That is the right call when the
+  // control is the only thing in a container, but here it leaves the bar with
+  // a gutter on the left and none on the right. Putting the step back matches
+  // the two ends.
+  toolBarTrailing: {
+    marginInlineEnd: 'var(--spacing-2)',
+  },
   // A vertical Divider is `height: 100%`, and a flex row that centres its
   // items gives a percentage height nothing to resolve against — the rule
   // collapses to nothing and the tool bar loses its groups. Stretching the
@@ -2233,17 +2241,26 @@ export default function CanvasEditor() {
                                           orientation="vertical"
                                           xstyle={styles.toolBarRule}
                                         />
-                                        <Selector
-                                          label="Zoom"
-                                          isLabelHidden
-                                          variant="ghost"
-                                          value={zoom}
-                                          onChange={setZoom}
-                                          options={ZOOM_OPTIONS}
-                                          placement="above"
-                                          width={92}
-                                          xstyle={styles.toolBarControl}
-                                        />
+                                        <div
+                                          {...stylex.props(
+                                            styles.toolBarTrailing,
+                                          )}>
+                                          <Selector
+                                            label="Zoom"
+                                            isLabelHidden
+                                            variant="ghost"
+                                            value={zoom}
+                                            onChange={setZoom}
+                                            options={ZOOM_OPTIONS}
+                                            placement="above"
+                                            // Fixed so the bar does not reflow
+                                            // as the value changes, and wide
+                                            // enough for the longest option
+                                            // ("100%") to avoid truncation.
+                                            width={92}
+                                            xstyle={styles.toolBarControl}
+                                          />
+                                        </div>
                                       </>
                                     }
                                   />
