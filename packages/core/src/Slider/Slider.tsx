@@ -1029,12 +1029,18 @@ export function Slider({ref, ...props}: SliderProps) {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          {...stylex.props(
-            styles.trackContainer,
-            isHorizontal
-              ? styles.trackContainerHorizontal
-              : styles.trackContainerVertical,
-            isDisabled && styles.trackContainerDisabled,
+          {...mergeProps(
+            themeProps('slider-control', {
+              orientation,
+              disabled: isDisabled ? 'disabled' : null,
+            }),
+            stylex.props(
+              styles.trackContainer,
+              isHorizontal
+                ? styles.trackContainerHorizontal
+                : styles.trackContainerVertical,
+              isDisabled && styles.trackContainerDisabled,
+            ),
           )}>
           {/* Background track */}
           <div

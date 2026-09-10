@@ -20,6 +20,12 @@ const anatomy = [
       'Control row containing the track, thumb or thumbs, and optional text value.',
   },
   {
+    name: 'Interactive control',
+    required: true,
+    description:
+      'Pointer and keyboard interaction surface containing the rail, fill, marks, and thumbs.',
+  },
+  {
     name: 'Track',
     required: true,
     description: 'Background rail representing the available numeric range.',
@@ -235,6 +241,11 @@ export const docs = {
         visualProps: ['orientation'],
         states: ['disabled'],
       },
+      {
+        className: 'astryx-slider-control',
+        visualProps: ['orientation'],
+        states: ['disabled'],
+      },
       {className: 'astryx-slider-track', visualProps: ['orientation']},
       {
         className: 'astryx-slider-thumb',
@@ -413,6 +424,11 @@ export const docsZh = {
     targets: [
       {
         className: 'astryx-slider',
+        visualProps: ['orientation'],
+        states: ['disabled'],
+      },
+      {
+        className: 'astryx-slider-control',
         visualProps: ['orientation'],
         states: ['disabled'],
       },

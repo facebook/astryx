@@ -145,6 +145,17 @@ export const Disabled: Story = {
   },
 };
 
+export const DisabledWithTextValue: Story = {
+  tags: ['visual-theme-matrix'],
+  render: args => <Slider {...(args as any)} />,
+  args: {
+    label: 'Volume',
+    value: 50,
+    valueDisplay: 'text',
+    isDisabled: true,
+  },
+};
+
 export const VerticalOrientation: Story = {
   render: args => {
     const [value, setValue] = useState(50);

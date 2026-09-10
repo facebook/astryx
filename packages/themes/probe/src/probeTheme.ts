@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  277 targets, 898 selectors (generated from the docs)
+//   components  278 targets, 906 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -2503,6 +2503,30 @@ export const probeTheme = defineTheme({
         borderColor: 'hsl(7.6 84% 25%)',
         outlineColor: 'hsl(104.9 82% 25%)',
       },
+      'weight:normal': {
+        backgroundColor: 'hsl(152.0 86% 62%)',
+        color: 'hsl(175.8 91% 12%)',
+        borderColor: 'hsl(343.2 81% 25%)',
+        outlineColor: 'hsl(43.4 72% 25%)',
+      },
+      'weight:medium': {
+        backgroundColor: 'hsl(79.7 86% 58%)',
+        color: 'hsl(290.3 72% 12%)',
+        borderColor: 'hsl(214.5 73% 25%)',
+        outlineColor: 'hsl(358.0 74% 25%)',
+      },
+      'weight:semibold': {
+        backgroundColor: 'hsl(359.7 75% 51%)',
+        color: 'hsl(105.3 74% 12%)',
+        borderColor: 'hsl(60.8 74% 25%)',
+        outlineColor: 'hsl(274.4 70% 25%)',
+      },
+      'weight:bold': {
+        backgroundColor: 'hsl(129.8 91% 64%)',
+        color: 'hsl(277.1 87% 12%)',
+        borderColor: 'hsl(266.7 92% 25%)',
+        outlineColor: 'hsl(341.8 86% 25%)',
+      },
     },
     'hover-card': {
       base: {
@@ -4377,6 +4401,32 @@ export const probeTheme = defineTheme({
         color: 'hsl(124.5 71% 12%)',
         borderColor: 'hsl(290.4 79% 25%)',
         outlineColor: 'hsl(151.6 92% 25%)',
+      },
+    },
+    'slider-control': {
+      base: {
+        backgroundColor: 'hsl(131.2 86% 51%)',
+        color: 'hsl(136.5 77% 12%)',
+        borderColor: 'hsl(91.2 84% 25%)',
+        outlineColor: 'hsl(331.5 83% 25%)',
+      },
+      'orientation:horizontal': {
+        backgroundColor: 'hsl(274.4 77% 64%)',
+        color: 'hsl(239.8 78% 12%)',
+        borderColor: 'hsl(30.5 82% 25%)',
+        outlineColor: 'hsl(251.4 72% 25%)',
+      },
+      'orientation:vertical': {
+        backgroundColor: 'hsl(114.7 85% 46%)',
+        color: 'hsl(341.5 93% 12%)',
+        borderColor: 'hsl(2.2 77% 25%)',
+        outlineColor: 'hsl(266.1 87% 25%)',
+      },
+      disabled: {
+        backgroundColor: 'hsl(214.9 85% 53%)',
+        color: 'hsl(356.2 83% 12%)',
+        borderColor: 'hsl(65.6 76% 25%)',
+        outlineColor: 'hsl(234.4 93% 25%)',
       },
     },
     'slider-thumb': {
