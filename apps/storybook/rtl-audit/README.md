@@ -187,7 +187,7 @@ D6 returns **N-A** when a story contains no contextual decoration. The
 applicability layer below decides whether that N-A is explained; D6 itself does
 not turn absence into a pass.
 
-### B. Curated precision — D2 / D3 / D4
+### B. Curated precision — D2 / D3 / D4 / D7 / D8
 
 `targets.json` holds the geometry/behavior dimensions that genuinely need
 hand-written selectors, run **in addition** to auto-discovery:
@@ -197,6 +197,17 @@ hand-written selectors, run **in addition** to auto-discovery:
 - **D3 behavior-flip** — directional behavior inverts, e.g. Carousel's scroll
   axis: "next" makes `scrollLeft` go positive in LTR and negative in RTL.
 - **D4 overlay-side** — a positioned affordance flips side (`boundingBox`).
+- **D7 coarse hit alignment** — each configured native input remains centered
+  under its visible coarse-pointer wrapper and receives a center-point hit.
+- **D8 logical inline-edge mirror** — one configured, visible, non-zero subject
+  carries an intentionally asymmetric logical start/end padding pair whose
+  logical values stay stable while the resolved physical inline-axis sides swap
+  between LTR and RTL: left/right in horizontal writing, top/bottom in vertical
+  or sideways writing. The orthogonal physical edges must remain stable.
+  Missing, duplicate, hidden, zero-size, symmetric, or changing-writing-mode
+  fixtures fail closed because they cannot prove the relationship. Real
+  Chromium startup self-checks prove horizontal and vertical-writing passes plus
+  a hidden-subject failure before any component result is accepted.
 
 D1 and D6 are intentionally **not** in `targets.json`; auto-discovery covers
 them universally.

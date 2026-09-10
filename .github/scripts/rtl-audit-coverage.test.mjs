@@ -10,6 +10,7 @@ import {
   buildAuditedComponentRoster,
   buildComponentCoverage,
   classifyDirectionalDecorationPair,
+  classifyLogicalInlinePair,
   collectDirectionalDecorations,
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 
@@ -97,6 +98,139 @@ describe('classifyDirectionalDecorationPair', () => {
         decoration('›', 'auto-bidi', MIRROR),
       ),
     ).toMatchObject({verdict: 'fail'});
+  });
+});
+
+function logicalMeasurement(overrides = {}) {
+  return {
+    count: 1,
+    visible: true,
+    width: 320,
+    height: 120,
+    direction: 'ltr',
+    writingMode: 'horizontal-tb',
+    inlineStart: 8,
+    inlineEnd: 24,
+    top: 4,
+    right: 24,
+    bottom: 12,
+    left: 8,
+    ...overrides,
+  };
+}
+
+describe('classifyLogicalInlinePair', () => {
+  it('passes asymmetric logical edges on a horizontal inline axis', () => {
+    expect(
+      classifyLogicalInlinePair(
+        logicalMeasurement(),
+        logicalMeasurement({direction: 'rtl', left: 24, right: 8}),
+      ),
+    ).toMatchObject({
+      verdict: 'pass',
+      reason:
+        'logical start/end stay stable and resolved left/right sides swap for horizontal-tb',
+    });
+  });
+
+  it('passes asymmetric logical edges on a vertical inline axis', () => {
+    expect(
+      classifyLogicalInlinePair(
+        logicalMeasurement({
+          writingMode: 'vertical-rl',
+          top: 8,
+          right: 4,
+          bottom: 24,
+          left: 12,
+        }),
+        logicalMeasurement({
+          direction: 'rtl',
+          writingMode: 'vertical-rl',
+          top: 24,
+          right: 4,
+          bottom: 8,
+          left: 12,
+        }),
+      ),
+    ).toMatchObject({
+      verdict: 'pass',
+      reason:
+        'logical start/end stay stable and resolved top/bottom sides swap for vertical-rl',
+    });
+  });
+
+  it('fails a hidden zero-size subject even when its values mirror', () => {
+    expect(
+      classifyLogicalInlinePair(
+        logicalMeasurement({visible: false, width: 0, height: 0}),
+        logicalMeasurement({
+          direction: 'rtl',
+          visible: false,
+          width: 0,
+          height: 0,
+          left: 24,
+          right: 8,
+        }),
+      ),
+    ).toMatchObject({
+      verdict: 'fail',
+      reason: 'logical inline-edge subject is not one visible non-zero box',
+    });
+  });
+
+  it('fails horizontal logical edges that stay on physical sides', () => {
+    expect(
+      classifyLogicalInlinePair(
+        logicalMeasurement(),
+        logicalMeasurement({direction: 'rtl'}),
+      ),
+    ).toMatchObject({verdict: 'fail'});
+  });
+
+  it('fails vertical writing that swaps left/right instead of top/bottom', () => {
+    expect(
+      classifyLogicalInlinePair(
+        logicalMeasurement({
+          writingMode: 'vertical-rl',
+          top: 8,
+          right: 4,
+          bottom: 24,
+          left: 12,
+        }),
+        logicalMeasurement({
+          direction: 'rtl',
+          writingMode: 'vertical-rl',
+          top: 8,
+          right: 12,
+          bottom: 24,
+          left: 4,
+        }),
+      ),
+    ).toMatchObject({
+      verdict: 'fail',
+      reason:
+        'logical start/end did not mirror on the top/bottom inline axis for vertical-rl',
+    });
+  });
+
+  it('fails when the writing mode changes between directions', () => {
+    expect(
+      classifyLogicalInlinePair(
+        logicalMeasurement(),
+        logicalMeasurement({
+          direction: 'rtl',
+          writingMode: 'vertical-rl',
+          top: 24,
+          right: 4,
+          bottom: 8,
+          left: 12,
+        }),
+      ),
+    ).toMatchObject({
+      verdict: 'fail',
+      reason:
+        'logical inline-edge writing mode is missing or changed between directions',
+    });
   });
 });
 

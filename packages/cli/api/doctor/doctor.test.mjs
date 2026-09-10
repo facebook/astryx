@@ -11,7 +11,12 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {doctor, checkVersionAlignment, checkPackageManager} from './doctor.mjs';
+import {
+  doctor,
+  checkImplicitIntegrations,
+  checkVersionAlignment,
+  checkPackageManager,
+} from './doctor.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const cwd = REPO;
@@ -207,4 +212,84 @@ describe('checkPackageManager', () => {
     expect(c.status).toBe('warn');
     expect(c.message).toContain('yarn.lock');
   });
+});
+
+describe('checkImplicitIntegrations', () => {
+  /** @param {object} [fields] */
+  const autolinked = (fields = {}) => ({
+    name: '@acme/widgets',
+    version: '1.0.0',
+    components: '/abs/components',
+    __spec: '@acme/widgets',
+    __autolinked: true,
+    __dependencyField: 'dependencies',
+    ...fields,
+  });
+
+  it('skips when the project could not be read', () => {
+    const c = checkImplicitIntegrations({integrations: null});
+    expect(c.status).toBe('info');
+    expect(c.message).toContain('Skipped');
+  });
+
+  it('reports none when nothing is installed', () => {
+    const c = checkImplicitIntegrations({integrations: []});
+    expect(c.status).toBe('info');
+    expect(c.message).toContain('no installed dependency');
+    expect(c.fix).toBeUndefined();
+  });
+
+  it('reports none when every loaded integration is configured', () => {
+    const c = checkImplicitIntegrations({
+      integrations: [autolinked({__autolinked: false})],
+    });
+    expect(c.status).toBe('info');
+    expect(c.message).toContain('named in astryx.config');
+  });
+
+  it('names the package, the field, and what it contributes', () => {
+    const c = checkImplicitIntegrations({
+      integrations: [autolinked({templates: '/abs/templates'})],
+    });
+    expect(c.message).toContain('@acme/widgets@1.0.0');
+    expect(c.message).toContain('from dependencies');
+    expect(c.message).toContain('contributing components, templates');
+  });
+
+  it('names the declared key too when an npm alias makes them differ', () => {
+    const c = checkImplicitIntegrations({
+      integrations: [
+        autolinked({
+          name: '@acme/ui',
+          version: '0.1.22',
+          __spec: '@acme/legacy-ui',
+        }),
+      ],
+    });
+    expect(c.message).toContain('@acme/ui@0.1.22');
+    expect(c.message).toContain('declared as "@acme/legacy-ui"');
+  });
+
+  it('marks the dependency load-bearing for an unused-dependency check', () => {
+    const c = checkImplicitIntegrations({integrations: [autolinked()]});
+    expect(c.fix).toContain('unused-dependency check');
+    expect(c.fix).toContain('astryx.config');
+  });
+
+  it('is always informational, so the CI gate stays green', () => {
+    for (const integrations of [
+      null,
+      [],
+      [autolinked()],
+      [autolinked({components: undefined})],
+      [autolinked({__autolinked: false})],
+    ]) {
+      expect(checkImplicitIntegrations({integrations}).status).toBe('info');
+    }
+  });
+
+  it('is part of the report doctor returns', async () => {
+    const r = await doctor({cwd});
+    expect(r.data.checks.map(c => c.id)).toContain('implicit-integrations');
+  }, SLOW);
 });

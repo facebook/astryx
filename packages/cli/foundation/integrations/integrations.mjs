@@ -41,11 +41,20 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  *   failure; other manifest contributions remain available
  * @property {string} __spec
  * @property {string} __packageDir
+ * @property {Record<string, unknown>|null} [__packageExports] the owning
+ *   package's `exports` map, kept from the package.json this loader already
+ *   parsed so import resolution does not read it a second time
  * @property {string} __manifestFile
  * @property {string} [__loadError] set when the manifest failed to load/validate;
  *   such an integration contributes nothing and is surfaced via Project.issues()
  * @property {string[]} [__unknownKeys] manifest keys this CLI does not know —
  *   surfaced as a warning; the rest of the manifest still contributes
+ * @property {boolean} [__autolinked] loaded because the project declares the
+ *   package as a dependency and it ships a manifest, with no astryx.config
+ *   entry naming it — see foundation/integrations/autolink.mjs
+ * @property {string} [__dependencyField] for an autolinked integration, the
+ *   package.json field that declared it (`dependencies`, `devDependencies`,
+ *   `optionalDependencies`)
  * @property {import('../../authoring/debug/type').DebugEventHandler} [__debug]
  *   the manifest module's `debug` NAMED export, when it exported a function.
  *   Not a manifest key — see {@link loadManifest}.
@@ -287,6 +296,7 @@ export async function loadIntegrations(
       __debug: debugHandler,
       __spec: spec,
       __packageDir: packageDir,
+      __packageExports: pkg.exports ?? null,
       __manifestFile: manifestFile,
     });
   }

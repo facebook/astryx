@@ -1257,6 +1257,11 @@
       "aliases": []
     },
     {
+      "name": "example-bottom-sheet-switcher-review-flow",
+      "path": "examples/bottom-sheet-switcher/review-flow",
+      "aliases": []
+    },
+    {
       "name": "example-bottom-sheet-height-variants",
       "path": "examples/bottom-sheet/height-variants",
       "aliases": []
@@ -3828,6 +3833,11 @@
     {
       "name": "showcase-banner-statuses",
       "path": "showcases/banner/statuses",
+      "aliases": []
+    },
+    {
+      "name": "showcase-base-typeahead-custom-search-bar",
+      "path": "showcases/base-typeahead/custom-search-bar",
       "aliases": []
     },
     {

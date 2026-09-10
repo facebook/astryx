@@ -18,6 +18,8 @@ import {
   SideNavSection,
 } from '@astryxdesign/core/SideNav';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
+import {TextArea} from '@astryxdesign/core/TextArea';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import * as stylex from '@stylexjs/stylex';
 import {
   HomeIcon,
@@ -52,6 +54,11 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column' as const,
     gap: 16,
+  },
+  fieldStack: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 32,
   },
 });
 
@@ -91,9 +98,7 @@ function AppTopNav({endContent}: {endContent?: React.ReactNode}) {
       heading={
         <TopNavHeading
           heading="Acme App"
-          logo={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          logo={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
         />
       }
       startContent={
@@ -174,9 +179,7 @@ function SideNavWithHeader() {
     <SideNav
       header={
         <SideNavHeading
-          icon={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
           heading="Acme App"
           headingHref="#"
         />
@@ -454,6 +457,36 @@ export const AutoHeight: Story = {
       sideNav={<SideNavWithoutHeader />}
       height="auto">
       <MockContent paragraphs={20} />
+    </AppShell>
+  ),
+};
+
+/**
+ * Auto height mode with Field-based inputs. Scroll the inputs under the
+ * sticky header — the header must stay above the input surfaces. Field
+ * contains its local stacking layers at its own surface (AST-027), so the
+ * header needs no escalated z-index: the detached variant's input wrapper
+ * z-index is local to the field and cannot compete with page-level stacking.
+ */
+export const AutoHeightWithFields: Story = {
+  render: () => (
+    <AppShell contentPadding={6} topNav={<AppTopNav />} height="auto">
+      <div {...stylex.props(styles.fieldStack)}>
+        <TextArea label="Question" value="" onChange={() => {}} />
+        <TextArea
+          label="Detached question"
+          statusVariant="detached"
+          value=""
+          onChange={() => {}}
+        />
+        <TextInput
+          label="Detached name"
+          statusVariant="detached"
+          value=""
+          onChange={() => {}}
+        />
+        <MockContent paragraphs={20} />
+      </div>
     </AppShell>
   ),
 };
