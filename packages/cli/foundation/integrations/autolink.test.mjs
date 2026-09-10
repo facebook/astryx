@@ -428,3 +428,81 @@ describe('Project.load with autolink', () => {
     expect(await project.issues()).toEqual([]);
   });
 });
+
+describe('the autolink kill switch', () => {
+  const ENV = 'ASTRYX_NO_AUTOLINK';
+  let saved;
+
+  beforeEach(() => {
+    saved = process.env[ENV];
+    delete process.env[ENV];
+  });
+
+  afterEach(() => {
+    if (saved === undefined) delete process.env[ENV];
+    else process.env[ENV] = saved;
+  });
+
+  /** A project whose sole integration arrives by autolink, not by config. */
+  function scaffoldAutolinked(fields = {}) {
+    writeProject(tmpDir, {dependencies: {'@acme/widgets': '^1.0.0'}, ...fields});
+    installPackage(tmpDir, {installAs: '@acme/widgets'});
+  }
+
+  it('loads the autolinked integration when nothing switches it off', async () => {
+    scaffoldAutolinked();
+    const project = await Project.load(tmpDir);
+    expect(project.loadedIntegrations.map(i => i.name)).toEqual(['@acme/widgets']);
+  });
+
+  it('loads nothing when the environment switch is set', async () => {
+    scaffoldAutolinked();
+    process.env[ENV] = '1';
+    const project = await Project.load(tmpDir);
+    expect(project.loadedIntegrations).toEqual([]);
+  });
+
+  it.each(['1', 'true', 'yes', 'please'])(
+    'treats %o as off — an operator reaching for this is not reading a spelling rule',
+    async value => {
+      scaffoldAutolinked();
+      process.env[ENV] = value;
+      const project = await Project.load(tmpDir);
+      expect(project.loadedIntegrations).toEqual([]);
+    },
+  );
+
+  it.each(['', '0', 'false'])('treats %o as not set', async value => {
+    scaffoldAutolinked();
+    process.env[ENV] = value;
+    const project = await Project.load(tmpDir);
+    expect(project.loadedIntegrations.map(i => i.name)).toEqual(['@acme/widgets']);
+  });
+
+  it('loads nothing when package.json opts out', async () => {
+    scaffoldAutolinked({astryx: {autolink: false}});
+    const project = await Project.load(tmpDir);
+    expect(project.loadedIntegrations).toEqual([]);
+  });
+
+  it('opts out only on false, not on any other value', async () => {
+    scaffoldAutolinked({astryx: {autolink: true}});
+    const project = await Project.load(tmpDir);
+    expect(project.loadedIntegrations.map(i => i.name)).toEqual(['@acme/widgets']);
+  });
+
+  it('still loads an integration the config NAMES', async () => {
+    // The switch governs what a project did not ask for. Naming an integration
+    // is asking for it, and no kill switch should silently drop a declaration.
+    writeProject(tmpDir, {
+      dependencies: {'@acme/widgets': '^1.0.0'},
+      astryx: {autolink: false},
+    });
+    installPackage(tmpDir, {installAs: '@acme/widgets'});
+    writeConfig(tmpDir, ['@acme/widgets']);
+    process.env[ENV] = '1';
+
+    const project = await Project.load(tmpDir);
+    expect(project.loadedIntegrations.map(i => i.name)).toEqual(['@acme/widgets']);
+  });
+});

@@ -127,6 +127,12 @@ test, applicable text, and consumer-documentation projections.
   alias or a non-semver protocol resolves like any other. A config entry keeps
   precedence over the same package autolinked, and a dependency whose manifest
   fails to load is dropped rather than raised as the consuming project's issue.
+  Two switches turn it off without touching a declaration:
+  `{"astryx": {"autolink": false}}` in package.json for a project that wants only
+  what it names, and `ASTRYX_NO_AUTOLINK` in the environment for the case a
+  release cannot serve — consumers resolve the CLI from their own lockfiles, so
+  a fix that ships in a version reaches them on their schedule, not ours. Neither
+  switch touches a CONFIGURED integration: naming one is asking for it.
 
 ## Change coupling
 
