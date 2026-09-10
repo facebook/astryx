@@ -1257,6 +1257,11 @@
       "aliases": []
     },
     {
+      "name": "example-bottom-sheet-switcher-review-flow",
+      "path": "examples/bottom-sheet-switcher/review-flow",
+      "aliases": []
+    },
+    {
       "name": "example-bottom-sheet-height-variants",
       "path": "examples/bottom-sheet/height-variants",
       "aliases": []
