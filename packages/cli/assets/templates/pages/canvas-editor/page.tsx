@@ -474,6 +474,26 @@ const EXPORT_MENU = EXPORT_FORMATS.map(label => ({label}));
 // Colour
 // =============================================================================
 
+/**
+ * The hue rail: a Slider whose track is a spectrum.
+ *
+ * Reaching for `components['slider-track']` rather than painting a rail by
+ * hand keeps the keyboard handling, the ARIA and the thumb that the system
+ * already tested, and leaves this file responsible only for the one thing
+ * that is actually specific — the gradient.
+ */
+const hueTheme = defineTheme({
+  name: 'hue',
+  components: {
+    'slider-track': {
+      base: {
+        backgroundImage:
+          'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)',
+      },
+    },
+  },
+});
+
 /** A colour as the picker holds it: hue 0–360, saturation and value 0–100. */
 interface Hsv {
   h: number;
@@ -527,9 +547,10 @@ function hexToHsv(hex: string): Hsv {
 }
 
 /**
- * Drag tracking for the two controls that have to be painted rather than
- * composed — the saturation/value plane and the hue rail. Reports the pointer
- * as a fraction of the element on press and for as long as the drag lasts.
+ * Drag tracking for the saturation/value plane, which is the one control
+ * here that has to be painted: it is two axes at once, and no slider is.
+ * Reports the pointer as a fraction of the element on press and for as long
+ * as the drag lasts.
  *
  * Pointer capture is what makes the drag survive leaving the element: a fast
  * diagonal out of the plane keeps tracking instead of stopping dead at the
@@ -771,15 +792,6 @@ const styles = stylex.create({
     cursor: 'crosshair',
     touchAction: 'none',
   },
-  hueRail: {
-    position: 'relative',
-    height: 'var(--spacing-3)',
-    borderRadius: 'var(--radius-full)',
-    backgroundImage:
-      'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)',
-    cursor: 'pointer',
-    touchAction: 'none',
-  },
   // Both thumbs are positioned by their centre, so the translate is what
   // keeps them on the value rather than beside it.
   thumb: {
@@ -844,10 +856,6 @@ const paint = stylex.create({
   planeThumb: (s: number, v: number) => ({
     insetInlineStart: `${s}%`,
     insetBlockStart: `${100 - v}%`,
-  }),
-  hueThumb: (h: number) => ({
-    insetInlineStart: `${(h / 360) * 100}%`,
-    insetBlockStart: '50%',
   }),
   fill: (color: string) => ({backgroundColor: color}),
 });
@@ -1090,11 +1098,8 @@ function ColorPicker({
       [commit, hsv],
     ),
   );
-  const hueTrack = usePointerTrack(
-    useCallback(x => commit({...hsv, h: Math.round(x * 360)}), [commit, hsv]),
-  );
-
-  const nudge = (event: React.KeyboardEvent, step: Partial<Hsv>) => {
+  /** Arrow keys on the plane: left/right saturate, up/down brighten. */
+  const nudge = (event: React.KeyboardEvent) => {
     const sign =
       event.key === 'ArrowRight' || event.key === 'ArrowUp'
         ? 1
@@ -1106,16 +1111,11 @@ function ColorPicker({
     }
     event.preventDefault();
     const horizontal = event.key === 'ArrowRight' || event.key === 'ArrowLeft';
+    const clamp = (n: number) => Math.min(100, Math.max(0, n));
     commit({
-      h: Math.min(360, Math.max(0, hsv.h + sign * (step.h ?? 0))),
-      s: Math.min(
-        100,
-        Math.max(0, hsv.s + (horizontal ? sign * (step.s ?? 0) : 0)),
-      ),
-      v: Math.min(
-        100,
-        Math.max(0, hsv.v + (horizontal ? 0 : sign * (step.v ?? 0))),
-      ),
+      h: hsv.h,
+      s: clamp(hsv.s + (horizontal ? sign * 2 : 0)),
+      v: clamp(hsv.v + (horizontal ? 0 : sign * 2)),
     });
   };
 
@@ -1129,7 +1129,7 @@ function ColorPicker({
         aria-valuenow={hsv.s}
         aria-valuemin={0}
         aria-valuemax={100}
-        onKeyDown={event => nudge(event, {s: 2, v: 2})}
+        onKeyDown={nudge}
         {...planeTrack}
         {...stylex.props(styles.plane, paint.hue(hsv.h))}>
         <span
@@ -1140,24 +1140,22 @@ function ColorPicker({
           )}
         />
       </div>
-      <div
-        role="slider"
-        tabIndex={0}
-        aria-label="Hue"
-        aria-valuenow={hsv.h}
-        aria-valuemin={0}
-        aria-valuemax={360}
-        onKeyDown={event => nudge(event, {h: 4})}
-        {...hueTrack}
-        {...stylex.props(styles.hueRail)}>
-        <span
-          {...stylex.props(
-            styles.thumb,
-            paint.hueThumb(hsv.h),
-            paint.fill(hsvToHex({h: hsv.h, s: 100, v: 100})),
-          )}
+      {/* The hue rail is a real Slider with its track repainted, not a
+      hand-rolled one: the rainbow is the only thing about it that is not
+      already a Slider, and `slider-track` is a theming target. Scoped to
+      its own Theme so the nine filter sliders in the same panel keep the
+      plain track they should have. */}
+      <Theme theme={hueTheme}>
+        <Slider
+          label="Hue"
+          isLabelHidden
+          min={0}
+          max={360}
+          value={hsv.h}
+          onChange={h => commit({...hsv, h})}
+          valueDisplay="none"
         />
-      </div>
+      </Theme>
       <TextInput
         label="Hex"
         isLabelHidden
@@ -1296,6 +1294,7 @@ function LayerRow({
  */
 function StyleRow({
   label,
+  name = label,
   value,
   placeholder,
   onChange,
@@ -1303,6 +1302,14 @@ function StyleRow({
   children,
 }: {
   label: string;
+  /**
+   * What the row's controls are called, when that has to differ from what
+   * the row is captioned. A text layer carries two shadows — its box's and
+   * its type's — and both are captioned "Shadow" because the section
+   * heading above each already says which. Screen reader users get no such
+   * heading with the control, so they get the longer name instead.
+   */
+  name?: string;
   value?: string;
   placeholder: string;
   onChange: (next: string) => void;
@@ -1314,7 +1321,7 @@ function StyleRow({
     <InspectorRow label={label}>
       <StackItem size="fill">
         <TextInput
-          label={label}
+          label={name}
           isLabelHidden
           size="sm"
           value={value ?? ''}
@@ -1322,11 +1329,11 @@ function StyleRow({
           onChange={onChange}
         />
       </StackItem>
-      <Swatch label={label} value={value} onChange={onChange}>
+      <Swatch label={name} value={value} onChange={onChange}>
         {children}
       </Swatch>
       <RowIcon
-        label={`Clear ${label.toLowerCase()}`}
+        label={`Clear ${name.toLowerCase()}`}
         icon={X}
         isDisabled={value === undefined}
         onClick={onClear}
@@ -1340,9 +1347,12 @@ function StyleRow({
  * popover as the colour because a shadow is one thing to set, not five.
  */
 function ShadowFields({
+  name,
   shadow,
   onChange,
 }: {
+  /** Prefixes each field, so two shadows on one layer stay tellable apart. */
+  name: string;
   shadow: Shadow;
   onChange: (next: Shadow) => void;
 }) {
@@ -1350,7 +1360,7 @@ function ShadowFields({
     <InspectorRow label={label} labelWidth={56}>
       <StackItem size="fill">
         <NumberInput
-          label={`Shadow ${label.toLowerCase()}`}
+          label={`${name} ${label.toLowerCase()}`}
           isLabelHidden
           size="sm"
           hasNumberSteppers
@@ -2011,6 +2021,7 @@ export default function CanvasEditor() {
                           />
                           <StyleRow
                             label="Shadow"
+                            name="Box shadow"
                             value={selected.shadow?.color}
                             placeholder="Add…"
                             onChange={next =>
@@ -2023,6 +2034,7 @@ export default function CanvasEditor() {
                             }
                             onClear={() => updateSelected({shadow: undefined})}>
                             <ShadowFields
+                              name="Box shadow"
                               shadow={selected.shadow ?? NO_SHADOW}
                               onChange={next => updateSelected({shadow: next})}
                             />
@@ -2280,7 +2292,8 @@ export default function CanvasEditor() {
                               </StackItem>
                             </InspectorRow>
                             <StyleRow
-                              label="Text shadow"
+                              label="Shadow"
+                              name="Text shadow"
                               value={selected.textShadow?.color}
                               placeholder="Add…"
                               onChange={next =>
@@ -2295,6 +2308,7 @@ export default function CanvasEditor() {
                                 updateSelected({textShadow: undefined})
                               }>
                               <ShadowFields
+                                name="Text shadow"
                                 shadow={selected.textShadow ?? NO_SHADOW}
                                 onChange={next =>
                                   updateSelected({textShadow: next})

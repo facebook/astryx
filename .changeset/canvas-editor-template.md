@@ -177,13 +177,22 @@ is meant to look like a control; the floating tool bar still uses it.
 **Border, Shadow and Fill are pickers, not text fields.** Each row is now a
 value, a chip that opens a picker, and a clear that only lights up once the
 slot holds something. Astryx has no colour picker to reach for, so the
-popover is built from what it does have — a `Popover`, a `TextInput` for hex
-— plus two controls that have to be painted because no component describes
-them: a saturation/value plane and a hue rail. A `Slider` styled into a
-rainbow would still only give one of the two axes, so both are `<div>`s with
-`role="slider"`, arrow keys and pointer capture. Capture is the part worth
-copying: without it a fast drag out of the plane stops at the edge instead
-of following the cursor.
+popover is assembled from what it does have: a `Popover`, a `TextInput` for
+hex, and a `Slider` for hue.
+
+The hue rail is worth pausing on, because the obvious move is to paint it and
+that would be wrong. A spectrum rail looks like custom work, but the only
+custom thing about it is the gradient — the dragging, the arrow keys, the
+ARIA and the thumb are all just a slider. So it _is_ a `Slider`, with
+`components['slider-track']` in a `defineTheme` carrying the spectrum, scoped
+under its own `Theme` so the nine filter sliders in the same panel keep the
+plain track they should have. Reach for the theming target before reaching
+for a `<div>`; check a component's `theming.targets` in its docs first.
+
+Only the saturation/value plane is painted, and only because it is two axes
+at once and no slider is. It carries `role="slider"`, arrow keys, and pointer
+capture — capture being the part worth copying, since without it a fast drag
+out of the plane stops at the edge instead of following the cursor.
 
 The picker holds HSV while it is open even though the layer stores hex. That
 is not redundancy — hex has no hue left once a colour reaches black or
