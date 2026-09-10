@@ -292,6 +292,8 @@ export interface TreeListItemInternalProps {
   target?: string;
   isDisabled?: boolean;
   isSelected?: boolean;
+  /** Consumer class for the row element. See `TreeListItemData.className`. */
+  className?: string;
   hasChildren: boolean;
   /**
    * Whether the tree contains at least one expandable item anywhere (i.e. a
@@ -339,6 +341,7 @@ export function TreeListItem({
   description,
   startContent,
   endContent,
+  className,
   onClick,
   href,
   target,
@@ -596,6 +599,10 @@ export function TreeListItem({
                   isDisabled && styles.disabled,
                   isSelected && styles.selected,
                 ),
+            // Last so it wins ties, and on the row box rather than the <li>:
+            // a marker here scopes `when.ancestor()` to the row's own hover,
+            // which is the boundary a consumer means by "this row".
+            className,
           )}
           style={indentStyle}
           onClick={handleClick}>
