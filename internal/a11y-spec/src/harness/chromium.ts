@@ -179,6 +179,7 @@ async function computedNode(
         role: null,
         name: '',
         description: '',
+        live: null,
         value: null,
         modal: null,
         multiline: null,
@@ -191,6 +192,7 @@ async function computedNode(
     }
 
     const role = text(node.role);
+    const live = property(node, 'live');
     const checked = property(node, 'checked');
     const invalid = property(node, 'invalid');
     const exposedValue = node.value?.value;
@@ -199,6 +201,10 @@ async function computedNode(
       role: role === '' ? null : role,
       name: text(node.name),
       description: text(node.description),
+      live:
+        live === 'off' || live === 'polite' || live === 'assertive'
+          ? live
+          : null,
       value:
         typeof exposedValue === 'string'
           ? exposedValue

@@ -48,6 +48,8 @@ export interface ComputedNode {
   readonly name: string;
   /** Computed accessible description. */
   readonly description: string;
+  /** Computed live-region channel, or null when this node is not live. */
+  readonly live: 'off' | 'polite' | 'assertive' | null;
   /** Computed text value, or null when the node exposes no value. */
   readonly value: string | null;
   /** Whether the engine exposes the subject as modal. */
