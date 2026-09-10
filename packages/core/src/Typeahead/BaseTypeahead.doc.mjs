@@ -96,6 +96,11 @@ export const docs = {
         description:
           'Use BaseTypeahead when Typeahead or Tokenizer would suffice; the extra wrapper and styling work is only justified for truly custom compositions.',
       },
+      {
+        guidance: false,
+        description:
+          'Treat Escape as cancellation of pending source work. It hides the current popup, but a late response can reopen it.',
+      },
     ],
   },
   props: [
@@ -144,7 +149,7 @@ export const docs = {
       name: 'menuWidth',
       type: 'number',
       description:
-        'Fixed dropdown width in pixels. The menu never shrinks below its anchor width.',
+        'Requested dropdown width in pixels before viewport clamping.',
     },
     {
       name: 'minQueryLength',
@@ -169,7 +174,7 @@ export const docs = {
       name: 'isFocusableDisabled',
       type: 'boolean',
       description:
-        'Keep a disabled input focusable with aria-disabled and readOnly so a caller-owned disabled reason remains discoverable.',
+        'Keep a disabled input focusable with aria-disabled and readOnly so a caller-owned disabled reason remains discoverable. It blocks text entry, but when applied after results are already open, Enter can still select the highlighted option.',
       default: 'false',
     },
     {
@@ -211,7 +216,8 @@ export const docs = {
     {
       name: 'inputTabIndex',
       type: 'number',
-      description: 'Tab-order override for the input element.',
+      description:
+        'Legacy input-specific alias for native tabIndex. When provided, it takes precedence; otherwise native tabIndex is preserved.',
     },
     {
       name: 'onKeyDown',
@@ -232,17 +238,20 @@ export const docs = {
     {
       name: 'inputId',
       type: 'string',
-      description: 'ID for the input element (for label association).',
+      description:
+        'Legacy input-specific alias for native id. When provided, it takes precedence; otherwise native id is preserved.',
     },
     {
       name: 'ariaDescribedBy',
       type: 'string',
-      description: 'Additional aria-describedby IDs.',
+      description:
+        'Legacy input-specific alias for native aria-describedby. When provided, it takes precedence; otherwise the native attribute is preserved.',
     },
     {
       name: 'ariaLabelledBy',
       type: 'string',
-      description: 'Additional aria-labelledby IDs used to name the combobox.',
+      description:
+        'Legacy input-specific alias for native aria-labelledby. When provided, it takes precedence; otherwise the native attribute is preserved.',
     },
   ],
 };
@@ -298,7 +307,7 @@ export const docsZh = {
     {
       name: 'menuWidth',
       type: 'number',
-      description: '下拉菜单的固定像素宽度。菜单不会小于其锚点宽度。',
+      description: '视口限制前请求的下拉菜单像素宽度。',
     },
     {
       name: 'minQueryLength',
@@ -323,7 +332,7 @@ export const docsZh = {
       name: 'isFocusableDisabled',
       type: 'boolean',
       description:
-        '使用 aria-disabled 和只读状态保持禁用输入框可聚焦，以便访问调用方提供的禁用原因。',
+        '使用 aria-disabled 和只读状态保持禁用输入框可聚焦，以便访问调用方提供的禁用原因。它会阻止文本输入，但如果结果已打开，按 Enter 仍可选择高亮选项。',
       default: 'false',
     },
     {
@@ -362,7 +371,8 @@ export const docsZh = {
     {
       name: 'inputTabIndex',
       type: 'number',
-      description: '输入元素的 Tab 顺序覆盖。',
+      description:
+        '原生 tabIndex 的旧输入专用别名。提供时优先；未提供时保留原生属性。',
     },
     {
       name: 'onKeyDown',
@@ -383,17 +393,20 @@ export const docsZh = {
     {
       name: 'inputId',
       type: 'string',
-      description: '输入元素的 ID（用于标签关联）。',
+      description:
+        '原生 id 的旧输入专用别名。提供时优先；未提供时保留原生属性。',
     },
     {
       name: 'ariaDescribedBy',
       type: 'string',
-      description: '附加的 aria-describedby ID。',
+      description:
+        '原生 aria-describedby 的旧输入专用别名。提供时优先；未提供时保留原生属性。',
     },
     {
       name: 'ariaLabelledBy',
       type: 'string',
-      description: '用于命名组合框的附加 aria-labelledby ID。',
+      description:
+        '原生 aria-labelledby 的旧输入专用别名。提供时优先；未提供时保留原生属性。',
     },
   ],
 };
@@ -431,6 +444,11 @@ export const docsDense = {
         description:
           'Use BaseTypeahead when Typeahead or Tokenizer suffice; extra work only pays off for custom compositions.',
       },
+      {
+        guidance: false,
+        description:
+          'Treat Escape as pending-work cancellation. It hides the popup, but a late response can reopen it.',
+      },
     ],
   },
   propDescriptions: {
@@ -441,26 +459,30 @@ export const docsDense = {
     placeholder: 'Input placeholder.',
     hasEntriesOnFocus: 'Bootstrap results on focus.',
     maxMenuItems: 'Max dropdown items.',
-    menuWidth: 'Fixed dropdown width in pixels.',
+    menuWidth: 'Requested px width before viewport clamping.',
     minQueryLength:
       'Min query length before searching. Menu stays closed below it.',
     emptySearchResultsText: 'Text when no results.',
     isDisabled: 'Whether input disabled.',
     isFocusableDisabled:
-      'Keep disabled input focusable for a caller-owned disabled reason.',
+      'Keeps disabled input focusable and blocks text entry; an already-open highlight can still be selected with Enter.',
     hasAutoFocus: 'Auto-focus on mount.',
     debounceMs: 'Search debounce ms. 0 for sync.',
     size: 'Dropdown option padding size.',
     anchorRef: 'Anchor for dropdown positioning. Defaults to input.',
     inputXStyle: 'Additional StyleX styles for input.',
     xstyle: 'Standard BaseProps StyleX styles for input.',
-    inputTabIndex: 'Input tab-order override.',
+    inputTabIndex:
+      'Legacy tabIndex alias; defined alias wins, otherwise native tabIndex passes through.',
     onKeyDown:
       'Keydown before internal nav. preventDefault() skips internal handling.',
     onChangeQuery: 'Fired on query text change.',
     onOpenChange: 'Fired on dropdown open/close.',
-    inputId: 'Input ID for label association.',
-    ariaDescribedBy: 'Additional aria-describedby IDs.',
-    ariaLabelledBy: 'Additional aria-labelledby IDs for the combobox name.',
+    inputId:
+      'Legacy id alias; defined alias wins, otherwise native id passes through.',
+    ariaDescribedBy:
+      'Legacy aria-describedby alias; defined alias wins, otherwise native attribute passes through.',
+    ariaLabelledBy:
+      'Legacy aria-labelledby alias; defined alias wins, otherwise native attribute passes through.',
   },
 };

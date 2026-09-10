@@ -32,7 +32,10 @@ const frameworks: SearchableItem[] = [
 const source = createStaticSource(frameworks);
 
 const styles = stylex.create({
-  root: {width: 320},
+  root: {
+    width: '100%',
+    maxWidth: 360,
+  },
   field: {
     backgroundColor: colorVars['--color-background-surface'],
     borderColor: colorVars['--color-border'],

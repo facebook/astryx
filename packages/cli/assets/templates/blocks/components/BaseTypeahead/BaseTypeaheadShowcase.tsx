@@ -13,29 +13,29 @@ import {
   colorVars,
   focusVars,
   radiusVars,
-  sizeVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 
 const frameworks: SearchableItem[] = [
-  {id: 'react', label: 'React'},
-  {id: 'vue', label: 'Vue'},
-  {id: 'svelte', label: 'Svelte'},
-  {id: 'next', label: 'Next.js'},
+  {id: 'react', label: 'React', auxiliaryData: {category: 'UI library'}},
+  {id: 'remix', label: 'Remix', auxiliaryData: {category: 'Web framework'}},
+  {id: 'next', label: 'Next.js', auxiliaryData: {category: 'Web framework'}},
 ];
+
 const source = createStaticSource(frameworks);
 
 const styles = stylex.create({
-  root: {width: 360},
+  root: {
+    width: '100%',
+    maxWidth: 360,
+  },
   field: {
-    alignItems: 'center',
     backgroundColor: colorVars['--color-background-surface'],
-    borderColor: colorVars['--color-border-emphasized'],
+    borderColor: colorVars['--color-border'],
     borderRadius: radiusVars['--radius-element'],
     borderStyle: 'solid',
     borderWidth: borderVars['--border-width'],
-    display: 'flex',
-    minHeight: sizeVars['--size-element-md'],
+    paddingBlock: spacingVars['--spacing-1-5'],
     paddingInline: spacingVars['--spacing-2'],
     outlineColor: {
       default: 'transparent',
@@ -48,30 +48,40 @@ const styles = stylex.create({
       ':has(input:focus-visible)': focusVars['--focus-outline-width'],
     },
   },
+  result: {
+    minWidth: 0,
+  },
 });
 
-export default function BaseTypeaheadShowcase() {
+export default function BaseTypeaheadCustomResults() {
   const [value, setValue] = useState<SearchableItem | null>(null);
-  const anchorRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   return (
     <VStack gap={3} xstyle={styles.root}>
-      <Text type="label">Framework</Text>
-      <div ref={anchorRef} {...stylex.props(styles.field)}>
+      <div ref={wrapperRef} {...stylex.props(styles.field)}>
         <BaseTypeahead
-          aria-label="Framework"
-          anchorRef={anchorRef}
-          debounceMs={0}
-          hasEntriesOnFocus
-          onChange={setValue}
-          placeholder="Search frameworks…"
+          aria-label="Search frameworks"
           searchSource={source}
           value={value}
+          onChange={setValue}
+          anchorRef={wrapperRef}
+          placeholder="Search frameworks…"
+          hasEntriesOnFocus
+          debounceMs={0}
+          renderItem={item => (
+            <VStack gap={0} xstyle={styles.result}>
+              <Text type="label">{item.label}</Text>
+              <Text type="supporting" color="secondary">
+                {
+                  (item.auxiliaryData as {category?: string} | undefined)
+                    ?.category
+                }
+              </Text>
+            </VStack>
+          )}
         />
       </div>
-      <Text type="supporting" color="secondary">
-        {value == null ? 'Choose a framework' : `Selected: ${value.label}`}
-      </Text>
     </VStack>
   );
 }

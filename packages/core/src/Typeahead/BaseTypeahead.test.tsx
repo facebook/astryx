@@ -103,6 +103,54 @@ describe('BaseTypeahead', () => {
     expect(onBlur).toHaveBeenCalledOnce();
   });
 
+  it('preserves native input attributes when legacy aliases are undefined', () => {
+    render(
+      <BaseTypeahead
+        searchSource={emptySource}
+        value={null}
+        onChange={() => {}}
+        id="native-input"
+        aria-describedby="native-description"
+        aria-labelledby="native-label"
+        tabIndex={3}
+        inputId={undefined}
+        ariaDescribedBy={undefined}
+        ariaLabelledBy={undefined}
+        inputTabIndex={undefined}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('id', 'native-input');
+    expect(input).toHaveAttribute('aria-describedby', 'native-description');
+    expect(input).toHaveAttribute('aria-labelledby', 'native-label');
+    expect(input).toHaveAttribute('tabindex', '3');
+  });
+
+  it('lets defined legacy aliases override their native equivalents', () => {
+    render(
+      <BaseTypeahead
+        searchSource={emptySource}
+        value={null}
+        onChange={() => {}}
+        id="native-input"
+        aria-describedby="native-description"
+        aria-labelledby="native-label"
+        tabIndex={3}
+        inputId="legacy-input"
+        ariaDescribedBy="legacy-description"
+        ariaLabelledBy="legacy-label"
+        inputTabIndex={-1}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('id', 'legacy-input');
+    expect(input).toHaveAttribute('aria-describedby', 'legacy-description');
+    expect(input).toHaveAttribute('aria-labelledby', 'legacy-label');
+    expect(input).toHaveAttribute('tabindex', '-1');
+  });
+
   it('counts grapheme clusters when enforcing minQueryLength', async () => {
     const search = vi.fn(() => [resultItem]);
     render(

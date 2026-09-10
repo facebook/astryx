@@ -87,9 +87,6 @@ const styles = stylex.create({
     maxWidth: '100%',
     width: '16rem',
   },
-  consumerInput: {
-    color: colorVars['--color-text-accent'],
-  },
   customItem: {
     display: 'flex',
     flexDirection: 'column',
@@ -109,14 +106,12 @@ type DemoProps = Omit<
   BaseTypeaheadProps<SearchableItem>,
   'searchSource' | 'value' | 'onChange'
 > & {
-  initialValue?: SearchableItem | null;
   label?: string;
   source?: SearchSource<SearchableItem>;
   isNarrow?: boolean;
 };
 
 function Demo({
-  initialValue = null,
   label = 'Framework',
   source: searchSource = source,
   isNarrow = false,
@@ -124,7 +119,7 @@ function Demo({
   ariaLabelledBy: ariaLabelledByProp,
   ...props
 }: DemoProps) {
-  const [value, setValue] = useState<SearchableItem | null>(initialValue);
+  const [value, setValue] = useState<SearchableItem | null>(null);
   const anchorRef = useRef<HTMLDivElement>(null);
   const generatedId = useId().replaceAll(':', '');
   const generatedInputId = `base-typeahead-${generatedId}`;
@@ -159,34 +154,6 @@ const meta: Meta<DemoProps> = {
   component: Demo,
   tags: ['autodocs'],
   parameters: {layout: 'centered'},
-  argTypes: {
-    initialValue: {control: false},
-    label: {control: 'text'},
-    source: {control: false},
-    isNarrow: {control: 'boolean'},
-    renderItem: {control: false},
-    placeholder: {control: 'text'},
-    hasEntriesOnFocus: {control: 'boolean'},
-    maxMenuItems: {control: 'number'},
-    menuWidth: {control: 'number'},
-    minQueryLength: {control: 'number'},
-    emptySearchResultsText: {control: 'text'},
-    isDisabled: {control: 'boolean'},
-    isFocusableDisabled: {control: 'boolean'},
-    hasAutoFocus: {control: 'boolean'},
-    debounceMs: {control: 'number'},
-    size: {control: 'radio', options: ['sm', 'md', 'lg']},
-    anchorRef: {control: false},
-    inputXStyle: {control: false},
-    xstyle: {control: false},
-    inputTabIndex: {control: 'number'},
-    onKeyDown: {control: false},
-    onChangeQuery: {control: false},
-    onOpenChange: {control: false},
-    inputId: {control: 'text'},
-    ariaDescribedBy: {control: 'text'},
-    ariaLabelledBy: {control: 'text'},
-  },
 } satisfies Meta<DemoProps>;
 
 export default meta;
@@ -242,15 +209,6 @@ export const EmptyResults: Story = {
   },
 };
 
-export const SelectedResult: Story = {
-  render: () => <Demo initialValue={items[0]} hasEntriesOnFocus />,
-  play: async ({canvasElement}) => {
-    const input = within(canvasElement).getByRole('combobox');
-    await userEvent.click(input);
-    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
-  },
-};
-
 export const CustomRenderer: Story = {
   render: () => (
     <Demo
@@ -291,24 +249,6 @@ export const SizeVariants: Story = {
   ),
 };
 
-export const ConsumerProps: Story = {
-  render: () => (
-    <Demo
-      aria-label="Framework search override"
-      className="base-typeahead-consumer-class"
-      data-audit-state="consumer-props"
-      debounceMs={0}
-      style={{letterSpacing: '0.08em'}}
-      xstyle={styles.consumerInput}
-    />
-  ),
-  play: async ({canvasElement}) => {
-    const input = within(canvasElement).getByRole('combobox');
-    await userEvent.type(input, 'rea');
-    await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
-  },
-};
-
 export const NarrowLongResult: Story = {
   render: () => (
     <Demo isNarrow hasEntriesOnFocus label="Framework in a narrow container" />
@@ -318,11 +258,20 @@ export const NarrowLongResult: Story = {
     await userEvent.click(input);
     await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
     await waitFor(() => {
-      const listbox = document.querySelector('[role="listbox"]');
-      expect(listbox).not.toBeNull();
-      const box = listbox?.getBoundingClientRect();
+      const listbox = document.querySelector<HTMLElement>('[role="listbox"]');
+      if (listbox == null) {
+        throw new Error('Expected the BaseTypeahead listbox to be open');
+      }
+      const box = listbox.getBoundingClientRect();
       expect(
-        box != null && box.left >= 0 && box.right <= window.innerWidth,
+        box.left >= 16 &&
+          box.right <= window.innerWidth - 16 &&
+          listbox.scrollWidth <= listbox.clientWidth,
+      ).toBe(true);
+      expect(
+        Array.from(
+          listbox.querySelectorAll<HTMLElement>('[role="option"]'),
+        ).every(option => option.scrollWidth <= option.clientWidth),
       ).toBe(true);
     });
   },

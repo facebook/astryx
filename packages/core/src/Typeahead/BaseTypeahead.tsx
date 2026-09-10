@@ -104,7 +104,7 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    */
   maxMenuItems?: number;
 
-  /** Fixed dropdown width in pixels. Never shrinks below the anchor width. */
+  /** Requested dropdown width in pixels before viewport clamping. */
   menuWidth?: number;
 
   /**
@@ -188,17 +188,20 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   debounceMs?: number;
 
   /**
-   * ID for the input element (for label association).
+   * Legacy input-specific alias for the native `id` prop. When provided, this
+   * alias takes precedence; otherwise the native prop is preserved.
    */
   inputId?: string;
 
   /**
-   * Additional aria-describedby IDs.
+   * Legacy input-specific alias for native `aria-describedby`. When provided,
+   * this alias takes precedence; otherwise the native prop is preserved.
    */
   ariaDescribedBy?: string;
 
   /**
-   * Additional aria-labelledby IDs.
+   * Legacy input-specific alias for native `aria-labelledby`. When provided,
+   * this alias takes precedence; otherwise the native prop is preserved.
    */
   ariaLabelledBy?: string;
 
@@ -208,12 +211,13 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   inputXStyle?: StyleXStyles;
 
   /**
-   * Tab-order override for the input element. Typeahead passes `-1` while
-   * its selected-value token is shown: the input is visually collapsed
-   * (width 0 / opacity 0) but must stay programmatically focusable for
-   * token edit/clear interactions, so removing it from the Tab order is
-   * what prevents an invisible tab stop (WCAG 2.4.3 / 2.4.7). The input
-   * remains focusable via `.focus()` regardless of this value.
+   * Legacy input-specific alias for native `tabIndex`. When provided, this
+   * alias takes precedence; otherwise the native prop is preserved. Typeahead
+   * passes `-1` while its selected-value token is shown: the input is visually
+   * collapsed (width 0 / opacity 0) but must stay programmatically focusable
+   * for token edit/clear interactions, so removing it from the Tab order is
+   * what prevents an invisible tab stop (WCAG 2.4.3 / 2.4.7). The input remains
+   * focusable via `.focus()` regardless of this value.
    */
   inputTabIndex?: number;
 
@@ -243,8 +247,8 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
 // =============================================================================
 
 const TYPEAHEAD_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
-const TYPEAHEAD_MAX_INLINE_SIZE = `calc(100vi - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
-const TYPEAHEAD_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${TYPEAHEAD_VIEWPORT_GUTTER} - ${TYPEAHEAD_VIEWPORT_GUTTER})`;
+const TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
+const TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${TYPEAHEAD_VIEWPORT_GUTTER})`;
 
 const styles = stylex.create({
   input: {
@@ -280,8 +284,8 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     minWidth: 'anchor-size(width)',
     maxInlineSize: stylex.firstThatWorks(
-      TYPEAHEAD_MAX_INLINE_SIZE,
-      TYPEAHEAD_MAX_INLINE_SIZE_FALLBACK,
+      TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE,
+      TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
     ),
   },
   popoverCustomWidth: (width: number) => ({
@@ -334,6 +338,11 @@ const styles = stylex.create({
     display: 'flex',
     flex: 1,
     minWidth: 0,
+    overflow: 'hidden',
+  },
+  defaultItem: {
+    minWidth: 0,
+    width: '100%',
   },
   emptyState: {
     padding: spacingVars['--spacing-3'],
@@ -442,6 +451,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   onPointerDown: onPointerDownProp,
   onFocus: onFocusProp,
   onBlur: onBlurProp,
+  id: nativeInputId,
+  'aria-describedby': nativeAriaDescribedBy,
+  'aria-labelledby': nativeAriaLabelledBy,
+  tabIndex: nativeInputTabIndex,
   ref,
   ...rest
 }: BaseTypeaheadProps<T>) {
@@ -452,7 +465,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     emptySearchResultsTextFromProps ??
     t('@astryx.typeahead.emptySearchResults');
   const generatedId = useId();
-  const inputId = externalInputId ?? generatedId;
+  // Keep the released input-specific aliases authoritative when a caller uses
+  // them, but do not let an omitted alias erase the equivalent native BaseProp.
+  const inputId = externalInputId ?? nativeInputId ?? generatedId;
+  const inputAriaDescribedBy = ariaDescribedBy ?? nativeAriaDescribedBy;
+  const inputAriaLabelledBy = ariaLabelledBy ?? nativeAriaLabelledBy;
+  const resolvedInputTabIndex = inputTabIndex ?? nativeInputTabIndex;
   const listboxId = useId();
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -1002,10 +1020,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
         aria-autocomplete="list"
         aria-busy={isLoading || undefined}
-        aria-describedby={ariaDescribedBy}
-        aria-labelledby={ariaLabelledBy}
+        aria-describedby={inputAriaDescribedBy}
+        aria-labelledby={inputAriaLabelledBy}
         aria-disabled={isFocusableDisabled ? 'true' : undefined}
-        tabIndex={inputTabIndex}
+        tabIndex={resolvedInputTabIndex}
         value={query}
         onChange={handleInputChange}
         onPointerDown={composeEventHandlers(() => {
@@ -1091,7 +1109,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
                       {renderItem ? (
                         renderItem(item)
                       ) : (
-                        <TypeaheadItem item={item} />
+                        <TypeaheadItem
+                          item={item}
+                          xstyle={styles.defaultItem}
+                        />
                       )}
                     </span>
                     {isSelected && (
