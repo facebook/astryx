@@ -11,9 +11,13 @@
  */
 
 import {fireEvent, render, screen} from '@testing-library/react';
-import {createRef, useState} from 'react';
+import {
+  createRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {useFocusTrap} from '../hooks';
+import {hasActiveFocusTrapEscape, useFocusTrap} from '../hooks';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
@@ -812,6 +816,68 @@ describe('BottomSheetSwitcher', () => {
     });
 
     expect(onNestedEscape).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
+  });
+
+  it('preserves the exported focus-trap Escape signal for a modal switcher', () => {
+    expect(hasActiveFocusTrapEscape()).toBe(false);
+
+    const {unmount} = render(
+      <BottomSheetSwitcher activeSheet="details" onActiveSheetChange={() => {}}>
+        <BottomSheet sheetId="details" label="Details">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    expect(hasActiveFocusTrapEscape()).toBe(true);
+    unmount();
+    expect(hasActiveFocusTrapEscape()).toBe(false);
+  });
+
+  it('dismisses a non-modal flow when a consumer stops Escape propagation', () => {
+    const onActiveSheetChange = vi.fn();
+    const onKeyDown = vi.fn((event: ReactKeyboardEvent) => {
+      event.stopPropagation();
+    });
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}
+        hasScrim={false}
+        onKeyDown={onKeyDown}>
+        <BottomSheet sheetId="details" label="Details">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    fireEvent.keyDown(getSharedDialog(), {key: 'Escape'});
+
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).toHaveBeenCalledWith(null);
+  });
+
+  it('honors a consumer that prevents the default Escape dismissal', () => {
+    const onActiveSheetChange = vi.fn();
+    const onKeyDown = vi.fn((event: ReactKeyboardEvent) => {
+      event.preventDefault();
+    });
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}
+        hasScrim={false}
+        onKeyDown={onKeyDown}>
+        <BottomSheet sheetId="details" label="Details">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    fireEvent.keyDown(getSharedDialog(), {key: 'Escape'});
+
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
     expect(onActiveSheetChange).not.toHaveBeenCalled();
   });
 

@@ -37,6 +37,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
   type SyntheticEvent,
@@ -45,8 +46,13 @@ import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import {useFocusTrap, useScrollLock} from '../hooks';
+import {useScrollLock} from '../hooks';
+import {
+  useFocusTrap,
+  useFocusTrapEscapeCompatibilitySignal,
+} from '../hooks/useFocusTrap';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
+import {dispatchLayerEscapeKeyDown} from '../Layer/layerStack';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {composeEventHandlers, mergeProps} from '../utils';
 import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
@@ -295,6 +301,10 @@ export function BottomSheetSwitcher({
   const {containerRef} = useFocusTrap<HTMLDialogElement>({
     isActive: isModal,
   });
+  // Before the shared dismissal stack, this modal trap supplied `onEscape`, so
+  // the released compatibility shim reported it as active. Keep that signal
+  // without registering the switcher twice in the one shared stack.
+  useFocusTrapEscapeCompatibilitySignal(isModal);
   const {shouldDismissOnCloseRequest} = useLayerDismissal({
     isActive: isFlowVisible,
     escapeBehavior: allowsEscapeDismiss ? 'close' : 'block',
@@ -589,6 +599,16 @@ export function BottomSheetSwitcher({
     },
     [dismissOnEscape, shouldDismissOnCloseRequest],
   );
+  const handleKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLDialogElement>) => {
+      // A consumer may stop propagation without claiming Escape. Route that
+      // unprevented press now so the shared stack still chooses the top layer;
+      // its preventDefault marker makes the document listener a no-op if the
+      // event does continue bubbling.
+      dispatchLayerEscapeKeyDown(event.nativeEvent);
+    },
+    [],
+  );
   const handleClick = useCallback(
     (event: ReactMouseEvent<HTMLDialogElement>) => {
       if (hasScrim && event.target === event.currentTarget) {
@@ -625,7 +645,7 @@ export function BottomSheetSwitcher({
         aria-modal={isModal ? 'true' : undefined}
         onCancel={composeEventHandlers(onCancel, handleCancel)}
         onClick={composeEventHandlers(onClick, handleClick)}
-        onKeyDown={onKeyDown}
+        onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}
         {...(activeSheetPurpose === 'required'
           ? {role: 'alertdialog'}
           : undefined)}>
