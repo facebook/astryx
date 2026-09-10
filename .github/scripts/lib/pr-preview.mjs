@@ -182,6 +182,15 @@ export async function resolveWorkflowRunPullRequest({
       // accepted above may reach a privileged mutation.
     }
   }
+  if (
+    matches.length === 0 &&
+    candidates.every(pull => pull?.state !== 'open')
+  ) {
+    // A source run can be rerun after its pull request merges. No privileged
+    // work remains when there is no open candidate, so finish without turning
+    // the trusted default-branch workflow red.
+    return null;
+  }
   if (matches.length !== 1) {
     refuse(
       `expected exactly one current pull request for source run ${run?.id}; found ${matches.length}`,

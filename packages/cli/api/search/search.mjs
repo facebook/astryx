@@ -57,6 +57,7 @@ import {
   discoverIntegrationComponents,
   findComponentReadme,
   resolveImportPath,
+  resolveIntegrationImportPath,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {discoverHooks, findHookDoc} from '../../foundation/discovery/hook-discovery.mjs';
 import {loadIntegrationsSafely} from '../component/_adapter.mjs';
@@ -552,7 +553,24 @@ async function gatherIntegrationComponents(cwd) {
         keywords: doc && Array.isArray(doc.keywords) ? doc.keywords : [],
         description: doc ? doc.usage?.description || doc.description || '' : '',
         guidance: guidanceFrom(doc),
-        _import: rec.package,
+        // Exactly what `component` reports: a doc may state its own specifier
+        // (one entry point exporting several components), and only when it
+        // does not do we resolve the subpath against the owning package's
+        // exports — read off the integration, which the loader already parsed.
+        // Reporting the bare package name here handed out a path that does not
+        // resolve, and disagreed with what `component <Name>` said about the
+        // very same component.
+        _import:
+          doc?.import ??
+          resolveIntegrationImportPath(
+            {
+              exportsMap: integration.__packageExports,
+              packageDir: integration.__packageDir,
+              docPath: rec.docPath,
+              packageName: rec.package,
+            },
+            rec.name,
+          ),
       });
     }
   }

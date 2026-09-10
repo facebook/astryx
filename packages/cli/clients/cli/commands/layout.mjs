@@ -200,7 +200,7 @@ export function registerLayout(program) {
       // Exit code is the contract and must NOT depend on --json vs human: an
       // invalid (but parseable) layout exits 1 in BOTH modes so `layout check`
       // works as a CI gate / agent check without parsing stdout. Decide it
-      // before the JSON return (parity with doctor / validate-integration).
+      // before the JSON return (parity with doctor integration validate).
       if (!result.data.valid) process.exitCode = 1;
 
       // A verdict on one expression: valid or not, with the errors that made

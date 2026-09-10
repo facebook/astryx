@@ -27,7 +27,7 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
  * the package's package.json; the `components`/`templates`/`codemods`/`docs`
  * roots are absolute paths resolved from the manifest. The `__`-prefixed fields
- * are internal bookkeeping used by validate-integration and Project.
+ * are internal bookkeeping used by Doctor integration validation and Project.
  * @typedef {object} LoadedIntegration
  * @property {string} name
  * @property {string} [version]
@@ -41,11 +41,20 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  *   failure; other manifest contributions remain available
  * @property {string} __spec
  * @property {string} __packageDir
+ * @property {Record<string, unknown>|null} [__packageExports] the owning
+ *   package's `exports` map, kept from the package.json this loader already
+ *   parsed so import resolution does not read it a second time
  * @property {string} __manifestFile
  * @property {string} [__loadError] set when the manifest failed to load/validate;
  *   such an integration contributes nothing and is surfaced via Project.issues()
  * @property {string[]} [__unknownKeys] manifest keys this CLI does not know —
  *   surfaced as a warning; the rest of the manifest still contributes
+ * @property {boolean} [__autolinked] loaded because the project declares the
+ *   package as a dependency and it ships a manifest, with no astryx.config
+ *   entry naming it — see foundation/integrations/autolink.mjs
+ * @property {string} [__dependencyField] for an autolinked integration, the
+ *   package.json field that declared it (`dependencies`, `devDependencies`,
+ *   `optionalDependencies`)
  * @property {import('../../authoring/debug/type').DebugEventHandler} [__debug]
  *   the manifest module's `debug` NAMED export, when it exported a function.
  *   Not a manifest key — see {@link loadManifest}.
@@ -61,7 +70,7 @@ export const MANIFEST_BASENAMES = [
 /**
  * Return the conventional root manifest paths present in `dir`, in
  * load-precedence order. Unlike {@link resolveManifestPath} this never throws —
- * callers (e.g. validate-integration) decide how to treat zero / multiple.
+ * callers (for example Doctor integration validation) decide how to treat zero / multiple.
  * @param {string} dir
  * @returns {string[]} absolute manifest paths
  */
@@ -134,7 +143,7 @@ export async function loadManifest(
 /**
  * Load and validate a manifest module's default export against the integration
  * schema. Throws if the default export is missing or invalid. Exposed for
- * validate-integration.
+ * Doctor integration validation.
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
  * @param {{fresh?: boolean}} [options]
@@ -268,7 +277,7 @@ export async function loadIntegrations(
       try {
         return assertWithin(value, packageDir, {label: 'contribution root'});
       } catch {
-        // Root escapes the package — skip silently (logged by validate-integration).
+        // Root escapes the package — skip silently (reported by Doctor validation).
         return undefined;
       }
     };
@@ -287,6 +296,7 @@ export async function loadIntegrations(
       __debug: debugHandler,
       __spec: spec,
       __packageDir: packageDir,
+      __packageExports: pkg.exports ?? null,
       __manifestFile: manifestFile,
     });
   }

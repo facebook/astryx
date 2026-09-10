@@ -6,11 +6,11 @@
  * When a CONFIGURED integration (from the Project's `loadedIntegrations`) has
  * validation issues, the everyday commands (component / template / upgrade)
  * should print ONE compact, non-blocking line per integration telling the user
- * to run `validate-integration` — instead of silently skipping broken
+ * to run `doctor integration validate` — instead of silently skipping broken
  * contributions or spamming per-contribution diagnostics.
  *
  * Design constraints (all enforced here):
- *   - Reuses the validate-integration validators (validateLoadedIntegration);
+ *   - Reuses the Doctor integration validators (validateLoadedIntegration);
  *     no validation logic is duplicated.
  *   - Writes to STDERR only, so it never corrupts a --json stdout envelope.
  *   - Suppressed entirely in --json mode.
@@ -23,10 +23,10 @@ import {validateLoadedIntegration} from './validate-contributions.mjs';
 
 /**
  * For each configured (already-loaded) integration, compute its issues using
- * the shared validate-integration validators and, if any exist, print exactly
+ * the shared integration validators and, if any exist, print exactly
  * ONE line per integration to stderr:
  *
- *   Warning: <pkg> has N integration issue(s). Run: astryx validate-integration <pkg>
+ *   Warning: <pkg> has N integration issue(s). Run: astryx doctor integration validate <pkg>
  *
  * @param {Array<import('./integrations.mjs').LoadedIntegration>} loadedIntegrations the Project's loaded integrations
  * @param {{json?: boolean}} [options]
@@ -53,7 +53,7 @@ export async function warnOnIntegrationIssues(loadedIntegrations, {json = false}
       // Stderr only — keeps stdout (and any --json envelope) clean.
       console.error(
         `Warning: ${pkg} has ${issues.length} integration issue(s). ` +
-          `Run: astryx validate-integration ${pkg}`,
+          `Run: astryx doctor integration validate ${pkg}`,
       );
     }
   } catch {

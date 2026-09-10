@@ -1,5 +1,28 @@
 # @xds/theme-neutral
 
+# 0.6.0
+
+#### Breaking Changes
+
+- Requires `@astryxdesign/core@0.6.0` as part of the coordinated stable release. Upgrade Core and this theme together.
+
+#### New Features
+
+- Add an authoring-time OKLCH palette generator with a pure API, terminal and HTML previews, typed palette output, custom stops, deterministic receipts, and overwrite protection.
+  [feat] Expose exact solid black and white values as `neutralPalettes.black` and `neutralPalettes.white` for use in semantic theme tokens.
+
+#### Fixes
+
+- Align Neutral light-mode foreground colors to darker palette stops.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
 # 0.5.4
 
 ---

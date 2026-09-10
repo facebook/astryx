@@ -31,6 +31,7 @@
 import {errors as playwrightErrors} from '@playwright/test';
 import type {CDPSession, Locator, Page} from '@playwright/test';
 import {
+  MissingHarnessRelation,
   type ComputedNode,
   type EvidenceLayer,
   type Harness,
@@ -64,6 +65,18 @@ function isTimeout(error: unknown): boolean {
   return error instanceof playwrightErrors.TimeoutError;
 }
 
+async function canReceivePointer(locator: Locator): Promise<boolean> {
+  try {
+    await locator.click({trial: true, timeout: POINTER_REACH_BUDGET_MS});
+    return true;
+  } catch (error) {
+    if (isTimeout(error)) {
+      return false;
+    }
+    throw error;
+  }
+}
+
 const KEYS: Record<Key, string> = {
   Space: ' ',
   Enter: 'Enter',
@@ -84,6 +97,7 @@ interface AxNode {
   readonly role?: AxValue;
   readonly name?: AxValue;
   readonly description?: AxValue;
+  readonly value?: AxValue;
   readonly backendDOMNodeId?: number;
   readonly properties?: readonly AxProperty[];
 }
@@ -103,6 +117,17 @@ function flag(node: AxNode, name: string): boolean {
   // accept every spelling of true rather than silently reading a set flag as
   // unset.
   return value === true || value === 'true' || value === 1;
+}
+
+function optionalFlag(node: AxNode, name: string): boolean | null {
+  const value = property(node, name);
+  if (value === true || value === 'true' || value === 1) {
+    return true;
+  }
+  if (value === false || value === 'false' || value === 0) {
+    return false;
+  }
+  return null;
 }
 
 const AX_TARGET_ATTRIBUTE = 'data-a11y-spec-ax-target';
@@ -154,19 +179,36 @@ async function computedNode(
         role: null,
         name: '',
         description: '',
+        value: null,
+        modal: null,
+        multiline: null,
+        readOnly: null,
+        required: null,
         checked: null,
         disabled: false,
         invalid: false,
       };
     }
 
+    const role = text(node.role);
     const checked = property(node, 'checked');
     const invalid = property(node, 'invalid');
+    const exposedValue = node.value?.value;
 
     return {
-      role: text(node.role) === '' ? null : text(node.role),
+      role: role === '' ? null : role,
       name: text(node.name),
       description: text(node.description),
+      value:
+        typeof exposedValue === 'string'
+          ? exposedValue
+          : role === 'textbox'
+            ? ''
+            : null,
+      modal: optionalFlag(node, 'modal'),
+      multiline: optionalFlag(node, 'multiline'),
+      readOnly: optionalFlag(node, 'readonly'),
+      required: optionalFlag(node, 'required'),
       checked:
         checked === 'true' || checked === true
           ? 'true'
@@ -212,10 +254,12 @@ export interface ChromiumHarnessOptions {
   readonly subject: Locator;
   /** The surface that receives pointer input when it differs from the semantic node. */
   readonly pointerTarget?: Locator;
-  /** A binding-owned visible label when it is not the subject's DOM label. */
-  readonly visibleLabel?: Locator;
+  /** A binding-owned visible label when it is not the subject's DOM label. Null means this state deliberately has no visible label. */
+  readonly visibleLabel?: Locator | null;
   /** A CDP session on `page`, reused across expectations. */
   readonly cdp: CDPSession;
+  /** Public-semantic elements participating in relationship expectations. */
+  readonly related?: Readonly<Record<string, Locator>>;
 }
 
 export function createChromiumHarness(
@@ -241,10 +285,148 @@ export function createChromiumHarness(
             }),
         attribute,
       ),
+    visibleIdReferences: attribute =>
+      locator.evaluate((element, name) => {
+        const isTransparentBox = (node: Element): boolean =>
+          getComputedStyle(node).display === 'contents';
+        const rendered = (node: Element): boolean => {
+          if (isTransparentBox(node)) {
+            return true;
+          }
+          if (
+            !node.checkVisibility({
+              visibilityProperty: true,
+              opacityProperty: true,
+              contentVisibilityAuto: true,
+            })
+          ) {
+            return false;
+          }
+          const box = node.getBoundingClientRect();
+          return box.width > 1 && box.height > 1;
+        };
+        const textIsReadable = (node: Element): boolean =>
+          !/^rgba\(.*,\s*0\)$/.test(getComputedStyle(node).color);
+        const paints = (node: Element): boolean => {
+          if (!rendered(node)) {
+            return false;
+          }
+          if (isTransparentBox(node)) {
+            return true;
+          }
+          const box = node.getBoundingClientRect();
+          const inlineStyle = (node as HTMLElement).style;
+          const pointerTransparent =
+            getComputedStyle(node).pointerEvents === 'none';
+          const originalPointerEvents =
+            inlineStyle.getPropertyValue('pointer-events');
+          const originalPriority =
+            inlineStyle.getPropertyPriority('pointer-events');
+          if (pointerTransparent) {
+            inlineStyle.setProperty('pointer-events', 'auto', 'important');
+          }
+          try {
+            const samples: ReadonlyArray<readonly [number, number]> = [
+              [box.x + box.width / 2, box.y + box.height / 2],
+              [box.x + 1, box.y + box.height / 2],
+              [box.right - 1, box.y + box.height / 2],
+            ];
+            return samples.some(([x, y]) => {
+              const at = node.ownerDocument.elementFromPoint(x, y);
+              return at != null && (at === node || node.contains(at));
+            });
+          } finally {
+            if (pointerTransparent) {
+              if (originalPointerEvents === '') {
+                inlineStyle.removeProperty('pointer-events');
+              } else {
+                inlineStyle.setProperty(
+                  'pointer-events',
+                  originalPointerEvents,
+                  originalPriority,
+                );
+              }
+            }
+          }
+        };
+        const visibleTextOf = (node: Element): string => {
+          if (!paints(node)) {
+            return '';
+          }
+          let value = '';
+          for (const child of node.childNodes) {
+            if (child.nodeType === Node.TEXT_NODE) {
+              if (textIsReadable(node)) {
+                value += child.nodeValue ?? '';
+              }
+            } else if (child.nodeType === Node.ELEMENT_NODE) {
+              value += ` ${visibleTextOf(child as Element)} `;
+            }
+          }
+          return value.replace(/\s+/g, ' ').trim();
+        };
+
+        return (element.getAttribute(name) ?? '')
+          .split(/\s+/)
+          .filter(Boolean)
+          .map(id => {
+            const target = element.ownerDocument.getElementById(id);
+            if (target == null) {
+              return null;
+            }
+            const text = visibleTextOf(target);
+            return text === '' ? null : text;
+          });
+      }, attribute),
+    labelText: () =>
+      locator.evaluate(element => {
+        const labelledBy = element.getAttribute('aria-labelledby');
+        if (labelledBy != null && labelledBy.trim() !== '') {
+          const text = labelledBy
+            .split(/\s+/)
+            .filter(Boolean)
+            .map(
+              id => element.ownerDocument.getElementById(id)?.textContent ?? '',
+            )
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          return text === '' ? null : text;
+        }
+        const ariaLabel = element.getAttribute('aria-label')?.trim();
+        if (ariaLabel != null && ariaLabel !== '') {
+          return ariaLabel;
+        }
+        if (
+          element instanceof HTMLInputElement ||
+          element instanceof HTMLTextAreaElement
+        ) {
+          const text = Array.from(element.labels ?? [])
+            .map(label => label.textContent ?? '')
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          return text === '' ? null : text;
+        }
+        return null;
+      }),
+    textValue: () =>
+      locator.evaluate(element => {
+        if (
+          element instanceof HTMLInputElement ||
+          element instanceof HTMLTextAreaElement
+        ) {
+          return element.value;
+        }
+        return null;
+      }),
     computed: () => computedNode(cdp, locator),
     visibleLabelText: async () => {
+      if (visibleLabel === null) {
+        return null;
+      }
       const explicitLabel =
-        visibleLabel == null ? null : await visibleLabel.elementHandle();
+        visibleLabel === undefined ? null : await visibleLabel.elementHandle();
       try {
         return await locator.evaluate((element, explicitLabel) => {
           // Whether a person can actually read this text. Two questions, because
@@ -442,13 +624,127 @@ export function createChromiumHarness(
       locator.evaluate(
         element => element.ownerDocument.activeElement === element,
       ),
+    containsFocus: () =>
+      locator.evaluate(element => {
+        const active = element.ownerDocument.activeElement;
+        return (
+          active != null && (active === element || element.contains(active))
+        );
+      }),
+    isModal: () => locator.evaluate(element => element.matches(':modal')),
+    canReceivePointer: () => canReceivePointer(locator),
     focus: () => locator.focus(),
+  };
+
+  const relatedSubject = (name: string): Subject => {
+    const related = options.related?.[name];
+    if (related == null) {
+      throw new MissingHarnessRelation('chromium', name);
+    }
+    return {
+      attribute: attribute => related.getAttribute(attribute),
+      idReferences: attribute =>
+        related.evaluate(
+          (element, relation) =>
+            (element.getAttribute(relation) ?? '')
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(id => {
+                const target = element.ownerDocument.getElementById(id);
+                return target == null
+                  ? null
+                  : (target.textContent ?? '').trim();
+              }),
+          attribute,
+        ),
+      visibleIdReferences: attribute =>
+        related.evaluate(
+          (element, relation) =>
+            (element.getAttribute(relation) ?? '')
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(id => {
+                const target = element.ownerDocument.getElementById(id);
+                if (target == null || !target.checkVisibility()) {
+                  return null;
+                }
+                const text = (target.textContent ?? '')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                return text === '' ? null : text;
+              }),
+          attribute,
+        ),
+      labelText: () =>
+        related.evaluate(element => {
+          const labelledBy = element.getAttribute('aria-labelledby');
+          if (labelledBy != null && labelledBy.trim() !== '') {
+            const text = labelledBy
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(
+                id =>
+                  element.ownerDocument.getElementById(id)?.textContent ?? '',
+              )
+              .join(' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            return text === '' ? null : text;
+          }
+          const ariaLabel = element.getAttribute('aria-label')?.trim();
+          if (ariaLabel != null && ariaLabel !== '') {
+            return ariaLabel;
+          }
+          if (
+            element instanceof HTMLInputElement ||
+            element instanceof HTMLTextAreaElement
+          ) {
+            const text = Array.from(element.labels ?? [])
+              .map(label => label.textContent ?? '')
+              .join(' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            return text === '' ? null : text;
+          }
+          return null;
+        }),
+      textValue: () =>
+        related.evaluate(element => {
+          if (
+            element instanceof HTMLInputElement ||
+            element instanceof HTMLTextAreaElement
+          ) {
+            return element.value;
+          }
+          return null;
+        }),
+      computed: () => computedNode(cdp, related),
+      visibleLabelText: async () => {
+        const value = (await related.innerText()).trim();
+        return value === '' ? null : value;
+      },
+      isFocused: () =>
+        related.evaluate(
+          element => element.ownerDocument.activeElement === element,
+        ),
+      containsFocus: () =>
+        related.evaluate(element => {
+          const active = element.ownerDocument.activeElement;
+          return (
+            active != null && (active === element || element.contains(active))
+          );
+        }),
+      isModal: () => related.evaluate(element => element.matches(':modal')),
+      canReceivePointer: () => canReceivePointer(related),
+      focus: () => related.focus(),
+    };
   };
 
   return {
     name: 'chromium',
     observes: CHROMIUM_OBSERVES,
     subject: async () => subject,
+    related: async name => relatedSubject(name),
     click: async (_subject, options) => {
       // Without `force`, Playwright first satisfies itself that the control is
       // visible, stable, enabled, and actually receives pointer events — so an
@@ -530,6 +826,15 @@ export function createChromiumHarness(
       await page.mouse.down();
       await page.mouse.move(releaseX, releaseY);
       await page.mouse.up();
+    },
+    typeText: async (_subject, text) => {
+      await locator.focus();
+      await page.keyboard.type(text);
+    },
+    clearText: async () => {
+      await locator.focus();
+      await page.keyboard.press('ControlOrMeta+A');
+      await page.keyboard.press('Backspace');
     },
     press: async key => {
       await page.keyboard.press(KEYS[key]);

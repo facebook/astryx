@@ -1,5 +1,100 @@
 # @xds/core
 
+# 0.6.0
+
+#### Breaking Changes
+
+- Remove deprecated focus-direction overrides, the hooks-path `isImeKeyEvent` re-export, and Resizable pixel-bound aliases.
+  **Codemod:** Run `npx astryx upgrade --apply` before updating to 0.6.0. It removes focus-hook `isRtl`, moves `isImeKeyEvent` imports to `@astryxdesign/core/utils`, and renames `minSizePx`/`maxSizePx` to `minSize`/`maxSize`.
+- Stop emitting deprecated bare prop and state classes such as `.primary`, `.sm`, and `.checked`. Components retain their stable `astryx-*` target classes and reflect visual props and runtime states through explicit `data-*` attributes; generated runtime and built theme CSS now uses that same selector contract.
+  Run `astryx upgrade --apply` to migrate safely identifiable selectors in `.css` files when a known Astryx target and v0.5.4 value have one or more known meanings. For example:
+
+  - `.astryx-button.primary` → `.astryx-button:is(.primary, [data-variant="primary"])`
+  - `.astryx-button.sm` → `.astryx-button:is(.sm, [data-size="sm"])`
+  - `.astryx-switch.checked` → `.astryx-switch:is(.checked, [data-checked="checked"])`
+
+  The codemod parses CSS selector syntax and never rewrites declarations, comments, JavaScript/TypeScript strings, unqualified classes, or custom/unknown qualified classes. Each known value becomes a specificity-preserving `:is(...)` union containing the original class arm plus every v0.5.4 reflected data-attribute arm. The class arm keeps consumer-supplied `className` matches working; the attribute arms match v0.6 props and states. You can narrow the union later when class provenance or prop-axis intent is known. Search for unqualified old value selectors such as `.primary` or `.sm` and migrate those manually only where Astryx usage is confirmed. Migrate selectors embedded in JavaScript or TypeScript manually with the same rules.
+
+  Semantic `defineTheme({components})` keys such as `variant:primary` and `checked` do not change. If you prebuild a custom theme, rerun `astryx theme build <theme-file>` after upgrading and deploy the regenerated `.css`, `.js`, `.d.ts`, and optional `.variants.d.ts` artifacts together. A built theme is marked `__built: true`, so the runtime intentionally does not regenerate stale CSS.
+
+  Exported theme helpers keep their return/container shapes but intentionally return different selector bytes:
+
+  - `themeProps` returns the stable target class (plus target-name compatibility aliases), without bare prop/state classes; its reflected `data-*` attributes are unchanged.
+  - `parseStyleKey` returns data-attribute selector suffixes instead of `.value`, `.prop-N`, or `.state` suffixes.
+  - `generateThemeRules` keeps its array contract and ordering; non-base component selectors use reflected attributes.
+  - `generateThemeRulesSplit` keeps `{component, prose}`; `component` selector bytes change and `prose` is unchanged.
+  - `generateOnMediaCSS` keeps its scoped string contract; component selector bytes change.
+  - `generateThemeCSS` keeps `{prose, component}` and the same layers/scopes; `component` inherits the new selectors and `prose` is unchanged.
+
+- Restrict `Stepper`'s `horizontalOptions.minimumStepWidth` to a pixel number and remove compact-layout implementation fields from `useStepperContext`.
+  Replace CSS-length thresholds such as `'7rem'` with their intended pixel number. Call `registerStep(index, {getIsDisabled})` instead of passing a disabled boolean; the options object is optional. `StepperContextValue` keeps transition history and step registration, while step count, compact state, summary-portal coordination, and threshold measurement remain package-internal.
+- Add ordered environmental adaptations to `defineTheme`
+  Themes can now opt into CSS-first token, theme-local token, and component changes for named viewport widths, primary-pointer precision, contrast preference, and motion preference:
+
+  ```ts
+  defineTheme({
+    name: 'acme',
+    adaptations: {
+      widthBreakpoints: {sm: 640, md: 768, lg: 1024, xl: 1280, '2xl': 1536},
+      rules: [
+        {
+          when: {width: {from: 'lg', below: 'xl'}, pointer: 'coarse'},
+          value: {tokens: {'--size-element-md': '44px'}},
+        },
+      ],
+    },
+  });
+  ```
+
+  Condition fields are ANDed. `width.from` is inclusive, `width.below` is exclusive, and rules cascade in declaration order so later matching writes win. Theme extension preserves the effective breakpoint map and inherited rule order; static builds retain the metadata needed for source-equivalent extension.
+
+  `AppShell` now accepts `xl` and `2xl` for `mobileNav.breakpoint` and resolves all five names through the nearest Theme. Mobile mode now uses the documented exclusive boundary (`width < breakpoint`), so an AppShell exactly at the named point renders the wider layout instead of the mobile layout.
+
+  `defineTheme` now validates the token values authored inside an adaptation rule, rejecting non-string scalars and arrays with a length other than two instead of emitting them. Root and on-media token input keeps its existing acceptance unchanged, so themes that pass values through casts or spreads keep building. It also validates the combined portable and theme-local token graph for every reachable set of matching adaptation rules, rejecting cycles before CSS is emitted. Component writes in a rule use the same target, axis, value-domain, and extension validation as root `components`; a rule may not be the only place a custom value is enrolled, because generated type augmentation is unconditional.
+
+  `astryx theme build` treats the adaptation generator as a core capability rather than a baseline requirement, so a theme with no adaptation intent still builds against an older installed `@astryxdesign/core` and emits the same CSS as before. A theme that does carry adaptation intent — valid rules, a custom `widthBreakpoints` map, or present-but-malformed adaptation metadata — fails against such a core before any output is written, with `ERR_CORE_INCOMPATIBLE` naming the missing `generateAdaptationCSS` export. A complete default width map with no rules asks for nothing and still builds. Where an older core's `defineTheme` drops adaptations while resolving, the build records each raw `defineTheme()` input and associates it with the theme it produced, so only the selected theme's lineage decides. An unobservable selected ancestor (including a CommonJS source package whose ESM core namespace cannot be wrapped) fails closed; an unused adaptive theme elsewhere in the import graph does not affect a plain build. The same capture preserves raw typography, color, radius, and motion axis metadata in old-core-built artifacts, allowing later current-core children to resolve partial adaptation axes exactly as if they extended the source theme.
+
+#### New Features
+
+- Banner exposes a `banner-frame` theme target on the visible frame that owns whole-banner elevation and the elevated-card silhouette. The target reflects `container` and `elevation`; existing Banner targets and default rendering are unchanged.
+- `Collapsible` and `CollapsibleGroup` accept `chevronPosition="start" | "end"`. The default remains `end`, preserving the released trailing chevron. `start` moves the disclosure arrow ahead of the label for tree/file-browser-style rows: it points inward toward content when collapsed, mirrors under RTL, and turns downward when expanded.
+  Set the position on `CollapsibleGroup` when direct items should share it. An individual `Collapsible` may override the group, while a Collapsible nested inside an item's content starts a new presentation scope and keeps its own default.
+- Add a named font-weight override to Heading with precedence over its
+  visual type and semantic-level defaults.
+- Add an `autoComplete` prop to TextInput and TextArea, forwarded to the native control unchanged.
+
+#### Fixes
+
+- ChatComposerInput: drop `aria-multiline` once triggers make the editable a combobox
+  `aria-multiline` was hardcoded on the contenteditable element while `useTriggerMenu` owns its role, so configuring `triggers` switched the role to `combobox` — which ARIA 1.2 does not list `aria-multiline` under — and axe flagged `aria-allowed-attr` (critical) on the 8 ChatComposerInput trigger stories and the 2 ChatLayout stories that render one. Moves the attribute into the hook's `ariaProps`, where the role and the attributes whose validity depends on it are decided together.
+- CheckboxListItem: the visible `description` is now the checkbox's accessible description, so the browser computes a distinct description instead of none. Item ids the description element it already renders and publishes that id to the content it renders in a slot, which keeps a plain string description's automatic single-line truncation. CheckboxInput now merges a consumer-supplied `aria-describedby` with its own description, status, and disabled-reason ids rather than replacing it. No public API changes.
+- CheckboxListItem: a ReactNode `label` now names the checkbox from its visible text through `aria-labelledby`, the way RadioListItem already does, instead of falling back to the generic name "Checkbox". `aria-label` still replaces that name; a rich label with no text at all needs it, as it does for RadioListItem. The dev-time warning that asked for `aria-label` on every rich label is gone.
+- Prevented removed Resizable bounds from being silently ignored and kept ambiguous spread migrations behavior-preserving (#6124)
+- Keep hover from auto-scrolling open option lists (#6077)
+  In a scrollable listbox whose highlight follows the pointer, scrolling the highlighted option into view moved the next option under the stationary pointer, whose mouseenter re-highlighted and scrolled again — an endless loop with no user input. This was already fixed for DropdownMenu and Chat; it now covers the remaining combobox-style paths through a shared highlight owner: Selector, MultiSelector, Typeahead, DateTimeInput, and CommandPalette hover highlights move only the highlight, while keyboard navigation still scrolls the highlighted option into view.
+- Slider keeps its focus ring hidden for modifier-only key presses after a pointer drag while preserving keyboard navigation (#5469)
+- Layout: keep content scrollbars at the content area's outer edge when `contentWidth` is set.
+  Without panels, `LayoutContent` spans the available Layout width and aligns its children to `contentWidth` internally. With exactly one panel, the panel stays aligned to the `contentWidth` frame while content extends across the opposite open area. A two-panel layout keeps the complete composition constrained.
+- Popover: apply same-gesture reopen protection through every opening path, focus genuine caller content regardless of activation modality, and keep the generated fallback close control hidden until keyboard users reach it.
+- SideNavItem: a consumer-provided `aria-label` no longer gets overwritten by the collapsed-rail fallback, in both the icon-only and popover-trigger paths.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @ernestt
+- @faga295
+- @freddymeta
+- @HelloOjasMutreja
+- @imdreamrunner
+- @jiunshinn
+- @kentonquatman
+- @Kyujenius
+- @rubyycheung
+
+---
+
 # 0.5.4
 
 #### Fixes

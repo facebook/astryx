@@ -30,7 +30,7 @@ export const doc = {
       name: 'name',
       type: 'string',
       description:
-        "Directory name without the Astryx prefix, PascalCase. e.g. 'Button', 'TextInput', 'AppShell'.",
+        "Stable machine identity and directory name without the Astryx prefix, PascalCase. e.g. 'Button', 'TextInput', 'AppShell'. Change `displayName`, not `name`, to edit the visible label; registry URLs derive from this identity by default.",
       required: true,
     },
     {
@@ -39,6 +39,12 @@ export const doc = {
       description:
         "Human-readable display name with spaces between words ('AppShell' → 'App Shell'). Drives the docsite gallery and sidebar label.",
       required: true,
+    },
+    {
+      name: 'registry',
+      type: 'RegistryDocIdentity',
+      description:
+        'Optional public registry identity. The converter derives a stable kebab-case slug from `name`; set `slug` only to override it, and keep prior relative paths in `aliases` after a published rename.',
     },
     {
       name: 'keywords',

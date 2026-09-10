@@ -6,7 +6,8 @@
  * @file layerStack.ts
  * @input Uses the isImeKeyEvent predicate from utils/ime
  * @output Exports the shared layer dismissal stack: registration, top-most
- *   ordering, and the single document-level Escape listener
+ *   ordering, the document-level Escape listener, and its internal local-event
+ *   dispatcher
  * @position Internal to the Layer system; consumed by useLayerDismissal, which
  *   is what overlays actually call. Not exported from the package root.
  *
@@ -34,11 +35,12 @@
  * ## Bubble phase, not capture
  *
  * The listener is on the BUBBLE phase so content inside a layer can claim the
- * press first, either by `stopPropagation()` (the press never reaches us) or by
- * `preventDefault()` (we see it and stand down). Editors are the motivating
- * case: Monaco and the rich-text editor use Escape to close their own find
- * widget or autocomplete, and that must win over dismissing the Dialog they sit
- * in. A capture-phase listener would take the press away from them.
+ * press first, either by `stopPropagation()` (the press never reaches the
+ * document listener) or by `preventDefault()` (we see it and stand down).
+ * A host whose public event prop can stop propagation may route the still-
+ * unprevented event through `dispatchLayerEscapeKeyDown` at its own boundary;
+ * the same stack still chooses the owner. Editors are why `preventDefault()`
+ * remains the explicit cancellation signal: their own Escape action must win.
  *
  * ## The stack, not the browser, decides
  *
@@ -275,7 +277,16 @@ function dispatchEscape(): boolean {
   return true;
 }
 
-function handleKeyDown(event: KeyboardEvent): void {
+/**
+ * Resolve a keydown through the shared stack immediately.
+ *
+ * The document listener is the normal path. A host may call this at its own
+ * element boundary after a consumer handler when that handler can stop
+ * propagation before the event reaches `document`. The same stack still picks
+ * the owner, and `preventDefault()` records the decision so a bubbling event is
+ * not handled twice.
+ */
+export function dispatchLayerEscapeKeyDown(event: KeyboardEvent): void {
   if (event.key !== 'Escape') {
     return;
   }
@@ -309,7 +320,7 @@ function startListening(): void {
   if (isListening || typeof document === 'undefined') {
     return;
   }
-  document.addEventListener('keydown', handleKeyDown);
+  document.addEventListener('keydown', dispatchLayerEscapeKeyDown);
   document.addEventListener('compositionstart', handleCompositionStart, true);
   document.addEventListener('compositionend', handleCompositionEnd, true);
   document.addEventListener('blur', handleCompositionEnd, true);
@@ -320,7 +331,7 @@ function stopListening(): void {
   if (!isListening || typeof document === 'undefined') {
     return;
   }
-  document.removeEventListener('keydown', handleKeyDown);
+  document.removeEventListener('keydown', dispatchLayerEscapeKeyDown);
   document.removeEventListener(
     'compositionstart',
     handleCompositionStart,

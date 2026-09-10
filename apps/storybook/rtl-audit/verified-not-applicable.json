@@ -49,6 +49,10 @@
     "reason": "BottomSheet owns no inline axis to mirror. The sheet is a centered column inside an insetInline: 0 container; its borders and top corner radii are identical on both inline edges; and its handle spans both inline edges with a centered pill. Motion and scrolling are block-axis only, and header and close chrome come from caller content."
   },
   {
+    "component": "core/BottomSheetSwitcher",
+    "reason": "BottomSheetSwitcher owns no direction-sensitive visual or interaction. Its shared dialog spans both axes symmetrically; sheet handoff, close, swipe, and alignment motion use only the block axis; and it owns no directional glyph, inline ordering, horizontal scroll action, or arrow-key behavior. Each child BottomSheet retains its own independently verified logical layout."
+  },
+  {
     "component": "unknown/ChartTooltip",
     "reason": "ChartTooltip uses explicitly physical left/right/top viewport placement and clamping. It has no logical start/end placement, direction-dependent control order, horizontal scrolling action, or coarse form hit target; tooltip rows inherit bidi layout without component-specific directional logic."
   },
@@ -136,6 +140,10 @@
   {
     "component": "lab/ListInput",
     "reason": "ListInput is a vertical record editor. Keyboard reordering uses ArrowUp/ArrowDown/Home/End, pointer dragging follows the physical pointer while preserving source direction in the preview, and add/remove motion is block-axis. Its grid and controls follow CSS direction with no component-owned horizontal semantic to mirror."
+  },
+  {
+    "component": "core/Dialog",
+    "reason": "Dialog uses logical inline offsets, logical container spacing, and direction-aware safe-area fallbacks. Its native modal lifecycle, focus entry and return, backdrop, and close glyph are direction-neutral; the directional entry translation follows the invoker's physical viewport position rather than reading direction. Dialog owns no left/right glyph swap, inline reordering, directional scroll or drag action, or horizontal keyboard behavior for the RTL audit to compare."
   },
   {
     "component": "core/HoverCard",

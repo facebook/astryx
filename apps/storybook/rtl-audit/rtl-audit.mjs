@@ -19,16 +19,17 @@
  *           - D6 (directional-decoration): single-glyph, aria-hidden decorations
  *             in repeated-item or between-sibling contexts mirror exactly once.
  *     (B) CURATED PRECISION — targets.json entries add D2 (order-flip),
- *         D3 (behavior-flip), D4 (overlay-side): the geometry/behavior dims that
+ *         D3 (behavior-flip), D4 (overlay-side), D7 (coarse hit alignment),
+ *         and D8 (logical inline-edge mirroring): the geometry/behavior dims that
  *         genuinely need hand-written selectors.
  *     (C) APPLICABILITY: every component is measured, explicitly verified N/A,
  *         or reported as a coverage gap. An all-N/A result is never called clean.
  * @input --storybook-dir <path> --output <file> [--targets <path>]
  *   [--verified-not-applicable <path>] [--filter <csv>] [--auto-only]
  *   [--curated-only]
- * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4 results,
- *   and a component coverage rollup. Mirrors the pr-a11y accessibility-audit
- *   harness.
+ * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4/D7/D8
+ *   results, and a component coverage rollup. Mirrors the pr-a11y accessibility-
+ *   audit harness.
  * @position internal test harness; run by the soft-gated `pr-rtl` CI job and
  *   locally via `pnpm -F @astryxdesign/storybook rtl-audit`.
  *
@@ -50,6 +51,7 @@ import {discoverComponents} from '../../../packages/cli/foundation/discovery/com
 import {
   buildAuditedComponentRoster,
   buildComponentCoverage,
+  classifyLogicalInlinePair,
   collectDirectionalDecorations,
   evaluateDirectionalDecorations,
 } from './rtl-audit-coverage.mjs';
@@ -782,6 +784,82 @@ async function checkD7CoarseHit(page, port, t, card) {
   card.notes.push(`D7 coarse hit-target center: ${results.map(result => `${result.rtl ? 'RTL' : 'LTR'} ${result.size}:${result.centers.map(formatTarget).join(',')}`).join('; ')}`);
 }
 
+async function measureLogicalInlineSubject(page, subject) {
+  const subjects = page.locator(subject);
+  const count = await subjects.count();
+  if (count !== 1) return {count, visible: false};
+  return subjects.first().evaluate(element => {
+    const style = getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    const number = value => Number.parseFloat(value);
+    const visible = typeof element.checkVisibility === 'function'
+      ? element.checkVisibility({checkOpacity: true, checkVisibilityCSS: true})
+      : style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) !== 0;
+    return {
+      count: 1, visible, width: rect.width, height: rect.height,
+      direction: style.direction,
+      writingMode: style.writingMode,
+      inlineStart: number(style.paddingInlineStart),
+      inlineEnd: number(style.paddingInlineEnd),
+      top: number(style.paddingTop), right: number(style.paddingRight),
+      bottom: number(style.paddingBottom), left: number(style.paddingLeft),
+    };
+  }).catch(() => null);
+}
+
+async function verifyD8BrowserContract(page) {
+  await page.setContent(`
+    <div id="d8-horizontal" dir="ltr" style="box-sizing:border-box;width:160px;height:40px;padding-block:4px 12px;padding-inline-start:8px;padding-inline-end:24px">horizontal</div>
+    <div id="d8-vertical" dir="ltr" style="box-sizing:border-box;width:160px;height:80px;writing-mode:vertical-rl;padding-block:4px 12px;padding-inline-start:8px;padding-inline-end:24px">vertical</div>
+  `);
+  const verifyPair = async subject => {
+    const ltr = await measureLogicalInlineSubject(page, subject);
+    await page.locator(subject).evaluate(element => { element.dir = 'rtl'; });
+    const rtl = await measureLogicalInlineSubject(page, subject);
+    return {ltr, rtl, result: classifyLogicalInlinePair(ltr, rtl)};
+  };
+  const horizontal = await verifyPair('#d8-horizontal');
+  const vertical = await verifyPair('#d8-vertical');
+  await page.locator('#d8-horizontal').evaluate(element => { element.style.display = 'none'; });
+  const hidden = await measureLogicalInlineSubject(page, '#d8-horizontal');
+  const hiddenVerdict = classifyLogicalInlinePair(hidden, hidden);
+  if (
+    horizontal.result.verdict !== 'pass' ||
+    vertical.result.verdict !== 'pass' ||
+    hiddenVerdict.verdict !== 'fail'
+  ) {
+    throw new Error(
+      `D8 browser contract failed: ${JSON.stringify({horizontal, vertical, hidden: {measurement: hidden, result: hiddenVerdict}})}`,
+    );
+  }
+  return {
+    horizontal,
+    vertical,
+    hidden: {measurement: hidden, result: hiddenVerdict},
+  };
+}
+
+async function checkD8LogicalInline(page, port, t, card) {
+  const subject = t.selectors?.subject;
+  if (!subject) { card.dims.D8 = 'N-A'; card.notes.push('D8: no subject selector configured'); return; }
+  const run = async rtl => {
+    await page.goto(storyUrl(port, t.storyId, rtl), {waitUntil: 'domcontentloaded'});
+    await settle(page); await doSetup(page, t);
+    return measureLogicalInlineSubject(page, subject);
+  };
+  const ltr = await run(false), rtl = await run(true);
+  if (ltr == null || rtl == null) { card.dims.D8 = 'N-A'; card.notes.push('D8: logical inline-edge subject was not measurable'); return; }
+  const result = classifyLogicalInlinePair(ltr, rtl);
+  card.dims.D8 = result.verdict;
+  const formatPhysical = measurement =>
+    `${measurement.top}/${measurement.right}/${measurement.bottom}/${measurement.left}px`;
+  card.notes.push(
+    `D8 logical inline edges: ${result.reason}; writing-mode ${ltr.writingMode}; ` +
+    `LTR start/end ${ltr.inlineStart}/${ltr.inlineEnd}px T/R/B/L ${formatPhysical(ltr)}; ` +
+    `RTL start/end ${rtl.inlineStart}/${rtl.inlineEnd}px T/R/B/L ${formatPhysical(rtl)}`,
+  );
+}
+
 async function scoreCurated(page, coarsePage, port, t) {
   const card = {component: t.component, storyId: t.storyId, dims: {}, notes: []};
   for (const dim of t.dims) {
@@ -790,6 +868,7 @@ async function scoreCurated(page, coarsePage, port, t) {
       else if (dim === 'D3') await checkD3Scroll(page, port, t, card);
       else if (dim === 'D4') await checkD4(page, port, t, card);
       else if (dim === 'D7') await checkD7CoarseHit(coarsePage, port, t, card);
+      else if (dim === 'D8') await checkD8LogicalInline(page, port, t, card);
       // D1 is handled by auto-discovery; ignore any stray D1 in curated entries.
     } catch (e) {
       card.dims[dim] = 'ERROR';
@@ -843,6 +922,7 @@ async function mapPool(items, pages, fn) {
     ),
   );
   const page = pages[0]; // curated dims run serially on the first page
+  const d8BrowserContract = await verifyD8BrowserContract(page);
   const coarseContext = await browser.newContext({
     viewport: {width: 1100, height: 760},
     deviceScaleFactor: 1,
@@ -1016,6 +1096,7 @@ async function mapPool(items, pages, fn) {
   const report = {
     generatedAt: new Date().toISOString(),
     dist: DIST,
+    selfChecks: {d8LogicalInline: d8BrowserContract},
     autoDiscovery: {
       total: autoResults.length,
       applicable: autoResults.filter(r => r.verdict !== 'N-A').length,
