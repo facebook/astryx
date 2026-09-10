@@ -43,7 +43,7 @@ export const docs = {
     {
       name: 'hasStickyGroupHeaders',
       type: 'boolean',
-      defaultValue: 'false',
+      default: 'false',
       description:
         "Pin each group heading to the top of the table's scroll container while its section is on screen, so a reader deep inside a long group can still see which group they are in. Needs a scrollport with somewhere to travel: the table's container only becomes one once something bounds its height, which is what useTableStickyHeader's maxHeight does. Install that alongside and the heading pins directly beneath the header row rather than under it — it reads the header's measured height and starts below it.",
     },
