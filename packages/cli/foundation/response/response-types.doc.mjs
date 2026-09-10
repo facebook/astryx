@@ -138,6 +138,17 @@ export const doc = {
         'An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer note.',
     },
 
+    // gap reports
+    {
+      value: 'gap-report.categories',
+      description: 'The fixed gap category values and human-readable labels.',
+    },
+    {
+      value: 'gap-report.file',
+      description:
+        'An aggregate receipt with overall status, the selected package and issues URL, ordered per-handler deliveries, and filedCount/routedOnlyCount totals.',
+    },
+
     // template
     {
       value: 'template.list',

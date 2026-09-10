@@ -16,6 +16,10 @@
 
 export {parseConfig} from './config/parse.mjs';
 export {parseIntegration} from './integration/parse.mjs';
+export {
+  parseGapReportHandler,
+  parseGapReportReceipt,
+} from './gap-report/parse.mjs';
 export {parseCodemod} from './codemod/parse.mjs';
 export {parseDebugEvent} from './debug/parse.mjs';
 export {parseDoc} from './doctypes/parse.mjs';

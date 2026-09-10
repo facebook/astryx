@@ -66,6 +66,7 @@ export const RESPONSE_TYPES = {
   search: ['search'],
   build: ['build.help', 'build.kit'],
   swizzle: ['swizzle.list', 'swizzle.copy'],
+  'gap-report': ['gap-report.categories', 'gap-report.file'],
   template: [
     'template.list',
     'template.show',
@@ -112,6 +113,10 @@ const EXAMPLES = {
   ],
   build: ['astryx build', 'astryx build "analytics dashboard" --json'],
   swizzle: ['astryx swizzle XDSButton'],
+  'gap-report': [
+    'astryx gap-report --list-categories',
+    "astryx gap-report Button --category docs_gap --reason 'Missing keyboard example'",
+  ],
   template: [
     'astryx template --json',
     'astryx template dashboard ./src/app',

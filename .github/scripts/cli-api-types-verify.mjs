@@ -97,7 +97,7 @@ fs.symlinkSync(CORE_DIR, path.join(nm, 'core'), 'dir');
 const scenario = `
 import {
   component, docs, blog, discover, template, hook, search, build, swizzle,
-  upgrade, init, doctor, layoutExpand, layoutCheck, layoutGrammar,
+  gapReport, upgrade, init, doctor, layoutExpand, layoutCheck, layoutGrammar,
   themeBuild, themeAdd, themeList, listThemes,
   integrationAdd, integrationAddComponent, integrationAddDoc,
   integrationAddTemplate, integrationAddCodemod, integrationAddAgentDoc,
@@ -105,8 +105,9 @@ import {
   validateIntegration, summarizeIssues, logger, AstryxError,
 } from '@astryxdesign/cli/api';
 import type {
-  ComponentOptions, SearchOptions, UpgradeOptions,
-  ComponentDetailResponse, SearchResponse, UpgradeRunResponse, Logger,
+  ComponentOptions, SearchOptions, UpgradeOptions, GapReportOptions,
+  ComponentDetailResponse, SearchResponse, UpgradeRunResponse,
+  GapReportReceiptResponse, GapReportCategoriesResponse, Logger,
   IntegrationAddComponentOptions, IntegrationAddDocOptions,
   IntegrationAddTemplateOptions, IntegrationAddCodemodOptions,
   IntegrationAddAgentDocOptions, IntegrationAddThemeOptions,
@@ -119,9 +120,10 @@ async function main() {
   if (r.type === 'component.detail') { const n: string = r.data.name; void n; }
   const s: SearchOptions = { limit: 5, type: 'component' };
   const l: Logger = logger; l.setSilent(false); l.log('x');
-  void ({} as ComponentOptions); void ({} as UpgradeOptions);
+  void ({} as ComponentOptions); void ({} as UpgradeOptions); void ({} as GapReportOptions);
   void ({} as ComponentDetailResponse); void ({} as SearchResponse); void ({} as UpgradeRunResponse);
-  void [docs, blog, discover, template, hook, search, build, swizzle, upgrade, init,
+  void ({} as GapReportReceiptResponse); void ({} as GapReportCategoriesResponse);
+  void [docs, blog, discover, template, hook, search, build, swizzle, gapReport, upgrade, init,
     doctor, layoutExpand, layoutCheck, layoutGrammar, themeBuild, themeAdd, themeList,
     listThemes, validateIntegration, summarizeIssues, AstryxError, s];
 }
@@ -158,7 +160,9 @@ import {
   parseDoc, parseComponent, parseHook, parseFunction, parseReference,
   parseTemplate, parseSchema, parseCommand, parseEnum,
 } from '@astryxdesign/cli/authoring';
-import type {SchemaDoc, CommandDoc, EnumDoc, FunctionDoc} from '@astryxdesign/cli/authoring';
+import type {
+  SchemaDoc, CommandDoc, EnumDoc, FunctionDoc, GapReportHandler,
+} from '@astryxdesign/cli/authoring';
 
 function authoringSurface(raw: unknown) {
   const doc = parseDoc(raw);
@@ -170,7 +174,14 @@ function authoringSurface(raw: unknown) {
   const command: CommandDoc = parseCommand(raw);
   const enumDoc: EnumDoc = parseEnum(raw);
   const fn: FunctionDoc = parseFunction(raw);
-  void [schema, command, enumDoc, fn];
+  const gapHandler: GapReportHandler = {
+    audience: 'public',
+    async handle(_report, {signal}) {
+      void signal;
+      return {status: 'skipped'};
+    },
+  };
+  void [schema, command, enumDoc, fn, gapHandler];
   void [parseComponent, parseHook, parseReference, parseTemplate];
 }
 void authoringSurface;
