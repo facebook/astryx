@@ -2,7 +2,8 @@
 
 /**
  * @file TextInput.test.tsx
- * @input Uses vitest, @testing-library/react, TextInput component
+ * @input Uses vitest, @testing-library/react, TextInput component, and the
+ *   shared declaredValue StyleX read-back helper
  * @output Unit tests for TextInput component behavior
  * @position Testing; validates TextInput.tsx implementation
  *
@@ -13,6 +14,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
+import {declaredValue} from '../__tests__/stylexDeclarations';
 import {InputGroup} from '../InputGroup';
 import {TextInput} from './TextInput';
 
@@ -1017,5 +1019,21 @@ describe('TextInput readonly theme state', () => {
     );
     const root = container.querySelector('.astryx-text-input');
     expect(root).not.toHaveAttribute('data-readonly');
+  });
+});
+
+describe('TextInput text size', () => {
+  it('renders the theme body size outside the iOS zoom gate', () => {
+    // The 16px floor rides `@supports (-webkit-touch-callout: none)` inside
+    // `@media (pointer: coarse)` — iOS Safari is the browser that zooms on
+    // focus under 16px, so the floor targets it alone instead of every
+    // coarse pointer. jsdom's CSSOM drops at-rule-wrapped declarations it
+    // cannot parse, so the gate itself is pinned against the sources in
+    // inputFontFloor.test.ts; what this asserts is the visible result off
+    // the gate: the plain token size, not a floor.
+    render(<TextInput label="Name" value="" onChange={() => {}} />);
+    expect(declaredValue(screen.getByLabelText('Name'), 'font-size')).toBe(
+      'var(--text-body-size)',
+    );
   });
 });
