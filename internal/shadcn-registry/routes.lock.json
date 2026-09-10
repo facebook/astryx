@@ -3836,6 +3836,11 @@
       "aliases": []
     },
     {
+      "name": "showcase-base-typeahead-custom-search-bar",
+      "path": "showcases/base-typeahead/custom-search-bar",
+      "aliases": []
+    },
+    {
       "name": "showcase-blockquote-default",
       "path": "showcases/blockquote/default",
       "aliases": []
