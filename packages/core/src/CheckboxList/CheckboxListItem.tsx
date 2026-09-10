@@ -22,10 +22,12 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
+import type {CheckboxInputProps} from '../CheckboxInput/CheckboxInput';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
 import {CheckboxListContext} from './CheckboxListContext';
 import {useTranslator} from '../i18n';
+import {ItemDescriptionContext} from '../Item/ItemDescriptionContext';
 
 // =============================================================================
 // Styles
@@ -85,6 +87,9 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
   value?: string;
   /**
    * Secondary content below the label. Accepts a plain string or a ReactNode.
+   * Exposed as the checkbox's accessible description through
+   * `aria-describedby`, so assistive technology can tell it is the explanation
+   * for this choice rather than unrelated row text.
    */
   description?: ReactNode;
   /**
@@ -123,6 +128,28 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
 // =============================================================================
 // Component
 // =============================================================================
+
+/**
+ * The row's visible description is the checkbox's accessible description. Item
+ * renders that element and owns its id, and publishes the id through
+ * ItemDescriptionContext; this reads it from inside the slot Item renders. The
+ * row cannot wrap the description in an id'd element instead — that turns a
+ * plain string into a ReactNode and drops the single-line truncation ListItem
+ * documents — and a public `descriptionId` prop would fail
+ * `spec:AST-002/DEC-1`, since the caller decides nothing Item cannot derive.
+ *
+ * This component owns `aria-describedby`, so the prop is omitted rather than
+ * accepted and overwritten: a caller passing one would otherwise lose the id
+ * silently.
+ */
+function DescribedCheckboxInput(
+  props: Omit<CheckboxInputProps, 'aria-describedby'>,
+) {
+  const describedBy = use(ItemDescriptionContext);
+  return (
+    <CheckboxInput {...props} aria-describedby={describedBy ?? undefined} />
+  );
+}
 
 /**
  * A checkbox item for use within CheckboxList (collection mode)
@@ -180,6 +207,7 @@ export function CheckboxListItem({
   const isRichLabel = typeof label !== 'string';
   const labelID = useId();
   const namesFromVisibleLabel = isRichLabel && ariaLabel == null;
+
   const checkboxLabel =
     ariaLabel ??
     (isRichLabel ? t('@astryx.checkboxList.item.checkbox') : label);
@@ -273,7 +301,7 @@ export function CheckboxListItem({
       className={className}
       style={style}
       startContent={
-        <CheckboxInput
+        <DescribedCheckboxInput
           ref={checkboxRef}
           label={checkboxLabel}
           aria-labelledby={namesFromVisibleLabel ? labelID : undefined}

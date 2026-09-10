@@ -140,5 +140,9 @@
   {
     "component": "lab/ListInput",
     "reason": "ListInput is a vertical record editor. Keyboard reordering uses ArrowUp/ArrowDown/Home/End, pointer dragging follows the physical pointer while preserving source direction in the preview, and add/remove motion is block-axis. Its grid and controls follow CSS direction with no component-owned horizontal semantic to mirror."
+  },
+  {
+    "component": "core/Dialog",
+    "reason": "Dialog uses logical inline offsets, logical container spacing, and direction-aware safe-area fallbacks. Its native modal lifecycle, focus entry and return, backdrop, and close glyph are direction-neutral; the directional entry translation follows the invoker's physical viewport position rather than reading direction. Dialog owns no left/right glyph swap, inline reordering, directional scroll or drag action, or horizontal keyboard behavior for the RTL audit to compare."
   }
 ]

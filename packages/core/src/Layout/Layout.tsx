@@ -40,6 +40,29 @@ import {
  */
 export type LayoutHeight = 'fill' | 'auto';
 
+/**
+ * Internal alignment subtracts contentWidth in CSS. Intrinsic values and bare
+ * variables cannot participate in that arithmetic, so they keep the released
+ * constrained-composition path.
+ */
+function supportsInternalContentWidthAlignment(
+  width: SizeValue | undefined,
+): boolean {
+  if (width == null || typeof width === 'number') {
+    return true;
+  }
+
+  const value = width.trim().toLowerCase();
+  if (value.includes('%')) {
+    return false;
+  }
+  return (
+    value === '0' ||
+    /^-?(?:\d+(?:\.\d+)?|\.\d+)[a-z]+$/.test(value) ||
+    /^(?:calc|min|max|clamp)\(/.test(value)
+  );
+}
+
 const styles = stylex.create({
   // Outer wrapper uses negative margin to escape container padding
   layoutOuter: {
@@ -54,6 +77,10 @@ const styles = stylex.create({
     '--container-padding-inline-end': '0px',
     '--container-padding-block-start': '0px',
     '--container-padding-block-end': '0px',
+    // Reset inherited width so nested Layouts without contentWidth keep their
+    // released padding. An explicit contentWidth overrides this on the same node.
+    '--layout-content-width': '100cqi',
+    '--layout-alignment-width': '100cqi',
   },
   fill: {
     // Add 2x container block padding to compensate for negative block margins
@@ -68,6 +95,51 @@ const styles = stylex.create({
     flex: 1,
     minHeight: 0,
   },
+  middleQuery: {
+    containerType: {
+      default: null,
+      ':has(> div > .astryx-layout-content)': 'inline-size',
+    },
+  },
+  // Without side panels, LayoutContent owns the full-width scrollport and
+  // aligns its children internally. Arbitrary content keeps the existing
+  // constrained-lane behavior.
+  singleColumnContent: {
+    width: '100%',
+    maxWidth: {
+      default: 'var(--layout-content-width, none)',
+      ':has(> .astryx-layout-content)': 'none',
+    },
+    marginInline: 'auto',
+  },
+  // With one side panel, keep that panel aligned to the content-width frame
+  // while allowing LayoutContent to occupy the opposite open side.
+  singlePanelMiddle: {
+    boxSizing: 'border-box',
+    width: '100%',
+    maxWidth: {
+      default: 'var(--layout-content-width, none)',
+      ':has(> div > .astryx-layout-content)': 'none',
+    },
+    marginInline: {
+      default: 'auto',
+      ':has(> div > .astryx-layout-content)': 0,
+    },
+  },
+  singleStartPanel: {
+    paddingInlineStart: {
+      default: null,
+      ':has(> div > .astryx-layout-content)':
+        'max(0px, calc((100% - var(--layout-content-width)) / 2))',
+    },
+  },
+  singleEndPanel: {
+    paddingInlineEnd: {
+      default: null,
+      ':has(> div > .astryx-layout-content)':
+        'max(0px, calc((100% - var(--layout-content-width)) / 2))',
+    },
+  },
   // When full bleed, set outer padding variables to 0 so child components touch container edges
   fullBleed: {
     '--layout-padding-outer-x': '0px',
@@ -78,6 +150,10 @@ const styles = stylex.create({
 const dynamicStyles = stylex.create({
   contentWidthVar: (width: SizeValue) => ({
     '--layout-content-width': typeof width === 'number' ? `${width}px` : width,
+  }),
+  contentAlignmentWidthVar: (width: SizeValue) => ({
+    '--layout-alignment-width':
+      typeof width === 'number' ? `${width}px` : width,
   }),
   contentWidth: (width: SizeValue) => ({
     width: '100%',
@@ -98,9 +174,23 @@ export interface LayoutProps extends Omit<BaseProps, 'content'> {
   content?: ReactNode;
 
   /**
-   * Maximum width of the content within each slot (header, content, footer,
-   * panels). Dividers remain full-bleed. Content is centered with
+   * Maximum width of the aligned content within each slot (header, content,
+   * footer, panels). Dividers remain full-bleed. Content is centered with
    * `margin-inline: auto` when narrower than the available space.
+   *
+   * In a layout without start or end panels, LayoutContent spans the available
+   * width so its scrollbar stays at the outer edge, while its children align
+   * internally to `contentWidth`. With exactly one panel, that panel remains
+   * aligned to the `contentWidth` frame while LayoutContent extends to the
+   * opposite open edge. With both panels, `contentWidth` includes the complete
+   * start + content + end composition. Intrinsic widths such as `fit-content`
+   * retain the constrained composition because they cannot participate in the
+   * internal alignment arithmetic. Percentage widths, including
+   * percentage-bearing `calc()`, `min()`, `max()`, and `clamp()` values, use the
+   * constrained fallback because they cannot share one arithmetic basis. Bare
+   * `var(...)` values also use that fallback because their resolved value may be
+   * intrinsic; wrap a variable guaranteed to resolve to a length in `calc(...)`
+   * to opt into edge scrolling.
    *
    * Numbers are treated as pixels, strings are used as-is (e.g., '60ch').
    * Common page widths:
@@ -253,6 +343,10 @@ export function Layout({
   const hasFooter = footer != null;
   const hasStart = start != null;
   const hasEnd = end != null;
+  const hasBothPanels = hasStart && hasEnd;
+  const hasSinglePanel = hasStart !== hasEnd;
+  const usesInternalContentWidth =
+    contentWidth != null && supportsInternalContentWidthAlignment(contentWidth);
   const slotsValue = useMemo<LayoutSlots>(
     () => ({hasHeader, hasFooter, hasStart, hasEnd}),
     [hasHeader, hasFooter, hasStart, hasEnd],
@@ -282,16 +376,39 @@ export function Layout({
             padding != null && layoutPaddingOuterXVarStyles[padding],
             padding != null && layoutPaddingOuterYVarStyles[padding],
             contentWidth != null && dynamicStyles.contentWidthVar(contentWidth),
+            usesInternalContentWidth &&
+              dynamicStyles.contentAlignmentWidthVar(contentWidth),
           )}>
           <AreaProvider area="header">{header}</AreaProvider>
           <div
             {...stylex.props(
               ...stack({direction: 'horizontal'}),
               styles.middle,
-              contentWidth != null && dynamicStyles.contentWidth(contentWidth),
+              contentWidth != null &&
+                (!usesInternalContentWidth || hasBothPanels) &&
+                dynamicStyles.contentWidth(contentWidth),
+              usesInternalContentWidth && !hasBothPanels && styles.middleQuery,
+              usesInternalContentWidth &&
+                hasSinglePanel &&
+                styles.singlePanelMiddle,
+              usesInternalContentWidth &&
+                hasStart &&
+                !hasEnd &&
+                styles.singleStartPanel,
+              usesInternalContentWidth &&
+                !hasStart &&
+                hasEnd &&
+                styles.singleEndPanel,
             )}>
             <AreaProvider area="start">{start}</AreaProvider>
-            <div {...stylex.props(...stackItem({size: 'fill'}))}>
+            <div
+              {...stylex.props(
+                ...stackItem({size: 'fill'}),
+                usesInternalContentWidth &&
+                  !hasStart &&
+                  !hasEnd &&
+                  styles.singleColumnContent,
+              )}>
               <AreaProvider area="content">{resolvedContent}</AreaProvider>
             </div>
             <AreaProvider area="end">{end}</AreaProvider>

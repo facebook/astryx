@@ -37,9 +37,14 @@ import {
   requiredLayers,
   type Enforcement,
   type Expectation,
+  type InitialFocusEntryObservation,
   type PatternContract,
 } from './contract';
-import type {EvidenceLayer, Harness} from './harness';
+import {
+  MissingHarnessRelation,
+  type EvidenceLayer,
+  type Harness,
+} from './harness';
 
 export type ResultStatus =
   /** The outcome was observed. */
@@ -124,6 +129,11 @@ export interface CheckAccessibilitySpecOptions<Facts> {
    * it where the pattern needs it is a binding fault and fails loudly.
    */
   readonly activations?: () => Promise<number>;
+  /**
+   * Browser event evidence for ordering-sensitive focus expectations. The
+   * binding must begin recording before the subject can receive focus.
+   */
+  readonly initialFocusEntry?: () => Promise<InitialFocusEntryObservation>;
   /**
    * Run only these expectation ids. Used by the contract's own mutation proof,
    * which asks one expectation at a time whether it notices its outcome being
@@ -248,9 +258,20 @@ export async function checkAccessibilitySpec<Facts>(
           }
           return options.activations();
         },
+        initialFocusEntry: async () => {
+          if (options.initialFocusEntry == null) {
+            throw new MissingBindingCapability(
+              `${expectation.id} reads the first focus entry, but this binding supplies no focus-entry observation`,
+            );
+          }
+          return options.initialFocusEntry();
+        },
       });
     } catch (error) {
-      if (error instanceof MissingBindingCapability) {
+      if (
+        error instanceof MissingBindingCapability ||
+        error instanceof MissingHarnessRelation
+      ) {
         // Never a contract result: the outcome was not tested at all.
         throw error;
       }

@@ -1387,6 +1387,47 @@ describe('DateTimeInput', () => {
       expect(listbox).toHaveAttribute('aria-label');
     });
 
+    it('highlights on hover without scrolling, keyboard still scrolls (#6077)', () => {
+      // Hover must highlight only: scrollIntoView under a stationary pointer
+      // moves the next option under it, re-highlighting and scrolling again —
+      // a runaway auto-scroll loop with no user input.
+      const scrollIntoView = vi.fn();
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: scrollIntoView,
+      });
+      try {
+        const {container} = render(
+          <DateTimeInput
+            label="Meeting"
+            value={'2026-03-15T14:00' as ISODateTimeString}
+            timeOptionInterval={60}
+            onChange={() => {}}
+          />,
+        );
+
+        const timeInput = screen.getByLabelText('Meeting time');
+        fireEvent.click(timeInput);
+        scrollIntoView.mockClear();
+
+        const options = container
+          .querySelector('[role="listbox"]')!
+          .querySelectorAll('[role="option"]');
+        fireEvent.mouseEnter(options[5]);
+
+        expect(timeInput.getAttribute('aria-activedescendant')).toBe(
+          options[5].id,
+        );
+        expect(scrollIntoView).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(timeInput, {key: 'ArrowDown'});
+        expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+      } finally {
+        delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+          .scrollIntoView;
+      }
+    });
+
     it('does not open the list when disabled', () => {
       render(
         <DateTimeInput

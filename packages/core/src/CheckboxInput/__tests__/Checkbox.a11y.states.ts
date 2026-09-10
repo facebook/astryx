@@ -255,9 +255,6 @@ export const CHECKBOX_BINDING_STATES = [
     visibleLabel: 'Email',
     visibleLabelSelector: '[data-a11y-visible-label]',
     storyId: 'a11y-checkbox-pattern--list-item-described',
-    declaredNotDelivered: [
-      {fact: 'description', owned: 'checkbox.description.resolvable'},
-    ],
   },
   {
     id: 'list-item-rich-label-visible-name',

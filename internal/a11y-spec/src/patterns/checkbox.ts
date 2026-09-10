@@ -887,6 +887,13 @@ export const CHECKBOX_PATTERN: PatternContract<CheckboxStateFacts> =
         reason:
           'A checkbox is a single control; the order it is read in relative to other content is decided by whatever composes it.',
       },
+      '1.3.5-identify-input-purpose': {
+        owner: 'the composing form and caller content',
+        verifiedBy:
+          'form integration review for any user-information input composed with this choice',
+        reason:
+          'A checkbox records a choice and does not itself collect the user-information values covered by autocomplete purpose tokens.',
+      },
       '1.4.1-use-of-color': {
         owner: 'the binding component and the theme',
         verifiedBy:

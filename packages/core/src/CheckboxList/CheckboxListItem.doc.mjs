@@ -31,7 +31,8 @@ export const docs = {
     {
       name: 'description',
       type: 'ReactNode',
-      description: 'Secondary content below the label. String or ReactNode.',
+      description:
+        "Secondary content below the label. String or ReactNode. Exposed as the checkbox's accessible description through aria-describedby, so assistive technology can tell it is the explanation for that choice.",
     },
     {
       name: 'endContent',
@@ -117,7 +118,8 @@ export const docsZh = {
     {
       name: 'description',
       type: 'ReactNode',
-      description: '标签下方的辅助内容。可为字符串或 ReactNode。',
+      description:
+        '标签下方的辅助内容。可为字符串或 ReactNode。会通过 aria-describedby 作为复选框的无障碍描述暴露，便于辅助技术识别它是该选项的说明。',
     },
     {
       name: 'endContent',
@@ -162,7 +164,8 @@ export const docsDense = {
     'aria-label':
       'Plain-text checkbox name replacing the one derived from label. Use when visible text is absent; otherwise retain every visible label word.',
     value: 'Identity key (required inside CheckboxList).',
-    description: 'Secondary content below label. String or ReactNode.',
+    description:
+      "Secondary content below label. String or ReactNode. Exposed as the checkbox's accessible description via aria-describedby.",
     endContent: 'Content rendered after label area.',
     isDisabled: 'Whether this individual item disabled.',
     isLoading:

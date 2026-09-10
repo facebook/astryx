@@ -8,7 +8,7 @@
  * the requested one, and routes to a leaf (list/show/skeleton/copy/cdn). The shared
  * discovery/IO + cross-command helpers live in `foundation/discovery/template-adapter.mjs` and are
  * RE-EXPORTED here so external import paths (`api/template/template.mjs`) —
- * used by component, layout, search, init, discover, validate-integration, and
+ * used by component, layout, search, init, discover, Doctor integration, and
  * lib/project — keep resolving unchanged.
  *
  * @position api/template — the template dispatcher + barrel; leaves live under
@@ -32,6 +32,7 @@ export {
   discoverAll,
   discoverAll as discoverTemplates,
   discoverAllWithErrors,
+  discoverCoreTemplates,
   discoverIntegrationTemplatesForOne,
   stripTemplateAssetRefs,
   listTemplates,

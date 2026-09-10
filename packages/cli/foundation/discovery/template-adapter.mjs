@@ -4,7 +4,7 @@
  * @file Shared template discovery + IO.
  *
  * Owns everything the template leaves (list/show/skeleton/copy) AND other
- * commands (component, layout, search, init, discover, validate-integration)
+ * commands (component, layout, search, init, discover, Doctor integration)
  * share: template discovery across core/external/integration sources, the
  * template-spec loaders, and the cross-command helpers (stripTemplateAssetRefs,
  * findShowcase, findRelatedBlocks, extractComponents, listTemplates). The
@@ -422,16 +422,30 @@ async function discoverAllBlocks(cwd = process.cwd()) {
 }
 
 /**
+ * Discover only the templates built into @astryxdesign/core. Integration
+ * authoring checks use this narrower surface so a broken project config or a
+ * second integration cannot affect the core-collision result.
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
+export async function discoverCoreTemplates() {
+  const [pages, blocks] = await Promise.all([
+    discoverPages(),
+    discoverBlocks(),
+  ]);
+  return [...pages, ...blocks];
+}
+
+/**
  * @param {string} [cwd]
  * @returns {Promise<DiscoveredTemplate[]>}
  */
 export async function discoverAll(cwd = process.cwd()) {
-  const [pages, blocks, integration] = await Promise.all([
-    discoverPages(),
-    discoverAllBlocks(cwd),
+  const [core, external, integration] = await Promise.all([
+    discoverCoreTemplates(),
+    discoverExternalBlocks(cwd),
     discoverIntegrationTemplates(cwd),
   ]);
-  return [...pages, ...blocks, ...integration.templates].sort((a, b) =>
+  return [...core, ...external, ...integration.templates].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
 }
@@ -542,7 +556,7 @@ async function discoverIntegrationTemplates(cwd = process.cwd()) {
  * Discover the templates contributed by a SINGLE integration. Same per-template
  * rules as {@link discoverIntegrationTemplates} (same-stem source required,
  * page|block type required); broken templates are recorded in `errors` rather
- * than thrown. Exposed for `validate-integration`.
+ * than thrown. Exposed for `doctor integration validate` and template authoring checks.
  *
  * @param {{name?: string, __spec?: string, templates?: string}} integration
  * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}

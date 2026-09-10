@@ -22,6 +22,20 @@
     }
   },
   {
+    "component": "CommandPalette",
+    "storyId": "core-commandpalette--default",
+    "dims": [
+      "D2"
+    ],
+    "setup": {
+      "click": "button:has-text(\"Open Command Palette\")"
+    },
+    "selectors": {
+      "prev": ".astryx-command-palette-input > span:first-child",
+      "next": ".astryx-command-palette-input > input[role=\"combobox\"]"
+    }
+  },
+  {
     "component": "CheckboxInput",
     "storyId": "core-checkboxinput--size-comparison",
     "dims": [

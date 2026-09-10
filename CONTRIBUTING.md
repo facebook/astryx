@@ -120,7 +120,7 @@ serves the edited source, so the story updates on save — no rebuild, no restar
 ### Running the Doc Site
 
 The doc site (`apps/docsite/`) is a Next.js app that renders the component
-documentation at https://astryx.dev. To run it locally:
+documentation at https://astryx.atmeta.com. To run it locally:
 
 ```bash
 # First time only — build the workspace packages it depends on

@@ -96,7 +96,10 @@ export const JSON_SUPPORTED = new Set([
   'upgrade',
   'manifest',
   'doctor',
-  'validate-integration',
+  'doctor integration validate',
+  'doctor integration templates',
+  'doctor integration components',
+  'doctor integration docs',
   'layout expand',
   'layout check',
   'layout grammar',
@@ -265,11 +268,6 @@ const commands = [
   {name: 'search', path: './commands/search.mjs', register: 'registerSearch'},
   {name: 'build', path: './commands/build.mjs', register: 'registerBuild'},
   {name: 'doctor', path: './commands/doctor.mjs', register: 'registerDoctor'},
-  {
-    name: 'validate-integration',
-    path: './commands/validate-integration.mjs',
-    register: 'registerValidateIntegration',
-  },
 ];
 
 const UPDATE_HINT_COMMANDS = new Set(['component', 'docs']);
