@@ -3,8 +3,8 @@
   "identity": "story",
   "build": {
     "root": "<repository>",
-    "expectedSha": "311a003b7af977c375c6b27bb972faf8f39e5c35",
-    "observedSha": "311a003b7af977c375c6b27bb972faf8f39e5c35"
+    "expectedSha": "f2076540d03389bc899690582e3fdcb59f4ffc3a",
+    "observedSha": "f2076540d03389bc899690582e3fdcb59f4ffc3a"
   },
   "expected": {
     "globals": {
@@ -96,6 +96,6 @@
   },
   "image": {
     "path": "<audit-workspace>/evidence/after/frames/hug-overview__neutral-light-ltr-320x680.png",
-    "bytes": 33075
+    "bytes": 28935
   }
 }

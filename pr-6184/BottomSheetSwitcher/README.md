@@ -4,7 +4,8 @@
 - Mode: Night Watch `N`
 - Rubric: `1.16`
 - Baseline: [`4a31578d288df665a1ceabab296d430f6e361cb5`](https://github.com/facebook/astryx/commit/4a31578d288df665a1ceabab296d430f6e361cb5)
-- Audited exact head: [`311a003b7af977c375c6b27bb972faf8f39e5c35`](https://github.com/facebook/astryx/commit/311a003b7af977c375c6b27bb972faf8f39e5c35)
+- Audited exact head: [`f2076540d03389bc899690582e3fdcb59f4ffc3a`](https://github.com/facebook/astryx/commit/f2076540d03389bc899690582e3fdcb59f4ffc3a)
+- Head reconciliation: this head adds an unrelated merge from `main`; audit-owned files are byte-identical, and all after-evidence below was regenerated at this exact head.
 - Pull request: [#6184](https://github.com/facebook/astryx/pull/6184)
 - Before: **71.3 / C**
 - After: **80.8 / C**
@@ -78,4 +79,4 @@ Open [#5813](https://github.com/facebook/astryx/pull/5813) edits controller rout
 - Component axe: **4 opened stories, 0 violations**. Curated RTL: **1 verified N/A, 0 gaps, 0 stale entries**.
 - Chromium: **16 exact-head after frames** plus the retained clipping proof, each with a sensor receipt; before/after pixel deltas are recorded separately because timed handoff position and browser rasterization vary between captures.
 - Representative contrast is stored in [`after/contrast-measurements.json`](after/contrast-measurements.json); shared/systemic failures are identified above rather than scored against the switcher.
-- The full local suite was attempted at both heads. The exact head reported 14 failures in 8 unrelated macOS/timing-sensitive files; the newly appearing DateTimeInput and SideNav failures both pass in isolation (39/39 and 194/194). Exact-head GitHub checks are summarized in the pull request.
+- The full local suite was attempted before the unrelated main merge and exposed only unrelated macOS/timing-sensitive failures; the newly appearing DateTimeInput and SideNav failures both passed in isolation (39/39 and 194/194). Current-head Linux CI passes, including `test`, `build`, `pr-a11y`, `pr-rtl`, and Stable visual regression.

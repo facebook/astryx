@@ -3,9 +3,9 @@
 
 Built pseudo.json — 362 keys
 Built pseudo.json — 362 keys
-(node:2803) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(node:70916) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
 (Use `node --trace-warnings ...` to show where the warning was created)
-(node:2802) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(node:70917) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
 (Use `node --trace-warnings ...` to show where the warning was created)
 Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
@@ -17,11 +17,12 @@ Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
- ✓ |ui| packages/core/src/Layer/layerDismissalFamilies.test.tsx (11 tests) 58ms
- ✓ |ui| packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx (26 tests) 972ms
+ ✓ |ui| packages/core/src/Layer/layerDismissalFamilies.test.tsx (11 tests) 135ms
+ ✓ |ui| packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx (26 tests) 3359ms
+     ✓ keeps the previous sheet stationary until the new entrance finishes, then fades it  846ms
 
  Test Files  2 passed (2)
       Tests  37 passed (37)
-   Start at  08:02:43
-   Duration  11.41s (transform 3.36s, setup 3.81s, import 4.38s, tests 1.03s, environment 8.78s)
+   Start at  07:43:08
+   Duration  11.23s (transform 8.24s, setup 1.06s, import 9.14s, tests 3.49s, environment 3.77s)
 

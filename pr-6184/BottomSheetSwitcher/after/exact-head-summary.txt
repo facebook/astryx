@@ -1,7 +1,12 @@
+head=f2076540d03389bc899690582e3fdcb59f4ffc3a
 focused-tests=0
 check-sync=0
 check-knowledge=0
 check-changesets=0
 core-doc-types=0
+storybook-types=0
+storybook-build=0
 a11y-audit=0
 rtl-audit=0
+chromium-captures=16
+chromium-failures=0
