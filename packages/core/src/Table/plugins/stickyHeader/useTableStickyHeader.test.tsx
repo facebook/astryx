@@ -64,7 +64,7 @@ describe('useTableStickyHeader', () => {
   it('caps the scroll container at a numeric maxHeight, in px', () => {
     function Harness() {
       const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
-      return <Table data={data} columns={columns} plugins={[stickyHeader]} />;
+      return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
     }
     render(<Harness />);
 
@@ -74,7 +74,7 @@ describe('useTableStickyHeader', () => {
   it('passes a string maxHeight through untouched', () => {
     function Harness() {
       const stickyHeader = useTableStickyHeader<Row>({maxHeight: '60vh'});
-      return <Table data={data} columns={columns} plugins={[stickyHeader]} />;
+      return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
     }
     render(<Harness />);
 
@@ -84,7 +84,7 @@ describe('useTableStickyHeader', () => {
   it('leaves the height alone when maxHeight is omitted, for callers whose ancestor already bounds the table', () => {
     function Harness() {
       const stickyHeader = useTableStickyHeader<Row>();
-      return <Table data={data} columns={columns} plugins={[stickyHeader]} />;
+      return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
     }
     render(<Harness />);
 
@@ -94,7 +94,7 @@ describe('useTableStickyHeader', () => {
   it('applies one pinning class to every header cell', () => {
     function Harness() {
       const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
-      return <Table data={data} columns={columns} plugins={[stickyHeader]} />;
+      return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
     }
     render(<Harness />);
 
@@ -118,7 +118,7 @@ describe('useTableStickyHeader', () => {
 
     function Pinned() {
       const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
-      return <Table data={data} columns={columns} plugins={[stickyHeader]} />;
+      return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
     }
     render(<Pinned />);
     const pinned = headerCells()[0].className;
@@ -137,8 +137,8 @@ describe('useTableStickyHeader', () => {
           columns={columns}
           plugins={
             headerFirst
-              ? [stickyHeader, stickyColumns]
-              : [stickyColumns, stickyHeader]
+              ? {stickyHeader, stickyColumns}
+              : {stickyColumns, stickyHeader}
           }
         />
       );
@@ -165,7 +165,7 @@ describe('useTableStickyHeader', () => {
         <Table
           data={data}
           columns={columns}
-          plugins={[stickyHeader]}
+          plugins={{stickyHeader}}
           aria-label={`tick-${tick}`}
         />
       );
