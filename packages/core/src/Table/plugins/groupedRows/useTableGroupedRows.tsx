@@ -92,6 +92,20 @@ export interface UseTableGroupedRowsConfig<T extends Record<string, unknown>> {
     count: number,
     collapsed: boolean,
   ) => ReactNode;
+  /**
+   * Pin each group heading to the top of the table's scroll container while
+   * its section is on screen, so a reader deep inside a long group can still
+   * see which group they are in.
+   *
+   * Requires a scrollport with somewhere to travel: the table's own container
+   * only becomes one once something bounds its height, which is what
+   * `useTableStickyHeader`'s `maxHeight` does. Install that plugin alongside
+   * this one and the heading pins directly beneath the header row — it reads
+   * the header's height and starts below it, so the two never overlap.
+   *
+   * @default false
+   */
+  hasStickyGroupHeaders?: boolean;
   /** Stable key for a real row. Falls back to a positional key when omitted. */
   getRowKey?: (item: T) => string;
   /** Explicit group ordering; groups not listed keep first-seen order after these. */
@@ -151,6 +165,25 @@ const styles = stylex.create({
   // shrink-wrap is opt-in rather than unconditional.
   headerInnerFitContent: {
     width: 'fit-content',
+  },
+  // Applied alongside headerCell when the heading is pinned vertically.
+  headerCellSticky: {
+    position: 'sticky',
+    // Starts below whatever the table already pins at the top of the same
+    // scrollport. useTableStickyHeader publishes its height here; with no
+    // pinned header the variable is unset and 0 is the right answer.
+    insetBlockStart: `var(--table-sticky-header-height, 0px)`,
+    // Above the body cells useTableStickyColumns pins at 1, so a pinned
+    // column scrolling underneath cannot paint over the heading. This ties
+    // with the header row useTableStickyHeader pins at 2 — harmless only
+    // because the offset above means the two never occupy the same pixels.
+    zIndex: 2,
+    // A sticky cell leaves its row behind, and the row is what carries the
+    // heading's fill. Without a background of its own the pinned cell is
+    // transparent and the rows travelling under it show through.
+    backgroundColor: colorVars['--color-background-muted'],
+    // Keeps the fill off the cell's collapsed divider border.
+    backgroundClip: 'padding-box',
   },
   // Standalone chevron button with no heavy chrome (transparent, borderless,
   // zero padding) so the icon sits flush with the start of the table
@@ -275,6 +308,7 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
     collapsedGroups,
     onToggleGroup,
     renderGroupHeader,
+    hasStickyGroupHeaders = false,
     getRowKey: getRowKeyProp,
     groupOrder,
   } = config;
@@ -383,7 +417,12 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
             // colSpan larger than the column count is clamped by the browser
             // to the actual number of columns, so the header always spans the
             // full width without the plugin knowing the column count.
-            <td colSpan={999} {...stylex.props(styles.headerCell)}>
+            <td
+              colSpan={999}
+              {...stylex.props(
+                styles.headerCell,
+                hasStickyGroupHeaders && styles.headerCellSticky,
+              )}>
               <span
                 {...stylex.props(
                   styles.headerInner,
@@ -429,7 +468,13 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
         };
       },
     }),
-    [collapsedGroups, onToggleGroup, renderGroupHeader, t],
+    [
+      collapsedGroups,
+      onToggleGroup,
+      renderGroupHeader,
+      hasStickyGroupHeaders,
+      t,
+    ],
   );
 
   return {plugin, data: flattened, idKey};

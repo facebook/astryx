@@ -14,7 +14,7 @@
  * and it is absent when the plugin is not installed.
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Table} from '../../Table';
 import {useTableStickyHeader} from './useTableStickyHeader';
@@ -54,6 +54,31 @@ function getScrollWrapper(): HTMLElement {
 
 function headerCells(): HTMLElement[] {
   return screen.getAllByRole('columnheader');
+}
+
+const HEIGHT_VAR = '--table-sticky-header-height';
+
+function publishedHeight(): string {
+  return getScrollWrapper().style.getPropertyValue(HEIGHT_VAR);
+}
+
+/**
+ * jsdom lays nothing out, so every box measures zero and the published height
+ * would be `0px` whatever the plugin did. Forcing a height is what makes the
+ * assertion about the plugin rather than about jsdom.
+ */
+function mockLayoutHeight(height: number) {
+  return vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+    height,
+    width: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: height,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  });
 }
 
 // =============================================================================
@@ -154,6 +179,50 @@ describe('useTableStickyHeader', () => {
 
       unmount();
     }
+  });
+
+  it('publishes the header height, so anything else pinning in the same scrollport can clear it', () => {
+    const rect = mockLayoutHeight(44);
+    function Harness() {
+      const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
+      return <Table data={data} columns={columns} plugins={{stickyHeader}} />;
+    }
+    render(<Harness />);
+
+    expect(publishedHeight()).toBe('44px');
+    rect.mockRestore();
+  });
+
+  it('publishes no height when the header is not pinned, so a lone group heading falls back to the top edge', () => {
+    const rect = mockLayoutHeight(44);
+    render(<Table data={data} columns={columns} />);
+
+    expect(publishedHeight()).toBe('');
+    rect.mockRestore();
+  });
+
+  it('keeps publishing the height when another plugin also holds the wrapper ref', () => {
+    const rect = mockLayoutHeight(44);
+    function Harness() {
+      const stickyHeader = useTableStickyHeader<Row>({maxHeight: 480});
+      const stickyColumns = useTableStickyColumns<Row>({startKeys: ['name']});
+      return (
+        <Table
+          data={data}
+          columns={columns}
+          plugins={{stickyColumns, stickyHeader}}
+        />
+      );
+    }
+    render(<Harness />);
+
+    // Both plugins want a ref on the same element. If either overwrote the
+    // other's rather than composing, one of these variables would be missing.
+    expect(publishedHeight()).toBe('44px');
+    expect(
+      getScrollWrapper().style.getPropertyValue('--table-sticky-shadow-start'),
+    ).not.toBe('');
+    rect.mockRestore();
   });
 
   it('is stable across re-renders with the same config', () => {
