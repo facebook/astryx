@@ -248,6 +248,21 @@ that all happen to be no-ops still force the image onto its own composited
 layer, so `filterCss` drops the ones sitting at 0 or 100 and returns `none`
 when they all are.
 
+**The layer rail is a `TreeList`, grouped by layer kind.** A poster's layers
+are not a flat list — the two text layers belong together and the images
+belong together — and a tree says so structurally instead of relying on sort
+order and the reader's inference. It also buys collapse for documents whose
+layer count outgrows the rail. The rows are supplied as data rather than
+composed, so `TreeList` keeps the disclosure state, the guide lines and the
+roving focus that a hand-rolled tree would have to reimplement; the lock still
+arrives through `endContent`.
+
+That data-driven API costs one behaviour. There is no per-row element left to
+carry a hover marker, so the marker moves up to the rail and the locks now
+reveal together on rail hover rather than one row at a time. Locked layers
+still render at full opacity at rest, so the state itself is never hidden —
+only the affordance to change it is progressive.
+
 A note if you wire the Appearance menu to a Theme of your own: a nested Theme
 recolours text but does not repaint the page behind transparent panels, so an
 explicit mode needs a surface — here a `Section` wrapping the editor — or the

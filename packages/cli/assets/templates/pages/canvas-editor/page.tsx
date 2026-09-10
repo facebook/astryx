@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useCallback, useState, type SVGProps} from 'react';
+import {useCallback, useRef, useState, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
@@ -44,10 +44,12 @@ import {Selector} from '@astryxdesign/core/Selector';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {TextArea} from '@astryxdesign/core/TextArea';
 import {TextInput} from '@astryxdesign/core/TextInput';
+import {TreeList, type TreeListItemData} from '@astryxdesign/core/TreeList';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 import {
+  Angle,
   Aperture,
   ArrowDownToLine,
   ArrowUpToLine,
@@ -67,13 +69,18 @@ import {
   Italic,
   Lock,
   LockOpen,
+  Menu,
   Minus,
   PanelBottom,
   PanelLeft,
+  PanelLeftRightDashed,
   PanelRight,
+  PanelTopBottomDashed,
+  Plus,
   Redo2,
   RotateCcw,
   RotateCw,
+  Scan,
   SquareDashed,
   SquareRoundCorner,
   Strikethrough,
@@ -164,8 +171,6 @@ type LayerKind = 'text' | 'image';
 type ThemeMode = 'light' | 'dark' | 'system';
 
 /** The menubar's menus, left to right. */
-type MenuID = 'file' | 'edit' | 'view' | 'object' | 'help';
-
 /** Horizontal and vertical placement of a text layer inside its box. */
 type AlignX = 'start' | 'center' | 'end' | 'justify';
 type AlignY = 'start' | 'center' | 'end';
@@ -208,7 +213,15 @@ interface Layer {
   width: number;
   height: number;
   rotation: number;
-  padding: number;
+  /**
+   * Padding is two numbers, not one: a poster's inset is almost never square,
+   * and a single field makes the common case — wide margins, tight leading
+   * above and below — impossible to express without opening a per-side
+   * editor. Inline is the left/right pair, block the top/bottom, matching the
+   * axis names CSS uses for the same thing.
+   */
+  paddingInline: number;
+  paddingBlock: number;
   radius: number;
   isLocked: boolean;
   /** Copy for a text layer; the alt text for an image layer. */
@@ -256,6 +269,22 @@ const NO_FILTERS: Filters = {
   sepia: 0,
 };
 
+/** An open document in the strip above the menubar. */
+interface DocumentTabData {
+  id: string;
+  name: string;
+  icon: IconType;
+}
+
+// Every document here is an artboard, so every tab carries the artboard mark.
+// Varying the icon per document would imply a distinction the editor does not
+// make, and a strip of mixed glyphs is harder to scan than a strip of one.
+const INITIAL_TABS: DocumentTabData[] = [
+  {id: 'poster', name: 'Salzburg poster', icon: Frame},
+  {id: 'brand', name: 'Brand sheet', icon: Frame},
+  {id: 'draft', name: 'Untitled draft', icon: Frame},
+];
+
 const INITIAL_LAYERS: Layer[] = [
   {
     id: 'headline',
@@ -266,7 +295,8 @@ const INITIAL_LAYERS: Layer[] = [
     width: 968,
     height: 300,
     rotation: 0,
-    padding: 0,
+    paddingInline: 0,
+    paddingBlock: 0,
     radius: 0,
     isLocked: false,
     content: 'A weekend in Salzburg',
@@ -293,7 +323,8 @@ const INITIAL_LAYERS: Layer[] = [
     width: 968,
     height: 56,
     rotation: 0,
-    padding: 0,
+    paddingInline: 0,
+    paddingBlock: 0,
     radius: 0,
     isLocked: false,
     content: 'March 14–16 · Austria',
@@ -319,7 +350,8 @@ const INITIAL_LAYERS: Layer[] = [
     width: 1080,
     height: 1920,
     rotation: 0,
-    padding: 0,
+    paddingInline: 0,
+    paddingBlock: 0,
     radius: 0,
     isLocked: true,
     content: 'The Salzach river and old town rooftops at dusk',
@@ -367,15 +399,20 @@ function glyph(char: string): IconType {
   return Glyph;
 }
 
-/** Built once at module scope so each glyph keeps a stable component identity. */
+/**
+ * Built once at module scope so each glyph keeps a stable component identity.
+ *
+ * Only the axis fields are lettered. A letter is the right mark when the
+ * field names a *dimension* a reader already has a letter for — X, Y, W, H
+ * are how the value is written down anyway. Where the pack has a drawing of
+ * the thing being set (an angle, a pair of insets, a rounded corner), the
+ * drawing says it in one glance and the letter makes you translate.
+ */
 const GLYPH = {
-  padding: glyph('P'),
-  radius: glyph('R'),
   x: glyph('X'),
   y: glyph('Y'),
   width: glyph('W'),
   height: glyph('H'),
-  rotation: glyph('°'),
 } as const;
 
 /**
@@ -619,16 +656,18 @@ function shadowCss(shadow: Shadow | undefined): string {
 // =============================================================================
 
 /**
- * Marks a layer row as the ancestor its hover selectors resolve against.
+ * Marks the ancestor a hover-reveal resolves against — a layer row, or a
+ * document tab.
  *
  * A scoped `defineMarker()` would be the usual choice, but StyleX only hashes
  * one inside a `.stylex.ts` module and a template is a single file. The
  * default marker is safe in its place here: product code compiles markers
  * under its own prefix, so this never answers to the one Layout sets
- * internally. The rows are the only thing in this file that carries it, and
- * they do not nest, so nothing else can trip the selectors below.
+ * internally. Layer rows and document tabs are the only things in this file
+ * that carry it, and neither nests inside the other, so nothing else can trip
+ * the selectors below.
  */
-const layerRow = stylex.defaultMarker();
+const hoverScope = stylex.defaultMarker();
 
 const styles = stylex.create({
   // Zoom the way a design tool does: lay the artboard out once at its native
@@ -671,6 +710,25 @@ const styles = stylex.create({
   // should scroll, including the quiet scroll that focusing a clipped child
   // would otherwise cause.
   artboardFrame: {overflow: 'clip'},
+  // The canvas pans in both axes, which centring normally breaks.
+  //
+  // A scroll port that centres with `justify-content`/`align-items` has no
+  // scrollable overflow on the *start* side: once the artboard is bigger than
+  // the port, its top-left is pushed out and nothing can scroll back to it.
+  // Auto margins centre the same way while leaving that overflow reachable —
+  // when there is spare room they split it, and when there is none they
+  // resolve to zero instead of pushing.
+  //
+  // The stage sizes to whichever is larger, the port or the artboard, so the
+  // scrollbars describe the artboard rather than the port.
+  canvasStage: {
+    display: 'flex',
+    width: 'max-content',
+    height: 'max-content',
+    minWidth: '100%',
+    minHeight: '100%',
+  },
+  artboardCentered: {margin: 'auto'},
   // Concentric corners. The card rounds to --radius-container and holds one
   // spacing step of padding, so the controls inside it round to the
   // difference: an inner corner struck from the same centre as the outer one
@@ -702,9 +760,78 @@ const styles = stylex.create({
   // The token is read on the inner element, where it also republishes
   // --container-padding-inline-*. That second effect is the one that
   // matters: it feeds the toolbar's edge compensation, which pulls ghost
-  // triggers back out by their own padding so the File *label* lines up on
-  // the gutter while its hover box still bleeds into it.
-  headerBar: {'--astryx-section-padding-inline': 'var(--spacing-3)'},
+  // triggers back out by their own padding so the menu button's *icon* lines
+  // up on the gutter while its hover box still bleeds into it.
+  headerBar: {'--astryx-section-padding-inline': 'var(--spacing-2)'},
+  // The open-document strip above the menubar. It scrolls rather than wraps:
+  // a second row of tabs would move the menubar down, and the whole point of
+  // the strip is that the chrome above the canvas has a fixed height.
+  tabStrip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--spacing-1)',
+    paddingInline: 'var(--spacing-2)',
+    paddingBlock: 'var(--spacing-1)',
+    overflowX: 'auto',
+    // The strip is short enough that a scrollbar would eat most of it, and
+    // the tabs are draggable-looking targets already.
+    scrollbarWidth: 'none',
+  },
+  // A tab is a wrapper, not a button, because it holds two separate actions:
+  // pick this document, and close it. Nesting the close inside the label's
+  // <button> would be invalid HTML and would make one hit area out of two
+  // jobs, so they sit as siblings and the wrapper only paints the chrome.
+  tab: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--spacing-1)',
+    flexShrink: 0,
+    // The 28px the rest of the editor aligns to.
+    height: 'var(--spacing-7)',
+    // Tighter on the close end: that side holds a bare 20px icon whose hit
+    // area already carries its own inset, so matching the label's inset
+    // would read as a wider gap.
+    paddingInlineStart: 'var(--spacing-2)',
+    paddingInlineEnd: 'var(--spacing-1)',
+    borderRadius: 'var(--radius-element)',
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': 'var(--color-background-muted)',
+    },
+    maxWidth: 176,
+  },
+  // The open document is a grey fill and nothing more. A border and shadow
+  // would make the tab a raised surface sitting on the bar, which reads as a
+  // second layer of chrome above a toolbar that is already a layer of chrome.
+  // The fill is the same one hover uses, so selection and hover agree.
+  tabActive: {backgroundColor: 'var(--color-background-muted)'},
+  // The label half: everything except the close, so the whole name is a
+  // target for switching documents.
+  tabSelect: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--spacing-1-5)',
+    // Without the min-width reset a flex item refuses to shrink below its
+    // content, and the label would push the close button out of the tab
+    // instead of truncating.
+    minWidth: 0,
+    padding: 0,
+    border: 'none',
+    backgroundColor: 'transparent',
+    fontFamily: 'inherit',
+    fontSize: 'var(--text-label-size)',
+    lineHeight: 'var(--text-label-leading)',
+    color: 'inherit',
+    cursor: 'pointer',
+  },
+  tabLabel: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  // The icon is the document's, so it keeps its own colour; only the label
+  // dims on an unselected tab.
+  tabIcon: {display: 'flex', flexShrink: 0},
   // A layer row keeps its lock quiet until the row is the one being pointed
   // at, so the rail reads as a list of names rather than a grid of buttons.
   // Opacity rather than display: the row must not change width when the
@@ -814,7 +941,13 @@ const styles = stylex.create({
   planeStack: {display: 'grid', gap: 'var(--spacing-3)'},
   // Filter rows put the slider beside the number rather than under it, so
   // nine of them still read as one column.
-  filterSlider: {flexShrink: 0, width: 56},
+  //
+  // The slider takes the fill and the number trails it at a fixed width: the
+  // slider is the control being used and the number is the read-out, so the
+  // draggable track gets the room. Fixed rather than hugging, so nine
+  // read-outs share one right edge instead of stepping in and out as their
+  // values change width.
+  filterValue: {flexShrink: 0, width: 64},
   // The image trigger is a swatch that happens to hold a picture, so it
   // takes the swatch's box rather than a nested action's.
   thumbnailButton: {
@@ -994,26 +1127,26 @@ function FilterRow({
   return (
     <InspectorRow label={filter.label}>
       <StackItem size="fill">
-        <NumberInput
-          label={filter.label}
+        <Slider
+          label={`${filter.label} slider`}
           isLabelHidden
-          size="sm"
           min={0}
           max={filter.max}
           value={value}
           onChange={onChange}
-          isWheelEnabled={false}
+          valueDisplay="none"
         />
       </StackItem>
-      <Slider
-        label={`${filter.label} slider`}
+      <NumberInput
+        label={filter.label}
         isLabelHidden
+        size="sm"
         min={0}
         max={filter.max}
         value={value}
         onChange={onChange}
-        valueDisplay="none"
-        xstyle={styles.filterSlider}
+        isWheelEnabled={false}
+        xstyle={styles.filterValue}
       />
     </InspectorRow>
   );
@@ -1076,6 +1209,62 @@ function ItemAction({
       {...stylex.props(styles.itemAction, xstyle)}>
       <Icon icon={icon} size={ICON} />
     </button>
+  );
+}
+
+/**
+ * One open document in the strip above the menubar.
+ *
+ * Two buttons, not one: switching to a document and closing it are separate
+ * actions, and an accessible name has to say which is which. The wrapper is
+ * an unstyled <div> that paints the tab chrome and carries the hover marker;
+ * putting the close inside the label's <button> would nest interactive
+ * content, which no browser or screen reader handles well.
+ *
+ * The close follows the same rule as the layer rail's lock: hidden until the
+ * tab is hovered or holds focus, and pinned open on the active tab, which is
+ * the one whose close a user reaches for. Because it only fades, the tab does
+ * not change width when the control arrives.
+ */
+function DocumentTab({
+  tab,
+  isActive,
+  onSelect,
+  onClose,
+}: {
+  tab: DocumentTabData;
+  isActive: boolean;
+  onSelect: () => void;
+  onClose: () => void;
+}) {
+  return (
+    // The marker goes through the same stylex.props() call as the styles: a
+    // separate className prop would be overwritten by the spread that follows
+    // it, and the close button would never find an ancestor to hover.
+    <div
+      {...stylex.props(hoverScope, styles.tab, isActive && styles.tabActive)}>
+      <button
+        type="button"
+        aria-current={isActive ? 'true' : undefined}
+        onClick={onSelect}
+        {...stylex.props(styles.tabSelect)}>
+        <span {...stylex.props(styles.tabIcon)}>
+          <Icon icon={tab.icon} size={ICON} />
+        </span>
+        <Text
+          type="label"
+          color={isActive ? 'primary' : 'secondary'}
+          xstyle={styles.tabLabel}>
+          {tab.name}
+        </Text>
+      </button>
+      <ItemAction
+        label={`Close ${tab.name}`}
+        icon={X}
+        onClick={onClose}
+        xstyle={[styles.rowAction, isActive && styles.rowActionPinned]}
+      />
+    </div>
   );
 }
 
@@ -1176,7 +1365,10 @@ function ColorPicker({
           min={0}
           max={360}
           value={hsv.h}
-          onChange={h => commit({...hsv, h})}
+          // Annotated because Slider's props are a union of the single and
+          // range forms, and with no `value` tuple to discriminate on there is
+          // nothing for the parameter to infer from.
+          onChange={(h: number) => commit({...hsv, h})}
           valueDisplay="none"
         />
       </Theme>
@@ -1271,40 +1463,57 @@ function Shortcut({children}: {children: string}) {
  * it shows the closed lock at rest, because that is a fact about the layer
  * rather than an action being offered.
  */
-function LayerRow({
-  layer,
-  isSelected,
-  onSelect,
-  onToggleLock,
-}: {
-  layer: Layer;
-  isSelected: boolean;
-  onSelect: () => void;
-  onToggleLock: () => void;
-}) {
-  return (
-    <Item
-      as="li"
-      density="compact"
-      label={layer.name}
-      isSelected={isSelected}
-      onClick={onSelect}
-      // The marker has to sit on the row itself for the hover selector below
-      // to scope to one row. `xstyle` takes style objects and rejects a
-      // marker's opaque type, so the class it compiles to goes on through
-      // `className`, which Item merges onto the same element.
-      className={stylex.props(layerRow).className}
-      startContent={<Icon icon={LAYER_ICON[layer.kind]} size={ICON} />}
-      endContent={
-        <ItemAction
-          label={layer.isLocked ? `Unlock ${layer.name}` : `Lock ${layer.name}`}
-          icon={layer.isLocked ? Lock : LockOpen}
-          onClick={onToggleLock}
-          xstyle={[styles.rowAction, layer.isLocked && styles.rowActionPinned]}
-        />
-      }
-    />
-  );
+/**
+ * The layer rail as a tree, grouped by what each layer is.
+ *
+ * A poster's layers are not a flat list — the two text layers belong together
+ * and the images belong together — and a tree says so structurally rather
+ * than by sorting and hoping the reader infers it. It also buys collapse: a
+ * document with thirty layers is navigable when the groups fold.
+ *
+ * Built as data rather than rows because TreeList owns the disclosure state,
+ * the guide lines and the roving focus that a hand-rolled tree would have to
+ * reimplement. The per-row pieces still come through the content slots, so
+ * the lock keeps its hover reveal.
+ */
+function layerTree(
+  layers: Layer[],
+  selectedID: string,
+  onSelect: (id: string) => void,
+  onToggleLock: (id: string) => void,
+): TreeListItemData[] {
+  const row = (layer: Layer): TreeListItemData => ({
+    id: layer.id,
+    label: layer.name,
+    isSelected: layer.id === selectedID,
+    onClick: () => onSelect(layer.id),
+    startContent: <Icon icon={LAYER_ICON[layer.kind]} size={ICON} />,
+    endContent: (
+      <ItemAction
+        label={layer.isLocked ? `Unlock ${layer.name}` : `Lock ${layer.name}`}
+        icon={layer.isLocked ? Lock : LockOpen}
+        onClick={() => onToggleLock(layer.id)}
+        xstyle={[styles.rowAction, layer.isLocked && styles.rowActionPinned]}
+      />
+    ),
+  });
+
+  const groups: {id: string; label: string; kind: LayerKind}[] = [
+    {id: 'group-text', label: 'Text', kind: 'text'},
+    {id: 'group-images', label: 'Images', kind: 'image'},
+  ];
+
+  // A group with nothing in it is a disclosure that opens onto nothing, so it
+  // does not get drawn.
+  return groups
+    .map(group => ({
+      id: group.id,
+      label: group.label,
+      isExpanded: true,
+      startContent: <Icon icon={LAYER_ICON[group.kind]} size={ICON} />,
+      children: layers.filter(l => l.kind === group.kind).map(row),
+    }))
+    .filter(group => group.children.length > 0);
 }
 
 /**
@@ -1425,7 +1634,38 @@ export default function CanvasEditor() {
     toolbar: true,
   });
   const [appearance, setAppearance] = useState<ThemeMode>('system');
-  const [openMenu, setOpenMenu] = useState<MenuID | null>(null);
+  const [tabs, setTabs] = useState(INITIAL_TABS);
+  const [activeTab, setActiveTab] = useState(INITIAL_TABS[0].id);
+  // Only used to name new tabs, so it counts documents opened rather than
+  // documents open — reusing "Untitled 2" after closing one would be worse.
+  const untitledCount = useRef(1);
+
+  // Closing the open document has to hand the strip a new one, and the
+  // neighbour is the least surprising choice: the tab that slides under the
+  // pointer is the one that takes over. Closing the last tab leaves the strip
+  // empty rather than inventing a document nobody asked for.
+  const closeTab = (id: string) => {
+    setTabs(current => {
+      const index = current.findIndex(tab => tab.id === id);
+      const next = current.filter(tab => tab.id !== id);
+      if (id === activeTab) {
+        const neighbour = next[index] ?? next[index - 1];
+        setActiveTab(neighbour ? neighbour.id : '');
+      }
+      return next;
+    });
+  };
+
+  const addTab = () => {
+    untitledCount.current += 1;
+    const tab: DocumentTabData = {
+      id: `untitled-${untitledCount.current}`,
+      name: `Untitled ${untitledCount.current}`,
+      icon: Frame,
+    };
+    setTabs(current => [...current, tab]);
+    setActiveTab(tab.id);
+  };
 
   // Both rails are drag-sized. The floors are the width each panel stops
   // being useful below — the rail at the point layer names start truncating,
@@ -1455,38 +1695,6 @@ export default function CanvasEditor() {
   const [headline, dateline] = layers.filter(layer => layer.kind === 'text');
   const photo = layers.filter(layer => layer.kind === 'image')[0];
 
-  /**
-   * Trigger props for one menubar title.
-   *
-   * What separates a menubar from a row of dropdowns is that the bar behaves
-   * as one control: once any menu is open, moving across the titles switches
-   * between them without a second click. A DropdownMenu holding its own open
-   * state cannot do that — it has no way to know a sibling is showing — so
-   * the bar keeps the open menu in one place and each title only reports
-   * what the pointer crossed.
-   */
-  const menu = (id: MenuID, label: string) => ({
-    button: {
-      label,
-      variant: 'ghost' as const,
-      size: 'sm' as const,
-      // Only take the menu when one is already open. Sweeping the bar with
-      // everything closed is a cursor crossing buttons, not a request.
-      onMouseEnter: () =>
-        setOpenMenu(current => (current === null ? null : id)),
-    },
-    // A menubar title is a word, not a select: the chevron belongs on a
-    // control that reports a value.
-    hasChevron: false,
-    isMenuOpen: openMenu === id,
-    // Closing has to be checked against which menu is open, not assumed.
-    // Handing the bar to a sibling closes this one on the way out, and a
-    // plain `isOpen ? id : null` lets that farewell land after the sibling
-    // has already claimed the bar — every switch would blank it instead.
-    onOpenChange: (isOpen: boolean) =>
-      setOpenMenu(current => (isOpen ? id : current === id ? null : current)),
-  });
-
   return (
     // Appearance drives a Theme around the whole editor, and that Theme needs
     // a surface of its own. Panels and toolbars are transparent, so without
@@ -1503,173 +1711,242 @@ export default function CanvasEditor() {
               label="Document actions"
               size="sm"
               dividers={['bottom']}
-              // Menubar titles sit tight to each other; the status text and
+              // The app menu sits tight to the tabs; the status text and
               // Export button on the other end need the room.
               gap={0.5}
-              xstyle={styles.headerBar}
+              // Cast because StyleXStyles is a union of known CSS properties,
+              // and a style holding nothing but a custom property matches
+              // none of them. The alternative is pairing it with a real
+              // property, but the only one worth pairing here is the padding
+              // this style exists precisely to avoid setting directly.
+              xstyle={styles.headerBar as stylex.StyleXStyles}
               startContent={
                 <>
-                  <DropdownMenu {...menu('file', 'File')}>
-                    <DropdownMenuItem
-                      label="New poster"
-                      endContent={<Shortcut>⌘N</Shortcut>}
-                    />
-                    <DropdownMenuItem
-                      label="Open…"
-                      endContent={<Shortcut>⌘O</Shortcut>}
-                    />
-                    <DropdownMenuDivider />
-                    <DropdownMenuItem
-                      label="Save"
-                      endContent={<Shortcut>⌘S</Shortcut>}
-                    />
-                    <DropdownMenuItem
-                      label="Save as…"
-                      endContent={<Shortcut>⇧⌘S</Shortcut>}
-                    />
-                    <DropdownMenuSubMenu label="Export">
-                      {EXPORT_FORMATS.map(format => (
-                        <DropdownMenuItem key={format} label={format} />
-                      ))}
+                  {/*
+                    One button for every command in the editor, the way a
+                    single-window design tool does it. A menubar spends the
+                    top-left on five words that are only read when someone is
+                    already looking for a command; folding them into submenus
+                    hands that space to the tabs, which are read constantly.
+                    The commands keep their grouping — the bar became the
+                    first level of the menu rather than disappearing.
+                  */}
+                  <DropdownMenu
+                    button={{
+                      label: 'Menu',
+                      tooltip: 'Menu',
+                      variant: 'ghost',
+                      size: 'sm',
+                      isIconOnly: true,
+                      icon: <Icon icon={Menu} size={ICON} />,
+                    }}
+                    hasChevron={false}
+                    // Left to itself the menu matches its trigger, and the
+                    // trigger is a 28px icon button — five one-word rows in a
+                    // column barely wider than the words. A set width gives
+                    // the submenu chevrons somewhere to sit at the far edge,
+                    // which is what makes the rows read as a menu bar folded
+                    // into a list rather than a stack of buttons.
+                    menuWidth={280}>
+                    <DropdownMenuSubMenu label="File">
+                      <DropdownMenuItem
+                        label="New poster"
+                        endContent={<Shortcut>⌘N</Shortcut>}
+                      />
+                      <DropdownMenuItem
+                        label="Open…"
+                        endContent={<Shortcut>⌘O</Shortcut>}
+                      />
+                      <DropdownMenuDivider />
+                      <DropdownMenuItem
+                        label="Save"
+                        endContent={<Shortcut>⌘S</Shortcut>}
+                      />
+                      <DropdownMenuItem
+                        label="Save as…"
+                        endContent={<Shortcut>⇧⌘S</Shortcut>}
+                      />
+                      <DropdownMenuSubMenu label="Export">
+                        {EXPORT_FORMATS.map(format => (
+                          <DropdownMenuItem key={format} label={format} />
+                        ))}
+                      </DropdownMenuSubMenu>
+                      <DropdownMenuDivider />
+                      <DropdownMenuItem
+                        label="Close"
+                        endContent={<Shortcut>⌘W</Shortcut>}
+                      />
                     </DropdownMenuSubMenu>
-                    <DropdownMenuDivider />
-                    <DropdownMenuItem
-                      label="Close"
-                      endContent={<Shortcut>⌘W</Shortcut>}
-                    />
-                  </DropdownMenu>
 
-                  <DropdownMenu {...menu('edit', 'Edit')}>
-                    <DropdownMenuItem
-                      label="Undo"
-                      endContent={<Shortcut>⌘Z</Shortcut>}
-                    />
-                    <DropdownMenuItem
-                      label="Redo"
-                      endContent={<Shortcut>⇧⌘Z</Shortcut>}
-                    />
-                    <DropdownMenuDivider />
-                    <DropdownMenuItem
-                      label="Cut"
-                      endContent={<Shortcut>⌘X</Shortcut>}
-                    />
-                    <DropdownMenuItem
-                      label="Copy"
-                      endContent={<Shortcut>⌘C</Shortcut>}
-                    />
-                    <DropdownMenuItem
-                      label="Paste"
-                      endContent={<Shortcut>⌘V</Shortcut>}
-                    />
-                    <DropdownMenuDivider />
-                    <DropdownMenuItem
-                      label="Duplicate"
-                      endContent={<Shortcut>⌘D</Shortcut>}
-                    />
-                    {/* Named, because a menu opened from the bar has lost
+                    <DropdownMenuSubMenu label="Edit">
+                      <DropdownMenuItem
+                        label="Undo"
+                        endContent={<Shortcut>⌘Z</Shortcut>}
+                      />
+                      <DropdownMenuItem
+                        label="Redo"
+                        endContent={<Shortcut>⇧⌘Z</Shortcut>}
+                      />
+                      <DropdownMenuDivider />
+                      <DropdownMenuItem
+                        label="Cut"
+                        endContent={<Shortcut>⌘X</Shortcut>}
+                      />
+                      <DropdownMenuItem
+                        label="Copy"
+                        endContent={<Shortcut>⌘C</Shortcut>}
+                      />
+                      <DropdownMenuItem
+                        label="Paste"
+                        endContent={<Shortcut>⌘V</Shortcut>}
+                      />
+                      <DropdownMenuDivider />
+                      <DropdownMenuItem
+                        label="Duplicate"
+                        endContent={<Shortcut>⌘D</Shortcut>}
+                      />
+                      {/* Named, because a menu opened from the bar has lost
                     sight of the rail: the row that would go is worth saying
                     out loud before a destructive item is clicked. */}
-                    <DropdownMenuItem
-                      label={`Delete ${selected.name}`}
-                      variant="destructive"
-                      endContent={<Shortcut>⌫</Shortcut>}
-                    />
-                  </DropdownMenu>
+                      <DropdownMenuItem
+                        label={`Delete ${selected.name}`}
+                        variant="destructive"
+                        endContent={<Shortcut>⌫</Shortcut>}
+                      />
+                    </DropdownMenuSubMenu>
 
-                  {/* Checkbox rows, not actions: each reports a state the
+                    {/* Checkbox rows, not actions: each reports a state the
                   user can see on the page, and the menu stays open so all
                   three can be set in one visit. */}
-                  <DropdownMenu {...menu('view', 'View')}>
-                    <DropdownMenuCheckboxItem
-                      label="Left panel"
-                      icon={PanelLeft}
-                      endContent={<Shortcut>⌘B</Shortcut>}
-                      value={chrome.left}
-                      onChange={next => setChrome(c => ({...c, left: next}))}
-                    />
-                    <DropdownMenuCheckboxItem
-                      label="Right panel"
-                      icon={PanelRight}
-                      endContent={<Shortcut>⇧⌘B</Shortcut>}
-                      value={chrome.right}
-                      onChange={next => setChrome(c => ({...c, right: next}))}
-                    />
-                    <DropdownMenuCheckboxItem
-                      label="Canvas tools"
-                      icon={PanelBottom}
-                      endContent={<Shortcut>⌘.</Shortcut>}
-                      value={chrome.toolbar}
-                      onChange={next => setChrome(c => ({...c, toolbar: next}))}
-                    />
-                    <DropdownMenuDivider />
-                    {/* The same value the tool bar's zoom control holds, so
+                    <DropdownMenuSubMenu label="View">
+                      <DropdownMenuCheckboxItem
+                        label="Left panel"
+                        icon={PanelLeft}
+                        endContent={<Shortcut>⌘B</Shortcut>}
+                        value={chrome.left}
+                        onChange={next => setChrome(c => ({...c, left: next}))}
+                      />
+                      <DropdownMenuCheckboxItem
+                        label="Right panel"
+                        icon={PanelRight}
+                        endContent={<Shortcut>⇧⌘B</Shortcut>}
+                        value={chrome.right}
+                        onChange={next => setChrome(c => ({...c, right: next}))}
+                      />
+                      <DropdownMenuCheckboxItem
+                        label="Canvas tools"
+                        icon={PanelBottom}
+                        endContent={<Shortcut>⌘.</Shortcut>}
+                        value={chrome.toolbar}
+                        onChange={next =>
+                          setChrome(c => ({...c, toolbar: next}))
+                        }
+                      />
+                      <DropdownMenuDivider />
+                      {/* The same value the tool bar's zoom control holds, so
                     setting it in either place moves the other. */}
-                    <DropdownMenuSubMenu label="Zoom">
-                      <DropdownMenuRadioGroup
-                        label="Zoom"
-                        value={zoom}
-                        onChange={setZoom}>
-                        {ZOOM_OPTIONS.map(option => (
+                      <DropdownMenuSubMenu label="Zoom">
+                        <DropdownMenuRadioGroup
+                          label="Zoom"
+                          value={zoom}
+                          onChange={setZoom}>
+                          {ZOOM_OPTIONS.map(option => (
+                            <DropdownMenuRadioItem
+                              key={option.value}
+                              value={option.value}
+                              label={option.label}
+                            />
+                          ))}
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuSubMenu>
+                      <DropdownMenuSubMenu label="Appearance">
+                        <DropdownMenuRadioGroup
+                          label="Appearance"
+                          value={appearance}
+                          onChange={next => setAppearance(next as ThemeMode)}>
+                          <DropdownMenuRadioItem value="light" label="Light" />
+                          <DropdownMenuRadioItem value="dark" label="Dark" />
                           <DropdownMenuRadioItem
-                            key={option.value}
-                            value={option.value}
-                            label={option.label}
+                            value="system"
+                            label="System"
+                          />
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuSubMenu>
+                    </DropdownMenuSubMenu>
+
+                    <DropdownMenuSubMenu label="Object">
+                      <DropdownMenuSubMenu label="Insert">
+                        {INSERT_ITEMS.map(item => (
+                          <DropdownMenuItem
+                            key={item.label}
+                            label={item.label}
+                            icon={item.icon}
                           />
                         ))}
-                      </DropdownMenuRadioGroup>
-                    </DropdownMenuSubMenu>
-                    <DropdownMenuSubMenu label="Appearance">
-                      <DropdownMenuRadioGroup
-                        label="Appearance"
-                        value={appearance}
-                        onChange={next => setAppearance(next as ThemeMode)}>
-                        <DropdownMenuRadioItem value="light" label="Light" />
-                        <DropdownMenuRadioItem value="dark" label="Dark" />
-                        <DropdownMenuRadioItem value="system" label="System" />
-                      </DropdownMenuRadioGroup>
-                    </DropdownMenuSubMenu>
-                  </DropdownMenu>
-
-                  <DropdownMenu {...menu('object', 'Object')}>
-                    <DropdownMenuSubMenu label="Insert">
-                      {INSERT_ITEMS.map(item => (
-                        <DropdownMenuItem
-                          key={item.label}
-                          label={item.label}
-                          icon={item.icon}
-                        />
-                      ))}
-                    </DropdownMenuSubMenu>
-                    <DropdownMenuDivider />
-                    <DropdownMenuItem
-                      label="Bring forward"
-                      endContent={<Shortcut>⌘]</Shortcut>}
-                    />
-                    <DropdownMenuItem
-                      label="Send backward"
-                      endContent={<Shortcut>⌘[</Shortcut>}
-                    />
-                    <DropdownMenuDivider />
-                    {/* The lock the rail row reveals on hover, reached from
+                      </DropdownMenuSubMenu>
+                      <DropdownMenuDivider />
+                      <DropdownMenuItem
+                        label="Bring forward"
+                        endContent={<Shortcut>⌘]</Shortcut>}
+                      />
+                      <DropdownMenuItem
+                        label="Send backward"
+                        endContent={<Shortcut>⌘[</Shortcut>}
+                      />
+                      <DropdownMenuDivider />
+                      {/* The lock the rail row reveals on hover, reached from
                     the menubar instead — one piece of state, two ways in. */}
-                    <DropdownMenuCheckboxItem
-                      label={`Lock ${selected.name}`}
-                      icon={selected.isLocked ? Lock : LockOpen}
-                      endContent={<Shortcut>⇧⌘L</Shortcut>}
-                      value={selected.isLocked}
-                      onChange={next => updateSelected({isLocked: next})}
-                    />
+                      <DropdownMenuCheckboxItem
+                        label={`Lock ${selected.name}`}
+                        icon={selected.isLocked ? Lock : LockOpen}
+                        endContent={<Shortcut>⇧⌘L</Shortcut>}
+                        value={selected.isLocked}
+                        onChange={next => updateSelected({isLocked: next})}
+                      />
+                    </DropdownMenuSubMenu>
+
+                    <DropdownMenuDivider />
+
+                    <DropdownMenuSubMenu label="Help">
+                      <DropdownMenuItem
+                        label="Keyboard shortcuts"
+                        endContent={<Shortcut>⌘/</Shortcut>}
+                      />
+                      <DropdownMenuItem label="Documentation" />
+                      <DropdownMenuDivider />
+                      <DropdownMenuItem label="About this editor" />
+                    </DropdownMenuSubMenu>
                   </DropdownMenu>
 
-                  <DropdownMenu {...menu('help', 'Help')}>
-                    <DropdownMenuItem
-                      label="Keyboard shortcuts"
-                      endContent={<Shortcut>⌘/</Shortcut>}
+                  {/*
+                    A group, not a nav landmark: a landmark inside a
+                    role="toolbar" is not a place a screen reader expects one,
+                    and the toolbar already is the region. The group gives the
+                    strip a name, and each tab says whether it is the open
+                    document with aria-current.
+                  */}
+                  <div
+                    role="group"
+                    aria-label="Open documents"
+                    {...stylex.props(styles.tabStrip)}>
+                    {tabs.map(tab => (
+                      <DocumentTab
+                        key={tab.id}
+                        tab={tab}
+                        isActive={tab.id === activeTab}
+                        onSelect={() => setActiveTab(tab.id)}
+                        onClose={() => closeTab(tab.id)}
+                      />
+                    ))}
+                    <IconButton
+                      label="New document"
+                      tooltip="New document"
+                      variant="ghost"
+                      size="sm"
+                      onClick={addTab}
+                      icon={<Icon icon={Plus} size={ICON} />}
                     />
-                    <DropdownMenuItem label="Documentation" />
-                    <DropdownMenuDivider />
-                    <DropdownMenuItem label="About this editor" />
-                  </DropdownMenu>
+                  </div>
                 </>
               }
               endContent={
@@ -1720,25 +1997,31 @@ export default function CanvasEditor() {
                             />
                           </SegmentedControl>
                           {panel === 'layers' ? (
-                            <List>
-                              {layers.map(layer => (
-                                <LayerRow
-                                  key={layer.id}
-                                  layer={layer}
-                                  isSelected={layer.id === selectedID}
-                                  onSelect={() => setSelectedID(layer.id)}
-                                  onToggleLock={() =>
+                            // TreeList builds its own rows, so there is no
+                            // per-row element left to mark. The marker moves
+                            // up to the rail, which trades one behaviour for
+                            // the grouping: the locks reveal together when the
+                            // pointer is anywhere in the rail, rather than one
+                            // row at a time. Locked layers still show at rest,
+                            // so the state is never hidden.
+                            <div {...stylex.props(hoverScope)}>
+                              <TreeList
+                                density="compact"
+                                items={layerTree(
+                                  layers,
+                                  selectedID,
+                                  setSelectedID,
+                                  id =>
                                     setLayers(current =>
                                       current.map(l =>
-                                        l.id === layer.id
+                                        l.id === id
                                           ? {...l, isLocked: !l.isLocked}
                                           : l,
                                       ),
-                                    )
-                                  }
-                                />
-                              ))}
-                            </List>
+                                    ),
+                                )}
+                              />
+                            </div>
                           ) : (
                             <List>
                               {EFFECT_PRESETS.map(preset => (
@@ -1762,6 +2045,11 @@ export default function CanvasEditor() {
                       <ResizeHandle
                         resizable={rail.props}
                         isAlwaysVisible={false}
+                        // Centred on the seam rather than pushed onto the
+                        // content side: the grip marks the edge it moves, and
+                        // an offset pill points at a boundary that is not
+                        // where the drag actually happens.
+                        pillPlacement="center"
                         label="Resize layers panel"
                       />
                     </>
@@ -1778,13 +2066,16 @@ export default function CanvasEditor() {
                         padding={4}
                         content={
                           <LayoutContent padding={6}>
-                            <Center>
+                            <div {...stylex.props(styles.canvasStage)}>
                               <Card
                                 padding={0}
                                 elevation="med"
                                 width={FRAME.width * scale}
                                 height={FRAME.height * scale}
-                                xstyle={styles.artboardFrame}>
+                                xstyle={[
+                                  styles.artboardFrame,
+                                  styles.artboardCentered,
+                                ]}>
                                 <Theme theme={posterTheme} mode="light">
                                   <AspectRatio
                                     ratio={FRAME.width / FRAME.height}
@@ -1870,7 +2161,7 @@ export default function CanvasEditor() {
                                   </AspectRatio>
                                 </Theme>
                               </Card>
-                            </Center>
+                            </div>
                           </LayoutContent>
                         }
                         footer={
@@ -1972,6 +2263,7 @@ export default function CanvasEditor() {
                         resizable={inspector.props}
                         isReversed
                         isAlwaysVisible={false}
+                        pillPlacement="center"
                         label="Resize properties panel"
                       />
                       <LayoutPanel
@@ -1983,10 +2275,20 @@ export default function CanvasEditor() {
                         <InspectorSection title="Layout">
                           <InspectorRow label="Padding">
                             <AxisInput
-                              icon={GLYPH.padding}
-                              label="Padding"
-                              value={selected.padding}
-                              onChange={next => updateSelected({padding: next})}
+                              icon={PanelLeftRightDashed}
+                              label="Horizontal padding"
+                              value={selected.paddingInline}
+                              onChange={next =>
+                                updateSelected({paddingInline: next})
+                              }
+                            />
+                            <AxisInput
+                              icon={PanelTopBottomDashed}
+                              label="Vertical padding"
+                              value={selected.paddingBlock}
+                              onChange={next =>
+                                updateSelected({paddingBlock: next})
+                              }
                             />
                             <IconButton
                               label="Set padding per side"
@@ -2032,7 +2334,7 @@ export default function CanvasEditor() {
                         <InspectorSection title="Styles">
                           <InspectorRow label="Radius">
                             <AxisInput
-                              icon={GLYPH.radius}
+                              icon={Scan}
                               label="Corner radius"
                               value={selected.radius}
                               onChange={next => updateSelected({radius: next})}
@@ -2086,7 +2388,7 @@ export default function CanvasEditor() {
                         <InspectorSection title="Transforms">
                           <InspectorRow label="Rotate">
                             <AxisInput
-                              icon={GLYPH.rotation}
+                              icon={Angle}
                               label="Rotation"
                               value={selected.rotation}
                               onChange={next =>
