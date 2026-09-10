@@ -180,7 +180,12 @@ async function computedNode(
         name: '',
         description: '',
         live: null,
+        atomic: null,
         value: null,
+        rangeValue: null,
+        rangeMin: null,
+        rangeMax: null,
+        valueText: null,
         modal: null,
         multiline: null,
         readOnly: null,
@@ -205,12 +210,26 @@ async function computedNode(
         live === 'off' || live === 'polite' || live === 'assertive'
           ? live
           : null,
+      atomic: optionalFlag(node, 'atomic'),
       value:
         typeof exposedValue === 'string'
           ? exposedValue
           : role === 'textbox'
             ? ''
             : null,
+      rangeValue: typeof exposedValue === 'number' ? exposedValue : null,
+      rangeMin:
+        typeof property(node, 'valuemin') === 'number'
+          ? (property(node, 'valuemin') as number)
+          : null,
+      rangeMax:
+        typeof property(node, 'valuemax') === 'number'
+          ? (property(node, 'valuemax') as number)
+          : null,
+      valueText:
+        typeof property(node, 'valuetext') === 'string'
+          ? (property(node, 'valuetext') as string)
+          : null,
       modal: optionalFlag(node, 'modal'),
       multiline: optionalFlag(node, 'multiline'),
       readOnly: optionalFlag(node, 'readonly'),
@@ -249,6 +268,69 @@ export async function holdMotionStill(page: Page): Promise<void> {
   await page.emulateMedia({reducedMotion: 'reduce'});
 }
 
+type ResolvedElementHandle = NonNullable<
+  Awaited<ReturnType<Locator['elementHandle']>>
+>;
+
+async function observeTextChangesDuring(
+  page: Page,
+  element: ResolvedElementHandle,
+  action: () => void | Promise<void>,
+): Promise<readonly string[]> {
+  await element.evaluate(node => {
+    const target = node as Element & {
+      __astryxA11ySpecTextObservation?: {
+        changes: string[];
+        observer: MutationObserver;
+      };
+    };
+    const changes: string[] = [];
+    const observer = new MutationObserver(() => {
+      changes.push((node.textContent ?? '').replace(/\s+/g, ' ').trim());
+    });
+    observer.observe(node, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+    target.__astryxA11ySpecTextObservation = {changes, observer};
+  });
+
+  const finish = () =>
+    element.evaluate(node => {
+      const target = node as Element & {
+        __astryxA11ySpecTextObservation?: {
+          changes: string[];
+          observer: MutationObserver;
+        };
+      };
+      const observation = target.__astryxA11ySpecTextObservation;
+      if (observation == null) {
+        throw new Error('the status text observation was lost');
+      }
+      if (observation.observer.takeRecords().length > 0) {
+        observation.changes.push(
+          (node.textContent ?? '').replace(/\s+/g, ' ').trim(),
+        );
+      }
+      observation.observer.disconnect();
+      delete target.__astryxA11ySpecTextObservation;
+      return observation.changes;
+    });
+
+  try {
+    await action();
+    await page.evaluate(
+      async () =>
+        new Promise<void>(resolve => requestAnimationFrame(() => resolve())),
+    );
+    return await finish();
+  } catch (error) {
+    await finish().catch(() => {});
+    throw error;
+  }
+}
+
 export interface ChromiumHarnessOptions {
   readonly page: Page;
   /**
@@ -273,6 +355,11 @@ export function createChromiumHarness(
 ): Harness {
   const {page, subject: locator, pointerTarget, cdp, visibleLabel} = options;
   const pointerLocator = pointerTarget ?? locator;
+  let initialElement: ReturnType<Locator['elementHandle']> | undefined;
+  const capturedElement = () => {
+    initialElement ??= locator.elementHandle();
+    return initialElement;
+  };
 
   const subject: Subject = {
     attribute: name => locator.getAttribute(name),
@@ -426,6 +513,26 @@ export function createChromiumHarness(
         }
         return null;
       }),
+    textContent: async () => {
+      const element = await capturedElement();
+      if (element == null) {
+        throw new Error('the subject is not in the document');
+      }
+      return element.evaluate(node =>
+        (node.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      );
+    },
+    isConnected: async () => {
+      const element = await capturedElement();
+      return element != null && element.evaluate(node => node.isConnected);
+    },
+    textChangesDuring: async action => {
+      const element = await capturedElement();
+      if (element == null) {
+        throw new Error('the subject is not in the document');
+      }
+      return observeTextChangesDuring(page, element, action);
+    },
     computed: () => computedNode(cdp, locator),
     visibleLabelText: async () => {
       if (visibleLabel === null) {
@@ -724,6 +831,20 @@ export function createChromiumHarness(
           }
           return null;
         }),
+      textContent: () =>
+        related.evaluate(node =>
+          (node.textContent ?? '').replace(/\s+/g, ' ').trim(),
+        ),
+      isConnected: () => related.evaluate(node => node.isConnected),
+      textChangesDuring: async action => {
+        const element = await related.elementHandle();
+        if (element == null) {
+          throw new Error(
+            `the related subject ${JSON.stringify(name)} is not in the document`,
+          );
+        }
+        return observeTextChangesDuring(page, element, action);
+      },
       computed: () => computedNode(cdp, related),
       visibleLabelText: async () => {
         const value = (await related.innerText()).trim();

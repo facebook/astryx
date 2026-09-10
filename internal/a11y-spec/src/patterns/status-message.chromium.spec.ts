@@ -3,66 +3,153 @@
 /**
  * @file status-message.chromium.spec.ts
  * @input Uses plain-HTML status fixtures and the Chromium accessibility tree
- * @output Positive and negative proof for browser-owned status-message outcomes
+ * @output Positive and negative proof for every browser-owned status-message outcome
  * @position Real-browser self-test of the contract, not a component binding
  */
 
 import {expect, test, type CDPSession, type Page} from '@playwright/test';
-import {checkAccessibilitySpec} from '../check';
-import {createChromiumHarness} from '../harness/chromium';
+import {checkAccessibilitySpec, type ExpectationResult} from '../check';
+import {describeExpectation, requiredLayers} from '../contract';
+import {CHROMIUM_OBSERVES, createChromiumHarness} from '../harness/chromium';
 import {STATUS_MESSAGE_PATTERN} from './status-message';
 import {
+  STATUS_MESSAGE_CONFORMING_FIXTURES,
+  STATUS_MESSAGE_MUTATIONS,
   STATUS_MESSAGE_SUBJECT_SELECTOR,
   statusMessageFixture,
   type StatusMessageFixture,
 } from './status-message.fixtures';
 
-async function resultFor(
+async function applyTransition(
+  page: Page,
+  target: StatusMessageFixture,
+  name: string,
+): Promise<void> {
+  const transition =
+    target.transitions?.[name as keyof typeof target.transitions];
+  if (transition == null) {
+    throw new Error(`fixture "${target.id}" supplies no "${name}" transition`);
+  }
+  const subject = page.locator(STATUS_MESSAGE_SUBJECT_SELECTOR);
+  if (transition.replaceSubject === true) {
+    await subject.evaluate((node, next) => {
+      const replacement = node.cloneNode(false) as Element;
+      if (next.attribute != null) {
+        if (next.value == null) {
+          replacement.removeAttribute(next.attribute);
+        } else {
+          replacement.setAttribute(next.attribute, next.value);
+        }
+      } else if (next.value !== undefined) {
+        replacement.textContent = next.value;
+      }
+      node.replaceWith(replacement);
+    }, transition);
+    return;
+  }
+  if (transition.pulse === true) {
+    await subject.evaluate((node, attribute) => {
+      if (attribute == null) {
+        node.textContent = '';
+      } else {
+        node.setAttribute(attribute, '');
+      }
+    }, transition.attribute ?? null);
+    await page.evaluate(
+      () =>
+        new Promise<void>(resolve => requestAnimationFrame(() => resolve())),
+    );
+  }
+  if (transition.value !== undefined) {
+    await subject.evaluate((node, next) => {
+      if (next.attribute == null) {
+        node.textContent = next.value ?? '';
+      } else if (next.value == null) {
+        node.removeAttribute(next.attribute);
+      } else {
+        node.setAttribute(next.attribute, next.value);
+      }
+    }, transition);
+  }
+  if (transition.focusSelector != null) {
+    await page.locator(transition.focusSelector).focus();
+  }
+}
+
+async function resultsFor(
   page: Page,
   cdp: CDPSession,
   target: StatusMessageFixture,
-) {
-  const result = await checkAccessibilitySpec({
-    spec: STATUS_MESSAGE_PATTERN,
-    binding: 'fixture',
-    state: target.id,
-    facts: target.facts,
-    mount: async () => {
-      await page.setContent(target.html);
-      return createChromiumHarness({
-        page,
-        cdp,
-        subject: page.locator(STATUS_MESSAGE_SUBJECT_SELECTOR),
-      });
-    },
-  });
-  return result.results[0];
+  only?: readonly string[],
+): Promise<readonly ExpectationResult[]> {
+  return (
+    await checkAccessibilitySpec({
+      spec: STATUS_MESSAGE_PATTERN,
+      binding: 'fixture',
+      state: target.id,
+      facts: target.facts,
+      only,
+      mount: async () => {
+        await page.setContent(target.html);
+        return createChromiumHarness({
+          page,
+          cdp,
+          subject: page.locator(STATUS_MESSAGE_SUBJECT_SELECTOR),
+          related: {
+            'focus-anchor': page.locator('[data-a11y-relation="focus-anchor"]'),
+          },
+        });
+      },
+      transition: name => applyTransition(page, target, name),
+    })
+  ).results;
 }
 
-test('exposes a polite status channel', async ({page}) => {
-  const cdp = await page.context().newCDPSession(page);
-  expect(
-    (
-      await resultFor(
+test.describe('status-message contract — conforming fixtures', () => {
+  for (const fixtureId of STATUS_MESSAGE_CONFORMING_FIXTURES) {
+    test(`${fixtureId}: every applicable expectation passes`, async ({
+      page,
+    }) => {
+      const cdp = await page.context().newCDPSession(page);
+      const results = await resultsFor(
         page,
         cdp,
-        statusMessageFixture('conforming-polite-channel'),
-      )
-    )?.status,
-  ).toBe('pass');
+        statusMessageFixture(fixtureId),
+      );
+      expect(
+        results
+          .filter(
+            result =>
+              result.status !== 'pass' && result.status !== 'not-applicable',
+          )
+          .map(result => `${result.expectation}: ${result.detail ?? ''}`),
+      ).toEqual([]);
+    });
+  }
 });
 
-test('rejects a status message with no programmatic live channel', async ({
-  page,
-}) => {
-  const cdp = await page.context().newCDPSession(page);
-  expect(
-    (
-      await resultFor(
-        page,
-        cdp,
-        statusMessageFixture('violating-unexposed-channel'),
+test.describe('status-message contract — deliberately violating fixtures', () => {
+  for (const expectation of STATUS_MESSAGE_PATTERN.expectations) {
+    if (
+      !requiredLayers(expectation).every(layer =>
+        CHROMIUM_OBSERVES.includes(layer),
       )
-    )?.status,
-  ).toBe('fail');
+    ) {
+      continue;
+    }
+    for (const fixtureId of STATUS_MESSAGE_MUTATIONS[expectation.id] ?? []) {
+      test(`${describeExpectation(expectation)} — fails against ${fixtureId}`, async ({
+        page,
+      }) => {
+        const cdp = await page.context().newCDPSession(page);
+        const [result] = await resultsFor(
+          page,
+          cdp,
+          statusMessageFixture(fixtureId),
+          [expectation.id],
+        );
+        expect(result?.status, result?.detail ?? 'no result').toBe('fail');
+      });
+    }
+  }
 });

@@ -72,24 +72,6 @@ describe('Spinner', () => {
     expect(spinner).toHaveAttribute('data-shade', 'inherit');
   });
 
-  it('has role="status"', () => {
-    render(<Spinner data-testid="spinner" />);
-    expect(screen.getByRole('status')).toBeInTheDocument();
-  });
-
-  it('has aria-label="Loading" by default', () => {
-    render(<Spinner data-testid="spinner" />);
-    expect(screen.getByTestId('spinner')).toHaveAttribute(
-      'aria-label',
-      'Loading',
-    );
-  });
-
-  it('names the status element from the visible string label', () => {
-    render(<Spinner label="Fetching data" data-testid="spinner" />);
-    expect(screen.getByRole('status')).toHaveAccessibleName('Fetching data');
-  });
-
   it('does not duplicate a visible string label as aria-label', () => {
     render(<Spinner label="Fetching data" data-testid="spinner" />);
     const status = screen.getByRole('status');

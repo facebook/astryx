@@ -13,6 +13,8 @@ review_triggers: [public-api, behavior, theming, accessibility]
 verified_by:
   [
     packages/core/src/FieldStatus/FieldStatus.test.tsx,
+    packages/core/src/FieldStatus/__tests__/StatusMessage.a11y.test.tsx,
+    packages/core/src/FieldStatus/__tests__/StatusMessage.a11y.chromium.spec.ts,
     scripts/check-knowledge.mjs,
   ]
 modules: []
@@ -20,7 +22,7 @@ families: []
 design_specs: []
 architecture: [architecture:component-theming-surface]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-009, spec:AST-020, spec:AST-021]
 ---
 
 # FieldStatus component contract
@@ -167,13 +169,13 @@ change either presentation.
 
 ## Verification map
 
-| Contract            | Verification                                              | Representative states                             | Mutation or failure expectation                                                         | Audit section                     |
-| ------------------- | --------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------- |
-| FR1, FR2, AR3, AR4  | `FieldStatus.test.tsx` rendering and detached-icon suites | Attached and detached; all status types           | Removing or reordering presentation parts fails DOM and accessibility assertions.       | `audit:FieldStatus/anatomy`       |
-| FR3, FR4            | `FieldStatus.test.tsx` theme target suites                | Attached/detached; error/warning/success          | Removing a target or status reflection fails class/data-attribute assertions.           | `audit:FieldStatus/theming`       |
-| FR5, FR6            | `FieldStatus.test.tsx` forwarding and update suites       | Initial render and rerender                       | Breaking the released root or update behavior fails compatibility assertions.           | `audit:FieldStatus/behavior`      |
-| AR1, AR2            | `FieldStatus.test.tsx` announcement suites                | Mount, message update, type update, empty message | Reintroducing a local live region or misrouting severity fails announcement assertions. | `audit:FieldStatus/accessibility` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                             | Consumer anatomy and current targets              | Missing, extra, duplicated, prefixed, or stale mappings fail repository validation.     | `audit:FieldStatus/theming`       |
+| Contract           | Verification                                                            | Representative states                                               | Mutation or failure expectation                                                                                                        | Audit section                     |
+| ------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| FR1, FR2, AR3, AR4 | `FieldStatus.test.tsx` rendering and detached-icon suites               | Attached and detached; all status types                             | Removing or reordering presentation parts fails DOM and accessibility assertions.                                                      | `audit:FieldStatus/anatomy`       |
+| FR3, FR4           | `FieldStatus.test.tsx` theme target suites                              | Attached/detached; error/warning/success                            | Removing a target or status reflection fails class/data-attribute assertions.                                                          | `audit:FieldStatus/theming`       |
+| FR5, FR6           | `FieldStatus.test.tsx` forwarding and update suites                     | Initial render and rerender                                         | Breaking the released root or update behavior fails compatibility assertions.                                                          | `audit:FieldStatus/behavior`      |
+| AR1                | `StatusMessage.a11y.test.tsx` and `StatusMessage.a11y.chromium.spec.ts` | Error, warning, and success; first message, replacement, and repeat | Removing the persistent channel, changing urgency, replacing its node, or dropping an update fails the shared status-message contract. | `audit:FieldStatus/accessibility` |
+| AR2                | `FieldStatus.test.tsx`                                                  | Attached/detached visible message and empty message                 | The visible description becomes a second live region or is hidden from assistive technology.                                           | `audit:FieldStatus/accessibility` |     | Theming anatomy map | `scripts/check-knowledge.mjs` | Consumer anatomy and current targets | Missing, extra, duplicated, prefixed, or stale mappings fail repository validation. | `audit:FieldStatus/theming` |
 
 ## Decision log
 

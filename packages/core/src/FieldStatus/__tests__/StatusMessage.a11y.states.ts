@@ -1,0 +1,258 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file StatusMessage.a11y.states.ts
+ * @input Uses StatusMessageStateFacts from the shared accessibility contract
+ * @output The AST-021 inventory for current Core status-message parts and states, plus explicit exclusions
+ * @position Data-only binding inventory shared by jsdom, Storybook, and Chromium
+ */
+
+import type {StatusMessageStateFacts} from '@astryxdesign/a11y-spec';
+
+export type CoreStatusMessageBinding =
+  | 'Toast announcement channel'
+  | 'Toast card'
+  | 'FieldStatus announcement channel'
+  | 'Spinner'
+  | 'ChatSystemMessage'
+  | 'ProgressBar';
+
+export interface CoreStatusMessageBindingDefinition {
+  readonly id: string;
+  readonly binding: CoreStatusMessageBinding;
+  readonly summary: string;
+  readonly facts: StatusMessageStateFacts;
+  readonly subjectSelector: string;
+  readonly storyId: string;
+}
+
+function liveFacts({
+  politeness,
+  message,
+  replacement,
+  messageSource = 'text',
+  canClear = false,
+  canRepeat = false,
+}: {
+  politeness: 'polite' | 'assertive';
+  message: string;
+  replacement: string;
+  messageSource?: 'text' | 'accessible-name';
+  canClear?: boolean;
+  canRepeat?: boolean;
+}): StatusMessageStateFacts {
+  return {
+    kind: 'live-region',
+    politeness,
+    messageSource,
+    message,
+    replacement,
+    canClear,
+    canRepeat,
+  };
+}
+
+export const CORE_STATUS_MESSAGE_BINDING_STATES = [
+  {
+    id: 'toast-info-announcement',
+    binding: 'Toast announcement channel',
+    summary:
+      'an info toast dispatch updates and can repeat through the persistent polite channel',
+    facts: liveFacts({
+      politeness: 'polite',
+      message: 'Changes saved',
+      replacement: 'Profile updated',
+      canRepeat: true,
+    }),
+    subjectSelector: '[data-astryx-live-region="polite"]',
+    storyId: 'a11y-status-message-pattern--toast-info-announcement',
+  },
+  {
+    id: 'toast-error-announcement',
+    binding: 'Toast announcement channel',
+    summary:
+      'an error toast dispatch updates and can repeat through the persistent assertive channel',
+    facts: liveFacts({
+      politeness: 'assertive',
+      message: 'Upload failed',
+      replacement: 'Connection failed',
+      canRepeat: true,
+    }),
+    subjectSelector: '[data-astryx-live-region="assertive"]',
+    storyId: 'a11y-status-message-pattern--toast-error-announcement',
+  },
+  {
+    id: 'toast-info-card-mounted',
+    binding: 'Toast card',
+    summary:
+      'the visible info card is mounted with its polite live-region content',
+    facts: liveFacts({
+      politeness: 'polite',
+      message: 'Changes saved',
+      replacement: 'Profile updated',
+    }),
+    subjectSelector: '.astryx-toast[role="status"]',
+    storyId: 'a11y-status-message-pattern--toast-info-card-mounted',
+  },
+  {
+    id: 'toast-error-card-mounted',
+    binding: 'Toast card',
+    summary:
+      'the visible error card is mounted with its assertive live-region content',
+    facts: liveFacts({
+      politeness: 'assertive',
+      message: 'Upload failed',
+      replacement: 'Connection failed',
+    }),
+    subjectSelector: '.astryx-toast[role="alert"]',
+    storyId: 'a11y-status-message-pattern--toast-error-card-mounted',
+  },
+  {
+    id: 'field-status-error-attached',
+    binding: 'FieldStatus announcement channel',
+    summary:
+      'an attached error enters and updates through the persistent assertive channel',
+    facts: liveFacts({
+      politeness: 'assertive',
+      message: 'This field is required',
+      replacement: 'Enter a valid email address',
+      canRepeat: true,
+    }),
+    subjectSelector: '[data-astryx-live-region="assertive"]',
+    storyId: 'a11y-status-message-pattern--field-status-error-attached',
+  },
+  {
+    id: 'field-status-warning-detached',
+    binding: 'FieldStatus announcement channel',
+    summary:
+      'a detached warning enters and updates through the persistent polite channel',
+    facts: liveFacts({
+      politeness: 'polite',
+      message: 'Check this value',
+      replacement: 'This value may be visible to others',
+      canRepeat: true,
+    }),
+    subjectSelector: '[data-astryx-live-region="polite"]',
+    storyId: 'a11y-status-message-pattern--field-status-warning-detached',
+  },
+  {
+    id: 'field-status-success-detached',
+    binding: 'FieldStatus announcement channel',
+    summary:
+      'a detached success enters and updates through the persistent polite channel',
+    facts: liveFacts({
+      politeness: 'polite',
+      message: 'Looks good',
+      replacement: 'Changes saved',
+      canRepeat: true,
+    }),
+    subjectSelector: '[data-astryx-live-region="polite"]',
+    storyId: 'a11y-status-message-pattern--field-status-success-detached',
+  },
+  {
+    id: 'spinner-default-label-mounted',
+    binding: 'Spinner',
+    summary:
+      'a loading spinner is mounted with its default accessible status name',
+    facts: liveFacts({
+      politeness: 'polite',
+      messageSource: 'accessible-name',
+      message: 'Loading',
+      replacement: 'Saving',
+    }),
+    subjectSelector: '[data-a11y-subject]',
+    storyId: 'a11y-status-message-pattern--spinner-default-label-mounted',
+  },
+  {
+    id: 'spinner-visible-label-mounted',
+    binding: 'Spinner',
+    summary:
+      'a loading spinner is mounted with a visible label that names its status role',
+    facts: liveFacts({
+      politeness: 'polite',
+      messageSource: 'accessible-name',
+      message: 'Fetching data',
+      replacement: 'Saving data',
+    }),
+    subjectSelector: '[data-a11y-subject] [role="status"]',
+    storyId: 'a11y-status-message-pattern--spinner-visible-label-mounted',
+  },
+  {
+    id: 'chat-system-status-mounted',
+    binding: 'ChatSystemMessage',
+    summary: 'a chat status notice is mounted with its live-region content',
+    facts: liveFacts({
+      politeness: 'polite',
+      message: 'Conversation started',
+      replacement: 'A file was shared',
+      canClear: true,
+    }),
+    subjectSelector: '[data-a11y-subject]',
+    storyId: 'a11y-status-message-pattern--chat-system-status-mounted',
+  },
+  {
+    id: 'progress-loading-to-complete',
+    binding: 'ProgressBar',
+    summary:
+      'an indeterminate operation becomes 40 percent complete and then finishes',
+    facts: {
+      kind: 'progressbar',
+      politeness: null,
+      name: 'Upload progress',
+      progressValue: 40,
+      completionValue: 100,
+      maxValue: 100,
+    },
+    subjectSelector: '[data-a11y-subject] [role="progressbar"]',
+    storyId: 'a11y-status-message-pattern--progress-loading-to-complete',
+  },
+] as const satisfies ReadonlyArray<CoreStatusMessageBindingDefinition>;
+
+export type CoreStatusMessageBindingState =
+  (typeof CORE_STATUS_MESSAGE_BINDING_STATES)[number];
+export type CoreStatusMessageStateId = CoreStatusMessageBindingState['id'];
+
+export const CORE_STATUS_MESSAGE_EXCLUSIONS = [
+  {
+    owner: 'FieldStatus visible message box',
+    part: 'visible validation text',
+    reason:
+      'component:FieldStatus AR2 keeps the visible box role-free as the input description target; its separate persistent announcement channel is bound above.',
+  },
+  {
+    owner: 'Spinner compositions',
+    part: 'aria-hidden decorative spinner',
+    reason:
+      'A composing control that marks Spinner aria-hidden owns the surrounding busy semantics; the decorative ring is not another status message.',
+  },
+  {
+    owner: 'ChatSystemMessage divider',
+    part: 'date or section separator',
+    reason:
+      'A divider does not report success, results, waiting, progress, or an error. Its current forced status role is tracked as a separate ownership mismatch rather than adopted here.',
+  },
+  {
+    owner: 'ChatMessageList and streaming logs',
+    part: 'role=log transcript updates',
+    reason:
+      'Sequential log announcements and stream batching are a distinct log pattern, not one atomic status message.',
+  },
+  {
+    owner: 'ChatComposer and ChatToolCalls',
+    part: 'composer errors and tool-run states',
+    reason:
+      'These adjacent surfaces have their own state ownership and were not named by this bounded first status-message migration.',
+  },
+  {
+    owner: 'Switch',
+    part: 'busy announcement',
+    reason:
+      'The current switch pattern has no busy announcement expectation, and overlapping work is changing this path; it is not silently absorbed into this migration.',
+  },
+  {
+    owner: 'ProgressBar component and theme',
+    part: 'visual fill, track, marks, animation, and status cadence',
+    reason:
+      'The binding covers browser-exposed role, name, values, and focus preservation. Paint stays in visual evidence; spoken cadence and timing stay under AST-009.',
+  },
+] as const;

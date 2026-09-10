@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {FieldStatus} from './FieldStatus';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -51,53 +51,6 @@ describe('FieldStatus', () => {
       const el = screen.getByTestId('fs');
       expect(el).not.toHaveAttribute('role');
       expect(el).not.toHaveAttribute('aria-live');
-    });
-
-    // Errors are urgent — they interrupt via the assertive channel.
-    it('announces error messages assertively, including on first mount', async () => {
-      render(<FieldStatus type="error" message="This field is required" />);
-      await waitFor(() => {
-        expect(assertiveRegion()).toHaveTextContent('This field is required');
-      });
-      expect(politeRegion()).toHaveTextContent('');
-    });
-
-    it('announces warning messages politely', async () => {
-      render(<FieldStatus type="warning" message="Check this value" />);
-      await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Check this value');
-      });
-      expect(assertiveRegion()).toHaveTextContent('');
-    });
-
-    it('announces success messages politely', async () => {
-      render(<FieldStatus type="success" message="Looks good" />);
-      await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Looks good');
-      });
-    });
-
-    it('announces message changes', async () => {
-      const {rerender} = render(<FieldStatus type="error" message="First" />);
-      await waitFor(() => {
-        expect(assertiveRegion()).toHaveTextContent('First');
-      });
-      rerender(<FieldStatus type="error" message="Second" />);
-      await waitFor(() => {
-        expect(assertiveRegion()).toHaveTextContent('Second');
-      });
-    });
-
-    // Severity changes re-route the announcement to the matching channel.
-    it('re-routes to the polite channel when type changes from error', async () => {
-      const {rerender} = render(<FieldStatus type="error" message="msg" />);
-      await waitFor(() => {
-        expect(assertiveRegion()).toHaveTextContent('msg');
-      });
-      rerender(<FieldStatus type="success" message="msg" />);
-      await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('msg');
-      });
     });
 
     it('does not announce an empty message', () => {

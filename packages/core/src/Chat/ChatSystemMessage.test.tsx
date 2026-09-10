@@ -10,12 +10,6 @@ describe('ChatSystemMessage', () => {
     expect(screen.getByText('Conversation started')).toBeTruthy();
   });
 
-  it('has role="status"', () => {
-    render(<ChatSystemMessage data-testid="sys">Notice</ChatSystemMessage>);
-    const el = screen.getByTestId('sys');
-    expect(el.getAttribute('role')).toBe('status');
-  });
-
   it('renders default variant without divider lines', () => {
     const {container} = render(<ChatSystemMessage>Hello</ChatSystemMessage>);
     // Divider lines have aria-hidden, so check there are none
@@ -57,7 +51,7 @@ describe('ChatSystemMessage', () => {
     expect(screen.getByTestId('my-sys')).toBeTruthy();
   });
 
-  it('forwards rest props (data-*, id) while keeping its own role', () => {
+  it('forwards rest props (data-*, id)', () => {
     render(
       <ChatSystemMessage data-testid="sys" data-custom="x" id="sys-1">
         Hello
@@ -66,7 +60,6 @@ describe('ChatSystemMessage', () => {
     const el = screen.getByTestId('sys');
     expect(el).toHaveAttribute('data-custom', 'x');
     expect(el).toHaveAttribute('id', 'sys-1');
-    expect(el.getAttribute('role')).toBe('status');
   });
 
   it('forwards rest props in the divider variant', () => {
@@ -77,6 +70,5 @@ describe('ChatSystemMessage', () => {
     );
     const el = screen.getByTestId('sys');
     expect(el).toHaveAttribute('data-custom', 'x');
-    expect(el.getAttribute('role')).toBe('status');
   });
 });

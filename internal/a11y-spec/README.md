@@ -44,20 +44,30 @@ src/
     ├── switch.*             the switch pattern, same four files
     ├── button.*             the button pattern, same four files
     ├── text-input.*         the native text-input pattern, same four files
-    └── modal-dialog.*       the native modal-dialog pattern, same four files
+    ├── modal-dialog.*       the native modal-dialog pattern, same four files
+    └── status-message.*     live-region and progress status mechanics
 ```
 
 ## The patterns
 
-| Pattern        | Adopted from                                                                             | Bound by                                                                  |
-| -------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `checkbox`     | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/)                       | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard |
-| `switch`       | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)                           | Switch                                                                    |
-| `button`       | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)                           | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton  |
-| `text-input`   | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox) | TextInput, TextArea                                                       |
-| `modal-dialog` | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)             | Dialog                                                                    |
+| Pattern          | Adopted from                                                                                 | Bound by                                                                         |
+| ---------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `checkbox`       | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/)                           | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard        |
+| `switch`         | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)                               | Switch                                                                           |
+| `button`         | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)                               | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton         |
+| `text-input`     | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox)     | TextInput, TextArea                                                              |
+| `modal-dialog`   | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)                 | Dialog                                                                           |
+| `status-message` | [WCAG 2.2 Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html) | Toast, FieldStatus, Spinner, ChatSystemMessage, ChatTypingIndicator, ProgressBar |
 
-The `text-input` contract is native rather than APG-derived. It covers the
+The `status-message` contract is WCAG-derived rather than an APG widget
+pattern. It covers the browser-observable mechanics of polite and assertive live
+regions plus progress bars: the channel and whole-message exposure, an empty
+region before a live update, in-place show/replace/clear transitions, a DOM
+change for repeated identical text, preserved focus, and progress role/name/value
+updates. It does **not** claim speech, braille, timing, ordering, cadence, or
+repetition; those outcomes remain real-AT evidence under AST-009. The repeated
+DOM-mutation check is advisory for exactly that reason.
+
 role-bearing `<input>` or `<textarea>` only; composed clear and tooltip buttons
 keep their button contract. Password fields bind to persistent naming, state,
 focus, and editing expectations, while HTML-AAM defines no corresponding ARIA
@@ -190,6 +200,13 @@ Lower-level contract fixtures, Chromium bindings, report generation, and mutatio
 proof use `checkAccessibilitySpec`, which returns the complete factual result without
 asserting it.
 
+Some stateful patterns ask the binding to perform a named public transition.
+The binding drives that transition through its public API; the contract then
+observes the same subject again. `Subject.textChangesDuring()` records DOM text
+mutations around one such transition, which lets the status-message contract
+prove that identical text is cleared and reinserted without claiming an actual
+assistive-technology announcement.
+
 ## Known failures
 
 A known failure names one expectation, one binding, one state, one evidence
@@ -213,6 +230,8 @@ refers to it (AST-021 FR8–FR10).
 # jsdom lane — part of `pnpm test`
 pnpm vitest run --project node internal/a11y-spec
 pnpm vitest run --project ui packages/core/src/Switch
+pnpm vitest run --project ui packages/core/src/FieldStatus/__tests__/StatusMessage.a11y.test.tsx
+pnpm vitest run --project ui packages/lab/src/Chat/__tests__/ChatTypingIndicator.a11y.test.tsx
 
 # Chromium lane — needs a browser and a built Storybook
 pnpm storybook:build
