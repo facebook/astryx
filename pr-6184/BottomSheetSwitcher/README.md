@@ -4,8 +4,8 @@
 - Mode: Night Watch `N`
 - Rubric: `1.16.2`
 - Baseline: [`4a31578d288df665a1ceabab296d430f6e361cb5`](https://github.com/facebook/astryx/commit/4a31578d288df665a1ceabab296d430f6e361cb5)
-- Audited exact head: [`d92a3a1b71f530462d2371f474d879a2712184a7`](https://github.com/facebook/astryx/commit/d92a3a1b71f530462d2371f474d879a2712184a7)
-- Head reconciliation: the main merge changed no audit-owned file; independent review then corrected two Escape compatibility regressions, and all after-evidence below was regenerated at this final source head.
+- Audited exact head: [`745876d581fec65828e959dd79d42ec16ed1d2e4`](https://github.com/facebook/astryx/commit/745876d581fec65828e959dd79d42ec16ed1d2e4)
+- Head reconciliation: current `main` was merged before final validation; the review-flow route lock required by that newer CI contract was added, and all after-evidence below was regenerated at this final source head.
 - Pull request: [#6184](https://github.com/facebook/astryx/pull/6184)
 - Before: **76.9 / C**
 - After: **86.4 / C**

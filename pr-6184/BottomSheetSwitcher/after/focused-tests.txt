@@ -3,17 +3,17 @@
 
 Built pseudo.json — 362 keys
 Built pseudo.json — 362 keys
-(node:2495) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(node:20464) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
 (Use `node --trace-warnings ...` to show where the warning was created)
-(node:2494) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(node:20461) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
 (Use `node --trace-warnings ...` to show where the warning was created)
-(node:2492) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(node:20460) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
 (Use `node --trace-warnings ...` to show where the warning was created)
-(node:2493) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(node:20462) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
 (Use `node --trace-warnings ...` to show where the warning was created)
-(node:2496) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(node:20463) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
 (Use `node --trace-warnings ...` to show where the warning was created)
- ✓ |ui| packages/core/src/Layer/useLayerDismissal.test.tsx (21 tests) 33ms
+ ✓ |ui| packages/core/src/Layer/useLayerDismissal.test.tsx (21 tests) 80ms
 Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
@@ -28,7 +28,7 @@ Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
- ✓ |ui| packages/core/src/Layer/layerDismissalInvariants.test.tsx (15 tests) 77ms
+ ✓ |ui| packages/core/src/Layer/layerDismissalInvariants.test.tsx (15 tests) 163ms
 Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
@@ -40,14 +40,14 @@ Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
 Not implemented: Window's scrollTo() method
+ ✓ |ui| packages/core/src/Layer/layerDismissalFamilies.test.tsx (11 tests) 136ms
 Not implemented: Window's scrollTo() method
- ✓ |ui| packages/core/src/Layer/layerDismissalFamilies.test.tsx (11 tests) 69ms
 Not implemented: Window's scrollTo() method
- ✓ |ui| packages/core/src/hooks/useFocusTrapEscapeShim.test.tsx (11 tests) 49ms
- ✓ |ui| packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx (29 tests) 940ms
+ ✓ |ui| packages/core/src/hooks/useFocusTrapEscapeShim.test.tsx (11 tests) 97ms
+ ✓ |ui| packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx (29 tests) 1748ms
 
  Test Files  5 passed (5)
       Tests  87 passed (87)
-   Start at  08:14:36
-   Duration  3.74s (transform 4.96s, setup 973ms, import 7.18s, tests 1.17s, environment 2.45s)
+   Start at  08:29:49
+   Duration  7.75s (transform 12.56s, setup 2.11s, import 14.31s, tests 2.22s, environment 5.78s)
 

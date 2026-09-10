@@ -3,12 +3,13 @@
 
 Built pseudo.json — 362 keys
 Built pseudo.json — 362 keys
-(node:98094) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(node:90714) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
 (Use `node --trace-warnings ...` to show where the warning was created)
- ✓ |ui| packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx (29 tests | 26 skipped) 213ms
+ ✓ |ui| packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx (29 tests | 26 skipped) 758ms
+     ✓ dismisses a non-modal flow when a consumer stops Escape propagation  602ms
 
  Test Files  1 passed (1)
       Tests  3 passed | 26 skipped (29)
-   Start at  08:11:33
-   Duration  5.52s (transform 3.18s, setup 344ms, import 3.43s, tests 213ms, environment 840ms)
+   Start at  08:43:45
+   Duration  17.19s (transform 11.68s, setup 546ms, import 12.21s, tests 758ms, environment 1.90s)
 

@@ -3,8 +3,8 @@
   "identity": "story",
   "build": {
     "root": "<repository>",
-    "expectedSha": "d92a3a1b71f530462d2371f474d879a2712184a7",
-    "observedSha": "d92a3a1b71f530462d2371f474d879a2712184a7"
+    "expectedSha": "745876d581fec65828e959dd79d42ec16ed1d2e4",
+    "observedSha": "745876d581fec65828e959dd79d42ec16ed1d2e4"
   },
   "expected": {
     "globals": {
@@ -96,6 +96,6 @@
   },
   "image": {
     "path": "<audit-workspace>/evidence/after/frames/hug-frequency__neutral-dark-ltr-390x844.png",
-    "bytes": 16316
+    "bytes": 16339
   }
 }

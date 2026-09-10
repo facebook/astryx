@@ -2,7 +2,7 @@ $ node .github/scripts/accessibility-audit.js --baseline .github/a11y-baseline.j
 Starting accessibility audit...
 Components to audit: BottomSheetSwitcher
 Storybook server running on http://localhost:6007
-Found 2102 stories
+Found 2136 stories
 Auditing 1 components
 ✓ Audited: BottomSheetSwitcher / Hug content - 0 issues
 ✓ Audited: BottomSheetSwitcher / Capped - 0 issues
