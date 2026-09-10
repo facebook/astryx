@@ -40,6 +40,7 @@ src/
 ├── spoken.ts      how a visible label is compared against a computed name
 ├── storybook.ts   a static server over a built Storybook, for the browser lane
 └── patterns/
+    ├── radio-group.*        the radio-group pattern, same four files
     ├── checkbox.*           the checkbox pattern, same four files
     ├── switch.*             the switch pattern, same four files
     ├── button.*             the button pattern, same four files
@@ -49,13 +50,14 @@ src/
 
 ## The patterns
 
-| Pattern        | Adopted from                                                                             | Bound by                                                                  |
-| -------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `checkbox`     | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/)                       | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard |
-| `switch`       | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)                           | Switch                                                                    |
-| `button`       | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)                           | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton  |
-| `text-input`   | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox) | TextInput, TextArea                                                       |
-| `modal-dialog` | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)             | Dialog                                                                    |
+| Pattern        | Adopted from                                                                             | Bound by                                                                     |
+| -------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `radio-group`  | [APG radio group](https://www.w3.org/WAI/ARIA/apg/patterns/radio/)                       | RadioList, SegmentedControl; role/state portions of DropdownMenu radio items |
+| `checkbox`     | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/)                       | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard    |
+| `switch`       | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)                           | Switch                                                                       |
+| `button`       | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)                           | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton     |
+| `text-input`   | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox) | TextInput, TextArea                                                          |
+| `modal-dialog` | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)             | Dialog                                                                       |
 
 The `text-input` contract is native rather than APG-derived. It covers the
 role-bearing `<input>` or `<textarea>` only; composed clear and tooltip buttons

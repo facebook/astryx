@@ -87,6 +87,12 @@ export {
 
 export {CHECKBOX_PATTERN, type CheckboxStateFacts} from './patterns/checkbox';
 
+export {
+  RADIO_GROUP_PATTERN,
+  type RadioGroupRole,
+  type RadioGroupStateFacts,
+} from './patterns/radio-group';
+
 export {SWITCH_PATTERN, type SwitchStateFacts} from './patterns/switch';
 
 export {
