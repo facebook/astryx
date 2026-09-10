@@ -20,6 +20,7 @@
  */
 
 import {
+  MissingHarnessRelation,
   UnobservableError,
   type Harness,
   type Subject,
@@ -54,11 +55,67 @@ function createSubject(element: Element): Subject {
           return target == null ? null : (target.textContent ?? '').trim();
         });
     },
+    visibleIdReferences: async () =>
+      unobservable(
+        'real-browser',
+        'whether referenced text is visibly rendered',
+      ),
+    labelText: async () => {
+      const labelledBy = element.getAttribute('aria-labelledby');
+      if (labelledBy != null && labelledBy.trim() !== '') {
+        const text = (
+          await Promise.all(
+            labelledBy
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(
+                async id =>
+                  element.ownerDocument.getElementById(id)?.textContent ?? '',
+              ),
+          )
+        )
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return text === '' ? null : text;
+      }
+      const ariaLabel = element.getAttribute('aria-label')?.trim();
+      if (ariaLabel != null && ariaLabel !== '') {
+        return ariaLabel;
+      }
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement
+      ) {
+        const text = Array.from(element.labels ?? [])
+          .map(label => label.textContent ?? '')
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return text === '' ? null : text;
+      }
+      return null;
+    },
+    textValue: async () => {
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement
+      ) {
+        return element.value;
+      }
+      return null;
+    },
     computed: async () =>
       unobservable('accessibility-tree', 'a computed accessibility node'),
     visibleLabelText: async () =>
       unobservable('real-browser', 'what a label actually renders as'),
     isFocused: async () => unobservable('real-browser', 'real focus'),
+    containsFocus: async () =>
+      unobservable('real-browser', 'whether focus is inside a subject'),
+    isModal: async () =>
+      unobservable('real-browser', 'native modal top-layer state'),
+    canReceivePointer: async () =>
+      unobservable('real-browser', 'pointer reachability'),
     focus: async () => unobservable('real-browser', 'real focus'),
   };
 }
@@ -71,6 +128,8 @@ export interface JsdomHarnessOptions {
    * the expectation under test instead of making the subject unfindable.
    */
   readonly subject: Element;
+  /** Public-semantic elements participating in a relationship expectation. */
+  readonly related?: Readonly<Record<string, Element>>;
 }
 
 export function createJsdomHarness(options: JsdomHarnessOptions): Harness {
@@ -79,10 +138,21 @@ export function createJsdomHarness(options: JsdomHarnessOptions): Harness {
     name: HARNESS,
     observes: JSDOM_OBSERVES,
     subject: async () => subject,
+    related: async name => {
+      const element = options.related?.[name];
+      if (element == null) {
+        throw new MissingHarnessRelation(HARNESS, name);
+      }
+      return createSubject(element);
+    },
     click: async () =>
       unobservable('real-browser', 'a real pointer activation'),
     abortedPress: async () =>
       unobservable('real-browser', 'a real pointer press'),
+    typeText: async () =>
+      unobservable('real-browser', 'real keyboard text entry'),
+    clearText: async () =>
+      unobservable('real-browser', 'real keyboard text deletion'),
     press: async () => unobservable('real-browser', 'a real key press'),
     resetFocus: async () => unobservable('real-browser', 'real focus'),
   };

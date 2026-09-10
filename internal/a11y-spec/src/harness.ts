@@ -37,10 +37,9 @@ export type EvidenceLayer = (typeof EVIDENCE_LAYERS)[number];
 /**
  * What the browser computes for a node. Only an engine can answer this.
  *
- * Requiredness is deliberately absent: Chromium's protocol does not emit a
- * `required` property for a checkbox, so putting one here would be a field this
- * package could only ever fill with a guess. The switch contract reads that
- * declaration at the DOM layer instead.
+ * Properties are nullable when the engine does not expose them for a role. For
+ * example, Chromium emits `required` for native textboxes but not checkboxes;
+ * callers must not substitute a DOM guess for a missing tree property.
  */
 export interface ComputedNode {
   /** Computed role, e.g. `switch`. */
@@ -49,6 +48,16 @@ export interface ComputedNode {
   readonly name: string;
   /** Computed accessible description. */
   readonly description: string;
+  /** Computed text value, or null when the node exposes no value. */
+  readonly value: string | null;
+  /** Whether the engine exposes the subject as modal. */
+  readonly modal: boolean | null;
+  /** Whether the engine exposes the textbox as multi-line. */
+  readonly multiline: boolean | null;
+  /** Whether the engine exposes the control as read-only. */
+  readonly readOnly: boolean | null;
+  /** Whether the engine exposes the control as required. */
+  readonly required: boolean | null;
   /** Computed checked state, or null when the node exposes none. */
   readonly checked: 'true' | 'false' | 'mixed' | null;
   readonly disabled: boolean;
@@ -65,6 +74,12 @@ export interface Subject {
    * is an id that resolves to nothing — a description the user never gets.
    */
   idReferences(attribute: string): Promise<readonly (string | null)[]>;
+  /** Real-browser layer: visible text for each id-list relationship target. */
+  visibleIdReferences(attribute: string): Promise<readonly (string | null)[]>;
+  /** DOM layer: persistent author-supplied label text, excluding placeholder. */
+  labelText(): Promise<string | null>;
+  /** DOM/runtime layer: the live value of a native text control, if this is one. */
+  textValue(): Promise<string | null>;
   /** Accessibility-tree layer: what the engine computes for this node. */
   computed(): Promise<ComputedNode>;
   /**
@@ -86,6 +101,12 @@ export interface Subject {
   visibleLabelText(): Promise<string | null>;
   /** Real-browser layer: whether this node currently holds focus. */
   isFocused(): Promise<boolean>;
+  /** Real-browser layer: whether focus is on this node or one of its descendants. */
+  containsFocus(): Promise<boolean>;
+  /** Real-browser layer: whether this node is an active modal in the top layer. */
+  isModal(): Promise<boolean>;
+  /** Real-browser layer: whether a pointer can currently reach this node. */
+  canReceivePointer(): Promise<boolean>;
   /** Real-browser layer: move focus here the way a user's Tab would leave it. */
   focus(): Promise<void>;
 }
@@ -104,6 +125,12 @@ export interface Harness {
   /** The element the binding designates as the pattern's control. */
   subject(): Promise<Subject>;
   /**
+   * Another public-semantic element involved in the outcome, such as the
+   * invoker a modal dialog returns focus to. Bindings name these relations;
+   * contracts never query component-private structure.
+   */
+  related(name: string): Promise<Subject>;
+  /**
    * Real-browser layer: click the subject the way a pointer user would,
    * including the browser's own judgement that the control is there to be
    * clicked. `ignoreAvailability` drops that judgement, and exists for the one
@@ -120,10 +147,23 @@ export interface Harness {
    * press, slide off, let go.
    */
   abortedPress(subject: Subject): Promise<void>;
+  /** Real-browser layer: type text into the focused subject. */
+  typeText(subject: Subject, text: string): Promise<void>;
+  /** Real-browser layer: select and delete all text from the subject. */
+  clearText(subject: Subject): Promise<void>;
   /** Real-browser layer: send a key to whatever currently holds focus. */
   press(key: Key): Promise<void>;
   /** Real-browser layer: park focus at the document body, before the content. */
   resetFocus(): Promise<void>;
+}
+
+export class MissingHarnessRelation extends Error {
+  constructor(harness: string, relation: string) {
+    super(
+      `The ${harness} harness binding supplies no related subject named "${relation}".`,
+    );
+    this.name = 'MissingHarnessRelation';
+  }
 }
 
 /**

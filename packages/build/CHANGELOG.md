@@ -1,5 +1,19 @@
 # @xds/build
 
+# 0.6.0
+
+#### Fixes
+
+- `withAstryx()` refuses a Turbopack config instead of building an unstyled app. Every alias the helper installs lives in `nextConfig.webpack`, which Turbopack never calls, so the app resolved `@astryxdesign/*` to dist while PostCSS compiled the library from source — disjoint class names, an exit code of 0, and an unstyled page. It now throws, naming both ways out: `--webpack`, or drop the helper and consume the pre-built package. Also warns when the merged alias map claims none of the packages, which reaches the same unstyled state by another route. (#6109)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @joaodotwork
+
+---
+
 # 0.5.4
 
 ---

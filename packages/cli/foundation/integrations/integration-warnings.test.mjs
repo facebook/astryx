@@ -58,7 +58,7 @@ describe('warnOnIntegrationIssues', () => {
     expect(errLines).toHaveLength(1);
     expect(errLines[0]).toBe(
       'Warning: @acme/widgets has 1 integration issue(s). ' +
-        'Run: astryx validate-integration @acme/widgets',
+        'Run: astryx doctor integration validate @acme/widgets',
     );
   });
 
@@ -81,7 +81,7 @@ describe('warnOnIntegrationIssues', () => {
     expect(errLines).toHaveLength(1);
     expect(errLines[0]).toBe(
       'Warning: @acme/stale has 1 integration issue(s). ' +
-        'Run: astryx validate-integration @acme/stale',
+        'Run: astryx doctor integration validate @acme/stale',
     );
   });
 

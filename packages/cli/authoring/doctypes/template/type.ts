@@ -4,6 +4,8 @@
  * @file Template doc types.
  */
 
+import type {RegistryDocIdentity} from '../base/type';
+
 export interface BaseTemplateDoc {
   /** Identifier name for the template. For block templates this matches
    *  the React component import name (e.g. `"ChatMessageMetadata"`); for
@@ -21,6 +23,8 @@ export interface BaseTemplateDoc {
   /** One-sentence description of what the template provides. */
   description?: string;
 
+  /** Optional stable slug override and prior aliases for registry output. */
+  registry?: RegistryDocIdentity;
   /** Whether this template is ready for use. Templates with
    *  isReady: false show as "(WIP)" in the gallery and CLI. */
   isReady?: boolean;
@@ -45,10 +49,9 @@ export interface BaseTemplateDoc {
 
 export interface BlockTemplateDoc extends BaseTemplateDoc {
   type: 'block';
-  /** The component this block is an example of.
-   *  Matches the component's doc name (e.g. 'Button', 'Dialog', 'Stack').
-   *  Used by the docsite to show relevant examples on component detail pages. */
-  exampleFor: string;
+  /** The component this block is an example of. When omitted, the block is a
+   *  standalone composition and is not owned by any component doc page. */
+  exampleFor?: string;
   /** Additional component or hook doc pages whose Examples section should
    *  include this block. Use when a component example is also the canonical
    *  usage example for one of that component's hooks. */
@@ -64,7 +67,8 @@ export interface BlockTemplateDoc extends BaseTemplateDoc {
   /** Component names this block uses, for cross-referencing.
    *  Powers "See also" and "Used in" sections — not for primary attribution. */
   componentsUsed?: string[];
-  /** When true this block is the canonical "hero" showcase for a component. */
+  /** When true this block is the canonical hero showcase for `exampleFor`.
+   *  Requires `exampleFor`; standalone blocks cannot be component showcases. */
   isShowcase?: boolean;
 }
 

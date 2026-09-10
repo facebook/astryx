@@ -386,6 +386,57 @@ describe('CheckboxList', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('exposes a string description to the checkbox via aria-describedby', () => {
+    render(
+      <List>
+        <CheckboxListItem
+          label="Email"
+          description="Receive notifications by email"
+        />
+      </List>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Email'});
+    const ids = checkbox.getAttribute('aria-describedby');
+    expect(ids).not.toBeNull();
+    const target = document.getElementById(ids!);
+    expect(target).toHaveTextContent('Receive notifications by email');
+  });
+
+  it('exposes a ReactNode description to the checkbox via aria-describedby', () => {
+    render(
+      <List>
+        <CheckboxListItem
+          label="Pro plan"
+          description={
+            <span>
+              See the <a href="#pricing">pricing page</a>
+            </span>
+          }
+        />
+      </List>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Pro plan'});
+    const target = document.getElementById(
+      checkbox.getAttribute('aria-describedby')!,
+    );
+    expect(target).toHaveTextContent('See the pricing page');
+  });
+
+  it('adds no aria-describedby when the description is absent or empty', () => {
+    render(
+      <List>
+        <CheckboxListItem label="Plain" />
+        <CheckboxListItem label="Empty" description="" />
+        <CheckboxListItem label="False" description={false} />
+      </List>,
+    );
+    for (const name of ['Plain', 'Empty', 'False']) {
+      expect(screen.getByRole('checkbox', {name})).not.toHaveAttribute(
+        'aria-describedby',
+      );
+    }
+  });
+
   it('renders description on the checkbox list group', () => {
     render(
       <CheckboxList

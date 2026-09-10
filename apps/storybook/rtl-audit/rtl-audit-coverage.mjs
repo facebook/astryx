@@ -257,6 +257,113 @@ export function evaluateDirectionalDecorations(ltr, rtl) {
   };
 }
 
+/**
+ * Classify one asymmetric inline-edge pair across LTR and RTL.
+ *
+ * Logical start/end values must stay stable while the physical edges for the
+ * computed inline axis swap: left/right in horizontal writing and top/bottom
+ * in vertical or sideways writing. A symmetric fixture cannot prove this
+ * relationship, so it fails closed instead of producing a vacuous pass.
+ */
+export function classifyLogicalInlinePair(ltr, rtl, tolerancePx = 0.5) {
+  const close = (left, right) => Math.abs(left - right) <= tolerancePx;
+  const boxes = [ltr, rtl];
+  if (
+    !boxes.every(
+      measurement =>
+        measurement?.count === 1 &&
+        measurement.visible === true &&
+        Number.isFinite(measurement.width) &&
+        Number.isFinite(measurement.height) &&
+        measurement.width > 0 &&
+        measurement.height > 0,
+    )
+  ) {
+    return {
+      verdict: 'fail',
+      reason: 'logical inline-edge subject is not one visible non-zero box',
+    };
+  }
+
+  const values = boxes.flatMap(measurement => [
+    measurement.inlineStart,
+    measurement.inlineEnd,
+    measurement.top,
+    measurement.right,
+    measurement.bottom,
+    measurement.left,
+  ]);
+  if (!values.every(Number.isFinite)) {
+    return {
+      verdict: 'fail',
+      reason: 'logical inline-edge measurements are incomplete',
+    };
+  }
+  if (ltr.direction !== 'ltr' || rtl.direction !== 'rtl') {
+    return {
+      verdict: 'fail',
+      reason:
+        'logical inline-edge measurements did not use LTR and RTL directions',
+    };
+  }
+  if (
+    typeof ltr.writingMode !== 'string' ||
+    ltr.writingMode !== rtl.writingMode
+  ) {
+    return {
+      verdict: 'fail',
+      reason:
+        'logical inline-edge writing mode is missing or changed between directions',
+    };
+  }
+
+  const writingMode = ltr.writingMode.toLowerCase();
+  const inlineEdges = writingMode.startsWith('horizontal')
+    ? ['left', 'right']
+    : writingMode.startsWith('vertical') || writingMode.startsWith('sideways')
+      ? ['top', 'bottom']
+      : null;
+  if (inlineEdges == null) {
+    return {
+      verdict: 'fail',
+      reason: `unsupported writing mode: ${ltr.writingMode}`,
+    };
+  }
+  if (close(ltr.inlineStart, ltr.inlineEnd)) {
+    return {
+      verdict: 'fail',
+      reason: 'fixture is symmetric and cannot prove inline-edge mirroring',
+    };
+  }
+
+  const [physicalStart, physicalEnd] = inlineEdges;
+  const orthogonalEdges =
+    physicalStart === 'left' ? ['top', 'bottom'] : ['left', 'right'];
+  const logicalStable =
+    close(ltr.inlineStart, rtl.inlineStart) &&
+    close(ltr.inlineEnd, rtl.inlineEnd);
+  const physicalMirrored =
+    close(ltr[physicalStart], rtl[physicalEnd]) &&
+    close(ltr[physicalEnd], rtl[physicalStart]);
+  const orthogonalStable = orthogonalEdges.every(edge =>
+    close(ltr[edge], rtl[edge]),
+  );
+
+  return logicalStable && physicalMirrored && orthogonalStable
+    ? {
+        verdict: 'pass',
+        reason:
+          `logical start/end stay stable and resolved ${physicalStart}/${physicalEnd} ` +
+          `sides swap for ${writingMode}`,
+      }
+    : {
+        verdict: 'fail',
+        reason:
+          `logical start/end did not mirror on the ${physicalStart}/${physicalEnd} ` +
+          `inline axis for ${writingMode}`,
+      };
+}
+
 function resultIsApplicable(result) {
   return result?.verdict === 'pass' || result?.verdict === 'fail';
 }

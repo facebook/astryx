@@ -27,9 +27,11 @@ export {
   type Enforcement,
   type Expectation,
   type ExpectationContext,
+  type InitialFocusEntryObservation,
   type NormativeSource,
   type PatternContract,
   type WcagCriterion,
+  type WebStandardRequirement,
 } from './contract';
 
 export {
@@ -41,6 +43,7 @@ export {
 
 export {
   EVIDENCE_LAYERS,
+  MissingHarnessRelation,
   UnobservableError,
   type ComputedNode,
   type EvidenceLayer,
@@ -77,9 +80,19 @@ export {
 
 export {createJsdomHarness, type JsdomHarnessOptions} from './harness/jsdom';
 
+export {
+  TEXT_INPUT_PATTERN,
+  type TextInputStateFacts,
+} from './patterns/text-input';
+
 export {CHECKBOX_PATTERN, type CheckboxStateFacts} from './patterns/checkbox';
 
 export {SWITCH_PATTERN, type SwitchStateFacts} from './patterns/switch';
+
+export {
+  MODAL_DIALOG_PATTERN,
+  type ModalDialogStateFacts,
+} from './patterns/modal-dialog';
 
 export {saysInOrder, spokenWords} from './spoken';
 

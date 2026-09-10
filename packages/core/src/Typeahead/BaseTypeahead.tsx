@@ -31,6 +31,7 @@ import {useBusyIndicatorLane} from './busyIndicatorLane';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {isImeKeyEvent} from '../utils/ime';
 import {TypeaheadItem} from './TypeaheadItem';
@@ -971,22 +972,15 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     [listboxId],
   );
 
-  // Keep the highlighted option visible during keyboard navigation. The
-  // listbox is a fixed-height scroll container, so without this the virtual
-  // cursor walks off-screen once navigation passes the visible window. Mirrors
-  // CommandPaletteItem's scrollIntoView({block: 'nearest'}) behavior.
-  useEffect(() => {
-    if (
-      !popover.isOpen ||
-      highlightedIndex < 0 ||
-      highlightedIndex >= results.length
-    ) {
-      return;
-    }
-    document
-      .getElementById(getItemId(highlightedIndex))
-      ?.scrollIntoView?.({block: 'nearest'});
-  }, [popover.isOpen, highlightedIndex, getItemId, results.length]);
+  // Keep the highlighted option visible during keyboard navigation; hover
+  // highlights never scroll (#6077). Both sides live in useHighlightedOptionScroll.
+  const highlightOnHover = useHighlightedOptionScroll({
+    isOpen: popover.isOpen,
+    highlightedIndex,
+    setHighlightedIndex,
+    getOptionId: getItemId,
+    itemCount: results.length,
+  });
 
   const selectedKey =
     value == null ? null : getKey(value.id, () => results.indexOf(value));
@@ -1098,7 +1092,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
                     aria-selected={isSelected}
                     tabIndex={-1}
                     onClick={() => handleSelect(item)}
-                    onMouseEnter={() => setHighlightedIndex(index)}
+                    onMouseEnter={() => highlightOnHover(index)}
                     {...stylex.props(
                       styles.item,
                       itemSizeStyles[size],

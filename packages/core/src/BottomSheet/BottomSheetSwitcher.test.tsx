@@ -11,9 +11,14 @@
  */
 
 import {fireEvent, render, screen} from '@testing-library/react';
-import {createRef, useState} from 'react';
+import {
+  createRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {useFocusTrap} from '../hooks';
+import {hasActiveFocusTrapEscape, useFocusTrap} from '../hooks';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 
@@ -128,6 +133,22 @@ function NestedEscapeTrap({onEscape}: {onEscape: () => void}) {
     <div ref={containerRef} data-testid="nested-escape-trap">
       Nested layer
     </div>
+  );
+}
+
+function NestedDismissibleLayer({onDismiss}: {onDismiss: () => void}) {
+  const [isOpen, setIsOpen] = useState(true);
+  useLayerDismissal({
+    isActive: isOpen,
+    onDismiss: () => {
+      setIsOpen(false);
+      onDismiss();
+    },
+  });
+  return (
+    <button type="button">
+      {isOpen ? 'Nested layer open' : 'Nested layer closed'}
+    </button>
   );
 }
 
@@ -795,6 +816,117 @@ describe('BottomSheetSwitcher', () => {
     });
 
     expect(onNestedEscape).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
+  });
+
+  it('preserves the exported focus-trap Escape signal for a modal switcher', () => {
+    expect(hasActiveFocusTrapEscape()).toBe(false);
+
+    const {unmount} = render(
+      <BottomSheetSwitcher activeSheet="details" onActiveSheetChange={() => {}}>
+        <BottomSheet sheetId="details" label="Details">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    expect(hasActiveFocusTrapEscape()).toBe(true);
+    unmount();
+    expect(hasActiveFocusTrapEscape()).toBe(false);
+  });
+
+  it('dismisses a non-modal flow when a consumer stops Escape propagation', () => {
+    const onActiveSheetChange = vi.fn();
+    const onKeyDown = vi.fn((event: ReactKeyboardEvent) => {
+      event.stopPropagation();
+    });
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}
+        hasScrim={false}
+        onKeyDown={onKeyDown}>
+        <BottomSheet sheetId="details" label="Details">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    fireEvent.keyDown(getSharedDialog(), {key: 'Escape'});
+
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).toHaveBeenCalledWith(null);
+  });
+
+  it('honors a consumer that prevents the default Escape dismissal', () => {
+    const onActiveSheetChange = vi.fn();
+    const onKeyDown = vi.fn((event: ReactKeyboardEvent) => {
+      event.preventDefault();
+    });
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}
+        hasScrim={false}
+        onKeyDown={onKeyDown}>
+        <BottomSheet sheetId="details" label="Details">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    fireEvent.keyDown(getSharedDialog(), {key: 'Escape'});
+
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
+  });
+
+  it('lets a nested registered layer handle Escape before a non-modal switcher', () => {
+    const onActiveSheetChange = vi.fn();
+    const onNestedDismiss = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}
+        hasScrim={false}>
+        <BottomSheet sheetId="details" label="Details">
+          <NestedDismissibleLayer onDismiss={onNestedDismiss} />
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Nested layer open'});
+    trigger.focus();
+    fireEvent.keyDown(trigger, {key: 'Escape'});
+
+    expect(onNestedDismiss).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(document, {key: 'Escape'});
+
+    expect(onNestedDismiss).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).toHaveBeenCalledWith(null);
+  });
+
+  it('keeps a non-modal switcher open when a platform close targets it under a nested layer', () => {
+    const onActiveSheetChange = vi.fn();
+    const onNestedDismiss = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}
+        hasScrim={false}>
+        <BottomSheet sheetId="details" label="Details">
+          <NestedDismissibleLayer onDismiss={onNestedDismiss} />
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    const event = new Event('cancel', {cancelable: true});
+    getSharedDialog().dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(onNestedDismiss).not.toHaveBeenCalled();
     expect(onActiveSheetChange).not.toHaveBeenCalled();
   });
 

@@ -38,6 +38,11 @@ export {
   validateIntegration,
   summarizeIssues,
 } from './integration/validate-integration.mjs';
+export {
+  integrationTemplateConflicts,
+  integrationComponentConflicts,
+  integrationDocConflicts,
+} from './integration/authoring-checks.mjs';
 export {AstryxError} from './error.mjs';
 // The one shared logger: the `logger` instance side-effecting commands write
 // through, plus its generated `Logger` type. Part of the public surface so an
@@ -66,3 +71,4 @@ export * from './init/init.type.mjs';
 export * from './doctor/doctor.type.mjs';
 export * from './layout/layout.type.mjs';
 export * from './integration/validate-integration.type.mjs';
+export * from './integration/authoring-checks.type.mjs';
