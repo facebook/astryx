@@ -60,8 +60,52 @@ function storyUrl(storyId: string): string {
   return `${storybook.origin}/iframe.html?id=${storyId}&viewMode=story`;
 }
 
-function subjectFor(page: Page, state: CoreStatusMessageBindingState): Locator {
-  return page.locator(state.subjectSelector);
+const BOUND_SUBJECT_ATTRIBUTE = 'data-a11y-binding-subject';
+
+function subjectFor(page: Page): Locator {
+  return page.locator(`[${BOUND_SUBJECT_ATTRIBUTE}]`);
+}
+
+async function bindSubject(
+  page: Page,
+  state: CoreStatusMessageBindingState,
+): Promise<void> {
+  const facts = state.facts;
+  const role = facts.kind === 'progressbar' ? 'progressbar' : facts.role;
+  if (role == null) {
+    throw new Error(
+      `${state.id}: this component binding declares no public role`,
+    );
+  }
+  const candidates = page.getByRole(role, {includeHidden: true});
+  let target: Locator;
+  if (facts.kind === 'progressbar') {
+    target = page.getByRole(role, {includeHidden: true, name: facts.name});
+  } else if (facts.messageSource === 'accessible-name') {
+    target = page.getByRole(role, {
+      includeHidden: true,
+      name: facts.initialMessage,
+    });
+  } else {
+    const texts = await candidates.evaluateAll(elements =>
+      elements.map(element =>
+        (element.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      ),
+    );
+    const indexes = texts.flatMap((text, index) =>
+      text === facts.initialMessage ? [index] : [],
+    );
+    if (indexes.length !== 1) {
+      throw new Error(
+        `${state.id}: expected one ${role} subject in initial state, found ${indexes.length}`,
+      );
+    }
+    target = candidates.nth(indexes[0]);
+  }
+  await expect(target).toHaveCount(1);
+  await target.evaluate((element, attribute) => {
+    element.setAttribute(attribute, '');
+  }, BOUND_SUBJECT_ATTRIBUTE);
 }
 
 async function mountState(
@@ -71,8 +115,9 @@ async function mountState(
   await page.goto(storyUrl(state.storyId), {waitUntil: 'load'});
   await holdMotionStill(page);
   await page.locator('[data-a11y-ready="true"]').waitFor({state: 'attached'});
-  await subjectFor(page, state).waitFor({state: 'attached'});
-  await expect(subjectFor(page, state)).toHaveCount(1);
+  await bindSubject(page, state);
+  await subjectFor(page).waitFor({state: 'attached'});
+  await expect(subjectFor(page)).toHaveCount(1);
   if ('focusSelector' in state) {
     await expect(page.locator(state.focusSelector)).toHaveAttribute(
       'aria-describedby',
@@ -109,7 +154,7 @@ async function runState(
       return createChromiumHarness({
         page,
         cdp,
-        subject: subjectFor(page, state),
+        subject: subjectFor(page),
         related: {
           'focus-anchor': page.locator(
             'focusSelector' in state

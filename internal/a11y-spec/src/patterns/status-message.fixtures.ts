@@ -43,9 +43,16 @@ const POLITE_FACTS: StatusMessageStateFacts = {
   message: 'Changes saved',
   replacement: 'Profile updated',
   semanticTransitions: ['show', 'replace', 'clear', 'repeat'],
-  focusTransition: 'show',
   canClear: true,
   canRepeat: true,
+};
+
+const MOUNTED_POLITE_FACTS: StatusMessageStateFacts = {
+  ...POLITE_FACTS,
+  initialMessage: 'Changes saved',
+  semanticTransitions: ['replace'],
+  canClear: false,
+  canRepeat: false,
 };
 
 const ASSERTIVE_FACTS: StatusMessageStateFacts = {
@@ -61,7 +68,6 @@ const NAMED_FACTS: StatusMessageStateFacts = {
   role: 'status',
   messageSource: 'accessible-name',
   semanticTransitions: ['show', 'replace'],
-  focusTransition: 'show',
   canClear: false,
   canRepeat: false,
 };
@@ -71,11 +77,23 @@ const PROGRESS_FACTS: StatusMessageStateFacts = {
   politeness: null,
   name: 'Upload progress',
   initialValue: null,
+  initialMin: 0,
+  initialMax: 100,
   progressValue: 40,
   completionValue: 100,
   minValue: 0,
   maxValue: 100,
-  focusTransition: 'progress',
+};
+
+const REVERSED_PROGRESS_FACTS: StatusMessageStateFacts = {
+  ...PROGRESS_FACTS,
+  minValue: 100,
+  maxValue: 0,
+};
+
+const OUT_OF_RANGE_PROGRESS_FACTS: StatusMessageStateFacts = {
+  ...PROGRESS_FACTS,
+  progressValue: 120,
 };
 
 const POLITE_TRANSITIONS = {
@@ -156,16 +174,18 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
     },
   },
   {
-    id: 'violating-born-with-content',
-    facts: POLITE_FACTS,
-    html: '<div data-a11y-subject role="status">Changes saved</div>',
-    transitions: {show: {}},
-  },
-  {
     id: 'violating-replaced-on-show',
     facts: POLITE_FACTS,
     html: '<div data-a11y-subject role="status"></div>',
     transitions: {show: {value: 'Changes saved', replaceSubject: true}},
+  },
+  {
+    id: 'violating-replaced-on-first-update',
+    facts: MOUNTED_POLITE_FACTS,
+    html: '<div data-a11y-subject role="status">Changes saved</div>',
+    transitions: {
+      replace: {value: 'Profile updated', replaceSubject: true},
+    },
   },
   {
     id: 'violating-missing-message',
@@ -211,11 +231,21 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
     },
   },
   {
+    id: 'violating-hidden-replacement',
+    facts: POLITE_FACTS,
+    html: '<div data-a11y-subject role="status"></div>',
+    transitions: {
+      show: {value: 'Changes saved'},
+      replace: {hiddenValue: 'Profile updated'},
+    },
+  },
+  {
     id: 'violating-stale-clear',
     facts: POLITE_FACTS,
     html: '<div data-a11y-subject role="status"></div>',
     transitions: {
       show: {value: 'Changes saved'},
+      replace: {value: 'Profile updated'},
       clear: {},
     },
   },
@@ -225,6 +255,7 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
     html: '<div data-a11y-subject role="status"></div>',
     transitions: {
       show: {value: 'Changes saved'},
+      replace: {value: 'Profile updated'},
       clear: {removeSubject: true},
     },
   },
@@ -307,6 +338,16 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
       progress: {attribute: 'aria-valuenow', value: '40'},
       complete: {attribute: 'aria-valuenow', value: '100'},
     },
+  },
+  {
+    id: 'violating-reversed-progress-range',
+    facts: REVERSED_PROGRESS_FACTS,
+    html: '<button data-a11y-relation="focus-anchor">Start upload</button><div data-a11y-subject role="progressbar" aria-label="Upload progress"></div>',
+  },
+  {
+    id: 'violating-out-of-range-progress-value',
+    facts: OUT_OF_RANGE_PROGRESS_FACTS,
+    html: '<button data-a11y-relation="focus-anchor">Start upload</button><div data-a11y-subject role="progressbar" aria-label="Upload progress"></div>',
   },
   {
     id: 'violating-frozen-progress',
@@ -392,14 +433,16 @@ export const STATUS_MESSAGE_MUTATIONS: Readonly<
         'after the "show" transition, not the intended polite channel',
     },
   ],
-  'status-message.region.precedes-content': [
-    {
-      fixture: 'violating-born-with-content',
-      failureIncludes: 'already contains "Changes saved"',
-    },
+  'status-message.region.precedes-update': [
     {
       fixture: 'violating-replaced-on-show',
-      failureIncludes: 'original empty status region was replaced',
+      failureIncludes:
+        'role=status container was replaced by the "show" update',
+    },
+    {
+      fixture: 'violating-replaced-on-first-update',
+      failureIncludes:
+        'role=status container was replaced by the "replace" update',
     },
   ],
   'status-message.message.text-exposed': [
@@ -410,6 +453,21 @@ export const STATUS_MESSAGE_MUTATIONS: Readonly<
     {
       fixture: 'violating-hidden-message',
       failureIncludes: 'accessibility tree exposes ""',
+    },
+    {
+      fixture: 'violating-wrong-replacement',
+      failureIncludes:
+        'after the "replace" transition, not the complete authored message "Profile updated"',
+    },
+    {
+      fixture: 'violating-hidden-replacement',
+      failureIncludes:
+        'accessibility tree exposes "" after the "replace" transition',
+    },
+    {
+      fixture: 'violating-stale-clear',
+      failureIncludes:
+        'after the "clear" transition, not the complete authored message ""',
     },
   ],
   'status-message.message.name-exposed': [
@@ -436,16 +494,8 @@ export const STATUS_MESSAGE_MUTATIONS: Readonly<
       failureIncludes:
         'replacing the status also replaced its live-region node',
     },
-    {
-      fixture: 'violating-wrong-replacement',
-      failureIncludes: 'instead of the complete later status',
-    },
   ],
   'status-message.message.cleared-in-place': [
-    {
-      fixture: 'violating-stale-clear',
-      failureIncludes: 'clearing the status left "Changes saved"',
-    },
     {
       fixture: 'violating-removed-on-clear',
       failureIncludes: 'clearing the status removed its live-region node',
@@ -464,7 +514,7 @@ export const STATUS_MESSAGE_MUTATIONS: Readonly<
   'status-message.focus.unchanged': [
     {
       fixture: 'violating-moves-focus',
-      failureIncludes: 'status update moved focus away',
+      failureIncludes: 'status transition moved focus away',
     },
   ],
   'status-message.progress.role-exposed': [
@@ -489,8 +539,16 @@ export const STATUS_MESSAGE_MUTATIONS: Readonly<
   ],
   'status-message.progress.values-exposed': [
     {
+      fixture: 'violating-reversed-progress-range',
+      failureIncludes: 'binding declares a reversed progress range 100..0',
+    },
+    {
+      fixture: 'violating-out-of-range-progress-value',
+      failureIncludes: 'progress value 120 outside 0..100',
+    },
+    {
       fixture: 'violating-progress-initial-value',
-      failureIncludes: 'initial progress value 5 instead of null',
+      failureIncludes: 'initial progress as value=5',
     },
     {
       fixture: 'violating-frozen-progress',

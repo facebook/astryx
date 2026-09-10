@@ -26,10 +26,22 @@ async function transition(name: string): Promise<void> {
 }
 
 function subjectFor(state: ChatTypingStatusBindingState): Element {
-  const matches = document.querySelectorAll(state.subjectSelector);
+  const facts = state.facts;
+  if (facts.kind !== 'live-region' || facts.role == null) {
+    throw new Error(
+      `${state.id}: this component binding declares no public role`,
+    );
+  }
+  const matches = screen
+    .getAllByRole(facts.role, {hidden: true})
+    .filter(
+      element =>
+        (element.textContent ?? '').replace(/\s+/g, ' ').trim() ===
+        facts.initialMessage,
+    );
   if (matches.length !== 1) {
     throw new Error(
-      `${state.id}: expected one subject matching ${JSON.stringify(state.subjectSelector)}, found ${matches.length}`,
+      `${state.id}: expected one ${facts.role} subject in initial state, found ${matches.length}`,
     );
   }
   return matches[0];

@@ -22,7 +22,6 @@ export interface CoreStatusMessageBindingDefinition {
   readonly binding: CoreStatusMessageBinding;
   readonly summary: string;
   readonly facts: StatusMessageStateFacts;
-  readonly subjectSelector: string;
   readonly focusSelector?: string;
   readonly storyId: string;
 }
@@ -35,7 +34,6 @@ function liveFacts({
   initialMessage = '',
   messageSource = 'text',
   semanticTransitions,
-  focusTransition,
   canClear = false,
   canRepeat = false,
 }: {
@@ -46,7 +44,6 @@ function liveFacts({
   initialMessage?: string;
   messageSource?: 'text' | 'accessible-name';
   semanticTransitions: ReadonlyArray<'show' | 'replace' | 'clear' | 'repeat'>;
-  focusTransition: 'show' | 'replace';
   canClear?: boolean;
   canRepeat?: boolean;
 }): StatusMessageStateFacts {
@@ -59,7 +56,6 @@ function liveFacts({
     message,
     replacement,
     semanticTransitions,
-    focusTransition,
     canClear,
     canRepeat,
   };
@@ -77,10 +73,8 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Changes saved',
       replacement: 'Profile updated',
       semanticTransitions: ['show', 'replace', 'repeat'],
-      focusTransition: 'show',
       canRepeat: true,
     }),
-    subjectSelector: '[data-astryx-live-region="polite"]',
     storyId: 'a11y-status-message-pattern--toast-info-announcement',
   },
   {
@@ -94,10 +88,8 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Upload failed',
       replacement: 'Connection failed',
       semanticTransitions: ['show', 'replace', 'repeat'],
-      focusTransition: 'show',
       canRepeat: true,
     }),
-    subjectSelector: '[data-astryx-live-region="assertive"]',
     storyId: 'a11y-status-message-pattern--toast-error-announcement',
   },
   {
@@ -112,9 +104,7 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Changes saved',
       replacement: 'Profile updated',
       semanticTransitions: ['replace'],
-      focusTransition: 'replace',
     }),
-    subjectSelector: '.astryx-toast[role="status"]',
     storyId: 'a11y-status-message-pattern--toast-info-card-mounted',
   },
   {
@@ -129,9 +119,7 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Upload failed',
       replacement: 'Connection failed',
       semanticTransitions: ['replace'],
-      focusTransition: 'replace',
     }),
-    subjectSelector: '.astryx-toast[role="alert"]',
     storyId: 'a11y-status-message-pattern--toast-error-card-mounted',
   },
   {
@@ -145,10 +133,8 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'This field is required',
       replacement: 'Enter a valid email address',
       semanticTransitions: ['show', 'replace', 'repeat'],
-      focusTransition: 'show',
       canRepeat: true,
     }),
-    subjectSelector: '[data-astryx-live-region="assertive"]',
     storyId: 'a11y-status-message-pattern--field-status-error-attached',
   },
   {
@@ -162,10 +148,8 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Check this value',
       replacement: 'This value may be visible to others',
       semanticTransitions: ['show', 'replace', 'repeat'],
-      focusTransition: 'show',
       canRepeat: true,
     }),
-    subjectSelector: '[data-astryx-live-region="polite"]',
     storyId: 'a11y-status-message-pattern--field-status-warning-detached',
   },
   {
@@ -179,10 +163,8 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Looks good',
       replacement: 'Changes saved',
       semanticTransitions: ['show', 'replace', 'repeat'],
-      focusTransition: 'show',
       canRepeat: true,
     }),
-    subjectSelector: '[data-astryx-live-region="polite"]',
     storyId: 'a11y-status-message-pattern--field-status-success-detached',
   },
   {
@@ -198,9 +180,7 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Loading',
       replacement: 'Saving',
       semanticTransitions: ['replace'],
-      focusTransition: 'replace',
     }),
-    subjectSelector: '[data-a11y-subject]',
     storyId: 'a11y-status-message-pattern--spinner-default-label-mounted',
   },
   {
@@ -216,9 +196,7 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Fetching data',
       replacement: 'Saving data',
       semanticTransitions: ['replace'],
-      focusTransition: 'replace',
     }),
-    subjectSelector: '[data-a11y-subject] [role="status"]',
     storyId: 'a11y-status-message-pattern--spinner-visible-label-mounted',
   },
   {
@@ -232,10 +210,8 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Conversation started',
       replacement: 'A file was shared',
       semanticTransitions: ['replace', 'clear'],
-      focusTransition: 'replace',
       canClear: true,
     }),
-    subjectSelector: '[data-a11y-subject]',
     storyId: 'a11y-status-message-pattern--chat-system-status-mounted',
   },
   {
@@ -248,14 +224,32 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       politeness: null,
       name: 'Upload progress',
       initialValue: null,
+      initialMin: 0,
+      initialMax: 100,
       progressValue: 40,
       completionValue: 100,
       minValue: 0,
       maxValue: 100,
-      focusTransition: 'progress',
     },
-    subjectSelector: '[data-a11y-subject] [role="progressbar"]',
     storyId: 'a11y-status-message-pattern--progress-loading-to-complete',
+  },
+  {
+    id: 'progress-custom-range',
+    binding: 'ProgressBar',
+    summary: 'a five-step operation exposes and updates its non-default range',
+    facts: {
+      kind: 'progressbar',
+      politeness: null,
+      name: 'Upload progress',
+      initialValue: 1,
+      initialMin: 0,
+      initialMax: 5,
+      progressValue: 3,
+      completionValue: 5,
+      minValue: 0,
+      maxValue: 5,
+    },
+    storyId: 'a11y-status-message-pattern--progress-custom-range',
   },
   {
     id: 'progress-mark-focused-update',
@@ -267,14 +261,14 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       politeness: null,
       name: 'Upload progress',
       initialValue: 20,
+      initialMin: 0,
+      initialMax: 100,
       progressValue: 40,
       completionValue: 100,
       minValue: 0,
       maxValue: 100,
-      focusTransition: 'progress',
     },
-    subjectSelector: '[data-a11y-subject] [role="progressbar"]',
-    focusSelector: '.astryx-progressbar-mark',
+    focusSelector: '[role="progressbar"] [tabindex="0"]',
     storyId: 'a11y-status-message-pattern--progress-mark-focused-update',
   },
 ] as const satisfies ReadonlyArray<CoreStatusMessageBindingDefinition>;

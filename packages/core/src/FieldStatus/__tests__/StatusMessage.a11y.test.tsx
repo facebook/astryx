@@ -49,10 +49,31 @@ async function renderState(
 }
 
 function subjectFor(state: CoreStatusMessageBindingState): Element {
-  const matches = document.querySelectorAll(state.subjectSelector);
+  const facts = state.facts;
+  const role = facts.kind === 'progressbar' ? 'progressbar' : facts.role;
+  if (role == null) {
+    throw new Error(
+      `${state.id}: this component binding declares no public role`,
+    );
+  }
+  const matches =
+    facts.kind === 'progressbar'
+      ? screen.getAllByRole(role, {hidden: true, name: facts.name})
+      : facts.messageSource === 'accessible-name'
+        ? screen.getAllByRole(role, {
+            hidden: true,
+            name: facts.initialMessage,
+          })
+        : screen
+            .getAllByRole(role, {hidden: true})
+            .filter(
+              element =>
+                (element.textContent ?? '').replace(/\s+/g, ' ').trim() ===
+                facts.initialMessage,
+            );
   if (matches.length !== 1) {
     throw new Error(
-      `${state.id}: expected one subject matching ${JSON.stringify(state.subjectSelector)}, found ${matches.length}`,
+      `${state.id}: expected one ${role} subject in initial state, found ${matches.length}`,
     );
   }
   return matches[0];

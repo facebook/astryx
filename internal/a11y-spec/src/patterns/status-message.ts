@@ -49,6 +49,20 @@ const ARIA_ALERT: WebStandardRequirement = {
   url: `${ARIA}/#alert`,
 };
 
+const ARIA_STATUS_ATOMIC: WebStandardRequirement = {
+  standard: 'web-standard',
+  specification: 'WAI-ARIA 1.2 status role',
+  requirement: 'The implicit value of aria-atomic for status is true.',
+  url: `${ARIA}/#status`,
+};
+
+const ARIA_ALERT_ATOMIC: WebStandardRequirement = {
+  standard: 'web-standard',
+  specification: 'WAI-ARIA 1.2 alert role',
+  requirement: 'The implicit value of aria-atomic for alert is true.',
+  url: `${ARIA}/#alert`,
+};
+
 const WCAG_ARIA22: WebStandardRequirement = {
   standard: 'web-standard',
   specification: 'WCAG 2.2 Technique ARIA22',
@@ -62,6 +76,14 @@ const ARIA_PROGRESSBAR: WebStandardRequirement = {
   specification: 'WAI-ARIA 1.2 progressbar role',
   requirement:
     'A progressbar is an element that displays the progress status for tasks that take a long time.',
+  url: `${ARIA}/#progressbar`,
+};
+
+const ARIA_PROGRESSBAR_RANGE: WebStandardRequirement = {
+  standard: 'web-standard',
+  specification: 'WAI-ARIA 1.2 progressbar role',
+  requirement:
+    'aria-valuemin must not exceed aria-valuemax, and a determinate aria-valuenow value must be within that inclusive range.',
   url: `${ARIA}/#progressbar`,
 };
 
@@ -80,8 +102,6 @@ export type StatusMessageStateFacts =
       readonly replacement: string;
       /** Every public transition after which role/channel invariants still apply. */
       readonly semanticTransitions: readonly StatusMessageTransitionName[];
-      /** One transition that demonstrably changes this state for focus proof. */
-      readonly focusTransition: 'show' | 'replace';
       readonly canClear: boolean;
       readonly canRepeat: boolean;
     }
@@ -90,11 +110,12 @@ export type StatusMessageStateFacts =
       readonly politeness: null;
       readonly name: string;
       readonly initialValue: number | null;
+      readonly initialMin: number | null;
+      readonly initialMax: number | null;
       readonly progressValue: number;
       readonly completionValue: number;
       readonly minValue: number;
       readonly maxValue: number;
-      readonly focusTransition: 'progress';
     };
 
 const LIVE_REGION = {
@@ -210,9 +231,9 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
         },
       },
       {
-        id: 'status-message.region.precedes-content',
+        id: 'status-message.region.precedes-update',
         outcome:
-          'The binding follows the ARIA22 reliability technique: a status container exists empty before text is inserted into that same node.',
+          'The binding follows the ARIA22 reliability technique: the role=status container exists before a tested message update occurs in that same node.',
         sources: [WCAG_ARIA22, WCAG_4_1_3, ARIA_STATUS],
         wcagOutcome:
           'Status information can be programmatically determined without moving focus.',
@@ -230,19 +251,24 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
         advisoryBecause:
           'ARIA22 is a sufficient WCAG technique, not the only conforming implementation; real assistive-technology evidence owns whether another lifecycle is reliably announced.',
         run: async ({subject, facts, transition}) => {
-          if (facts.kind !== 'live-region' || facts.messageSource !== 'text') {
+          if (
+            facts.kind !== 'live-region' ||
+            facts.role !== 'status' ||
+            facts.messageSource !== 'text'
+          ) {
             return;
           }
-          const before = await subject.textContent();
-          if (before !== '') {
+          const firstUpdate = facts.semanticTransitions[0];
+          if (firstUpdate == null) {
             throw new Error(
-              `the status region already contains ${JSON.stringify(before)} at the pre-update boundary, so it was mounted with its message instead of receiving the status as a later change`,
+              'the binding declares no message transition for the ARIA22 lifecycle check',
             );
           }
-          await transition('show');
+          await subject.isConnected();
+          await transition(firstUpdate);
           if (!(await subject.isConnected())) {
             throw new Error(
-              'the original empty status region was replaced when the message appeared, so the message did not update the region that preceded it',
+              `the role=status container was replaced by the ${JSON.stringify(firstUpdate)} update instead of predating and receiving that message`,
             );
           }
         },
@@ -284,11 +310,13 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
             facts.initialMessage,
             'at the pre-update boundary',
           );
-          await transition(facts.focusTransition);
-          await assertMessage(
-            messageAfterTransition(facts, facts.focusTransition),
-            `after the ${JSON.stringify(facts.focusTransition)} transition`,
-          );
+          for (const name of facts.semanticTransitions) {
+            await transition(name);
+            await assertMessage(
+              messageAfterTransition(facts, name),
+              `after the ${JSON.stringify(name)} transition`,
+            );
+          }
         },
       },
       {
@@ -325,22 +353,26 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
             }
           };
           await assertName(facts.initialMessage, 'at the pre-update boundary');
-          await transition(facts.focusTransition);
-          await assertName(
-            messageAfterTransition(facts, facts.focusTransition),
-            `after the ${JSON.stringify(facts.focusTransition)} transition`,
-          );
+          for (const name of facts.semanticTransitions) {
+            await transition(name);
+            await assertName(
+              messageAfterTransition(facts, name),
+              `after the ${JSON.stringify(name)} transition`,
+            );
+          }
         },
       },
       {
         id: 'status-message.region.atomic',
         outcome:
-          'The whole status is exposed as one update, so partial text changes do not lose the context that gives them meaning.',
-        sources: [WCAG_4_1_3, ARIA_STATUS, ARIA_ALERT],
+          'The browser exposes the status or alert role’s implicit whole-region atomicity before and after public updates.',
+        sources: [WCAG_4_1_3, ARIA_STATUS_ATOMIC, ARIA_ALERT_ATOMIC],
         covers: ['4.1.3-status-messages'],
         appliesWhen: ROLE_LIVE_REGION,
         evidenceLayer: 'accessibility-tree',
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          'WAI-ARIA defines an overridable implicit default; only real assistive-technology evidence can establish whole-message presentation.',
         run: async ({subject, facts, transition}) => {
           if (facts.kind !== 'live-region' || facts.role == null) {
             return;
@@ -367,8 +399,7 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
         sources: [WCAG_4_1_3],
         covers: ['4.1.3-status-messages'],
         appliesWhen: LIVE_REGION,
-        evidenceLayer: 'accessibility-tree',
-        alsoNeeds: ['dom'],
+        evidenceLayer: 'dom',
         enforcement: 'advisory',
         advisoryBecause:
           'Same-node replacement is a browser-observable reliability mechanism, not the only WCAG-conforming implementation; real assistive-technology evidence owns the resulting announcement.',
@@ -386,27 +417,6 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
               'replacing the status also replaced its live-region node, so the later message was born in a new region instead of updating the existing one',
             );
           }
-          if (facts.messageSource === 'text') {
-            const authored = normalizeText(await subject.textContent());
-            const exposed = normalizeText(
-              (await subject.computed()).accessibleText,
-            );
-            if (
-              authored !== normalizeText(facts.replacement) ||
-              exposed !== normalizeText(facts.replacement)
-            ) {
-              throw new Error(
-                `after replacement, the live region authors ${JSON.stringify(authored)} and exposes ${JSON.stringify(exposed)} instead of the complete later status ${JSON.stringify(normalizeText(facts.replacement))}`,
-              );
-            }
-          } else {
-            const name = (await subject.computed()).name.trim();
-            if (name !== facts.replacement.trim()) {
-              throw new Error(
-                `after replacement, the browser computes the live region name as ${JSON.stringify(name)} instead of ${JSON.stringify(facts.replacement.trim())}`,
-              );
-            }
-          }
         },
       },
       {
@@ -418,7 +428,10 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
         appliesWhen: {
           condition:
             'this binding owns clearing status text from its persistent live region',
-          test: facts => facts.kind === 'live-region' && facts.canClear,
+          test: facts =>
+            facts.kind === 'live-region' &&
+            facts.messageSource === 'text' &&
+            facts.canClear,
         },
         evidenceLayer: 'dom',
         enforcement: 'advisory',
@@ -440,12 +453,6 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
               'clearing the status removed its live-region node, so a later message has no persistent channel to update',
             );
           }
-          const after = normalizeText(await subject.textContent());
-          if (after !== '') {
-            throw new Error(
-              `clearing the status left ${JSON.stringify(after)} in the live region, so stale text remains the current programmatic status`,
-            );
-          }
         },
       },
       {
@@ -457,7 +464,10 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
         appliesWhen: {
           condition:
             'this binding exposes repeated occurrences of the same status',
-          test: facts => facts.kind === 'live-region' && facts.canRepeat,
+          test: facts =>
+            facts.kind === 'live-region' &&
+            facts.messageSource === 'text' &&
+            facts.canRepeat,
         },
         evidenceLayer: 'dom',
         enforcement: 'advisory',
@@ -515,11 +525,17 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
               'the binding focus anchor could not receive focus before the status transition, so this scenario does not prove the no-focus-change requirement',
             );
           }
-          await transition(facts.focusTransition);
-          if (!(await anchor.isFocused())) {
-            throw new Error(
-              'the status update moved focus away from the user’s current control instead of remaining passive',
-            );
+          const transitions: readonly StatusMessageTransitionName[] =
+            facts.kind === 'live-region'
+              ? facts.semanticTransitions
+              : ['progress', 'complete'];
+          for (const name of transitions) {
+            await transition(name);
+            if (!(await anchor.isFocused())) {
+              throw new Error(
+                `the ${JSON.stringify(name)} status transition moved focus away from the user’s current control instead of remaining passive`,
+              );
+            }
           }
         },
       },
@@ -589,8 +605,13 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
       {
         id: 'status-message.progress.values-exposed',
         outcome:
-          'The progress bar exposes the binding’s declared starting, in-progress, and completion values and range.',
-        sources: [WCAG_4_1_3, WCAG_4_1_2, ARIA_PROGRESSBAR],
+          'The progress bar exposes a valid declared range and its starting, in-progress, and completion values.',
+        sources: [
+          WCAG_4_1_3,
+          WCAG_4_1_2,
+          ARIA_PROGRESSBAR,
+          ARIA_PROGRESSBAR_RANGE,
+        ],
         covers: ['4.1.3-status-messages', '4.1.2-name-role-value'],
         appliesWhen: PROGRESSBAR,
         evidenceLayer: 'accessibility-tree',
@@ -599,19 +620,33 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           if (facts.kind !== 'progressbar') {
             return;
           }
-          const initial = await subject.computed();
-          if (initial.rangeValue !== facts.initialValue) {
+          if (facts.minValue > facts.maxValue) {
             throw new Error(
-              `the browser exposes initial progress value ${String(initial.rangeValue)} instead of ${String(facts.initialValue)}`,
+              `the binding declares a reversed progress range ${facts.minValue}..${facts.maxValue}`,
             );
           }
+          for (const [phase, value] of [
+            ['initial', facts.initialValue],
+            ['progress', facts.progressValue],
+            ['completion', facts.completionValue],
+          ] as const) {
+            if (
+              value != null &&
+              (value < facts.minValue || value > facts.maxValue)
+            ) {
+              throw new Error(
+                `the binding declares ${phase} progress value ${value} outside ${facts.minValue}..${facts.maxValue}`,
+              );
+            }
+          }
+          const initial = await subject.computed();
           if (
-            facts.initialValue != null &&
-            (initial.rangeMin !== facts.minValue ||
-              initial.rangeMax !== facts.maxValue)
+            initial.rangeValue !== facts.initialValue ||
+            initial.rangeMin !== facts.initialMin ||
+            initial.rangeMax !== facts.initialMax
           ) {
             throw new Error(
-              `the browser exposes the initial progress range as ${String(initial.rangeMin)}..${String(initial.rangeMax)} instead of ${facts.minValue}..${facts.maxValue}`,
+              `the browser exposes initial progress as value=${String(initial.rangeValue)}, min=${String(initial.rangeMin)}, max=${String(initial.rangeMax)} instead of value=${String(facts.initialValue)}, min=${String(facts.initialMin)}, max=${String(facts.initialMax)}`,
             );
           }
           await transition('progress');

@@ -17,7 +17,6 @@ export interface ChatTypingStatusBindingDefinition {
   readonly binding: 'ChatTypingIndicator';
   readonly summary: string;
   readonly facts: StatusMessageStateFacts;
-  readonly subjectSelector: string;
   readonly storyId: string;
 }
 
@@ -30,7 +29,6 @@ const LIFECYCLE_FACTS: StatusMessageStateFacts = {
   message: 'Ana is typing…',
   replacement: 'Ana and Ben are typing…',
   semanticTransitions: ['show', 'replace', 'clear'],
-  focusTransition: 'show',
   canClear: true,
   canRepeat: false,
 };
@@ -43,7 +41,6 @@ export const CHAT_TYPING_STATUS_BINDING_STATES: ReadonlyArray<ChatTypingStatusBi
       summary:
         'the mounted empty indicator receives one name, replaces it with two, then clears',
       facts: LIFECYCLE_FACTS,
-      subjectSelector: '.astryx-chat-typing-indicator',
       storyId: 'a11y-status-message-pattern--chat-typing-empty-to-message',
     },
     {
@@ -54,10 +51,8 @@ export const CHAT_TYPING_STATUS_BINDING_STATES: ReadonlyArray<ChatTypingStatusBi
         ...LIFECYCLE_FACTS,
         initialMessage: 'Ana is typing…',
         semanticTransitions: ['replace'],
-        focusTransition: 'replace',
         canClear: false,
       },
-      subjectSelector: '.astryx-chat-typing-indicator',
       storyId: 'a11y-status-message-pattern--chat-typing-name-mounted',
     },
   ];

@@ -50,8 +50,40 @@ test.afterAll(async () => {
   await storybook?.close();
 });
 
-function subjectFor(page: Page, state: ChatTypingStatusBindingState): Locator {
-  return page.locator(state.subjectSelector);
+const BOUND_SUBJECT_ATTRIBUTE = 'data-a11y-binding-subject';
+
+function subjectFor(page: Page): Locator {
+  return page.locator(`[${BOUND_SUBJECT_ATTRIBUTE}]`);
+}
+
+async function bindSubject(
+  page: Page,
+  state: ChatTypingStatusBindingState,
+): Promise<void> {
+  const facts = state.facts;
+  if (facts.kind !== 'live-region' || facts.role == null) {
+    throw new Error(
+      `${state.id}: this component binding declares no public role`,
+    );
+  }
+  const candidates = page.getByRole(facts.role, {includeHidden: true});
+  const texts = await candidates.evaluateAll(elements =>
+    elements.map(element =>
+      (element.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    ),
+  );
+  const indexes = texts.flatMap((text, index) =>
+    text === facts.initialMessage ? [index] : [],
+  );
+  if (indexes.length !== 1) {
+    throw new Error(
+      `${state.id}: expected one ${facts.role} subject in initial state, found ${indexes.length}`,
+    );
+  }
+  const target = candidates.nth(indexes[0]);
+  await target.evaluate((element, attribute) => {
+    element.setAttribute(attribute, '');
+  }, BOUND_SUBJECT_ATTRIBUTE);
 }
 
 async function mountState(
@@ -64,8 +96,9 @@ async function mountState(
   );
   await holdMotionStill(page);
   await page.locator('[data-a11y-ready="true"]').waitFor({state: 'attached'});
-  await subjectFor(page, state).waitFor({state: 'attached'});
-  await expect(subjectFor(page, state)).toHaveCount(1);
+  await bindSubject(page, state);
+  await subjectFor(page).waitFor({state: 'attached'});
+  await expect(subjectFor(page)).toHaveCount(1);
 }
 
 async function transition(page: Page, name: string): Promise<void> {
@@ -96,7 +129,7 @@ async function runState(
       return createChromiumHarness({
         page,
         cdp,
-        subject: subjectFor(page, state),
+        subject: subjectFor(page),
         related: {
           'focus-anchor': page.locator('[data-a11y-relation="focus-anchor"]'),
         },

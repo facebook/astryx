@@ -188,11 +188,11 @@ function SpinnerHarness({visibleLabel}: {visibleLabel: boolean}) {
       <TransitionButton name="show" onClick={() => setLabel(initial)} />
       <TransitionButton name="replace" onClick={() => setLabel(replacement)} />
       {visibleLabel ? (
-        <Spinner data-a11y-subject label={label ?? 'Fetching data'} />
+        <Spinner label={label ?? 'Fetching data'} />
       ) : label == null ? (
-        <Spinner data-a11y-subject />
+        <Spinner />
       ) : (
-        <Spinner data-a11y-subject aria-label={label} />
+        <Spinner aria-label={label} />
       )}
     </Frame>
   );
@@ -209,24 +209,42 @@ function ChatSystemMessageHarness() {
         onClick={() => setMessage('A file was shared')}
       />
       <TransitionButton name="clear" onClick={() => setMessage('')} />
-      <ChatSystemMessage data-a11y-subject>{message}</ChatSystemMessage>
+      <ChatSystemMessage>{message}</ChatSystemMessage>
     </Frame>
   );
 }
 
-function ProgressHarness({withMark = false}: {withMark?: boolean}) {
+function ProgressHarness({
+  initial,
+  progressValue = 40,
+  completionValue = 100,
+  max = 100,
+  withMark = false,
+}: {
+  initial?: 'loading' | number;
+  progressValue?: number;
+  completionValue?: number;
+  max?: number;
+  withMark?: boolean;
+}) {
   const [progress, setProgress] = useState<'loading' | number>(
-    withMark ? 20 : 'loading',
+    initial ?? (withMark ? 20 : 'loading'),
   );
   return (
     <Frame>
-      <TransitionButton name="progress" onClick={() => setProgress(40)} />
-      <TransitionButton name="complete" onClick={() => setProgress(100)} />
+      <TransitionButton
+        name="progress"
+        onClick={() => setProgress(progressValue)}
+      />
+      <TransitionButton
+        name="complete"
+        onClick={() => setProgress(completionValue)}
+      />
       <ProgressBar
-        data-a11y-subject
         label="Upload progress"
         isIndeterminate={progress === 'loading'}
         value={typeof progress === 'number' ? progress : 0}
+        max={max}
         marks={withMark ? [{value: 75, label: 'Target'}] : undefined}
       />
     </Frame>
@@ -273,6 +291,14 @@ export const CORE_STATUS_MESSAGE_STATE_RENDERS: Record<
   'spinner-visible-label-mounted': () => <SpinnerHarness visibleLabel />,
   'chat-system-status-mounted': () => <ChatSystemMessageHarness />,
   'progress-loading-to-complete': () => <ProgressHarness />,
+  'progress-custom-range': () => (
+    <ProgressHarness
+      initial={1}
+      progressValue={3}
+      completionValue={5}
+      max={5}
+    />
+  ),
   'progress-mark-focused-update': () => <ProgressHarness withMark />,
 };
 

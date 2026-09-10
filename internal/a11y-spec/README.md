@@ -61,12 +61,13 @@ src/
 
 The `status-message` contract is WCAG-derived rather than an APG widget
 pattern. Required expectations cover browser-exposed status/alert roles and
-channels, complete exposed text or names, preserved focus, and progressbar
-role/name/value transitions. ARIA22's empty-before-update technique, same-node
-replacement/clearing, and repeated-text DOM mutation remain advisory reliability
-evidence: automation can observe those mechanics, but only real assistive-
-technology evidence can establish announcement timing, order, repetition, or
-omission.
+channels, complete exposed text or names across every public update, preserved
+focus, and progressbar role/name/range/value transitions. ARIA22's
+container-before-update technique, the roles' overridable implicit atomic
+defaults, same-node replacement/clearing, and repeated-text DOM mutation remain
+advisory reliability evidence: automation can observe those mechanics, but only
+real assistive-technology evidence can establish announcement timing, order,
+repetition, or omission.
 
 The `text-input` contract is native rather than APG-derived. It covers the
 role-bearing `<input>` or `<textarea>` only; composed clear and tooltip buttons

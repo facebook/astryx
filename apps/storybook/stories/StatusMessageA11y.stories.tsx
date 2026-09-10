@@ -81,6 +81,7 @@ export const ChatSystemStatusMounted = coreStory('chat-system-status-mounted');
 export const ProgressLoadingToComplete = coreStory(
   'progress-loading-to-complete',
 );
+export const ProgressCustomRange = coreStory('progress-custom-range');
 export const ProgressMarkFocusedUpdate = coreStory(
   'progress-mark-focused-update',
 );
