@@ -19,6 +19,7 @@ import babel from '@babel/core';
 import stylexPlugin from '@stylexjs/babel-plugin';
 import ts from 'typescript';
 import {registryItemSchema, registrySchema} from 'shadcn/schema';
+import {stripCopyrightHeader} from '../../../packages/cli/foundation/text/copyright-header.mjs';
 import {
   createRegistryReceipt,
   registryReceiptTarget,
@@ -85,7 +86,11 @@ function readImportSpecifiers(source, fileName) {
   return [...specifiers].sort();
 }
 
-function dependencySpec(packageName, packageDependencies) {
+function dependencySpec(
+  packageName,
+  packageDependencies,
+  fallbackRange = null,
+) {
   const spec = packageDependencies.get(packageName);
   if (spec) {
     return spec;
@@ -93,7 +98,7 @@ function dependencySpec(packageName, packageDependencies) {
   if (packageName.startsWith('@astryxdesign/')) {
     throw new UnpublishedAstryxDependencyError(packageName);
   }
-  return packageName;
+  return fallbackRange ? `${packageName}@${fallbackRange}` : packageName;
 }
 
 function precompileStylexSource(source, fileName) {
@@ -133,7 +138,49 @@ function precompileStylexSource(source, fileName) {
   };
 }
 
-function dependenciesForSource(source, fileName, packageDependencies) {
+function dependenciesForPackages(
+  packageNames,
+  packageDependencies,
+  packagePeerDependencies,
+) {
+  const dependencies = new Set();
+  const visited = new Set();
+  const queue = [
+    ...packageNames.map(name => ({name, range: null})),
+    {name: '@astryxdesign/core', range: null},
+    {name: '@stylexjs/stylex', range: null},
+  ];
+
+  while (queue.length > 0) {
+    const {name, range} = queue.shift();
+    if (
+      visited.has(name) ||
+      name === 'react' ||
+      name.startsWith('react/') ||
+      name === 'react-dom' ||
+      name.startsWith('react-dom/')
+    ) {
+      continue;
+    }
+    visited.add(name);
+    dependencies.add(dependencySpec(name, packageDependencies, range));
+
+    for (const [peerName, peerRange] of Object.entries(
+      packagePeerDependencies.get(name) ?? {},
+    )) {
+      queue.push({name: peerName, range: peerRange});
+    }
+  }
+
+  return [...dependencies].sort();
+}
+
+function dependenciesForSource(
+  source,
+  fileName,
+  packageDependencies,
+  packagePeerDependencies,
+) {
   const packages = new Set();
   for (const specifier of readImportSpecifiers(source, fileName)) {
     if (specifier.startsWith('.')) {
@@ -153,22 +200,19 @@ function dependenciesForSource(source, fileName, packageDependencies) {
     }
     packages.add(packageNameFromSpecifier(specifier));
   }
-  return [...packages]
-    .map(packageName => dependencySpec(packageName, packageDependencies))
-    .sort();
+  return dependenciesForPackages(
+    [...packages],
+    packageDependencies,
+    packagePeerDependencies,
+  );
 }
 
-function withCoreDependency(dependencies, packageDependencies) {
-  return [
-    ...new Set([
-      ...dependencies,
-      dependencySpec('@astryxdesign/core', packageDependencies),
-      dependencySpec('@stylexjs/stylex', packageDependencies),
-    ]),
-  ].sort();
-}
-
-function componentItem(packageName, component, packageDependencies) {
+function componentItem(
+  packageName,
+  component,
+  packageDependencies,
+  packagePeerDependencies,
+) {
   if (!component.importPath) {
     throw new Error(
       `${packageName}/${component.name} has no public import path`,
@@ -195,9 +239,10 @@ function componentItem(packageName, component, packageDependencies) {
       component.description ||
       `Public ${isHook ? 'hook' : 'component'} entry for ${component.name}.`,
     author: 'Astryx',
-    dependencies: withCoreDependency(
-      [dependencySpec(packageName, packageDependencies)],
+    dependencies: dependenciesForPackages(
+      [packageName],
       packageDependencies,
+      packagePeerDependencies,
     ),
     css: ASTRYX_CSS,
     files: [
@@ -262,7 +307,13 @@ function withCompositionReceipt(item, identity, sourceVersion) {
   };
 }
 
-function blockItem(block, packageDependencies, cliRoot, sourceVersion) {
+function blockItem(
+  block,
+  packageDependencies,
+  packagePeerDependencies,
+  cliRoot,
+  sourceVersion,
+) {
   const identity = blockRegistryIdentity(
     block.name,
     block.exampleFor,
@@ -279,7 +330,10 @@ function blockItem(block, packageDependencies, cliRoot, sourceVersion) {
     block.category,
     `${block.dirName}.tsx`,
   );
-  const compiled = precompileStylexSource(block.source, fileName);
+  const compiled = precompileStylexSource(
+    stripCopyrightHeader(block.source),
+    fileName,
+  );
   return withCompositionReceipt(
     {
       $schema: REGISTRY_ITEM_SCHEMA,
@@ -288,9 +342,11 @@ function blockItem(block, packageDependencies, cliRoot, sourceVersion) {
       title: block.displayName || block.name,
       description: block.description || `Astryx ${kind}: ${block.name}.`,
       author: 'Astryx',
-      dependencies: withCoreDependency(
-        dependenciesForSource(compiled.source, fileName, packageDependencies),
+      dependencies: dependenciesForSource(
+        compiled.source,
+        fileName,
         packageDependencies,
+        packagePeerDependencies,
       ),
       css: ASTRYX_CSS,
       files: [
@@ -316,7 +372,13 @@ function blockItem(block, packageDependencies, cliRoot, sourceVersion) {
   );
 }
 
-function pageItem(template, packageDependencies, cliRoot, sourceVersion) {
+function pageItem(
+  template,
+  packageDependencies,
+  packagePeerDependencies,
+  cliRoot,
+  sourceVersion,
+) {
   const identity = pageRegistryIdentity(template.slug, template.registry);
   const itemName = identity.name;
   const fileName = path.join(
@@ -327,7 +389,10 @@ function pageItem(template, packageDependencies, cliRoot, sourceVersion) {
     template.slug,
     'page.tsx',
   );
-  const compiled = precompileStylexSource(template.source, fileName);
+  const compiled = precompileStylexSource(
+    stripCopyrightHeader(template.source),
+    fileName,
+  );
   return withCompositionReceipt(
     {
       $schema: REGISTRY_ITEM_SCHEMA,
@@ -336,9 +401,11 @@ function pageItem(template, packageDependencies, cliRoot, sourceVersion) {
       title: template.name,
       description: template.description || `Astryx page: ${template.name}.`,
       author: 'Astryx',
-      dependencies: withCoreDependency(
-        dependenciesForSource(compiled.source, fileName, packageDependencies),
+      dependencies: dependenciesForSource(
+        compiled.source,
+        fileName,
         packageDependencies,
+        packagePeerDependencies,
       ),
       css: ASTRYX_CSS,
       files: [
@@ -426,6 +493,9 @@ export function buildShadcnRegistry({
     ]),
     ...Object.entries(externalDependencySpecs),
   ]);
+  const packagePeerDependencies = new Map(
+    packages.map(pkg => [pkg.name, pkg.peerDependencies ?? {}]),
+  );
   const componentEntries = Object.entries(allComponents);
   const skippedComponents = componentEntries
     .filter(([packageName]) => !packageDependencies.has(packageName))
@@ -434,7 +504,12 @@ export function buildShadcnRegistry({
     .filter(([packageName]) => packageDependencies.has(packageName))
     .flatMap(([packageName, components]) =>
       components.map(component =>
-        componentItem(packageName, component, packageDependencies),
+        componentItem(
+          packageName,
+          component,
+          packageDependencies,
+          packagePeerDependencies,
+        ),
       ),
     )
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -443,7 +518,13 @@ export function buildShadcnRegistry({
   for (const block of blocks) {
     try {
       blockItems.push(
-        blockItem(block, packageDependencies, cliRoot, sourceVersion),
+        blockItem(
+          block,
+          packageDependencies,
+          packagePeerDependencies,
+          cliRoot,
+          sourceVersion,
+        ),
       );
     } catch (error) {
       if (error instanceof UnpublishedAstryxDependencyError) {
@@ -460,7 +541,13 @@ export function buildShadcnRegistry({
   for (const template of templates) {
     try {
       pageItems.push(
-        pageItem(template, packageDependencies, cliRoot, sourceVersion),
+        pageItem(
+          template,
+          packageDependencies,
+          packagePeerDependencies,
+          cliRoot,
+          sourceVersion,
+        ),
       );
     } catch (error) {
       if (error instanceof UnpublishedAstryxDependencyError) {
@@ -518,6 +605,14 @@ export function buildShadcnRegistry({
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), {recursive: true});
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+export function generateShadcnRegistryForTarget({target, outDir, ...options}) {
+  if (target !== 'canary') {
+    fs.rmSync(outDir, {recursive: true, force: true});
+    return null;
+  }
+  return generateShadcnRegistry({outDir, ...options});
 }
 
 export function generateShadcnRegistry({

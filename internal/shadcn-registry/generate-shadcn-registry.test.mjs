@@ -29,6 +29,7 @@ import {
 import {
   buildShadcnRegistry,
   generateShadcnRegistry,
+  generateShadcnRegistryForTarget,
 } from '../../apps/docsite/scripts/generate-shadcn-registry.mjs';
 import {
   blockRegistryIdentity,
@@ -297,6 +298,22 @@ describe('buildShadcnRegistry', () => {
     }
   });
 
+  it('removes stale compatibility output for non-canary targets', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-production-'));
+    const outDir = path.join(root, 'shadcn');
+    try {
+      mkdirSync(outDir, {recursive: true});
+      writeFileSync(path.join(outDir, 'stale.json'), '{}\n');
+
+      expect(
+        generateShadcnRegistryForTarget({target: 'latest', outDir}),
+      ).toBeNull();
+      expect(existsSync(outDir)).toBe(false);
+    } finally {
+      rmSync(root, {recursive: true, force: true});
+    }
+  });
+
   it('creates a first-class standalone block item', () => {
     const standalone = {
       ...fixture().blocks[0],
@@ -359,7 +376,22 @@ describe('buildShadcnRegistry', () => {
     const project = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-receipt-'));
     try {
       writeConsumerProject(project);
-      const {items} = buildShadcnRegistry(fixture());
+      const base = fixture();
+      const {items} = buildShadcnRegistry(
+        fixture({
+          blocks: [
+            {
+              ...base.blocks[0],
+              source:
+                '// Copyright (c) Meta Platforms, Inc. and affiliates.\n\n' +
+                "'use client';\n\n" +
+                '// Keep this consumer guidance.\n' +
+                "import {Button} from '@astryxdesign/core/Button';\n" +
+                'export default function ButtonShowcase() { return <Button label="Save" />; }\n',
+            },
+          ],
+        }),
+      );
       const block = items.find(
         item => item.name === 'showcase-button-variants',
       );
@@ -397,6 +429,37 @@ describe('buildShadcnRegistry', () => {
           ),
         ),
       ).toBe(true);
+      const installedSource = readFileSync(
+        path.join(
+          project,
+          'src',
+          'components',
+          'astryx',
+          'showcases',
+          'ButtonShowcase.tsx',
+        ),
+        'utf8',
+      );
+      const installedReceipt = parseRegistryReceipt(
+        JSON.parse(
+          readFileSync(
+            path.join(
+              project,
+              'src',
+              'components',
+              'astryx',
+              'showcases',
+              '.astryx',
+              'showcase-button-variants.json',
+            ),
+            'utf8',
+          ),
+        ),
+      );
+      expect(block.files[0].content).not.toContain('Copyright (c) Meta');
+      expect(installedSource).toBe(block.files[0].content);
+      expect(installedReceipt.files[0].content).toBe(installedSource);
+      expect(installedSource).toContain('// Keep this consumer guidance.');
     } finally {
       rmSync(project, {recursive: true, force: true});
     }
@@ -505,6 +568,53 @@ describe('buildShadcnRegistry', () => {
         target: 'components/astryx/Button.ts',
         content: "export * from '@astryxdesign/core/Button';\n",
       }),
+    ]);
+  });
+
+  it('installs non-React peer dependencies for package-backed entries', () => {
+    const base = fixture();
+    const {items} = buildShadcnRegistry(
+      fixture({
+        packages: [
+          ...base.packages,
+          {
+            name: '@astryxdesign/richtext',
+            version: '0.1.9',
+            peerDependencies: {
+              '@astryxdesign/core': '0.5.2',
+              '@lexical/react': '^0.46.0',
+              '@stylexjs/stylex': '>=0.10.0',
+              lexical: '^0.46.0',
+              react: '>=19.0.0',
+              'react-dom': '>=19.0.0',
+            },
+          },
+        ],
+        allComponents: {
+          ...base.allComponents,
+          '@astryxdesign/richtext': [
+            {
+              name: 'RichTextEditor',
+              displayName: 'Rich Text Editor',
+              importPath: '@astryxdesign/richtext',
+              hidden: false,
+              params: null,
+            },
+          ],
+        },
+        dependencyTag: 'canary',
+      }),
+    );
+    const component = items.find(
+      item => item.name === 'component-richtext-rich-text-editor',
+    );
+
+    expect(component.dependencies).toEqual([
+      '@astryxdesign/core@canary',
+      '@astryxdesign/richtext@canary',
+      '@lexical/react@^0.46.0',
+      '@stylexjs/stylex@0.19.0',
+      'lexical@^0.46.0',
     ]);
   });
 
@@ -670,13 +780,16 @@ describe('buildShadcnRegistry', () => {
       dependencyTag: 'canary',
     });
     const component = items.find(item => item.name === 'component-button');
-    const showcase = items.find(item => item.name === 'showcase-button-variants');
+    const showcase = items.find(
+      item => item.name === 'showcase-button-variants',
+    );
     expect(component.dependencies).toEqual([
       '@astryxdesign/core@canary',
       '@stylexjs/stylex@0.19.0',
     ]);
     expect(
-      parseRegistryReceipt(JSON.parse(showcase.files[1].content)).source.version,
+      parseRegistryReceipt(JSON.parse(showcase.files[1].content)).source
+        .version,
     ).toBe('canary');
   });
 

@@ -86,6 +86,11 @@ launch gate for the production endpoint and announcement.
   installed Astryx release, auto-update an unchanged file, three-way merge
   edits, leave the original untouched when edits conflict, and never recreate a
   deleted or moved file.
+- **FR10 — Required full-catalog CI.** Required pull-request CI MUST generate
+  the complete preview catalog, reject production output before launch, install
+  every canonical item through the pinned shadcn client, verify every route and
+  exact written file, and compile every installed source against the current
+  Astryx package exports.
 - **IR1 — Generated from current sources.** Registry output MUST come from the
   existing docsite and CLI catalogs, never a parallel handwritten item list.
 - **IR2 — Build-time static output.** The docsite build MUST generate static JSON
@@ -94,10 +99,11 @@ launch gate for the production endpoint and announcement.
 - **IR3 — Failure is loud.** Missing source, duplicate names, invalid schemas,
   unresolved package versions, escaping relative imports, and stale generated
   output MUST fail generation or verification.
-- **IR4 — End-to-end evidence.** Verification MUST install representative
-  component, showcase, block, and page items into a clean shadcn-style app and
-  build that app. The full catalog MUST receive schema, uniqueness, dependency,
-  and source-boundary checks.
+- **IR4 — End-to-end evidence.** Required verification MUST install every
+  canonical component, hook, showcase, example, block, and page into a clean
+  shadcn-style app through the pinned stock client, verify exact written bytes
+  and declared dependencies, and compile every written source file. Alias
+  routes MUST resolve to the same canonical item bytes.
 - **IR5 — Stable route contract.** Generated item names and canonical paths MUST
   match the reviewed route lock. Display-name edits MUST NOT change them. An
   intentional rename MUST retain old paths through `registry.aliases` unless a
@@ -121,30 +127,29 @@ showcases and examples, blocks, pages, package versions, and source. The
 compatibility layer adds a serializer over that existing catalog rather than a
 second discovery system.
 
-The current catalog generates 970 items. Its 702 copied compositions each carry
-a validated adjacent receipt. Prior evidence, before receipts were added,
-installed all 921 then-generated entries through shadcn 4.19.0 into a clean Vite
-application, wrote every component, hook, block, and page file with zero install
-failures, and compiled all 6,620 imported modules in one build. Fourteen
-compositions that author local StyleX are precompiled to compiler-free JSX during
-generation; all other composition source stays typed TSX. Component
-implementation copying failed because private imports and uncompiled StyleX
-crossed the package boundary; FR2 avoids that path by installing the package and
-creating a public re-export only.
+The current catalog generates 970 items. Its 700 copied compositions each carry
+an adjacent receipt whose base matches the exact bytes stock shadcn writes.
+Required CI installs all 970 entries through shadcn 4.19.0 into one clean
+consumer, verifies all 1,670 written source and receipt files, and compiles all
+970 source entry points. Fourteen compositions that author local StyleX are
+precompiled to compiler-free JSX during generation; all other composition
+source stays typed TSX. Component implementation copying failed because private
+imports and uncompiled StyleX crossed the package boundary; FR2 avoids that
+path by installing the package and creating a public re-export only.
 
 ## Verification
 
-| Contract | Verification                                                        | Representative states                           | Mutation or failure expectation                            |
-| -------- | ------------------------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| FR1, FR5 | shadcn schema validation and deterministic snapshot                 | component, showcase, example, block, page       | Unknown type, duplicate name, or unstable output fails     |
-| FR2      | clean consumer install plus source inspection                       | Core component, hook, non-Core package          | Implementation source or private import fails              |
-| FR3, IR1 | reconcile registry counts and names with generated docsite catalogs | visible and hidden entries, grouped families    | Missing or extra catalog entry fails                       |
-| FR4, IR3 | dependency extraction and relative-import audit                     | heroicons, recharts, StyleX import, page source | Escaping import or undeclared package fails                |
-| FR6      | raw JSON and shadcn parse tests                                     | optional `astryx` metadata present              | shadcn install changes or Astryx metadata becomes required |
-| FR7      | docsite tests and copy-button interaction                           | component, block, page, compatibility guide     | Command is absent, stale, or misstates copy behavior       |
-| FR8      | canary preview plus production-target assertion                     | preview and released package dependencies       | Production enables before the upgrade gate passes          |
-| FR9      | receipt mutation tests plus stock ShadCN install                    | pristine, edited, conflicting, missing, aliased | User source is overwritten or an old route stops resolving |
-| IR4      | clean shadcn-style fixture install, build, and Chrome screenshot    | one of each item kind; light and dark           | Install, build, or render fails                            |
+| Contract  | Verification                                                        | Representative states                           | Mutation or failure expectation                            |
+| --------- | ------------------------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
+| FR1, FR5  | shadcn schema validation and deterministic snapshot                 | component, showcase, example, block, page       | Unknown type, duplicate name, or unstable output fails     |
+| FR2       | clean consumer install plus source inspection                       | Core component, hook, non-Core package          | Implementation source or private import fails              |
+| FR3, IR1  | reconcile registry counts and names with generated docsite catalogs | visible and hidden entries, grouped families    | Missing or extra catalog entry fails                       |
+| FR4, IR3  | dependency extraction and relative-import audit                     | heroicons, recharts, StyleX import, page source | Escaping import or undeclared package fails                |
+| FR6       | raw JSON and shadcn parse tests                                     | optional `astryx` metadata present              | shadcn install changes or Astryx metadata becomes required |
+| FR7       | docsite tests and copy-button interaction                           | component, block, page, compatibility guide     | Command is absent, stale, or misstates copy behavior       |
+| FR8       | canary preview plus production-target assertion                     | preview and released package dependencies       | Production enables before the upgrade gate passes          |
+| FR9       | receipt mutation tests plus stock ShadCN install                    | pristine, edited, conflicting, missing, aliased | User source is overwritten or an old route stops resolving |
+| FR10, IR4 | required full-catalog clean-consumer install and build              | every canonical item, route, dependency, target | Any item fails to install, match its receipt, or compile   |
 
 ## Decision log
 
@@ -225,6 +230,25 @@ Rejected: hash-only receipts. They cannot reconstruct the merge base after a
 user edits the file. Also rejected: rebuilding the latest composition from raw
 CLI template assets at upgrade time. StyleX-precompiled registry items require
 the registry's compiled bytes.
+
+### DEC-7 — Gate every registry item through one clean consumer
+
+**Reference:** `spec:AST-026/DEC-7`
+**Decider:** `josephfarina`, `2026-09-10`
+
+Required pull-request CI proves the release-channel selector removes compatibility
+output for production, then passes every canonical preview item to the pinned
+shadcn client in one clean consumer. The consumer replaces Astryx package pins
+with the current local package builds so a new component can prove its exports
+before that version exists on npm; all third-party dependencies retain the
+versions declared by the generated catalog. CI compares every written file with
+its registry bytes and compiles every source while resolving Astryx package
+exports.
+
+Rejected: one client process per item. It repeats dependency installation
+hundreds of times without adding protocol coverage. Also rejected: validating
+only representative items. A source or target defect can be unique to any one
+of the generated compositions.
 
 ## Open questions
 
