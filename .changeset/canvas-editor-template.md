@@ -277,6 +277,15 @@ which marks each row so the hover selector scopes to one row rather than to
 the whole rail. Groups take the frame mark rather than repeating a child's
 glyph, since a parent is a container and not another layer of that kind.
 
+**A tab's close eats into its label rather than widening the tab.** Fading a
+control that still occupies its box costs the name 20px permanently to hold
+room for something usually invisible. The close now collapses to zero width
+at rest and takes its 20px back on hover, so the space belongs to the name
+until it is needed. That requires a set tab width: with content sizing the
+label has nothing to shrink against, and revealing the close would push every
+tab to its right — the strip would reflow under the pointer and the target
+being reached for would move.
+
 **Icons in the rail share one colour, and unselected tabs dim whole.** Every
 rail glyph now resolves to the secondary _icon_ token. That token and its
 text counterpart agree at the theme root but diverge under this editor's

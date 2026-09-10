@@ -82,7 +82,7 @@ import {
   RotateCcw,
   RotateCw,
   Scan,
-  SquareDashed,
+  SquareSquare,
   SquareRoundCorner,
   Strikethrough,
   TextAlignCenter,
@@ -797,6 +797,12 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: 'var(--spacing-1)',
     flexShrink: 0,
+    // A set width is what lets the close eat into the label instead of
+    // widening the tab. With content sizing there is nothing for the label to
+    // shrink against, so revealing the close would push every tab to its
+    // right — the strip would reflow under the pointer, and the target you
+    // were reaching for would move. Sized to hold the longest seeded name.
+    width: 156,
     // The 28px the rest of the editor aligns to.
     height: 'var(--spacing-7)',
     // Tighter on the close end: that side holds a bare 20px icon whose hit
@@ -826,6 +832,9 @@ const styles = stylex.create({
     // content, and the label would push the close button out of the tab
     // instead of truncating.
     minWidth: 0,
+    // Takes the slack in the fixed-width tab, so the close sits at the far
+    // edge and the label is the thing that gives way when it appears.
+    flexGrow: 1,
     padding: 0,
     border: 'none',
     backgroundColor: 'transparent',
@@ -867,6 +876,32 @@ const styles = stylex.create({
   // A locked layer says so at rest: the state is a property of the layer, not
   // an action offered on hover.
   rowActionPinned: {opacity: 1},
+  // The tab close reveals by width, not just opacity. Fading a control that
+  // still occupies its box means the name is permanently short by 20px to
+  // hold room for something usually invisible; collapsing the box hands that
+  // space back to the label at rest and takes it again on hover, so the tab
+  // keeps one width and the name simply truncates a little sooner.
+  tabClose: {
+    width: {
+      default: 0,
+      '@media (hover: none)': 'var(--spacing-5)',
+      [stylex.when.ancestor(':hover')]: 'var(--spacing-5)',
+      [stylex.when.ancestor(':focus-within')]: 'var(--spacing-5)',
+    },
+    opacity: {
+      default: 0,
+      '@media (hover: none)': 1,
+      [stylex.when.ancestor(':hover')]: 1,
+      [stylex.when.ancestor(':focus-within')]: 1,
+    },
+    // The box is what animates, so it must clip its own glyph on the way in.
+    overflow: 'hidden',
+    flexShrink: 0,
+    transition: 'width 120ms ease, opacity 120ms ease',
+  },
+  // The active tab keeps its close, the way an open document keeps a way to
+  // be shut without being pointed at first.
+  tabClosePinned: {width: 'var(--spacing-5)', opacity: 1},
   // Hold the label column at its set width. The fields beside it carry the
   // flex min-width reset, so without this the row spends its shrinkage on
   // whichever item gives way first and each label ends up a different width —
@@ -1280,7 +1315,7 @@ function DocumentTab({
         label={`Close ${tab.name}`}
         icon={X}
         onClick={onClose}
-        xstyle={[styles.rowAction, isActive && styles.rowActionPinned]}
+        xstyle={[styles.tabClose, isActive && styles.tabClosePinned]}
       />
     </div>
   );
@@ -2333,7 +2368,7 @@ export default function CanvasEditor() {
                               tooltip="Per side"
                               size="sm"
                               variant="ghost"
-                              icon={<Icon icon={SquareDashed} size={ICON} />}
+                              icon={<Icon icon={SquareSquare} size={ICON} />}
                             />
                           </InspectorRow>
                         </InspectorSection>
