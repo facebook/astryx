@@ -284,10 +284,34 @@ at rest and takes its 20px back on hover, so the space belongs to the name
 until it is needed. That requires a set tab width: with content sizing the
 label has nothing to shrink against, and revealing the close would push every
 tab to its right — the strip would reflow under the pointer and the target
-being reached for would move.
+being reached for would move. The reveal is instant. Easing the width means
+the label reflows for the length of the animation, so the name wobbles every
+time the pointer crosses a tab — motion on an affordance that is only ever
+glanced at. The set width holds the longest seeded name _with_ its close
+showing, since the open document never hides one.
+
+**Tabs separate with a 16px rule, dropped either side of the open one.** A
+vertical `Divider` takes its height from the row unless given one, and the
+strip has no columns to divide — it needs the smallest mark that reads as
+"these are separate tabs". Tabs are all one width, so the rule marks a
+boundary rather than sitting midway between two labels, which is also why it
+is dropped next to the open document: that tab already reads as separate by
+its fill, and a rule running into the fill's rounded edge only crowds it. The
+rule is hidden rather than unmounted, so moving the selection does not add or
+remove a flex item and slide the whole strip sideways under the pointer that
+just clicked it.
+
+**The image row's trigger is a `Thumbnail`, not a button wrapping an `img`.**
+The component already carries what the hand-rolled version was re-deriving:
+button semantics and a hover overlay from `onClick`, an accessible name and
+tooltip from `label`, and the same `--radius-element` the colour swatches
+use. It ships at 64px for media grids, so it takes a width override to join a
+row of 28px controls; the picture stays square on its own aspect ratio, so
+the height needs no help.
 
 **Icons in the rail share one colour, and unselected tabs dim whole.** Every
-rail glyph now resolves to the secondary _icon_ token. That token and its
+rail glyph, and the strip's new-document `+`, now resolves to the secondary
+_icon_ token. That token and its
 text counterpart agree at the theme root but diverge under this editor's
 theme, so a lock keyed to the text ramp came out darker than the layer glyphs
 on its own row. Tabs dim their icon alongside their label; dimming the label

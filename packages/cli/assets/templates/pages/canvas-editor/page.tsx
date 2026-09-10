@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useCallback, useRef, useState, type SVGProps} from 'react';
+import {Fragment, useCallback, useRef, useState, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
@@ -44,6 +44,7 @@ import {Selector} from '@astryxdesign/core/Selector';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {TextArea} from '@astryxdesign/core/TextArea';
 import {TextInput} from '@astryxdesign/core/TextInput';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 import {TreeList, type TreeListItemData} from '@astryxdesign/core/TreeList';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
@@ -59,11 +60,12 @@ import {
   CaseUpper,
   Contrast,
   Download,
+  // Aliased: a bare `File` would shadow the DOM type the image picker reads.
+  File as FileIcon,
   FlipHorizontal2,
   FlipVertical2,
   FoldVertical,
   Frame,
-  PenTool,
   Grip,
   Group,
   Image as ImageIcon,
@@ -277,15 +279,15 @@ interface DocumentTabData {
   icon: IconType;
 }
 
-// Every document here is an editable drawing, so every tab carries the same
-// mark. Varying the icon per document would imply a distinction the editor
-// does not make, and a strip of mixed glyphs is harder to scan than a strip
-// of one. The frame mark moved to the layer groups, where it means the thing
-// it names — a container — leaving the tabs to say "a document you draw in".
+// Every tab carries the same mark: varying it per document would imply a
+// distinction the editor does not make, and a strip of mixed glyphs is harder
+// to scan than a strip of one. A tab stands for an open file, so the file mark
+// is the literal one; the frame mark belongs to the layer groups, where it
+// names an actual container.
 const INITIAL_TABS: DocumentTabData[] = [
-  {id: 'poster', name: 'Salzburg poster', icon: PenTool},
-  {id: 'brand', name: 'Brand sheet', icon: PenTool},
-  {id: 'draft', name: 'Untitled draft', icon: PenTool},
+  {id: 'poster', name: 'Salzburg poster', icon: FileIcon},
+  {id: 'brand', name: 'Brand sheet', icon: FileIcon},
+  {id: 'draft', name: 'Untitled draft', icon: FileIcon},
 ];
 
 const INITIAL_LAYERS: Layer[] = [
@@ -788,6 +790,12 @@ const styles = stylex.create({
     // the tabs are draggable-looking targets already.
     scrollbarWidth: 'none',
   },
+  // A short rule, not a full-height one: the strip has no columns to divide,
+  // it only needs the smallest mark that reads as "these are separate tabs".
+  // A vertical Divider takes its height from the row unless given one, and a
+  // centred 16px keeps it clear of both the tab fill and the bar's own edges.
+  tabRule: {height: 16, alignSelf: 'center', flexShrink: 0},
+  tabRuleHidden: {visibility: 'hidden'},
   // A tab is a wrapper, not a button, because it holds two separate actions:
   // pick this document, and close it. Nesting the close inside the label's
   // <button> would be invalid HTML and would make one hit area out of two
@@ -801,8 +809,9 @@ const styles = stylex.create({
     // widening the tab. With content sizing there is nothing for the label to
     // shrink against, so revealing the close would push every tab to its
     // right — the strip would reflow under the pointer, and the target you
-    // were reaching for would move. Sized to hold the longest seeded name.
-    width: 156,
+    // were reaching for would move. Sized to hold the longest seeded name
+    // *with* its close showing, since the active tab never hides one.
+    width: 164,
     // The 28px the rest of the editor aligns to.
     height: 'var(--spacing-7)',
     // Tighter on the close end: that side holds a bare 20px icon whose hit
@@ -894,10 +903,12 @@ const styles = stylex.create({
       [stylex.when.ancestor(':hover')]: 1,
       [stylex.when.ancestor(':focus-within')]: 1,
     },
-    // The box is what animates, so it must clip its own glyph on the way in.
+    // The box collapses rather than fades, so it clips its own glyph.
     overflow: 'hidden',
     flexShrink: 0,
-    transition: 'width 120ms ease, opacity 120ms ease',
+    // No transition. Easing a width means the label reflows for the length of
+    // the animation, so the name wobbles every time the pointer crosses a tab
+    // — motion on a hover affordance that is only ever glanced at.
   },
   // The active tab keeps its close, the way an open document keeps a way to
   // be shut without being pointed at first.
@@ -997,24 +1008,10 @@ const styles = stylex.create({
   // read-outs share one right edge instead of stepping in and out as their
   // values change width.
   filterValue: {flexShrink: 0, width: 64},
-  // The image trigger is a swatch that happens to hold a picture, so it
-  // takes the swatch's box rather than a nested action's.
-  thumbnailButton: {
-    display: 'inline-flex',
-    width: 'var(--spacing-7)',
-    height: 'var(--spacing-7)',
-    flexShrink: 0,
-    padding: 0,
-    borderRadius: 'var(--radius-element)',
-    cursor: 'pointer',
-  },
-  thumbnail: {
-    overflow: 'hidden',
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    borderColor: 'var(--color-border-emphasized)',
-  },
-  thumbnailImage: {width: '100%', height: '100%', objectFit: 'cover'},
+  // Thumbnail ships at 64px for media grids; here it is a control sitting in
+  // a row of 28px controls, so it takes the same box as the colour swatches.
+  // Width alone is enough — the picture is kept square by an aspect ratio.
+  sourceThumbnail: {width: 'var(--spacing-7)'},
 });
 
 /**
@@ -1730,7 +1727,7 @@ export default function CanvasEditor() {
     const tab: DocumentTabData = {
       id: `untitled-${untitledCount.current}`,
       name: `Untitled ${untitledCount.current}`,
-      icon: PenTool,
+      icon: FileIcon,
     };
     setTabs(current => [...current, tab]);
     setActiveTab(tab.id);
@@ -1998,22 +1995,45 @@ export default function CanvasEditor() {
                     role="group"
                     aria-label="Open documents"
                     {...stylex.props(styles.tabStrip)}>
-                    {tabs.map(tab => (
-                      <DocumentTab
-                        key={tab.id}
-                        tab={tab}
-                        isActive={tab.id === activeTab}
-                        onSelect={() => setActiveTab(tab.id)}
-                        onClose={() => closeTab(tab.id)}
-                      />
-                    ))}
+                    {tabs.map((tab, index) => {
+                      // Tabs are all one width, so the rule marks a boundary
+                      // rather than sitting midway between two labels. It is
+                      // dropped either side of the open document: that tab
+                      // already reads as separate by its fill, and a rule
+                      // running into the fill's rounded edge only crowds it.
+                      // Hidden rather than unmounted, so moving the selection
+                      // does not add or remove a flex item and slide the whole
+                      // strip sideways under the pointer that just clicked it.
+                      const previous = tabs[index - 1];
+                      const isRuleHidden =
+                        previous?.id === activeTab || tab.id === activeTab;
+                      return (
+                        <Fragment key={tab.id}>
+                          {previous != null ? (
+                            <Divider
+                              orientation="vertical"
+                              xstyle={[
+                                styles.tabRule,
+                                isRuleHidden && styles.tabRuleHidden,
+                              ]}
+                            />
+                          ) : null}
+                          <DocumentTab
+                            tab={tab}
+                            isActive={tab.id === activeTab}
+                            onSelect={() => setActiveTab(tab.id)}
+                            onClose={() => closeTab(tab.id)}
+                          />
+                        </Fragment>
+                      );
+                    })}
                     <IconButton
                       label="New document"
                       tooltip="New document"
                       variant="ghost"
                       size="sm"
                       onClick={addTab}
-                      icon={<Icon icon={Plus} size={ICON} />}
+                      icon={<Icon icon={Plus} size={ICON} color="secondary" />}
                     />
                   </div>
                 </>
@@ -2795,22 +2815,16 @@ export default function CanvasEditor() {
                                 />
                                 {/* The trigger shows the picture rather than
                                 an icon standing in for one: the row is about
-                                which image this is. */}
-                                <button
-                                  type="button"
-                                  aria-label="Replace image"
-                                  title="Replace image"
+                                which image this is. `onClick` is what gives
+                                Thumbnail its button semantics and hover
+                                overlay, and `label` doubles as the tooltip. */}
+                                <Thumbnail
+                                  src={PHOTO_LAYER_SRC}
+                                  alt={`Current image, ${imageName}`}
+                                  label="Replace image"
                                   onClick={() => fileRef.current?.click()}
-                                  {...stylex.props(
-                                    styles.thumbnailButton,
-                                    styles.thumbnail,
-                                  )}>
-                                  <img
-                                    src={PHOTO_LAYER_SRC}
-                                    alt=""
-                                    {...stylex.props(styles.thumbnailImage)}
-                                  />
-                                </button>
+                                  xstyle={styles.sourceThumbnail}
+                                />
                               </InspectorRow>
                               <InspectorRow label="Fit">
                                 <StackItem size="fill">
