@@ -167,6 +167,28 @@ describe('useTableGroupedRows', () => {
     expect(screen.getByText('Infra::1::open')).toBeInTheDocument();
   });
 
+  it('shrink-wraps the group header the same way with and without renderGroupHeader', () => {
+    // The chevron only stays pinned on a sideways-scrolled table if its
+    // wrapper is narrower than the cell it sits in — a sticky box confined to
+    // a containing block it already fills has no slack to travel. The wrapper
+    // used to be shrink-wrapped only for the built-in heading, which stranded
+    // the collapse toggle off-screen for anyone passing renderGroupHeader.
+    const wrapperClass = (container: HTMLElement) => {
+      const toggle = within(container).getAllByRole('button')[0];
+      return toggle.parentElement?.className;
+    };
+
+    const builtIn = render(<Harness />);
+    const builtInClass = wrapperClass(builtIn.container);
+    builtIn.unmount();
+
+    const custom = render(
+      <Harness renderGroupHeader={key => <span>{key}</span>} />,
+    );
+
+    expect(wrapperClass(custom.container)).toBe(builtInClass);
+  });
+
   it('renders nothing (no group headers) for empty data', () => {
     render(<Harness rows={[]} />);
     // Column header row still renders; no group header rows.

@@ -145,11 +145,13 @@ const styles = stylex.create({
     // No inline start padding on the cell, so the chevron aligns with the
     // table's leading edge (Ernest review #1).
     paddingInlineStart: spacingVars['--spacing-1'],
-  },
-  // Applied alongside headerInner when using the built-in default heading.
-  // A custom `renderGroupHeader` may need the full column width, so the
-  // shrink-wrap is opt-in rather than unconditional.
-  headerInnerFitContent: {
+    // Shrink-wrapped so the sticky above has somewhere to travel. A sticky box
+    // is confined to its containing block, so one that already spans the cell —
+    // and the cell spans every column — has no slack to take up and never
+    // moves. This applies to a custom `renderGroupHeader` too: the chevron is
+    // the plugin's, and userland can pin its own heading but cannot reach the
+    // control, so leaving the wrapper full width stranded the collapse toggle
+    // off-screen on any table scrolled sideways.
     width: 'fit-content',
   },
   // Standalone chevron button with no heavy chrome (transparent, borderless,
@@ -384,11 +386,7 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
             // to the actual number of columns, so the header always spans the
             // full width without the plugin knowing the column count.
             <td colSpan={999} {...stylex.props(styles.headerCell)}>
-              <span
-                {...stylex.props(
-                  styles.headerInner,
-                  !renderGroupHeader && styles.headerInnerFitContent,
-                )}>
+              <span {...stylex.props(styles.headerInner)}>
                 {/* Standalone chevron button, flush with the table's start
                     edge (no heavy button chrome) — the keyboard control. */}
                 <button
