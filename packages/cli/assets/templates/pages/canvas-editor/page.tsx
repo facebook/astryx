@@ -823,27 +823,16 @@ const styles = stylex.create({
   // a second row of tabs would move the menubar down, and the whole point of
   // the strip is that the chrome above the canvas has a fixed height.
   tabStrip: {
-    display: 'flex',
-    alignItems: 'center',
-    // No gap: a flex gap applies on *both* sides of a rule, so it would sit
-    // in a channel of its own rather than on the seam between two tabs. The
-    // tabs carry their own inner padding, so butting them up costs the labels
-    // nothing and the rule lands exactly on the boundary it marks.
-    gap: 0,
     minWidth: 0,
     flexShrink: 1,
-    // The strip has to cap itself. It sits in Toolbar's start slot, and that
-    // slot is not the one built to give way — only the centre slot carries
+    // The strip has to cap itself, which is the one thing HStack's maxWidth
+    // cannot say for it. It sits in Toolbar's start slot, and that slot is
+    // not the one built to give way — only the centre slot carries
     // `min-width: 0`, so a start slot grows to its content and pushes the bar
     // wider instead of squeezing. Widening the start slot in core would
     // change every toolbar's behaviour to suit one page's tab strip, so the
-    // cap lives here: bar width less the room the menu button and the trailing
-    // save/export group need. Once capped, the tabs inside flex down to their
-    // own floor and the strip scrolls only after that.
-    maxWidth: `calc(100cqw - ${TAB_STRIP_RESERVE}px)`,
-    paddingInline: 'var(--spacing-2)',
-    paddingBlock: 'var(--spacing-1)',
-    overflowX: 'auto',
+    // cap arrives as a maxWidth prop and this only has to let it shrink.
+    //
     // The strip is short enough that a scrollbar would eat most of it, and
     // the tabs are draggable-looking targets already.
     scrollbarWidth: 'none',
@@ -861,14 +850,19 @@ const styles = stylex.create({
   // centred 16px keeps it clear of both the tab fill and the bar's own edges.
   tabRule: {height: 16, alignSelf: 'center', flexShrink: 0},
   tabRuleHidden: {visibility: 'hidden'},
-  // A tab is a wrapper, not a button, because it holds two separate actions:
-  // pick this document, and close it. Nesting the close inside the label's
-  // <button> would be invalid HTML and would make one hit area out of two
-  // jobs, so they sit as siblings and the wrapper only paints the chrome.
+  // Everything a tab needs beyond an Item: a width ceiling and a tighter
+  // measure. Item brings the 28px box, the radius, the fill when selected,
+  // the inline padding, and the ellipsis on a string label.
   tab: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--spacing-1)',
+    // Item spaces a list row, where 8px either side of the label is right
+    // because the rows are stacked and the eye reads down a column. A tab is
+    // read across, and at this ceiling those three 8px channels cost the
+    // name six characters: "Salzburg poster" needs 102px and would get 96.
+    // Back to the measure the strip had before, which clears it with 2px
+    // spare — the close end tighter still, because a bare 20px icon carries
+    // its own inset and an equal gap there reads as a wider one.
+    gap: 'var(--spacing-1-5)',
+    paddingInlineEnd: 'var(--spacing-1)',
     // A width the tab is allowed to shrink under, which makes it a ceiling:
     // it never grows, so it sits at this size until something squeezes it.
     // It has to be `width` and not `flexBasis` — a basis does not raise an
@@ -882,54 +876,22 @@ const styles = stylex.create({
     // to an unreadable sliver. Enough for the mark, a few characters and the
     // close; past it the strip's own overflow takes over.
     minWidth: 96,
-    // The 28px the rest of the editor aligns to.
-    height: 'var(--spacing-7)',
-    // Tighter on the close end: that side holds a bare 20px icon whose hit
-    // area already carries its own inset, so matching the label's inset
-    // would read as a wider gap.
-    paddingInlineStart: 'var(--spacing-2)',
-    paddingInlineEnd: 'var(--spacing-1)',
-    borderRadius: 'var(--radius-element)',
+  },
+  // Item marks a selected row with --color-accent-muted, which this editor's
+  // theme resolves to #262626 in dark — the exact colour of the header bar
+  // the strip sits on, so the open document would read as no document at
+  // all. The muted background is a step off the bar in both schemes, and it
+  // is the fill hover already uses, so selection and hover agree.
+  tabSelected: {backgroundColor: 'var(--color-background-muted)'},
+  // Item paints a fill when selected but leaves hover to the list that owns
+  // it, and the strip is not a list. The tab is a target on its own, so it
+  // answers the pointer itself.
+  tabHover: {
     backgroundColor: {
       default: 'transparent',
       ':hover': 'var(--color-background-muted)',
     },
   },
-  // The open document is a grey fill and nothing more. A border and shadow
-  // would make the tab a raised surface sitting on the bar, which reads as a
-  // second layer of chrome above a toolbar that is already a layer of chrome.
-  // The fill is the same one hover uses, so selection and hover agree.
-  tabActive: {backgroundColor: 'var(--color-background-muted)'},
-  // The label half: everything except the close, so the whole name is a
-  // target for switching documents.
-  tabSelect: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--spacing-1-5)',
-    // Without the min-width reset a flex item refuses to shrink below its
-    // content, and the label would push the close button out of the tab
-    // instead of truncating.
-    minWidth: 0,
-    // Takes the slack in the fixed-width tab, so the close sits at the far
-    // edge and the label is the thing that gives way when it appears.
-    flexGrow: 1,
-    padding: 0,
-    border: 'none',
-    backgroundColor: 'transparent',
-    fontFamily: 'inherit',
-    fontSize: 'var(--text-label-size)',
-    lineHeight: 'var(--text-label-leading)',
-    color: 'inherit',
-    cursor: 'pointer',
-  },
-  tabLabel: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  // Icon and label dim together on an unselected tab: dimming only the label
-  // left the icon at full strength, which read as the row being half-active.
-  tabIcon: {display: 'flex', flexShrink: 0},
   // A layer row keeps its lock quiet until the row is the one being pointed
   // at, so the rail reads as a list of names rather than a grid of buttons.
   // Opacity rather than display: the row must not change width when the
@@ -1330,11 +1292,16 @@ function ItemAction({
 /**
  * One open document in the strip above the menubar.
  *
- * Two buttons, not one: switching to a document and closing it are separate
- * actions, and an accessible name has to say which is which. The wrapper is
- * an unstyled <div> that paints the tab chrome and carries the hover marker;
- * putting the close inside the label's <button> would nest interactive
- * content, which no browser or screen reader handles well.
+ * An open document is the same kind of thing as a layer: a name with a mark
+ * in front of it and an action behind, which is why this is the same Item
+ * the rail is built from rather than a tab. Item ellipsizes a string label
+ * on its own, so the width ceiling below is the only thing left to say, and
+ * it ignores a click that lands on a nested button — that is what stops the
+ * close from also switching to the document it is closing.
+ *
+ * Not TabList: a Tab marks the open one with an underline rather than a
+ * fill, sizes itself to its label with no way to cap it from out here, and
+ * keeps both of those in spans an xstyle cannot reach.
  *
  * The close follows the same rule as the layer rail's lock: hidden until the
  * tab is hovered or holds focus, and pinned open on the active tab, which is
@@ -1353,37 +1320,35 @@ function DocumentTab({
   onClose: () => void;
 }) {
   return (
-    // The marker goes through the same stylex.props() call as the styles: a
-    // separate className prop would be overwritten by the spread that follows
-    // it, and the close button would never find an ancestor to hover.
-    <div
-      {...stylex.props(hoverScope, styles.tab, isActive && styles.tabActive)}>
-      <button
-        type="button"
-        aria-current={isActive ? 'true' : undefined}
-        onClick={onSelect}
-        {...stylex.props(styles.tabSelect)}>
-        <span {...stylex.props(styles.tabIcon)}>
-          <Icon
-            icon={tab.icon}
-            size={ICON}
-            color={isActive ? 'primary' : 'secondary'}
-          />
-        </span>
-        <Text
-          type="label"
+    <Item
+      label={tab.name}
+      density="compact"
+      isSelected={isActive}
+      onClick={onSelect}
+      aria-current={isActive ? 'true' : undefined}
+      // Scopes the close's reveal to this tab rather than to the whole strip,
+      // exactly as a layer row scopes its lock. It rides on className because
+      // an xstyle marker would be merged after Item's own styles.
+      className={stylex.props(hoverScope).className}
+      startContent={
+        <Icon
+          icon={tab.icon}
+          size={ICON}
           color={isActive ? 'primary' : 'secondary'}
-          xstyle={styles.tabLabel}>
-          {tab.name}
-        </Text>
-      </button>
-      <ItemAction
-        label={`Close ${tab.name}`}
-        icon={X}
-        onClick={onClose}
-        xstyle={[styles.tabClose, isActive && styles.tabClosePinned]}
-      />
-    </div>
+        />
+      }
+      endContent={
+        <ItemAction
+          label={`Close ${tab.name}`}
+          icon={X}
+          onClick={onClose}
+          xstyle={[styles.tabClose, isActive && styles.tabClosePinned]}
+        />
+      }
+      // Both fills land after Item's own, which is what lets the selected one
+      // be replaced; they stay mutually exclusive so hover cannot erase it.
+      xstyle={[styles.tab, isActive ? styles.tabSelected : styles.tabHover]}
+    />
   );
 }
 
@@ -2065,10 +2030,16 @@ export default function CanvasEditor() {
                     strip a name, and each tab says whether it is the open
                     document with aria-current.
                   */}
-                  <div
+                  <HStack
                     role="group"
                     aria-label="Open documents"
-                    {...stylex.props(styles.tabStrip)}>
+                    gap={0}
+                    vAlign="center"
+                    paddingInline={2}
+                    paddingBlock={1}
+                    isScrollable
+                    maxWidth={`calc(100cqw - ${TAB_STRIP_RESERVE}px)`}
+                    xstyle={styles.tabStrip}>
                     {tabs.map((tab, index) => {
                       // Tabs are all one width, so the rule marks a boundary
                       // rather than sitting midway between two labels. It is
@@ -2101,7 +2072,7 @@ export default function CanvasEditor() {
                         </Fragment>
                       );
                     })}
-                  </div>
+                  </HStack>
                   {/*
                     Outside the strip on both counts: it is not one of the
                     open documents the group is named for, and inside a strip

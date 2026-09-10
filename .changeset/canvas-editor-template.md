@@ -361,6 +361,30 @@ theme, so a lock keyed to the text ramp came out darker than the layer glyphs
 on its own row. Tabs dim their icon alongside their label; dimming the label
 alone left the icon at full strength and read as half-active.
 
+**An open document tab is an `Item`, and the strip is an `HStack`.** A tab
+was a `div` painting chrome around a `button` and a `span`, with its own
+radius, fill, height, gap, padding and ellipsis. It is the same object as a
+layer row — a name with a mark in front and an action behind — so it is now
+the same component, and all of that comes from `Item`: `density="compact"`
+gives the 28px box, `isSelected` the fill, `startContent` and `endContent`
+the file mark and the close, and a string `label` ellipsizes on its own.
+`Item` also ignores a click that lands on a nested button, which is what
+keeps the close from switching to the document it closes. The strip's flex,
+gap, padding, scroll and cap are all `HStack` props now.
+
+Not `TabList`, which is the component the name suggests: a `Tab` marks the
+open one with an underline rather than a fill, sizes itself to its label with
+no way to cap it from outside, and keeps both of those in spans an `xstyle`
+cannot reach.
+
+Two things stayed local. The width ceiling, because the strip sits in
+`Toolbar`'s start slot and that slot grows to its content. And the selected
+fill, because `Item` marks selection with `--color-accent-muted`, which this
+editor's theme resolves to the exact colour of the header bar in dark — the
+open document would have read as no document at all. `Item` also spaces a
+list row for reading down a column; across a tab those channels cost the name
+six characters, so the measure is tightened back to what the strip had.
+
 A note if you wire the Appearance menu to a Theme of your own: a nested Theme
 recolours text but does not repaint the page behind transparent panels, so an
 explicit mode needs a surface — here a `Section` wrapping the editor — or the
