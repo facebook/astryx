@@ -715,6 +715,48 @@ export const ResizableInAppShell: Story = {
       <Text type="body">Drag the sidebar edge to resize the navigation.</Text>
     </AppShell>
   ),
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+
+    const nav = canvasElement.querySelector<HTMLElement>('nav');
+    const panel = nav?.closest<HTMLElement>('.astryx-app-shell-sidenav');
+    const handle = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="astryx-sidenav-resize-handle"]',
+    );
+
+    if (!panel || !handle) {
+      throw new Error('Resizable AppShell fixture did not render as expected');
+    }
+
+    if (panel.scrollWidth !== panel.clientWidth) {
+      throw new Error(
+        `Resizable SideNav overflowed its AppShell panel: clientWidth ${panel.clientWidth}px, scrollWidth ${panel.scrollWidth}px`,
+      );
+    }
+
+    handle.focus();
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+    const focusStyle = getComputedStyle(handle);
+    const outlineWidth = Number.parseFloat(focusStyle.outlineWidth);
+    const outlineOffset = Number.parseFloat(focusStyle.outlineOffset);
+    if (
+      canvasElement.ownerDocument.activeElement !== handle ||
+      !handle.matches(':focus-visible') ||
+      focusStyle.outlineStyle === 'none' ||
+      !Number.isFinite(outlineWidth) ||
+      outlineWidth <= 0 ||
+      !Number.isFinite(outlineOffset) ||
+      outlineOffset > -outlineWidth
+    ) {
+      throw new Error(
+        `Resize handle focus ring was not visibly inset: ${outlineWidth}px ${focusStyle.outlineStyle}, offset ${outlineOffset}px`,
+      );
+    }
+  },
 };
 
 // =============================================================================
