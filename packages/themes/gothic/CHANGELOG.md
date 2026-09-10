@@ -1,5 +1,13 @@
 # @xds/theme-gothic
 
+# 0.6.0
+
+#### Breaking Changes
+
+- Requires `@astryxdesign/core@0.6.0` as part of the coordinated stable release. Upgrade Core and this theme together.
+
+---
+
 # 0.5.4
 
 ---
