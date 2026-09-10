@@ -3751,6 +3751,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-table-sticky-header",
+      "path": "hooks/use-table-sticky-header",
+      "aliases": []
+    },
+    {
       "name": "hook-use-table-tree-data",
       "path": "hooks/use-table-tree-data",
       "aliases": []
