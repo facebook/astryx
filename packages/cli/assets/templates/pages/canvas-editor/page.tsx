@@ -6,7 +6,6 @@ import {useCallback, useState, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
-import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Center} from '@astryxdesign/core/Center';
 import {Divider} from '@astryxdesign/core/Divider';
@@ -21,7 +20,7 @@ import {
 } from '@astryxdesign/core/DropdownMenu';
 import {Icon, type IconType} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
-import {Kbd} from '@astryxdesign/core/Kbd';
+import {Item} from '@astryxdesign/core/Item';
 import {
   HStack,
   Layout,
@@ -31,10 +30,12 @@ import {
   StackItem,
   VStack,
 } from '@astryxdesign/core/Layout';
-import {List, ListItem} from '@astryxdesign/core/List';
+import {List} from '@astryxdesign/core/List';
 import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {Popover} from '@astryxdesign/core/Popover';
 import {ResizeHandle, useResizable} from '@astryxdesign/core/Resizable';
 import {Section} from '@astryxdesign/core/Section';
+import {Slider} from '@astryxdesign/core/Slider';
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -47,15 +48,26 @@ import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 import {
+  Aperture,
+  ArrowDownToLine,
+  ArrowUpToLine,
+  Baseline,
+  CaseLower,
+  CaseSensitive,
+  CaseUpper,
+  Contrast,
   Download,
-  FlipHorizontal,
-  FlipVertical,
+  FlipHorizontal2,
+  FlipVertical2,
+  FoldVertical,
   Frame,
+  Grip,
   Group,
   Image as ImageIcon,
+  Italic,
   Lock,
   LockOpen,
-  Palette,
+  Minus,
   PanelBottom,
   PanelLeft,
   PanelRight,
@@ -63,7 +75,14 @@ import {
   RotateCcw,
   RotateCw,
   SquareDashed,
+  SquareRoundCorner,
+  Strikethrough,
+  TextAlignCenter,
+  TextAlignEnd,
+  TextAlignJustify,
+  TextAlignStart,
   Type,
+  Underline,
   Undo2,
   X,
 } from 'lucide-react';
@@ -135,7 +154,7 @@ const ICON = 'sm' as const;
  * Wide enough for the longest label the panel uses at the label type size,
  * which is what puts every control on a single left edge.
  */
-const LABEL_COLUMN = 58;
+const LABEL_COLUMN = 80;
 
 const PHOTO_LAYER_SRC = '/template-assets/moody-scene-vertical-1.png';
 
@@ -146,6 +165,39 @@ type ThemeMode = 'light' | 'dark' | 'system';
 
 /** The menubar's menus, left to right. */
 type MenuID = 'file' | 'edit' | 'view' | 'object' | 'help';
+
+/** Horizontal and vertical placement of a text layer inside its box. */
+type AlignX = 'start' | 'center' | 'end' | 'justify';
+type AlignY = 'start' | 'center' | 'end';
+type Decoration = 'none' | 'underline' | 'line-through';
+type Transform = 'none' | 'capitalize' | 'uppercase' | 'lowercase';
+
+/**
+ * The nine CSS filters the image inspector exposes, in the order they are
+ * listed there. Kept as one record so a layer carries a single `filters`
+ * object and the artboard can build a `filter` string by walking it, rather
+ * than nine optional fields that every read has to spell out.
+ */
+interface Filters {
+  blur: number;
+  brightness: number;
+  contrast: number;
+  grayscale: number;
+  hue: number;
+  invert: number;
+  opacity: number;
+  saturate: number;
+  sepia: number;
+}
+
+/** A drop shadow, in the four numbers the shadow popover edits. */
+interface Shadow {
+  x: number;
+  y: number;
+  blur: number;
+  spread: number;
+  color: string;
+}
 
 interface Layer {
   id: string;
@@ -161,12 +213,48 @@ interface Layer {
   isLocked: boolean;
   /** Copy for a text layer; the alt text for an image layer. */
   content: string;
+  /** Undefined means the slot is empty and the field shows its placeholder. */
+  border?: string;
+  fill?: string;
+  /** The shadow cast by the layer's box. */
+  shadow?: Shadow;
   /** Type settings. Only text layers carry them, and only they show them. */
   family?: string;
   weight?: string;
+  color?: string;
   size?: number;
+  line?: number;
   tracking?: number;
+  alignX?: AlignX;
+  alignY?: AlignY;
+  isItalic?: boolean;
+  decoration?: Decoration;
+  transform?: Transform;
+  /**
+   * The shadow cast by the glyphs, which is a different property from the
+   * one in Styles: that one is the box's, this one is the type's, and a
+   * layer can carry both.
+   */
+  textShadow?: Shadow;
+  stroke?: number;
+  /** Image settings. Only image layers carry them. */
+  fit?: string;
+  filters?: Filters;
 }
+
+const NO_SHADOW: Shadow = {x: 0, y: 0, blur: 0, spread: 0, color: '#000000'};
+
+const NO_FILTERS: Filters = {
+  blur: 0,
+  brightness: 100,
+  contrast: 100,
+  grayscale: 0,
+  hue: 0,
+  invert: 0,
+  opacity: 100,
+  saturate: 100,
+  sepia: 0,
+};
 
 const INITIAL_LAYERS: Layer[] = [
   {
@@ -182,10 +270,19 @@ const INITIAL_LAYERS: Layer[] = [
     radius: 0,
     isLocked: false,
     content: 'A weekend in Salzburg',
+    fill: '#111111',
     family: 'Anton',
     weight: 'Regular',
+    color: '#111111',
     size: 112,
+    line: 100,
     tracking: -2,
+    alignX: 'start',
+    alignY: 'start',
+    isItalic: false,
+    decoration: 'none',
+    transform: 'uppercase',
+    stroke: 0,
   },
   {
     id: 'dateline',
@@ -202,8 +299,16 @@ const INITIAL_LAYERS: Layer[] = [
     content: 'March 14–16 · Austria',
     family: 'Inter Tight',
     weight: 'Medium',
+    color: '#111111',
     size: 26,
+    line: 120,
     tracking: 32,
+    alignX: 'center',
+    alignY: 'start',
+    isItalic: false,
+    decoration: 'none',
+    transform: 'uppercase',
+    stroke: 0,
   },
   {
     id: 'photo',
@@ -218,10 +323,15 @@ const INITIAL_LAYERS: Layer[] = [
     radius: 0,
     isLocked: true,
     content: 'The Salzach river and old town rooftops at dusk',
+    fit: 'Cover',
+    filters: NO_FILTERS,
   },
 ];
 
 const LAYER_ICON = {text: Type, image: ImageIcon} as const;
+
+/** The inspector's vertical alignment, in the words a Stack uses for it. */
+const V_ALIGN = {start: 'start', center: 'center', end: 'end'} as const;
 
 // =============================================================================
 // Field glyphs
@@ -266,9 +376,72 @@ const GLYPH = {
   width: glyph('W'),
   height: glyph('H'),
   rotation: glyph('°'),
-  fontSize: glyph('A'),
-  tracking: glyph('AV'),
 } as const;
+
+/**
+ * Each preset carries its own icon. A library where every row shows the same
+ * glyph is a list you have to read word by word; distinct marks let the eye
+ * find the row it wants.
+ */
+const EFFECT_PRESETS: {label: string; icon: IconType}[] = [
+  {label: 'Grain overlay', icon: Aperture},
+  {label: 'Halftone', icon: Grip},
+  {label: 'Duotone teal', icon: Contrast},
+];
+
+/**
+ * The icon-only segmented rows in the text inspector. Each entry keeps its
+ * spoken label next to its glyph, because `isLabelHidden` hides the text but
+ * still needs it for the accessible name.
+ */
+const ALIGN_X: {value: AlignX; label: string; icon: IconType}[] = [
+  {value: 'start', label: 'Align left', icon: TextAlignStart},
+  {value: 'center', label: 'Align centre', icon: TextAlignCenter},
+  {value: 'end', label: 'Align right', icon: TextAlignEnd},
+  {value: 'justify', label: 'Justify', icon: TextAlignJustify},
+];
+
+const ALIGN_Y: {value: AlignY; label: string; icon: IconType}[] = [
+  {value: 'start', label: 'Align top', icon: ArrowUpToLine},
+  {value: 'center', label: 'Align middle', icon: FoldVertical},
+  {value: 'end', label: 'Align bottom', icon: ArrowDownToLine},
+];
+
+const DECORATIONS: {value: Decoration; label: string; icon: IconType}[] = [
+  {value: 'none', label: 'No decoration', icon: CaseSensitive},
+  {value: 'underline', label: 'Underline', icon: Underline},
+  {value: 'line-through', label: 'Strikethrough', icon: Strikethrough},
+];
+
+const TRANSFORMS: {value: Transform; label: string; icon: IconType}[] = [
+  {value: 'none', label: 'As typed', icon: Minus},
+  {value: 'capitalize', label: 'Capitalise', icon: CaseSensitive},
+  {value: 'uppercase', label: 'Uppercase', icon: CaseUpper},
+  {value: 'lowercase', label: 'Lowercase', icon: CaseLower},
+];
+
+/**
+ * The nine image filters, with the range and unit each one is stated in.
+ * `max` is what the slider runs to rather than what CSS allows — brightness
+ * and saturate go past 200%, but a rail that reaches 500 spends most of its
+ * travel somewhere nobody drags to.
+ */
+const FILTERS: {
+  key: keyof Filters;
+  label: string;
+  max: number;
+  unit: string;
+}[] = [
+  {key: 'blur', label: 'Blur', max: 20, unit: 'px'},
+  {key: 'brightness', label: 'Brightness', max: 200, unit: '%'},
+  {key: 'contrast', label: 'Contrast', max: 200, unit: '%'},
+  {key: 'grayscale', label: 'Grayscale', max: 100, unit: '%'},
+  {key: 'hue', label: 'Hue', max: 360, unit: 'deg'},
+  {key: 'invert', label: 'Invert', max: 100, unit: '%'},
+  {key: 'opacity', label: 'Opacity', max: 100, unit: '%'},
+  {key: 'saturate', label: 'Saturate', max: 200, unit: '%'},
+  {key: 'sepia', label: 'Sepia', max: 100, unit: '%'},
+];
 
 const ZOOM_OPTIONS = [
   {value: '0.25', label: '25%'},
@@ -296,6 +469,129 @@ const EXPORT_FORMATS = [
 ];
 
 const EXPORT_MENU = EXPORT_FORMATS.map(label => ({label}));
+
+// =============================================================================
+// Colour
+// =============================================================================
+
+/** A colour as the picker holds it: hue 0–360, saturation and value 0–100. */
+interface Hsv {
+  h: number;
+  s: number;
+  v: number;
+}
+
+/**
+ * The picker thinks in HSV because that is the shape of its two controls — a
+ * hue rail and a saturation/value plane — while every value it reads and
+ * writes is a hex string. These convert between the two.
+ */
+function hsvToHex({h, s, v}: Hsv): string {
+  const channel = (n: number) => {
+    const k = (n + h / 60) % 6;
+    const value =
+      (v / 100) * (1 - (s / 100) * Math.max(0, Math.min(k, 4 - k, 1)));
+    return Math.round(value * 255)
+      .toString(16)
+      .padStart(2, '0');
+  };
+  return `#${channel(5)}${channel(3)}${channel(1)}`;
+}
+
+function hexToHsv(hex: string): Hsv {
+  const parsed = /^#?([\da-f]{6})$/i.exec(hex.trim());
+  if (!parsed) {
+    return {h: 0, s: 0, v: 0};
+  }
+  const int = parseInt(parsed[1], 16);
+  const r = ((int >> 16) & 255) / 255;
+  const g = ((int >> 8) & 255) / 255;
+  const b = (int & 255) / 255;
+  const max = Math.max(r, g, b);
+  const span = max - Math.min(r, g, b);
+  let h = 0;
+  if (span !== 0) {
+    if (max === r) {
+      h = ((g - b) / span) % 6;
+    } else if (max === g) {
+      h = (b - r) / span + 2;
+    } else {
+      h = (r - g) / span + 4;
+    }
+  }
+  return {
+    h: (Math.round(h * 60) + 360) % 360,
+    s: max === 0 ? 0 : Math.round((span / max) * 100),
+    v: Math.round(max * 100),
+  };
+}
+
+/**
+ * Drag tracking for the two controls that have to be painted rather than
+ * composed — the saturation/value plane and the hue rail. Reports the pointer
+ * as a fraction of the element on press and for as long as the drag lasts.
+ *
+ * Pointer capture is what makes the drag survive leaving the element: a fast
+ * diagonal out of the plane keeps tracking instead of stopping dead at the
+ * edge, which is the difference between a picker that feels attached to the
+ * cursor and one that keeps dropping it.
+ */
+function usePointerTrack(onTrack: (x: number, y: number) => void) {
+  const read = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const box = event.currentTarget.getBoundingClientRect();
+      onTrack(
+        Math.min(1, Math.max(0, (event.clientX - box.left) / box.width)),
+        Math.min(1, Math.max(0, (event.clientY - box.top) / box.height)),
+      );
+    },
+    [onTrack],
+  );
+  return {
+    onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
+      event.currentTarget.setPointerCapture(event.pointerId);
+      read(event);
+    },
+    onPointerMove: (event: React.PointerEvent<HTMLElement>) => {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        read(event);
+      }
+    },
+  };
+}
+
+/**
+ * Builds the `filter` shorthand from the nine values the inspector edits.
+ *
+ * Only the ones that are off their neutral point are emitted: a filter list
+ * of nine no-op functions still forces the image onto its own composited
+ * layer, and a poster that is only ever blurred should not pay for the other
+ * eight.
+ */
+function filterCss(filters: Filters): string {
+  const parts = [
+    ['blur', filters.blur, 0, 'px'],
+    ['brightness', filters.brightness, 100, '%'],
+    ['contrast', filters.contrast, 100, '%'],
+    ['grayscale', filters.grayscale, 0, '%'],
+    ['hue-rotate', filters.hue, 0, 'deg'],
+    ['invert', filters.invert, 0, '%'],
+    ['opacity', filters.opacity, 100, '%'],
+    ['saturate', filters.saturate, 100, '%'],
+    ['sepia', filters.sepia, 0, '%'],
+  ] as const;
+  const active = parts
+    .filter(([, value, neutral]) => value !== neutral)
+    .map(([name, value, , unit]) => `${name}(${value}${unit})`);
+  return active.length > 0 ? active.join(' ') : 'none';
+}
+
+/** `text-shadow` takes no spread, so a text layer's shadow drops it. */
+function shadowCss(shadow: Shadow | undefined): string {
+  return shadow
+    ? `${shadow.x}px ${shadow.y}px ${shadow.blur}px ${shadow.color}`
+    : 'none';
+}
 
 // =============================================================================
 // Styles
@@ -326,9 +622,21 @@ const styles = stylex.create({
   // belong to a layer, not to the poster, and they change per keystroke.
   // Tracking is a percentage of the type size, the way a design tool states
   // it, so it holds when the size changes.
-  type: (size: number, tracking: number) => ({
+  type: (
+    size: number,
+    tracking: number,
+    line: number,
+    color: string,
+    stroke: number,
+    shadow: string,
+  ) => ({
     fontSize: `${size}px`,
     letterSpacing: `${tracking / 100}em`,
+    lineHeight: `${line}%`,
+    color,
+    WebkitTextStrokeWidth: stroke > 0 ? `${stroke}px` : null,
+    WebkitTextStrokeColor: stroke > 0 ? color : null,
+    textShadow: shadow,
   }),
   // AspectRatio's `fit` stretches every direct child to fill the box, so a
   // second one would flow below the photo and clip. Taking the text layers
@@ -405,6 +713,143 @@ const styles = stylex.create({
   // whichever item gives way first and each label ends up a different width —
   // which is exactly the shared left edge the panel is built around.
   labelColumn: {flexShrink: 0},
+  // A row action, sized to its icon instead of to a control.
+  //
+  // The smallest IconButton is 28px, which is the whole row's height budget
+  // once compact density adds its 4px above and below — a rail of 28px rows
+  // cannot contain a 28px button. So these are bare buttons: no painted box,
+  // no size floor, just a hit area around the icon. They keep <button>
+  // because the lock and the clear are real actions that have to stay
+  // keyboard-reachable; it is the Button *component's* minimum that had to
+  // go, not the element.
+  rowIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 'var(--spacing-5)',
+    height: 'var(--spacing-5)',
+    padding: 0,
+    border: 'none',
+    borderRadius: 'var(--radius-inner)',
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': 'var(--color-neutral)',
+    },
+    color: {
+      default: 'var(--color-text-secondary)',
+      ':hover': 'var(--color-text)',
+      ':disabled': 'var(--color-text-disabled)',
+    },
+    cursor: {default: 'pointer', ':disabled': 'default'},
+  },
+  // The colour chip that opens a picker. Sized to the same 20px as a row
+  // icon so a row holding one still measures 28px.
+  swatch: {
+    width: 'var(--spacing-5)',
+    height: 'var(--spacing-5)',
+    flexShrink: 0,
+    padding: 0,
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-emphasized)',
+    borderRadius: 'var(--radius-inner)',
+    cursor: 'pointer',
+    // A chip for an unset slot reads as empty rather than as black.
+    backgroundImage:
+      'linear-gradient(45deg, transparent 45%, var(--color-border-emphasized) 45% 55%, transparent 55%)',
+  },
+  swatchFilled: {backgroundImage: 'none'},
+  // The saturation/value plane. White runs left to right and black bottom to
+  // top over the pure hue, so every point in the square is one colour at
+  // that hue.
+  plane: {
+    position: 'relative',
+    height: 160,
+    borderRadius: 'var(--radius-inner)',
+    backgroundImage:
+      'linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent)',
+    cursor: 'crosshair',
+    touchAction: 'none',
+  },
+  hueRail: {
+    position: 'relative',
+    height: 'var(--spacing-3)',
+    borderRadius: 'var(--radius-full)',
+    backgroundImage:
+      'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)',
+    cursor: 'pointer',
+    touchAction: 'none',
+  },
+  // Both thumbs are positioned by their centre, so the translate is what
+  // keeps them on the value rather than beside it.
+  thumb: {
+    position: 'absolute',
+    width: 'var(--spacing-3)',
+    height: 'var(--spacing-3)',
+    borderWidth: '2px',
+    borderStyle: 'solid',
+    borderColor: '#fff',
+    borderRadius: 'var(--radius-full)',
+    boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.35)',
+    transform: 'translate(-50%, -50%)',
+    pointerEvents: 'none',
+  },
+  planeStack: {display: 'grid', gap: 'var(--spacing-3)'},
+  // Filter rows put the slider beside the number rather than under it, so
+  // nine of them still read as one column.
+  filterSlider: {flexShrink: 0, width: 56},
+  thumbnail: {
+    overflow: 'hidden',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-emphasized)',
+  },
+  thumbnailImage: {width: '100%', height: '100%', objectFit: 'cover'},
+});
+
+/**
+ * The enumerable half of a text layer's styling. These are closed sets, so
+ * they compile to static classes picked by key rather than to a custom
+ * property set at runtime.
+ */
+const typeCase = stylex.create({
+  none: {textTransform: 'none'},
+  capitalize: {textTransform: 'capitalize'},
+  uppercase: {textTransform: 'uppercase'},
+  lowercase: {textTransform: 'lowercase'},
+});
+
+const typeLine = stylex.create({
+  none: {textDecorationLine: 'none'},
+  underline: {textDecorationLine: 'underline'},
+  'line-through': {textDecorationLine: 'line-through'},
+});
+
+const typeSlant = stylex.create({
+  normal: {fontStyle: 'normal'},
+  italic: {fontStyle: 'italic'},
+});
+
+const typeAlign = stylex.create({
+  start: {textAlign: 'start'},
+  center: {textAlign: 'center'},
+  end: {textAlign: 'end'},
+  justify: {textAlign: 'justify'},
+});
+
+/** Runtime values the painted controls need, kept out of the static sheet. */
+const paint = stylex.create({
+  photo: (filter: string) => ({filter}),
+  hue: (h: number) => ({backgroundColor: `hsl(${h} 100% 50%)`}),
+  planeThumb: (s: number, v: number) => ({
+    insetInlineStart: `${s}%`,
+    insetBlockStart: `${100 - v}%`,
+  }),
+  hueThumb: (h: number) => ({
+    insetInlineStart: `${(h / 360) * 100}%`,
+    insetBlockStart: '50%',
+  }),
+  fill: (color: string) => ({backgroundColor: color}),
 });
 
 // =============================================================================
@@ -422,16 +867,19 @@ const styles = stylex.create({
 function InspectorRow({
   label,
   hAlign,
+  labelWidth = LABEL_COLUMN,
   children,
 }: {
   label: string;
   /** Set to "end" for a row of bare buttons, which have no field to fill. */
   hAlign?: 'start' | 'end';
+  /** Narrower inside a popover, where the panel's column would not fit. */
+  labelWidth?: number;
   children: React.ReactNode;
 }) {
   return (
     <HStack gap={2} vAlign="center">
-      <HStack width={LABEL_COLUMN} xstyle={styles.labelColumn}>
+      <HStack width={labelWidth} xstyle={styles.labelColumn}>
         <Text type="label" color="secondary" maxLines={1}>
           {label}
         </Text>
@@ -472,6 +920,81 @@ function AxisInput({
   );
 }
 
+/**
+ * A numeric row with the steppers showing. Size, line height and letter
+ * spacing get them because they are values you arrive at by nudging rather
+ * than by typing a number you already know.
+ */
+function StepperRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (next: number) => void;
+}) {
+  return (
+    <InspectorRow label={label}>
+      <StackItem size="fill">
+        <NumberInput
+          label={label}
+          isLabelHidden
+          size="sm"
+          hasNumberSteppers
+          value={value}
+          onChange={onChange}
+          isWheelEnabled={false}
+        />
+      </StackItem>
+    </InspectorRow>
+  );
+}
+
+/**
+ * One image filter: the number and the rail that drags it.
+ *
+ * Both are wired to the same value, which is the point — you drag to find
+ * the look and read the number to reproduce it, and nine of these read as
+ * one column because the rail is fixed-width instead of filling.
+ */
+function FilterRow({
+  filter,
+  value,
+  onChange,
+}: {
+  filter: (typeof FILTERS)[number];
+  value: number;
+  onChange: (next: number) => void;
+}) {
+  return (
+    <InspectorRow label={filter.label}>
+      <StackItem size="fill">
+        <NumberInput
+          label={filter.label}
+          isLabelHidden
+          size="sm"
+          min={0}
+          max={filter.max}
+          value={value}
+          onChange={onChange}
+          isWheelEnabled={false}
+        />
+      </StackItem>
+      <Slider
+        label={`${filter.label} slider`}
+        isLabelHidden
+        min={0}
+        max={filter.max}
+        value={value}
+        onChange={onChange}
+        valueDisplay="none"
+        xstyle={styles.filterSlider}
+      />
+    </InspectorRow>
+  );
+}
+
 /** An inspector group: a caption, its rows, and a closing divider. */
 function InspectorSection({
   title,
@@ -489,6 +1012,231 @@ function InspectorSection({
         {children}
       </VStack>
     </Section>
+  );
+}
+
+/**
+ * A row action: an icon you can click, not a button with an icon in it.
+ *
+ * See `styles.rowIcon` for why these are bare `<button>`s rather than
+ * `IconButton`s.
+ */
+function RowIcon({
+  label,
+  icon,
+  isDisabled,
+  onClick,
+  xstyle,
+}: {
+  label: string;
+  icon: IconType;
+  isDisabled?: boolean;
+  onClick?: () => void;
+  xstyle?: stylex.StyleXStyles;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      disabled={isDisabled}
+      onClick={onClick}
+      {...stylex.props(styles.rowIcon, xstyle)}>
+      <Icon icon={icon} size={ICON} />
+    </button>
+  );
+}
+
+/**
+ * The saturation/value plane, the hue rail, and the hex field, which are the
+ * three ways the same colour gets said.
+ *
+ * The plane and the rail are painted rather than composed: a two-dimensional
+ * gradient and a rainbow track are not controls the system ships, and a
+ * Slider styled into a hue rail would still only give one of the two axes.
+ * They carry `role="slider"` with arrow keys so the picker is not
+ * pointer-only, and the hex field is the exact route for anyone who already
+ * knows the value.
+ *
+ * HSV lives here rather than on the layer. A layer stores a hex string —
+ * that is what the artboard paints — but hex has no hue to slide once the
+ * colour reaches black or white, so the picker keeps the HSV it is working
+ * in for as long as it is open.
+ */
+function ColorPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const [hsv, setHsv] = useState(() => hexToHsv(value));
+  const [draft, setDraft] = useState(value);
+
+  const commit = useCallback(
+    (next: Hsv) => {
+      setHsv(next);
+      const hex = hsvToHex(next);
+      setDraft(hex);
+      onChange(hex);
+    },
+    [onChange],
+  );
+
+  const planeTrack = usePointerTrack(
+    useCallback(
+      (x, y) =>
+        commit({...hsv, s: Math.round(x * 100), v: Math.round(100 - y * 100)}),
+      [commit, hsv],
+    ),
+  );
+  const hueTrack = usePointerTrack(
+    useCallback(x => commit({...hsv, h: Math.round(x * 360)}), [commit, hsv]),
+  );
+
+  const nudge = (event: React.KeyboardEvent, step: Partial<Hsv>) => {
+    const sign =
+      event.key === 'ArrowRight' || event.key === 'ArrowUp'
+        ? 1
+        : event.key === 'ArrowLeft' || event.key === 'ArrowDown'
+          ? -1
+          : 0;
+    if (sign === 0) {
+      return;
+    }
+    event.preventDefault();
+    const horizontal = event.key === 'ArrowRight' || event.key === 'ArrowLeft';
+    commit({
+      h: Math.min(360, Math.max(0, hsv.h + sign * (step.h ?? 0))),
+      s: Math.min(
+        100,
+        Math.max(0, hsv.s + (horizontal ? sign * (step.s ?? 0) : 0)),
+      ),
+      v: Math.min(
+        100,
+        Math.max(0, hsv.v + (horizontal ? 0 : sign * (step.v ?? 0))),
+      ),
+    });
+  };
+
+  return (
+    <div {...stylex.props(styles.planeStack)}>
+      <div
+        role="slider"
+        tabIndex={0}
+        aria-label="Saturation and brightness"
+        aria-valuetext={`${hsv.s}% saturation, ${hsv.v}% brightness`}
+        aria-valuenow={hsv.s}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        onKeyDown={event => nudge(event, {s: 2, v: 2})}
+        {...planeTrack}
+        {...stylex.props(styles.plane, paint.hue(hsv.h))}>
+        <span
+          {...stylex.props(
+            styles.thumb,
+            paint.planeThumb(hsv.s, hsv.v),
+            paint.fill(hsvToHex(hsv)),
+          )}
+        />
+      </div>
+      <div
+        role="slider"
+        tabIndex={0}
+        aria-label="Hue"
+        aria-valuenow={hsv.h}
+        aria-valuemin={0}
+        aria-valuemax={360}
+        onKeyDown={event => nudge(event, {h: 4})}
+        {...hueTrack}
+        {...stylex.props(styles.hueRail)}>
+        <span
+          {...stylex.props(
+            styles.thumb,
+            paint.hueThumb(hsv.h),
+            paint.fill(hsvToHex({h: hsv.h, s: 100, v: 100})),
+          )}
+        />
+      </div>
+      <TextInput
+        label="Hex"
+        isLabelHidden
+        size="sm"
+        value={draft}
+        onChange={next => {
+          setDraft(next);
+          if (/^#?[\da-f]{6}$/i.test(next.trim())) {
+            setHsv(hexToHsv(next));
+            onChange(next.startsWith('#') ? next : `#${next}`);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * The chip that opens a picker. Twenty pixels square, so a row carrying one
+ * still measures 28.
+ */
+function Swatch({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value?: string;
+  onChange: (next: string) => void;
+  children?: React.ReactNode;
+}) {
+  return (
+    <Popover
+      label={label}
+      placement="start"
+      alignment="start"
+      width={248}
+      content={
+        <VStack gap={3}>
+          <Text type="label" weight="semibold">
+            {label}
+          </Text>
+          <ColorPicker value={value ?? '#ffffff'} onChange={onChange} />
+          {children}
+        </VStack>
+      }>
+      <button
+        type="button"
+        aria-label={`${label}${value ? `, ${value}` : ', not set'}`}
+        {...stylex.props(
+          styles.swatch,
+          value != null && styles.swatchFilled,
+          value != null && paint.fill(value),
+        )}
+      />
+    </Popover>
+  );
+}
+
+/**
+ * A menu shortcut, printed the way a desktop menu prints one: quiet
+ * secondary text set hard against the menu's right edge.
+ *
+ * `Kbd` paints one key cap per key, so `⌘` and `N` arrive as two small
+ * objects sitting beside the item. A shortcut is a hint about the item, not
+ * a control on it, so it reads better as one dim string that the eye can
+ * skip.
+ *
+ * The glyphs are literal because platform detection is core's, not a
+ * template's — `Kbd` resolves `mod` to ⌘ or Ctrl through an internal util
+ * that is deliberately unexported. These read as macOS, as they do in the
+ * shell-nav template.
+ */
+function Shortcut({children}: {children: string}) {
+  return (
+    <Text type="supporting" color="secondary">
+      {children}
+    </Text>
   );
 }
 
@@ -513,24 +1261,23 @@ function LayerRow({
   onToggleLock: () => void;
 }) {
   return (
-    <ListItem
+    <Item
+      as="li"
+      density="compact"
       label={layer.name}
       isSelected={isSelected}
       onClick={onSelect}
       // The marker has to sit on the row itself for the hover selector below
       // to scope to one row. `xstyle` takes style objects and rejects a
       // marker's opaque type, so the class it compiles to goes on through
-      // `className`, which ListItem merges onto the same <li>.
+      // `className`, which Item merges onto the same element.
       className={stylex.props(layerRow).className}
       startContent={<Icon icon={LAYER_ICON[layer.kind]} size={ICON} />}
       endContent={
-        <IconButton
+        <RowIcon
           label={layer.isLocked ? `Unlock ${layer.name}` : `Lock ${layer.name}`}
-          tooltip={layer.isLocked ? 'Unlock layer' : 'Lock layer'}
-          size="sm"
-          variant="ghost"
+          icon={layer.isLocked ? Lock : LockOpen}
           onClick={onToggleLock}
-          icon={<Icon icon={layer.isLocked ? Lock : LockOpen} size={ICON} />}
           xstyle={[styles.rowAction, layer.isLocked && styles.rowActionPinned]}
         />
       }
@@ -539,18 +1286,29 @@ function LayerRow({
 }
 
 /**
- * A style slot that is either unset or carries a value: a field led by a
- * swatch that opens the picker, and a clear that only lights up once the slot
- * holds something.
+ * A style slot that is either unset or carries a value: a field led by the
+ * slot's own icon, and a clear that only lights up once the slot holds
+ * something.
+ *
+ * The icon is a prop rather than one shared swatch. Border, shadow and fill
+ * are three different properties, and giving them one icon makes the column
+ * read as three copies of the same control.
  */
 function StyleRow({
   label,
   value,
   placeholder,
+  onChange,
+  onClear,
+  children,
 }: {
   label: string;
   value?: string;
   placeholder: string;
+  onChange: (next: string) => void;
+  onClear: () => void;
+  /** Extra controls for the popover, e.g. a shadow's offset and blur. */
+  children?: React.ReactNode;
 }) {
   return (
     <InspectorRow label={label}>
@@ -558,21 +1316,58 @@ function StyleRow({
         <TextInput
           label={label}
           isLabelHidden
-          startIcon={Palette}
           size="sm"
           value={value ?? ''}
           placeholder={placeholder}
+          onChange={onChange}
         />
       </StackItem>
-      <IconButton
+      <Swatch label={label} value={value} onChange={onChange}>
+        {children}
+      </Swatch>
+      <RowIcon
         label={`Clear ${label.toLowerCase()}`}
-        tooltip="Clear"
-        size="sm"
-        variant="ghost"
+        icon={X}
         isDisabled={value === undefined}
-        icon={<Icon icon={X} size={ICON} />}
+        onClick={onClear}
       />
     </InspectorRow>
+  );
+}
+
+/**
+ * The four numbers a shadow has beyond its colour. They live in the same
+ * popover as the colour because a shadow is one thing to set, not five.
+ */
+function ShadowFields({
+  shadow,
+  onChange,
+}: {
+  shadow: Shadow;
+  onChange: (next: Shadow) => void;
+}) {
+  const field = (key: 'x' | 'y' | 'blur' | 'spread', label: string) => (
+    <InspectorRow label={label} labelWidth={56}>
+      <StackItem size="fill">
+        <NumberInput
+          label={`Shadow ${label.toLowerCase()}`}
+          isLabelHidden
+          size="sm"
+          hasNumberSteppers
+          value={shadow[key]}
+          onChange={next => onChange({...shadow, [key]: next})}
+          isWheelEnabled={false}
+        />
+      </StackItem>
+    </InspectorRow>
+  );
+  return (
+    <VStack gap={2}>
+      {field('x', 'X')}
+      {field('y', 'Y')}
+      {field('blur', 'Blur')}
+      {field('spread', 'Spread')}
+    </VStack>
   );
 }
 
@@ -601,8 +1396,8 @@ export default function CanvasEditor() {
   // and the ceilings keep either from eating the canvas they exist to serve.
   const rail = useResizable({defaultSize: 216, minSize: 176, maxSize: 320});
   const inspector = useResizable({
-    defaultSize: 272,
-    minSize: 248,
+    defaultSize: 288,
+    minSize: 264,
     maxSize: 400,
   });
 
@@ -680,20 +1475,20 @@ export default function CanvasEditor() {
                   <DropdownMenu {...menu('file', 'File')}>
                     <DropdownMenuItem
                       label="New poster"
-                      endContent={<Kbd keys="mod+n" />}
+                      endContent={<Shortcut>⌘N</Shortcut>}
                     />
                     <DropdownMenuItem
                       label="Open…"
-                      endContent={<Kbd keys="mod+o" />}
+                      endContent={<Shortcut>⌘O</Shortcut>}
                     />
                     <DropdownMenuDivider />
                     <DropdownMenuItem
                       label="Save"
-                      endContent={<Kbd keys="mod+s" />}
+                      endContent={<Shortcut>⌘S</Shortcut>}
                     />
                     <DropdownMenuItem
                       label="Save as…"
-                      endContent={<Kbd keys="mod+shift+s" />}
+                      endContent={<Shortcut>⇧⌘S</Shortcut>}
                     />
                     <DropdownMenuSubMenu label="Export">
                       {EXPORT_FORMATS.map(format => (
@@ -703,36 +1498,36 @@ export default function CanvasEditor() {
                     <DropdownMenuDivider />
                     <DropdownMenuItem
                       label="Close"
-                      endContent={<Kbd keys="mod+w" />}
+                      endContent={<Shortcut>⌘W</Shortcut>}
                     />
                   </DropdownMenu>
 
                   <DropdownMenu {...menu('edit', 'Edit')}>
                     <DropdownMenuItem
                       label="Undo"
-                      endContent={<Kbd keys="mod+z" />}
+                      endContent={<Shortcut>⌘Z</Shortcut>}
                     />
                     <DropdownMenuItem
                       label="Redo"
-                      endContent={<Kbd keys="mod+shift+z" />}
+                      endContent={<Shortcut>⇧⌘Z</Shortcut>}
                     />
                     <DropdownMenuDivider />
                     <DropdownMenuItem
                       label="Cut"
-                      endContent={<Kbd keys="mod+x" />}
+                      endContent={<Shortcut>⌘X</Shortcut>}
                     />
                     <DropdownMenuItem
                       label="Copy"
-                      endContent={<Kbd keys="mod+c" />}
+                      endContent={<Shortcut>⌘C</Shortcut>}
                     />
                     <DropdownMenuItem
                       label="Paste"
-                      endContent={<Kbd keys="mod+v" />}
+                      endContent={<Shortcut>⌘V</Shortcut>}
                     />
                     <DropdownMenuDivider />
                     <DropdownMenuItem
                       label="Duplicate"
-                      endContent={<Kbd keys="mod+d" />}
+                      endContent={<Shortcut>⌘D</Shortcut>}
                     />
                     {/* Named, because a menu opened from the bar has lost
                     sight of the rail: the row that would go is worth saying
@@ -740,7 +1535,7 @@ export default function CanvasEditor() {
                     <DropdownMenuItem
                       label={`Delete ${selected.name}`}
                       variant="destructive"
-                      endContent={<Kbd keys="backspace" />}
+                      endContent={<Shortcut>⌫</Shortcut>}
                     />
                   </DropdownMenu>
 
@@ -751,21 +1546,21 @@ export default function CanvasEditor() {
                     <DropdownMenuCheckboxItem
                       label="Left panel"
                       icon={PanelLeft}
-                      endContent={<Kbd keys="mod+b" />}
+                      endContent={<Shortcut>⌘B</Shortcut>}
                       value={chrome.left}
                       onChange={next => setChrome(c => ({...c, left: next}))}
                     />
                     <DropdownMenuCheckboxItem
                       label="Right panel"
                       icon={PanelRight}
-                      endContent={<Kbd keys="mod+shift+b" />}
+                      endContent={<Shortcut>⇧⌘B</Shortcut>}
                       value={chrome.right}
                       onChange={next => setChrome(c => ({...c, right: next}))}
                     />
                     <DropdownMenuCheckboxItem
                       label="Canvas tools"
                       icon={PanelBottom}
-                      endContent={<Kbd keys="mod+." />}
+                      endContent={<Shortcut>⌘.</Shortcut>}
                       value={chrome.toolbar}
                       onChange={next => setChrome(c => ({...c, toolbar: next}))}
                     />
@@ -811,11 +1606,11 @@ export default function CanvasEditor() {
                     <DropdownMenuDivider />
                     <DropdownMenuItem
                       label="Bring forward"
-                      endContent={<Kbd keys="mod+]" />}
+                      endContent={<Shortcut>⌘]</Shortcut>}
                     />
                     <DropdownMenuItem
                       label="Send backward"
-                      endContent={<Kbd keys="mod+[" />}
+                      endContent={<Shortcut>⌘[</Shortcut>}
                     />
                     <DropdownMenuDivider />
                     {/* The lock the rail row reveals on hover, reached from
@@ -823,7 +1618,7 @@ export default function CanvasEditor() {
                     <DropdownMenuCheckboxItem
                       label={`Lock ${selected.name}`}
                       icon={selected.isLocked ? Lock : LockOpen}
-                      endContent={<Kbd keys="mod+shift+l" />}
+                      endContent={<Shortcut>⇧⌘L</Shortcut>}
                       value={selected.isLocked}
                       onChange={next => updateSelected({isLocked: next})}
                     />
@@ -832,7 +1627,7 @@ export default function CanvasEditor() {
                   <DropdownMenu {...menu('help', 'Help')}>
                     <DropdownMenuItem
                       label="Keyboard shortcuts"
-                      endContent={<Kbd keys="mod+/" />}
+                      endContent={<Shortcut>⌘/</Shortcut>}
                     />
                     <DropdownMenuItem label="Documentation" />
                     <DropdownMenuDivider />
@@ -888,7 +1683,7 @@ export default function CanvasEditor() {
                             />
                           </SegmentedControl>
                           {panel === 'layers' ? (
-                            <List density="compact">
+                            <List>
                               {layers.map(layer => (
                                 <LayerRow
                                   key={layer.id}
@@ -908,17 +1703,15 @@ export default function CanvasEditor() {
                               ))}
                             </List>
                           ) : (
-                            <List density="compact">
-                              {[
-                                'Grain overlay',
-                                'Halftone',
-                                'Duotone teal',
-                              ].map(preset => (
-                                <ListItem
-                                  key={preset}
-                                  label={preset}
+                            <List>
+                              {EFFECT_PRESETS.map(preset => (
+                                <Item
+                                  key={preset.label}
+                                  as="li"
+                                  density="compact"
+                                  label={preset.label}
                                   startContent={
-                                    <Icon icon={Palette} size={ICON} />
+                                    <Icon icon={preset.icon} size={ICON} />
                                   }
                                 />
                               ))}
@@ -963,31 +1756,77 @@ export default function CanvasEditor() {
                                     <img
                                       src={PHOTO_LAYER_SRC}
                                       alt={photo.content}
+                                      {...stylex.props(
+                                        paint.photo(
+                                          filterCss(
+                                            photo.filters ?? NO_FILTERS,
+                                          ),
+                                        ),
+                                      )}
                                     />
+                                    {/* Both text layers share one column, so
+                                    vertical alignment is a property of the
+                                    column and the headline speaks for it. */}
                                     <VStack
                                       padding={6}
                                       gap={3}
+                                      vAlign={
+                                        V_ALIGN[headline.alignY ?? 'start']
+                                      }
                                       xstyle={styles.textLayers}>
                                       <Text
                                         type="supporting"
-                                        color="primary"
-                                        justify="center"
                                         display="block"
-                                        xstyle={styles.type(
-                                          dateline.size ?? 0,
-                                          dateline.tracking ?? 0,
-                                        )}>
+                                        xstyle={[
+                                          styles.type(
+                                            dateline.size ?? 0,
+                                            dateline.tracking ?? 0,
+                                            dateline.line ?? 100,
+                                            dateline.color ?? '#111111',
+                                            dateline.stroke ?? 0,
+                                            shadowCss(dateline.textShadow),
+                                          ),
+                                          typeAlign[dateline.alignX ?? 'start'],
+                                          typeCase[
+                                            dateline.transform ?? 'none'
+                                          ],
+                                          typeLine[
+                                            dateline.decoration ?? 'none'
+                                          ],
+                                          typeSlant[
+                                            dateline.isItalic
+                                              ? 'italic'
+                                              : 'normal'
+                                          ],
+                                        ]}>
                                         {dateline.content}
                                       </Text>
                                       <Heading
                                         level={2}
                                         type="display-1"
-                                        justify="center"
                                         textWrap="balance"
-                                        xstyle={styles.type(
-                                          headline.size ?? 0,
-                                          headline.tracking ?? 0,
-                                        )}>
+                                        xstyle={[
+                                          styles.type(
+                                            headline.size ?? 0,
+                                            headline.tracking ?? 0,
+                                            headline.line ?? 100,
+                                            headline.color ?? '#111111',
+                                            headline.stroke ?? 0,
+                                            shadowCss(headline.textShadow),
+                                          ),
+                                          typeAlign[headline.alignX ?? 'start'],
+                                          typeCase[
+                                            headline.transform ?? 'none'
+                                          ],
+                                          typeLine[
+                                            headline.decoration ?? 'none'
+                                          ],
+                                          typeSlant[
+                                            headline.isItalic
+                                              ? 'italic'
+                                              : 'normal'
+                                          ],
+                                        ]}>
                                         {headline.content}
                                       </Heading>
                                     </VStack>
@@ -1112,12 +1951,9 @@ export default function CanvasEditor() {
                               value={selected.padding}
                               onChange={next => updateSelected({padding: next})}
                             />
-                            <IconButton
+                            <RowIcon
                               label="Set padding per side"
-                              tooltip="Per side"
-                              size="sm"
-                              variant="ghost"
-                              icon={<Icon icon={SquareDashed} size={ICON} />}
+                              icon={SquareDashed}
                             />
                           </InspectorRow>
                         </InspectorSection>
@@ -1161,17 +1997,43 @@ export default function CanvasEditor() {
                               value={selected.radius}
                               onChange={next => updateSelected({radius: next})}
                             />
-                            <IconButton
+                            <RowIcon
                               label="Set radius per corner"
-                              tooltip="Per corner"
-                              size="sm"
-                              variant="ghost"
-                              icon={<Icon icon={SquareDashed} size={ICON} />}
+                              icon={SquareRoundCorner}
                             />
                           </InspectorRow>
-                          <StyleRow label="Border" value="0" placeholder="0" />
-                          <StyleRow label="Shadow" placeholder="Add…" />
-                          <StyleRow label="Fill" placeholder="Add…" />
+                          <StyleRow
+                            label="Border"
+                            value={selected.border}
+                            placeholder="Add…"
+                            onChange={next => updateSelected({border: next})}
+                            onClear={() => updateSelected({border: undefined})}
+                          />
+                          <StyleRow
+                            label="Shadow"
+                            value={selected.shadow?.color}
+                            placeholder="Add…"
+                            onChange={next =>
+                              updateSelected({
+                                shadow: {
+                                  ...(selected.shadow ?? NO_SHADOW),
+                                  color: next,
+                                },
+                              })
+                            }
+                            onClear={() => updateSelected({shadow: undefined})}>
+                            <ShadowFields
+                              shadow={selected.shadow ?? NO_SHADOW}
+                              onChange={next => updateSelected({shadow: next})}
+                            />
+                          </StyleRow>
+                          <StyleRow
+                            label="Fill"
+                            value={selected.fill}
+                            placeholder="Add…"
+                            onChange={next => updateSelected({fill: next})}
+                            onClear={() => updateSelected({fill: undefined})}
+                          />
                         </InspectorSection>
 
                         <InspectorSection title="Transforms">
@@ -1184,45 +2046,33 @@ export default function CanvasEditor() {
                                 updateSelected({rotation: next})
                               }
                             />
-                            <IconButton
+                            <RowIcon
                               label="Rotate counterclockwise"
-                              tooltip="−90°"
-                              size="sm"
-                              variant="ghost"
+                              icon={RotateCcw}
                               onClick={() =>
                                 updateSelected({
                                   rotation: (selected.rotation + 270) % 360,
                                 })
                               }
-                              icon={<Icon icon={RotateCcw} size={ICON} />}
                             />
-                            <IconButton
+                            <RowIcon
                               label="Rotate clockwise"
-                              tooltip="+90°"
-                              size="sm"
-                              variant="ghost"
+                              icon={RotateCw}
                               onClick={() =>
                                 updateSelected({
                                   rotation: (selected.rotation + 90) % 360,
                                 })
                               }
-                              icon={<Icon icon={RotateCw} size={ICON} />}
                             />
                           </InspectorRow>
                           <InspectorRow label="Flip" hAlign="end">
-                            <IconButton
+                            <RowIcon
                               label="Flip horizontally"
-                              tooltip="Flip horizontally"
-                              size="sm"
-                              variant="ghost"
-                              icon={<Icon icon={FlipHorizontal} size={ICON} />}
+                              icon={FlipHorizontal2}
                             />
-                            <IconButton
+                            <RowIcon
                               label="Flip vertically"
-                              tooltip="Flip vertically"
-                              size="sm"
-                              variant="ghost"
-                              icon={<Icon icon={FlipVertical} size={ICON} />}
+                              icon={FlipVertical2}
                             />
                           </InspectorRow>
                         </InspectorSection>
@@ -1265,45 +2115,279 @@ export default function CanvasEditor() {
                                 />
                               </StackItem>
                             </InspectorRow>
-                            <InspectorRow label="Size">
-                              <AxisInput
-                                icon={GLYPH.fontSize}
-                                label="Font size"
-                                value={selected.size ?? 0}
-                                onChange={next => updateSelected({size: next})}
+                            <InspectorRow label="Color">
+                              <StackItem size="fill">
+                                <TextInput
+                                  label="Text colour"
+                                  isLabelHidden
+                                  size="sm"
+                                  value={selected.color ?? ''}
+                                  onChange={next =>
+                                    updateSelected({color: next})
+                                  }
+                                />
+                              </StackItem>
+                              <Swatch
+                                label="Text colour"
+                                value={selected.color}
+                                onChange={next => updateSelected({color: next})}
                               />
-                              <AxisInput
-                                icon={GLYPH.tracking}
-                                label="Letter spacing"
-                                value={selected.tracking ?? 0}
+                            </InspectorRow>
+                            <StepperRow
+                              label="Size"
+                              value={selected.size ?? 0}
+                              onChange={next => updateSelected({size: next})}
+                            />
+                            <StepperRow
+                              label="Line"
+                              value={selected.line ?? 100}
+                              onChange={next => updateSelected({line: next})}
+                            />
+                            <StepperRow
+                              label="Spacing"
+                              value={selected.tracking ?? 0}
+                              onChange={next =>
+                                updateSelected({tracking: next})
+                              }
+                            />
+                            <InspectorRow label="Align">
+                              <StackItem size="fill">
+                                <SegmentedControl
+                                  label="Horizontal alignment"
+                                  size="sm"
+                                  layout="fill"
+                                  value={selected.alignX ?? 'start'}
+                                  onChange={next =>
+                                    updateSelected({alignX: next as AlignX})
+                                  }>
+                                  {ALIGN_X.map(option => (
+                                    <SegmentedControlItem
+                                      key={option.value}
+                                      value={option.value}
+                                      label={option.label}
+                                      isLabelHidden
+                                      icon={
+                                        <Icon icon={option.icon} size={ICON} />
+                                      }
+                                    />
+                                  ))}
+                                </SegmentedControl>
+                              </StackItem>
+                            </InspectorRow>
+                            <InspectorRow label="Align">
+                              <StackItem size="fill">
+                                <SegmentedControl
+                                  label="Vertical alignment"
+                                  size="sm"
+                                  layout="fill"
+                                  value={selected.alignY ?? 'start'}
+                                  onChange={next =>
+                                    updateSelected({alignY: next as AlignY})
+                                  }>
+                                  {ALIGN_Y.map(option => (
+                                    <SegmentedControlItem
+                                      key={option.value}
+                                      value={option.value}
+                                      label={option.label}
+                                      isLabelHidden
+                                      icon={
+                                        <Icon icon={option.icon} size={ICON} />
+                                      }
+                                    />
+                                  ))}
+                                </SegmentedControl>
+                              </StackItem>
+                            </InspectorRow>
+                            <InspectorRow label="Style">
+                              <StackItem size="fill">
+                                <SegmentedControl
+                                  label="Font style"
+                                  size="sm"
+                                  layout="fill"
+                                  value={
+                                    selected.isItalic ? 'italic' : 'normal'
+                                  }
+                                  onChange={next =>
+                                    updateSelected({
+                                      isItalic: next === 'italic',
+                                    })
+                                  }>
+                                  <SegmentedControlItem
+                                    value="normal"
+                                    label="Regular"
+                                    isLabelHidden
+                                    icon={<Icon icon={Baseline} size={ICON} />}
+                                  />
+                                  <SegmentedControlItem
+                                    value="italic"
+                                    label="Italic"
+                                    isLabelHidden
+                                    icon={<Icon icon={Italic} size={ICON} />}
+                                  />
+                                </SegmentedControl>
+                              </StackItem>
+                            </InspectorRow>
+                            <InspectorRow label="Decoration">
+                              <StackItem size="fill">
+                                <SegmentedControl
+                                  label="Text decoration"
+                                  size="sm"
+                                  layout="fill"
+                                  value={selected.decoration ?? 'none'}
+                                  onChange={next =>
+                                    updateSelected({
+                                      decoration: next as Decoration,
+                                    })
+                                  }>
+                                  {DECORATIONS.map(option => (
+                                    <SegmentedControlItem
+                                      key={option.value}
+                                      value={option.value}
+                                      label={option.label}
+                                      isLabelHidden
+                                      icon={
+                                        <Icon icon={option.icon} size={ICON} />
+                                      }
+                                    />
+                                  ))}
+                                </SegmentedControl>
+                              </StackItem>
+                            </InspectorRow>
+                            <InspectorRow label="Transform">
+                              <StackItem size="fill">
+                                <SegmentedControl
+                                  label="Text transform"
+                                  size="sm"
+                                  layout="fill"
+                                  value={selected.transform ?? 'none'}
+                                  onChange={next =>
+                                    updateSelected({
+                                      transform: next as Transform,
+                                    })
+                                  }>
+                                  {TRANSFORMS.map(option => (
+                                    <SegmentedControlItem
+                                      key={option.value}
+                                      value={option.value}
+                                      label={option.label}
+                                      isLabelHidden
+                                      icon={
+                                        <Icon icon={option.icon} size={ICON} />
+                                      }
+                                    />
+                                  ))}
+                                </SegmentedControl>
+                              </StackItem>
+                            </InspectorRow>
+                            <StyleRow
+                              label="Text shadow"
+                              value={selected.textShadow?.color}
+                              placeholder="Add…"
+                              onChange={next =>
+                                updateSelected({
+                                  textShadow: {
+                                    ...(selected.textShadow ?? NO_SHADOW),
+                                    color: next,
+                                  },
+                                })
+                              }
+                              onClear={() =>
+                                updateSelected({textShadow: undefined})
+                              }>
+                              <ShadowFields
+                                shadow={selected.textShadow ?? NO_SHADOW}
                                 onChange={next =>
-                                  updateSelected({tracking: next})
+                                  updateSelected({textShadow: next})
                                 }
+                              />
+                            </StyleRow>
+                            <InspectorRow label="Stroke">
+                              <StackItem size="fill">
+                                <NumberInput
+                                  label="Text stroke"
+                                  isLabelHidden
+                                  size="sm"
+                                  value={selected.stroke ?? 0}
+                                  onChange={next =>
+                                    updateSelected({stroke: next})
+                                  }
+                                  isWheelEnabled={false}
+                                />
+                              </StackItem>
+                              <RowIcon
+                                label="Clear stroke"
+                                icon={X}
+                                isDisabled={!selected.stroke}
+                                onClick={() => updateSelected({stroke: 0})}
                               />
                             </InspectorRow>
                           </InspectorSection>
                         ) : (
-                          <InspectorSection title="Image">
-                            <InspectorRow label="Source">
-                              <Text maxLines={1}>{selected.name}.png</Text>
-                            </InspectorRow>
-                            <InspectorRow label="Fit">
-                              <StackItem size="fill">
-                                <Selector
-                                  label="Image fit"
-                                  isLabelHidden
-                                  size="sm"
-                                  value="Cover"
-                                  options={['Cover', 'Contain', 'Fill']}
+                          <>
+                            <InspectorSection title="Image">
+                              <InspectorRow label="Edit">
+                                <StackItem size="fill">
+                                  <TextInput
+                                    label="Image source"
+                                    isLabelHidden
+                                    size="sm"
+                                    value="Image"
+                                    isReadOnly
+                                  />
+                                </StackItem>
+                                {/* The trigger shows the picture rather than
+                                an icon standing in for one: the row is about
+                                which image this is. */}
+                                <button
+                                  type="button"
+                                  aria-label="Replace image"
+                                  title="Replace image"
+                                  {...stylex.props(
+                                    styles.rowIcon,
+                                    styles.thumbnail,
+                                  )}>
+                                  <img
+                                    src={PHOTO_LAYER_SRC}
+                                    alt=""
+                                    {...stylex.props(styles.thumbnailImage)}
+                                  />
+                                </button>
+                              </InspectorRow>
+                              <InspectorRow label="Fit">
+                                <StackItem size="fill">
+                                  <Selector
+                                    label="Image fit"
+                                    isLabelHidden
+                                    size="sm"
+                                    value={selected.fit ?? 'Cover'}
+                                    onChange={next =>
+                                      updateSelected({fit: next})
+                                    }
+                                    options={['Cover', 'Contain', 'Fill']}
+                                  />
+                                </StackItem>
+                              </InspectorRow>
+                            </InspectorSection>
+                            <InspectorSection title="Filters">
+                              {FILTERS.map(filter => (
+                                <FilterRow
+                                  key={filter.key}
+                                  filter={filter}
+                                  value={
+                                    (selected.filters ?? NO_FILTERS)[filter.key]
+                                  }
+                                  onChange={next =>
+                                    updateSelected({
+                                      filters: {
+                                        ...(selected.filters ?? NO_FILTERS),
+                                        [filter.key]: next,
+                                      },
+                                    })
+                                  }
                                 />
-                              </StackItem>
-                            </InspectorRow>
-                            <Button
-                              label="Replace image"
-                              size="sm"
-                              variant="secondary"
-                            />
-                          </InspectorSection>
+                              ))}
+                            </InspectorSection>
+                          </>
                         )}
                       </LayoutPanel>
                     </>

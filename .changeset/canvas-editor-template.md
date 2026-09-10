@@ -10,6 +10,14 @@ on a muted backdrop under a floating tool bar that sets zoom, and a property
 inspector on the right whose fields retarget to the selected layer. Both rails
 drag to resize.
 
+The inspector is the substance of it. A text layer gets font, weight, colour,
+size, line height, letter spacing, horizontal and vertical alignment, slant,
+decoration, transform, a text shadow and a stroke; an image layer gets fit and
+the nine CSS filters, each on a number and a rail that move together. Colour
+anywhere in the panel opens a real picker. Everything that can reach the
+artboard does — typing in Transform recases the poster, dragging Sepia tints
+the photograph.
+
 It fills a gap next to `Tools - Page Editor`. That one composes a document — a
 palette of blocks dropped into a flow that reflows around them. This one moves
 objects on a fixed 1080 x 1920 frame, where position and size are coordinates
@@ -114,6 +122,92 @@ and the second thing it does is the one that matters: it republishes
 reads to pull ghost triggers back out by their own padding — so the File
 _label_ lines up on the gutter while its hover box still bleeds into it, and
 the two ends of the bar finally balance.
+
+**One icon on three rows is a list nobody reads.** Border, shadow and fill
+all shipped with the same `Palette` swatch, and the three effect presets in
+the library shared it too — six rows, one mark, so the column read as one
+control repeated rather than six different things. Lucide has no `shadow`,
+`fill` or `padding` icon, so the picks came out of reading the pack rather
+than guessing at names: `PaintBucket` for fill, `SquareStack` for shadow
+(two offset squares is a drop shadow), plain `Square` for border,
+`SquareRoundCorner` for per-corner radius so it stops colliding with the
+per-side padding button that was also `SquareDashed`. Two things worth
+knowing if you go looking yourself. Names in that pack can be aliases —
+`FlipHorizontal` re-exports `square-centerline-dashed-horizontal`, which at
+16px is an unreadable dashed box, and the mirrored triangles you actually
+want are `FlipHorizontal2`. And judge candidates at 16px, not at sketch
+size: `radius` is a legible corner gauge at 48px and mush at 16.
+
+X, Y, W and H stay letterforms. They are names, not pictures — no icon
+distinguishes the horizontal coordinate from the vertical one, and every
+design tool prints the letters for the same reason.
+
+**A shortcut is a hint, not a control.** `Kbd` paints one key cap per key, so
+`⌘N` arrived as two small objects beside the menu item and read as something
+you could press. Desktop menus print shortcuts as quiet secondary text, which
+is what these are now — a `Text type="supporting" color="secondary"`, one
+string, set against the menu's right edge. The cost is platform awareness:
+`Kbd` resolves `mod` to ⌘ or Ctrl, and it does that through
+`isApplePlatform`, which core keeps unexported on purpose, so a template that
+leaves `Kbd` prints macOS glyphs and stops adapting. The `shell-nav` menubar
+already makes that trade. If you need both the quiet treatment and the
+platform switch, that is a gap in `Kbd` rather than something to solve at the
+callsite.
+
+**Rows are `Item`, not `ListItem`.** Both land on the same compact metrics —
+4px/8px padding — but `Item` carries its own `density` instead of taking it
+from `List` context, so a row keeps its spacing wherever it is put and the
+rail does not depend on the list above it to stay dense. The rows still
+render as `<li>` through `as="li"`, so the rail is still a list to a screen
+reader, and `Item` merges `className`, which is what lets the hover-reveal
+marker keep sitting on the row itself.
+
+**A 28px row cannot hold a button.** Compact density spends 4px above and
+below, which leaves 20px for content — and the smallest `IconButton` is 28px
+on its own, so a rail of `IconButton` rows measures 36px no matter what
+density says. There is no smaller size to reach for; the floor is the
+component's. So the row actions here are bare `<button>`s with an icon
+inside and no painted box: `styles.rowIcon` gives them a 20px hit area, a
+hover wash and a focus ring, and the rail now measures 28px. Note what did
+_not_ change — they are still `<button>` elements, so the lock, the clear and
+the swatch stay keyboard-reachable and stay announced. It was `Button`'s
+minimum that had to go, not the element. Keep `IconButton` where a control
+is meant to look like a control; the floating tool bar still uses it.
+
+**Border, Shadow and Fill are pickers, not text fields.** Each row is now a
+value, a chip that opens a picker, and a clear that only lights up once the
+slot holds something. Astryx has no colour picker to reach for, so the
+popover is built from what it does have — a `Popover`, a `TextInput` for hex
+— plus two controls that have to be painted because no component describes
+them: a saturation/value plane and a hue rail. A `Slider` styled into a
+rainbow would still only give one of the two axes, so both are `<div>`s with
+`role="slider"`, arrow keys and pointer capture. Capture is the part worth
+copying: without it a fast drag out of the plane stops at the edge instead
+of following the cursor.
+
+The picker holds HSV while it is open even though the layer stores hex. That
+is not redundancy — hex has no hue left once a colour reaches black or
+white, so a picker that round-trips through it loses your place on the rail
+the moment you drag to the bottom of the plane.
+
+Shadow reuses the same popover and adds X, Y, Blur and Spread inside it,
+because a shadow is one thing to set rather than five rows to find. And
+Shadow appears twice on a text layer on purpose: the one in Styles is the
+box's, the one in Text is the type's, and a layer can carry both.
+
+**Enumerable styling is static; only the open-ended values are dynamic.**
+Text transform, decoration, slant and alignment are closed sets, so they
+compile to real classes picked by key (`typeCase`, `typeLine`, `typeSlant`,
+`typeAlign`) rather than to a custom property written on every keystroke.
+Size, line height, colour, stroke and shadow have no such set, so those stay
+a dynamic `styles.type(…)`. Worth splitting rather than making everything
+dynamic: the static half costs nothing at runtime and shows up in devtools
+as a name instead of a variable.
+
+**Filters emit only what is off its neutral point.** Nine filter functions
+that all happen to be no-ops still force the image onto its own composited
+layer, so `filterCss` drops the ones sitting at 0 or 100 and returns `none`
+when they all are.
 
 A note if you wire the Appearance menu to a Theme of your own: a nested Theme
 recolours text but does not repaint the page behind transparent panels, so an
