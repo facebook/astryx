@@ -18,8 +18,6 @@
  * deduped, so each leaf stays a thin projection.
  */
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {findCoreDir, discoverExternalPackages} from '../../foundation/fs/paths.mjs';
 import {
