@@ -1,0 +1,6 @@
+HEAD=dc02cb01275f4b616a08533295db7c2a2b6fc814
+$ pnpm check:knowledge && pnpm -F @astryxdesign/core typecheck && pnpm -F @astryxdesign/core typecheck:docs
+$ node scripts/check-knowledge.mjs
+Knowledge templates and records are aligned.
+$ tsc --project tsconfig.json --noEmit
+$ tsc --project tsconfig.docs.json

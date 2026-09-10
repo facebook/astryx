@@ -28,7 +28,9 @@
     }
   },
   "afterReviewCorrections": {
-    "head": "95d05caabfd3fad4392892135870cf50b62bbab1",
+    "head": "dc02cb01275f4b616a08533295db7c2a2b6fc814",
+    "unaffectedEvidenceHead": "95d05caabfd3fad4392892135870cf50b62bbab1",
+    "finalSourceDelta": "comment-only focusable-disabled accuracy correction; affected checks rerun at final head",
     "score": 77.8,
     "grade": "C",
     "sections": {

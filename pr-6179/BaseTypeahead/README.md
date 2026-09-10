@@ -5,7 +5,8 @@
 - Rubric: `1.16.2`
 - Original audit baseline: [`53bc34db7c9dd40c3fe0f0e0f419adaea71a73cd`](https://github.com/facebook/astryx/commit/53bc34db7c9dd40c3fe0f0e0f419adaea71a73cd), **63.4 / D**
 - Re-audited review baseline: [`507f7c203f4e451a2bb50ecd731c850d510271fb`](https://github.com/facebook/astryx/commit/507f7c203f4e451a2bb50ecd731c850d510271fb), **72.4 / C**
-- Corrected exact head: [`95d05caabfd3fad4392892135870cf50b62bbab1`](https://github.com/facebook/astryx/commit/95d05caabfd3fad4392892135870cf50b62bbab1), **77.8 / C**
+- Final corrected source head: [`dc02cb01275f4b616a08533295db7c2a2b6fc814`](https://github.com/facebook/astryx/commit/dc02cb01275f4b616a08533295db7c2a2b6fc814), **77.8 / C**
+- Unaffected browser/a11y/RTL evidence head: [`95d05caabfd3fad4392892135870cf50b62bbab1`](https://github.com/facebook/astryx/commit/95d05caabfd3fad4392892135870cf50b62bbab1). The only later source delta is the two focusable-disabled accuracy comments; knowledge, type, docsite, and focused checks were rerun at `dc02cb0`.
 - Pull request: [#6179](https://github.com/facebook/astryx/pull/6179)
 
 Every final Chromium frame has a sibling sensor receipt binding the story, globals, media, viewport, semantic state, and exact repository head. The machine-readable score and eligibility verdict are in [`scorecard.json`](scorecard.json).
@@ -32,7 +33,7 @@ Weighted score: **72.4 → 77.8 (C → C)**. Four retained BLOCKs keep the PR ma
 
 | Finding | Red proof | Final proof |
 | --- | --- | --- |
-| Undefined legacy aliases erased native `id`, `aria-labelledby`, `aria-describedby`, and `tabIndex` | [`before/native-alias-precedence-red.txt`](before/native-alias-precedence-red.txt) | [`after/focused-tests.txt`](after/focused-tests.txt), 609/609 |
+| Undefined legacy aliases erased native `id`, `aria-labelledby`, `aria-describedby`, and `tabIndex` | [`before/native-alias-precedence-red.txt`](before/native-alias-precedence-red.txt) | [`after/focused-tests.txt`](after/focused-tests.txt), 610/610 |
 | 320px popup lost one gutter and the long option scrolled 443px inside a 280px row | [`before/viewport-content-red.json`](before/viewport-content-red.json) | [`after/viewport-content-final.json`](after/viewport-content-final.json) and the narrow frame receipt |
 | Pending search can reopen after Escape | prior report omitted this retained state | [`after/BaseTypeahead.escape-gap.test.txt`](after/BaseTypeahead.escape-gap.test.txt), expected red at the exact head |
 | Focusable-disabled behavior was overstated | retained behavior existed but prose claimed selection was blocked | [`after/BaseTypeahead.focusable-disabled-gap.test.txt`](after/BaseTypeahead.focusable-disabled-gap.test.txt), expected red at the exact head; docs/spec now describe it accurately |
@@ -42,10 +43,10 @@ At 320 CSS px, the final listbox is `x=32`, `right=304`, `width=272`, `clientWid
 
 ## Final exact-head validation
 
-- Focused component/theming tests: **610 passed**; [`after/focused-tests.txt`](after/focused-tests.txt).
-- Exact-head Storybook build, docsite generation/tests/typecheck, and focused package typechecks: pass; [`after/storybook-build-final.txt`](after/storybook-build-final.txt) and [`after/docsite-final-after-build.txt`](after/docsite-final-after-build.txt).
-- Strict lint: **0 errors** (84 unrelated repository warnings); [`after/lint-strict-final.txt`](after/lint-strict-final.txt).
-- Docsite: **495 passed**; [`after/docsite-final-after-build.txt`](after/docsite-final-after-build.txt).
+- Final-head knowledge, core type/docs, docsite generation/tests, and focused suites: pass at `dc02cb0`; [`after/final-accuracy-checks.txt`](after/final-accuracy-checks.txt), [`after/docsite-final-after-build.txt`](after/docsite-final-after-build.txt), and [`after/focused-tests.txt`](after/focused-tests.txt).
+- Focused component/theming tests: **610 passed**.
+- Storybook build, strict lint, component axe, RTL, and Chromium receipts remain bound to `95d05ca`; the only later source delta is the two focusable-disabled accuracy comments.
+- Docsite: **495 passed**.
 - Component axe: **0 violations across all 8 retained stories**; [`after/a11y-report.json`](after/a11y-report.json).
 - Curated RTL: **D4 pass, 1 measured, 0 gaps**; [`after/rtl-audit-report.json`](after/rtl-audit-report.json).
 - Chromium: **26 standard frames + 1 forced-colors frame**, all sensor-green; [`after/frames/capture-results.json`](after/frames/capture-results.json).
