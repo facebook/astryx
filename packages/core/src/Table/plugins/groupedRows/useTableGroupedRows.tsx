@@ -408,7 +408,12 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
                   aria-expanded={!collapsed}>
                   <Icon
                     icon="chevronRight"
-                    size="xsm"
+                    // 16px, not the 12px this started at. The chevron is the
+                    // control for the whole section and sits beside a heading,
+                    // so at 12 it read as decoration on the label rather than
+                    // the thing you press, and it was the smallest hit target
+                    // in the table.
+                    size="sm"
                     // The rotation rides on the glyph rather than a wrapper
                     // span so the theme target below reaches both the mark and
                     // its open/closed transform.
