@@ -197,12 +197,12 @@ export const doc = {
     {
       value: 'theme.list',
       description:
-        'Every bundled theme as a ThemeListEntry[]: each with slug, displayName, description, and a maintained flag.',
+        'Every bundled or installed integration theme as a ThemeListEntry[]: each with slug, displayName, description, maintained flag, and owner package.',
     },
     {
       value: 'theme.add',
       description:
-        'A scaffold receipt: resolved slug, displayName, maintained flag, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.',
+        'A scaffold receipt: resolved slug, displayName, maintained flag, owner package, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.',
     },
     {
       value: 'theme.template',

@@ -26,6 +26,9 @@ export interface AstryxIntegration {
    *  serves from `astryx docs`, alongside the built-in ones. A topic may also
    *  `replace` or `extend` a built-in topic; see the ReferenceDoc type. */
   docs?: string;
+  /** Relative path to the source-theme catalog root (resolved to absolute).
+   *  The root contains `manifest.json` plus one directory per theme slug. */
+  themes?: string;
   /** Static package guidance appended to the CLI-owned managed agent block. */
   agentDocs?: {
     append?: readonly string[];

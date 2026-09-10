@@ -201,13 +201,12 @@ add('template nonexistent', ['template', 'nonexistent99'],
   () => apiCall(api.template, 'nonexistent99'));
 
 // Theme list + add error path (read-only; never scaffolds files here).
-// `theme list` / `theme add --list` are served by the dedicated themeList()
-// leaf (the CLI routes the --list affordance there); themeAdd() now only
-// scaffolds a named slug and throws on a missing/unknown one.
+// The CLI routes its project-aware list surfaces to themeListAvailable(); the
+// synchronous themeList() export stays bundled-only for API compatibility.
 add('theme list', ['theme', 'list'],
-  () => apiCall(api.themeList));
+  () => apiCall(api.themeListAvailable, {cwd: ROOT}));
 add('theme add --list', ['theme', 'add', '--list'],
-  () => apiCall(api.themeList));
+  () => apiCall(api.themeListAvailable, {cwd: ROOT}));
 add('theme add nonexistent', ['theme', 'add', 'nonexistent99'],
   () => apiCall(api.themeAdd, 'nonexistent99', {cwd: ROOT}));
 

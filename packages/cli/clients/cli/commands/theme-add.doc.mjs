@@ -16,9 +16,9 @@ export const doc = {
   namespace: 'cli',
   summary: 'Scaffold a theme into your project as editable source',
   description:
-    "Copies a bundled theme's source into your project so you own it, no theme package " +
-    'needed. Writes are staged then renamed, rolling back on failure. Running it with no ' +
-    'slug, or with --list, lists the bundled themes instead.',
+    "Copies a bundled or installed integration theme's source into your project so you own it. " +
+    'Writes are staged then renamed, rolling back on failure. Running it with no slug, or with ' +
+    '--list, lists available themes; use --package when more than one owner provides the slug.',
   fn: 'themeAdd',
   args: [
     {name: 'slug', param: 'slug', required: false},
@@ -31,19 +31,24 @@ export const doc = {
       description: 'Overwrite existing files without prompting',
     },
     {flag: '--list', description: 'List available themes'},
+    {
+      flag: '--package <package>',
+      param: 'options.package',
+      description: 'Select the package that owns the theme',
+    },
   ],
   examples: [
     {label: 'Scaffold a theme', cli: 'astryx theme add matcha'},
     {
-      label: 'Custom target path',
-      cli: 'astryx theme add matcha ./src/themes/matcha',
+      label: 'Select an integration theme',
+      cli: 'astryx theme add ocean --package @acme/themes',
     },
   ],
   exitCodes: [
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'unknown theme, a path escape, a missing bundled file, or an existing file without --overwrite',
+      when: 'unknown or ambiguous theme, a path escape, a missing catalog file, or an existing file without --overwrite',
     },
   ],
   related: ['theme list', 'theme build'],

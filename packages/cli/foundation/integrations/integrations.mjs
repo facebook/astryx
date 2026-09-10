@@ -6,7 +6,7 @@
  * Integrations are PACKAGE NAMES listed in astryx.config.{ts,mjs,js}. Each
  * package declares a single conventional root manifest sibling to its
  * package.json — astryx.integration.{ts,mjs,js} — which contributes
- * components/templates/codemods/docs roots and an optional issuesUrl. Identity
+ * components/templates/codemods/docs/themes roots and an optional issuesUrl. Identity
  * (name, version) comes from the package's package.json, not the manifest.
  */
 
@@ -25,8 +25,8 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
 
 /**
  * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
- * the package's package.json; the `components`/`templates`/`codemods`/`docs`
- * roots are absolute paths resolved from the manifest. The `__`-prefixed fields
+ * the package's package.json; the `components`/`templates`/`codemods`/`docs`/
+ * `themes` roots are absolute paths resolved from the manifest. The `__`-prefixed fields
  * are internal bookkeeping used by Doctor integration validation and Project.
  * @typedef {object} LoadedIntegration
  * @property {string} name
@@ -35,6 +35,7 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  * @property {string} [templates]
  * @property {string} [codemods]
  * @property {string} [docs]
+ * @property {string} [themes]
  * @property {string} [issuesUrl]
  * @property {{append?: readonly string[]}} [agentDocs]
  * @property {string} [__agentDocsError] contribution-specific validation
@@ -181,7 +182,9 @@ export function resolvePackageDir(packageName, cwd = process.cwd()) {
   const nodeModules = path.resolve(cwd, 'node_modules');
   const dir = path.resolve(nodeModules, ...packageName.split('/'));
   if (dir !== nodeModules && !dir.startsWith(nodeModules + path.sep)) {
-    throw new Error(`Integration "${packageName}" resolves outside node_modules.`);
+    throw new Error(
+      `Integration "${packageName}" resolves outside node_modules.`,
+    );
   }
   return dir;
 }
@@ -289,6 +292,7 @@ export async function loadIntegrations(
       templates: resolveRoot(manifest.templates),
       codemods: resolveRoot(manifest.codemods),
       docs: resolveRoot(manifest.docs),
+      themes: resolveRoot(manifest.themes),
       issuesUrl: manifest.issuesUrl,
       agentDocs: manifest.agentDocs,
       __agentDocsError: agentDocsError,

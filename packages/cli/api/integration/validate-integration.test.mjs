@@ -33,13 +33,19 @@ afterEach(() => {
  * @param {string} dir
  * @param {{name?: string, version?: string, manifest: string, manifestExt?: string}} opts
  */
-function writePackage(dir, {name = '@acme/widgets', version = '1.0.0', manifest, manifestExt = 'mjs'}) {
+function writePackage(
+  dir,
+  {name = '@acme/widgets', version = '1.0.0', manifest, manifestExt = 'mjs'},
+) {
   fs.mkdirSync(dir, {recursive: true});
   fs.writeFileSync(
     path.join(dir, 'package.json'),
     JSON.stringify({name, version}),
   );
-  fs.writeFileSync(path.join(dir, `astryx.integration.${manifestExt}`), manifest);
+  fs.writeFileSync(
+    path.join(dir, `astryx.integration.${manifestExt}`),
+    manifest,
+  );
 }
 
 /** Find issues by code. */
@@ -116,7 +122,10 @@ describe('validate-integration API', () => {
   it('flags multiple manifests as multiple_manifests error', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {manifest: `export default {};\n`});
-    fs.writeFileSync(path.join(pkgDir, 'astryx.integration.js'), 'export default {};\n');
+    fs.writeFileSync(
+      path.join(pkgDir, 'astryx.integration.js'),
+      'export default {};\n',
+    );
     const result = await validateLocalIntegration(pkgDir);
     expect(byCode(result.issues, 'multiple_manifests')).toHaveLength(1);
   });
@@ -169,7 +178,10 @@ describe('validate-integration API', () => {
     const cmDir = path.join(pkgDir, 'codemods', '0.2.0');
     fs.mkdirSync(cmDir, {recursive: true});
     // Missing default export → discovery throws → invalid_codemod.
-    fs.writeFileSync(path.join(cmDir, 'broken.mjs'), `export const nope = 1;\n`);
+    fs.writeFileSync(
+      path.join(cmDir, 'broken.mjs'),
+      `export const nope = 1;\n`,
+    );
 
     const result = await validateLocalIntegration(pkgDir);
     expect(byCode(result.issues, 'invalid_codemod')).toHaveLength(1);
@@ -192,6 +204,52 @@ describe('validate-integration API', () => {
     expect(byCode(result.issues, 'invalid_template')).toHaveLength(1);
   });
 
+  it('reports no errors for a valid source-theme catalog', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default { themes: './themes' };\n`,
+    });
+    const themeDir = path.join(pkgDir, 'themes', 'ocean');
+    fs.mkdirSync(themeDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'themes', 'manifest.json'),
+      JSON.stringify({
+        version: 1,
+        themes: [
+          {
+            slug: 'ocean',
+            displayName: 'Ocean',
+            description: 'Blue and calm.',
+            maintained: true,
+            entry: 'oceanTheme.ts',
+            exportName: 'oceanTheme',
+            files: ['oceanTheme.ts'],
+          },
+        ],
+      }),
+    );
+    fs.writeFileSync(
+      path.join(themeDir, 'oceanTheme.ts'),
+      `export const oceanTheme = {};\n`,
+    );
+
+    const result = await validateLocalIntegration(pkgDir);
+    expect(byCode(result.issues, 'invalid_theme')).toHaveLength(0);
+    expect(summarizeIssues(result.issues).errors).toBe(0);
+  });
+
+  it('flags an unreadable source-theme catalog as invalid_theme', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default { themes: './themes' };\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'themes'), {recursive: true});
+    fs.writeFileSync(path.join(pkgDir, 'themes', 'manifest.json'), '{not-json');
+
+    const result = await validateLocalIntegration(pkgDir);
+    expect(byCode(result.issues, 'invalid_theme')).toHaveLength(1);
+  });
+
   it('validates an installed package resolved from node_modules', async () => {
     const consumer = path.join(tmpDir, 'consumer');
     fs.mkdirSync(consumer, {recursive: true});
@@ -206,7 +264,10 @@ describe('validate-integration API', () => {
       manifest: `export default { templates: './gone' };\n`,
     });
 
-    const result = await validateInstalledIntegration('@acme/widgets', consumer);
+    const result = await validateInstalledIntegration(
+      '@acme/widgets',
+      consumer,
+    );
     expect(result.found).toBe(true);
     expect(result.name).toBe('@acme/widgets');
     expect(result.version).toBe('2.0.0');

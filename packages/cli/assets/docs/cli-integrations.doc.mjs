@@ -7,7 +7,7 @@ export const docs = {
   title: 'CLI Integrations',
   category: 'guide',
   description:
-    'Author an npm package that contributes components, templates, and upgrade codemods to Astryx.',
+    'Author an npm package that contributes components, templates, themes, docs, and upgrade codemods to Astryx.',
 
   sections: [
     {
@@ -16,11 +16,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'An integration is an npm package that contributes components, templates, doc topics, and/or upgrade codemods to a consumer\'s design-system workflow. Consumers install the package and add it to their `astryx.config`; from then on the integration\'s contributions show up alongside core\'s in the same CLI commands.',
+          text: "An integration is an npm package that contributes components, templates, source themes, doc topics, and/or upgrade codemods to a consumer's design-system workflow. Consumers install the package and add it to their `astryx.config`; from then on the integration's contributions show up alongside core's in the same CLI commands.",
         },
         {
           type: 'prose',
-          text: 'The system runs on two files. The consumer writes `astryx.config.{ts,mjs,js}` at their project root to list which packages to load. The author writes `astryx.integration.{ts,mjs,js}` at the package root to declare what the package contributes. This page is the author\'s guide. For the consumer side, run `npx astryx docs getting-started`.',
+          text: "The system runs on two files. The consumer writes `astryx.config.{ts,mjs,js}` at their project root to list which packages to load. The author writes `astryx.integration.{ts,mjs,js}` at the package root to declare what the package contributes. This page is the author's guide. For the consumer side, run `npx astryx docs getting-started`.",
         },
         {
           type: 'prose',
@@ -33,7 +33,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Your components and templates then appear next to core\'s:',
+          text: "Your components and templates then appear next to core's:",
         },
         {
           type: 'code',
@@ -48,12 +48,12 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'To register your package as an integration, add an `astryx.integration.{ts,mjs,js}` file as a sibling of your `package.json`. It tells the CLI where to find your components, templates, doc topics, and codemods. Identity (name, version) comes from your `package.json`, not this file.',
+          text: 'To register your package as an integration, add an `astryx.integration.{ts,mjs,js}` file as a sibling of your `package.json`. It tells the CLI where to find your components, templates, source themes, doc topics, and codemods. Identity (name, version) comes from your `package.json`, not this file.',
         },
         {
           type: 'code',
           lang: 'typescript',
-          code: "// astryx.integration.ts\nexport default {\n  components: './components',\n  templates: './templates',\n  codemods: './codemods',\n  docs: './docs',\n  issuesUrl: 'https://github.com/acme/widgets/issues',\n};",
+          code: "// astryx.integration.ts\nexport default {\n  components: './components',\n  templates: './templates',\n  themes: './themes',\n  codemods: './codemods',\n  docs: './docs',\n  issuesUrl: 'https://github.com/acme/widgets/issues',\n};",
         },
         {
           type: 'prose',
@@ -86,7 +86,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Templates are usually not exported from the package directly. Instead, consumers browse them through the CLI and materialize them into their app. Define a template as a plain object stamped with `type: \'page\'` (full pages) or `type: \'block\'` (smaller chunks) in a `.template.{ts,mjs,js}` file next to the source, for example `AcmeLandingPage.tsx` and `AcmeLandingPage.template.ts`.',
+          text: "Templates are usually not exported from the package directly. Instead, consumers browse them through the CLI and materialize them into their app. Define a template as a plain object stamped with `type: 'page'` (full pages) or `type: 'block'` (smaller chunks) in a `.template.{ts,mjs,js}` file next to the source, for example `AcmeLandingPage.tsx` and `AcmeLandingPage.template.ts`.",
         },
         {
           type: 'prose',
@@ -148,11 +148,43 @@ export const docs = {
           style: 'unordered',
           items: [
             'A topic name is a CLI argument and a docsite path, so it may hold only letters, digits, `_` and `-`.',
-            "A name that collides with an existing topic and declares neither `replaces` nor `extends` is an error, not a silent override; the CLI will not guess which one you meant.",
-            '`replaces` and `extends` are exclusive: a topic either takes another\'s place or merges onto it.',
+            'A name that collides with an existing topic and declares neither `replaces` nor `extends` is an error, not a silent override; the CLI will not guess which one you meant.',
+            "`replaces` and `extends` are exclusive: a topic either takes another's place or merges onto it.",
             'Two integrations replacing one topic is a warning, and the one configured later in `astryx.config` wins.',
             '`astryx doctor integration docs <package>` classifies Core overlaps as intentional replacements, intentional extensions, or accidental same-name conflicts.',
           ],
+        },
+      ],
+    },
+    {
+      title: 'Themes',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: "A theme contribution is editable `defineTheme` source, not compiled CSS. Add `themes: './themes'` to `astryx.integration.*`, place the source under one directory per slug, and list it in `themes/manifest.json`. If package.json has a `files` allowlist, include both the integration manifest and the themes root; packages with no allowlist already publish both. Do not add an `exports` map only for theme discovery.",
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          code: 'themes/\n  manifest.json\n  ocean/\n    oceanTheme.ts',
+        },
+        {
+          type: 'prose',
+          text: "The root catalog uses the same entry contract as Astryx's bundled themes: `slug`, `displayName`, `description`, `maintained`, `entry`, `exportName`, and `files`. `entry` and every file are relative to `themes/<slug>/`; `exportName` identifies the named theme export in the entry source.",
+        },
+        {
+          type: 'code',
+          lang: 'json',
+          code: '{\n  "version": 1,\n  "themes": [{\n    "slug": "ocean",\n    "displayName": "Ocean",\n    "description": "Ocean theme.",\n    "maintained": true,\n    "entry": "oceanTheme.ts",\n    "exportName": "oceanTheme",\n    "files": ["oceanTheme.ts"]\n  }]\n}',
+        },
+        {
+          type: 'prose',
+          text: 'After a consumer installs the package, `astryx theme list` shows its themes with the owner package, and `astryx theme add <slug> --package <package>` copies the selected source into the app. If two packages use one slug, an unscoped add fails instead of choosing one silently.',
+        },
+        {
+          type: 'prose',
+          text: "Compatibility is additive. A CLI released before the `themes` field ignores that unknown key with a warning and continues loading the integration's older contribution kinds, but it cannot list or add the contributed theme. Upgrade `@astryxdesign/cli` in the consumer to use it.",
         },
       ],
     },
@@ -185,7 +217,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Ship codemods so `astryx upgrade` can migrate consumers across breaking changes in your package. Point the integration file\'s `codemods` field at your codemods root, and author each one as a plain object stamped with `type: \'code\'` (transforms source files) or `type: \'config\'` (rewrites the consumer\'s `astryx.config`).',
+          text: "Ship codemods so `astryx upgrade` can migrate consumers across breaking changes in your package. Point the integration file's `codemods` field at your codemods root, and author each one as a plain object stamped with `type: 'code'` (transforms source files) or `type: 'config'` (rewrites the consumer's `astryx.config`).",
         },
         {
           type: 'code',
@@ -213,7 +245,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The event is the same `DebugEvent` a consumer receives from `debug` in their own `astryx.config`, and both run: an app that sets its own handler still reaches yours, and yours never displaces theirs. The app handler is called first, then each integration in the order the config lists them. Every handler is called in isolation with its own copy of the event — one that throws, prints, or calls `process.exit` cannot change the command\'s output or exit code, and cannot stop the others.',
+          text: "The event is the same `DebugEvent` a consumer receives from `debug` in their own `astryx.config`, and both run: an app that sets its own handler still reaches yours, and yours never displaces theirs. The app handler is called first, then each integration in the order the config lists them. Every handler is called in isolation with its own copy of the event — one that throws, prints, or calls `process.exit` cannot change the command's output or exit code, and cannot stop the others.",
         },
         {
           type: 'prose',
@@ -227,7 +259,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Every CLI command loads the consumer\'s `astryx.config`, resolves each listed integration\'s manifest from `node_modules`, and discovers its contributions. Each file is parsed at the load boundary through `@astryxdesign/cli/authoring` — when the CLI loads it, not when you author it. A field of the wrong type fails there. A field this CLI does not know is ignored with a warning naming it, so a manifest written against a newer CLI still contributes everything this one understands. There are no factories; you write a plain object and stamp its `type`.',
+          text: "Every CLI command loads the consumer's `astryx.config`, resolves each listed integration's manifest from `node_modules`, and discovers its contributions. Each file is parsed at the load boundary through `@astryxdesign/cli/authoring` — when the CLI loads it, not when you author it. A field of the wrong type fails there. A field this CLI does not know is ignored with a warning naming it, so a manifest written against a newer CLI still contributes everything this one understands. There are no factories; you write a plain object and stamp its `type`.",
         },
         {
           type: 'prose',

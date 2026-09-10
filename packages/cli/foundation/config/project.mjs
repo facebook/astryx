@@ -6,7 +6,7 @@
  * `Project` is the one entry point a command uses to read everything it needs
  * about a consumer's project: the validated config surface, the configured
  * integrations, and the resolved discovery sets (components, templates,
- * codemods, docs) — plus issue routing (issuesUrl) and the accumulated
+ * codemods, docs, themes) — plus issue routing (issuesUrl) and the accumulated
  * integration issues. It replaces the old `loadConfig(cwd)` plain-object loader
  * and the per-command fan-out into the various discovery helpers.
  *
@@ -16,7 +16,7 @@
  *     package.json, import + validate it, load the configured integrations —
  *     plus autolink the installed ones no config names, and nothing more.
  *     Discovery is LAZY.
- *   - Discovery methods (components/templates/codemods/docs) are MEMOIZED per
+ *   - Discovery methods (components/templates/codemods/docs/themes) are MEMOIZED per
  *     instance (via the pluggable cache) and orchestrate the EXISTING discovery
  *     functions — Project never reimplements discovery.
  *   - SKIP + WARN policy: as a discovery method runs, per-integration work is
@@ -56,6 +56,10 @@ import {
   DocsCatalog,
   discoverIntegrationDocs,
 } from '../discovery/docs-discovery.mjs';
+import {
+  discoverBundledThemes,
+  discoverIntegrationThemes,
+} from '../discovery/theme-discovery.mjs';
 import {getTransformsBetween} from '../../assets/codemods/registry.mjs';
 import {
   discoverIntegrationCodemods,
@@ -572,6 +576,38 @@ export class Project {
       }
 
       return templates.sort((a, b) => a.name.localeCompare(b.name));
+    });
+  }
+
+  /**
+   * Bundled source themes plus themes contributed by installed integrations.
+   * Each record keeps its package owner and source directory so callers can
+   * both list and copy it without reconstructing paths. A broken integration's
+   * themes are skipped under the same issue policy as every other kind.
+   *
+   * @returns {Promise<import('../discovery/theme-discovery.mjs').DiscoveredTheme[]>}
+   */
+  async themes() {
+    return this.#memo('themes', async () => {
+      const themes = discoverBundledThemes();
+
+      for (const integration of this.#loadedIntegrations) {
+        await this.#collectIssues(integration);
+        const pkg = this.#pkgLabel(integration);
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
+        if (!integration?.themes) continue;
+        try {
+          themes.push(...(await discoverIntegrationThemes(integration)));
+        } catch (err) {
+          this.#pushIssue(pkg, {
+            code: 'invalid_theme',
+            severity: 'error',
+            message: errorMessage(err),
+          });
+        }
+      }
+
+      return themes;
     });
   }
 

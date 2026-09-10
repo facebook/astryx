@@ -164,6 +164,7 @@ async function validateAtPackageDir(packageDir, identity) {
     templates: resolveRoot(manifest.templates),
     codemods: resolveRoot(manifest.codemods),
     docs: resolveRoot(manifest.docs),
+    themes: resolveRoot(manifest.themes),
     issuesUrl: manifest.issuesUrl,
     agentDocs: manifest.agentDocs,
     __agentDocsError: agentDocsError,

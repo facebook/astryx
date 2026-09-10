@@ -114,6 +114,11 @@ export const doc = {
         'A component name is owned by more than one package (narrow with --package).',
     },
     {
+      value: 'ERR_AMBIGUOUS_THEME',
+      description:
+        'A theme slug is owned by more than one package (narrow with --package).',
+    },
+    {
       value: 'ERR_UNKNOWN_THEME',
       description: 'No theme matched the requested slug (theme add).',
     },

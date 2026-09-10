@@ -142,13 +142,13 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'Start from a theme we ship, or write one from scratch with defineTheme. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
+          text: 'Start from a bundled theme or one contributed by an installed integration, or write one from scratch with defineTheme. `theme list` names each owner; when packages share a slug, pass `--package`. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Browse, then copy a theme in as editable source',
-          code: 'astryx theme list\nastryx theme add stone',
+          code: 'astryx theme list\nastryx theme add stone\nastryx theme add ocean --package @acme/themes',
         },
         {
           type: 'prose',
