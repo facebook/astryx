@@ -2,9 +2,9 @@
   "label": "after: BaseTypeahead selected-result · neutral-light-ltr",
   "identity": "story",
   "build": {
-    "root": "<repository>",
-    "expectedSha": "d539b93eaa472e66bdab154f3c623a26af874189",
-    "observedSha": "d539b93eaa472e66bdab154f3c623a26af874189"
+    "root": "/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140",
+    "expectedSha": "7af883c1fbea72453fc7dcff771e3a9c4a364601",
+    "observedSha": "7af883c1fbea72453fc7dcff771e3a9c4a364601"
   },
   "expected": {
     "globals": {
@@ -29,14 +29,14 @@
     "targetCount": 1,
     "state": {
       "expandedCount": 1,
-      "visibleOptions": 5,
+      "visibleOptions": 1,
       "selectedOptions": 1
     },
     "runningAnimations": 0
   },
   "observed": {
-    "storyExpected": "core-basetypeahead--selected-result",
-    "storyObserved": "core-basetypeahead--selected-result",
+    "storyExpected": "core-basetypeahead--default",
+    "storyObserved": "core-basetypeahead--default",
     "routeObserved": "/iframe.html",
     "globals": {
       "astryxTheme": "neutral",
@@ -74,12 +74,12 @@
     "storybookError": null,
     "state": {
       "expandedCount": 1,
-      "visibleOptions": 5,
+      "visibleOptions": 1,
       "selectedOptions": 1
     }
   },
   "image": {
-    "path": "<evidence>/after/frames/selected-result__neutral-light-ltr.png",
-    "bytes": 18503
+    "path": "/Users/cindyxz/astryx/session-work/night-watch-audit-1-20260909-1788948140/correction-20260910/evidence/after/frames/selected-result__neutral-light-ltr.png",
+    "bytes": 9426
   }
 }

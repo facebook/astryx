@@ -1,0 +1,37 @@
+HEAD=7af883c1fbea72453fc7dcff771e3a9c4a364601
+AUDIT_HARNESS=BaseTypeahead.escape-gap.test.tsx
+
+ RUN  v4.1.10 /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140
+
+Built pseudo.json — 362 keys
+Built pseudo.json — 362 keys
+(node:28554) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ |ui| packages/core/src/Typeahead/BaseTypeahead.escape-gap.test.tsx (1 test | 1 failed) 352ms
+   × keeps a pending result list dismissed after Escape 349ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |ui| packages/core/src/Typeahead/BaseTypeahead.escape-gap.test.tsx > keeps a pending result list dismissed after Escape
+Error: expect(element).toHaveAttribute("aria-expanded", "false") // element.getAttribute("aria-expanded") === "false"
+
+Expected the element to have attribute:
+  aria-expanded="false"
+Received:
+  aria-expanded="true"
+ ❯ packages/core/src/Typeahead/BaseTypeahead.escape-gap.test.tsx:55:17
+     53|   resolveSearch?.([item]);
+     54|   await waitFor(() => expect(input).not.toHaveAttribute('aria-busy'));
+     55|   expect(input).toHaveAttribute('aria-expanded', 'false');
+       |                 ^
+     56| });
+     57|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  09:21:07
+   Duration  4.51s (transform 2.46s, setup 216ms, import 2.72s, tests 352ms, environment 536ms)
+

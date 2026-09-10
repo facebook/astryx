@@ -1,0 +1,234 @@
+HEAD=7af883c1fbea72453fc7dcff771e3a9c4a364601
+$ pnpm check:repo && ASTRYX_STRICT_LINT=1 eslint . --cache
+$ pnpm check:sync && pnpm check:knowledge && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits && pnpm check:cli-structure && pnpm check:use-client && pnpm check:portable-scripts && pnpm check:i18n-catalog && pnpm check:cldr-weekdays && pnpm check:fixtures && pnpm check:setup-contract
+$ node scripts/check-sync.js
+✅ All SYNC comments are clean.
+$ node scripts/check-knowledge.mjs
+Knowledge templates and records are aligned.
+$ node scripts/check-package-boundaries.js
+Package boundaries are clean.
+$ node scripts/check-changesets.mjs
+✓ check:changesets — 26 changeset(s) valid (0.x: [breaking] -> minor, else patch)
+$ node scripts/check-demo-media.mjs
+✅ 5 image-backed Thumbnail example(s) checked — all use CORS-safe demo media.
+$ node scripts/check-executable-bits.mjs
+✅ 5 tracked shell script(s) checked — all executable.
+$ node scripts/check-cli-structure.mjs
+✅ 8 doc-type(s) + 16 api folder(s) checked — CLI structure is intact.
+$ node scripts/check-use-client.mjs
+✅ 278 client-API files checked — all have "use client" as their first statement.
+$ node scripts/check-portable-scripts.mjs
+✅ 218 package.json script(s) checked — all portable.
+$ node scripts/check-i18n-catalog.mjs
+✓ check:i18n-catalog — 358 key(s) over 485 reference(s) resolve; 362 en and 7081 translated message(s) parsed and contract-checked; plural categories evaluated with runtime CLDR 48.0; 29 locale(s) consistent
+  · af-ZA.json: 124/362 key(s) untranslated (falls back to en)
+  · ar-SA.json: 114/362 key(s) untranslated (falls back to en)
+  · ca-ES.json: 120/362 key(s) untranslated (falls back to en)
+  · cs-CZ.json: 116/362 key(s) untranslated (falls back to en)
+  · da-DK.json: 122/362 key(s) untranslated (falls back to en)
+  · de-DE.json: 122/362 key(s) untranslated (falls back to en)
+  · el-GR.json: 116/362 key(s) untranslated (falls back to en)
+  · es-ES.json: 119/362 key(s) untranslated (falls back to en)
+  · fi-FI.json: 116/362 key(s) untranslated (falls back to en)
+  · fr-FR.json: 125/362 key(s) untranslated (falls back to en)
+  · he-IL.json: 116/362 key(s) untranslated (falls back to en)
+  · hu-HU.json: 116/362 key(s) untranslated (falls back to en)
+  · it-IT.json: 119/362 key(s) untranslated (falls back to en)
+  · ja-JP.json: 114/362 key(s) untranslated (falls back to en)
+  · ko-KR.json: 116/362 key(s) untranslated (falls back to en)
+  · nl-NL.json: 125/362 key(s) untranslated (falls back to en)
+  · no-NO.json: 119/362 key(s) untranslated (falls back to en)
+  · pl-PL.json: 118/362 key(s) untranslated (falls back to en)
+  · pt-BR.json: 118/362 key(s) untranslated (falls back to en)
+  · pt-PT.json: 118/362 key(s) untranslated (falls back to en)
+  · ro-RO.json: 118/362 key(s) untranslated (falls back to en)
+  · ru-RU.json: 116/362 key(s) untranslated (falls back to en)
+  · sr-SP.json: 116/362 key(s) untranslated (falls back to en)
+  · sv-SE.json: 117/362 key(s) untranslated (falls back to en)
+  · tr-TR.json: 116/362 key(s) untranslated (falls back to en)
+  · uk-UA.json: 116/362 key(s) untranslated (falls back to en)
+  · vi-VN.json: 117/362 key(s) untranslated (falls back to en)
+  · zh-CN.json: 114/362 key(s) untranslated (falls back to en)
+  · zh-TW.json: 114/362 key(s) untranslated (falls back to en)
+  · 2 key reference(s) unverifiable (key not statically knowable):
+      packages/core/src/Chat/ChatMessageMetadata.tsx:125  statusConfig.i18nKey
+      packages/core/src/PowerSearch/resolveOperatorLabel.ts:33  operator.i18nKey
+$ node scripts/generate-cldr-weekdays.mjs --check
+✓ Calendar CLDR weekday data matches 31 generated locale entries
+$ node internal/vibe-tests/scripts/fixture-suite.mjs verify
+verified 3 canonical fixtures
+$ node scripts/generate-setup-contract.mjs --check
+Setup contract in sync.
+(node:26889) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/eslint.config.js?mtime=1788948184863 is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/apps/docsite/src/app/playground/themeEditor/ThemeEditor.tsx
+  24:3  warning  'expandColorScale' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/apps/sandbox/src/app/(raw)/pages/mobile-prototypes/page.tsx
+  15:44  warning  'ReactNode' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/apps/sandbox/src/app/(raw)/pages/mobile-prototypes/primitives.tsx
+  532:17  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  567:32  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  567:44  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  578:36  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/apps/sandbox/src/app/(raw)/pages/mobile-prototypes/prototypes.tsx
+  1267:16  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/internal/vibe-tests/setup-test/setup-aggregate.ts
+  197:24  warning  Always prefer const x: T = { ... }  @typescript-eslint/consistent-type-assertions
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/charts/src/marks/dotGLInteractive.tsx
+  565:20  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/cli/assets/templates/pages/ai-chat/page.tsx
+  87:3  warning  Always prefer const x: T = { ... }  @typescript-eslint/consistent-type-assertions
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Chat/ChatDictationButton.tsx
+  136:7  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Chat/ChatLayoutScrollButton.tsx
+  139:7  warning  <div> exists only to style <Button>. Astryx components extend BaseProps, so pass the styles to <Button> via xstyle and drop the wrapper — an extra DOM node changes the parent's flex/grid child relationship and can break alignment  @astryx/no-style-only-wrapper
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Chat/ChatMessage.tsx
+  265:12  warning  `metadata != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(metadata)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Chat/ChatMessageMetadata.tsx
+  147:8  warning  `timestamp != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(timestamp)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Chat/ChatSystemMessage.tsx
+  155:10  warning  `icon != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(icon)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Chat/ChatToolCalls.tsx
+  450:8   warning  `call.target != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(call.target)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)              @astryx/no-nullish-jsx-guard
+  457:12  warning  `call.additions != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(call.additions)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)        @astryx/no-nullish-jsx-guard
+  462:12  warning  `call.deletions != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(call.deletions)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)        @astryx/no-nullish-jsx-guard
+  470:8   warning  `call.duration != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(call.duration)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)          @astryx/no-nullish-jsx-guard
+  640:14  warning  `latestCall.target != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(latestCall.target)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Chat/useChatDictation.ts
+  360:24  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/CheckboxInput/CheckboxInput.test.tsx
+  31:10  warning  'injectedRules' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/CheckboxInput/CheckboxInput.tsx
+  34:3  warning  'radiusVars' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/DateInput/DateInput.tsx
+  34:3  warning  'borderVars' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/DateInput/DateInputTouch.test.tsx
+  45:9  warning  'stableClassName' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/DateInput/usePointerDragScroll.ts
+  46:20  warning  'useRef' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/EmptyState/EmptyState.tsx
+  172:8   warning  `icon != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(icon)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)                @astryx/no-nullish-jsx-guard
+  184:10  warning  `description != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(description)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+  203:8   warning  `actions != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(actions)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)          @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Item/Item.tsx
+  482:8  warning  `description != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(description)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)    @astryx/no-nullish-jsx-guard
+  512:8  warning  `startContent != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(startContent)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+  565:8  warning  `endContent != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(endContent)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)      @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/MetadataList/MetadataList.tsx
+  233:5  warning  `title != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(title)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/MetadataList/MetadataListItem.tsx
+  156:8  warning  `icon != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(icon)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/OverflowList/OverflowList.tsx
+  373:10  warning  `measureIndicator != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(measureIndicator)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Pagination/Pagination.tsx
+  755:14  warning  `computedTotalPages != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(computedTotalPages)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/PowerSearch/PowerSearch.tsx
+  1038:7  warning  `resultCountText != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(resultCountText)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/PowerSearch/PowerSearchEditPopover.tsx
+  332:7   warning  <div> exists only to style <Selector>. Astryx components extend BaseProps, so pass the styles to <Selector> via xstyle and drop the wrapper — an extra DOM node changes the parent's flex/grid child relationship and can break alignment                              @astryx/no-style-only-wrapper
+  344:9   warning  <div> exists only to style <Selector>. Astryx components extend BaseProps, so pass the styles to <Selector> via xstyle and drop the wrapper — an extra DOM node changes the parent's flex/grid child relationship and can break alignment                              @astryx/no-style-only-wrapper
+  357:9   warning  <div> exists only to style <PowerSearchValueEditor>. Astryx components extend BaseProps, so pass the styles to <PowerSearchValueEditor> via xstyle and drop the wrapper — an extra DOM node changes the parent's flex/grid child relationship and can break alignment  @astryx/no-style-only-wrapper
+  580:9   warning  <div> exists only to style <Selector>. Astryx components extend BaseProps, so pass the styles to <Selector> via xstyle and drop the wrapper — an extra DOM node changes the parent's flex/grid child relationship and can break alignment                              @astryx/no-style-only-wrapper
+  772:15  warning  <div> exists only to style <Selector>. Astryx components extend BaseProps, so pass the styles to <Selector> via xstyle and drop the wrapper — an extra DOM node changes the parent's flex/grid child relationship and can break alignment                              @astryx/no-style-only-wrapper
+  832:11  warning  <div> exists only to style <Selector>. Astryx components extend BaseProps, so pass the styles to <Selector> via xstyle and drop the wrapper — an extra DOM node changes the parent's flex/grid child relationship and can break alignment                              @astryx/no-style-only-wrapper
+  844:13  warning  <div> exists only to style <Selector>. Astryx components extend BaseProps, so pass the styles to <Selector> via xstyle and drop the wrapper — an extra DOM node changes the parent's flex/grid child relationship and can break alignment                              @astryx/no-style-only-wrapper
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Switch/Switch.tsx
+  44:21  warning  'mergeRefs' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Table/BaseTable.tsx
+  472:10  warning  `after != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(after)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Table/plugins/sortable/useTableSortable.tsx
+  342:8  warning  `rank != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(rank)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/TextArea/TextArea.tsx
+  649:10  warning  `maxLength != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(maxLength)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Toast/ToastViewport.tsx
+  270:7  warning  <div> exists only to style <ToastSurface>. Astryx components extend BaseProps, so pass the styles to <ToastSurface> via xstyle and drop the wrapper — an extra DOM node changes the parent's flex/grid child relationship and can break alignment  @astryx/no-style-only-wrapper
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/ToggleButton/ToggleButton.tsx
+  317:5  warning  `children != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(children)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/TopNav/TopNavMegaMenu.tsx
+  516:14  warning  `items != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(items)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)        @astryx/no-nullish-jsx-guard
+  523:14  warning  `featured != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(featured)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+  602:12  warning  `featured != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(featured)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/TopNav/TopNavMegaMenuItem.tsx
+  183:36  warning  This component accepts `xstyle` via BaseProps but never forwards it, so the consumer override is silently dropped. Destructure `xstyle` and thread it into the root `mergeProps(...)` / `stylex.props(...)` call        @astryx/require-baseprops-passthrough
+  183:36  warning  This component accepts `className` via BaseProps but never forwards it, so the consumer override is silently dropped. Destructure `className` and thread it into the root `mergeProps(...)` / `stylex.props(...)` call  @astryx/require-baseprops-passthrough
+  183:36  warning  This component accepts `style` via BaseProps but never forwards it, so the consumer override is silently dropped. Destructure `style` and thread it into the root `mergeProps(...)` / `stylex.props(...)` call          @astryx/require-baseprops-passthrough
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/TreeList/TreeList.tsx
+  363:8  warning  `header != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(header)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/TreeList/TreeListItem.tsx
+  433:8   warning  `description != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(description)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)            @astryx/no-nullish-jsx-guard
+  512:8   warning  `startContent != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(startContent)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)          @astryx/no-nullish-jsx-guard
+  544:8   warning  `endContent != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(endContent)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)              @astryx/no-nullish-jsx-guard
+  605:22  warning  `renderedChildren != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(renderedChildren)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/VisuallyHidden/VisuallyHidden.tsx
+  89:32  warning  This component accepts `xstyle` via BaseProps but never forwards it, so the consumer override is silently dropped. Destructure `xstyle` and thread it into the root `mergeProps(...)` / `stylex.props(...)` call  @astryx/require-baseprops-passthrough
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/lab/src/LogStream/LogStream.tsx
+  114:12  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here                                                                                                    @astryx/no-raw-color
+  115:18  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here                                                                                                    @astryx/no-raw-color
+  116:11  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here                                                                                                    @astryx/no-raw-color
+  117:12  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here                                                                                                    @astryx/no-raw-color
+  118:9   warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here                                                                                                    @astryx/no-raw-color
+  119:15  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here                                                                                                    @astryx/no-raw-color
+  120:9   warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here                                                                                                    @astryx/no-raw-color
+  121:10  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here                                                                                                    @astryx/no-raw-color
+  240:12  warning  `light-dark()` in a component hardcodes a light/dark decision that belongs to the theme. A theme can retint any token this component reads, but it cannot reach inside a literal — so this value fixes the one scheme it was written for and leaves every other theme failing on the other side. Read a token instead (`colorVars['--color-…']`), and if none fits, add the `[light, dark]` pair in the theme layer, where `defineTheme` generates the `light-dark()` for every theme at once  @astryx/no-light-dark-outside-theme
+  243:12  warning  `light-dark()` in a component hardcodes a light/dark decision that belongs to the theme. A theme can retint any token this component reads, but it cannot reach inside a literal — so this value fixes the one scheme it was written for and leaves every other theme failing on the other side. Read a token instead (`colorVars['--color-…']`), and if none fits, add the `[light, dark]` pair in the theme layer, where `defineTheme` generates the `light-dark()` for every theme at once  @astryx/no-light-dark-outside-theme
+  278:22  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here                                                                                                    @astryx/no-raw-color
+  313:18  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here                                                                                                    @astryx/no-raw-color
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/lab/src/Sankey/SankeyGrid.tsx
+  44:30  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+  56:23  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+
+/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/lab/src/Sankey/SankeyLabel.tsx
+   54:9   warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+   55:9   warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+   58:7   warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+   59:7   warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+  156:19  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+  203:14  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+  213:17  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+  225:19  warning  Raw colour in component source. A theme can retint any token this component reads, but it cannot reach inside a literal — so this is the colour every theme gets, including a consumer's own. Read a token instead (`colorVars['--color-…']`, `shadowVars['--shadow-…']`), or derive one with `color-mix()` on token vars. If no token fits, the value belongs in the theme layer, not here  @astryx/no-raw-color
+
+✖ 84 problems (0 errors, 84 warnings)
+

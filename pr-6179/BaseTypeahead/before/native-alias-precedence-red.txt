@@ -1,0 +1,60 @@
+HEAD=507f7c203f4e451a2bb50ecd731c850d510271fb
+Scope: all 24 workspace projects
+[WARN] There are cyclic workspace dependencies: /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/charts, /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/cli
+✓ Lockfile passes supply-chain policies (verified 23h ago)
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 0, reused 1, downloaded 0, added 0
+Packages: +3 -167
++-------------------------------------------------------------------------------
+Progress: resolved 0, reused 170, downloaded 0, added 3, done
+
+. prepare$ husky install
+. prepare: husky - install command is DEPRECATED
+. prepare: Done
+packages/cli postinstall$ node scripts/postinstall.mjs
+packages/cli postinstall: Done
+packages/core postinstall$ node scripts/postinstall.mjs
+packages/core postinstall: Done
+apps/sandbox postinstall$ astryx init --features agents
+apps/sandbox postinstall: ✓ AI agent docs installed → AGENTS.md
+apps/sandbox postinstall: Done
+Done in 2.1s using pnpm v11.10.0
+
+ RUN  v4.1.10 /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140
+
+Built pseudo.json — 362 keys
+Built pseudo.json — 362 keys
+(node:84752) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ |ui| packages/core/src/Typeahead/BaseTypeahead.test.tsx (5 tests | 1 failed | 3 skipped) 145ms
+     ↓ forwards supported DOM, styling, and event props to the combobox input
+     × preserves native input attributes when legacy aliases are undefined 128ms
+     ✓ lets defined legacy aliases override their native equivalents 15ms
+     ↓ counts grapheme clusters when enforcing minQueryLength
+     ↓ exposes a completed empty search as a disabled listbox option
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |ui| packages/core/src/Typeahead/BaseTypeahead.test.tsx > BaseTypeahead > preserves native input attributes when legacy aliases are undefined
+Error: expect(element).toHaveAttribute("id", "native-input") // element.getAttribute("id") === "native-input"
+
+Expected the element to have attribute:
+  id="native-input"
+Received:
+  id="_r_0_"
+ ❯ packages/core/src/Typeahead/BaseTypeahead.test.tsx:124:19
+    122|
+    123|     const input = screen.getByRole('combobox');
+    124|     expect(input).toHaveAttribute('id', 'native-input');
+       |                   ^
+    125|     expect(input).toHaveAttribute('aria-describedby', 'native-descript…
+    126|     expect(input).toHaveAttribute('aria-labelledby', 'native-label');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed | 3 skipped (5)
+   Start at  07:58:40
+   Duration  3.40s (transform 1.57s, setup 265ms, import 1.73s, tests 145ms, environment 713ms)
+

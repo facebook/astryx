@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "component": "core/BaseTypeahead",
+  "package": "@astryxdesign/core",
+  "mode": "N",
+  "rubricVersion": "1.16.2",
+  "originalAuditBaseline": {
+    "head": "53bc34db7c9dd40c3fe0f0e0f419adaea71a73cd",
+    "score": 63.4,
+    "grade": "D"
+  },
+  "beforeReviewCorrections": {
+    "head": "507f7c203f4e451a2bb50ecd731c850d510271fb",
+    "score": 72.4,
+    "grade": "C",
+    "sections": {
+      "accessibility": 2,
+      "theming": 4.5,
+      "api": 2.5,
+      "behavior": 4.5,
+      "designObjective": 5,
+      "designRendered": 4.5,
+      "testing": 4.5,
+      "codeHealth": 3.5,
+      "docs": 4.5,
+      "i18nRtl": 5,
+      "responsive": 1
+    }
+  },
+  "afterReviewCorrections": {
+    "head": "7af883c1fbea72453fc7dcff771e3a9c4a364601",
+    "score": 77.8,
+    "grade": "C",
+    "sections": {
+      "accessibility": 2,
+      "theming": 4.5,
+      "api": 3,
+      "behavior": 4.5,
+      "designObjective": 5,
+      "designRendered": 4.5,
+      "testing": 4.5,
+      "codeHealth": 3.5,
+      "docs": 4.5,
+      "i18nRtl": 5,
+      "responsive": 5
+    }
+  },
+  "affectedRows": [
+    {
+      "row": "A4",
+      "before": "retained BLOCK omitted from the prior scorecard",
+      "after": "retained BLOCK explicitly proven and scored: a pending result can reopen after Escape"
+    },
+    {
+      "row": "A11",
+      "before": "retained BLOCK existed but docs/spec overstated selection blocking",
+      "after": "retained BLOCK unchanged; docs/spec and exact-head retained-red evidence now match shipped behavior"
+    },
+    {
+      "row": "P2/P3",
+      "before": "two API BLOCKs; undefined legacy aliases erased native id, aria-labelledby, aria-describedby, and tabIndex",
+      "after": "native attributes survive when aliases are undefined; defined aliases retain non-breaking precedence; one unrelated released-surface BLOCK remains"
+    },
+    {
+      "row": "R1",
+      "before": "1/5 anchor: 320px popup touched the viewport edge and contained a 443px-scrolling option inside a 280px row",
+      "after": "5/5 anchor: 16px end gutter and zero listbox/option horizontal overflow"
+    },
+    {
+      "row": "X10-X12",
+      "before": "redundant permanent selected-result and consumer-props stories plus enumerative argTypes and duplicate showcase implementation",
+      "after": "states are driven from reusable fixtures; two stories and enumerative argTypes were removed; the existing Custom Search implementation became the hero, with one materially distinct custom-results example retained"
+    }
+  ],
+  "openBlocks": [
+    "A1: direct BaseTypeahead can be unnamed",
+    "A4: a pending result can reopen the popup after Escape",
+    "A11: an already-open focusable-disabled combobox can select on Enter",
+    "P38/public API ownership: released BaseTypeaheadProps exposes package-internal composition knobs"
+  ],
+  "eligibility": {
+    "verdict": "manual-review-only; not eligible for unattended merge",
+    "reasons": [
+      "four retained BLOCKs remain",
+      "AST-029 FR11 unattended audit activation is not shipped",
+      "human re-review is required after the request-changes correction"
+    ],
+    "autoMerge": false,
+    "ledgerUpdated": false
+  }
+}

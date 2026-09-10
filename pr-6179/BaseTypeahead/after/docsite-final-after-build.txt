@@ -1,0 +1,191 @@
+HEAD=7af883c1fbea72453fc7dcff771e3a9c4a364601
+Scope: all 24 workspace projects
+[WARN] There are cyclic workspace dependencies: /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/charts, /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/cli
+✓ Lockfile passes supply-chain policies (verified 1d ago)
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 0, reused 1, downloaded 0, added 0
+Packages: -167
+--------------------------------------------------------------------------------
+Progress: resolved 0, reused 167, downloaded 0, added 0, done
+
+. prepare$ husky install
+. prepare: husky - install command is DEPRECATED
+. prepare: Done
+packages/cli postinstall$ node scripts/postinstall.mjs
+packages/cli postinstall: Done
+packages/core postinstall$ node scripts/postinstall.mjs
+packages/core postinstall: Done
+apps/sandbox postinstall$ astryx init --features agents
+apps/sandbox postinstall: ✓ AI agent docs installed → AGENTS.md
+apps/sandbox postinstall: Done
+Done in 4.7s using pnpm v11.10.0
+$ node scripts/check-workspace-build.mjs && pnpm build:theme && node scripts/generate-data.mjs && node scripts/generate-scope.mjs && node scripts/generate-playground-types.mjs && node scripts/copy-vendor.mjs
+$ astryx theme build src/themes/astryxTheme.ts --out src/themes/astryx.css
+
+Next step: run `pnpm exec astryx init` to finish setup and install the Astryx agent prompt.
+
+Building theme from src/themes/astryxTheme.ts...
+
+✓ src/themes/astryx.css
+  18 token overrides, 3 component overrides
+  8.0 KB
+✓ src/themes/astryx.js
+✓ src/themes/astryx.d.ts
+
+Install in your app (paths are relative to a file in src/ — adjust if yours lives elsewhere):
+
+  import { astryxTheme } from './themes/astryx';
+  import './themes/astryx.css';
+
+  <Theme theme={astryxTheme}>
+    <App />
+  </Theme>
+
+Or with a <link> tag:
+
+  import { astryxTheme } from './themes/astryx';
+
+  <link rel="stylesheet" href="./themes/astryx.css" />
+  <Theme theme={astryxTheme}>
+    <App />
+  </Theme>
+
+  note: Font "Figtree Variable" is named by this theme but not loaded — add a <link> or @font-face in your app (recipe: astryx docs typography)
+
+⚠ Theme "astryx" names fonts it does not load: "Figtree Variable"
+  The built CSS only sets font-family — load these in your app, or every
+  browser quietly falls back.
+
+  Google Fonts (add :wght@… axes as your theme's weights require):
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree+Variable&display=swap" />
+
+  Self-hosted (repeat per family and weight):
+
+    @font-face {
+      font-family: "Figtree Variable";
+      src: url('/fonts/figtree-variable.woff2') format('woff2');
+      font-display: swap;
+    }
+
+  Recipe and fallback-stack guidance: astryx docs typography
+
+Docsite content target: canary (reading package docs from .)
+Generating docsite data...
+
+Generating package registry...
+  wrote apps/docsite/src/generated/packageRegistry.ts
+Generating theme registry...
+  wrote apps/docsite/src/generated/themeRegistry.ts
+  wrote apps/docsite/src/generated/themes.css
+Generating component registry...
+  wrote apps/docsite/src/generated/componentRegistry.ts
+  wrote apps/docsite/src/generated/componentPreviewRegistry.ts
+Generating grouped component registry...
+  wrote apps/docsite/src/generated/groupedComponentRegistry.ts
+Generating block registry...
+  wrote apps/docsite/src/generated/blockRegistry.ts
+  wrote apps/docsite/src/generated/package-styles.css
+Generating template registry...
+  wrote apps/docsite/src/generated/templateRegistry.ts
+Generating docs registry...
+  wrote apps/docsite/src/generated/docsRegistry.ts
+Generating blog registry...
+  wrote apps/docsite/src/generated/blogRegistry.ts
+Generating showcase registry...
+  wrote apps/docsite/src/generated/showcaseRegistry.ts
+  copied 178 showcase files (178 unique components)
+Generating example registry...
+  wrote apps/docsite/src/generated/exampleRegistry.ts
+  copied 511 example blocks for 190 components
+
+Summary:
+  12 packages
+  270 components
+  647 blocks (178 showcases, 511 examples)
+  52 templates
+  20 doc topics
+  10 blog posts
+  6 themes
+Done.
+✓ Generated /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/apps/docsite/src/generated/playground-scope.ts
+  104 components
+  2 themes
+  lucide-react icons + 4 heroicon variants
+Scanning /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/dist for .d.ts files...
+Generated heroicon types: 4 variants
+Generated playground-types.json: 602 Astryx type files, 1651KB
+monaco: already present at public/monaco/vs — skipping
+typescript: already present at public/vendor/typescript.js — skipping
+Scope: all 24 workspace projects
+[WARN] There are cyclic workspace dependencies: /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/charts, /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/cli
+✓ Lockfile passes supply-chain policies (verified 1d ago)
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 0, reused 1, downloaded 0, added 0
+Packages: -167
+--------------------------------------------------------------------------------
+Progress: resolved 0, reused 167, downloaded 0, added 0
+Progress: resolved 0, reused 167, downloaded 0, added 0, done
+
+. prepare$ husky install
+. prepare: husky - install command is DEPRECATED
+. prepare: Done
+packages/cli postinstall$ node scripts/postinstall.mjs
+packages/cli postinstall: Done
+packages/core postinstall$ node scripts/postinstall.mjs
+packages/core postinstall: Done
+apps/sandbox postinstall$ astryx init --features agents
+apps/sandbox postinstall: ✓ AI agent docs installed → AGENTS.md
+apps/sandbox postinstall: Done
+Done in 5.5s using pnpm v11.10.0
+$ vitest run
+
+ RUN  v4.1.10 /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/apps/docsite
+
+ ✓ src/__tests__/component-preview-theme.test.ts (3 tests) 156ms
+ ✓ src/__tests__/blog.test.ts (33 tests) 105ms
+ ✓ src/__tests__/component-detail-wiring.test.ts (6 tests) 761ms
+     ✓ reaches every module in component-detail/ from a page  705ms
+ ✓ src/__tests__/mcp-server.test.ts (22 tests) 92ms
+ ✓ src/__tests__/search-palette.test.ts (5 tests) 33ms
+ ✓ src/__tests__/sitemap.test.ts (7 tests) 33ms
+ ✓ src/__tests__/compress.test.ts (4 tests) 8ms
+ ✓ src/__tests__/static-shell.test.ts (4 tests) 8ms
+ ✓ src/__tests__/code-linkifiers.test.ts (39 tests) 71ms
+ ✓ src/__tests__/playground-format.test.ts (36 tests) 1609ms
+     ✓ matches the repo’s own Prettier byte-for-byte  660ms
+ ✓ src/__tests__/changelog-view.test.ts (6 tests) 20ms
+ ✓ src/__tests__/playground-scope.test.ts (12 tests) 21ms
+ ✓ src/__tests__/did-you-mean.test.ts (8 tests) 51ms
+ ✓ src/__tests__/changelog-linkify.test.ts (19 tests) 136ms
+ ✓ src/__tests__/pageMetadata.test.ts (9 tests) 17ms
+ ✓ src/__tests__/theming-helpers.test.ts (22 tests) 8ms
+ ✓ src/__tests__/theme-helpers.test.ts (3 tests) 28ms
+ ✓ src/__tests__/theme-concentricity.test.ts (10 tests) 6ms
+ ✓ src/__tests__/component-prop-controls.test.ts (11 tests) 10ms
+ ✓ src/__tests__/component-preview-state.test.ts (37 tests) 30ms
+ ✓ src/__tests__/inline-tokens.test.ts (9 tests) 18ms
+ ✓ src/__tests__/component-detail-resolve-elements.test.ts (6 tests) 8ms
+ ✓ src/__tests__/playground-number-control.test.ts (3 tests) 25ms
+ ✓ src/__tests__/template-gallery-performance.test.ts (2 tests) 4ms
+ ✓ src/__tests__/type-definitions.test.ts (18 tests) 85ms
+ ✓ src/__tests__/code-examples.test.ts (4 tests) 3ms
+ ✓ src/__tests__/anatomy-helpers.test.ts (7 tests) 6ms
+ ✓ src/__tests__/docs-linkify.test.ts (8 tests) 15ms
+ ✓ src/__tests__/playground-preview-channel.test.ts (6 tests) 4ms
+ ✓ src/__tests__/component-categories.test.ts (2 tests) 3ms
+ ✓ src/__tests__/live-number-input.test.ts (3 tests) 3ms
+ ✓ src/__tests__/interactive-preview.test.ts (3 tests) 518ms
+     ✓ keeps a radio item unchecked after its value changes until activation  382ms
+ ✓ src/__tests__/prose-link.test.ts (5 tests) 9ms
+ ✓ src/__tests__/data-extraction.test.ts (123 tests) 625ms
+     ✓ keeps core component docs complete for generated component pages  417ms
+
+ Test Files  34 passed (34)
+      Tests  495 passed (495)
+   Start at  09:18:44
+   Duration  16.66s (transform 48.19s, setup 0ms, import 67.84s, tests 4.53s, environment 1.39s)
+
+$ tsc --noEmit

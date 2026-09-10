@@ -2,9 +2,9 @@
   "label": "after: BaseTypeahead narrow-long-result · neutral-light-ltr",
   "identity": "story",
   "build": {
-    "root": "<repository>",
-    "expectedSha": "d539b93eaa472e66bdab154f3c623a26af874189",
-    "observedSha": "d539b93eaa472e66bdab154f3c623a26af874189"
+    "root": "/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140",
+    "expectedSha": "7af883c1fbea72453fc7dcff771e3a9c4a364601",
+    "observedSha": "7af883c1fbea72453fc7dcff771e3a9c4a364601"
   },
   "expected": {
     "globals": {
@@ -32,7 +32,10 @@
       "visibleOptions": 5,
       "horizontalOverflow": false,
       "anchorsInsideViewport": true,
-      "listboxesInsideViewport": true
+      "listboxesInsideViewport": true,
+      "listboxesInsideGutters": true,
+      "listboxesContainContent": true,
+      "optionsContainContent": true
     },
     "runningAnimations": 0
   },
@@ -79,11 +82,14 @@
       "visibleOptions": 5,
       "horizontalOverflow": false,
       "anchorsInsideViewport": true,
-      "listboxesInsideViewport": true
+      "listboxesInsideViewport": true,
+      "listboxesInsideGutters": true,
+      "listboxesContainContent": true,
+      "optionsContainContent": true
     }
   },
   "image": {
-    "path": "<evidence>/after/frames/narrow-long-result__neutral-light-ltr.png",
-    "bytes": 15551
+    "path": "/Users/cindyxz/astryx/session-work/night-watch-audit-1-20260909-1788948140/correction-20260910/evidence/after/frames/narrow-long-result__neutral-light-ltr.png",
+    "bytes": 15504
   }
 }

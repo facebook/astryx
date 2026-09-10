@@ -1,0 +1,47 @@
+HEAD=7af883c1fbea72453fc7dcff771e3a9c4a364601
+AUDIT_HARNESS=BaseTypeahead.focusable-disabled-gap.test.tsx
+
+ RUN  v4.1.10 /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140
+
+Built pseudo.json — 362 keys
+Built pseudo.json — 362 keys
+(node:28486) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ |ui| packages/core/src/Typeahead/BaseTypeahead.focusable-disabled-gap.test.tsx (1 test | 1 failed) 155ms
+   × blocks keyboard selection when the open combobox becomes focusable-disabled 153ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |ui| packages/core/src/Typeahead/BaseTypeahead.focusable-disabled-gap.test.tsx > blocks keyboard selection when the open combobox becomes focusable-disabled
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      Object {
+        "id": "1",
+        "label": "Apple",
+      },
+    ]
+
+
+Number of calls: 1
+
+ ❯ packages/core/src/Typeahead/BaseTypeahead.focusable-disabled-gap.test.tsx:60:24
+     58|   rerender(renderComponent(true));
+     59|   fireEvent.keyDown(input, {key: 'Enter'});
+     60|   expect(onChange).not.toHaveBeenCalled();
+       |                        ^
+     61| });
+     62|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  09:21:01
+   Duration  3.23s (transform 1.48s, setup 233ms, import 1.66s, tests 155ms, environment 587ms)
+

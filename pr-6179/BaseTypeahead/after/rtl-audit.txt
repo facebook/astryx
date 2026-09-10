@@ -1,0 +1,9 @@
+HEAD=7af883c1fbea72453fc7dcff771e3a9c4a364601
+$ node apps/storybook/rtl-audit/rtl-audit.mjs -- --filter BaseTypeahead
+CUR  RTL-ready  core/basetypeahead   {"D4":"pass"}
+
+WROTE rtl-audit-report.json
+AUTO: 0 pass / 0 fail (0 surprise) / 1 N-A
+PM  : 0 pass / 0 fail / 8 N-A (tol 3px)
+DEC : 0 pass / 0 fail / 8 N-A
+COV : 1 measured / 0 verified N-A / 0 gap / 0 stale

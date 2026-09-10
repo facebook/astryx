@@ -1,0 +1,74 @@
+{
+  "head": "507f7c203f4e451a2bb50ecd731c850d510271fb",
+  "story": "core-basetypeahead--narrow-long-result",
+  "viewport": {
+    "width": 320,
+    "height": 680,
+    "dpr": 1
+  },
+  "errors": [],
+  "observed": {
+    "viewportWidth": 320,
+    "expectedGutter": 16,
+    "listbox": {
+      "x": 32,
+      "right": 304,
+      "width": 272,
+      "clientWidth": 272,
+      "scrollWidth": 272
+    },
+    "popover": {
+      "x": 32,
+      "right": 304,
+      "width": 272,
+      "clientWidth": 272,
+      "scrollWidth": 272
+    },
+    "options": [
+      {
+        "x": 36,
+        "right": 300,
+        "width": 264,
+        "clientWidth": 264,
+        "scrollWidth": 264
+      },
+      {
+        "x": 36,
+        "right": 300,
+        "width": 264,
+        "clientWidth": 264,
+        "scrollWidth": 264
+      },
+      {
+        "x": 36,
+        "right": 300,
+        "width": 264,
+        "clientWidth": 264,
+        "scrollWidth": 264
+      },
+      {
+        "x": 36,
+        "right": 300,
+        "width": 264,
+        "clientWidth": 264,
+        "scrollWidth": 264
+      },
+      {
+        "x": 36,
+        "right": 300,
+        "width": 264,
+        "clientWidth": 264,
+        "scrollWidth": 264
+      }
+    ],
+    "document": {
+      "clientWidth": 320,
+      "scrollWidth": 320
+    }
+  },
+  "expected": {
+    "twoSidedGutter": 16,
+    "noHorizontalContentOverflow": true
+  },
+  "result": "pass"
+}
