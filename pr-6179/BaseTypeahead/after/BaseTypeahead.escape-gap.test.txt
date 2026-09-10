@@ -1,14 +1,14 @@
-HEAD=7af883c1fbea72453fc7dcff771e3a9c4a364601
+HEAD=95d05caabfd3fad4392892135870cf50b62bbab1
 AUDIT_HARNESS=BaseTypeahead.escape-gap.test.tsx
 
  RUN  v4.1.10 /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140
 
 Built pseudo.json — 362 keys
 Built pseudo.json — 362 keys
-(node:28554) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(node:41518) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
 (Use `node --trace-warnings ...` to show where the warning was created)
- ❯ |ui| packages/core/src/Typeahead/BaseTypeahead.escape-gap.test.tsx (1 test | 1 failed) 352ms
-   × keeps a pending result list dismissed after Escape 349ms
+ ❯ |ui| packages/core/src/Typeahead/BaseTypeahead.escape-gap.test.tsx (1 test | 1 failed) 296ms
+   × keeps a pending result list dismissed after Escape 293ms
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -32,6 +32,6 @@ Received:
 
  Test Files  1 failed (1)
       Tests  1 failed (1)
-   Start at  09:21:07
-   Duration  4.51s (transform 2.46s, setup 216ms, import 2.72s, tests 352ms, environment 536ms)
+   Start at  09:38:21
+   Duration  4.64s (transform 2.51s, setup 281ms, import 2.78s, tests 296ms, environment 645ms)
 

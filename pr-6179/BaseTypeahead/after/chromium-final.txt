@@ -1,0 +1,242 @@
+HEAD=95d05caabfd3fad4392892135870cf50b62bbab1
+$ capture 26 standard Chromium frames
+sensors        label=after: BaseTypeahead default · neutral-light-ltr  story=core-basetypeahead--default  theme=neutral  mode=light  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead default · neutral-dark-ltr  story=core-basetypeahead--default  theme=neutral  mode=dark  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead logical-dropdown · neutral-light-ltr  story=core-basetypeahead--logical-dropdown-placement  theme=neutral  mode=light  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead logical-dropdown · neutral-dark-ltr  story=core-basetypeahead--logical-dropdown-placement  theme=neutral  mode=dark  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead loading · neutral-light-ltr  story=core-basetypeahead--loading  theme=neutral  mode=light  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead loading · neutral-dark-ltr  story=core-basetypeahead--loading  theme=neutral  mode=dark  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead empty-results · neutral-light-ltr  story=core-basetypeahead--empty-results  theme=neutral  mode=light  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead empty-results · neutral-dark-ltr  story=core-basetypeahead--empty-results  theme=neutral  mode=dark  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead selected-result · neutral-light-ltr  story=core-basetypeahead--default  theme=neutral  mode=light  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead selected-result · neutral-dark-ltr  story=core-basetypeahead--default  theme=neutral  mode=dark  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead custom-renderer · neutral-light-ltr  story=core-basetypeahead--custom-renderer  theme=neutral  mode=light  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead custom-renderer · neutral-dark-ltr  story=core-basetypeahead--custom-renderer  theme=neutral  mode=dark  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead disabled-states · neutral-light-ltr  story=core-basetypeahead--disabled-states  theme=neutral  mode=light  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead disabled-states · neutral-dark-ltr  story=core-basetypeahead--disabled-states  theme=neutral  mode=dark  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead narrow-long-result · neutral-light-ltr  story=core-basetypeahead--narrow-long-result  theme=neutral  mode=light  dir=ltr  viewport=320x680@1  state=pass
+sensors        label=after: BaseTypeahead narrow-long-result · neutral-dark-ltr  story=core-basetypeahead--narrow-long-result  theme=neutral  mode=dark  dir=ltr  viewport=320x680@1  state=pass
+sensors        label=after: BaseTypeahead focus-visible · neutral-light-ltr  story=core-basetypeahead--default  theme=neutral  mode=light  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead focus-visible · neutral-dark-ltr  story=core-basetypeahead--default  theme=neutral  mode=dark  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead size-sm · neutral-light-ltr  story=core-basetypeahead--size-variants  theme=neutral  mode=light  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead size-sm · neutral-dark-ltr  story=core-basetypeahead--size-variants  theme=neutral  mode=dark  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead size-md · neutral-light-ltr  story=core-basetypeahead--size-variants  theme=neutral  mode=light  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead size-md · neutral-dark-ltr  story=core-basetypeahead--size-variants  theme=neutral  mode=dark  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead size-lg · neutral-light-ltr  story=core-basetypeahead--size-variants  theme=neutral  mode=light  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead size-lg · neutral-dark-ltr  story=core-basetypeahead--size-variants  theme=neutral  mode=dark  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead default · matcha-light-ltr  story=core-basetypeahead--default  theme=matcha  mode=light  dir=ltr  viewport=900x620@1  state=pass
+sensors        label=after: BaseTypeahead logical-dropdown · neutral-light-rtl  story=core-basetypeahead--logical-dropdown-placement  theme=neutral  mode=light  dir=rtl  viewport=900x620@1  state=pass
+{
+  "arm": "after",
+  "captures": 26,
+  "failures": []
+}
+$ capture forced-colors frame
+{
+  "label": "after: BaseTypeahead highlighted option in forced colors",
+  "identity": "story",
+  "build": {
+    "root": "/Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140",
+    "expectedSha": "95d05caabfd3fad4392892135870cf50b62bbab1",
+    "observedSha": "95d05caabfd3fad4392892135870cf50b62bbab1"
+  },
+  "expected": {
+    "story": "core-basetypeahead--logical-dropdown-placement",
+    "viewport": {
+      "width": 900,
+      "height": 620,
+      "dpr": 1
+    },
+    "media": {
+      "forcedColors": true
+    },
+    "state": {
+      "expanded": "true",
+      "highlightedOutline": true
+    }
+  },
+  "observed": {
+    "story": "core-basetypeahead--logical-dropdown-placement",
+    "errors": [],
+    "state": {
+      "forcedColors": true,
+      "expanded": "true",
+      "rows": [
+        {
+          "text": "React",
+          "backgroundColor": "rgba(255, 255, 255, 0.05)",
+          "color": "rgb(0, 0, 0)",
+          "outlineColor": "rgba(5, 0, 73, 0.8)",
+          "outlineStyle": "solid",
+          "outlineWidth": "1px"
+        },
+        {
+          "text": "Vue",
+          "backgroundColor": "rgba(255, 255, 255, 0)",
+          "color": "rgb(0, 0, 0)",
+          "outlineColor": "rgb(0, 0, 0)",
+          "outlineStyle": "none",
+          "outlineWidth": "3px"
+        }
+      ]
+    }
+  },
+  "result": "pass",
+  "image": {
+    "path": "/Users/cindyxz/astryx/session-work/night-watch-audit-1-20260909-1788948140/correction-20260910/evidence/after/frames/highlighted-option__forced-colors.png"
+  }
+}
+$ verify exact 320px geometry
+{
+  "head": "95d05caabfd3fad4392892135870cf50b62bbab1",
+  "story": "core-basetypeahead--narrow-long-result",
+  "viewport": {
+    "width": 320,
+    "height": 680,
+    "dpr": 1
+  },
+  "errors": [],
+  "observed": {
+    "viewportWidth": 320,
+    "expectedGutter": 16,
+    "listbox": {
+      "x": 32,
+      "right": 304,
+      "width": 272,
+      "clientWidth": 272,
+      "scrollWidth": 272
+    },
+    "popover": {
+      "x": 32,
+      "right": 304,
+      "width": 272,
+      "clientWidth": 272,
+      "scrollWidth": 272
+    },
+    "options": [
+      {
+        "x": 36,
+        "right": 300,
+        "width": 264,
+        "clientWidth": 264,
+        "scrollWidth": 264
+      },
+      {
+        "x": 36,
+        "right": 300,
+        "width": 264,
+        "clientWidth": 264,
+        "scrollWidth": 264
+      },
+      {
+        "x": 36,
+        "right": 300,
+        "width": 264,
+        "clientWidth": 264,
+        "scrollWidth": 264
+      },
+      {
+        "x": 36,
+        "right": 300,
+        "width": 264,
+        "clientWidth": 264,
+        "scrollWidth": 264
+      },
+      {
+        "x": 36,
+        "right": 300,
+        "width": 264,
+        "clientWidth": 264,
+        "scrollWidth": 264
+      }
+    ],
+    "document": {
+      "clientWidth": 320,
+      "scrollWidth": 320
+    }
+  },
+  "expected": {
+    "twoSidedGutter": 16,
+    "noHorizontalContentOverflow": true
+  },
+  "result": "pass"
+}
+$ measure representative contrast
+{
+  "head": "95d05caabfd3fad4392892135870cf50b62bbab1",
+  "browser": "Chromium",
+  "rows": [
+    {
+      "theme": "neutral",
+      "mode": "light",
+      "pair": "field label / surface",
+      "foreground": "rgb(0, 0, 0)",
+      "background": "rgb(255, 255, 255)",
+      "ratio": 21,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "light",
+      "pair": "option text / option surface",
+      "foreground": "rgb(0, 0, 0)",
+      "background": "rgb(255, 255, 255)",
+      "ratio": 21,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "light",
+      "pair": "focus outline / adjacent surface",
+      "foreground": "rgb(27, 27, 27)",
+      "background": "rgb(255, 255, 255)",
+      "outlineStyle": "solid",
+      "ratio": 17.22,
+      "threshold": 3,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "dark",
+      "pair": "field label / surface",
+      "foreground": "rgb(255, 255, 255)",
+      "background": "rgb(38, 38, 38)",
+      "ratio": 15.13,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "dark",
+      "pair": "option text / option surface",
+      "foreground": "rgb(255, 255, 255)",
+      "background": "rgb(27, 27, 27)",
+      "ratio": 17.22,
+      "threshold": 4.5,
+      "result": "pass"
+    },
+    {
+      "theme": "neutral",
+      "mode": "dark",
+      "pair": "focus outline / adjacent surface",
+      "foreground": "rgb(241, 241, 241)",
+      "background": "rgb(38, 38, 38)",
+      "outlineStyle": "solid",
+      "ratio": 13.4,
+      "threshold": 3,
+      "result": "pass"
+    },
+    {
+      "theme": "matcha",
+      "mode": "light",
+      "pair": "field label / surface",
+      "foreground": "rgb(62, 72, 29)",
+      "background": "rgb(255, 255, 255)",
+      "ratio": 9.77,
+      "threshold": 4.5,
+      "result": "pass"
+    }
+  ]
+}

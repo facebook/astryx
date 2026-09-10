@@ -1,9 +1,9 @@
-HEAD=7af883c1fbea72453fc7dcff771e3a9c4a364601
+HEAD=95d05caabfd3fad4392892135870cf50b62bbab1
 $ node .github/scripts/accessibility-audit.js --baseline .github/a11y-baseline.json --fail-on-new -- --components BaseTypeahead
 Starting accessibility audit...
 Components to audit: BaseTypeahead
 Storybook server running on http://localhost:6007
-Found 2110 stories
+Found 2145 stories
 Auditing 1 components
 ✓ Audited: BaseTypeahead / Default - 0 issues
 ✓ Audited: BaseTypeahead / Logical Dropdown Placement - 0 issues

@@ -5,7 +5,7 @@
 - Rubric: `1.16.2`
 - Original audit baseline: [`53bc34db7c9dd40c3fe0f0e0f419adaea71a73cd`](https://github.com/facebook/astryx/commit/53bc34db7c9dd40c3fe0f0e0f419adaea71a73cd), **63.4 / D**
 - Re-audited review baseline: [`507f7c203f4e451a2bb50ecd731c850d510271fb`](https://github.com/facebook/astryx/commit/507f7c203f4e451a2bb50ecd731c850d510271fb), **72.4 / C**
-- Corrected exact head: [`7af883c1fbea72453fc7dcff771e3a9c4a364601`](https://github.com/facebook/astryx/commit/7af883c1fbea72453fc7dcff771e3a9c4a364601), **77.8 / C**
+- Corrected exact head: [`95d05caabfd3fad4392892135870cf50b62bbab1`](https://github.com/facebook/astryx/commit/95d05caabfd3fad4392892135870cf50b62bbab1), **77.8 / C**
 - Pull request: [#6179](https://github.com/facebook/astryx/pull/6179)
 
 Every final Chromium frame has a sibling sensor receipt binding the story, globals, media, viewport, semantic state, and exact repository head. The machine-readable score and eligibility verdict are in [`scorecard.json`](scorecard.json).
@@ -42,7 +42,7 @@ At 320 CSS px, the final listbox is `x=32`, `right=304`, `width=272`, `clientWid
 
 ## Final exact-head validation
 
-- Focused component/theming tests: **609 passed**; [`after/focused-tests.txt`](after/focused-tests.txt).
+- Focused component/theming tests: **610 passed**; [`after/focused-tests.txt`](after/focused-tests.txt).
 - Exact-head Storybook build, docsite generation/tests/typecheck, and focused package typechecks: pass; [`after/storybook-build-final.txt`](after/storybook-build-final.txt) and [`after/docsite-final-after-build.txt`](after/docsite-final-after-build.txt).
 - Strict lint: **0 errors** (84 unrelated repository warnings); [`after/lint-strict-final.txt`](after/lint-strict-final.txt).
 - Docsite: **495 passed**; [`after/docsite-final-after-build.txt`](after/docsite-final-after-build.txt).

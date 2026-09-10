@@ -1,14 +1,14 @@
-HEAD=7af883c1fbea72453fc7dcff771e3a9c4a364601
+HEAD=95d05caabfd3fad4392892135870cf50b62bbab1
 AUDIT_HARNESS=BaseTypeahead.focusable-disabled-gap.test.tsx
 
  RUN  v4.1.10 /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140
 
 Built pseudo.json — 362 keys
 Built pseudo.json — 362 keys
-(node:28486) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(node:41633) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
 (Use `node --trace-warnings ...` to show where the warning was created)
- ❯ |ui| packages/core/src/Typeahead/BaseTypeahead.focusable-disabled-gap.test.tsx (1 test | 1 failed) 155ms
-   × blocks keyboard selection when the open combobox becomes focusable-disabled 153ms
+ ❯ |ui| packages/core/src/Typeahead/BaseTypeahead.focusable-disabled-gap.test.tsx (1 test | 1 failed) 186ms
+   × blocks keyboard selection when the open combobox becomes focusable-disabled 183ms
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -42,6 +42,6 @@ Number of calls: 1
 
  Test Files  1 failed (1)
       Tests  1 failed (1)
-   Start at  09:21:01
-   Duration  3.23s (transform 1.48s, setup 233ms, import 1.66s, tests 155ms, environment 587ms)
+   Start at  09:38:28
+   Duration  4.38s (transform 2.34s, setup 262ms, import 2.56s, tests 186ms, environment 713ms)
 

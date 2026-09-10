@@ -1,5 +1,5 @@
-HEAD=7af883c1fbea72453fc7dcff771e3a9c4a364601
-$ pnpm check:repo && ASTRYX_STRICT_LINT=1 eslint . --cache
+HEAD=95d05caabfd3fad4392892135870cf50b62bbab1
+$ pnpm check:repo && ASTRYX_STRICT_LINT=1 pnpm exec eslint . --cache
 $ pnpm check:sync && pnpm check:knowledge && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits && pnpm check:cli-structure && pnpm check:use-client && pnpm check:portable-scripts && pnpm check:i18n-catalog && pnpm check:cldr-weekdays && pnpm check:fixtures && pnpm check:setup-contract
 $ node scripts/check-sync.js
 ✅ All SYNC comments are clean.
@@ -8,7 +8,7 @@ Knowledge templates and records are aligned.
 $ node scripts/check-package-boundaries.js
 Package boundaries are clean.
 $ node scripts/check-changesets.mjs
-✓ check:changesets — 26 changeset(s) valid (0.x: [breaking] -> minor, else patch)
+✓ check:changesets — 3 changeset(s) valid (0.x: [breaking] -> minor, else patch)
 $ node scripts/check-demo-media.mjs
 ✅ 5 image-backed Thumbnail example(s) checked — all use CORS-safe demo media.
 $ node scripts/check-executable-bits.mjs
@@ -16,7 +16,7 @@ $ node scripts/check-executable-bits.mjs
 $ node scripts/check-cli-structure.mjs
 ✅ 8 doc-type(s) + 16 api folder(s) checked — CLI structure is intact.
 $ node scripts/check-use-client.mjs
-✅ 278 client-API files checked — all have "use client" as their first statement.
+✅ 282 client-API files checked — all have "use client" as their first statement.
 $ node scripts/check-portable-scripts.mjs
 ✅ 218 package.json script(s) checked — all portable.
 $ node scripts/check-i18n-catalog.mjs
@@ -59,7 +59,7 @@ $ node internal/vibe-tests/scripts/fixture-suite.mjs verify
 verified 3 canonical fixtures
 $ node scripts/generate-setup-contract.mjs --check
 Setup contract in sync.
-(node:26889) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/eslint.config.js?mtime=1788948184863 is not specified and it doesn't parse as CommonJS.
+(node:42468) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/eslint.config.js?mtime=1788948184863 is not specified and it doesn't parse as CommonJS.
 Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
 To eliminate this warning, add "type": "module" to /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/package.json.
 (Use `node --trace-warnings ...` to show where the warning was created)
@@ -134,9 +134,9 @@ To eliminate this warning, add "type": "module" to /Users/cindyxz/astryx/worktre
   203:8   warning  `actions != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(actions)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)          @astryx/no-nullish-jsx-guard
 
 /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/Item/Item.tsx
-  482:8  warning  `description != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(description)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)    @astryx/no-nullish-jsx-guard
-  512:8  warning  `startContent != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(startContent)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
-  565:8  warning  `endContent != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(endContent)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)      @astryx/no-nullish-jsx-guard
+  492:8  warning  `description != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(description)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)    @astryx/no-nullish-jsx-guard
+  523:8  warning  `startContent != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(startContent)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
+  576:8  warning  `endContent != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(endContent)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)      @astryx/no-nullish-jsx-guard
 
 /Users/cindyxz/astryx/worktrees/night-watch-audit-1-20260909-1788948140/packages/core/src/MetadataList/MetadataList.tsx
   233:5  warning  `title != null` guards rendered JSX with a bare nullish check, but `false`, `true`, and `""` all pass `!= null` — leaking an empty wrapper into the DOM. Use `isRenderable(title)` from `@astryxdesign/core/utils`, which also excludes boolean and empty-string values (0 stays renderable)  @astryx/no-nullish-jsx-guard
