@@ -97,7 +97,7 @@
     "typescript-eslint": "^8.62.1",
     "vite": "catalog:",
     "vite-plugin-singlefile": "^2.3.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.11"
   },
   "packageManager": "pnpm@11.10.0",
   "lint-staged": {

@@ -54,7 +54,7 @@
     "autoprefixer": "^10.5.2",
     "shadcn": "4.19.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.11"
   },
   "browserslist": [
     "last 1 Chrome version"
