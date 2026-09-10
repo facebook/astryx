@@ -14,7 +14,8 @@
  *   - `Project.load(cwd, {cache})` is the async factory (constructors can't be
  *     async). It does what loadConfig did — find the config sibling-of
  *     package.json, import + validate it, load the configured integrations —
- *     and nothing more. Discovery is LAZY.
+ *     plus autolink the installed ones no config names, and nothing more.
+ *     Discovery is LAZY.
  *   - Discovery methods (components/templates/codemods/docs) are MEMOIZED per
  *     instance (via the pluggable cache) and orchestrate the EXISTING discovery
  *     functions — Project never reimplements discovery.
@@ -35,6 +36,7 @@ import * as path from 'node:path';
 import {findPresentFiles, loadModuleWithParser} from '../fs/module-loader.mjs';
 import {parseConfig} from '../../authoring/config/parse.mjs';
 import {loadIntegrations} from '../integrations/integrations.mjs';
+import {autolinkIntegrations} from '../integrations/autolink.mjs';
 import {
   setProject as setDebugProject,
   setEventHandler as setDebugEventHandler,
@@ -59,7 +61,10 @@ import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
 } from '../../assets/codemods/integration-discovery.mjs';
-import {validateLoadedIntegration} from '../integrations/validate-contributions.mjs';
+import {
+  INVALID_AGENT_DOCS,
+  validateLoadedIntegration,
+} from '../integrations/validate-contributions.mjs';
 import {
   InMemoryConfigCache,
   cacheKey,
@@ -232,13 +237,22 @@ export class Project {
    * lazy and memoized on the returned instance.
    *
    * @param {string} [cwd]
-   * @param {{cache?: import('./config-cache.mjs').ConfigCache}} [options]
+   * @param {{cache?: import('./config-cache.mjs').ConfigCache, fresh?: boolean}} [options]
    * @returns {Promise<Project>}
    */
-  static async load(cwd = process.cwd(), {cache} = {}) {
-    const resolvedCache = cache ?? new InMemoryConfigCache();
+  static async load(cwd = process.cwd(), {cache, fresh = false} = {}) {
+    const resolvedCache = fresh
+      ? new InMemoryConfigCache()
+      : (cache ?? new InMemoryConfigCache());
     const configPath = findConfigPath(cwd);
     const hash = configContentHash(configPath);
+    // The project root: the config's directory when there is one (findConfigPath
+    // resolves the config as a sibling of the nearest package.json, so the two
+    // agree), otherwise that package.json's directory. Dependencies are declared
+    // there, and node_modules sits there.
+    const projectDir = configPath
+      ? path.dirname(configPath)
+      : (findPackageRoot(cwd) ?? cwd);
 
     /** @type {import('../../authoring/config/type').AstryxConfig} */
     let config = {integrations: []};
@@ -250,13 +264,30 @@ export class Project {
     if (configPath) {
       config = await loadModuleWithParser(configPath, parseConfig, {
         label: 'astryx.config',
+        fresh,
       });
-      const configDir = path.dirname(configPath);
       integrations = config.integrations ?? [];
       loadedIntegrations = await loadIntegrations(integrations, {
-        cwd: configDir,
+        cwd: projectDir,
+        fresh,
       });
     }
+
+    // An installed integration the config does not name is still installed.
+    // This runs whether or not a config exists, because the projects it reaches
+    // are overwhelmingly the ones with no astryx.config at all: a scaffold adds
+    // the dependency and writes no config, and the integration then contributes
+    // nothing for want of a line nobody knew to write. Appended AFTER the
+    // configured ones so an explicit entry keeps its position and its
+    // precedence in every discovery order.
+    loadedIntegrations = [
+      ...loadedIntegrations,
+      ...(await autolinkIntegrations({
+        projectDir,
+        loaded: loadedIntegrations,
+        fresh,
+      })),
+    ];
 
     // The debug recorder resolves its settings synchronously, long before any
     // command gets here, so this is where a project's `debug` block gets a
@@ -307,12 +338,21 @@ export class Project {
     return this.#config;
   }
 
-  /** Configured integration package names. @returns {string[]} */
+  /**
+   * Integration package names the config names. NOT the full set that is
+   * loaded — an autolinked integration is absent here by definition. For
+   * everything in play, read {@link Project.loadedIntegrations}.
+   * @returns {string[]}
+   */
   get integrations() {
     return this.#integrations;
   }
 
-  /** Resolved loaded integrations (lib/integrations.mjs shape). @returns {import('../integrations/integrations.mjs').LoadedIntegration[]} */
+  /**
+   * Every resolved integration (lib/integrations.mjs shape), configured ones
+   * first, then the autolinked ones (`__autolinked`).
+   * @returns {import('../integrations/integrations.mjs').LoadedIntegration[]}
+   */
   get loadedIntegrations() {
     return this.#loadedIntegrations;
   }
@@ -378,6 +418,22 @@ export class Project {
   }
 
   /**
+   * Whether this package has an error that invalidates its regular manifest
+   * contributions. Invalid `agentDocs` blocks agent-doc writes only; it must not
+   * withdraw components, templates, docs, or codemods.
+   * @param {string} pkg
+   * @returns {boolean}
+   */
+  #hasBlockingContributionIssue(pkg) {
+    return this.#issues.some(
+      issue =>
+        issue.package === pkg &&
+        issue.severity === 'error' &&
+        issue.code !== INVALID_AGENT_DOCS,
+    );
+  }
+
+  /**
    * Validate one loaded integration and collect any issues. Marks the
    * integration visited so issues() won't redo the work. Best-effort: a
    * validator throwing is itself recorded as an issue, never propagated.
@@ -439,10 +495,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         try {
           // discoverOwnedComponents owns the core+integration record shape;
           // here we add only this integration's records (core is handled
@@ -495,10 +548,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         try {
           const {templates: ts, errors} =
             await discoverIntegrationTemplatesForOne(integration);
@@ -546,10 +596,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         if (!integration?.docs) continue;
         try {
           const {records, errors} = await discoverIntegrationDocs(integration);
@@ -604,10 +651,7 @@ export class Project {
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
         const pkg = this.#pkgLabel(integration);
-        const hadError = this.#issues.some(
-          i => i.package === pkg && i.severity === 'error',
-        );
-        if (hadError) continue;
+        if (this.#hasBlockingContributionIssue(pkg)) continue;
         if (!integration?.codemods) continue;
         try {
           // Validate this integration's codemods discover cleanly in

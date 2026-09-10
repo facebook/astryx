@@ -22,14 +22,14 @@ export const docs = {
       name: 'label',
       type: 'ReactNode',
       description:
-        'Primary label for the radio item. Rich labels may contain links or buttons, which keep their own behavior without selecting the item. The label text names the radio; pair it with aria-label when that text does not read well on its own.',
+        'Primary label for the radio item. Rich labels may contain links or buttons, which keep their own behavior without selecting the item. The label text names the radio; use aria-label only when that text is absent, or retain every visible label word in the override.',
       required: true,
     },
     {
       name: 'aria-label',
       type: 'string',
       description:
-        'Plain-text accessible name for the radio, applied to the control rather than the row. It overrides whatever the label element computes — a plain string label included — so reach for it when a rich label\u2019s own text is absent or reads badly.',
+        'Plain-text accessible name for the radio, applied to the control rather than the row. It overrides the name derived from the label. Use it when a rich label has no visible text; otherwise retain every visible label word.',
     },
     {
       name: 'value',
@@ -96,14 +96,14 @@ export const docsZh = {
       name: 'label',
       type: 'ReactNode',
       description:
-        '单选选项的主标签。富内容标签可包含链接或按钮，它们保留自身行为且不会选中该选项。标签文本用于命名单选框；若朗读效果不佳，请同时传入 aria-label。',
+        '单选选项的主标签。富内容标签可包含链接或按钮，它们保留自身行为且不会选中该选项。标签文本用于命名单选框；仅当可见文本缺失时使用 aria-label，否则覆盖值必须保留全部可见文字。',
       required: true,
     },
     {
       name: 'aria-label',
       type: 'string',
       description:
-        '单选框的纯文本无障碍名称，应用于控件本身而非整行。它会覆盖标签元素计算出的名称（包括纯字符串标签），因此仅在富文本标签自身缺少文本或朗读效果不佳时使用。',
+        '单选框的纯文本无障碍名称，应用于控件本身而非整行。它会覆盖由标签推导出的名称。仅当富标签没有可见文本时才完全替代；否则必须保留全部可见文字。',
     },
     {
       name: 'value',
@@ -144,7 +144,8 @@ export const docsDense = {
   propDescriptions: {
     label:
       'Primary label. String or ReactNode; nested controls keep their behavior.',
-    'aria-label': 'Plain-text radio name; overrides any label.',
+    'aria-label':
+      'Plain-text radio name replacing the derived label. Use when visible text is absent; otherwise retain every visible label word.',
     value: 'Value of this radio item.',
     description: 'Secondary content below label. String or ReactNode.',
     isDisabled: 'Whether this individual radio item disabled.',

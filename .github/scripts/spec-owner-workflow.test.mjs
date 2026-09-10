@@ -41,7 +41,10 @@ describe('spec-only workflow contract', () => {
         'git show "origin/${{ github.base_ref }}:.github/scripts/knowledge-paths.cjs"',
       );
       expect(source, workflow).toContain(
-        'CLASSIFIER_DIR="$RUNNER_TEMP/change-scope"',
+        'git show "origin/${{ github.base_ref }}:scripts/component-packages.cjs"',
+      );
+      expect(source, workflow).toContain(
+        'CLASSIFIER_ROOT="$RUNNER_TEMP/change-scope"',
       );
     }
 
@@ -49,16 +52,24 @@ describe('spec-only workflow contract', () => {
       path.join(os.tmpdir(), 'astryx-change-scope-'),
     );
     try {
+      const classifierDir = path.join(isolated, '.github/scripts');
+      const registryDir = path.join(isolated, 'scripts');
+      fs.mkdirSync(classifierDir, {recursive: true});
+      fs.mkdirSync(registryDir, {recursive: true});
       for (const file of ['change-scope.cjs', 'knowledge-paths.cjs']) {
         fs.copyFileSync(
           path.join(root, '.github/scripts', file),
-          path.join(isolated, file),
+          path.join(classifierDir, file),
         );
       }
+      fs.copyFileSync(
+        path.join(root, 'scripts/component-packages.cjs'),
+        path.join(registryDir, 'component-packages.cjs'),
+      );
       const output = path.join(isolated, 'github-output');
       const result = spawnSync(
         process.execPath,
-        [path.join(isolated, 'change-scope.cjs'), '--github-output'],
+        [path.join(classifierDir, 'change-scope.cjs'), '--github-output'],
         {
           encoding: 'utf8',
           env: {...process.env, GITHUB_OUTPUT: output},
@@ -68,13 +79,13 @@ describe('spec-only workflow contract', () => {
       );
       expect(result.status, result.stderr).toBe(0);
       expect(fs.readFileSync(output, 'utf8')).toBe(
-        'spec_only=true\ndocsite_only=false\n',
+        'spec_only=true\ndocsite_only=false\ntooling_only=false\n',
       );
 
-      fs.rmSync(path.join(isolated, 'knowledge-paths.cjs'));
+      fs.rmSync(path.join(classifierDir, 'knowledge-paths.cjs'));
       const missingDependency = spawnSync(
         process.execPath,
-        [path.join(isolated, 'change-scope.cjs')],
+        [path.join(classifierDir, 'change-scope.cjs')],
         {
           encoding: 'utf8',
           input: 'A\tpackages/core/src/Button/Button.spec.md\n',
@@ -123,13 +134,34 @@ describe('spec-only workflow contract', () => {
     expect(validate).toBeGreaterThan(setup);
     expect(build).toBeGreaterThan(validate);
     expect(generate).toBeGreaterThan(build);
-    expect(docsiteJob.slice(setup, validate)).not.toContain('\n        if:');
+    expect(docsiteJob.slice(setup, validate)).toContain(
+      "if: needs.check-scope.outputs.tooling_only != 'true'",
+    );
+    expect(docsiteJob.slice(setup, validate)).not.toContain(
+      "needs.check-scope.outputs.spec_only != 'true'",
+    );
     expect(docsiteJob.slice(build, generate)).toContain(
       "if: needs.check-scope.outputs.spec_only != 'true'",
     );
     expect(docsiteJob.slice(generate)).toContain(
       "if: needs.check-scope.outputs.spec_only != 'true'",
     );
+  });
+
+  it('skips every Storybook build command for spec-only changes', () => {
+    const ci = read('.github/workflows/ci.yml');
+    const jobStart = ci.indexOf('  build-storybook:');
+    const jobEnd = ci.indexOf('\n  build-sandbox:', jobStart);
+    const buildJob = ci.slice(jobStart, jobEnd);
+    const steps = buildJob.split(/\n      - name: /).slice(1);
+    const commandSteps = steps.filter(step =>
+      /\n        run: (?:pnpm|node)/.test(step),
+    );
+
+    expect(commandSteps.length).toBeGreaterThan(0);
+    for (const step of commandSteps) {
+      expect(step).toContain("needs.check-scope.outputs.spec_only != 'true'");
+    }
   });
 
   it('fails closed when file APIs are truncated or scope classification fails', () => {

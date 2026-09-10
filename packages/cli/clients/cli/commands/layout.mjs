@@ -31,6 +31,7 @@ import {doc as layoutGrammarCommand} from './layout-grammar.doc.mjs';
 import {doc as layoutExpandFn} from '../../../api/layout/layoutExpand.doc.mjs';
 import {doc as layoutCheckFn} from '../../../api/layout/layoutCheck.doc.mjs';
 import {doc as layoutGrammarFn} from '../../../api/layout/layoutGrammar.doc.mjs';
+import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
 
 /**
  * The api layer's @returns for these functions widen the `type` discriminator
@@ -119,11 +120,10 @@ export function registerLayout(program) {
       const json = program.opts().json || false;
       const source = await readExpression(expression, options);
       if (!source || source.trim() === '') {
-        cliError(
+        return cliError(
           'No layout expression given — pass it as an argument, via --file, or on stdin',
           {code: ERROR_CODES.ERR_MISSING_ARGUMENT},
         );
-        return;
       }
       /** @type {LayoutExpandResponse} */
       let result;
@@ -137,10 +137,14 @@ export function registerLayout(program) {
         }));
       } catch (e) {
         const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
-        return;
+        return cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
       }
-      if (json) return jsonOut(result);
+      // Expanding turns an expression into TSX — a transformation, not a
+      // lookup. What it produced is in the output; there is no set to count.
+      if (json) {
+        jsonOut(result);
+        return NO_RESULT_SET;
+      }
 
       /** @type {import('../formatters/index.mjs').Block[]} */
       const out = [];
@@ -166,6 +170,7 @@ export function registerLayout(program) {
         out.push(code(result.data.code));
       }
       emit(...out);
+      return NO_RESULT_SET;
     },
   });
 
@@ -175,11 +180,10 @@ export function registerLayout(program) {
       const json = program.opts().json || false;
       const source = await readExpression(expression, options);
       if (!source || source.trim() === '') {
-        cliError(
+        return cliError(
           'No layout expression given — pass it as an argument, via --file, or on stdin',
           {code: ERROR_CODES.ERR_MISSING_ARGUMENT},
         );
-        return;
       }
       /** @type {LayoutCheckResponse} */
       let result;
@@ -191,16 +195,20 @@ export function registerLayout(program) {
         }));
       } catch (e) {
         const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
-        return;
+        return cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
       }
       // Exit code is the contract and must NOT depend on --json vs human: an
       // invalid (but parseable) layout exits 1 in BOTH modes so `layout check`
       // works as a CI gate / agent check without parsing stdout. Decide it
-      // before the JSON return (parity with doctor / validate-integration).
+      // before the JSON return (parity with doctor integration validate).
       if (!result.data.valid) process.exitCode = 1;
 
-      if (json) return jsonOut(result);
+      // A verdict on one expression: valid or not, with the errors that made
+      // it so. Nothing was looked up.
+      if (json) {
+        jsonOut(result);
+        return NO_RESULT_SET;
+      }
 
       const {valid, form, errors, warnings, compact, outline} = result.data;
       if (!valid) {
@@ -214,7 +222,7 @@ export function registerLayout(program) {
           text(`[fail] Invalid (${errors.length} error${errors.length === 1 ? '' : 's'}):`),
           list(items),
         );
-        return;
+        return NO_RESULT_SET;
       }
 
       /** @type {import('../formatters/index.mjs').Block[]} */
@@ -225,6 +233,7 @@ export function registerLayout(program) {
       // The canonical compact/outline surfaces are preformatted — emit verbatim.
       out.push(section('compact'), code(compact), section('outline'), code(outline));
       emit(...out);
+      return NO_RESULT_SET;
     },
   });
 
@@ -238,12 +247,17 @@ export function registerLayout(program) {
         result = /** @type {LayoutGrammarResponse} */ (await layoutGrammar({cwd: process.cwd()}));
       } catch (e) {
         const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
-        return;
+        return cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
       }
-      if (json) return jsonOut(result);
+      // One document, the same one every time: the grammar cheatsheet.
+      const answered = resultSet({count: 1, resultKind: 'doc'});
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
       // The cheatsheet is a preformatted document — emit verbatim.
       emit(code(result.data.text));
+      return answered;
     },
   });
 }

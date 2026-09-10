@@ -4,15 +4,17 @@
  * @file On-disk contribution checks for a LOADED integration.
  *
  * These validators live in foundation rather than beside the
- * `validate-integration` command because foundation itself needs them:
+ * Doctor integration validation because foundation itself needs them:
  * `Project` collects integration issues while assembling components/templates,
  * and `integration-warnings` nudges about them on ordinary commands. Keeping
  * them here means those callers no longer reach up into `api/`.
  *
- * The manifest schema is NOT re-validated here — `loadIntegrations` already did
- * that and throws otherwise. What is re-checked is the on-disk contributions
- * (roots + codemods/templates/components), because those regress independently
- * of the manifest: a deleted directory, a template that lost its source file.
+ * The base manifest schema is not re-validated here — `loadIntegrations` already
+ * did that. Optional contributions such as `agentDocs` carry their own error
+ * marker so a bad contribution is reported without withdrawing valid roots.
+ * What is re-checked is the on-disk contributions (roots +
+ * codemods/templates/components), because those regress independently of the
+ * manifest: a deleted directory, a template that lost its source file.
  *
  * @input a loaded-integration-shaped object (absolute contribution roots + identity)
  * @output AstryxIntegrationIssue[]
@@ -29,6 +31,9 @@ import {discoverIntegrationDocs} from '../discovery/docs-discovery.mjs';
  * @typedef {import('./issue').AstryxIntegrationIssue} Issue
  * @typedef {import('./integrations.mjs').LoadedIntegration} LoadedIntegration
  */
+
+/** Stable issue code for an invalid optional agent-doc contribution. */
+export const INVALID_AGENT_DOCS = 'invalid_agent_docs';
 
 /** @param {string} code @param {string} message @returns {Issue} */
 export function issueError(code, message) {
@@ -200,7 +205,7 @@ async function runContributionChecks(integration, issues) {
  * Validate an already-LOADED integration (as produced by `loadIntegrations` —
  * absolute contribution roots plus identity) and return its issues. This is the
  * reuse seam for everyday commands that have already loaded the configured
- * integrations and want the SAME validators that `validate-integration` runs,
+ * integrations and want the SAME validators that Doctor runs,
  * without re-resolving the manifest from disk.
  *
  * @param {LoadedIntegration} loaded loaded-integration-shaped object
@@ -218,6 +223,9 @@ export async function validateLoadedIntegration(loaded) {
     return [issueError('integration_error', loaded.__loadError)];
   }
   checkUnknownKeys(loaded, issues);
+  if (loaded.__agentDocsError) {
+    issues.push(issueError(INVALID_AGENT_DOCS, loaded.__agentDocsError));
+  }
   checkRoots(
     {
       components: loaded.components,

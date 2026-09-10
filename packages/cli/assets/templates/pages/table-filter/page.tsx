@@ -2227,8 +2227,8 @@ export default function TableFilterTemplate() {
   // much room that the table loses its sortable columns.
   const detailWidth = useResizable({
     defaultSize: 380,
-    minSizePx: 320,
-    maxSizePx: 560,
+    minSize: 320,
+    maxSize: 560,
   });
 
   // --- Sorting ---------------------------------------------------------------

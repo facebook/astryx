@@ -214,6 +214,11 @@ export const doc = {
       description:
         'The whole themeable surface: the echoed filter, the component count, and one entry per theming target — {key, className, component, props, states}, where props and states are its legal override keys.',
     },
+    {
+      value: 'theme.palette.generate',
+      description:
+        'An author-reviewable OKLCH palette candidate, its reproducibility receipt, summary counts, and optional candidate/receipt file-write result.',
+    },
 
     // upgrade
     {
@@ -246,11 +251,26 @@ export const doc = {
         'The health-check report: `checks` (each with id, label, status: pass | warn | fail | info, a message, and a fix when not passing) plus a `summary` of counts per status.',
     },
 
-    // validate-integration
+    // integration authoring
     {
       value: 'integration.validate',
       description:
         'The validation result: the package name and version (both null when no local manifest is found) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
+    },
+    {
+      value: 'integration.template-conflicts',
+      description:
+        'The integration identity, structural issues, and non-blocking conflicts where an integration template id is also owned by Core; each conflict includes the exact package-qualified command.',
+    },
+    {
+      value: 'integration.component-conflicts',
+      description:
+        'The integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
+    },
+    {
+      value: 'integration.doc-conflicts',
+      description:
+        'The integration identity, structural issues, and Core doc overlaps classified as intentional replacements, intentional extensions, or accidental same-name conflicts.',
     },
 
     // layout (XLE/XLO)

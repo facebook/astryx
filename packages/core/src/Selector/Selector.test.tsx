@@ -1728,6 +1728,44 @@ describe('Selector', () => {
           .scrollIntoView;
       }
     });
+
+    it('highlights on hover without scrolling, keyboard still scrolls (#6077)', async () => {
+      // Hover must highlight only: scrollIntoView under a stationary pointer
+      // moves the next option under it, re-highlighting and scrolling again —
+      // a runaway auto-scroll loop with no user input.
+      const scrollIntoView = vi.fn();
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: scrollIntoView,
+      });
+      try {
+        const user = userEvent.setup();
+        const longOptions = Array.from(
+          {length: 20},
+          (_, i) => `Option ${i + 1}`,
+        );
+        render(<Selector label="Fruit" options={longOptions} />);
+
+        await user.tab();
+        await user.keyboard('{Enter}'); // open
+        scrollIntoView.mockClear();
+
+        const options = screen.getAllByRole('option', {hidden: true});
+        fireEvent.mouseEnter(options[3]);
+
+        const trigger = screen.getByRole('combobox');
+        expect(trigger.getAttribute('aria-activedescendant')).toBe(
+          options[3].id,
+        );
+        expect(scrollIntoView).not.toHaveBeenCalled();
+
+        await user.keyboard('{ArrowDown}');
+        expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+      } finally {
+        delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+          .scrollIntoView;
+      }
+    });
   });
 
   describe('typeahead', () => {
@@ -3185,7 +3223,9 @@ describe('Selector indicator (chevron) icon theme target', () => {
     expect(css).toContain('.astryx-selector-indicator-icon {');
     expect(css).toContain('width: 14px');
     expect(css).toContain('height: 14px');
-    expect(css).toContain('.astryx-selector-indicator-icon.expanded');
+    expect(css).toContain(
+      '.astryx-selector-indicator-icon[data-state="expanded"]',
+    );
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -3320,6 +3360,35 @@ describe('Selector search focus ring', () => {
     await user.tab();
     await user.keyboard('{Enter}');
     await waitForSearchFocus();
+    expect(field()).toHaveAttribute('data-keyboard-focus', 'true');
+  });
+
+  it('rings when Shift+Tab returns from clear to the search input', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value={undefined}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await waitForSearchFocus();
+    const search = screen.getByRole('combobox', {hidden: true});
+    await user.type(search, 'a');
+
+    await user.tab();
+    expect(
+      screen.getByRole('button', {
+        name: 'Clear Search options',
+        hidden: true,
+      }),
+    ).toHaveFocus();
+
+    await user.tab({shift: true});
+    expect(search).toHaveFocus();
     expect(field()).toHaveAttribute('data-keyboard-focus', 'true');
   });
 });
@@ -3599,7 +3668,7 @@ describe('Selector disabled state theme target', () => {
     );
     const root = getSelectorRoot(container);
     expect(root).not.toHaveAttribute('data-disabled');
-    expect(root).not.toHaveClass('disabled');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 
   it('exposes the disabled state so a theme can key on it', () => {
@@ -3612,7 +3681,7 @@ describe('Selector disabled state theme target', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-selector.disabled');
+    expect(css).toContain('.astryx-selector[data-disabled="disabled"]');
     expect(css).toContain('opacity: 0.4');
   });
 });
@@ -3791,6 +3860,9 @@ describe('Selector popup theme target', () => {
     fireEvent.click(trigger);
 
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger.parentElement).toHaveClass(
+      stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
+    );
   });
 });
 
@@ -3813,7 +3885,7 @@ describe('Selector option-row theme target', () => {
     expect(options).toHaveLength(3);
     for (const option of options) {
       expect(option).toHaveClass('astryx-selector-option-row');
-      expect(option).toHaveClass('lg');
+      expect(option).toHaveAttribute('data-size', 'lg');
       expect(option).toHaveAttribute('data-size', 'lg');
     }
   });
@@ -3906,9 +3978,13 @@ describe('Selector option-row theme target', () => {
     });
     const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-selector-option-row {');
-    expect(css).toContain('.astryx-selector-option-row.selected');
-    expect(css).toContain('.astryx-selector-option-row.disabled');
-    expect(css).toContain('.astryx-selector-option-row.md');
+    expect(css).toContain(
+      '.astryx-selector-option-row[data-selected="selected"]',
+    );
+    expect(css).toContain(
+      '.astryx-selector-option-row[data-disabled="disabled"]',
+    );
+    expect(css).toContain('.astryx-selector-option-row[data-size="md"]');
   });
 });
 

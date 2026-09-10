@@ -26,6 +26,10 @@ export interface AstryxIntegration {
    *  serves from `astryx docs`, alongside the built-in ones. A topic may also
    *  `replace` or `extend` a built-in topic; see the ReferenceDoc type. */
   docs?: string;
+  /** Static package guidance appended to the CLI-owned managed agent block. */
+  agentDocs?: {
+    append?: readonly string[];
+  };
   /** Where to file issues/feedback for this integration. */
   issuesUrl?: string;
 }

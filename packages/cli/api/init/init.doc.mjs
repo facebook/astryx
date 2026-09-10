@@ -17,7 +17,8 @@ export const doc = {
   description:
     'Sets a project up with NO prompts, so it behaves identically for humans, ' +
     'agents, CI, and piped I/O. By default it installs the AGENTS.md/CLAUDE.md ' +
-    'agent-docs cheat sheet and prints getting-started guidance; `features` / ' +
+    'agent-docs cheat sheet, including guidance from configured integrations, and ' +
+    'prints getting-started guidance; `features` / ' +
     '`all` add theme and page-building guidance and can scaffold a starter ' +
     'template. With `removeAgents` it removes the managed agent-docs block ' +
     'instead of installing.',

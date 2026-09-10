@@ -125,7 +125,7 @@ export const docs = {
           name: 'hasAutoFocus',
           type: 'boolean',
           description:
-            'Whether to move focus into the popover when it opens. Keyboard activation focuses the first content control; pointer activation focuses the labeled dialog container so an action does not appear preselected. Set to false for inline showcases or documentation previews.',
+            'Whether to move focus into the popover when it opens. Focus enters the first genuine content control; dialogs with none fall back to the labeled surface. The generated fallback close control stays hidden until reached through keyboard navigation. Set to false for input-owned focus, inline showcases, or documentation previews.',
           default: 'true',
         },
         {
@@ -347,7 +347,7 @@ export const docsZh = {
           name: 'hasAutoFocus',
           type: 'boolean',
           description:
-            '弹出框打开时是否自动聚焦第一个可聚焦元素。内联展示或文档预览设为 false。',
+            '弹出框打开时是否将焦点移入其中。优先聚焦调用方内容中的第一个控件；若对话框没有此类控件，则聚焦带标签的表面。生成的关闭按钮仅在键盘导航到达时显示。',
           default: 'true',
         },
         {
@@ -541,7 +541,7 @@ export const docsDense = {
           'Whether to include hidden close button for accessibility.',
         closeButtonLabel: 'Label for hidden close button.',
         hasAutoFocus:
-          'Move focus into the popover on open; keyboard targets the first control and pointer targets the dialog container.',
+          'Move focus into genuine popover content on open, with a labeled-surface fallback; the generated close control stays hidden until reached by keyboard.',
         hasLightDismiss:
           'Outside click dismisses; false for explicit-dismiss surfaces (coachmarks).',
         hasEscapeDismiss:

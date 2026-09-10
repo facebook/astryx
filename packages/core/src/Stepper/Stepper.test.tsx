@@ -1,11 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {StrictMode, createRef} from 'react';
+import {StrictMode, createRef, useLayoutEffect} from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {act, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Stepper} from './Stepper';
 import {Step} from './Step';
+import {useStepperContext} from './StepperContext';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
@@ -75,6 +76,38 @@ describe('Stepper', () => {
       screen.getByRole('list', {name: 'Checkout progress'}),
     ).toBeInTheDocument();
   });
+
+  it.each(['horizontal', 'vertical'] as const)(
+    'exposes only the supported public context keys at runtime when %s',
+    orientation => {
+      let contextKeys: string[] = [];
+
+      function ContextProbe() {
+        contextKeys = Object.keys(useStepperContext()).sort();
+        return null;
+      }
+
+      render(
+        <Stepper activeStep={0} orientation={orientation}>
+          <ContextProbe />
+          <Step step={0} label="Step 1" />
+        </Stepper>,
+      );
+
+      expect(contextKeys).toEqual(
+        [
+          'activeStep',
+          'previousActiveStep',
+          'orientation',
+          'isNonLinear',
+          'onStepClick',
+          'density',
+          'indicatorPosition',
+          'registerStep',
+        ].sort(),
+      );
+    },
+  );
 
   it('supports vertical orientation', () => {
     render(
@@ -1036,11 +1069,7 @@ describe('Stepper', () => {
      * The value has to be in place before the first render because the shared
      * resize observer takes its opening measurement synchronously during commit.
      */
-    function atWidth(
-      width: number,
-      ui: React.ReactElement,
-      resolvedMinStepWidth = 112,
-    ) {
+    function atWidth(width: number, ui: React.ReactElement) {
       const original = Object.getOwnPropertyDescriptor(
         Element.prototype,
         'clientWidth',
@@ -1050,9 +1079,6 @@ describe('Stepper', () => {
         get(this: Element) {
           if (this.classList.contains('astryx-stepper')) {
             return width;
-          }
-          if (this instanceof HTMLElement && this.style.width !== '') {
-            return resolvedMinStepWidth;
           }
           return this.classList.contains('astryx-stepper-frame') ? 1000 : 0;
         },
@@ -1179,7 +1205,7 @@ describe('Stepper', () => {
       expect(document.querySelector('.astryx-stepper-summary')).toBeNull();
     });
 
-    it('treats a numeric minimum step width as pixels', () => {
+    it('treats the minimum step width as pixels without a measurement probe', () => {
       atWidth(
         360,
         fourSteps({
@@ -1188,138 +1214,14 @@ describe('Stepper', () => {
             collapsedVariant: 'withLabelAndControls',
           },
         }),
-        80,
       );
 
       expect(document.querySelector(SUMMARY)).toBeNull();
-      const measure = Array.from(
-        document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
-      ).find(element => element.style.width !== '');
-      expect(measure).toHaveStyle({width: '80px'});
-    });
-
-    it('measures a custom threshold when every step is complete', () => {
-      // activeStep === stepCount is the supported all-complete state, so no
-      // step is active. Four steps still get 90px each, which is enough for
-      // this custom 80px threshold and must not fall back to the 112px default.
-      atWidth(
-        360,
-        <Stepper
-          activeStep={4}
-          horizontalOptions={{
-            minimumStepWidth: 'var(--completed-step-width)',
-            collapsedVariant: 'withLabelAndControls',
-          }}
-          style={{'--completed-step-width': '5rem'} as React.CSSProperties}>
-          <Step step={0} label="Cart" />
-          <Step step={1} label="Shipping" />
-          <Step step={2} label="Delivery" />
-          <Step step={3} label="Payment" />
-        </Stepper>,
-        80,
-      );
-
-      expect(document.querySelector(SUMMARY)).toBeNull();
-      const measure = Array.from(
-        document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
-      ).find(element => element.style.width !== '');
-      expect(measure).toHaveStyle({
-        width: 'var(--completed-step-width)',
-      });
-      expect(measure?.closest('li')).toBe(screen.getAllByRole('listitem')[0]);
-    });
-
-    it('lets the browser resolve a CSS minimum step width', () => {
-      // Four steps get 90px each. The browser-resolved 6rem probe is stubbed
-      // to 96px, so this instance collapses without Stepper parsing the unit.
-      atWidth(
-        360,
-        fourSteps({
-          horizontalOptions: {
-            minimumStepWidth: 'var(--checkout-step-width)',
-            collapsedVariant: 'withLabelAndControls',
-          },
-          style: {'--checkout-step-width': '6rem'} as React.CSSProperties,
-        }),
-        96,
-      );
-
-      expect(document.querySelector(SUMMARY)).toBeInTheDocument();
-      const measure = Array.from(
-        document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
-      ).find(element => element.style.width !== '');
-      expect(measure).toHaveStyle({width: 'var(--checkout-step-width)'});
-      const list = screen.getByRole('list');
-      expect(measure?.closest('ol')).toBe(list);
-      const frame = list.parentElement;
-      expect(frame).toHaveClass('astryx-stepper-frame');
-      expect(frame?.style.getPropertyValue('--checkout-step-width')).toBe(
-        '6rem',
-      );
-    });
-
-    it('responds when a CSS minimum step width resolves to a new size', () => {
-      const originalWidth = Object.getOwnPropertyDescriptor(
-        Element.prototype,
-        'clientWidth',
-      );
-      let resolvedMinStepWidth = 80;
-      let resize: ResizeObserverCallback = () => {};
-      class ResizeObserverStub {
-        constructor(callback: ResizeObserverCallback) {
-          resize = callback;
-        }
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      }
-      vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-      Object.defineProperty(Element.prototype, 'clientWidth', {
-        configurable: true,
-        get(this: Element) {
-          if (this.classList.contains('astryx-stepper')) {
-            return 360;
-          }
-          return this instanceof HTMLElement && this.style.width !== ''
-            ? resolvedMinStepWidth
-            : 0;
-        },
-      });
-
-      let view: ReturnType<typeof render> | null = null;
-      try {
-        view = render(
-          fourSteps({
-            horizontalOptions: {
-              minimumStepWidth: 'var(--step-width, 5rem)',
-              collapsedVariant: 'withLabelAndControls',
-            },
-          }),
-        );
-        expect(document.querySelector(SUMMARY)).toBeNull();
-        const measure = Array.from(
+      expect(
+        Array.from(
           document.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
-        ).find(element => element.style.width !== '');
-        expect(measure).toBeDefined();
-
-        resolvedMinStepWidth = 96;
-        act(() =>
-          resize([{target: measure!} as unknown as ResizeObserverEntry], null!),
-        );
-        expect(document.querySelector(SUMMARY)).toBeInTheDocument();
-      } finally {
-        view?.unmount();
-        vi.unstubAllGlobals();
-        if (originalWidth) {
-          Object.defineProperty(
-            Element.prototype,
-            'clientWidth',
-            originalWidth,
-          );
-        } else {
-          delete (Element.prototype as {clientWidth?: number}).clientWidth;
-        }
-      }
+        ).find(element => element.style.width !== ''),
+      ).toBeUndefined();
     });
 
     it('leaves a vertical stepper alone at any width', () => {
@@ -1398,6 +1300,66 @@ describe('Stepper', () => {
       expect(onStepClick).toHaveBeenLastCalledWith(0);
     });
 
+    it('reads registration state again when a compact control activates', async () => {
+      const user = userEvent.setup();
+      const onStepClick = vi.fn();
+      const disabled = {
+        0: false,
+        1: false,
+        2: false,
+        3: false,
+      };
+
+      function Registration({step}: {step: 0 | 1 | 2 | 3}) {
+        const {registerStep} = useStepperContext();
+        useLayoutEffect(
+          () =>
+            registerStep(step, {
+              getIsDisabled: () => disabled[step],
+            }),
+          [registerStep, step],
+        );
+        return null;
+      }
+
+      atWidth(
+        320,
+        <Stepper activeStep={1} onStepClick={onStepClick}>
+          <Registration step={0} />
+          <Registration step={1} />
+          <Registration step={2} />
+          <Registration step={3} />
+        </Stepper>,
+      );
+
+      // Step 2 was the target during render. Change only the registered source;
+      // no parent render should be needed before activation skips it.
+      disabled[2] = true;
+      await user.click(screen.getByRole('button', {name: 'Next step'}));
+      expect(onStepClick).toHaveBeenCalledWith(3);
+    });
+
+    it('reads the current disabled state from each registration', async () => {
+      const user = userEvent.setup();
+      const onStepClick = vi.fn();
+      const steps = (isDeliveryDisabled: boolean) => (
+        <Stepper activeStep={1} onStepClick={onStepClick}>
+          <Step step={0} label="Cart" />
+          <Step step={1} label="Shipping" />
+          <Step step={2} label="Delivery" isDisabled={isDeliveryDisabled} />
+          <Step step={3} label="Payment" />
+        </Stepper>
+      );
+      const {rerender} = atWidth(320, steps(true));
+
+      await user.click(screen.getByRole('button', {name: 'Next step'}));
+      expect(onStepClick).toHaveBeenLastCalledWith(3);
+
+      rerender(steps(false));
+      await user.click(screen.getByRole('button', {name: 'Next step'}));
+      expect(onStepClick).toHaveBeenLastCalledWith(2);
+    });
+
     it('disables a summary control with no enabled step in its direction', () => {
       atWidth(
         320,
@@ -1435,12 +1397,7 @@ describe('Stepper', () => {
         Object.defineProperty(Element.prototype, 'clientWidth', {
           configurable: true,
           get(this: Element) {
-            if (this.classList.contains('astryx-stepper')) {
-              return width;
-            }
-            return this instanceof HTMLElement && this.style.width !== ''
-              ? 112
-              : 0;
+            return this.classList.contains('astryx-stepper') ? width : 0;
           },
         });
 
@@ -1970,9 +1927,9 @@ describe('step-label and step-description theme targets', () => {
     const label = container.querySelector('.astryx-step-label');
     const description = container.querySelector('.astryx-step-description');
     expect(label).toHaveAttribute('data-disabled', 'disabled');
-    expect(label).toHaveClass('disabled');
+    expect(label).toHaveAttribute('data-disabled', 'disabled');
     expect(description).not.toHaveAttribute('data-disabled');
-    expect(description).not.toHaveClass('disabled');
+    expect(description).not.toHaveAttribute('data-disabled');
 
     // A DOM attribute alone would not prove the public defineTheme path accepts
     // and emits the state. Hold both halves of the contract.
@@ -1985,7 +1942,7 @@ describe('step-label and step-description theme targets', () => {
       },
     });
     const {component: css} = generateThemeCSS(theme);
-    expect(css).toContain('.astryx-step-label.disabled');
+    expect(css).toContain('.astryx-step-label[data-disabled="disabled"]');
     expect(css).toContain('opacity: 0.4');
   });
 

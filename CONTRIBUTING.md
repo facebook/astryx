@@ -120,7 +120,7 @@ serves the edited source, so the story updates on save — no rebuild, no restar
 ### Running the Doc Site
 
 The doc site (`apps/docsite/`) is a Next.js app that renders the component
-documentation at https://astryx.dev. To run it locally:
+documentation at https://astryx.atmeta.com. To run it locally:
 
 ```bash
 # First time only — build the workspace packages it depends on
@@ -447,6 +447,32 @@ When the audit reports baseline entries as "resolved", delete them from
 > third of the success criteria). A green `pr-a11y` job does not mean a
 > component is accessible — keyboard flows, focus order, screen-reader
 > semantics, and contrast in context still need manual checks.
+
+### Accessibility spec-test contracts
+
+axe finds broad markup violations; it does not know that a switch has to turn
+back off. The reusable **accessibility spec tests** in
+[`internal/a11y-spec/`](internal/a11y-spec/README.md) encode one adopted
+WAI-ARIA APG pattern as a standards-traceable contract, and components bind to
+it. Each expectation names the WCAG success criterion or APG requirement it
+comes from, the evidence layer that can observe it, and whether it gates.
+
+They run in two lanes, and the split is the point: jsdom proves DOM-layer facts
+in `pnpm test`, and everything that needs a computed accessibility tree, real
+focus, or real activation is reported `unrun` there and proven in Chromium.
+
+```bash
+# One-time setup
+pnpm storybook:build
+npx playwright install chromium
+
+pnpm test:a11y-contract      # the Chromium lane (also runs inside pr-a11y)
+```
+
+Adopting the pattern in a new component means binding to the existing contract,
+not copying its assertions — see the package README and
+[`docs/specs/AST-020`](docs/specs/AST-020/spec.md) /
+[`docs/specs/AST-021`](docs/specs/AST-021/spec.md).
 
 ### RTL audits
 

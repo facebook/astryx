@@ -28,15 +28,15 @@
 
 /**
  * State of the managed agent-docs block (`<!-- ASTRYX:START --> … END -->`)
- * relative to the installed core version, plus what `upgrade` did about it.
- * Present on every upgrade response (run, status, and the codemod/config error
- * envelopes) because the block is refreshed independently of codemods.
+ * relative to the fully rendered block for installed Core and configured
+ * integration manifests. Present on every upgrade response. Dry-run only
+ * reports; apply writes after selected codemods and hooks succeed.
  *
  * - `refreshed`     — a stale block was rewritten (`--apply` only).
  * - `would-refresh` — a stale block was detected in dry-run; nothing written.
  * - `nudge-init`    — no managed block exists; user should run `init`.
- * - `error`         — refresh was attempted but writing failed.
- * - `none`          — nothing to do (block already current).
+ * - `error`         — the expected block could not be rendered or written.
+ * - `none`          — nothing to do (block already matches expected content).
  *
  * @typedef {object} AgentDocsSummary
  * @property {'missing' | 'stale' | 'current'} status

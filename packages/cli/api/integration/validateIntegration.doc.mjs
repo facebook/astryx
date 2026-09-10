@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file FunctionDoc for `validateIntegration()` / `astryx validate-integration`.
+ * @file FunctionDoc for `validateIntegration()` / `astryx doctor integration validate`.
  * Colocated with the API function it documents; the shape source of truth stays
  * in `validate-integration.type.mjs`.
  * @position packages/cli/api/integration — function documentation
@@ -58,6 +58,6 @@ export const doc = {
       code: "await validateIntegration('@acme/astryx-integration');",
     },
   ],
-  command: 'validate-integration',
-  related: ['summarizeIssues', 'doctor', 'upgrade'],
+  command: 'doctor integration validate',
+  related: ['summarizeIssues', 'doctor integration templates', 'upgrade'],
 };

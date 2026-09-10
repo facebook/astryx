@@ -12,7 +12,7 @@ export const docs = {
   sections: [
     {
       title: 'Quick Start',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'code',
@@ -63,7 +63,7 @@ function App() {
     },
     {
       title: 'Available Themes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -118,7 +118,7 @@ function App() {
     },
     {
       title: 'Theme Props',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'table',
@@ -138,7 +138,7 @@ function App() {
     },
     {
       title: 'Creating a Custom Theme',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -158,7 +158,7 @@ function App() {
     },
     {
       title: 'defineTheme',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -231,7 +231,7 @@ const myTheme = defineTheme({
     },
     {
       title: 'Extending a Theme',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -258,23 +258,126 @@ const brandTheme = defineTheme({
           type: 'table',
           headers: ['Field', 'Merge behavior'],
           rows: [
-            ['tokens', 'Base tokens are copied first, then child tokens override on top.'],
-            ['components', 'Deep-merged: child component rules override matching keys from the base.'],
-            ['icons', 'Shallow-merged: child icons override matching names from the base.'],
-            ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
-            ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
-            ['typography, motion, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],
+            [
+              'tokens',
+              'Base tokens are copied first, then child tokens override on top.',
+            ],
+            [
+              'components',
+              'Deep-merged: child component rules override matching keys from the base.',
+            ],
+            [
+              'icons',
+              'Shallow-merged: child icons override matching names from the base.',
+            ],
+            [
+              'indicators',
+              'Shallow-merged: child indicators override matching names from the base.',
+            ],
+            [
+              'onDark, onLight',
+              "Deep-merged per surface: the base's resolved surface first, then the child's overrides.",
+            ],
+            [
+              'typography, motion, radius, color',
+              'Child config replaces base entirely (these are scale inputs, not additive).',
+            ],
+            [
+              'adaptations',
+              'Width-breakpoint overrides merge by fixed name. Inherited ordered rules keep their relative order; child rules append and re-resolve against the child root axes.',
+            ],
           ],
         },
         {
           type: 'prose',
-          text: 'Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme\'s CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) is a build error rather than a theme that silently inherits nothing.',
+          text: "Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme's CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) is a build error rather than a theme that silently inherits nothing.",
+        },
+      ],
+    },
+    {
+      title: 'Theme Adaptations',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Use `adaptations` for opt-in token, theme-local token, and component changes under viewport width, primary-pointer precision, contrast preference, or motion preference. Conditions in one `when` are ANDed. Rules are ordinary ordered objects, and later matching writes win.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Width and pointer adaptations',
+          code: `const acmeTheme = defineTheme({
+  name: 'acme',
+  adaptations: {
+    widthBreakpoints: {
+      sm: 640,
+      md: 768,
+      lg: 1024,
+      xl: 1280,
+      '2xl': 1536,
+    },
+    rules: [
+      {
+        when: {width: {below: 'md'}},
+        value: {tokens: {'--spacing-4': '12px'}},
+      },
+      {
+        when: {pointer: 'coarse'},
+        value: {
+          tokens: {
+            '--size-element-sm': '36px',
+            '--size-element-md': '40px',
+            '--size-element-lg': '44px',
+          },
+        },
+      },
+      {
+        when: {
+          width: {from: 'lg', below: 'xl'},
+          pointer: 'coarse',
+          contrast: 'more',
+        },
+        value: {components: {card: {base: {borderWidth: '2px'}}}},
+      },
+    ],
+  },
+});`,
+        },
+        {
+          type: 'table',
+          headers: ['Condition', 'Values'],
+          rows: [
+            ['width.from / width.below', 'sm | md | lg | xl | 2xl'],
+            ['pointer', 'coarse | fine'],
+            ['contrast', 'more | less | no-preference'],
+            ['motion', 'reduce | no-preference'],
+          ],
+        },
+        {
+          type: 'prose',
+          text: '`widthBreakpoints` are fixed named start points. Defaults are 640 / 768 / 1024 / 1280 / 1536 CSS pixels. `from` includes its point; `below` excludes it. Breakpoint configuration alone emits no CSS.',
+        },
+        {
+          type: 'prose',
+          text: '**Precedence follows rule order.** Root theme values apply first, then every matching rule in declaration order. A later rule may deliberately restore a root value. `onDark` and `onLight` media-surface overrides apply after adaptations and win on the same leaf.',
+        },
+        {
+          type: 'prose',
+          text: "`extends` preserves the base rule order and appends child rules. Inherited conditions use the child's effective breakpoint map, and partial generative axes complete from the child root metadata. An empty child rule is a no-op, not a removal operator.",
+        },
+        {
+          type: 'prose',
+          text: 'A rule may replace a theme-local token only when the exact name is already enrolled by root `localTokens` or an enrolled base. Component writes in a rule are validated exactly like root `components` — same targets, axes, and value domains. The one addition is that a rule may not be the only place a custom value is enrolled: a value that is valid only because a theme enrolls it generates unconditional type augmentation, so declare it on the root theme first and let rules restyle it. Built-in values need no root declaration. When rules can match together, their ordered portable and local token writes are validated as one effective graph; any reachable cycle fails before CSS is emitted.',
+        },
+        {
+          type: 'prose',
+          text: 'Adaptations compile to CSS media queries with no resize listener or styling rerender. Runtime and `astryx theme build` use the same compiler, but only a built theme is present at first paint in an SSR app.',
         },
       ],
     },
     {
       title: 'Component Style Overrides',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -307,7 +410,7 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Run `astryx theme targets` for every themeable key in the system (`astryx theme targets <Name>` to scope it, `--json` to lint a theme against it), and `astryx component <Name>` for one component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
+          text: "Run `astryx theme targets` for every themeable key in the system (`astryx theme targets <Name>` to scope it, `--json` to lint a theme against it), and `astryx component <Name>` for one component's theming targets, public CSS variables, and which standard CSS properties are supported.",
         },
         {
           type: 'list',
@@ -328,11 +431,11 @@ const brandTheme = defineTheme({
     },
     {
       title: 'Custom Variants',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Themes can add new prop values to any component. Any `prop:value` key where the value isn\'t a built-in gets treated as a new variant. Use `astryx theme build` to generate TypeScript augmentations for type safety.',
+          text: "Themes can add new prop values to any component. Any `prop:value` key where the value isn't a built-in gets treated as a new variant. Use `astryx theme build` to generate TypeScript augmentations for type safety.",
         },
         {
           type: 'code',
@@ -371,13 +474,13 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Custom variants only work when the theme that defines them is active. The component\'s variant map is extended via module augmentation, with no changes to the component source needed.',
+          text: "Custom variants only work when the theme that defines them is active. The component's variant map is extended via module augmentation, with no changes to the component source needed.",
         },
       ],
     },
     {
       title: 'Building Themes for Production',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -403,7 +506,7 @@ const brandTheme = defineTheme({
             ],
             [
               'ocean.js',
-              'ES module exporting the theme object with `__built: true` and pre-resolved token values. Also re-exports the icon registry if the source theme declares one.',
+              'ES module exporting the theme object with `__built: true` and pre-resolved token values. Also imports and re-exports an icon registry when the build detects its named import in the source theme (see the limitations below).',
             ],
             [
               'ocean.d.ts',
@@ -411,13 +514,40 @@ const brandTheme = defineTheme({
             ],
             [
               'ocean.variants.d.ts',
-              '(Optional) Module augmentations for custom component prop values found in the theme\'s component overrides',
+              "(Optional) Module augmentations for custom component prop values found in the theme's component overrides",
             ],
           ],
         },
         {
           type: 'prose',
+          text: "The current `theme build` implementation emits an icon import when it detects a named import used by the theme’s `icons:` field, such as `import {oceanIcons} from './icons'` with `icons: oceanIcons`. It does not compile that registry module. Inline registries, including local constants, are currently omitted from the generated theme even though `defineTheme` accepts them at runtime. Move the registry to a separate module and use a named import for this build flow. For a registry that uses React and lucide-react, the following example compiles it alongside the generated theme:",
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Compiling the icon registry sidecar',
+          code: `# Emit the built theme; point its icon import at the file the next step produces
+astryx theme build ./src/themes/ocean.ts -o dist/theme.css --icons-specifier ./icons.mjs
+
+# Compile the icon registry to a real ES module next to the generated JS
+esbuild src/themes/icons.tsx --bundle --format=esm --outfile=dist/icons.mjs \\
+  --external:react --external:lucide-react --jsx=automatic`,
+        },
+        {
+          type: 'prose',
+          text: 'In the example above, the generated theme imports `./icons.mjs` from `dist`. If the second command is skipped, `theme build` can still succeed, but loading or bundling the generated module fails because `dist/icons.mjs` is missing. `--icons-specifier` changes the emitted import; it does not create or verify the target file. Match the specifier to a module that resolves from the generated JS file. Keep `react` and the icon library external so the registry does not bundle its own copies of those dependencies.',
+        },
+        {
+          type: 'prose',
+          text: 'Without `--icons-specifier`, the detected source import specifier is emitted unchanged. In the default no-`--out` flow, a bundler can resolve an extensionless `./icons` to the neighboring `icons.tsx` source. Node ESM does not perform that lookup and reports `ERR_MODULE_NOT_FOUND`. Moving the output with `--out` also changes where relative imports resolve; the generated module cannot find the original source merely because a bundler is used.',
+        },
+        {
+          type: 'prose',
           text: 'The `__built: true` flag tells Theme to skip runtime `<style>` injection; the CSS file handles it.',
+        },
+        {
+          type: 'prose',
+          text: 'After upgrading Astryx across a selector-contract change, rerun `astryx theme build <theme-file>` for every custom prebuilt theme. Deploy the regenerated `.css`, `.js`, `.d.ts`, and optional `.variants.d.ts` together. The runtime intentionally trusts `__built: true` and will not repair stale CSS from an older build.',
         },
         {
           type: 'code',
@@ -432,13 +562,13 @@ import './themes/ocean.css';
         },
         {
           type: 'prose',
-          text: 'The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app\'s job. See `astryx docs typography` for the full recipe.',
+          text: "The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app's job. See `astryx docs typography` for the full recipe.",
         },
       ],
     },
     {
       title: 'Runtime vs Built Themes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -450,13 +580,13 @@ import './themes/ocean.css';
           rows: [
             [
               'Import (published theme)',
-              "@astryxdesign/theme-{name}",
-              "@astryxdesign/theme-{name}/built + theme.css",
+              '@astryxdesign/theme-{name}',
+              '@astryxdesign/theme-{name}/built + theme.css',
             ],
             [
               'Import (custom theme)',
               'defineTheme() directly',
-              "Built .js + .css from `astryx theme build`",
+              'Built .js + .css from `astryx theme build`',
             ],
             [
               'How it works',
@@ -494,14 +624,14 @@ import './themes/ocean.css';
           style: 'dont',
           items: [
             'Use runtime themes in production SSR apps; component overrides will flash on hydration.',
-            'Import /built without the CSS file; component overrides won\'t apply.',
+            "Import /built without the CSS file; component overrides won't apply.",
           ],
         },
       ],
     },
     {
       title: 'Light/Dark Mode',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -530,7 +660,7 @@ import './themes/ocean.css';
     },
     {
       title: 'Nesting Themes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -556,7 +686,7 @@ import './themes/ocean.css';
     },
     {
       title: 'Token Utilities',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -599,7 +729,7 @@ const chartTheme = {
     },
     {
       title: 'useTheme Hook',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',

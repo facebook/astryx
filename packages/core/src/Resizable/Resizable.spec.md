@@ -46,8 +46,8 @@ selected state, persistence, callbacks, paint, and ARIA in resolved pixels.
 - Released default preserved: `yes`; numeric and exact `Npx` stay pixels, exact
   `N%` retains released one-time default behavior, and the broad `defaultSize`
   string type remains source-compatible
-- Compatibility class: additive `minSize` / `maxSize`, structured percentage helper,
-  and optional container basis; deprecated pixel aliases remain supported
+- Compatibility class: 0.6 removes the deprecated pixel-bound aliases after two
+  stable releases; numeric `minSize` / `maxSize` preserve their pixel semantics
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: CSS-like `min()` / `max()` strings are not supported. Use
   `percent(value, {min: pixel(value)})` or
@@ -99,7 +99,7 @@ in `Resizable.doc.mjs` and `useResizable.doc.mjs`.
 | FR3 | Pointer, keyboard, collapse, snap, persistence, reversal, and size behavior remain owned by ResizeHandle and useResizable rather than layout-regions collaborators.                                                                      | Current source, docs, and tests  | Verified current ownership; resize semantics remain unchanged |
 | FR4 | Resizable metadata advertises `direction` as a Handle visual state, but current runtime calls `themeProps('resize-handle')` without reflecting that value, so direction selectors cannot match.                                          | Current source and public docs   | Verified audit gap; deliberately not fixed in this change     |
 | FR5 | `percent(value, {min: pixel(value)})` and `percent(value, {max: pixel(value)})` resolve against the AST-010 basis; a default selects pixels once, while a bound re-resolves and clamps selected pixels. Both/neither bounds are invalid. | AST-010, source, tests, Chromium | New structured sizing behavior; selected state remains pixels |
-| FR6 | Deprecated pixel aliases remain source-compatible and mutually exclusive with unified bounds; untyped exact atomic strings keep their released runtime behavior, and untyped conflicts prefer the unified value and warn.                | AST-010, source, tests           | Additive migration with deterministic precedence              |
+| FR6 | `minSize` and `maxSize` are the only bound spellings in 0.6; numeric values retain pixel semantics, and the upgrade codemod rewrites static inline uses of the removed aliases.                                                          | AST-010, source, codemod tests   | Breaking cleanup with mechanical migration                    |
 
 ### Allowed variation
 
@@ -205,7 +205,7 @@ not emit the documented target state.
 | FR3                 | `ResizeHandle.test.tsx` and `useResizable.test.ts` | Pointer, keyboard, snap, collapse, persistence                                                                  | Moving resize ownership or changing current transformations fails focused behavior coverage.                                                       | `audit:Resizable/behavior` |
 | FR4                 | Source and public metadata comparison              | Horizontal and vertical Handle                                                                                  | No current test detects that documented `direction` is absent from runtime target-state reflection.                                                | `audit:Resizable/theming`  |
 | FR5                 | Hook/utils tests, typecheck, and Chromium          | Canonical floor/ceiling/default; invalid XOR shape; SSR/hydration; basis changes; numeric `containerRef` parity | Wrong resolution, rescaling defaults, stale clamps, observer leaks, extra numeric renders/ref reads, or state/paint/storage/ARIA divergence fails. | `audit:Resizable/behavior` |
-| FR6                 | Hook type/runtime tests                            | Old-only aliases; untyped exact atomic strings; typed and untyped conflicts                                     | Alias incompatibility, ambiguous config, or wrong precedence fails focused tests.                                                                  | `audit:Resizable/behavior` |
+| FR6                 | Hook type/runtime and codemod tests                | Removed alias type errors; single/multi-region inline migrations; numeric pixel bounds                          | A removed alias still type-checks, or migration changes its numeric meaning.                                                                       | `audit:Resizable/behavior` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                      | Canonical anatomy and two current targets                                                                       | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                                                         | `audit:Resizable/theming`  |
 
 Current tests exercise Handle and Grab zone structure and behavior but do not

@@ -18,8 +18,6 @@
  * deduped, so each leaf stays a thin projection.
  */
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {findCoreDir, discoverExternalPackages} from '../../foundation/fs/paths.mjs';
 import {
@@ -31,6 +29,7 @@ import {
   findIntegrationComponentDoc,
   findIntegrationComponentSource,
   resolveImportPath,
+  resolveIntegrationImportPath as resolveIntegrationImport,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
@@ -388,39 +387,26 @@ export function withOwnership(docs, owner, componentName, coreDir) {
 }
 
 /**
- * Resolve the specifier an integration component is imported from, against the
- * owning package's `exports` map.
+ * Resolve the specifier an integration component is imported from.
  *
- * A component lives in a directory that need not share its name — several
- * components can be exported from one entry point — so the specifier has to
- * come from the directory the doc file sits in, checked against `exports`,
- * rather than from the component name. Falls back to the package root when the
- * directory is not an exported subpath, matching what a consumer would have to
- * write by hand.
+ * Thin adapter over the shared resolver in foundation, which `search` also
+ * uses; the two surfaces have to report the same specifier for the same
+ * component.
  *
  * @param {OwnershipSubject} owner
  * @param {string} componentName
  * @returns {string}
  */
 function resolveIntegrationImportPath(owner, componentName) {
-  const packageDir = owner.integration?.__packageDir;
-  const directory = owner.docPath
-    ? path.basename(path.dirname(owner.docPath))
-    : componentName;
-  if (!packageDir) {
-    return owner.package;
-  }
-  try {
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
-    );
-    if (manifest.exports?.[`./${directory}`]) {
-      return `${owner.package}/${directory}`;
-    }
-  } catch {
-    // An unreadable or malformed manifest is not worth failing a lookup over.
-  }
-  return owner.package;
+  return resolveIntegrationImport(
+    {
+      exportsMap: owner.integration?.__packageExports,
+      packageDir: owner.integration?.__packageDir,
+      docPath: owner.docPath,
+      packageName: owner.package,
+    },
+    componentName,
+  );
 }
 
 /**

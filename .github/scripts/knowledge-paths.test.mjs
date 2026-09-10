@@ -12,23 +12,38 @@ const {
 describe('component knowledge paths', () => {
   it.each([
     [
-      'flat component record',
+      'directory-layout Core component record',
       'packages/core/src/Button/Button.spec.md',
       'component',
     ],
     [
-      'flat public member record',
+      'directory-layout public member record',
       'packages/core/src/NavMenu/NavHeadingMenu.spec.md',
       'component',
     ],
     [
-      'nested module record',
+      'directory-layout module record',
       'packages/core/src/Table/plugins/rowStatus/useTableRowStatus.spec.md',
       'module',
     ],
     [
-      'nested Lab module record',
-      'packages/lab/src/Future/subsystems/model/createModel.spec.md',
+      'flat Charts component record',
+      'packages/charts/src/Chart.spec.md',
+      'component',
+    ],
+    [
+      'flat Rich Text component record',
+      'packages/richtext/src/RichTextView.spec.md',
+      'component',
+    ],
+    [
+      'flat Vega component record',
+      'packages/vega/src/VegaChart.spec.md',
+      'component',
+    ],
+    [
+      'flat-package module record',
+      'packages/charts/src/Chart/plugins/useChartSelection.spec.md',
       'module',
     ],
   ])('classifies the %s', (_label, filePath, kind) => {
@@ -53,7 +68,8 @@ describe('component knowledge paths', () => {
     'packages/core/src/Button/Button.md',
     'packages/core/src/Button/not-kebab.spec.md',
     'packages/core/src/Button.spec.md',
-    'packages/charts/src/Chart/Chart.spec.md',
+    'packages/themes/neutral/src/Button.spec.md',
+    'packages/cli/src/Prompt.spec.md',
   ])('rejects non-record path %s', filePath => {
     expect(classifyComponentKnowledgePath(filePath)).toBeNull();
   });

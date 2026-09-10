@@ -11,7 +11,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as os from 'node:os';
 import {init, getNextSteps} from './init.mjs';
 import {logger} from '../logger.mjs';
 import {AstryxError} from '../error.mjs';
@@ -22,7 +21,7 @@ const MARKER_START = '<!-- ASTRYX:START -->';
 let tmpDir;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-init-api-'));
+  tmpDir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-init-api-'));
 });
 
 afterEach(() => {
@@ -33,6 +32,29 @@ afterEach(() => {
 const read = rel => fs.readFileSync(path.join(tmpDir, rel), 'utf8');
 /** @param {string} rel */
 const exists = rel => fs.existsSync(path.join(tmpDir, rel));
+
+function writeIntegration() {
+  fs.writeFileSync(
+    path.join(tmpDir, 'package.json'),
+    JSON.stringify({name: 'consumer'}),
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'astryx.config.mjs'),
+    `export default {integrations: ['@acme/widgets']};\n`,
+  );
+  const packageDir = path.join(tmpDir, 'node_modules', '@acme', 'widgets');
+  fs.mkdirSync(packageDir, {recursive: true});
+  fs.writeFileSync(
+    path.join(packageDir, 'package.json'),
+    JSON.stringify({name: '@acme/widgets'}),
+  );
+  fs.writeFileSync(
+    path.join(packageDir, 'astryx.integration.mjs'),
+    `export default {agentDocs: {
+      append: ['Run acme verify before finishing.'],
+    }};\n`,
+  );
+}
 
 describe('init() — receipts + side effects', () => {
   it('default mode installs AGENTS.md and returns an init.run receipt', async () => {
@@ -45,6 +67,47 @@ describe('init() — receipts + side effects', () => {
     expect(res.data.docsError).toBeNull();
     expect(exists('AGENTS.md')).toBe(true);
     expect(read('AGENTS.md')).toContain(MARKER_START);
+  });
+
+  it('renders configured integration guidance into the real init block', async () => {
+    writeIntegration();
+
+    const res = await init({features: 'agents'}, {cwd: tmpDir});
+
+    expect(res.type).toBe('init.run');
+    if (res.type !== 'init.run') return;
+    expect(res.data.docsError).toBeNull();
+    const content = read('AGENTS.md');
+    expect(content).toContain(
+      '- `@acme/widgets`: Run acme verify before finishing.',
+    );
+    expect(
+      content.indexOf('Run acme verify before finishing.'),
+    ).toBeGreaterThan(content.indexOf('MORE CLI:'));
+  });
+
+  it('leaves existing agent docs unchanged when integration agentDocs is invalid', async () => {
+    writeIntegration();
+    fs.writeFileSync(
+      path.join(
+        tmpDir,
+        'node_modules',
+        '@acme',
+        'widgets',
+        'astryx.integration.mjs',
+      ),
+      `export default {agentDocs: {append: [' invalid']}};\n`,
+    );
+    const before = '# Agents\n\nKeep this byte-for-byte.\n';
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), before);
+
+    const res = await init({features: 'agents'}, {cwd: tmpDir});
+
+    expect(res.type).toBe('init.run');
+    if (res.type !== 'init.run') return;
+    expect(res.data.docsWritten).toEqual([]);
+    expect(res.data.docsError).toMatchObject({kind: 'install-failed'});
+    expect(read('AGENTS.md')).toBe(before);
   });
 
   it('writes to the cwd param, not process.cwd() (no chdir)', async () => {

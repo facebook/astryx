@@ -15,6 +15,7 @@ import {Project} from '../../../foundation/config/project.mjs';
 import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
+import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
 import {doc as templateCommand} from './template.doc.mjs';
 import {doc as templateFn} from '../../../api/template/template.doc.mjs';
 
@@ -47,6 +48,27 @@ export {discoverTemplates, listTemplates} from '../../../api/template/template.m
  */
 
 /**
+ * What the run answered with. Listing and printing a template are lookups;
+ * scaffolding one into a project (or writing the CDN starter) is a file
+ * written, which is an effect with nothing to count.
+ *
+ * @param {TemplateResponse} result
+ * @returns {import('../../../foundation/debug/command-result.mjs').CommandResult}
+ */
+function summarize(result) {
+  switch (result.type) {
+    case 'template.list':
+      return resultSet({count: result.data.length, resultKind: 'template'});
+    case 'template.show':
+    case 'template.skeleton':
+      return resultSet({count: 1, resultKind: 'template', directMatch: true});
+    case 'template.copy':
+    case 'template.cdn':
+      return NO_RESULT_SET;
+  }
+}
+
+/**
  * @param {import('commander').Command} program
  */
 export function registerTemplate(program) {
@@ -64,7 +86,7 @@ export function registerTemplate(program) {
 
       // Non-blocking nudge: if any configured integration has validation
       // issues, print one compact line to stderr pointing at
-      // validate-integration. Best-effort; suppressed in --json mode.
+      // doctor integration validate. Best-effort; suppressed in --json mode.
       try {
         const project = await Project.load(process.cwd());
         await warnOnIntegrationIssues(
@@ -93,8 +115,7 @@ export function registerTemplate(program) {
           const msg =
             `Refusing to overwrite existing file ${rel}. ` +
             `Re-run with --overwrite (or -f) to replace it.`;
-          cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
-          return;
+          return cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
         }
       }
 
@@ -117,11 +138,14 @@ export function registerTemplate(program) {
         // template API throws structured errors with {name, reason} suggestions —
         // pass them through untouched so the CLI envelope matches the API.
         const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
-        return;
+        return cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
       }
 
-      if (json) return jsonOut(result);
+      const answered = summarize(result);
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       switch (result.type) {
         case 'template.list': {
@@ -201,6 +225,7 @@ export function registerTemplate(program) {
           break;
         }
       }
+      return answered;
     },
   });
 }

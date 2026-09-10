@@ -14,14 +14,14 @@ export const docs = {
       name: 'label',
       type: 'ReactNode',
       description:
-        'Primary text label for the item. Rich labels may contain links or buttons, which keep their own behavior without toggling the item. Pair a ReactNode label with aria-label so screen readers get a concise checkbox name.',
+        'Primary text label for the item. Rich labels may contain links or buttons, which keep their own behavior without toggling the item. A ReactNode label names the checkbox from its visible text; pass aria-label only when that text is absent, or include all visible label words in the override.',
       required: true,
     },
     {
       name: 'aria-label',
       type: 'string',
       description:
-        'Plain-text accessible name for the checkbox when label is a ReactNode. Applied to the checkbox control. Without it, rich-label items all announce as the generic "Checkbox" to screen readers.',
+        'Plain-text accessible name for the checkbox, replacing the one derived from label. Applied to the checkbox control. Use it when a rich label has no visible text; otherwise the value must retain every visible label word.',
     },
     {
       name: 'value',
@@ -31,7 +31,8 @@ export const docs = {
     {
       name: 'description',
       type: 'ReactNode',
-      description: 'Secondary content below the label. String or ReactNode.',
+      description:
+        "Secondary content below the label. String or ReactNode. Exposed as the checkbox's accessible description through aria-describedby, so assistive technology can tell it is the explanation for that choice.",
     },
     {
       name: 'endContent',
@@ -79,10 +80,10 @@ export const docs = {
   ],
   examples: [
     {
-      label: 'Rich label with an accessible name',
+      label: 'Rich label with an overriding aria-label',
       code: `<CheckboxListItem
   label={<span>Pro plan <Badge label="Recommended" /></span>}
-  aria-label="Pro plan"
+  aria-label="Pro plan Recommended option"
   value="pro"
 />`,
     },
@@ -100,14 +101,14 @@ export const docsZh = {
       name: 'label',
       type: 'ReactNode',
       description:
-        '选项的主标签。富内容标签可包含链接或按钮，它们保留自身行为且不会切换该选项。ReactNode 标签应同时传入 aria-label，为屏幕阅读器提供简洁的复选框名称。',
+        '选项的主标签。富内容标签可包含链接或按钮，它们保留自身行为且不会切换该选项。ReactNode 标签会以其可见文本为复选框命名；仅当可见文本缺失时使用 aria-label，否则覆盖值必须保留全部可见文字。',
       required: true,
     },
     {
       name: 'aria-label',
       type: 'string',
       description:
-        '当 label 是 ReactNode 时，复选框的纯文本无障碍名称。缺少它时，富标签选项都会向屏幕阅读器播报为通用的 "Checkbox"。',
+        '复选框的纯文本无障碍名称，会替换由 label 推导出的名称。仅当富标签没有可见文本时才完全替代；否则必须保留全部可见文字。',
     },
     {
       name: 'value',
@@ -117,7 +118,8 @@ export const docsZh = {
     {
       name: 'description',
       type: 'ReactNode',
-      description: '标签下方的辅助内容。可为字符串或 ReactNode。',
+      description:
+        '标签下方的辅助内容。可为字符串或 ReactNode。会通过 aria-describedby 作为复选框的无障碍描述暴露，便于辅助技术识别它是该选项的说明。',
     },
     {
       name: 'endContent',
@@ -158,11 +160,12 @@ export const docsDense = {
     'Individual checkbox item w/ label, description, end content slot.',
   propDescriptions: {
     label:
-      'Primary label. String or ReactNode; nested controls keep their behavior.',
+      'Primary label. String or ReactNode; nested controls keep their behavior. A ReactNode names the checkbox from its visible text.',
     'aria-label':
-      'Plain-text checkbox name when label is a ReactNode. Without it, rich-label items all announce as "Checkbox".',
+      'Plain-text checkbox name replacing the one derived from label. Use when visible text is absent; otherwise retain every visible label word.',
     value: 'Identity key (required inside CheckboxList).',
-    description: 'Secondary content below label. String or ReactNode.',
+    description:
+      "Secondary content below label. String or ReactNode. Exposed as the checkbox's accessible description via aria-describedby.",
     endContent: 'Content rendered after label area.',
     isDisabled: 'Whether this individual item disabled.',
     isLoading:

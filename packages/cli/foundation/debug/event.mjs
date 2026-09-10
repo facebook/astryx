@@ -30,9 +30,16 @@ import {isCliOneOff, detectPackageManager} from '../env/package-manager.mjs';
  * without a single compile error, which is exactly what the version exists to
  * prevent.
  *
+ * v3 made every command report its result, which changed what an ABSENT one
+ * means: `output.resultKind` is null only when the run never reached an
+ * answer, and a command with no result set now says `none`. The values did not
+ * move, but the null did — a consumer counting nulls as "commands with nothing
+ * to report" would silently start counting failures instead, and no widened
+ * union catches a branch on null.
+ *
  * @type {import('../../authoring/debug/type').DebugSchemaVersion}
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * The recorded shape is PUBLISHED — a project sets `debug` in `astryx.config`

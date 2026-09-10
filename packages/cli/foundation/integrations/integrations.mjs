@@ -13,17 +13,21 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../fs/path-safety.mjs';
-import {parseIntegration} from '../../authoring/integration/parse.mjs';
-// The key census is internal to the schema module on purpose: it is derived
-// from the schema so it cannot drift, and it is not public API.
-import {unknownIntegrationKeys} from '../../authoring/integration/schema.mjs';
+// The key census and contribution parsers are internal to the schema module on
+// purpose: the public parser still validates the complete authored type, while
+// the loader can isolate an invalid optional contribution from valid roots.
+import {
+  parseAgentDocsField,
+  parseIntegrationBase,
+  unknownIntegrationKeys,
+} from '../../authoring/integration/schema.mjs';
 import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
 
 /**
  * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
  * the package's package.json; the `components`/`templates`/`codemods`/`docs`
  * roots are absolute paths resolved from the manifest. The `__`-prefixed fields
- * are internal bookkeeping used by validate-integration and Project.
+ * are internal bookkeeping used by Doctor integration validation and Project.
  * @typedef {object} LoadedIntegration
  * @property {string} name
  * @property {string} [version]
@@ -32,13 +36,25 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  * @property {string} [codemods]
  * @property {string} [docs]
  * @property {string} [issuesUrl]
+ * @property {{append?: readonly string[]}} [agentDocs]
+ * @property {string} [__agentDocsError] contribution-specific validation
+ *   failure; other manifest contributions remain available
  * @property {string} __spec
  * @property {string} __packageDir
+ * @property {Record<string, unknown>|null} [__packageExports] the owning
+ *   package's `exports` map, kept from the package.json this loader already
+ *   parsed so import resolution does not read it a second time
  * @property {string} __manifestFile
  * @property {string} [__loadError] set when the manifest failed to load/validate;
  *   such an integration contributes nothing and is surfaced via Project.issues()
  * @property {string[]} [__unknownKeys] manifest keys this CLI does not know —
  *   surfaced as a warning; the rest of the manifest still contributes
+ * @property {boolean} [__autolinked] loaded because the project declares the
+ *   package as a dependency and it ships a manifest, with no astryx.config
+ *   entry naming it — see foundation/integrations/autolink.mjs
+ * @property {string} [__dependencyField] for an autolinked integration, the
+ *   package.json field that declared it (`dependencies`, `devDependencies`,
+ *   `optionalDependencies`)
  * @property {import('../../authoring/debug/type').DebugEventHandler} [__debug]
  *   the manifest module's `debug` NAMED export, when it exported a function.
  *   Not a manifest key — see {@link loadManifest}.
@@ -54,7 +70,7 @@ export const MANIFEST_BASENAMES = [
 /**
  * Return the conventional root manifest paths present in `dir`, in
  * load-precedence order. Unlike {@link resolveManifestPath} this never throws —
- * callers (e.g. validate-integration) decide how to treat zero / multiple.
+ * callers (for example Doctor integration validation) decide how to treat zero / multiple.
  * @param {string} dir
  * @returns {string[]} absolute manifest paths
  */
@@ -63,32 +79,56 @@ export function findManifestPaths(dir) {
 }
 
 /**
- * Load and validate a manifest module's default export against the integration
- * schema, and report the keys this CLI does not know. Default export only —
- * `.ts` is loaded via jiti; `.mjs`/`.js` via dynamic import. Throws if the
- * default export is missing or invalid.
+ * Load and validate a manifest module's default export, while isolating the
+ * optional `agentDocs` contribution from the manifest's other fields.
  *
- * The raw default export is inspected before it is parsed, because parsing
- * strips the unknown keys: after `parseIntegration` there is nothing left to
- * report. Exposed for validate-integration.
+ * The base manifest still fails as one unit when a root or `issuesUrl` is
+ * invalid. `agentDocs` is parsed separately: a bad contribution is returned as
+ * `agentDocsError`, while valid components/templates/docs/codemods stay loaded.
+ * The raw object is also inspected before parsing so unknown-key warnings retain
+ * forward compatibility.
  *
- * `debug` comes back separately because it is a NAMED export, not a manifest
- * key. A key would have to survive the manifest schema of every CLI version
- * already installed against this integration, and older ones reject an unknown
- * key outright — losing that integration's components, templates and codemods
- * with it (#5119). A named export is simply not read by a CLI that does not
- * know about it, so an integration can start contributing one without a
- * coordinated upgrade.
+ * `debug` comes back separately because it is a named export, not a manifest
+ * key. A CLI that does not know it simply does not read it.
  *
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
- * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler}>}
+ * @param {{fresh?: boolean}} [options]
+ * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, agentDocsError?: string}>}
  */
-export async function loadManifest(file, label = 'integration manifest') {
-  const mod = await importUserModule(file);
+export async function loadManifest(
+  file,
+  label = 'integration manifest',
+  {fresh = false} = {},
+) {
+  const mod = await importUserModule(file, {fresh});
   const raw = mod?.default;
+  const baseManifest = parseIntegrationBase(raw, label);
+  const hasAgentDocs =
+    raw != null &&
+    typeof raw === 'object' &&
+    !Array.isArray(raw) &&
+    Object.prototype.hasOwnProperty.call(raw, 'agentDocs');
+  const rawAgentDocs = hasAgentDocs
+    ? /** @type {{agentDocs?: unknown}} */ (raw).agentDocs
+    : undefined;
+  /** @type {import('../../authoring/integration/type').AstryxIntegration['agentDocs']} */
+  let agentDocs;
+  /** @type {string | undefined} */
+  let agentDocsError;
+  if (hasAgentDocs && rawAgentDocs !== undefined) {
+    try {
+      agentDocs = parseAgentDocsField(
+        rawAgentDocs,
+        `${label} field "agentDocs"`,
+      );
+    } catch (err) {
+      agentDocsError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
   return {
-    manifest: parseIntegration(raw, label),
+    manifest: agentDocs == null ? baseManifest : {...baseManifest, agentDocs},
     unknownKeys: unknownIntegrationKeys(raw),
     debug:
       typeof mod?.debug === 'function'
@@ -96,19 +136,25 @@ export async function loadManifest(file, label = 'integration manifest') {
             mod.debug
           )
         : undefined,
+    agentDocsError,
   };
 }
 
 /**
  * Load and validate a manifest module's default export against the integration
  * schema. Throws if the default export is missing or invalid. Exposed for
- * validate-integration.
+ * Doctor integration validation.
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
+ * @param {{fresh?: boolean}} [options]
  * @returns {Promise<import('../../authoring/integration/type').AstryxIntegration>}
  */
-export async function loadManifestObject(file, label = 'integration manifest') {
-  return (await loadManifest(file, label)).manifest;
+export async function loadManifestObject(
+  file,
+  label = 'integration manifest',
+  options,
+) {
+  return (await loadManifest(file, label, options)).manifest;
 }
 
 /**
@@ -168,10 +214,13 @@ function resolveManifestPath(packageDir, spec) {
  * Load configured integrations.
  *
  * @param {string[]} [specs] package names
- * @param {{cwd?: string}} [options]
+ * @param {{cwd?: string, fresh?: boolean}} [options]
  * @returns {Promise<LoadedIntegration[]>}
  */
-export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
+export async function loadIntegrations(
+  specs = [],
+  {cwd = process.cwd(), fresh = false} = {},
+) {
   /** @type {LoadedIntegration[]} */
   const integrations = [];
   const seen = new Set();
@@ -197,12 +246,15 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
     let unknownKeys;
     /** @type {import('../../authoring/debug/type').DebugEventHandler | undefined} */
     let debugHandler;
+    /** @type {string | undefined} */
+    let agentDocsError;
     try {
       ({
         manifest,
         unknownKeys,
         debug: debugHandler,
-      } = await loadManifest(manifestFile, `Integration ${spec}`));
+        agentDocsError,
+      } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
     } catch (err) {
       // A manifest that throws on import or fails schema validation must NOT take
       // down every command (component/docs/theme don't need this integration).
@@ -225,7 +277,7 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
       try {
         return assertWithin(value, packageDir, {label: 'contribution root'});
       } catch {
-        // Root escapes the package — skip silently (logged by validate-integration).
+        // Root escapes the package — skip silently (reported by Doctor validation).
         return undefined;
       }
     };
@@ -238,10 +290,13 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
       codemods: resolveRoot(manifest.codemods),
       docs: resolveRoot(manifest.docs),
       issuesUrl: manifest.issuesUrl,
+      agentDocs: manifest.agentDocs,
+      __agentDocsError: agentDocsError,
       __unknownKeys: unknownKeys,
       __debug: debugHandler,
       __spec: spec,
       __packageDir: packageDir,
+      __packageExports: pkg.exports ?? null,
       __manifestFile: manifestFile,
     });
   }

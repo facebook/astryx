@@ -37,6 +37,10 @@ const neutralLocalTokens: Record<string, TokenValue> = {
   '--astryx-theme-neutral-color-status-fill-success': ['#198100', '#64af4c'],
   '--astryx-theme-neutral-color-status-fill-warning': '#ffce2f',
   '--astryx-theme-neutral-color-status-fill-error': ['#c9303a', '#ff705d'],
+  '--astryx-theme-neutral-color-status-muted-accent': [
+    blue.light[85],
+    withAlpha(blue.dark[75], '3D'),
+  ],
   '--astryx-theme-neutral-color-on-tint-neutral': ['#fafafa4D', '#0a0a0a4D'],
   '--astryx-theme-neutral-color-on-tint-overlay-hover': [
     '#fafafa1A',
@@ -45,6 +49,14 @@ const neutralLocalTokens: Record<string, TokenValue> = {
   '--astryx-theme-neutral-color-on-tint-overlay-pressed': [
     '#fafafa33',
     '#0a0a0a33',
+  ],
+  '--astryx-theme-neutral-color-destructive-overlay-hover': [
+    withAlpha(red.light[70], '0D'),
+    withAlpha(red.dark[65], '0D'),
+  ],
+  '--astryx-theme-neutral-color-destructive-overlay-pressed': [
+    withAlpha(red.light[70], '1A'),
+    withAlpha(red.dark[65], '1A'),
   ],
 };
 
@@ -97,7 +109,7 @@ export const neutralTheme = defineTheme({
     '--color-background-popover': [neutral.light[100], neutral.dark[10]],
     '--color-background-muted': [neutral.light[95], neutral.dark[10]],
 
-    '--color-accent': [neutral.light[15], neutral.dark[95]],
+    '--color-accent': [neutral.light[10], neutral.dark[95]],
     '--color-accent-muted': [neutral.light[95], neutral.dark[15]],
     '--color-neutral': [
       withAlpha(neutral.light[0], '0F'),
@@ -119,10 +131,10 @@ export const neutralTheme = defineTheme({
     ],
 
     // Text
-    '--color-text-primary': [neutral.light[5], neutral.dark[100]],
-    '--color-text-secondary': [neutral.light[35], neutral.dark[65]],
-    '--color-text-disabled': [neutral.light[65], neutral.dark[35]],
-    '--color-text-accent': [neutral.light[15], neutral.dark[95]],
+    '--color-text-primary': [neutral.light[0], neutral.dark[100]],
+    '--color-text-secondary': [neutral.light[30], neutral.dark[65]],
+    '--color-text-disabled': [neutral.light[60], neutral.dark[35]],
+    '--color-text-accent': [neutral.light[10], neutral.dark[95]],
     '--color-on-dark': neutral.light[100],
     '--color-on-light': neutral.light[5],
     '--color-on-accent': [neutral.light[100], neutral.dark[5]],
@@ -131,14 +143,14 @@ export const neutralTheme = defineTheme({
     '--color-on-warning': neutral.light[5],
 
     // Icon
-    '--color-icon-accent': [neutral.light[15], neutral.dark[95]],
-    '--color-icon-primary': [neutral.light[5], neutral.dark[100]],
-    '--color-icon-secondary': [neutral.light[50], neutral.dark[65]],
-    '--color-icon-disabled': [neutral.light[65], neutral.dark[35]],
+    '--color-icon-accent': [neutral.light[10], neutral.dark[95]],
+    '--color-icon-primary': [neutral.light[0], neutral.dark[100]],
+    '--color-icon-secondary': [neutral.light[45], neutral.dark[65]],
+    '--color-icon-disabled': [neutral.light[60], neutral.dark[35]],
 
-    '--color-success': [green.light[40], green.light[80]],
-    '--color-error': [red.light[35], red.dark[85]],
-    '--color-warning': [yellow.light[40], yellow.light[85]],
+    '--color-success': [green.light[25], green.light[80]],
+    '--color-error': [red.light[25], red.dark[85]],
+    '--color-warning': [yellow.light[25], yellow.light[85]],
     '--color-success-muted': [green.dark[85], withAlpha(green.light[75], '3D')],
     '--color-error-muted': [red.light[85], withAlpha(red.dark[75], '3D')],
     '--color-warning-muted': [
@@ -160,67 +172,55 @@ export const neutralTheme = defineTheme({
     ],
     '--color-tint-hover': ['black', 'white'],
 
-    '--color-background-red': [red.light[85], withAlpha(red.dark[75], '3D')],
+    '--color-background-red': [red.light[85], red.dark[25]],
     '--color-border-red': [red.light[80], red.light[65]],
-    '--color-icon-red': [red.light[30], red.dark[75]],
-    '--color-text-red': [red.light[30], red.dark[85]],
+    '--color-icon-red': [red.light[25], red.dark[75]],
+    '--color-text-red': [red.light[25], red.dark[80]],
 
-    '--color-background-orange': [
-      orange.light[85],
-      withAlpha(orange.light[75], '3D'),
-    ],
+    '--color-background-orange': [orange.light[85], orange.dark[25]],
     '--color-border-orange': [orange.light[85], orange.dark[65]],
-    '--color-icon-orange': [orange.light[30], orange.light[75]],
-    '--color-text-orange': [orange.light[30], orange.dark[85]],
+    '--color-icon-orange': [orange.light[25], orange.light[75]],
+    '--color-text-orange': [orange.light[25], orange.dark[80]],
 
-    '--color-background-yellow': [
-      yellow.dark[90],
-      withAlpha(yellow.light[75], '3D'),
-    ],
+    '--color-background-yellow': [yellow.dark[90], yellow.dark[25]],
     '--color-border-yellow': [yellow.dark[80], yellow.light[65]],
-    '--color-icon-yellow': [yellow.light[30], yellow.light[75]],
-    '--color-text-yellow': [yellow.light[30], yellow.light[85]],
+    '--color-icon-yellow': [yellow.light[25], yellow.light[75]],
+    '--color-text-yellow': [yellow.light[25], yellow.light[80]],
 
-    '--color-background-green': [
-      green.dark[85],
-      withAlpha(green.light[75], '3D'),
-    ],
+    '--color-background-green': [green.dark[85], green.dark[25]],
     '--color-border-green': [green.dark[80], green.light[65]],
-    '--color-icon-green': [green.light[30], green.light[75]],
-    '--color-text-green': [green.light[30], green.light[80]],
+    '--color-icon-green': [green.light[25], green.light[75]],
+    '--color-text-green': [green.light[25], green.light[75]],
 
-    '--color-background-teal': [teal.light[85], withAlpha(teal.dark[75], '3D')],
+    '--color-background-teal': [teal.light[85], teal.dark[25]],
     '--color-border-teal': [teal.light[80], teal.dark[65]],
-    '--color-icon-teal': [teal.light[30], teal.dark[75]],
-    '--color-text-teal': [teal.light[30], teal.light[85]],
+    '--color-icon-teal': [teal.light[25], teal.dark[75]],
+    '--color-text-teal': [teal.light[25], teal.light[80]],
 
-    '--color-background-cyan': [cyan.dark[85], withAlpha(cyan.dark[75], '3D')],
+    '--color-background-cyan': [cyan.dark[85], cyan.dark[25]],
     '--color-border-cyan': [cyan.dark[80], cyan.dark[65]],
-    '--color-icon-cyan': [cyan.light[30], cyan.dark[75]],
-    '--color-text-cyan': [cyan.light[30], cyan.dark[85]],
+    '--color-icon-cyan': [cyan.light[25], cyan.dark[75]],
+    '--color-text-cyan': [cyan.light[25], cyan.dark[80]],
 
-    '--color-background-blue': [blue.light[85], withAlpha(blue.dark[75], '3D')],
+    '--color-background-blue': [blue.light[85], blue.dark[25]],
     '--color-border-blue': [blue.light[80], blue.dark[65]],
-    '--color-icon-blue': [blue.light[30], blue.dark[75]],
-    '--color-text-blue': [blue.light[30], blue.dark[85]],
+    '--color-icon-blue': [blue.light[25], blue.dark[75]],
+    '--color-text-blue': [blue.light[25], blue.dark[80]],
 
-    '--color-background-purple': [
-      purple.light[90],
-      withAlpha(purple.light[75], '3D'),
-    ],
+    '--color-background-purple': [purple.light[90], purple.dark[25]],
     '--color-border-purple': [purple.light[85], purple.light[70]],
-    '--color-icon-purple': [purple.light[30], purple.light[75]],
-    '--color-text-purple': [purple.light[30], purple.dark[85]],
+    '--color-icon-purple': [purple.light[25], purple.light[75]],
+    '--color-text-purple': [purple.light[25], purple.dark[80]],
 
-    '--color-background-pink': [pink.light[85], withAlpha(pink.dark[75], '3D')],
+    '--color-background-pink': [pink.light[85], pink.dark[25]],
     '--color-border-pink': [pink.light[85], pink.light[70]],
-    '--color-icon-pink': [pink.light[30], pink.dark[75]],
-    '--color-text-pink': [pink.light[30], pink.dark[85]],
+    '--color-icon-pink': [pink.light[25], pink.dark[75]],
+    '--color-text-pink': [pink.light[25], pink.dark[80]],
 
-    '--color-background-gray': [neutral.light[90], 'var(--color-neutral)'],
+    '--color-background-gray': [neutral.light[90], neutral.dark[20]],
     '--color-border-gray': [neutral.light[85], neutral.dark[15]],
-    '--color-icon-gray': [neutral.light[35], neutral.dark[65]],
-    '--color-text-gray': [neutral.light[15], neutral.dark[90]],
+    '--color-icon-gray': [neutral.light[30], neutral.dark[65]],
+    '--color-text-gray': [neutral.light[10], neutral.dark[85]],
 
     // =========================================================================
     // Radius — slightly larger than default (kept as-is)
@@ -277,6 +277,10 @@ export const neutralTheme = defineTheme({
       'variant:destructive': {
         backgroundColor: 'var(--color-error-muted)',
         color: 'var(--color-error)',
+        '--color-overlay-hover':
+          'var(--astryx-theme-neutral-color-destructive-overlay-hover)',
+        '--color-overlay-pressed':
+          'var(--astryx-theme-neutral-color-destructive-overlay-pressed)',
       },
     },
 
@@ -387,7 +391,8 @@ export const neutralTheme = defineTheme({
           'var(--astryx-theme-neutral-color-on-tint-overlay-pressed)',
       },
       'status:info': {
-        '--color-accent-muted': 'var(--color-background-blue)',
+        '--color-accent-muted':
+          'var(--astryx-theme-neutral-color-status-muted-accent)',
         '--color-text-primary': 'var(--color-text-blue)',
         '--color-text-secondary': 'var(--color-text-blue)',
         '--color-accent': 'var(--color-text-blue)',
@@ -403,7 +408,6 @@ export const neutralTheme = defineTheme({
         '--color-warning': 'var(--color-text-yellow)',
       },
       'status:error': {
-        '--color-error-muted': 'var(--color-background-red)',
         '--color-text-primary': 'var(--color-text-red)',
         '--color-text-secondary': 'var(--color-text-red)',
         '--color-error': 'var(--color-text-red)',

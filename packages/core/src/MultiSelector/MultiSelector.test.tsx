@@ -1574,6 +1574,50 @@ describe('MultiSelector', () => {
       }
     });
 
+    it('highlights on hover without scrolling, keyboard still scrolls (#6077)', async () => {
+      // Hover must highlight only: scrollIntoView under a stationary pointer
+      // moves the next option under it, re-highlighting and scrolling again —
+      // a runaway auto-scroll loop with no user input.
+      const scrollIntoView = vi.fn();
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: scrollIntoView,
+      });
+      try {
+        const user = userEvent.setup();
+        const longOptions = Array.from(
+          {length: 20},
+          (_, i) => `Option ${i + 1}`,
+        );
+        render(
+          <MultiSelector
+            label="Fruit"
+            options={longOptions}
+            value={[]}
+            onChange={() => {}}
+          />,
+        );
+
+        const trigger = screen.getByRole('combobox');
+        await user.click(trigger);
+        scrollIntoView.mockClear();
+
+        const options = screen.getAllByRole('option', {hidden: true});
+        fireEvent.mouseEnter(options[3]);
+
+        expect(trigger.getAttribute('aria-activedescendant')).toBe(
+          options[3].id,
+        );
+        expect(scrollIntoView).not.toHaveBeenCalled();
+
+        await user.keyboard('{ArrowDown}');
+        expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+      } finally {
+        delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+          .scrollIntoView;
+      }
+    });
+
     it('clears all values via Delete on the focused trigger', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -2599,7 +2643,9 @@ describe('MultiSelector indicator (chevron) icon theme target', () => {
     expect(css).toContain('.astryx-multi-selector-indicator-icon {');
     expect(css).toContain('width: 14px');
     expect(css).toContain('height: 14px');
-    expect(css).toContain('.astryx-multi-selector-indicator-icon.expanded');
+    expect(css).toContain(
+      '.astryx-multi-selector-indicator-icon[data-state="expanded"]',
+    );
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -2928,7 +2974,7 @@ describe('MultiSelector disabled state theme target', () => {
     );
     const root = getSelectorRoot(container);
     expect(root).not.toHaveAttribute('data-disabled');
-    expect(root).not.toHaveClass('disabled');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 
   it('exposes the disabled state so a theme can key on it', () => {
@@ -2941,7 +2987,7 @@ describe('MultiSelector disabled state theme target', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-multi-selector.disabled');
+    expect(css).toContain('.astryx-multi-selector[data-disabled="disabled"]');
     expect(css).toContain('opacity: 0.4');
   });
 });
@@ -2965,7 +3011,7 @@ describe('MultiSelector dropdown option theme target', () => {
     expect(options).toHaveLength(3);
     for (const option of options) {
       expect(option).toHaveClass('astryx-multi-selector-option');
-      expect(option).toHaveClass('lg');
+      expect(option).toHaveAttribute('data-size', 'lg');
       expect(option).toHaveAttribute('data-size', 'lg');
     }
   });
@@ -2987,12 +3033,12 @@ describe('MultiSelector dropdown option theme target', () => {
     await user.click(screen.getByRole('combobox'));
     const [selected, plain, disabled] = screen.getAllByRole('option', h);
 
-    expect(selected).toHaveClass('selected');
     expect(selected).toHaveAttribute('data-selected', 'selected');
-    expect(plain).not.toHaveClass('selected');
+    expect(selected).toHaveAttribute('data-selected', 'selected');
+    expect(plain).not.toHaveAttribute('data-selected');
     expect(plain).not.toHaveAttribute('data-selected');
 
-    expect(disabled).toHaveClass('disabled');
+    expect(disabled).toHaveAttribute('data-disabled', 'disabled');
     expect(disabled).toHaveAttribute('data-disabled', 'disabled');
     expect(plain).not.toHaveAttribute('data-disabled');
   });
@@ -3013,7 +3059,7 @@ describe('MultiSelector dropdown option theme target', () => {
     const [selectAllRow, ...regularRows] = screen.getAllByRole('option', h);
     expect(selectAllRow).toHaveTextContent('Select all');
     expect(selectAllRow).toHaveClass('astryx-multi-selector-option');
-    expect(selectAllRow).toHaveClass('select-all');
+    expect(selectAllRow).toHaveAttribute('data-select-all', 'select-all');
     expect(selectAllRow).toHaveAttribute('data-select-all', 'select-all');
 
     for (const row of regularRows) {
@@ -3058,9 +3104,13 @@ describe('MultiSelector dropdown option theme target', () => {
     });
     const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-multi-selector-option {');
-    expect(css).toContain('.astryx-multi-selector-option.selected');
-    expect(css).toContain('.astryx-multi-selector-option.select-all');
-    expect(css).toContain('.astryx-multi-selector-option.lg');
+    expect(css).toContain(
+      '.astryx-multi-selector-option[data-selected="selected"]',
+    );
+    expect(css).toContain(
+      '.astryx-multi-selector-option[data-select-all="select-all"]',
+    );
+    expect(css).toContain('.astryx-multi-selector-option[data-size="lg"]');
   });
 });
 
@@ -3123,5 +3173,8 @@ describe('MultiSelector popup theme target', () => {
     fireEvent.click(trigger);
 
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger.parentElement).toHaveClass(
+      stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
+    );
   });
 });

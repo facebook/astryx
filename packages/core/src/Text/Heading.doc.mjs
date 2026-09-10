@@ -10,7 +10,10 @@ export const docs = {
     'Semantic heading component that renders h1-h6 elements with themed styling, themed sizing via type scale tokens, and line-clamp truncation.',
   theming: {
     targets: [
-      {className: 'astryx-heading', visualProps: ['level', 'color', 'type']},
+      {
+        className: 'astryx-heading',
+        visualProps: ['level', 'color', 'type', 'weight'],
+      },
     ],
   },
   props: [
@@ -26,6 +29,12 @@ export const docs = {
       type: "'display-1' | 'display-2' | 'display-3'",
       description:
         'Display type variant. Overrides the visual styling from `level` with display-scale sizing (larger, lighter weight, tighter line-height). Themes may add custom visual types. The `level` still determines the HTML element for accessibility. Use for hero banners, marketing headlines, and data callouts.',
+    },
+    {
+      name: 'weight',
+      type: "'normal' | 'medium' | 'semibold' | 'bold'",
+      description:
+        'Explicit font-weight override. Wins over the selected visual type or heading-level default.',
     },
     {
       name: 'children',
@@ -125,6 +134,11 @@ export const docsZh = {
         '展示类型变体。用展示级别的大小（更大、更轻的字重、更紧的行高）覆盖来自 `level` 的视觉样式。主题可以添加自定义视觉类型。`level` 仍然决定用于无障碍的 HTML 元素。用于英雄横幅、营销标题和数据提示。',
     },
     {
+      name: 'weight',
+      type: "'normal' | 'medium' | 'semibold' | 'bold'",
+      description: '显式字重覆盖。优先于所选视觉类型或标题级别的默认值。',
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description: '标题内容。',
@@ -210,6 +224,8 @@ export const docsDense = {
     level:
       'Heading level; determines HTML element + styling from theme (unless type is set).',
     type: 'Display variant (display-1/2/3 or a theme-owned custom type); overrides visual styling from level.',
+    weight:
+      'Explicit font weight; wins over the visual type or heading-level default.',
     children: 'Heading content.',
     accessibilityLevel:
       'aria-level override when different from level for document outline.',

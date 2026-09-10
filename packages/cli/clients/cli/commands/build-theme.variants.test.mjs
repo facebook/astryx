@@ -105,7 +105,18 @@ describe('theme build custom-variant augmentations', () => {
             'variant:accentOutline': { backgroundColor: 'transparent' },
             'size:jumbo': { paddingBlock: '40px' },
           },
-          heading: { 'type:hero': { fontSize: '80px' } },
+          heading: {
+            'weight:bold': { fontWeight: '900' },
+            'type:hero': { fontSize: '80px', fontWeight: '300' },
+          },
+        },
+        onDark: {
+          components: {
+            heading: {
+              'weight:bold': { fontWeight: '800' },
+              'type:hero': { fontWeight: '350' },
+            },
+          },
         },
       };\n`,
     );
@@ -127,6 +138,31 @@ describe('theme build custom-variant augmentations', () => {
     expect(dts).toContain("declare module '@astryxdesign/core/Heading'");
     // …but closed literal-union props still get no dead augmentation.
     expect(dts).not.toMatch(/ButtonSizeMap/);
+
+    const css = fs.readFileSync(
+      path.join(tmpDir, 'variants-theme.css'),
+      'utf-8',
+    );
+    const mainTypeIndex = css.indexOf(
+      '.astryx-heading[data-type="hero"]',
+    );
+    const mainTypeWeightIndex = css.indexOf('font-weight: 300;', mainTypeIndex);
+    const mainWeightIndex = css.indexOf(
+      '.astryx-heading[data-weight="bold"]',
+    );
+    const mainWeightValueIndex = css.indexOf('font-weight: 900;', mainWeightIndex);
+    const mediaTypeIndex = css.lastIndexOf(
+      '.astryx-heading[data-type="hero"]',
+    );
+    const mediaTypeWeightIndex = css.indexOf('font-weight: 350;', mediaTypeIndex);
+    const mediaWeightIndex = css.lastIndexOf(
+      '.astryx-heading[data-weight="bold"]',
+    );
+    const mediaWeightValueIndex = css.indexOf('font-weight: 800;', mediaWeightIndex);
+    expect(mainTypeWeightIndex).toBeGreaterThan(mainTypeIndex);
+    expect(mainWeightValueIndex).toBeGreaterThan(mainWeightIndex);
+    expect(mediaTypeWeightIndex).toBeGreaterThan(mediaTypeIndex);
+    expect(mediaWeightValueIndex).toBeGreaterThan(mediaWeightIndex);
   });
 
   it('unions custom Heading types from onDark and onLight into the public type contract', async () => {

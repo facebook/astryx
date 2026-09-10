@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Programmatic API for `astryx validate-integration`.
+ * @file Integration structure validation for
+ * `astryx doctor integration validate`.
  *
  * Validates exactly ONE integration package at a time and reports findings
  * using the AstryxIntegrationIssue model
@@ -15,7 +16,7 @@
  *
  * Both return a { found, name, version, manifestFile, issues } result. `found`
  * is false only for the no-manifest local case, which is guidance (not an
- * error) so `validate-integration` can stay exit-0 in a non-integration dir.
+ * error) so the Doctor check stays exit-0 in a non-integration dir.
  *
  * The on-disk contribution validators themselves (roots + codemods/templates/
  * components/docs, behind `validateLoadedIntegration`) live in
@@ -58,6 +59,7 @@ export {validateLoadedIntegration};
  * @property {string} [version] Integration package version.
  * @property {string} [manifestFile] Absolute path to the loaded manifest.
  * @property {Issue[]} issues
+ * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
  */
 
 /**
@@ -75,7 +77,6 @@ function findNearestPackageJson(cwd) {
     dir = parent;
   }
 }
-
 
 /**
  * Validate a single integration given its package directory and identity.
@@ -121,15 +122,17 @@ async function validateAtPackageDir(packageDir, identity) {
   const manifestFile = manifests[0];
   result.manifestFile = manifestFile;
 
-  // loadManifest loads the default export and validates it against the
-  // integration schema (the shared load boundary). A missing default export or
-  // a schema failure throws; we convert either into a single invalid_manifest
-  // error issue so validate-integration stays exit-1-but-not-crash.
+  // loadManifest validates the base manifest and isolates optional agent-doc
+  // validation. A missing default export or invalid base field throws and
+  // becomes invalid_manifest; invalid agentDocs is carried to the shared
+  // contribution validator so other valid roots remain available.
   let manifest;
   /** @type {string[]} */
   let unknownKeys;
+  /** @type {string | undefined} */
+  let agentDocsError;
   try {
-    ({manifest, unknownKeys} = await loadManifest(
+    ({manifest, unknownKeys, agentDocsError} = await loadManifest(
       manifestFile,
       `Integration manifest (${path.basename(manifestFile)})`,
     ));
@@ -162,11 +165,14 @@ async function validateAtPackageDir(packageDir, identity) {
     codemods: resolveRoot(manifest.codemods),
     docs: resolveRoot(manifest.docs),
     issuesUrl: manifest.issuesUrl,
+    agentDocs: manifest.agentDocs,
+    __agentDocsError: agentDocsError,
     __unknownKeys: unknownKeys,
     __spec: identity.name,
     __packageDir: packageDir,
     __manifestFile: manifestFile,
   };
+  result.integration = loaded;
 
   // Roots + contribution checks are shared with validateLoadedIntegration so
   // the everyday-command nudge runs the exact same validators.
@@ -279,8 +285,8 @@ export async function validateIntegration(pkg, options = {}) {
   return {
     type: 'integration.validate',
     data: {
-      name: result.found ? result.name ?? null : null,
-      version: result.found ? result.version ?? null : null,
+      name: result.found ? (result.name ?? null) : null,
+      version: result.found ? (result.version ?? null) : null,
       issues: result.issues,
     },
   };

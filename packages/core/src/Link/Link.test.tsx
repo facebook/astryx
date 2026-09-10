@@ -122,7 +122,8 @@ describe('Link', () => {
 
   it('defaults the inner text type to body', () => {
     render(<Link href="/test">Body link</Link>);
-    expect(screen.getByText('Body link')).toHaveClass('astryx-text', 'body');
+    expect(screen.getByText('Body link')).toHaveClass('astryx-text');
+    expect(screen.getByText('Body link')).toHaveAttribute('data-type', 'body');
   });
 
   it('forwards type="inherit" so the link adopts the surrounding text type', () => {
@@ -134,8 +135,9 @@ describe('Link', () => {
     // The inner Text renders with the `inherit` type, so font-size/line-height
     // inherit from the surrounding text rather than imposing the body type.
     const text = screen.getByText('Inline link');
-    expect(text).toHaveClass('astryx-text', 'inherit');
-    expect(text).not.toHaveClass('body');
+    expect(text).toHaveClass('astryx-text');
+    expect(text).toHaveAttribute('data-type', 'inherit');
+    expect(text).not.toHaveAttribute('data-type', 'body');
   });
 
   it('applies hasUnderline style when true', () => {
@@ -412,6 +414,6 @@ describe('Link', () => {
     );
     const link = screen.getByRole('link', {name: 'Themed Link'});
     expect(link.className).toContain('astryx-link');
-    expect(link.className).toContain('secondary');
+    expect(link).toHaveAttribute('data-color', 'secondary');
   });
 });

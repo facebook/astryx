@@ -1,5 +1,31 @@
 # @xds/theme-matcha
 
+# 0.6.0
+
+#### Breaking Changes
+
+- Requires `@astryxdesign/core@0.6.0` as part of the coordinated stable release. Upgrade Core and this theme together.
+
+---
+
+# 0.5.4
+
+---
+
+# 0.5.3
+
+#### Fixes
+
+- Rename built-in syntax theme identifiers. (#5847)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
 # 0.5.2
 
 ---

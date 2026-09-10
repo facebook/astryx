@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file build command — thin wrapper with stable result telemetry.
+ * @file build command — thin wrapper with a stable result summary.
  *
  *   astryx build                  → the PLAYBOOK (how to build a page)
  *   astryx build "<what>"         → a COMPOSITION KIT (closest page template,
@@ -17,7 +17,7 @@ import {
   formatCliCommand,
 } from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {recordResultSummary} from '../../../foundation/debug/index.mjs';
+import {resultSet, resultSetOf} from '../../../foundation/debug/index.mjs';
 import {
   emit,
   section,
@@ -92,9 +92,16 @@ export function registerBuild(program) {
       // No query → the playbook. Still routed through the API for the envelope.
       if (!query || !String(query).trim()) {
         const result = await buildApi(undefined, {cwd: process.cwd()});
-        if (json) return jsonOut(result);
+        // The playbook is a document, not a lookup: one doc, always the same
+        // one. Counting it as a result keeps "what did this run answer with"
+        // true for the no-argument form too.
+        const playbook = resultSet({count: 1, resultKind: 'doc'});
+        if (json) {
+          jsonOut(result);
+          return playbook;
+        }
         printPlaybook(run);
-        return;
+        return playbook;
       }
 
       // Arg validation stays in the CLI.
@@ -118,8 +125,10 @@ export function registerBuild(program) {
       } catch (e) {
         const err =
           /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions, code: err.code});
-        return;
+        return cliError(err.message, {
+          suggestions: err.suggestions,
+          code: err.code,
+        });
       }
 
       const {
@@ -134,20 +143,27 @@ export function registerBuild(program) {
         foundation,
         hint,
       } = result.data;
-      recordResultSummary([...pages, ...blocks, ...domain], {
+      // The kit spans domains, so its kind comes from the pieces themselves.
+      // `frame` and `foundation` are always-on and deliberately excluded: they
+      // are not what the query matched.
+      const answered = resultSetOf([...pages, ...blocks, ...domain], {
+        count: matchCount,
+        empty: !hasResults,
         directMatch,
-        resultCount: matchCount,
-        emptyResult: !hasResults,
+        fallbackKind: options.type ?? 'mixed',
       });
 
-      if (json) return jsonOut(result);
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       if (!hasResults) {
         emit(
           text(`No matches for "${q}".`),
           text(`Try a broader term, or browse: ${run} component --list`),
         );
-        return;
+        return answered;
       }
 
       // Same JSON->text projection as search, but leaner: the section header
@@ -259,6 +275,7 @@ export function registerBuild(program) {
       }
 
       emit(...out);
+      return answered;
     },
   });
 }

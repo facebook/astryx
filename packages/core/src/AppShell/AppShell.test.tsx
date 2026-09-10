@@ -2,8 +2,8 @@
 
 /**
  * @file AppShell.test.tsx
- * @input Uses vitest, @testing-library/react, AppShell component
- * @output Unit tests for AppShell component behavior
+ * @input Uses vitest, React server rendering, @testing-library/react, AppShell component
+ * @output Unit tests for AppShell client behavior and SSR breakpoint semantics
  * @position Testing; validates AppShell.tsx implementation
  *
  * SYNC: When AppShell.tsx changes, update tests to match new behavior
@@ -18,14 +18,17 @@ import {
   beforeEach,
   afterEach,
 } from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {renderToString} from 'react-dom/server';
+import {act, render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {AppShell} from './AppShell';
 import {InternationalizationProvider} from '../i18n';
 import {MobileNav} from '../MobileNav';
 import {SideNav, SideNavItem, SideNavSection} from '../SideNav';
 import {TopNav, TopNavHeading, TopNavItem} from '../TopNav';
+import {TextInput} from '../TextInput';
 import {useAppShellMobile} from './AppShellMobileContext';
+import {Theme, defineTheme} from '../theme';
 
 // jsdom doesn't implement showModal/close on <dialog>, so we mock them
 beforeAll(() => {
@@ -109,6 +112,9 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  act(() => {
+    document.documentElement.removeAttribute('data-astryx-theme');
+  });
 });
 
 describe('AppShell', () => {
@@ -296,15 +302,140 @@ describe('AppShell', () => {
   // Responsive breakpoint
   // ===========================================================================
 
-  it('tracks breakpoint changes', () => {
+  it('uses the default named breakpoint with an exclusive upper edge', () => {
     render(
       <AppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'md'}}>
         <div>Content</div>
       </AppShell>,
     );
 
-    // matchMedia should have been called for the breakpoint
-    expect(window.matchMedia).toHaveBeenCalled();
+    expect(window.matchMedia).toHaveBeenCalledWith('(width < 768px)');
+  });
+
+  it('resolves all named points through the nearest Theme', () => {
+    const theme = {
+      ...defineTheme({
+        name: 'app-shell-points',
+        adaptations: {widthBreakpoints: {xl: 1400, '2xl': 1800}},
+      }),
+      __built: true as const,
+    };
+
+    render(
+      <Theme theme={theme}>
+        <AppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: '2xl'}}>
+          <div>Content</div>
+        </AppShell>
+      </Theme>,
+    );
+
+    expect(window.matchMedia).toHaveBeenCalledWith('(width < 1800px)');
+  });
+
+  it('uses the provider object when another theme shares its name', () => {
+    const outer = {
+      ...defineTheme({
+        name: 'same-name',
+        adaptations: {widthBreakpoints: {md: 700}},
+      }),
+      __built: true as const,
+    };
+    const inner = {
+      ...defineTheme({
+        name: 'same-name',
+        adaptations: {widthBreakpoints: {md: 900}},
+      }),
+      __built: true as const,
+    };
+
+    render(
+      <Theme theme={outer}>
+        <Theme theme={inner}>
+          <div>Nested</div>
+        </Theme>
+        <AppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'md'}}>
+          <div>Content</div>
+        </AppShell>
+      </Theme>,
+    );
+
+    expect(window.matchMedia).toHaveBeenCalledWith('(width < 700px)');
+  });
+
+  it('uses a built theme object from provider context', () => {
+    const builtTheme = {
+      ...defineTheme({
+        name: 'built-app-shell-points',
+        adaptations: {widthBreakpoints: {'2xl': 1700}},
+      }),
+      __built: true as const,
+      __adaptationRules: undefined,
+    };
+
+    render(
+      <Theme theme={builtTheme}>
+        <AppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: '2xl'}}>
+          <div>Content</div>
+        </AppShell>
+      </Theme>,
+    );
+
+    expect(window.matchMedia).toHaveBeenCalledWith('(width < 1700px)');
+  });
+
+  it('falls back per key when built metadata has a partial width map', () => {
+    const partialBuiltTheme = {
+      ...defineTheme({name: 'partial-built-app-shell-points'}),
+      __built: true as const,
+      __adaptations: {
+        widthBreakpoints: {md: 700},
+        rules: [],
+      },
+    } as unknown as ReturnType<typeof defineTheme>;
+
+    render(
+      <Theme theme={partialBuiltTheme}>
+        <AppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'xl'}}>
+          <div>Content</div>
+        </AppShell>
+      </Theme>,
+    );
+
+    expect(window.matchMedia).toHaveBeenCalledWith('(width < 1280px)');
+  });
+
+  it('follows the registered root theme without provider context', () => {
+    defineTheme({
+      name: 'root-app-shell-points',
+      adaptations: {widthBreakpoints: {lg: 1111}},
+    });
+    const originalGetAttribute = document.documentElement.getAttribute.bind(
+      document.documentElement,
+    );
+    vi.spyOn(document.documentElement, 'getAttribute').mockImplementation(
+      name =>
+        name === 'data-astryx-theme'
+          ? 'root-app-shell-points'
+          : originalGetAttribute(name),
+    );
+
+    render(
+      <AppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'lg'}}>
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    expect(window.matchMedia).toHaveBeenCalledWith('(width < 1111px)');
+  });
+
+  it('supports the added xl breakpoint without a Theme provider', () => {
+    render(
+      <AppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'xl'}}>
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    expect(window.matchMedia).toHaveBeenCalledWith('(width < 1280px)');
   });
 
   it('does not enter mobile mode when mobileNav breakpoint is none', () => {
@@ -314,12 +445,29 @@ describe('AppShell', () => {
       </AppShell>,
     );
 
-    // breakpoint 'none' uses (max-width: 0px) which never matches,
+    // breakpoint 'none' uses (width < 0px), which never matches,
     // so sideNav stays inline and no mobile nav toggle appears
     expect(screen.getByText('Nav')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /menu/i}),
     ).not.toBeInTheDocument();
+  });
+
+  it('renders breakpoint none as non-mobile on the server regardless of the SSR hint', () => {
+    const host = document.createElement('div');
+    host.innerHTML = renderToString(
+      <AppShell
+        sideNav={<TestSideNav />}
+        mobileNav={{breakpoint: 'none', defaultIsMobile: true}}>
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    expect(
+      host.querySelector(
+        '.astryx-app-shell > .astryx-layout .astryx-layout-panel',
+      ),
+    ).not.toBeNull();
   });
 
   // ===========================================================================
@@ -558,6 +706,41 @@ describe('AppShell', () => {
   // ===========================================================================
   // Sticky navigation in auto mode
   // ===========================================================================
+
+  // A Field input wrapper carries a local z-index (it paints above the
+  // attached status message box via a negative-margin overlap), so without a
+  // component-owned isolation boundary it competes with page-level stacking —
+  // a field scrolled underneath the sticky header then paints over it (#5689).
+  // The fix is local containment: the Field root isolates the wrapper's local
+  // layer, so the header needs no escalated z-index to stay above it. This
+  // asserts that ownership boundary — the field's painted surface is an
+  // isolated stacking context — not a comparison between two page-level
+  // z-index values.
+  it('contains Field input stacking locally so the sticky header needs no escalated z-index in auto mode', () => {
+    render(
+      <AppShell height="auto" topNav={<div>Nav</div>}>
+        <TextInput
+          label="Name"
+          statusVariant="detached"
+          value=""
+          onChange={() => {}}
+        />
+      </AppShell>,
+    );
+    const header = screen.getByRole('banner');
+    const inputWrapper = screen.getByRole('textbox').parentElement!;
+    // The detached variant renders the input wrapper outside Field's isolated
+    // attached-status wrapper, so the Field root must own the boundary.
+    const fieldRoot = inputWrapper.parentElement!;
+    expect(inputWrapper).toBeTruthy();
+    expect(getComputedStyle(header).position).toBe('sticky');
+    // The header stays at its normal local stacking level — no escalation.
+    expect(Number(getComputedStyle(header).zIndex)).toBe(1);
+    expect(getComputedStyle(inputWrapper).position).toBe('relative');
+    // Field's local layers cannot escape into page-level stacking: the root
+    // establishes an isolation boundary around the input wrapper's z-index.
+    expect(getComputedStyle(fieldRoot).isolation).toBe('isolate');
+  });
 
   it('wraps header in sticky container in auto mode', () => {
     render(

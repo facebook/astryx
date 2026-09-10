@@ -18,9 +18,12 @@ verified_by:
     clients/cli/cli-exit-codes.test.mjs,
     clients/cli/error-envelope-code.test.mjs,
     foundation/response/error-codes.test.mjs,
+    foundation/agent-docs/agent-docs.test.mjs,
+    foundation/integrations/autolink.test.mjs,
+    clients/cli/commands/upgrade.integration-policy.test.mjs,
     clients/cli/formatters/index.test.mjs,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-017/DEC-4]
 ---
 
 # CLI surface architecture
@@ -62,9 +65,14 @@ rather than left to the command author.
 
 Discovery of components, templates, codemods and docs is not per-command. It
 goes through the `Project` seam in `foundation/config`, which resolves the
-integrations named in `astryx.config`. Each integration is loaded
-independently, so one broken package degrades that package's contribution and
-never fails the run.
+integrations named in `astryx.config` and then autolinks any DECLARED dependency
+that ships a root `astryx.integration.*` manifest — a config entry is how a
+project pins an integration, not how the CLI finds one. Each integration is
+loaded independently, so one broken package degrades that package's
+contribution and never fails the run.
+
+AST-017 DEC-4 owns stable response-entry fields and requires their complete type,
+test, applicable text, and consumer-documentation projections.
 
 ## Boundaries and invariants
 
@@ -107,6 +115,18 @@ never fails the run.
 - **INV12 — Human chatter never touches stdout in JSON mode.** `humanLog` and
   `humanWarn` are the only chatter primitives, and both are no-ops under
   `--json`.
+- **INV13 — Agent docs have one rendered source of truth.** Init and upgrade
+  render configured integration `agentDocs` through the existing `Project`
+  seam. Upgrade compares complete block bytes even when Core is unchanged and,
+  when codemods or hooks run, writes the prepared block only after they succeed.
+- **INV14 — An installed integration is discoverable without configuration, and
+  autolinking it can only add.** A dependency the project DECLARES in
+  package.json, and that ships a root `astryx.integration.*` manifest, is
+  loaded; `node_modules` is never walked, so nothing the project did not declare
+  can contribute. Only the dependency KEY is read, never its value, so an npm
+  alias or a non-semver protocol resolves like any other. A config entry keeps
+  precedence over the same package autolinked, and a dependency whose manifest
+  fails to load is dropped rather than raised as the consuming project's issue.
 
 ## Change coupling
 
@@ -115,7 +135,8 @@ updated in the same pull request when it moves an invariant:
 
 - adding, removing, or renaming a command or subcommand;
 - adding an error code, or changing what an existing code means;
-- adding a field to the JSON envelope, or changing the shape of one;
+- a change to a stable JSON envelope or discriminated response-entry field
+  follows `spec:AST-017/DEC-4`;
 - adding a formatter, or writing to stdout from anywhere other than `emit` and
   `jsonOut`;
 - changing the file layout under `clients/cli/commands`.
@@ -139,13 +160,15 @@ non-interactive guarantee.
 - `foundation/response/error-codes.mjs` — the frozen, append-only code set.
 - `foundation/config` — the `Project` discovery seam and the integration
   manifest loader.
+- `foundation/agent-docs` — the shared expected-block renderer and managed-file
+  writer used by init and upgrade.
 - `api/<subject>/…` — the scriptable functions the commands wrap; each owns the
   `type` on its own envelope.
 
 ## Deciding specs
 
-None yet. This record describes behaviour that is already shipped. A change to
-an invariant above needs a system spec.
+- `spec:AST-017/DEC-4` — stable response fields and their complete projections
+  are current compatibility authority.
 
 ## Verification
 

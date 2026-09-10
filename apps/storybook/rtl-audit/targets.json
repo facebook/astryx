@@ -22,6 +22,30 @@
     }
   },
   {
+    "component": "CommandPalette",
+    "storyId": "core-commandpalette--default",
+    "dims": [
+      "D2"
+    ],
+    "setup": {
+      "click": "button:has-text(\"Open Command Palette\")"
+    },
+    "selectors": {
+      "prev": ".astryx-command-palette-input > span:first-child",
+      "next": ".astryx-command-palette-input > input[role=\"combobox\"]"
+    }
+  },
+  {
+    "component": "Center",
+    "storyId": "core-center--padding-per-edge",
+    "dims": [
+      "D8"
+    ],
+    "selectors": {
+      "subject": ".astryx-center"
+    }
+  },
+  {
     "component": "CheckboxInput",
     "storyId": "core-checkboxinput--size-comparison",
     "dims": [
@@ -75,6 +99,17 @@
       "prev": "input[aria-label=\"Pro\"]",
       "next": "[data-testid=\"radio-end-content\"]",
       "inputSelector": "input[type=\"radio\"]"
+    }
+  },
+  {
+    "component": "SegmentedControl",
+    "storyId": "core-segmentedcontrol--default",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "button[role=\"radio\"][data-value=\"grid\"]",
+      "next": "button[role=\"radio\"][data-value=\"table\"]"
     }
   },
   {
@@ -210,6 +245,17 @@
     "selectors": {
       "scroller": ".astryx-tab-strip",
       "nextButton": ".astryx-tab-scroll-button"
+    }
+  },
+  {
+    "component": "BaseTypeahead",
+    "storyId": "core-basetypeahead--logical-dropdown-placement",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": "[role=\"listbox\"]",
+      "overlayRoot": "[data-base-typeahead-anchor=\"true\"]"
     }
   },
   {
@@ -351,6 +397,34 @@
     }
   },
   {
+    "component": "Selector",
+    "storyId": "core-selector--default",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": "[role=\"combobox\"]"
+    },
+    "selectors": {
+      "overlay": ".astryx-selector-popup",
+      "overlayRoot": "[role=\"combobox\"]"
+    }
+  },
+  {
+    "component": "MultiSelector",
+    "storyId": "core-multiselector--default",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": "[role=\"combobox\"]"
+    },
+    "selectors": {
+      "overlay": ".astryx-multi-selector-popup",
+      "overlayRoot": "[role=\"combobox\"]"
+    }
+  },
+  {
     "component": "SideNav",
     "storyId": "core-sidenav--default",
     "dims": [
@@ -395,6 +469,17 @@
     "selectors": {
       "overlay": ".astryx-rich-text-editor > div:first-child > div:last-child",
       "overlayRoot": ".astryx-rich-text-editor"
+    }
+  },
+  {
+    "component": "AvatarGroupOverflow",
+    "storyId": "core-avatargroupoverflow--default",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-avatar-group > .astryx-avatar:first-child",
+      "next": ".astryx-avatar-group-overflow"
     }
   }
 ]

@@ -26,6 +26,7 @@ function scaffold({
   brokenCodemod = false,
   docs = null,
   unknownKeys = null,
+  agentDocs = null,
   integrationIssuesUrl = 'https://example.com/widgets/issues',
 } = {}) {
   fs.writeFileSync(
@@ -51,6 +52,7 @@ function scaffold({
   if (withTemplates) manifest.templates = './templates';
   if (withCodemods) manifest.codemods = './codemods';
   if (docs) manifest.docs = './docs';
+  if (agentDocs != null) manifest.agentDocs = agentDocs;
   if (unknownKeys) Object.assign(manifest, unknownKeys);
   if (integrationIssuesUrl) manifest.issuesUrl = integrationIssuesUrl;
   fs.writeFileSync(
@@ -264,6 +266,37 @@ describe('Project discovery', () => {
     expect(catalog.resolve('deploying')).toBeUndefined();
     const issues = await project.issues();
     expect(issues.some(i => i.code === 'invalid_doc' && i.severity === 'error')).toBe(true);
+  });
+
+  it('keeps regular contributions when agentDocs is invalid', async () => {
+    scaffold({
+      agentDocs: {append: [' invalid']},
+      docs: {'deploying.doc.mjs': topicDoc()},
+    });
+    const project = await Project.load(tmpDir);
+
+    expect(
+      (await project.components()).some(c => c.package === '@acme/widgets'),
+    ).toBe(true);
+    expect(
+      (await project.templates()).some(t => t.package === '@acme/widgets'),
+    ).toBe(true);
+    expect((await project.codemods('0.1.0', '0.2.0')).integration).toHaveLength(
+      1,
+    );
+    expect((await project.docs()).resolve('deploying')?.package).toBe(
+      '@acme/widgets',
+    );
+
+    const issues = await project.issues();
+    expect(
+      issues.some(
+        issue =>
+          issue.package === '@acme/widgets' &&
+          issue.code === 'invalid_agent_docs' &&
+          issue.severity === 'error',
+      ),
+    ).toBe(true);
   });
 
   it('memoizes components() — the second call does not re-walk', async () => {
