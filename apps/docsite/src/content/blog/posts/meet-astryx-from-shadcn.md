@@ -1,6 +1,6 @@
 ---
 title: 'Meet people where they already build'
-description: 'An experiment that lets shadcn users install Astryx components, examples, blocks, and pages without giving up the Astryx package or CLI.'
+description: 'A compatibility path for shadcn users to install Astryx components, examples, blocks, and pages without giving up the Astryx package or CLI.'
 date: '2026-09-02'
 type: 'engineering'
 draft: true
@@ -46,6 +46,8 @@ This splits the catalog into two useful kinds of install:
 
 That distinction matters. Copying a complete Button implementation into every app makes upgrades harder and lets every copy drift. Copying a dashboard that uses the published Button is normal application development. The design system stays a dependency. The page stays yours.
 
+Copied compositions include a small adjacent Astryx receipt. After you update the Astryx packages, `astryx upgrade --registry` previews changes against the installed base and the matching registry release. Add `--apply` to update unchanged files and merge non-overlapping edits. Conflicts leave your file untouched with a separate review file.
+
 Deep customization still exists, but it remains explicit through `astryx swizzle`. A normal registry install does not cross that line for you.
 
 ## We tried the whole catalog
@@ -71,11 +73,12 @@ npx shadcn@latest add <registry-origin>/examples/button/variants.json
 # I need help finding and maintaining the right pieces
 astryx build "analytics dashboard with filters"
 astryx doctor
-astryx upgrade --apply
+astryx upgrade --registry
+astryx upgrade --registry --apply
 ```
 
 ## Why bother?
 
 Incremental adoption is the point. A team can try one Astryx block inside its current app. It can add a full page when that is useful. It does not need to declare a migration project or learn a new tool before seeing value.
 
-If the experiment holds up, Astryx gets a wider front door without giving up the package boundary or the richer CLI experience. We meet people where they already build, and give them a reason to come further in.
+Astryx gets a wider front door without giving up the package boundary or the richer CLI experience. We meet people where they already build, and give them a reason to come further in.

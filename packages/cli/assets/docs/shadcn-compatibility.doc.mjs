@@ -15,7 +15,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Astryx supports the shadcn Registry as a compatibility and distribution protocol. This does not make Astryx a shadcn-based library. The Astryx packages remain the implementation and the Astryx CLI remains the primary interface for discovery, composition, theming, validation, and upgrades.',
+          text: 'This guide is for existing shadcn users who want to add Astryx without replacing their current toolchain. Astryx supports the shadcn Registry as a compatibility and distribution protocol. The Astryx packages remain the implementation and the Astryx CLI remains the richer interface for discovery, composition, theming, validation, and upgrades.',
         },
         {
           type: 'prose',
@@ -23,7 +23,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'This compatibility path is experimental. Use it to test incremental adoption in an existing shadcn-style application. Do not treat the registry URL or generated catalog as a stable support promise until Astryx announces it as supported.',
+          text: 'The registry is published as-is for existing shadcn users. Issues are welcome in the Astryx repository, with no response-time promise.',
         },
       ],
     },
@@ -66,17 +66,17 @@ export const docs = {
             [
               'Showcase or example',
               'Editable application-level composition source that imports Astryx packages',
-              'Your app owns the composition; Astryx owns the imported components',
+              'Your app owns its edits; the adjacent Astryx receipt enables safe upgrades',
             ],
             [
               'Block',
               'A larger editable composition plus its package dependencies',
-              'Your app owns the composition; Astryx owns the imported components',
+              'Your app owns its edits; the adjacent Astryx receipt enables safe upgrades',
             ],
             [
               'Page',
               'A complete editable page plus its package dependencies',
-              'Your app owns the page; Astryx owns the imported components',
+              'Your app owns its edits; the adjacent Astryx receipt enables safe upgrades',
             ],
           ],
         },
@@ -128,7 +128,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'For an example, block, or page, the command writes editable TSX into your app. That TSX imports public Astryx package paths. It does not reach into package internals and it does not require a StyleX compiler in your app.',
+          text: 'For an example, block, or page, the command writes editable TSX plus a small adjacent `.astryx` receipt. The TSX imports public Astryx package paths. The receipt stores the exact installed base so a later upgrade can preserve your edits; it is not application code and should stay committed with the copied file.',
         },
       ],
     },
@@ -147,7 +147,8 @@ export const docs = {
 astryx component Button
 astryx template dashboard
 astryx doctor
-astryx upgrade --apply`,
+astryx upgrade --registry
+astryx upgrade --registry --apply`,
         },
       ],
     },
@@ -159,8 +160,12 @@ astryx upgrade --apply`,
           style: 'unordered',
           items: [
             'Package upgrades update Astryx components, hooks, behavior, accessibility, and compiled styles.',
-            'Copied examples, blocks, and pages are application code. They do not update automatically when the catalog changes.',
-            'The experimental catalog excludes unpublished packages because an external package manager cannot install them.',
+            'A normal `astryx upgrade` also checks copied-composition receipts. Use `astryx upgrade --registry` to preview only those files; add `--apply` to write safe updates.',
+            'Registry source must match the installed Astryx release. The command refuses to copy source from a newer or older release.',
+            'An unchanged copied file updates automatically. Non-overlapping edits are three-way merged against the installed base.',
+            'A conflicting edit leaves your file untouched and writes a separate `.astryx-conflict` file for review.',
+            'A deleted or moved copied file is reported but never recreated or overwritten.',
+            'The registry excludes unpublished packages because an external package manager cannot install them.',
             'Your project needs a valid components.json and TypeScript configuration for the shadcn CLI to resolve target paths.',
             'The compatibility layer is additive. It does not require replacing existing shadcn components or migrating the whole application.',
           ],

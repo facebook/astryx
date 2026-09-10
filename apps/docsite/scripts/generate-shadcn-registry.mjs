@@ -9,7 +9,8 @@
  *
  * The registry keeps Astryx packages as real dependencies. Component and hook
  * items create public re-exports; blocks and pages copy app-level composition
- * source that already imports published package paths.
+ * source that already imports published package paths and add adjacent receipts
+ * so Astryx can reconcile later releases without taking ownership of user edits.
  */
 
 import * as fs from 'node:fs';
@@ -18,6 +19,11 @@ import babel from '@babel/core';
 import stylexPlugin from '@stylexjs/babel-plugin';
 import ts from 'typescript';
 import {registryItemSchema, registrySchema} from 'shadcn/schema';
+import {
+  createRegistryReceipt,
+  registryReceiptTarget,
+  serializeRegistryReceipt,
+} from '../../../packages/cli/authoring/shadcn/receipt.mjs';
 import {
   blockRegistryIdentity,
   componentRegistryIdentity,
@@ -213,7 +219,50 @@ function componentItem(packageName, component, packageDependencies) {
   };
 }
 
-function blockItem(block, packageDependencies, cliRoot) {
+function withCompositionReceipt(item, identity, sourceVersion) {
+  const sourceFile = item.files[0];
+  const receiptTarget = registryReceiptTarget(sourceFile.target, item.name);
+  const receipt = createRegistryReceipt({
+    item: {
+      name: item.name,
+      path: identity.path,
+      aliases: identity.aliases,
+      kind: identity.kind,
+    },
+    sourceVersion,
+    receiptTarget,
+    files: [
+      {
+        id: 'primary',
+        target: sourceFile.target,
+        registryPath: sourceFile.path,
+        content: sourceFile.content,
+      },
+    ],
+  });
+
+  return {
+    ...item,
+    files: [
+      sourceFile,
+      {
+        path: `registry/${item.name}/astryx-receipt.json`,
+        type: 'registry:file',
+        target: receiptTarget,
+        content: serializeRegistryReceipt(receipt),
+      },
+    ],
+    astryx: {
+      ...item.astryx,
+      receipt: {
+        schemaVersion: receipt.schemaVersion,
+        target: receiptTarget,
+      },
+    },
+  };
+}
+
+function blockItem(block, packageDependencies, cliRoot, sourceVersion) {
   const identity = blockRegistryIdentity(
     block.name,
     block.exampleFor,
@@ -231,39 +280,43 @@ function blockItem(block, packageDependencies, cliRoot) {
     `${block.dirName}.tsx`,
   );
   const compiled = precompileStylexSource(block.source, fileName);
-  return {
-    $schema: REGISTRY_ITEM_SCHEMA,
-    name: itemName,
-    type: 'registry:block',
-    title: block.displayName || block.name,
-    description: block.description || `Astryx ${kind}: ${block.name}.`,
-    author: 'Astryx',
-    dependencies: withCoreDependency(
-      dependenciesForSource(compiled.source, fileName, packageDependencies),
-      packageDependencies,
-    ),
-    css: ASTRYX_CSS,
-    files: [
-      {
-        path: `registry/${itemName}/${block.dirName}.${compiled.extension}`,
-        type: 'registry:block',
-        target: `components/astryx/${kind === 'block' ? 'blocks' : `${kind}s`}/${block.dirName}.${compiled.extension}`,
-        content: compiled.source,
+  return withCompositionReceipt(
+    {
+      $schema: REGISTRY_ITEM_SCHEMA,
+      name: itemName,
+      type: 'registry:block',
+      title: block.displayName || block.name,
+      description: block.description || `Astryx ${kind}: ${block.name}.`,
+      author: 'Astryx',
+      dependencies: withCoreDependency(
+        dependenciesForSource(compiled.source, fileName, packageDependencies),
+        packageDependencies,
+      ),
+      css: ASTRYX_CSS,
+      files: [
+        {
+          path: `registry/${itemName}/${block.dirName}.${compiled.extension}`,
+          type: 'registry:block',
+          target: `components/astryx/${kind === 'block' ? 'blocks' : `${kind}s`}/${block.dirName}.${compiled.extension}`,
+          content: compiled.source,
+        },
+      ],
+      astryx: {
+        kind,
+        path: identity.path,
+        aliases: identity.aliases,
+        exampleFor: block.exampleFor || null,
+        category: block.category,
+        componentsUsed: block.componentsUsed,
+        precompiledStylex: compiled.precompiledStylex,
       },
-    ],
-    astryx: {
-      kind,
-      path: identity.path,
-      aliases: identity.aliases,
-      exampleFor: block.exampleFor || null,
-      category: block.category,
-      componentsUsed: block.componentsUsed,
-      precompiledStylex: compiled.precompiledStylex,
     },
-  };
+    identity,
+    sourceVersion,
+  );
 }
 
-function pageItem(template, packageDependencies, cliRoot) {
+function pageItem(template, packageDependencies, cliRoot, sourceVersion) {
   const identity = pageRegistryIdentity(template.slug, template.registry);
   const itemName = identity.name;
   const fileName = path.join(
@@ -275,38 +328,42 @@ function pageItem(template, packageDependencies, cliRoot) {
     'page.tsx',
   );
   const compiled = precompileStylexSource(template.source, fileName);
-  return {
-    $schema: REGISTRY_ITEM_SCHEMA,
-    name: itemName,
-    type: 'registry:page',
-    title: template.name,
-    description: template.description || `Astryx page: ${template.name}.`,
-    author: 'Astryx',
-    dependencies: withCoreDependency(
-      dependenciesForSource(compiled.source, fileName, packageDependencies),
-      packageDependencies,
-    ),
-    css: ASTRYX_CSS,
-    files: [
-      {
-        path: `registry/${itemName}/page.${compiled.extension}`,
-        // shadcn 4.19.0 silently skips files typed registry:page. The item
-        // remains registry:page while its source file uses the working type.
-        type: 'registry:block',
-        target: `app/astryx/${template.slug}/page.${compiled.extension}`,
-        content: compiled.source,
+  return withCompositionReceipt(
+    {
+      $schema: REGISTRY_ITEM_SCHEMA,
+      name: itemName,
+      type: 'registry:page',
+      title: template.name,
+      description: template.description || `Astryx page: ${template.name}.`,
+      author: 'Astryx',
+      dependencies: withCoreDependency(
+        dependenciesForSource(compiled.source, fileName, packageDependencies),
+        packageDependencies,
+      ),
+      css: ASTRYX_CSS,
+      files: [
+        {
+          path: `registry/${itemName}/page.${compiled.extension}`,
+          // shadcn 4.19.0 silently skips files typed registry:page. The item
+          // remains registry:page while its source file uses the working type.
+          type: 'registry:block',
+          target: `app/astryx/${template.slug}/page.${compiled.extension}`,
+          content: compiled.source,
+        },
+      ],
+      astryx: {
+        kind: 'page',
+        path: identity.path,
+        aliases: identity.aliases,
+        category: template.category,
+        isReady: template.isReady,
+        isHiddenFromOverview: template.isHiddenFromOverview,
+        precompiledStylex: compiled.precompiledStylex,
       },
-    ],
-    astryx: {
-      kind: 'page',
-      path: identity.path,
-      aliases: identity.aliases,
-      category: template.category,
-      isReady: template.isReady,
-      isHiddenFromOverview: template.isHiddenFromOverview,
-      precompiledStylex: compiled.precompiledStylex,
     },
-  };
+    identity,
+    sourceVersion,
+  );
 }
 
 function assertUniqueItemNames(items) {
@@ -352,6 +409,14 @@ export function buildShadcnRegistry({
   dependencyTag = null,
   externalDependencySpecs = {},
 }) {
+  const cliPackage = packages.find(pkg => pkg.name === '@astryxdesign/cli');
+  const sourceVersion = dependencyTag ?? cliPackage?.version;
+  if (!sourceVersion && (blocks.length > 0 || templates.length > 0)) {
+    throw new Error(
+      'Cannot generate copied composition receipts without an @astryxdesign/cli version',
+    );
+  }
+
   const packageDependencies = new Map([
     ...packages.map(pkg => [
       pkg.name,
@@ -377,7 +442,9 @@ export function buildShadcnRegistry({
   let skippedUnpublishedBlocks = 0;
   for (const block of blocks) {
     try {
-      blockItems.push(blockItem(block, packageDependencies, cliRoot));
+      blockItems.push(
+        blockItem(block, packageDependencies, cliRoot, sourceVersion),
+      );
     } catch (error) {
       if (error instanceof UnpublishedAstryxDependencyError) {
         skippedUnpublishedBlocks++;
@@ -392,7 +459,9 @@ export function buildShadcnRegistry({
   let skippedUnpublishedPages = 0;
   for (const template of templates) {
     try {
-      pageItems.push(pageItem(template, packageDependencies, cliRoot));
+      pageItems.push(
+        pageItem(template, packageDependencies, cliRoot, sourceVersion),
+      );
     } catch (error) {
       if (error instanceof UnpublishedAstryxDependencyError) {
         skippedUnpublishedPages++;

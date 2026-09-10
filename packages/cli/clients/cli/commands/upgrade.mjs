@@ -35,7 +35,7 @@ export function registerUpgrade(program) {
         const json = program.opts().json || false;
         logger.setSilent(json);
 
-        /** @type {import('../../../api/upgrade/upgrade.type.mjs').UpgradeListResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeStatusResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeRunResponse} */
+        /** @type {import('../../../api/upgrade/upgrade.type.mjs').UpgradeListResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeRegistryResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeStatusResponse | import('../../../api/upgrade/upgrade.type.mjs').UpgradeRunResponse} */
         let result;
         try {
           result = await upgradeApi(options, {cwd: process.cwd()});
@@ -54,6 +54,17 @@ export function registerUpgrade(program) {
         }
 
         if (json) jsonOut(result);
+
+        const registrySummary =
+          result.type === 'upgrade.registry'
+            ? result.data
+            : result.type === 'upgrade.run'
+              ? result.data.registryCompositions
+              : result.type === 'upgrade.status' &&
+                  'registryCompositions' in result.data
+                ? result.data.registryCompositions
+                : undefined;
+        if (registrySummary && !registrySummary.ok) process.exitCode = 1;
 
         // `--list` is the one lookup here: which migrations exist for the
         // range. Everything else migrates the project — an effect, reported by

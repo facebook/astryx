@@ -30,8 +30,8 @@ Astryx CLI remains the primary, richer interface for discovery, composition,
 integrations, themes, validation, and upgrades.
 
 This record governs the approved compatibility foundation. The implementation
-may merge behind the canary docsite while copied-composition upgrades and public
-support ownership remain launch gates for the production endpoint and announcement.
+may merge behind the canary docsite while copied-composition upgrades remain the
+launch gate for the production endpoint and announcement.
 
 ## Non-goals
 
@@ -45,7 +45,7 @@ support ownership remain launch gates for the production endpoint and announceme
 
 ## Requirements
 
-- **FR1 — Standard protocol.** Every experimental item MUST validate against the
+- **FR1 — Standard protocol.** Every registry item MUST validate against the
   standard shadcn Registry schema and use a standard registry item type. A
   standard shadcn client MUST NOT need Astryx-specific code to read or install
   the item.
@@ -78,7 +78,14 @@ support ownership remain launch gates for the production endpoint and announceme
 - **FR8 — Staged launch.** Preview builds MUST serve the full registry from their
   own `/shadcn` origin with `@canary` package dependencies. Production MUST use
   exact released package versions and remain disabled until copied-composition
-  upgrades and public support ownership are ready.
+  upgrades are ready.
+- **FR9 — Upgrade-safe copied compositions.** Every copied showcase, example,
+  block, and page MUST install an adjacent machine-readable receipt containing
+  the stable item route, the copied target, the exact installed bytes, and their
+  hash. `astryx upgrade` MUST only apply a canonical item that matches the
+  installed Astryx release, auto-update an unchanged file, three-way merge
+  edits, leave the original untouched when edits conflict, and never recreate a
+  deleted or moved file.
 - **IR1 — Generated from current sources.** Registry output MUST come from the
   existing docsite and CLI catalogs, never a parallel handwritten item list.
 - **IR2 — Build-time static output.** The docsite build MUST generate static JSON
@@ -108,16 +115,19 @@ support ownership remain launch gates for the production endpoint and announceme
 
 ## Current-state impact
 
-The CLI already ships components, 161 blocks, and 47 ready page templates. The
-docsite generator already discovers components, individual showcases and
-examples, blocks, pages, package versions, and source. The experiment adds a
-serializer over that existing catalog rather than a second discovery system.
+The CLI already ships components, hundreds of examples and showcases, and page
+templates. The docsite generator already discovers components, individual
+showcases and examples, blocks, pages, package versions, and source. The
+compatibility layer adds a serializer over that existing catalog rather than a
+second discovery system.
 
-Prior evidence installed all 921 generated entries through shadcn 4.19.0 into
-a clean Vite application, wrote every component, hook, block, and page file with
-zero install failures, and compiled all 6,620 imported modules in one build.
-Fourteen compositions that author local StyleX are precompiled to compiler-free
-JSX during generation; all other composition source stays typed TSX. Component
+The current catalog generates 970 items. Its 702 copied compositions each carry
+a validated adjacent receipt. Prior evidence, before receipts were added,
+installed all 921 then-generated entries through shadcn 4.19.0 into a clean Vite
+application, wrote every component, hook, block, and page file with zero install
+failures, and compiled all 6,620 imported modules in one build. Fourteen
+compositions that author local StyleX are precompiled to compiler-free JSX during
+generation; all other composition source stays typed TSX. Component
 implementation copying failed because private imports and uncompiled StyleX
 crossed the package boundary; FR2 avoids that path by installing the package and
 creating a public re-export only.
@@ -132,7 +142,8 @@ creating a public re-export only.
 | FR4, IR3 | dependency extraction and relative-import audit                     | heroicons, recharts, StyleX import, page source | Escaping import or undeclared package fails                |
 | FR6      | raw JSON and shadcn parse tests                                     | optional `astryx` metadata present              | shadcn install changes or Astryx metadata becomes required |
 | FR7      | docsite tests and copy-button interaction                           | component, block, page, compatibility guide     | Command is absent, stale, or misstates copy behavior       |
-| FR8      | canary preview plus production-target assertion                     | preview and released package dependencies       | Production enables before both launch gates pass           |
+| FR8      | canary preview plus production-target assertion                     | preview and released package dependencies       | Production enables before the upgrade gate passes          |
+| FR9      | receipt mutation tests plus stock ShadCN install                    | pristine, edited, conflicting, missing, aliased | User source is overwritten or an old route stops resolving |
 | IR4      | clean shadcn-style fixture install, build, and Chrome screenshot    | one of each item kind; light and dark           | Install, build, or render fails                            |
 
 ## Decision log
@@ -168,7 +179,7 @@ upgrades and crosses private-import and uncompiled-StyleX boundaries.
 
 Merge the compatibility foundation after end-to-end verification, but keep the
 production registry and broad announcement disabled until copied-composition
-upgrades and public support ownership are ready.
+upgrades are ready.
 
 ### DEC-4 — Derive stable IDs from docs and organize URLs by item kind
 
@@ -196,11 +207,26 @@ reserve `/r` for a future Astryx-native protocol. Production items pin exact
 released Astryx package versions; preview items use the matching preview origin
 and `@canary` dependencies.
 
+### DEC-6 — Install adjacent receipts and reconcile from the canonical registry
+
+**Reference:** `spec:AST-026/DEC-6`
+**Decider:** `josephfarina`, `2026-09-10`
+
+Each copied composition carries a unique JSON receipt beside its source. The
+receipt stores the installed base bytes and hash; the stable item route resolves
+the release's compiled source. `astryx upgrade --registry` refuses a registry
+item that does not match the installed Astryx release, then updates pristine
+files or performs a real three-way merge without treating editable application
+code as package-owned implementation. Conflicts are written to a separate
+artifact and never replace the user's file. Deleted or moved files stay deleted
+or moved.
+
+Rejected: hash-only receipts. They cannot reconstruct the merge base after a
+user edits the file. Also rejected: rebuilding the latest composition from raw
+CLI template assets at upgrade time. StyleX-precompiled registry items require
+the registry's compiled bytes.
+
 ## Open questions
 
-- **OQ1 — Support operations.** (`human-api`) Which maintainer and public channel
-  own registry support, and what response promise is documented?
-- **OQ2 — Copied-composition upgrades.** (`engineering`) What provenance and
-  upgrade flow keeps copied showcases, examples, blocks, and pages maintainable?
-- **OQ3 — Catalog visibility.** (`human-design`) Should hidden or not-ready
+- **OQ1 — Catalog visibility.** (`human-design`) Should hidden or not-ready
   catalog entries stay addressable by URL, or be omitted entirely?
