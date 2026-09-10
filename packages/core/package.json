@@ -687,6 +687,7 @@
     "@babel/core": "catalog:",
     "@babel/preset-react": "catalog:",
     "@babel/preset-typescript": "catalog:",
+    "@heroicons/react": "^2.2.0",
     "@stylexjs/babel-plugin": "catalog:",
     "@testing-library/dom": "^10.0.0",
     "@testing-library/jest-dom": "catalog:",

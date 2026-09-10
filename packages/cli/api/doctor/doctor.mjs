@@ -24,7 +24,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
-import {CLI_ROOT, findCoreDir} from '../../foundation/fs/paths.mjs';
+import {CLI_ROOT, findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
 import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {findConfigPath, Project} from '../../foundation/config/project.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
@@ -92,31 +92,6 @@ function findNodeModules(startDir) {
   for (let i = 0; i < 6; i++) {
     const candidate = path.join(dir, 'node_modules');
     if (fs.existsSync(candidate)) return candidate;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return null;
-}
-
-/**
- * Locate a package inside the project's own node_modules chain.
- *
- * Deliberately not `require.resolve`: Node folds NODE_PATH and the global
- * folders into resolution even when `paths` is given, so a package merely
- * reachable from the ambient environment would read as installed in the
- * user's project. Reading package.json off disk also sidesteps packages that
- * don't export it, so the version is always available to range-check.
- *
- * @param {string} startDir
- * @param {string} name
- * @returns {string|null} the package directory, or null when not installed
- */
-function findInstalledPackage(startDir, name) {
-  let dir = startDir;
-  for (let i = 0; i < 6; i++) {
-    const candidate = path.join(dir, 'node_modules', ...name.split('/'));
-    if (fs.existsSync(path.join(candidate, 'package.json'))) return candidate;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;

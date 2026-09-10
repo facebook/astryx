@@ -68,6 +68,9 @@
  */
 
 import {createRequire} from 'node:module';
+import * as path from 'node:path';
+
+import {findInstalledPackage} from '../../../foundation/fs/paths.mjs';
 
 /**
  * Marks a theme object with the raw input it was resolved from. Enumerable on
@@ -427,6 +430,17 @@ export function interceptCore(coreThemeModule, coreRootModule) {
       /** @type {Array<() => void>} */
       const undo = [];
       let covered = true;
+
+      // Only a core the theme's OWN node_modules chain can reach is one a
+      // `.cjs` source dependency beside it could require. `require` also folds
+      // NODE_PATH in, and pnpm's isolated layout puts every package in
+      // `node_modules/.pnpm/node_modules` — which Vitest puts on NODE_PATH.
+      // An ambient hit there belongs to no dependency here, so wrapping it
+      // proves nothing and failing to wrap it gaps nothing.
+      if (!findInstalledPackage(path.dirname(fromFile), '@astryxdesign/core')) {
+        return {covered, undo: () => {}};
+      }
+
       for (const specifier of [
         '@astryxdesign/core/theme',
         '@astryxdesign/core',

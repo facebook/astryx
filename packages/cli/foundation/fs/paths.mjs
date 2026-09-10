@@ -42,6 +42,33 @@ export function findCoreDir(startDir = process.cwd()) {
 }
 
 /**
+ * Locate a package inside `startDir`'s own node_modules chain.
+ *
+ * Deliberately not `require.resolve`: Node folds NODE_PATH and the global
+ * folders into resolution even when `paths` is given, so a package merely
+ * reachable from the ambient environment reads as installed here. pnpm's
+ * isolated layout puts every package in `node_modules/.pnpm/node_modules`,
+ * and Vitest puts that directory on NODE_PATH, so the gap is not theoretical.
+ * Reading package.json off disk also sidesteps packages that don't export it,
+ * so the version is always available to range-check.
+ *
+ * @param {string} startDir
+ * @param {string} name
+ * @returns {string|null} the package directory, or null when not installed
+ */
+export function findInstalledPackage(startDir, name) {
+  let dir = startDir;
+  for (let i = 0; i < 6; i++) {
+    const candidate = path.join(dir, 'node_modules', ...name.split('/'));
+    if (fs.existsSync(path.join(candidate, 'package.json'))) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+/**
  * Find the monorepo root by looking for the root package.json
  * that has workspaces defined.
  */

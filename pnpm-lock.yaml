@@ -843,6 +843,9 @@ importers:
       '@babel/preset-typescript':
         specifier: 'catalog:'
         version: 7.29.7(@babel/core@7.29.7)
+      '@heroicons/react':
+        specifier: ^2.2.0
+        version: 2.2.0(react@19.2.7)
       '@stylexjs/babel-plugin':
         specifier: 'catalog:'
         version: 0.19.0
