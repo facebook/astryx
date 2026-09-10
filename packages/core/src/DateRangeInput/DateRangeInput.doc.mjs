@@ -178,9 +178,21 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-range-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-date-range-input',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
       {className: 'astryx-date-range-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-range-input-clear-icon', deprecatedFor: 'input-clear-icon'},
+      {
+        className: 'astryx-date-range-input-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
+      {className: 'astryx-date-range-input-presets'},
+      {
+        className: 'astryx-date-range-input-preset',
+        states: ['selected', 'disabled'],
+      },
     ],
   },
   usage: {
@@ -231,6 +243,12 @@ export const docs = {
           'Text above the trigger describing what date range is expected.',
       },
       {
+        name: 'Field surface',
+        required: true,
+        description:
+          'Bordered control containing the calendar toggle, range trigger, and end affordances.',
+      },
+      {
         name: 'Trigger button',
         required: true,
         description:
@@ -251,6 +269,12 @@ export const docs = {
         name: 'Preset sidebar',
         required: false,
         description: 'A list of preset range options beside the calendar.',
+      },
+      {
+        name: 'Preset button',
+        required: false,
+        description:
+          'A quick-select action for one preset range, reflecting current and disabled states.',
       },
       {
         name: 'Clear button',
@@ -320,7 +344,8 @@ export const docsDense = {
     isDisabled: 'disable trigger+picker',
     disabledMessage:
       'reason shown in a tooltip on hover/focus when disabled; keeps trigger focusable via aria-disabled',
-    value: 'selected range {start, end} or null; import DateRange type from @astryxdesign/core/DateRangeInput (do not redeclare)',
+    value:
+      'selected range {start, end} or null; import DateRange type from @astryxdesign/core/DateRangeInput (do not redeclare)',
     onChange: 'callback on range change; null on clear',
     min: 'min selectable date: ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
     max: 'max selectable date: ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
@@ -334,10 +359,12 @@ export const docsDense = {
     placeholder: 'placeholder when empty',
     size: 'trigger size',
     status: 'error/warning/success status',
-    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
+    statusVariant:
+      'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'tooltip via info icon at label end',
     numberOfMonths: 'months in calendar (default 2)',
-    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
+    weekStartsOn:
+      'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     changeAction:
       'async action fired after onChange; drives optimistic UI updates via useTransition',
     isLoading: 'loading state; disables interaction + shows a spinner',
