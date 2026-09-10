@@ -34,8 +34,6 @@ function liveFacts({
   initialMessage = '',
   messageSource = 'text',
   semanticTransitions,
-  canClear = false,
-  canRepeat = false,
 }: {
   role: 'status' | 'alert' | null;
   politeness: 'polite' | 'assertive';
@@ -44,8 +42,6 @@ function liveFacts({
   initialMessage?: string;
   messageSource?: 'text' | 'accessible-name';
   semanticTransitions: ReadonlyArray<'show' | 'replace' | 'clear' | 'repeat'>;
-  canClear?: boolean;
-  canRepeat?: boolean;
 }): StatusMessageStateFacts {
   return {
     kind: 'live-region',
@@ -56,8 +52,6 @@ function liveFacts({
     message,
     replacement,
     semanticTransitions,
-    canClear,
-    canRepeat,
   };
 }
 
@@ -73,7 +67,6 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Changes saved',
       replacement: 'Profile updated',
       semanticTransitions: ['show', 'replace', 'repeat'],
-      canRepeat: true,
     }),
     storyId: 'a11y-status-message-pattern--toast-info-announcement',
   },
@@ -88,7 +81,6 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Upload failed',
       replacement: 'Connection failed',
       semanticTransitions: ['show', 'replace', 'repeat'],
-      canRepeat: true,
     }),
     storyId: 'a11y-status-message-pattern--toast-error-announcement',
   },
@@ -133,7 +125,6 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'This field is required',
       replacement: 'Enter a valid email address',
       semanticTransitions: ['show', 'replace', 'repeat'],
-      canRepeat: true,
     }),
     storyId: 'a11y-status-message-pattern--field-status-error-attached',
   },
@@ -148,7 +139,6 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Check this value',
       replacement: 'This value may be visible to others',
       semanticTransitions: ['show', 'replace', 'repeat'],
-      canRepeat: true,
     }),
     storyId: 'a11y-status-message-pattern--field-status-warning-detached',
   },
@@ -163,7 +153,6 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Looks good',
       replacement: 'Changes saved',
       semanticTransitions: ['show', 'replace', 'repeat'],
-      canRepeat: true,
     }),
     storyId: 'a11y-status-message-pattern--field-status-success-detached',
   },
@@ -210,7 +199,6 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       message: 'Conversation started',
       replacement: 'A file was shared',
       semanticTransitions: ['replace', 'clear'],
-      canClear: true,
     }),
     storyId: 'a11y-status-message-pattern--chat-system-status-mounted',
   },

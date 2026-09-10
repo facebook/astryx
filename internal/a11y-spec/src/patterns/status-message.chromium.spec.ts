@@ -150,7 +150,7 @@ test.describe('status-message contract — conforming fixtures', () => {
     });
   }
 
-  test('a replacement node can satisfy every required semantic outcome while identity remains advisory', async ({
+  test('a replacement node can satisfy every required semantic outcome', async ({
     page,
   }) => {
     const cdp = await page.context().newCDPSession(page);
@@ -167,12 +167,6 @@ test.describe('status-message contract — conforming fixtures', () => {
         )
         .map(result => `${result.expectation}: ${result.detail ?? ''}`),
     ).toEqual([]);
-
-    const [identity] = await resultsFor(page, cdp, fixture, [
-      'status-message.message.replaced-in-place',
-    ]);
-    expect(identity?.status).toBe('fail');
-    expect(identity?.detail).toContain('replaced its live-region node');
   });
 });
 

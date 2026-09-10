@@ -118,9 +118,9 @@ intentional decision.
 
 ### Performance and resources
 
-- **PR1 — Announcement work.** A message change schedules only the persistent
-  live-region announcement; FieldStatus owns no global event listeners,
-  observers, or measurements.
+- **PR1 — Channel-update work.** A message change schedules only the persistent
+  live-region update; FieldStatus owns no global event listeners, observers, or
+  measurements.
 
 ## Accessibility contract
 
@@ -181,7 +181,7 @@ change either presentation.
 | FR5, FR6            | `FieldStatus.test.tsx` forwarding and update suites                     | Initial render and rerender                                   | Breaking the released root or update behavior fails compatibility assertions.                                                         | `audit:FieldStatus/behavior`      |
 | AR1                 | `StatusMessage.a11y.test.tsx` and `StatusMessage.a11y.chromium.spec.ts` | Error, warning, and success; post-mount message replacement   | Removing the persistent channel, changing its role/urgency, or dropping a post-mount update fails the shared status-message contract. | `audit:FieldStatus/accessibility` |
 | AR1                 | `FieldStatus.test.tsx` channel-routing suite                            | First non-empty mount; same-instance message and type changes | Breaking FieldStatus's first-use hook call or severity rerouting fails component-specific assertions.                                 | `audit:FieldStatus/accessibility` |
-| AR5                 | Named real-AT/browser evidence required by `spec:AST-009`               | First mount; message replacement; type/urgency change         | No lower-layer green result may be presented as proof of spoken or braille output.                                                    | `audit:FieldStatus/accessibility` |
+| AR5                 | Pending/unverified real-AT evidence governed by `spec:AST-009`          | First mount; message replacement; type/urgency change         | Spoken and braille output remain unverified until a durable named AT/browser receipt exists.                                          | `audit:FieldStatus/accessibility` |
 | AR2                 | `FieldStatus.test.tsx`                                                  | Attached/detached visible message and empty message           | The visible description becomes a second live region or is hidden from assistive technology.                                          | `audit:FieldStatus/accessibility` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                           | Consumer anatomy and current targets                          | Missing, extra, duplicated, prefixed, or stale mappings fail repository validation.                                                   | `audit:FieldStatus/theming`       |
 

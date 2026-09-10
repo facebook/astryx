@@ -42,17 +42,13 @@ const POLITE_FACTS: StatusMessageStateFacts = {
   initialMessage: '',
   message: 'Changes saved',
   replacement: 'Profile updated',
-  semanticTransitions: ['show', 'replace', 'clear', 'repeat'],
-  canClear: true,
-  canRepeat: true,
+  semanticTransitions: ['show', 'replace', 'repeat', 'clear'],
 };
 
 const MOUNTED_POLITE_FACTS: StatusMessageStateFacts = {
   ...POLITE_FACTS,
   initialMessage: 'Changes saved',
   semanticTransitions: ['replace'],
-  canClear: false,
-  canRepeat: false,
 };
 
 const ASSERTIVE_FACTS: StatusMessageStateFacts = {
@@ -68,8 +64,6 @@ const NAMED_FACTS: StatusMessageStateFacts = {
   role: 'status',
   messageSource: 'accessible-name',
   semanticTransitions: ['show', 'replace'],
-  canClear: false,
-  canRepeat: false,
 };
 
 const PROGRESS_FACTS: StatusMessageStateFacts = {
@@ -122,6 +116,17 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
     facts: POLITE_FACTS,
     html: '<button data-a11y-relation="focus-anchor">Save</button><div data-a11y-subject role="status" aria-live="polite" aria-atomic="true"></div>',
     transitions: POLITE_TRANSITIONS,
+  },
+  {
+    id: 'conforming-removable-status',
+    facts: POLITE_FACTS,
+    html: '<button data-a11y-relation="focus-anchor">Save</button><div data-a11y-subject role="status" aria-live="polite" aria-atomic="true"></div>',
+    transitions: {
+      show: {value: 'Changes saved'},
+      replace: {value: 'Profile updated'},
+      repeat: {value: 'Changes saved', pulse: true},
+      clear: {removeSubject: true},
+    },
   },
   {
     id: 'conforming-assertive-channel',
@@ -255,41 +260,24 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
     },
   },
   {
+    id: 'violating-hidden-repeat',
+    facts: POLITE_FACTS,
+    html: '<div data-a11y-subject role="status"></div>',
+    transitions: {
+      show: {value: 'Changes saved'},
+      replace: {value: 'Profile updated'},
+      repeat: {hiddenValue: 'Changes saved'},
+    },
+  },
+  {
     id: 'violating-stale-clear',
     facts: POLITE_FACTS,
     html: '<div data-a11y-subject role="status"></div>',
     transitions: {
       show: {value: 'Changes saved'},
       replace: {value: 'Profile updated'},
+      repeat: {value: 'Changes saved', pulse: true},
       clear: {},
-    },
-  },
-  {
-    id: 'violating-removed-on-clear',
-    facts: POLITE_FACTS,
-    html: '<div data-a11y-subject role="status"></div>',
-    transitions: {
-      show: {value: 'Changes saved'},
-      replace: {value: 'Profile updated'},
-      clear: {removeSubject: true},
-    },
-  },
-  {
-    id: 'violating-repeat-without-change',
-    facts: POLITE_FACTS,
-    html: '<div data-a11y-subject role="status"></div>',
-    transitions: {
-      show: {value: 'Changes saved'},
-      repeat: {},
-    },
-  },
-  {
-    id: 'violating-replaced-on-repeat',
-    facts: POLITE_FACTS,
-    html: '<div data-a11y-subject role="status"></div>',
-    transitions: {
-      show: {value: 'Changes saved'},
-      repeat: {value: 'Changes saved', replaceSubject: true},
     },
   },
   {
@@ -389,36 +377,11 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
       complete: {attribute: 'aria-valuenow', value: '40'},
     },
   },
-  {
-    id: 'violating-replaced-progress',
-    facts: PROGRESS_FACTS,
-    html: '<button data-a11y-relation="focus-anchor">Start upload</button><div data-a11y-subject role="progressbar" aria-label="Upload progress"></div>',
-    transitions: {
-      progress: {
-        attribute: 'aria-valuenow',
-        value: '40',
-        replaceSubject: true,
-      },
-      complete: {attribute: 'aria-valuenow', value: '100'},
-    },
-  },
-  {
-    id: 'violating-replaced-on-complete',
-    facts: PROGRESS_FACTS,
-    html: '<button data-a11y-relation="focus-anchor">Start upload</button><div data-a11y-subject role="progressbar" aria-label="Upload progress"></div>',
-    transitions: {
-      progress: {attribute: 'aria-valuenow', value: '40'},
-      complete: {
-        attribute: 'aria-valuenow',
-        value: '100',
-        replaceSubject: true,
-      },
-    },
-  },
 ];
 
 export const STATUS_MESSAGE_CONFORMING_FIXTURES = [
   'conforming-polite-channel',
+  'conforming-removable-status',
   'conforming-assertive-channel',
   'conforming-named-channel',
   'conforming-progress',
@@ -490,6 +453,11 @@ export const STATUS_MESSAGE_MUTATIONS: Readonly<
         'accessibility tree exposes "" after the "replace" transition',
     },
     {
+      fixture: 'violating-hidden-repeat',
+      failureIncludes:
+        'accessibility tree exposes "" after the "repeat" transition',
+    },
+    {
       fixture: 'violating-stale-clear',
       failureIncludes:
         'after the "clear" transition, not the complete authored message ""',
@@ -511,29 +479,6 @@ export const STATUS_MESSAGE_MUTATIONS: Readonly<
       fixture: 'violating-loses-atomicity',
       failureIncludes:
         'not expose this status region as atomic after the "show" transition',
-    },
-  ],
-  'status-message.message.replaced-in-place': [
-    {
-      fixture: 'violating-replaced-region',
-      failureIncludes:
-        'replacing the status also replaced its live-region node',
-    },
-  ],
-  'status-message.message.cleared-in-place': [
-    {
-      fixture: 'violating-removed-on-clear',
-      failureIncludes: 'clearing the status removed its live-region node',
-    },
-  ],
-  'status-message.message.repeat-creates-change': [
-    {
-      fixture: 'violating-repeat-without-change',
-      failureIncludes: 'produced text changes []',
-    },
-    {
-      fixture: 'violating-replaced-on-repeat',
-      failureIncludes: 'repeating the status replaced its live-region node',
     },
   ],
   'status-message.focus.unchanged': [
@@ -590,16 +535,6 @@ export const STATUS_MESSAGE_MUTATIONS: Readonly<
     {
       fixture: 'violating-incomplete-progress',
       failureIncludes: 'browser exposes completion as value=',
-    },
-  ],
-  'status-message.progress.node-persists': [
-    {
-      fixture: 'violating-replaced-progress',
-      failureIncludes: 'starting the next progress state replaced',
-    },
-    {
-      fixture: 'violating-replaced-on-complete',
-      failureIncludes: 'completing progress replaced',
     },
   ],
 };

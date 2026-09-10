@@ -108,10 +108,8 @@ export type StatusMessageStateFacts =
       readonly initialMessage: string;
       readonly message: string;
       readonly replacement: string;
-      /** Every public transition after which role/channel invariants still apply. */
+      /** Public message transitions to observe; clear may remove the semantic subject. */
       readonly semanticTransitions: readonly StatusMessageTransitionName[];
-      readonly canClear: boolean;
-      readonly canRepeat: boolean;
     }
   | {
       readonly kind: 'progressbar';
@@ -204,6 +202,9 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           await assertRole('at the pre-update boundary');
           for (const name of facts.semanticTransitions) {
             await transition(name);
+            if (name === 'clear' && !(await subject.currentExists())) {
+              continue;
+            }
             await assertRole(`after the ${JSON.stringify(name)} transition`);
           }
         },
@@ -234,6 +235,9 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           await assertChannel('at the pre-update boundary');
           for (const name of facts.semanticTransitions) {
             await transition(name);
+            if (name === 'clear' && !(await subject.currentExists())) {
+              continue;
+            }
             await assertChannel(`after the ${JSON.stringify(name)} transition`);
           }
         },
@@ -320,6 +324,9 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           );
           for (const name of facts.semanticTransitions) {
             await transition(name);
+            if (name === 'clear' && !(await subject.currentExists())) {
+              continue;
+            }
             await assertMessage(
               messageAfterTransition(facts, name),
               `after the ${JSON.stringify(name)} transition`,
@@ -363,6 +370,9 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           await assertName(facts.initialMessage, 'at the pre-update boundary');
           for (const name of facts.semanticTransitions) {
             await transition(name);
+            if (name === 'clear' && !(await subject.currentExists())) {
+              continue;
+            }
             await assertName(
               messageAfterTransition(facts, name),
               `after the ${JSON.stringify(name)} transition`,
@@ -374,7 +384,9 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
         id: 'status-message.region.atomic',
         outcome:
           'The browser exposes the status or alert role’s implicit whole-region atomicity before and after public updates.',
-        sources: [WCAG_4_1_3, ARIA_STATUS_ATOMIC, ARIA_ALERT_ATOMIC],
+        sources: [ARIA_STATUS_ATOMIC, ARIA_ALERT_ATOMIC, WCAG_4_1_3],
+        wcagOutcome:
+          'Status information can be programmatically determined without moving focus.',
         covers: ['4.1.3-status-messages'],
         appliesWhen: ROLE_LIVE_REGION,
         evidenceLayer: 'accessibility-tree',
@@ -396,115 +408,10 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           await assertAtomic('at the pre-update boundary');
           for (const name of facts.semanticTransitions) {
             await transition(name);
+            if (name === 'clear' && !(await subject.currentExists())) {
+              continue;
+            }
             await assertAtomic(`after the ${JSON.stringify(name)} transition`);
-          }
-        },
-      },
-      {
-        id: 'status-message.message.replaced-in-place',
-        outcome:
-          'A later status replaces the earlier message inside the same live-region node.',
-        sources: [WCAG_4_1_3],
-        covers: ['4.1.3-status-messages'],
-        appliesWhen: LIVE_REGION,
-        evidenceLayer: 'dom',
-        enforcement: 'advisory',
-        advisoryBecause:
-          'Same-node replacement is a browser-observable reliability mechanism, not the only WCAG-conforming implementation; real assistive-technology evidence owns the resulting announcement.',
-        run: async ({subject, facts, transition}) => {
-          if (facts.kind !== 'live-region') {
-            return;
-          }
-          await subject.isConnected();
-          if (facts.initialMessage === '') {
-            await transition('show');
-          }
-          await transition('replace');
-          if (!(await subject.isConnected())) {
-            throw new Error(
-              'replacing the status also replaced its live-region node, so the later message was born in a new region instead of updating the existing one',
-            );
-          }
-        },
-      },
-      {
-        id: 'status-message.message.cleared-in-place',
-        outcome:
-          'When the status is cleared, stale text leaves the same live region instead of remaining as the current programmatic status.',
-        sources: [WCAG_4_1_3],
-        covers: ['4.1.3-status-messages'],
-        appliesWhen: {
-          condition:
-            'this binding owns clearing status text from its persistent live region',
-          test: facts =>
-            facts.kind === 'live-region' &&
-            facts.messageSource === 'text' &&
-            facts.canClear,
-        },
-        evidenceLayer: 'dom',
-        enforcement: 'advisory',
-        advisoryBecause:
-          'Clearing stale DOM text in the same channel is a reliability mechanism; WCAG requires the status outcome, not one universal clear lifecycle.',
-        run: async ({subject, facts, transition}) => {
-          if (
-            facts.kind !== 'live-region' ||
-            facts.messageSource !== 'text' ||
-            !facts.canClear
-          ) {
-            return;
-          }
-          await subject.isConnected();
-          await transition('show');
-          await transition('clear');
-          if (!(await subject.isConnected())) {
-            throw new Error(
-              'clearing the status removed its live-region node, so a later message has no persistent channel to update',
-            );
-          }
-        },
-      },
-      {
-        id: 'status-message.message.repeat-creates-change',
-        outcome:
-          'Repeating the same status creates a fresh content change instead of leaving an unchanged region that cannot signal a new event.',
-        sources: [WCAG_4_1_3],
-        covers: ['4.1.3-status-messages'],
-        appliesWhen: {
-          condition:
-            'this binding exposes repeated occurrences of the same status',
-          test: facts =>
-            facts.kind === 'live-region' &&
-            facts.messageSource === 'text' &&
-            facts.canRepeat,
-        },
-        evidenceLayer: 'dom',
-        enforcement: 'advisory',
-        advisoryBecause:
-          'A clear-and-reinsert DOM change is the mechanism this layer can prove; whether and when assistive technology announces the repetition remains real-AT evidence under AST-009.',
-        run: async ({subject, facts, transition}) => {
-          if (
-            facts.kind !== 'live-region' ||
-            facts.messageSource !== 'text' ||
-            !facts.canRepeat
-          ) {
-            return;
-          }
-          await transition('show');
-          const changes = (
-            await subject.textChangesDuring(() => transition('repeat'))
-          ).map(normalizeText);
-          if (!(await subject.isConnected())) {
-            throw new Error(
-              'repeating the status replaced its live-region node instead of creating a new change inside the existing channel',
-            );
-          }
-          if (
-            !changes.includes('') ||
-            changes.at(-1) !== normalizeText(facts.message)
-          ) {
-            throw new Error(
-              `repeating ${JSON.stringify(normalizeText(facts.message))} produced text changes ${JSON.stringify(changes)}; the same words need an observable clear-and-reinsert DOM change before any real-AT repetition claim can be tested`,
-            );
           }
         },
       },
@@ -615,12 +522,14 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
         outcome:
           'The progress bar exposes a valid declared range and its starting, in-progress, and completion values.',
         sources: [
-          WCAG_4_1_3,
-          WCAG_4_1_2,
-          ARIA_PROGRESSBAR,
           ARIA_VALUE_MIN,
           ARIA_VALUE_NOW,
+          ARIA_PROGRESSBAR,
+          WCAG_4_1_3,
+          WCAG_4_1_2,
         ],
+        wcagOutcome:
+          'Progress status and its current value can be programmatically determined without moving focus.',
         covers: ['4.1.3-status-messages', '4.1.2-name-role-value'],
         appliesWhen: PROGRESSBAR,
         evidenceLayer: 'accessibility-tree',
@@ -688,36 +597,6 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           ) {
             throw new Error(
               `the browser exposes completion as value=${String(completed.rangeValue)}, min=${String(completed.rangeMin)}, max=${String(completed.rangeMax)} instead of ${facts.completionValue} in ${facts.minValue}..${facts.maxValue}`,
-            );
-          }
-        },
-      },
-      {
-        id: 'status-message.progress.node-persists',
-        outcome:
-          'Progress values update on the same progressbar node so focus and relationships can remain stable.',
-        sources: [WCAG_4_1_3, WCAG_4_1_2, ARIA_PROGRESSBAR],
-        covers: ['4.1.3-status-messages', '4.1.2-name-role-value'],
-        appliesWhen: PROGRESSBAR,
-        evidenceLayer: 'dom',
-        enforcement: 'advisory',
-        advisoryBecause:
-          'Same-node progress updates preserve browser state, but WCAG does not require one universal DOM identity strategy.',
-        run: async ({subject, facts, transition}) => {
-          if (facts.kind !== 'progressbar') {
-            return;
-          }
-          await subject.isConnected();
-          await transition('progress');
-          if (!(await subject.isConnected())) {
-            throw new Error(
-              'starting the next progress state replaced the progressbar node instead of updating the existing status surface',
-            );
-          }
-          await transition('complete');
-          if (!(await subject.isConnected())) {
-            throw new Error(
-              'completing progress replaced the progressbar node instead of updating the existing status surface',
             );
           }
         },

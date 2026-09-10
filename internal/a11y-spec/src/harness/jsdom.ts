@@ -107,25 +107,8 @@ function createSubject(element: Element): Subject {
     },
     textContent: async () =>
       (element.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    currentExists: async () => element.isConnected,
     isConnected: async () => element.isConnected,
-    textChangesDuring: async action => {
-      const changes: string[] = [];
-      const observer = new MutationObserver(() => {
-        changes.push((element.textContent ?? '').replace(/\s+/g, ' ').trim());
-      });
-      observer.observe(element, {
-        childList: true,
-        characterData: true,
-        subtree: true,
-      });
-      try {
-        await action();
-        await Promise.resolve();
-        return changes;
-      } finally {
-        observer.disconnect();
-      }
-    },
     computed: async () =>
       unobservable('accessibility-tree', 'a computed accessibility node'),
     visibleLabelText: async () =>

@@ -93,10 +93,10 @@ export interface Subject {
   textValue(): Promise<string | null>;
   /** DOM layer: the subject's authored text content, whitespace-normalized. */
   textContent(): Promise<string>;
+  /** DOM layer: whether a current semantic subject resolves after an update. */
+  currentExists(): Promise<boolean>;
   /** DOM layer: whether the originally designated subject is still connected. */
   isConnected(): Promise<boolean>;
-  /** DOM layer: text-content snapshots produced while a public transition runs. */
-  textChangesDuring(action: () => Promise<void>): Promise<readonly string[]>;
   /** Accessibility-tree layer: what the engine computes for this node. */
   computed(): Promise<ComputedNode>;
   /**

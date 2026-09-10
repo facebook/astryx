@@ -29,8 +29,6 @@ const LIFECYCLE_FACTS: StatusMessageStateFacts = {
   message: 'Ana is typing…',
   replacement: 'Ana and Ben are typing…',
   semanticTransitions: ['show', 'replace', 'clear'],
-  canClear: true,
-  canRepeat: false,
 };
 
 export const CHAT_TYPING_STATUS_BINDING_STATES: ReadonlyArray<ChatTypingStatusBindingDefinition> =
@@ -51,7 +49,6 @@ export const CHAT_TYPING_STATUS_BINDING_STATES: ReadonlyArray<ChatTypingStatusBi
         ...LIFECYCLE_FACTS,
         initialMessage: 'Ana is typing…',
         semanticTransitions: ['replace'],
-        canClear: false,
       },
       storyId: 'a11y-status-message-pattern--chat-typing-name-mounted',
     },

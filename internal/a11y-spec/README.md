@@ -63,11 +63,9 @@ The `status-message` contract is WCAG-derived rather than an APG widget
 pattern. Required expectations cover browser-exposed status/alert roles and
 channels, complete exposed text or names across every public update, preserved
 focus, and progressbar role/name/range/value transitions. ARIA22's
-container-before-update technique, the roles' overridable implicit atomic
-defaults, same-node replacement/clearing, and repeated-text DOM mutation remain
-advisory reliability evidence: automation can observe those mechanics, but only
-real assistive-technology evidence can establish announcement timing, order,
-repetition, or omission.
+container-before-update technique and the roles' overridable implicit atomic
+defaults remain advisory reliability evidence. Repetition, timing, order, and
+omission remain real assistive-technology outcomes.
 
 The `text-input` contract is native rather than APG-derived. It covers the
 role-bearing `<input>` or `<textarea>` only; composed clear and tooltip buttons
@@ -202,12 +200,10 @@ Lower-level contract fixtures, Chromium bindings, report generation, and mutatio
 proof use `checkAccessibilitySpec`, which returns the complete factual result without
 asserting it.
 
-Some stateful patterns ask the binding to perform a named public transition.
-The binding drives that transition through its public API; the contract then
-observes the same subject again. `Subject.textChangesDuring()` records DOM text
-mutations around one such transition, which lets the status-message contract
-prove that identical text is cleared and reinserted without claiming an actual
-assistive-technology announcement.
+Some stateful patterns ask the binding to perform named public transitions. The
+binding drives each transition through its public API; the contract then
+re-observes the current semantic subject. Transition names describe user-visible
+state changes rather than component-private implementation steps.
 
 ## Known failures
 
