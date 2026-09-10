@@ -552,15 +552,10 @@ export function createChromiumHarness(
         }
         return null;
       }),
-    textContent: async () => {
-      const element = await capturedElement();
-      if (element == null) {
-        throw new Error('the subject is not in the document');
-      }
-      return element.evaluate(node =>
+    textContent: () =>
+      locator.evaluate(node =>
         (node.textContent ?? '').replace(/\s+/g, ' ').trim(),
-      );
-    },
+      ),
     isConnected: async () => {
       const element = await capturedElement();
       return element != null && element.evaluate(node => node.isConnected);

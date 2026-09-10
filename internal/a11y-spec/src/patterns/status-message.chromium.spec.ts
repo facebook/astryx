@@ -149,6 +149,31 @@ test.describe('status-message contract — conforming fixtures', () => {
       ).toEqual([]);
     });
   }
+
+  test('a replacement node can satisfy every required semantic outcome while identity remains advisory', async ({
+    page,
+  }) => {
+    const cdp = await page.context().newCDPSession(page);
+    const fixture = statusMessageFixture('violating-replaced-region');
+    const requiredIds = STATUS_MESSAGE_PATTERN.expectations
+      .filter(expectation => expectation.enforcement === 'required')
+      .map(expectation => expectation.id);
+    const required = await resultsFor(page, cdp, fixture, requiredIds);
+    expect(
+      required
+        .filter(
+          result =>
+            result.status !== 'pass' && result.status !== 'not-applicable',
+        )
+        .map(result => `${result.expectation}: ${result.detail ?? ''}`),
+    ).toEqual([]);
+
+    const [identity] = await resultsFor(page, cdp, fixture, [
+      'status-message.message.replaced-in-place',
+    ]);
+    expect(identity?.status).toBe('fail');
+    expect(identity?.detail).toContain('replaced its live-region node');
+  });
 });
 
 test.describe('status-message contract — deliberately violating fixtures', () => {

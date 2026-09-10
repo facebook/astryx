@@ -79,12 +79,20 @@ const ARIA_PROGRESSBAR: WebStandardRequirement = {
   url: `${ARIA}/#progressbar`,
 };
 
-const ARIA_PROGRESSBAR_RANGE: WebStandardRequirement = {
+const ARIA_VALUE_MIN: WebStandardRequirement = {
   standard: 'web-standard',
-  specification: 'WAI-ARIA 1.2 progressbar role',
+  specification: 'WAI-ARIA 1.2 aria-valuemin property',
   requirement:
-    'aria-valuemin must not exceed aria-valuemax, and a determinate aria-valuenow value must be within that inclusive range.',
-  url: `${ARIA}/#progressbar`,
+    'Authors MUST ensure the value of aria-valuemin is less than or equal to the value of aria-valuemax.',
+  url: `${ARIA}/#aria-valuemin`,
+};
+
+const ARIA_VALUE_NOW: WebStandardRequirement = {
+  standard: 'web-standard',
+  specification: 'WAI-ARIA 1.2 aria-valuenow property',
+  requirement:
+    'Authors MUST ensure aria-valuenow is greater than or equal to aria-valuemin and less than or equal to aria-valuemax.',
+  url: `${ARIA}/#aria-valuenow`,
 };
 
 export type StatusMessageTransitionName =
@@ -110,8 +118,8 @@ export type StatusMessageStateFacts =
       readonly politeness: null;
       readonly name: string;
       readonly initialValue: number | null;
-      readonly initialMin: number | null;
-      readonly initialMax: number | null;
+      readonly initialMin: number;
+      readonly initialMax: number;
       readonly progressValue: number;
       readonly completionValue: number;
       readonly minValue: number;
@@ -610,7 +618,8 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           WCAG_4_1_3,
           WCAG_4_1_2,
           ARIA_PROGRESSBAR,
-          ARIA_PROGRESSBAR_RANGE,
+          ARIA_VALUE_MIN,
+          ARIA_VALUE_NOW,
         ],
         covers: ['4.1.3-status-messages', '4.1.2-name-role-value'],
         appliesWhen: PROGRESSBAR,
@@ -620,20 +629,30 @@ export const STATUS_MESSAGE_PATTERN: PatternContract<StatusMessageStateFacts> =
           if (facts.kind !== 'progressbar') {
             return;
           }
+          if (facts.initialMin > facts.initialMax) {
+            throw new Error(
+              `the binding declares a reversed initial progress range ${facts.initialMin}..${facts.initialMax}`,
+            );
+          }
+          if (
+            facts.initialValue != null &&
+            (facts.initialValue < facts.initialMin ||
+              facts.initialValue > facts.initialMax)
+          ) {
+            throw new Error(
+              `the binding declares initial progress value ${facts.initialValue} outside ${facts.initialMin}..${facts.initialMax}`,
+            );
+          }
           if (facts.minValue > facts.maxValue) {
             throw new Error(
               `the binding declares a reversed progress range ${facts.minValue}..${facts.maxValue}`,
             );
           }
           for (const [phase, value] of [
-            ['initial', facts.initialValue],
             ['progress', facts.progressValue],
             ['completion', facts.completionValue],
           ] as const) {
-            if (
-              value != null &&
-              (value < facts.minValue || value > facts.maxValue)
-            ) {
+            if (value < facts.minValue || value > facts.maxValue) {
               throw new Error(
                 `the binding declares ${phase} progress value ${value} outside ${facts.minValue}..${facts.maxValue}`,
               );

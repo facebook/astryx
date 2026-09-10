@@ -85,6 +85,19 @@ const PROGRESS_FACTS: StatusMessageStateFacts = {
   maxValue: 100,
 };
 
+const REVERSED_INITIAL_PROGRESS_FACTS: StatusMessageStateFacts = {
+  ...PROGRESS_FACTS,
+  initialMin: 5,
+  initialMax: 0,
+};
+
+const OUT_OF_INITIAL_RANGE_PROGRESS_FACTS: StatusMessageStateFacts = {
+  ...PROGRESS_FACTS,
+  initialValue: 10,
+  initialMin: 0,
+  initialMax: 5,
+};
+
 const REVERSED_PROGRESS_FACTS: StatusMessageStateFacts = {
   ...PROGRESS_FACTS,
   minValue: 100,
@@ -215,10 +228,12 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
   {
     id: 'violating-replaced-region',
     facts: POLITE_FACTS,
-    html: '<div data-a11y-subject role="status"></div>',
+    html: '<button data-a11y-relation="focus-anchor">Save</button><div data-a11y-subject role="status"></div>',
     transitions: {
       show: {value: 'Changes saved'},
       replace: {value: 'Profile updated', replaceSubject: true},
+      clear: {value: ''},
+      repeat: {value: 'Changes saved', pulse: true},
     },
   },
   {
@@ -338,6 +353,16 @@ export const STATUS_MESSAGE_FIXTURES: readonly StatusMessageFixture[] = [
       progress: {attribute: 'aria-valuenow', value: '40'},
       complete: {attribute: 'aria-valuenow', value: '100'},
     },
+  },
+  {
+    id: 'violating-reversed-initial-progress-range',
+    facts: REVERSED_INITIAL_PROGRESS_FACTS,
+    html: '<button data-a11y-relation="focus-anchor">Start upload</button><div data-a11y-subject role="progressbar" aria-label="Upload progress"></div>',
+  },
+  {
+    id: 'violating-out-of-initial-range-value',
+    facts: OUT_OF_INITIAL_RANGE_PROGRESS_FACTS,
+    html: '<button data-a11y-relation="focus-anchor">Start upload</button><div data-a11y-subject role="progressbar" aria-label="Upload progress" aria-valuemin="0" aria-valuemax="5" aria-valuenow="10"></div>',
   },
   {
     id: 'violating-reversed-progress-range',
@@ -538,6 +563,14 @@ export const STATUS_MESSAGE_MUTATIONS: Readonly<
     },
   ],
   'status-message.progress.values-exposed': [
+    {
+      fixture: 'violating-reversed-initial-progress-range',
+      failureIncludes: 'reversed initial progress range 5..0',
+    },
+    {
+      fixture: 'violating-out-of-initial-range-value',
+      failureIncludes: 'initial progress value 10 outside 0..5',
+    },
     {
       fixture: 'violating-reversed-progress-range',
       failureIncludes: 'binding declares a reversed progress range 100..0',
