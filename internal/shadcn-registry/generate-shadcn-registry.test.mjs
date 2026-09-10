@@ -19,6 +19,7 @@ import {
 } from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {promisify} from 'node:util';
 import {describe, expect, it} from 'vitest';
 import {reconcileRegistryCompositions} from '../../packages/cli/api/upgrade/registry/registry.mjs';
@@ -45,6 +46,27 @@ import {
 } from '../../apps/docsite/src/lib/shadcnRegistry.mjs';
 
 const execFileAsync = promisify(execFile);
+
+const DOCSITE_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../apps/docsite',
+);
+
+/**
+ * The `shadcn` bin, found from the package that declares it. Only a hoisted
+ * node_modules puts a workspace package's own bin at the repo root.
+ */
+function shadcnBin() {
+  let dir = DOCSITE_ROOT;
+  for (let i = 0; i < 6; i++) {
+    const candidate = path.join(dir, 'node_modules', '.bin', 'shadcn');
+    if (existsSync(candidate)) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new Error(`shadcn bin not found above ${DOCSITE_ROOT}`);
+}
 
 const packages = [
   {name: '@astryxdesign/cli', version: '0.6.0'},
@@ -425,7 +447,7 @@ describe('buildShadcnRegistry', () => {
       writeFileSync(itemPath, JSON.stringify(block));
 
       await execFileAsync(
-        path.resolve('node_modules/.bin/shadcn'),
+        shadcnBin(),
         ['add', itemPath, '--yes'],
         {cwd: project, timeout: 30_000},
       );
@@ -599,7 +621,7 @@ describe('buildShadcnRegistry', () => {
       const itemPath = path.join(project, 'block.json');
       writeFileSync(itemPath, JSON.stringify(oldItem));
       await execFileAsync(
-        path.resolve('node_modules/.bin/shadcn'),
+        shadcnBin(),
         ['add', itemPath, '--yes'],
         {cwd: project, timeout: 30_000},
       );
@@ -748,7 +770,7 @@ describe('buildShadcnRegistry', () => {
       const itemPath = path.join(project, 'page.json');
       writeFileSync(itemPath, JSON.stringify(page));
       await execFileAsync(
-        path.resolve('node_modules/.bin/shadcn'),
+        shadcnBin(),
         ['add', itemPath, '--yes'],
         {cwd: project, timeout: 30_000},
       );
@@ -825,7 +847,7 @@ describe('buildShadcnRegistry', () => {
       writeConsumerProject(project);
 
       await execFileAsync(
-        path.resolve('node_modules/.bin/shadcn'),
+        shadcnBin(),
         ['add', `${origin}/shadcn/examples/parent.json`, '--yes'],
         {
           cwd: project,
