@@ -56,7 +56,6 @@ import {
   discoverComponents,
   discoverIntegrationComponents,
   findComponentReadme,
-  readPackageExports,
   resolveImportPath,
   resolveIntegrationImportPath,
 } from '../../foundation/discovery/component-discovery.mjs';
@@ -546,9 +545,6 @@ async function gatherIntegrationComponents(cwd) {
   /** @type {Candidate[]} */
   const candidates = [];
   for (const integration of loadedIntegrations) {
-    // One manifest read per PACKAGE, not per component: resolving a 100-
-    // component package used to reparse the same package.json 100 times.
-    const exportsMap = readPackageExports(integration.__packageDir);
     for (const rec of discoverIntegrationComponents(integration)) {
       const doc = await loadModuleDoc(rec.docPath);
       candidates.push({
@@ -559,14 +555,19 @@ async function gatherIntegrationComponents(cwd) {
         guidance: guidanceFrom(doc),
         // Exactly what `component` reports: a doc may state its own specifier
         // (one entry point exporting several components), and only when it
-        // does not do we resolve the subpath from the doc's directory against
-        // the owning package's exports. Reporting the bare package name here
-        // handed out a path that does not resolve, and disagreed with what
-        // `component <Name>` said about the very same component.
+        // does not do we resolve the subpath against the owning package's
+        // exports — read off the integration, which the loader already parsed.
+        // Reporting the bare package name here handed out a path that does not
+        // resolve, and disagreed with what `component <Name>` said about the
+        // very same component.
         _import:
           doc?.import ??
           resolveIntegrationImportPath(
-            {exportsMap, docPath: rec.docPath, packageName: rec.package},
+            {
+              exportsMap: integration.__packageExports,
+              docPath: rec.docPath,
+              packageName: rec.package,
+            },
             rec.name,
           ),
       });

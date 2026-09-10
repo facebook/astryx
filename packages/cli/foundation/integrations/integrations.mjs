@@ -41,6 +41,9 @@ import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
  *   failure; other manifest contributions remain available
  * @property {string} __spec
  * @property {string} __packageDir
+ * @property {Record<string, unknown>|null} [__packageExports] the owning
+ *   package's `exports` map, kept from the package.json this loader already
+ *   parsed so import resolution does not read it a second time
  * @property {string} __manifestFile
  * @property {string} [__loadError] set when the manifest failed to load/validate;
  *   such an integration contributes nothing and is surfaced via Project.issues()
@@ -287,6 +290,7 @@ export async function loadIntegrations(
       __debug: debugHandler,
       __spec: spec,
       __packageDir: packageDir,
+      __packageExports: pkg.exports ?? null,
       __manifestFile: manifestFile,
     });
   }

@@ -28,7 +28,6 @@ import {
   findExternalComponentDoc,
   findIntegrationComponentDoc,
   findIntegrationComponentSource,
-  readPackageExports,
   resolveImportPath,
   resolveIntegrationImportPath as resolveIntegrationImport,
 } from '../../foundation/discovery/component-discovery.mjs';
@@ -401,7 +400,7 @@ export function withOwnership(docs, owner, componentName, coreDir) {
 function resolveIntegrationImportPath(owner, componentName) {
   return resolveIntegrationImport(
     {
-      exportsMap: readPackageExports(owner.integration?.__packageDir),
+      exportsMap: owner.integration?.__packageExports,
       docPath: owner.docPath,
       packageName: owner.package,
     },

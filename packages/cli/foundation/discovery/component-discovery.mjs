@@ -396,23 +396,41 @@ export function resolveImportPath(coreDir, componentName) {
 }
 
 /**
- * Read a package's `exports` map once, so a caller resolving many components
- * from the same package parses its manifest once rather than per component.
+ * Does a package's `exports` map publish this subpath?
  *
- * @param {string|undefined} packageDir
- * @returns {Record<string, unknown>|null} the map, or null when unreadable
+ * Node matches a subpath either by an exact key or by a PATTERN key holding a
+ * single `*`, which stands for any (possibly empty) run of characters — so
+ * `./*` publishes `./Carousel` just as surely as a literal `./Carousel` key
+ * does. A key whose target is `null` blocks the subpath instead of publishing
+ * it, and a package with no map at all publishes nothing by subpath.
+ *
+ * Exact-key-only matching is why this is a function rather than a lookup: it
+ * reported the bare package for every wildcard package, which is a specifier
+ * that need not resolve at all when the package has no `.` export.
+ *
+ * @param {Record<string, unknown>|null|undefined} exportsMap
+ * @param {string} subpath e.g. `./Carousel`
+ * @returns {boolean}
  */
-export function readPackageExports(packageDir) {
-  if (!packageDir) return null;
-  try {
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
-    );
-    return manifest.exports ?? null;
-  } catch {
-    // An unreadable or malformed manifest is not worth failing a lookup over.
-    return null;
+function exportsPublish(exportsMap, subpath) {
+  if (!exportsMap || typeof exportsMap !== 'object') return false;
+  if (subpath in exportsMap) return exportsMap[subpath] != null;
+  for (const [key, target] of Object.entries(exportsMap)) {
+    const star = key.indexOf('*');
+    if (star === -1) continue;
+    // One `*` per key, per the spec; a second is not a pattern.
+    if (key.indexOf('*', star + 1) !== -1) continue;
+    const prefix = key.slice(0, star);
+    const suffix = key.slice(star + 1);
+    if (
+      subpath.length >= prefix.length + suffix.length &&
+      subpath.startsWith(prefix) &&
+      subpath.endsWith(suffix)
+    ) {
+      return target != null;
+    }
   }
+  return false;
 }
 
 /**
@@ -423,8 +441,8 @@ export function readPackageExports(packageDir) {
  * components can be exported from one entry point — so the specifier has to
  * come from the directory the doc file sits in, checked against `exports`,
  * rather than from the component name. Falls back to the package root when the
- * directory is not an exported subpath, matching what a consumer would have to
- * write by hand.
+ * package does not publish that subpath, matching what a consumer would have
+ * to write by hand.
  *
  * Lives here, beside {@link resolveImportPath}, because more than one surface
  * answers "where is this imported from" and they have to agree: `component`
@@ -432,18 +450,20 @@ export function readPackageExports(packageDir) {
  * each resolved it for itself the two disagreed, and an import specifier that
  * does not resolve is worse than no answer.
  *
- * Takes the parsed map rather than a directory so resolving a package's whole
- * component set costs one manifest read; see {@link readPackageExports}.
+ * Takes the parsed map rather than a directory, so a caller resolving a whole
+ * package's components reads its manifest no times — `loadIntegrations` has
+ * already parsed it onto `__packageExports`.
  *
- * @param {{exportsMap: Record<string, unknown>|null, docPath?: string|null, packageName: string}} owner
+ * @param {{exportsMap: Record<string, unknown>|null|undefined, docPath?: string|null, packageName: string}} owner
  * @param {string} componentName
  * @returns {string}
  */
 export function resolveIntegrationImportPath(owner, componentName) {
   const {exportsMap, docPath, packageName} = owner;
-  if (!exportsMap) return packageName;
   const directory = docPath ? path.basename(path.dirname(docPath)) : componentName;
-  return exportsMap[`./${directory}`] ? `${packageName}/${directory}` : packageName;
+  return exportsPublish(exportsMap, `./${directory}`)
+    ? `${packageName}/${directory}`
+    : packageName;
 }
 
 // ── External package discovery ───────────────────────────────────────

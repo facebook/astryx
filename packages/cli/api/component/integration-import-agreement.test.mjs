@@ -189,14 +189,44 @@ describe('integration component import specifiers', () => {
   );
 
   it(
-    'a wildcard-only exports map resolves the same way at both surfaces',
+    'a wildcard exports map resolves to the exported subpath at both surfaces',
     async () => {
-      // A wildcard is not matched as a literal subpath key, so both fall back
-      // to the package root. Pinned because the two must agree on the
-      // fallback, not only on the hit.
-      scaffold({exports: {'.': './src/index.js', './*': './src/*/index.js'}});
+      // `./*` publishes `./Carousel` exactly as a literal key would, so the
+      // subpath is the correct answer. An earlier version of this test asserted
+      // only that the two surfaces AGREED, and both agreed on the bare package
+      // — a specifier that need not resolve at all here, since this package
+      // publishes no `.` export. Agreement is necessary and not sufficient.
+      scaffold({exports: {'./*': './src/*/index.js'}});
       const {detail, found} = await bothSurfaces();
 
+      expect(detail).toBe('@acme/widgets/Carousel');
+      expect(found).toBe(detail);
+    },
+    SLOW,
+  );
+
+  it(
+    'a wildcard whose target is null does not publish the subpath',
+    async () => {
+      // `null` blocks a subpath rather than publishing it, so the honest answer
+      // is the package root at both surfaces.
+      scaffold({exports: {'.': './src/index.js', './*': null}});
+      const {detail, found} = await bothSurfaces();
+
+      expect(detail).toBe('@acme/widgets');
+      expect(found).toBe(detail);
+    },
+    SLOW,
+  );
+
+  it(
+    'a prefixed wildcard only matches the subpaths it covers',
+    async () => {
+      // `./components/*` does not cover `./Carousel`, so this falls back.
+      scaffold({exports: {'.': './src/index.js', './components/*': './src/*/index.js'}});
+      const {detail, found} = await bothSurfaces();
+
+      expect(detail).toBe('@acme/widgets');
       expect(found).toBe(detail);
     },
     SLOW,
