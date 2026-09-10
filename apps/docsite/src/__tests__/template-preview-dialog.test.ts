@@ -12,6 +12,7 @@
 import {
   createElement,
   Suspense,
+  startTransition,
   useLayoutEffect,
   useRef,
   useState,
@@ -243,5 +244,61 @@ describe('template preview selection', () => {
       screen.getByTestId('preview').closest<HTMLElement>('[role="dialog"]')
         ?.hidden,
     ).toBe(true);
+  });
+
+  it('opens C after closing a pending A-to-B navigation', async () => {
+    let resolve!: () => void;
+    let ready = false;
+    const navigation = new Promise<void>(done => {
+      resolve = done;
+    });
+    function Navigation({index}: {index: number | null}) {
+      if (index !== 0 && !ready) {
+        throw navigation;
+      }
+      return null;
+    }
+    function Gallery() {
+      const [selection, setSelection] = useState<number | null>(0);
+      const [routeSelection, setRouteSelection] = useState<number | null>(0);
+      // Match the gallery: selection updates immediately, while router.replace
+      // schedules separate transition work that can remain suspended.
+      const select = (index: number | null) => {
+        setSelection(index);
+        startTransition(() => setRouteSelection(index));
+      };
+      return createElement(
+        Suspense,
+        {fallback: 'Navigating'},
+        createElement('button', {onClick: () => select(2)}, 'Open C'),
+        createElement(TemplatePreviewDialog, {
+          items,
+          index: selection ?? 0,
+          isOpen: selection !== null,
+          onIndexChange: select,
+          onOpenChange: (open: boolean) => {
+            if (!open) {
+              select(null);
+            }
+          },
+        }),
+        createElement(Navigation, {index: routeSelection}),
+      );
+    }
+    render(createElement(Gallery));
+    fireEvent.click(screen.getByRole('button', {name: 'Next template'}));
+    expect(screen.getByTestId('pending-preview')).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', {name: 'Close preview'}));
+    commits.length = 0;
+    fireEvent.click(screen.getByRole('button', {name: 'Open C'}));
+    expectOnlyVisible('template-c');
+    expect(commits.every(commit => commit.slug === 'template-c')).toBe(true);
+    expect(screen.queryByTestId('pending-preview')).toBeNull();
+    await act(async () => {
+      ready = true;
+      resolve();
+      await navigation;
+    });
+    expectOnlyVisible('template-c');
   });
 });

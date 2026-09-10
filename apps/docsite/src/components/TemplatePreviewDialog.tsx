@@ -9,8 +9,8 @@
  * display order. Arrow keys (←/→) also navigate; Escape closes.
  *
  * @input Template metadata, selected index, open state, and navigation callbacks.
- * @output A responsive dialog with immediate selected previews, pending navigation,
- * and template actions.
+ * @output A responsive dialog with immediate selected previews, selection-scoped
+ * pending navigation, and template actions.
  * @position Shared preview controller for the templates gallery.
  *
  * The header surfaces template metadata (name, description) on
@@ -265,6 +265,8 @@ export function TemplatePreviewDialog({
 }: TemplatePreviewDialogProps) {
   const [cmdCopied, setCmdCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [pendingPreviewItem, setPendingPreviewItem] =
+    useState<TemplatePreviewItem | null>(null);
 
   // Release the top layer when this dialog is torn down while still open.
   //
@@ -292,12 +294,22 @@ export function TemplatePreviewDialog({
 
   const count = items.length;
   const current = items[index];
+  // Router work may outlive closing or selecting another card. Retire its
+  // preview state during render so it cannot cover a newer selection.
+  if (
+    pendingPreviewItem !== null &&
+    (!isOpen || pendingPreviewItem !== current)
+  ) {
+    setPendingPreviewItem(null);
+  }
+  const isPreviewPending =
+    isPending && isOpen && pendingPreviewItem === current;
   // Only pending prev/next navigation may retain the deferred preview beneath
   // its skeleton. Opening a card or syncing a URL must show the current item
   // immediately, even if the mounted dialog's deferred index is still stale.
   const deferredIndex = useDeferredValue(index);
   const deferredCurrent = items[deferredIndex];
-  const previewCurrent = isPending ? deferredCurrent : current;
+  const previewCurrent = isPreviewPending ? deferredCurrent : current;
 
   const go = (delta: number) => {
     if (count === 0) {
@@ -310,6 +322,7 @@ export function TemplatePreviewDialog({
       direction: delta > 0 ? 'next' : 'prev',
       item: items[nextIndex]?.slug,
     });
+    setPendingPreviewItem(current);
     startTransition(() => {
       onIndexChange(nextIndex);
     });
@@ -386,7 +399,7 @@ export function TemplatePreviewDialog({
                 key={previewCurrent.slug}
                 slug={previewCurrent.slug}
               />
-              {isPending && (
+              {isPreviewPending && (
                 <div {...stylex.props(styles.skeletonOverlay)}>
                   <Skeleton width="100%" height="100%" />
                 </div>
