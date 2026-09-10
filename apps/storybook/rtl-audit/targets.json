@@ -36,6 +36,16 @@
     }
   },
   {
+    "component": "Center",
+    "storyId": "core-center--padding-per-edge",
+    "dims": [
+      "D8"
+    ],
+    "selectors": {
+      "subject": ".astryx-center"
+    }
+  },
+  {
     "component": "CheckboxInput",
     "storyId": "core-checkboxinput--size-comparison",
     "dims": [
