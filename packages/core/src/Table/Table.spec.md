@@ -22,7 +22,7 @@ verified_by:
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-modules: [module:Table/useTableRowStatus]
+modules: [module:Table/useTableRowStatus, module:Table/useTableColumnResize]
 families: []
 design_specs: []
 architecture:
