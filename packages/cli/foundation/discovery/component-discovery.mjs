@@ -435,7 +435,7 @@ function exportsPublish(exportsMap, subpath) {
 
 /**
  * Resolve the specifier an integration component is imported from, against the
- * owning package's already-parsed `exports` map.
+ * owning package's `exports` map.
  *
  * A component lives in a directory that need not share its name — several
  * components can be exported from one entry point — so the specifier has to
@@ -450,20 +450,45 @@ function exportsPublish(exportsMap, subpath) {
  * each resolved it for itself the two disagreed, and an import specifier that
  * does not resolve is worse than no answer.
  *
- * Takes the parsed map rather than a directory, so a caller resolving a whole
- * package's components reads its manifest no times — `loadIntegrations` has
- * already parsed it onto `__packageExports`.
+ * `exportsMap` is the map `loadIntegrations` already parsed onto the loaded
+ * integration, so the common path reads no manifest at all. `undefined` means
+ * the caller has no parsed map — a record built by hand rather than by the
+ * loader — and only then is the manifest read here. `null` means the loader
+ * looked and the package has no `exports`, which is an answer, not a gap: it
+ * must not trigger a read. Resolution that depended on every producer of a
+ * record remembering to populate a field would degrade silently, and silently
+ * is how this bug got here.
  *
- * @param {{exportsMap: Record<string, unknown>|null|undefined, docPath?: string|null, packageName: string}} owner
+ * @param {{exportsMap?: Record<string, unknown>|null, packageDir?: string, docPath?: string|null, packageName: string}} owner
  * @param {string} componentName
  * @returns {string}
  */
 export function resolveIntegrationImportPath(owner, componentName) {
-  const {exportsMap, docPath, packageName} = owner;
+  const {exportsMap, packageDir, docPath, packageName} = owner;
+  const map = exportsMap === undefined ? readPackageExports(packageDir) : exportsMap;
   const directory = docPath ? path.basename(path.dirname(docPath)) : componentName;
-  return exportsPublish(exportsMap, `./${directory}`)
-    ? `${packageName}/${directory}`
-    : packageName;
+  return exportsPublish(map, `./${directory}`) ? `${packageName}/${directory}` : packageName;
+}
+
+/**
+ * Read a package's `exports` map from disk. The fallback for a loaded-
+ * integration record that carries no parsed map; {@link loadIntegrations}
+ * populates one for every integration it loads.
+ *
+ * @param {string|undefined} packageDir
+ * @returns {Record<string, unknown>|null}
+ */
+function readPackageExports(packageDir) {
+  if (!packageDir) return null;
+  try {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
+    );
+    return manifest.exports ?? null;
+  } catch {
+    // An unreadable or malformed manifest is not worth failing a lookup over.
+    return null;
+  }
 }
 
 // ── External package discovery ───────────────────────────────────────

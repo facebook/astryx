@@ -401,6 +401,7 @@ function resolveIntegrationImportPath(owner, componentName) {
   return resolveIntegrationImport(
     {
       exportsMap: owner.integration?.__packageExports,
+      packageDir: owner.integration?.__packageDir,
       docPath: owner.docPath,
       packageName: owner.package,
     },

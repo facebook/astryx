@@ -565,6 +565,7 @@ async function gatherIntegrationComponents(cwd) {
           resolveIntegrationImportPath(
             {
               exportsMap: integration.__packageExports,
+              packageDir: integration.__packageDir,
               docPath: rec.docPath,
               packageName: rec.package,
             },

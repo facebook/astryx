@@ -26,6 +26,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {component} from './component.mjs';
 import {search} from '../search/search.mjs';
+import {resolveIntegrationImportPath} from '../../foundation/discovery/component-discovery.mjs';
 
 const SLOW = 30_000;
 
@@ -287,4 +288,31 @@ describe('integration component import specifiers', () => {
     },
     SLOW,
   );
+
+  it('resolves from disk for a record that carries no parsed exports map', () => {
+    // `loadIntegrations` parses the map onto every integration it loads, but a
+    // record built by hand — as several tests and callers do — has no such
+    // field. Resolution must read the manifest rather than quietly reporting
+    // the bare package, because a silent degradation is how the original bug
+    // reached users. `undefined` means "nobody parsed it"; `null` means the
+    // loader looked and there was none.
+    scaffold({exports: SUBPATH_EXPORTS});
+    const pkgDir = path.join(tmpDir, 'node_modules', '@acme', 'widgets');
+    const docPath = path.join(pkgDir, 'src', 'Carousel', 'AcmeCarousel.doc.mjs');
+
+    expect(
+      resolveIntegrationImportPath(
+        {packageDir: pkgDir, docPath, packageName: '@acme/widgets'},
+        'AcmeCarousel',
+      ),
+    ).toBe('@acme/widgets/Carousel');
+
+    // A parsed `null` is an answer, not a gap: it must not fall back to a read.
+    expect(
+      resolveIntegrationImportPath(
+        {exportsMap: null, packageDir: pkgDir, docPath, packageName: '@acme/widgets'},
+        'AcmeCarousel',
+      ),
+    ).toBe('@acme/widgets');
+  });
 });
