@@ -65,7 +65,7 @@ export const docs = {
     {
       name: 'scrollToTopAction',
       type: '() => Promise<void>',
-      description: 'Async action fired when user scrolls to top. Use for loading older messages. Wrapped in useTransition: shows a spinner at the top while pending.',
+      description: 'Async action fired when user scrolls to top. Use for loading older messages. Wrapped in useTransition: shows a spinner at the top while pending and marks the log aria-busy. Single-flight, the viewport position is preserved when earlier messages prepend, and an underfilled list keeps loading until it can scroll. Apply loaded messages to state before the promise resolves, keep stable keys across prepends, and pass undefined once no earlier history remains.',
     },
     {
       name: 'density',
@@ -101,7 +101,7 @@ export const docsZh = {
   propDescriptions: {
     children: '消息元素，通常是 ChatMessage 或 ChatSystemMessage。',
     emptyState: '列表无消息时显示的内容。',
-    scrollToTopAction: '用户滚动到顶部时触发的异步操作。用于加载更早的消息。',
+    scrollToTopAction: '用户滚动到顶部时触发的异步操作。用于加载更早的消息。同一时间只运行一次，加载完成后保持阅读位置不跳动；列表未填满时会持续加载。请在 Promise 完成前把消息写入状态、保持 key 稳定；没有更早的历史时请传 undefined。',
     density: '视觉密度，通过上下文传递给子消息。',
     gap: '顶层消息行之间的间距。默认跟随密度；当 LLM 事件流等独立行需要不同间距时可覆盖。',
     align: "列表内容不足一屏时的垂直对齐方式。'bottom' 用占位块填满剩余空间，让简短对话贴近输入框；'top' 省略占位块，让消息从顶部开始。仅影响未填满的列表，溢出后两种模式滚动一致，保持自动滚动到底部。",
@@ -117,7 +117,7 @@ export const docsDense = {
   propDescriptions: {
     children: 'msg elements (ChatMessage or ChatSystemMessage)',
     emptyState: 'content when no msgs',
-    scrollToTopAction: 'async action at scroll top; load older msgs',
+    scrollToTopAction: 'async action at scroll top; load older msgs; single-flight + aria-busy + viewport preserved on prepend + auto-fills underfilled list; apply msgs before resolve, stable keys; pass undefined when exhausted',
     density: 'visual density; flows to children via context',
     gap: 'top-level row gap; defaults to density spacing; override for independent LLM/tool rows',
     align: "'top'|'bottom' (def bottom); bottom spacer pushes short lists down, top starts at top; overflow scrolls same either way",

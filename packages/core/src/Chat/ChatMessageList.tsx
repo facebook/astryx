@@ -4,14 +4,17 @@
 
 /**
  * @file ChatMessageList.tsx
- * @input Uses React, StyleX, ChatListContext, theme tokens, spacing step utilities
+ * @input Uses React, StyleX, ChatListContext, useIsomorphicLayoutEffect, theme tokens, spacing step utilities, getScrollableAncestor
  * @output Exports ChatMessageList component and ChatMessageListProps
  * @position Presentational message container — holds ChatMessage children
  *
  * Renders a container with role="log" for chat message histories.
  * Handles density context, configurable gap, empty state,
  * a configurable spacer (align) that pushes messages to the bottom,
- * and an infinite scroll sentinel.
+ * and an infinite scroll sentinel. Loading earlier messages is
+ * single-flight and preserves the reader's viewport position across the
+ * prepend (native scroll anchoring is suppressed at scrollTop 0, where
+ * the sentinel fires).
  *
  * Auto-scroll and the scroll-to-bottom button are owned by
  * ChatLayout. When used standalone (without a layout), the list
@@ -20,10 +23,18 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/Chat.stories.tsx
+ * - /apps/storybook/stories/ChatLayout.stories.tsx (load-earlier story)
  * - /packages/cli/assets/templates/blocks/components/ChatMessageList/ (block examples)
  */
 
-import {type ReactNode, useEffect, useMemo, useRef, useTransition} from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useTransition,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {
@@ -33,9 +44,11 @@ import {
 } from './ChatContext';
 import {mergeProps} from '../utils';
 import {Spinner} from '../Spinner';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {BaseProps} from '../BaseProps';
 import type {SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {getScrollableAncestor} from '../utils/getScrollableAncestor';
 
 export interface ChatMessageListProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -55,7 +68,15 @@ export interface ChatMessageListProps extends BaseProps<HTMLDivElement> {
   /**
    * Async action when the user scrolls to the top.
    * Use for loading older messages. Wrapped in useTransition —
-   * shows a spinner at the top while pending.
+   * shows a spinner at the top while pending. Only one load runs at a
+   * time, the log is marked `aria-busy` while it runs, and the reader's
+   * viewport position is preserved when earlier messages prepend. While
+   * the list is too short to scroll, further pages load automatically
+   * until it overflows.
+   *
+   * Apply the loaded messages to state before the returned promise
+   * resolves, keep stable keys across prepends, and pass `undefined`
+   * once no earlier history remains.
    */
   scrollToTopAction?: () => Promise<void>;
 
@@ -236,7 +257,20 @@ export function ChatMessageList({
   const layoutContext = useChatLayoutContext();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
+  const loadingTopRef = useRef<HTMLDivElement>(null);
   const [isLoadingTop, startTransition] = useTransition();
+
+  const scrollToTopActionRef = useRef(scrollToTopAction);
+  scrollToTopActionRef.current = scrollToTopAction;
+  const hasScrollToTopAction = scrollToTopAction != null;
+  const loadEarlierInFlightRef = useRef(false);
+  const prependAnchorRef = useRef<{
+    element: Element;
+    container: Element;
+    top: number;
+    expectedScrollTop: number;
+  } | null>(null);
 
   // Register inner content element with the layout for height observation
   useEffect(() => {
@@ -251,19 +285,78 @@ export function ChatMessageList({
     children !== false &&
     !(Array.isArray(children) && children.length === 0);
 
-  // IntersectionObserver for scroll-to-top infinite scroll
+  // The first message element: whatever follows the last structural element
+  // above the content. That is the spacer for align="bottom"; align="top"
+  // omits it, leaving the spinner while a load is pending, else the sentinel.
+  const getFirstMessageElement = useCallback(
+    () =>
+      (spacerRef.current ?? loadingTopRef.current ?? sentinelRef.current)
+        ?.nextElementSibling ?? null,
+    [],
+  );
+
+  // Start one load-earlier cycle: anchor the first message element so the
+  // viewport can be restored after the prepend (native scroll anchoring is
+  // suppressed at scrollTop 0, which is exactly where the sentinel fires),
+  // then run the action inside a transition. Single-flight.
+  const beginLoadEarlier = useCallback(
+    (container: Element | null) => {
+      if (loadEarlierInFlightRef.current) {
+        return;
+      }
+      const action = scrollToTopActionRef.current;
+      if (!action) {
+        return;
+      }
+      loadEarlierInFlightRef.current = true;
+
+      const resolvedContainer = container ?? document.scrollingElement;
+      const anchor = getFirstMessageElement();
+      if (resolvedContainer && anchor) {
+        prependAnchorRef.current = {
+          element: anchor,
+          container: resolvedContainer,
+          top:
+            anchor.getBoundingClientRect().top -
+            resolvedContainer.getBoundingClientRect().top,
+          expectedScrollTop: resolvedContainer.scrollTop,
+        };
+      } else {
+        prependAnchorRef.current = null;
+      }
+
+      startTransition(async () => {
+        try {
+          await action();
+        } finally {
+          loadEarlierInFlightRef.current = false;
+        }
+      });
+    },
+    [getFirstMessageElement],
+  );
+
+  // IntersectionObserver for scroll-to-top infinite scroll. The action
+  // lives in a ref so an inline callback doesn't reconnect the observer
+  // on every render.
   useEffect(() => {
-    const scrollContainer = layoutContext?.scrollContainerRef?.current;
-    if (!scrollToTopAction || !sentinelRef.current) {
+    if (!hasScrollToTopAction || !sentinelRef.current) {
       return;
     }
+    const scrollContainer = layoutContext?.scrollContainerRef?.current;
+    // Compensation target: the layout's scroller, or, standalone, the
+    // scroller that actually clips the list rather than the page. No
+    // overflow requirement: an underfilled list's scroller cannot scroll
+    // yet, and the auto-refill cycle must still target it.
+    const captureContainer =
+      scrollContainer ??
+      getScrollableAncestor(sentinelRef.current, {requireOverflow: false});
 
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0]?.isIntersecting) {
-          startTransition(async () => {
-            await scrollToTopAction();
-          });
+        // Entries are oldest-first; only the latest state matters.
+        if (entries[entries.length - 1]?.isIntersecting) {
+          beginLoadEarlier(captureContainer);
         }
       },
       {root: scrollContainer ?? null, threshold: 0},
@@ -271,7 +364,49 @@ export function ChatMessageList({
 
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [scrollToTopAction, layoutContext]);
+  }, [hasScrollToTopAction, layoutContext, beginLoadEarlier]);
+
+  // Keep the anchor at its captured viewport offset while a load-earlier
+  // cycle settles. Runs per commit; measured, not assumed — if native
+  // anchoring already kept the anchor in place, the delta is 0. The anchor
+  // disarms only after the prepend actually committed (the action may
+  // resolve before the consumer's state lands) — or when the reader
+  // scrolled away, which hands stability back to native anchoring.
+  useIsomorphicLayoutEffect(() => {
+    const anchor = prependAnchorRef.current;
+    if (!anchor || loadEarlierInFlightRef.current) {
+      return;
+    }
+    const {container, element} = anchor;
+
+    if (Math.abs(container.scrollTop - anchor.expectedScrollTop) > 1) {
+      prependAnchorRef.current = null;
+      return;
+    }
+    if (!element.isConnected) {
+      prependAnchorRef.current = null;
+      return;
+    }
+
+    const delta =
+      element.getBoundingClientRect().top -
+      container.getBoundingClientRect().top -
+      anchor.top;
+    if (delta !== 0) {
+      container.scrollTop += delta;
+      anchor.expectedScrollTop = container.scrollTop;
+    }
+
+    const prepended = getFirstMessageElement() !== element;
+    if (prepended && !isLoadingTop) {
+      prependAnchorRef.current = null;
+      // Underfilled list: still pinned at the top after a successful page
+      // means there is no room to scroll — keep filling until it overflows.
+      if (container.scrollTop === 0) {
+        beginLoadEarlier(container);
+      }
+    }
+  });
 
   const contextValue = useMemo(() => ({density}), [density]);
 
@@ -290,7 +425,7 @@ export function ChatMessageList({
         ref={ref}
         role="log"
         aria-live="polite"
-        aria-busy={isStreaming || undefined}
+        aria-busy={isStreaming || isLoadingTop || undefined}
         tabIndex={0}
         data-testid={testId}
         {...mergeProps(
@@ -307,7 +442,7 @@ export function ChatMessageList({
 
           {/* Loading spinner at top */}
           {isLoadingTop && (
-            <div {...stylex.props(styles.loadingTop)}>
+            <div ref={loadingTopRef} {...stylex.props(styles.loadingTop)}>
               <Spinner size="md" />
             </div>
           )}
@@ -315,7 +450,7 @@ export function ChatMessageList({
           {/* Spacer pushes messages to bottom when the list isn't full.
               Omitted for top alignment so messages start at the top. */}
           {align === 'bottom' && (
-            <div {...stylex.props(styles.spacer)} aria-hidden />
+            <div ref={spacerRef} {...stylex.props(styles.spacer)} aria-hidden />
           )}
 
           {/* Messages or empty state */}
