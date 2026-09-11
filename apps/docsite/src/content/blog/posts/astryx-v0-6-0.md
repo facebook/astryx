@@ -66,16 +66,6 @@ They also gain announced empty states and `isReadOnly`, so selected values can r
 
 ![A compact project form where opening the Owning team Selector animates its adaptive bottom sheet into view, then dismisses it. The Reviewers MultiSelector remains visible in the same product context.](/blog/astryx-v0-6-0/adaptive-inputs.webp)
 
-### Next: spacing-aware component surfaces
-
-The broader component-level `adaptations` API did not make the v0.6.0 cut. It is planned for v0.7.0 so products can choose exact component surfaces from named width rules rather than relying only on pointer type. The first targets are:
-
-- `DateInput` and `DateTimeInput` — native, popover, or bottom-sheet surfaces;
-- `DropdownMenu`, `MoreMenu`, and `ContextMenu` — anchored menus or bottom sheets; and
-- other layered controls where the available space should decide the presentation.
-
-Until that API lands, v0.6.0’s responsive component example is Selector’s shipped adaptive presentation.
-
 ## Six new starting points
 
 Astryx 0.6 adds five wizard templates and a work-item detail page. Each one solves a distinct product shape:
