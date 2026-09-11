@@ -216,6 +216,7 @@ async function computedNode(
         readOnly: null,
         required: null,
         checked: null,
+        selected: null,
         disabled: false,
         invalid: false,
       };
@@ -241,6 +242,7 @@ async function computedNode(
     }
     const live = property(node, 'live');
     const checked = property(node, 'checked');
+    const selected = optionalFlag(node, 'selected');
     const invalid = property(node, 'invalid');
     const exposedValue = node.value?.value;
 
@@ -285,6 +287,7 @@ async function computedNode(
             : checked === 'mixed'
               ? 'mixed'
               : null,
+      selected,
       disabled: flag(node, 'disabled'),
       invalid: invalid != null && invalid !== 'false' && invalid !== false,
     };
@@ -304,11 +307,30 @@ async function computedNode(
  * `use: {reducedMotion: 'reduce'}` and Chromium's own
  * `--force-prefers-reduced-motion` flag both leave
  * `matchMedia('(prefers-reduced-motion: reduce)')` FALSE in this version —
- * measured, not assumed — so either one would read like a safeguard while doing
- * nothing. `emulateMedia` takes effect immediately and can be checked.
+ * measured, not assumed. `emulateMedia` sets the preference, while the injected
+ * override also collapses components that intentionally retain a non-zero
+ * reduced-motion duration. Two animation frames apply both changes before an
+ * expectation can observe the page.
  */
 export async function holdMotionStill(page: Page): Promise<void> {
   await page.emulateMedia({reducedMotion: 'reduce'});
+  await page.addStyleTag({
+    content: `
+      *, *::before, *::after {
+        animation-delay: 0s !important;
+        animation-duration: 0s !important;
+        scroll-behavior: auto !important;
+        transition-delay: 0s !important;
+        transition-duration: 0s !important;
+      }
+    `,
+  });
+  await page.evaluate(
+    () =>
+      new Promise<void>(resolve => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
 }
 
 export interface ChromiumHarnessOptions {
@@ -330,6 +352,111 @@ export interface ChromiumHarnessOptions {
   readonly related?: Readonly<Record<string, Locator>>;
 }
 
+async function renderedVisible(locator: Locator): Promise<boolean> {
+  return locator.evaluate(element => {
+    if (
+      !element.checkVisibility({
+        visibilityProperty: true,
+        opacityProperty: true,
+        contentVisibilityAuto: true,
+      })
+    ) {
+      return false;
+    }
+    const box = element.getBoundingClientRect();
+    return box.width > 0 && box.height > 0;
+  });
+}
+
+const AX_OWNERSHIP_TARGET_ATTRIBUTE = 'data-a11y-spec-ownership-target';
+
+async function backendNodeId(
+  cdp: CDPSession,
+  locator: Locator,
+): Promise<number | null> {
+  const previous = await locator.getAttribute(AX_OWNERSHIP_TARGET_ATTRIBUTE);
+  await locator.evaluate(
+    (element, attribute) => element.setAttribute(attribute, ''),
+    AX_OWNERSHIP_TARGET_ATTRIBUTE,
+  );
+  try {
+    const {root} = (await cdp.send('DOM.getDocument', {
+      depth: 0,
+    })) as unknown as {
+      root: {nodeId: number};
+    };
+    const {nodeId} = (await cdp.send('DOM.querySelector', {
+      nodeId: root.nodeId,
+      selector: `[${AX_OWNERSHIP_TARGET_ATTRIBUTE}]`,
+    })) as unknown as {nodeId: number};
+    if (nodeId === 0) {
+      return null;
+    }
+    const {node} = (await cdp.send('DOM.describeNode', {
+      nodeId,
+    })) as unknown as {
+      node: {backendNodeId?: number};
+    };
+    return node.backendNodeId ?? null;
+  } finally {
+    await locator.evaluate(
+      (element, [attribute, oldValue]) => {
+        if (oldValue == null) {
+          element.removeAttribute(attribute);
+        } else {
+          element.setAttribute(attribute, oldValue);
+        }
+      },
+      [AX_OWNERSHIP_TARGET_ATTRIBUTE, previous] as const,
+    );
+  }
+}
+
+async function containsSemantically(
+  cdp: CDPSession,
+  container: Locator,
+  candidate: Locator,
+): Promise<boolean> {
+  const containerBackendId = await backendNodeId(cdp, container);
+  const candidateBackendId = await backendNodeId(cdp, candidate);
+  if (containerBackendId == null || candidateBackendId == null) {
+    return false;
+  }
+  const {nodes} = (await cdp.send(
+    'Accessibility.getFullAXTree',
+  )) as unknown as {nodes: readonly AxNode[]};
+  const byId = new Map(
+    nodes.flatMap(node =>
+      node.nodeId == null ? [] : [[node.nodeId, node] as const],
+    ),
+  );
+  const containerNode = nodes.find(
+    node =>
+      node.backendDOMNodeId === containerBackendId && node.ignored !== true,
+  );
+  const candidateNode = nodes.find(
+    node =>
+      node.backendDOMNodeId === candidateBackendId && node.ignored !== true,
+  );
+  if (containerNode?.nodeId == null || candidateNode?.nodeId == null) {
+    return false;
+  }
+  const pending = [...(containerNode.childIds ?? [])];
+  const visited = new Set<string>();
+  while (pending.length > 0) {
+    const nodeId = pending.pop();
+    if (nodeId == null || visited.has(nodeId)) {
+      continue;
+    }
+    if (nodeId === candidateNode.nodeId) {
+      return true;
+    }
+    visited.add(nodeId);
+    pending.push(...(byId.get(nodeId)?.childIds ?? []));
+  }
+  return false;
+}
+
 export function createChromiumHarness(
   options: ChromiumHarnessOptions,
 ): Harness {
@@ -341,6 +468,7 @@ export function createChromiumHarness(
     return initialElement;
   };
   const pointerTargets = new WeakMap<Subject, Locator>();
+  const semanticTargets = new WeakMap<Subject, Locator>();
 
   const subject: Subject = {
     attribute: name => locator.getAttribute(name),
@@ -703,6 +831,7 @@ export function createChromiumHarness(
         await explicitLabel?.dispose();
       }
     },
+    isVisible: () => renderedVisible(locator),
     isFocused: () =>
       locator.evaluate(
         element => element.ownerDocument.activeElement === element,
@@ -719,6 +848,7 @@ export function createChromiumHarness(
     focus: () => locator.focus(),
   };
   pointerTargets.set(subject, pointerLocator);
+  semanticTargets.set(subject, locator);
 
   const relatedSubject = (name: string): Subject => {
     const related = options.related?.[name];
@@ -813,6 +943,7 @@ export function createChromiumHarness(
         const value = (await related.innerText()).trim();
         return value === '' ? null : value;
       },
+      isVisible: () => renderedVisible(related),
       isFocused: () =>
         related.evaluate(
           element => element.ownerDocument.activeElement === element,
@@ -829,6 +960,7 @@ export function createChromiumHarness(
       focus: () => related.focus(),
     };
     pointerTargets.set(result, related);
+    semanticTargets.set(result, related);
     return result;
   };
 
@@ -837,6 +969,65 @@ export function createChromiumHarness(
     observes: CHROMIUM_OBSERVES,
     subject: async () => subject,
     related: async name => relatedSubject(name),
+    contains: async (container, candidate) => {
+      const containerLocator = semanticTargets.get(container);
+      const candidateLocator = semanticTargets.get(candidate);
+      if (containerLocator == null || candidateLocator == null) {
+        throw new Error(
+          'the Chromium harness was asked to compare a subject it did not create',
+        );
+      }
+      const candidateHandle = await candidateLocator.elementHandle();
+      if (candidateHandle == null) {
+        return false;
+      }
+      try {
+        return await containerLocator.evaluate(
+          (element, candidateElement) => element.contains(candidateElement),
+          candidateHandle,
+        );
+      } finally {
+        await candidateHandle.dispose();
+      }
+    },
+    containsSemantically: async (container, candidate) => {
+      const containerLocator = semanticTargets.get(container);
+      const candidateLocator = semanticTargets.get(candidate);
+      if (containerLocator == null || candidateLocator == null) {
+        throw new Error(
+          'the Chromium harness was asked to compare a subject it did not create',
+        );
+      }
+      return containsSemantically(cdp, containerLocator, candidateLocator);
+    },
+    references: async (source, attribute, target) => {
+      const sourceLocator = semanticTargets.get(source);
+      const targetLocator = semanticTargets.get(target);
+      if (sourceLocator == null || targetLocator == null) {
+        throw new Error(
+          'the Chromium harness was asked to compare a subject it did not create',
+        );
+      }
+      const targetHandle = await targetLocator.elementHandle();
+      if (targetHandle == null) {
+        return false;
+      }
+      try {
+        return await sourceLocator.evaluate(
+          (element, [name, targetElement]) =>
+            (element.getAttribute(name) ?? '')
+              .split(/\s+/)
+              .filter(Boolean)
+              .some(
+                id =>
+                  element.ownerDocument.getElementById(id) === targetElement,
+              ),
+          [attribute, targetHandle] as const,
+        );
+      } finally {
+        await targetHandle.dispose();
+      }
+    },
     click: async (targetSubject, options) => {
       const target = pointerTargets.get(targetSubject);
       if (target == null) {

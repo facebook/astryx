@@ -113,6 +113,8 @@ function createSubject(element: Element): Subject {
       unobservable('accessibility-tree', 'a computed accessibility node'),
     visibleLabelText: async () =>
       unobservable('real-browser', 'what a label actually renders as'),
+    isVisible: async () =>
+      unobservable('real-browser', 'whether a node is rendered and visible'),
     isFocused: async () => unobservable('real-browser', 'real focus'),
     containsFocus: async () =>
       unobservable('real-browser', 'whether focus is inside a subject'),
@@ -137,17 +139,56 @@ export interface JsdomHarnessOptions {
 }
 
 export function createJsdomHarness(options: JsdomHarnessOptions): Harness {
+  const elements = new WeakMap<Subject, Element>();
   const subject = createSubject(options.subject);
+  elements.set(subject, options.subject);
+  const relatedSubjects = new Map<string, Subject>();
+  for (const [name, element] of Object.entries(options.related ?? {})) {
+    const related = createSubject(element);
+    elements.set(related, element);
+    relatedSubjects.set(name, related);
+  }
   return {
     name: HARNESS,
     observes: JSDOM_OBSERVES,
     subject: async () => subject,
     related: async name => {
-      const element = options.related?.[name];
-      if (element == null) {
+      const related = relatedSubjects.get(name);
+      if (related == null) {
         throw new MissingHarnessRelation(HARNESS, name);
       }
-      return createSubject(element);
+      return related;
+    },
+    contains: async (container, candidate) => {
+      const containerElement = elements.get(container);
+      const candidateElement = elements.get(candidate);
+      if (containerElement == null || candidateElement == null) {
+        throw new Error(
+          'the jsdom harness was asked to compare a subject it did not create',
+        );
+      }
+      return containerElement.contains(candidateElement);
+    },
+    containsSemantically: async () =>
+      unobservable(
+        'accessibility-tree',
+        'whether one subject semantically owns another',
+      ),
+    references: async (source, attribute, target) => {
+      const sourceElement = elements.get(source);
+      const targetElement = elements.get(target);
+      if (sourceElement == null || targetElement == null) {
+        throw new Error(
+          'the jsdom harness was asked to compare a subject it did not create',
+        );
+      }
+      return (sourceElement.getAttribute(attribute) ?? '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .some(
+          id =>
+            sourceElement.ownerDocument.getElementById(id) === targetElement,
+        );
     },
     click: async () =>
       unobservable('real-browser', 'a real pointer activation'),
