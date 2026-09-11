@@ -3491,6 +3491,16 @@
       "aliases": []
     },
     {
+      "name": "example-use-table-sticky-header-pinned-header",
+      "path": "examples/use-table-sticky-header/pinned-header",
+      "aliases": []
+    },
+    {
+      "name": "example-use-table-sticky-header-with-pinned-columns",
+      "path": "examples/use-table-sticky-header/with-pinned-columns",
+      "aliases": []
+    },
+    {
       "name": "example-use-table-tree-data-tree-table",
       "path": "examples/use-table-tree-data/tree-table",
       "aliases": []

@@ -98,7 +98,7 @@ const stickyHeaderStyles = stylex.create({
  * ```
  * const stickyHeader = useTableStickyHeader({maxHeight: 480});
  *
- * <Table data={rows} columns={columns} plugins={[stickyHeader]} />
+ * <Table data={rows} columns={columns} plugins={{stickyHeader}} />
  * ```
  */
 export function useTableStickyHeader<T extends Record<string, unknown>>(
