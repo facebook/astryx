@@ -7,7 +7,8 @@
 /**
  * @file Trusted component-audit scope classifier.
  * @input Git name-status rows on stdin and --registry <trusted-base registry>.
- * @output GitHub job outputs for component, RTL, and fail-closed full-audit scope.
+ * @output GitHub job outputs for component, RTL, and fail-closed full-audit scope;
+ *   empty or unmatched input always selects the full audits.
  * @position Loaded with its registry from the pull request's trusted base ref.
  */
 
@@ -24,44 +25,43 @@ function changedPathsFromNameStatus(input) {
 
 function classifyComponentAuditScope(paths, componentPackages) {
   const sourceRoots = componentPackages.map(pkg => `${pkg.src}/`);
-  const componentSourceChanged = paths.some(file =>
-    sourceRoots.some(root => file.startsWith(root)),
-  );
-  const storyChanged = paths.some(file =>
-    file.startsWith('apps/storybook/stories/'),
-  );
-  const accessibilityChanged = paths.some(
-    file =>
-      file.startsWith('internal/a11y-spec/') ||
-      /(^|\/)src\/.*\.a11y\./.test(file) ||
-      file === 'playwright.config.ts',
-  );
-  const rtlHarnessChanged = paths.some(
-    file =>
-      file.startsWith('apps/storybook/rtl-audit/') ||
-      file === '.github/scripts/rtl-audit-coverage.test.mjs' ||
-      file === '.github/scripts/weekly-rtl-summary.test.mjs' ||
-      file === '.github/workflows/rtl-weekly.yml',
-  );
-  const policyChanged = paths.some(file =>
-    [
-      '.github/scripts/analyze-pr.js',
-      '.github/scripts/component-audit-scope.cjs',
-      '.github/workflows/ci.yml',
-      'scripts/component-packages.cjs',
-    ].includes(file),
-  );
+  const isComponentSource = file =>
+    sourceRoots.some(root => file.startsWith(root));
+  const isStory = file => file.startsWith('apps/storybook/stories/');
+  const isAccessibilitySurface = file =>
+    file.startsWith('internal/a11y-spec/') ||
+    /(^|\/)src\/.*\.a11y\./.test(file) ||
+    file === 'playwright.config.ts';
+  const isRtlHarness = file =>
+    file.startsWith('apps/storybook/rtl-audit/') ||
+    file === '.github/scripts/rtl-audit-coverage.test.mjs' ||
+    file === '.github/scripts/weekly-rtl-summary.test.mjs' ||
+    file === '.github/workflows/rtl-weekly.yml';
+
+  const componentSourceChanged = paths.some(isComponentSource);
+  const storyChanged = paths.some(isStory);
+  const accessibilityChanged = paths.some(isAccessibilitySurface);
+  const rtlHarnessChanged = paths.some(isRtlHarness);
+  const hasUnmatchedInput =
+    paths.length === 0 ||
+    paths.some(
+      file =>
+        !isComponentSource(file) &&
+        !isStory(file) &&
+        !isAccessibilitySurface(file) &&
+        !isRtlHarness(file),
+    );
 
   return {
     has_components:
       componentSourceChanged ||
       storyChanged ||
       accessibilityChanged ||
-      policyChanged,
+      hasUnmatchedInput,
     has_rtl_components:
-      componentSourceChanged || storyChanged || policyChanged,
-    has_rtl_harness: rtlHarnessChanged || policyChanged,
-    force_full_component_audits: policyChanged,
+      componentSourceChanged || storyChanged || hasUnmatchedInput,
+    has_rtl_harness: rtlHarnessChanged || hasUnmatchedInput,
+    force_full_component_audits: hasUnmatchedInput,
   };
 }
 

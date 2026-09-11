@@ -15,6 +15,13 @@ const {
   classifyComponentAuditScope,
 } = require('./component-audit-scope.cjs');
 
+const FULL_AUDIT_SCOPE = {
+  has_components: true,
+  has_rtl_components: true,
+  has_rtl_harness: true,
+  force_full_component_audits: true,
+};
+
 describe('component audit scope', () => {
   it('loads the classifier and registry from the trusted base ref', () => {
     const workflow = fs.readFileSync(
@@ -57,20 +64,26 @@ describe('component audit scope', () => {
         ['packages/vega/src/VegaChart.tsx'],
         prControlledPackages,
       ),
-    ).toMatchObject({
-      has_components: false,
-      has_rtl_components: false,
-      force_full_component_audits: false,
-    });
+    ).toMatchObject(FULL_AUDIT_SCOPE);
 
     expect(
       classifyComponentAuditScope(changedPaths, prControlledPackages),
-    ).toMatchObject({
-      has_components: true,
-      has_rtl_components: true,
-      has_rtl_harness: true,
-      force_full_component_audits: true,
-    });
+    ).toMatchObject(FULL_AUDIT_SCOPE);
+  });
+
+  it.each([
+    [
+      'routing-test-only',
+      ['.github/scripts/component-audit-scope.test.mjs'],
+    ],
+    ['trusted classifier dependency', ['.github/scripts/change-scope.cjs']],
+    ['accessibility harness', ['.github/scripts/accessibility-audit.js']],
+    ['unknown path', ['new/unclassified/path.xyz']],
+    ['empty input', []],
+  ])('fails closed for %s', (_name, paths) => {
+    expect(
+      classifyComponentAuditScope(paths, COMPONENT_PACKAGES),
+    ).toMatchObject(FULL_AUDIT_SCOPE);
   });
 
   it('keeps rename source and destination paths in scope', () => {
