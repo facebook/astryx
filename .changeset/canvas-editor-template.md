@@ -4,7 +4,7 @@
 
 [feat] Add a Canvas Editor page template
 
-A layered-artboard workspace, staged hidden: a File/Edit/View/Object/Help
+A layered-artboard workspace: a File/Edit/View/Object/Help
 menubar over a layer rail and asset library on the left, the artboard centered
 on a muted backdrop under a floating tool bar that sets zoom, and a property
 inspector on the right whose fields retarget to the selected layer. Both rails
