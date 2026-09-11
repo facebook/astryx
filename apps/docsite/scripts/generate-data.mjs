@@ -2176,7 +2176,7 @@ export const blogDarkImages: string[] = ${JSON.stringify(darkImages, null, 2)};
   return {blogPostCount: posts.length, blogTypeCount: types.length};
 }
 
-function checkShadcnRouteLock(contracts) {
+function checkShadcnRouteLock(contracts, {allowSubset = false} = {}) {
   const lockPath = path.join(
     REPO_ROOT,
     'internal',
@@ -2187,6 +2187,11 @@ function checkShadcnRouteLock(contracts) {
   const serialized = `${JSON.stringify(lock, null, 2)}\n`;
 
   if (process.env.UPDATE_SHADCN_ROUTE_LOCK === '1') {
+    if (allowSubset) {
+      throw new Error(
+        'Refusing to replace the complete ShadCN route lock from a production subset.',
+      );
+    }
     fs.writeFileSync(lockPath, serialized, 'utf8');
     console.log(`  updated ${path.relative(REPO_ROOT, lockPath)}`);
     return;
@@ -2198,6 +2203,21 @@ function checkShadcnRouteLock(contracts) {
     );
   }
   const current = fs.readFileSync(lockPath, 'utf8');
+  if (allowSubset) {
+    const locked = new Map(
+      JSON.parse(current).items.map(contract => [contract.name, contract]),
+    );
+    for (const contract of contracts) {
+      if (
+        JSON.stringify(locked.get(contract.name)) !== JSON.stringify(contract)
+      ) {
+        throw new Error(
+          `Production ShadCN route ${contract.path} is absent from or differs from the reviewed route lock.`,
+        );
+      }
+    }
+    return;
+  }
   if (current !== serialized) {
     throw new Error(
       `Generated ShadCN names or routes changed. Preserve old paths with doc.registry.aliases, or intentionally refresh the reviewed lock with UPDATE_SHADCN_ROUTE_LOCK=1 node apps/docsite/scripts/generate-data.mjs.`,
@@ -2227,25 +2247,21 @@ async function main() {
     blocks,
     templates,
     cliRoot: CLI_ROOT,
-    dependencyTag: 'canary',
+    dependencyTag: DOCSITE_TARGET === 'canary' ? 'canary' : null,
     externalDependencySpecs: registryExternalDependencySpecs(),
   });
-  if (shadcnCounts) {
-    checkShadcnRouteLock(shadcnCounts.contracts);
-  }
+  checkShadcnRouteLock(shadcnCounts.contracts, {
+    allowSubset: DOCSITE_TARGET === 'latest',
+  });
   // `/r` stays unclaimed for a future Astryx-native registry.
   fs.rmSync(path.join(DOCSITE_ROOT, 'public', 'r'), {
     recursive: true,
     force: true,
   });
-  const showcaseCopied = generateShowcaseRegistry(
-    blocks,
-    shadcnCounts?.itemPaths,
-  );
-  const examplesCopied = generateExampleRegistry(
-    blocks,
-    shadcnCounts?.itemPaths,
-  );
+  const shadcnUiItemPaths =
+    DOCSITE_TARGET === 'canary' ? shadcnCounts.itemPaths : undefined;
+  const showcaseCopied = generateShowcaseRegistry(blocks, shadcnUiItemPaths);
+  const examplesCopied = generateExampleRegistry(blocks, shadcnUiItemPaths);
   const registryOrigin = resolveShadcnRegistryOrigin(process.env);
   const registryIsPreview =
     DOCSITE_TARGET === 'canary' &&
@@ -2268,19 +2284,15 @@ export const shadcnRegistryIsPreview = ${registryIsPreview};
   console.log(`  ${docsCount} doc topics`);
   console.log(`  ${blogPostCount} blog posts`);
   console.log(`  ${themeCount} themes`);
-  if (shadcnCounts) {
-    console.log(
-      `  ${shadcnCounts.total} ShadCN registry items ` +
-        `(${shadcnCounts.components} components, ${shadcnCounts.hooks} hooks, ` +
-        `${shadcnCounts.showcases} showcases, ${shadcnCounts.examples} examples, ` +
-        `${shadcnCounts.blocks} standalone blocks, ${shadcnCounts.pages} pages; ` +
-        `${shadcnCounts.skippedUnpublishedComponents} unpublished components, ` +
-        `${shadcnCounts.skippedUnpublishedBlocks} blocks, and ` +
-        `${shadcnCounts.skippedUnpublishedPages} pages skipped)`,
-    );
-  } else {
-    console.log('  ShadCN registry disabled for the production target');
-  }
+  console.log(
+    `  ${shadcnCounts.total} ShadCN registry items ` +
+      `(${shadcnCounts.components} components, ${shadcnCounts.hooks} hooks, ` +
+      `${shadcnCounts.showcases} showcases, ${shadcnCounts.examples} examples, ` +
+      `${shadcnCounts.blocks} standalone blocks, ${shadcnCounts.pages} pages; ` +
+      `${shadcnCounts.skippedUnpublishedComponents} unpublished components, ` +
+      `${shadcnCounts.skippedUnpublishedBlocks} blocks, and ` +
+      `${shadcnCounts.skippedUnpublishedPages} pages skipped)`,
+  );
   console.log('Done.');
 }
 

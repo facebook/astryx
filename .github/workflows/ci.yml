@@ -291,7 +291,7 @@ jobs:
     needs: [check-scope]
     if: ${{ always() && !cancelled() }}
     runs-on: 4-core-ubuntu
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -315,7 +315,7 @@ jobs:
         if: needs.check-scope.outputs.spec_only != 'true'
         run: pnpm build
 
-      - name: Verify production excludes compatibility output
+      - name: Verify hidden production registry contract
         if: needs.check-scope.outputs.spec_only != 'true'
         run: node internal/shadcn-registry/verify-production-gate.mjs
 
@@ -325,8 +325,27 @@ jobs:
           DOCSITE_TARGET: canary
         run: node apps/docsite/scripts/generate-data.mjs
 
-      - name: Install and build every registry item
+      - name: Install and build every preview registry item
         if: needs.check-scope.outputs.spec_only != 'true'
+        run: node internal/shadcn-registry/verify-full-catalog.mjs
+
+      - name: Generate the hidden production registry
+        if: needs.check-scope.outputs.spec_only != 'true'
+        env:
+          DOCSITE_TARGET: latest
+        run: node apps/docsite/scripts/generate-data.mjs
+
+      - name: Verify hidden production discovery surfaces
+        if: needs.check-scope.outputs.spec_only != 'true'
+        env:
+          ASTRYX_VERIFY_HIDDEN_PRODUCTION: '1'
+          NEXT_PUBLIC_DOCS_TARGET: latest
+        run: pnpm -F @astryxdesign/docsite exec vitest run src/__tests__/hidden-shadcn-production.test.ts
+
+      - name: Install and build every hidden production registry item
+        if: needs.check-scope.outputs.spec_only != 'true'
+        env:
+          ASTRYX_SHADCN_USE_PUBLISHED_PACKAGES: '1'
         run: node internal/shadcn-registry/verify-full-catalog.mjs
 
   # Historical required check name. The two Vitest lanes and the public
