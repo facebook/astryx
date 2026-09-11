@@ -11,6 +11,7 @@
 
 export {DateInput} from './DateInput';
 export type {
+  DateInputAdaptationValue,
   DateInputProps,
   DateInputSize,
   DateInputFormat,

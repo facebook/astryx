@@ -12,6 +12,10 @@
  *   `extends: true`; the `node` project deliberately does NOT extend, so it
  *   runs in a plain node environment without the jsdom/StyleX overhead.
  *
+ *   Storybook is split across BOTH projects on purpose: `.storybook/` config
+ *   invariants are pure assertions about config objects and belong to `node`,
+ *   while a suite about a STORY has to render one and belongs to `ui`.
+ *
  *   (Migrated from the removed `vitest.workspace.ts` for Vitest 4, which
  *   dropped the standalone workspace file in favor of inline `test.projects`.)
  *
@@ -89,9 +93,10 @@ export default defineConfig({
     // Test projects (migrated from vitest.workspace.ts). Partitioning rule
     // (nothing can fall through):
     //   - `ui`   = packages/core + packages/lab + packages/charts + packages/richtext
-    //              + packages/vega — need jsdom, the StyleX babel
-    //              transform, and the jest-dom setup; inherit all of that from
-    //              the root config via `extends: true`.
+    //              + packages/vega + apps/storybook/stories — need jsdom,
+    //              the StyleX babel transform, and the jest-dom setup;
+    //              inherit all of that from the root config via
+    //              `extends: true`.
     //   - `node` = everything else (CLI, build tooling, scripts, internal
     //              utils, and app-level suites that need no DOM) — no DOM, no
     //              StyleX/babel transform, no jest-dom
@@ -123,6 +128,10 @@ export default defineConfig({
             'packages/charts/src/**/*.test.{ts,tsx,mjs}',
             'packages/richtext/src/**/*.test.{ts,tsx,mjs}',
             'packages/vega/src/**/*.test.{ts,tsx,mjs}',
+            // Story-level suites: a story can only be asserted on where it can
+            // be RENDERED, so these belong here rather than in `node` beside
+            // the .storybook config invariants.
+            'apps/storybook/stories/**/*.test.{ts,tsx}',
           ],
         },
       },

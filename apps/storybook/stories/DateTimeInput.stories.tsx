@@ -14,9 +14,7 @@ const meta: Meta<typeof DateTimeInput> = {
     docs: {
       description: {
         component:
-          'A date-time field that fits the pointer it is used with. On a mouse or trackpad it renders the existing side-by-side date and time inputs: the date half opens a calendar popover, and the time half accepts typed entry plus optional preset times.\n\n' +
-          "Where the primary pointer is a finger (`pointer: coarse`), the closed control still renders separate Date and Time segments; tapping either segment opens a bottom sheet directly to the matching section. A segmented Date/Time pill stays at the top of the sheet for switching; Date reuses Astryx's custom swipable month picker and month/year wheels, its Save date action advances to Time, and Time uses accessible hour/minute/second wheels with the final Save action. The public props are the same on both surfaces.\n\n" +
-          '**Seeing the touch surface:** open any story on a phone/tablet or in device emulation reporting a coarse pointer. No separate story is needed because the same component chooses the surface at runtime.',
+          'A date-time field with an exact caller-owned adaptations policy over native, popover, and bottom-sheet surfaces for both segments. The policy names the server-rendered default and any ordered width/pointer rules. Without adaptations, the deprecated nativePicker compatibility path keeps its released pointer-driven and per-segment fallback behavior.',
       },
     },
   },
@@ -78,7 +76,8 @@ const meta: Meta<typeof DateTimeInput> = {
       control: 'radio',
       options: ['touch', 'always', 'never'],
       description:
-        "Date and time picker surfaces: native browser/OS controls on touch by default, native wherever compatible, or Astryx's surfaces everywhere",
+        'Deprecated. Use adaptations. At rest, touch maps to default popover plus a coarse-pointer native rule; always maps to constant native; never maps to default popover plus a coarse-pointer bottom-sheet rule. adaptations additionally holds the active tree until idle.',
+      table: {category: 'Deprecated'},
     },
     numberOfMonths: {
       control: 'radio',
@@ -138,35 +137,77 @@ export const WithValue: Story = {
   },
 };
 
-export const NativePickerModes: Story = {
+/**
+ * A caller-owned `adaptations` policy: the pair of surfaces follows rules you
+ * write rather than the pointer alone.
+ *
+ * This one defaults to the platform's own date and time controls — including on
+ * the server, which a pointer test cannot decide — and keeps Astryx's typed
+ * fields with their anchored calendar and time list on a touch device, where a
+ * tablet user cross-referencing dates is better served by a visible month grid
+ * than by an OS wheel. That is the opposite of what `nativePicker` can say,
+ * which is the point: a policy value is exact, and holds on whatever pointer is
+ * reading it.
+ *
+ * Note what authoring `native` costs the whole field: because the value is a
+ * promise that BOTH segments are platform controls, the props the OS picker
+ * cannot express — `hasSeconds`, a non-default `timeIncrement`,
+ * `timeOptionInterval`, `weekStartsOn`, `numberOfMonths` — cannot be set on
+ * this field at all, on any pointer. They throw at render, naming the policy
+ * path, rather than being quietly dropped on whichever device selects the
+ * native rule. A field that needs one of them wants a policy over `popover` and
+ * `bottom-sheet`, or the legacy `nativePicker`, whose per-segment fallback
+ * retains an Astryx time field instead.
+ *
+ * Rules are checked in author order and the LAST match wins.
+ */
+export const AdaptationsCoarsePopover: Story = {
+  name: 'Adaptations — Astryx popovers on a coarse pointer',
   render: () => {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       '2026-03-15T14:30' as ISODateTimeString,
     );
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
-        <DateTimeInput
-          label="nativePicker='touch' (default)"
-          description="Native date and compatible time controls on a coarse primary pointer"
-          value={value}
-          onChange={setValue}
-          nativePicker="touch"
-        />
-        <DateTimeInput
-          label="nativePicker='always'"
-          description="Native date and compatible time controls on every pointer type"
-          value={value}
-          onChange={setValue}
-          nativePicker="always"
-        />
-        <DateTimeInput
-          label="nativePicker='never'"
-          description="Astryx bottom sheet on coarse pointers; calendar popover on fine pointers"
-          value={value}
-          onChange={setValue}
-          nativePicker="never"
-        />
-      </div>
+      <DateTimeInput
+        label="Starts"
+        description="Typed fields with anchored calendar on a finger; platform controls on a mouse"
+        value={value}
+        onChange={setValue}
+        adaptations={{
+          default: 'native',
+          rules: [{when: {pointer: 'coarse'}, value: 'popover'}],
+        }}
+      />
+    );
+  },
+};
+
+/**
+ * The coordinated Date/Time sheet on a FINE pointer.
+ *
+ * `bottom-sheet` names the touch surface exactly, so it renders on the mouse
+ * you are reading this with: two read-only segments that open one sheet with a
+ * Date panel and a Time panel, rather than two independent popovers. Useful on
+ * a kiosk or a stylus-driven screen, where the pointer reports `fine` but the
+ * reach is a whole arm — and impossible to ask for with `nativePicker`.
+ *
+ * `default` with no rules is also the SSR-safe spelling: the server renders
+ * this surface, and hydration matches it.
+ */
+export const AdaptationsFineBottomSheet: Story = {
+  name: 'Adaptations — coordinated sheet on a fine pointer',
+  render: () => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T14:30' as ISODateTimeString,
+    );
+    return (
+      <DateTimeInput
+        label="Starts"
+        description="Policy-pinned Date/Time sheet, on any pointer"
+        value={value}
+        onChange={setValue}
+        adaptations={{default: 'bottom-sheet', rules: []}}
+      />
     );
   },
 };

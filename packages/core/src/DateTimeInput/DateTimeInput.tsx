@@ -15,7 +15,10 @@
  * - /packages/core/src/DateTimeInput/DateTimeInput.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/DateTimeInput/DateTimeInput.test.tsx (desktop tests for new/changed behavior)
  * - /packages/core/src/DateTimeInput/DateTimeInputTouch.test.tsx (touch-surface tests)
+ * - /packages/core/src/DateTimeInput/DateTimeInputAdaptations.test.tsx (surface policy tests)
  * - /packages/core/src/DateTimeInput/index.ts (exports if types change)
+ * - /packages/core/src/hooks/useAdaptationSurfaceLatch.ts (holds a surface mid-interaction)
+ * - /packages/core/src/theme/componentAdaptations.ts (policy shape + compiler)
  * - /apps/storybook/stories/DateTimeInput.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/DateTimeInput/ (showcase blocks)
  */
@@ -90,9 +93,15 @@ import {
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useAdaptationSurfaceLatch} from '../hooks/useAdaptationSurfaceLatch';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
+import {
+  forEachAuthoredAdaptationValue,
+  type ComponentAdaptations,
+} from '../theme/componentAdaptations';
+import {useComponentAdaptations} from '../theme/useComponentAdaptations';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {useLocale, useTranslator} from '../i18n';
@@ -105,7 +114,31 @@ export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
 };
 
+/**
+ * When DateTimeInput hands date and time picking to the browser/OS instead of
+ * its own surfaces.
+ *
+ * @deprecated Use `adaptations` with `DateTimeInputAdaptationValue`. The closest
+ * policy for each shorthand is documented on `DateTimeInputProps.nativePicker`.
+ */
 export type DateTimeInputNativePicker = 'touch' | 'always' | 'never';
+
+/**
+ * The surfaces a resolved DateTimeInput adaptation policy can name.
+ *
+ * The whole domain of `adaptations`, and each value is EXACT — it names one
+ * tree for BOTH segments, on any pointer:
+ * - `'native'`: the platform's own date and time controls in Astryx chrome
+ * - `'popover'`: the typed fields with the calendar and time list in anchored
+ *   popovers
+ * - `'bottom-sheet'`: the read-only segments opening the coordinated Date/Time
+ *   sheet
+ *
+ * Spelled as literals rather than aliased to an internal type, so a consumer's
+ * compiler diagnostics never name something they cannot import.
+ */
+export type DateTimeInputAdaptationValue =
+  'native' | 'popover' | 'bottom-sheet';
 
 export type DateTimeInputHourFormat = '12h' | '24h';
 
@@ -475,37 +508,211 @@ export interface DateTimeInputProps extends Omit<
   weekStartsOn?: DayOfWeek | DayOfWeekName;
 
   /**
-   * When date and time picking are handed to the browser/OS instead of Astryx's
-   * calendar and time surfaces.
+   * Deprecated shorthand for choosing the date and time surfaces. Existing
+   * calls keep their released behavior, but new code should use `adaptations`
+   * so the server-rendered surface and every environment rule are explicit.
    *
-   * - `'touch'` (default): native date and time inputs on a coarse primary
-   *   pointer; Astryx's typed fields and popovers otherwise
-   * - `'always'`: native date and time inputs wherever the browser supports them
-   * - `'never'`: Astryx's own surfaces everywhere — typed fields on a fine
-   *   pointer and the coordinated Date/Time bottom sheet on a coarse pointer
+   * For the initial render and while the field is idle, map each value as
+   * follows:
+   * - `'touch'` → `{default: 'popover', rules: [{when: {pointer: 'coarse'}, value: 'native'}]}`
+   * - `'always'` → `{default: 'native', rules: []}`
+   * - `'never'` → `{default: 'popover', rules: [{when: {pointer: 'coarse'}, value: 'bottom-sheet'}]}`
    *
-   * Native pickers cannot express `numberOfMonths`, `weekStartsOn`,
-   * `dateConstraints`, or `timeOptionInterval`. Calendar-only options are
-   * ignored in native mode and constraints are enforced on commit. The native
-   * time control is used for the default minute-precision contract; requesting
-   * `hasSeconds`, a non-default `timeIncrement`, or `timeOptionInterval` keeps
-   * Astryx's time field because iOS cannot represent those behaviors faithfully.
-   * `min` / `max` are forwarded to each native control as hints and enforced in
-   * JavaScript. `hourFormat` formats the closed value; the OS picker follows the
-   * user's locale.
+   * The new policy intentionally differs during an active interaction:
+   * `adaptations` holds the current tree until the field is idle, while
+   * `nativePicker="touch"` and `nativePicker="never"` keep their released
+   * immediate pointer-switch behavior.
+   *
+   * Those mappings select the same idle surfaces for fields whose other props
+   * every selected surface can honor. Legacy `'touch'` and `'always'` calls may
+   * instead retain an Astryx time field when `hasSeconds`, a non-default
+   * `timeIncrement`, or `timeOptionInterval` is set, and may ignore
+   * `numberOfMonths` or `weekStartsOn` on the native date control. Those mixed
+   * fallbacks have no exact `adaptations` equivalent; keep the shorthand until
+   * the callsite can choose an exact supported surface. `min`, `max`, and
+   * `dateConstraints` remain supported and are enforced on commit.
+   *
+   * Mutually exclusive with `adaptations`.
    *
    * @default 'touch'
+   * @deprecated Use `adaptations`; the mapping above preserves idle surface
+   * selection when the exact surfaces support the field's other props.
+   */
+  nativePicker?: DateTimeInputNativePicker;
+
+  /**
+   * Environment-conditioned surface policy: which pair of pickers this field
+   * renders, decided by rules you write instead of by the pointer alone.
+   *
+   * `default` is the server-rendered, hydration, and no-match value; ordered
+   * `rules` map conditions to the same three values, and the LAST matching rule
+   * wins — condition shape creates no specificity. Width names resolve against
+   * the NEAREST Theme's width points, `from` is inclusive, `below` is
+   * exclusive, and the fields of one `when` are ANDed. An empty `rules` array
+   * is well-formed and pins the field to `default` everywhere.
+   *
+   * Each value is exact and holds on any pointer, which is the difference from
+   * `nativePicker`: `'bottom-sheet'` presents the coordinated sheet to a mouse
+   * if that is what the policy says, and `'popover'` keeps the typed fields on
+   * a phone. `'native'` means native for BOTH segments — there is no
+   * per-segment fallback inside it.
+   *
+   * That exactness is why a policy naming `'native'` anywhere — `default` or
+   * ANY rule, matched today or not — is checked against the props the platform
+   * controls cannot express: `numberOfMonths={2}`, an explicit `weekStartsOn`,
+   * `hasSeconds`, a non-default `timeIncrement`, or any `timeOptionInterval`
+   * throw at render rather than quietly retaining an Astryx field on whichever
+   * device selects that rule. `min`, `max` and `dateConstraints` stay
+   * supported: native mode forwards the bounds and enforces constraints on
+   * commit.
+   *
+   * Mutually exclusive with `nativePicker` — the two name the same choice, so
+   * passing both defined values throws before a surface opens. An explicitly
+   * spread `undefined` is not a conflict.
+   *
+   * While the field is in use the resolved surface is held: a rule boundary
+   * crossed during an open picker, or while the field has focus, applies once
+   * the surface has closed and focus has left, so a rotation never swallows a
+   * half-typed time.
+   *
    * @example
    * ```
    * <DateTimeInput
-   *   label="Event time"
+   *   label="Starts"
    *   value={dateTime}
    *   onChange={setDateTime}
-   *   nativePicker="never"
+   *   adaptations={{
+   *     default: 'popover',
+   *     rules: [
+   *       {when: {width: {below: 'md'}}, value: 'bottom-sheet'},
+   *       {when: {width: {below: 'sm'}, pointer: 'coarse'}, value: 'native'},
+   *     ],
+   *   }}
    * />
    * ```
    */
-  nativePicker?: DateTimeInputNativePicker;
+  adaptations?: ComponentAdaptations<DateTimeInputAdaptationValue>;
+}
+
+/** Runtime domain for `adaptations`, so an untyped caller is rejected too. */
+const DATE_TIME_INPUT_ADAPTATION_VALUES = [
+  'native',
+  'popover',
+  'bottom-sheet',
+] as const satisfies ReadonlyArray<DateTimeInputAdaptationValue>;
+
+/** Diagnostic root for every `adaptations` failure on this component. */
+const ADAPTATIONS_PATH = '<DateTimeInput adaptations>';
+
+/**
+ * `nativePicker` and `adaptations` name the same choice, so accepting both
+ * would make precedence — not the caller — decide the surfaces.
+ *
+ * Checked on `undefined`, not on presence: spreading a props bag that carries
+ * an explicit `adaptations: undefined` beside a real `nativePicker` is an
+ * ordinary call, not a conflict (spec:AST-031 FR6).
+ */
+function assertExclusiveSurfaceProps(
+  nativePicker: DateTimeInputNativePicker | undefined,
+  adaptations: ComponentAdaptations<DateTimeInputAdaptationValue> | undefined,
+): void {
+  if (nativePicker !== undefined && adaptations !== undefined) {
+    throw new Error(
+      '<DateTimeInput> received both `nativePicker` and `adaptations`, which select the same surfaces. Pass `adaptations` for an environment-conditioned policy — its `native` value is what `nativePicker` reaches — or `nativePicker` for the pointer-driven shorthand.',
+    );
+  }
+}
+
+/**
+ * Reject a policy that names a surface it has also made impossible to draw.
+ *
+ * `'native'` is a promise about BOTH segments, so every prop the platform
+ * controls cannot represent is a contradiction with it: the OS picker has no
+ * month grid and no week-start control, iOS has no seconds wheel, its `step` is
+ * validation rather than picker cadence, and it has no preset-time list. Under
+ * the legacy `nativePicker` those props quietly retain an Astryx time field
+ * per segment; a policy that names an exact surface cannot do that without
+ * making the name a lie, so it throws instead — in production as well as
+ * development.
+ *
+ * Every authored value is checked — `default` and EVERY rule, including ones
+ * today's viewport cannot match — so the failure lands on the author's machine
+ * instead of on the one phone that selects that rule (spec:AST-031 IR3).
+ *
+ * Presence versus value matters: `weekStartsOn={0}` and `timeOptionInterval`
+ * are rejected because they were stated at all, while `hasSeconds={false}`,
+ * `timeIncrement={1}` and `numberOfMonths={1}` state the shape native mode
+ * already has and pass. `min`, `max` and `dateConstraints` are never rejected —
+ * native mode forwards the bounds and enforces constraints on commit.
+ */
+function assertNativeSurfaceIsDrawable(
+  adaptations: ComponentAdaptations<DateTimeInputAdaptationValue>,
+  {
+    numberOfMonths,
+    weekStartsOn,
+    hasSeconds,
+    timeIncrement,
+    timeOptionInterval,
+  }: DateTimeInputProps,
+): void {
+  const conflicts: string[] = [];
+  if (numberOfMonths !== undefined && numberOfMonths !== 1) {
+    conflicts.push(
+      `\`numberOfMonths={${numberOfMonths}}\` (the platform picker has no month grid to widen)`,
+    );
+  }
+  if (weekStartsOn !== undefined) {
+    conflicts.push(
+      `\`weekStartsOn={${JSON.stringify(weekStartsOn)}}\` (the platform picker follows the OS locale's first day of week)`,
+    );
+  }
+  if (hasSeconds) {
+    // Truthiness, not `=== true`, because that is how the RENDER reads it:
+    // `usesNativeTimePicker` is gated on `!hasSeconds`, so an untyped caller's
+    // `hasSeconds={1}` retains the Astryx time field. Validating on strict
+    // equality would let exactly that call through a policy promising two
+    // platform controls, and the field would quietly render one.
+    conflicts.push(
+      `\`hasSeconds={${JSON.stringify(hasSeconds)}}\` (iOS has no seconds wheel)`,
+    );
+  }
+  if (timeIncrement !== undefined && timeIncrement !== 1) {
+    conflicts.push(
+      `\`timeIncrement={${timeIncrement}}\` (native \`step\` is validation, not picker cadence)`,
+    );
+  }
+  if (timeOptionInterval !== undefined) {
+    conflicts.push(
+      `\`timeOptionInterval={${timeOptionInterval}}\` (the platform picker has no preset-time list)`,
+    );
+  }
+  if (conflicts.length === 0) {
+    return;
+  }
+  forEachAuthoredAdaptationValue(
+    adaptations,
+    ADAPTATIONS_PATH,
+    (value, valuePath) => {
+      if (value === 'native') {
+        throw new Error(
+          `${valuePath} is "native", which cannot honor ${conflicts.join(
+            ' or ',
+          )}. Use "popover" or "bottom-sheet" for that value, or drop the prop.`,
+        );
+      }
+    },
+  );
+}
+
+/** Run the latch's focus handler after the caller's own, never instead of it. */
+function composeFocusHandler(
+  callerHandler: React.FocusEventHandler<HTMLElement> | undefined,
+  latchHandler: (event: FocusEvent<HTMLElement>) => void,
+): React.FocusEventHandler<HTMLElement> {
+  return event => {
+    callerHandler?.(event);
+    latchHandler(event);
+  };
 }
 
 function splitDateTime(dt: ISODateTimeString | undefined): {
@@ -1910,22 +2117,64 @@ function PointerDateTimeField({
 PointerDateTimeField.displayName = 'PointerDateTimeField';
 
 /**
- * A combined date and time picker whose `nativePicker` prop chooses both
- * surfaces. Native modes use OS-owned date and time controls in Astryx field
- * chrome. With `nativePicker="never"`, fine pointers keep the typed fields and
- * popovers while coarse pointers get Astryx's coordinated Date/Time bottom
- * sheet.
+ * A combined date and time picker whose `adaptations` policy selects one exact
+ * surface for both segments: native controls, typed fields with anchored
+ * popovers, or the coordinated Date/Time bottom sheet. `default` owns the
+ * server-rendered and hydration surface; ordered rules may then respond to the
+ * nearest Theme's width points and the primary pointer (spec:AST-031 FR3).
+ *
+ * Without `adaptations`, the deprecated `nativePicker` compatibility path keeps
+ * its released pointer-driven and per-segment fallback behavior.
  */
 export function DateTimeInput({
-  nativePicker = 'touch',
+  nativePicker,
+  adaptations,
   ...props
 }: DateTimeInputProps) {
+  // Both props before any hook: a call that names the surfaces twice is a
+  // mistake to report, not a precedence to resolve.
+  assertExclusiveSurfaceProps(nativePicker, adaptations);
+
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
+  // Called unconditionally, with `undefined` for a call site that has no
+  // policy: the resolver then subscribes to nothing and publishes nothing, so
+  // the legacy path below runs exactly the media query it always did.
+  const {value: adaptedSurface} = useComponentAdaptations(adaptations, {
+    path: ADAPTATIONS_PATH,
+    values: DATE_TIME_INPUT_ADAPTATION_VALUES,
+  });
+  const {surface, onFocusCapture, onBlurCapture} =
+    useAdaptationSurfaceLatch(adaptedSurface);
+
+  if (adaptations !== undefined) {
+    assertNativeSurfaceIsDrawable(adaptations, props);
+    // The two surfaces are separate trees, so the latch's focus handlers ride
+    // the field root each of them spreads its pass-through props onto.
+    const surfaceProps: DateTimeInputProps = {
+      ...props,
+      onFocusCapture: composeFocusHandler(props.onFocusCapture, onFocusCapture),
+      onBlurCapture: composeFocusHandler(props.onBlurCapture, onBlurCapture),
+    };
+    if (surface === 'bottom-sheet') {
+      return <TouchDateTimeField {...surfaceProps} />;
+    }
+    // The pointer field draws both native and Astryx segments; the exact value
+    // picks which, on any pointer, rather than letting its own media query.
+    return (
+      <PointerDateTimeField
+        {...surfaceProps}
+        nativePicker={surface === 'native' ? 'always' : 'never'}
+      />
+    );
+  }
+
+  const legacyNativePicker = nativePicker ?? 'touch';
   const usesNativePicker =
-    nativePicker === 'always' || (nativePicker === 'touch' && isTouch);
+    legacyNativePicker === 'always' ||
+    (legacyNativePicker === 'touch' && isTouch);
 
   return usesNativePicker || !isTouch ? (
-    <PointerDateTimeField {...props} nativePicker={nativePicker} />
+    <PointerDateTimeField {...props} nativePicker={legacyNativePicker} />
   ) : (
     <TouchDateTimeField {...props} />
   );
