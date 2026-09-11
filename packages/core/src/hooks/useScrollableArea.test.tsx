@@ -283,7 +283,7 @@ describe('useScrollableArea', () => {
     void act(() => viewport.dispatchEvent(new Event('scroll')));
     flushFrame();
 
-    expect(viewport).not.toHaveAttribute('tabindex');
+    expect(viewport).toHaveAttribute('tabindex', '-1');
     expect(document.activeElement).toBe(viewport);
   });
 

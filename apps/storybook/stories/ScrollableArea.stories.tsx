@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '@astryxdesign/core/Button';
@@ -66,7 +66,6 @@ const styles = stylex.create({
   verticalRail: {
     display: 'grid',
     gap: spacingVars['--spacing-2'],
-    minBlockSize: 620,
     padding: spacingVars['--spacing-2'],
   },
   twoAxisCanvas: {
@@ -147,7 +146,7 @@ const styles = stylex.create({
   },
   nestedViewport: {
     inlineSize: 280,
-    blockSize: 100,
+    blockSize: 140,
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colorVars['--color-border-emphasized'],
@@ -155,7 +154,7 @@ const styles = stylex.create({
   },
   nestedOuter: {
     inlineSize: 320,
-    blockSize: 260,
+    blockSize: 300,
   },
   verticalWriting: {
     writingMode: 'vertical-rl',
@@ -428,6 +427,42 @@ export const LogicalDirections: Story = {
       </ScrollableArea>
     </VStack>
   ),
+  parameters: {controls: {disable: true}},
+};
+
+function RTLBehaviorProbeStory() {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const scrollToInlineEnd = () => {
+    const viewport = viewportRef.current;
+    if (viewport == null) {
+      return;
+    }
+    viewport.scrollLeft +=
+      getComputedStyle(viewport).direction === 'rtl' ? -160 : 160;
+  };
+
+  return (
+    <VStack gap={3} xstyle={styles.canvas}>
+      <Button
+        label="Scroll inline end"
+        data-rtl-scroll-button="true"
+        onClick={scrollToInlineEnd}>
+        Scroll inline end
+      </Button>
+      <ScrollableArea
+        ref={viewportRef}
+        axis="inline"
+        label="Logical direction probe"
+        data-rtl-scroll-probe="true"
+        xstyle={styles.viewport}>
+        <Cards count={6} />
+      </ScrollableArea>
+    </VStack>
+  );
+}
+
+export const RTLBehaviorProbe: Story = {
+  render: () => <RTLBehaviorProbeStory />,
   parameters: {controls: {disable: true}},
 };
 

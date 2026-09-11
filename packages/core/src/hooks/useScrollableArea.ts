@@ -291,6 +291,11 @@ export function useScrollableArea({
     ): ScrollableElementProps<E> => {
       const hasEffectiveAxis =
         state.inline.isScrollable || state.block.isScrollable;
+      const keepsProgrammaticFocus =
+        !hasEffectiveAxis &&
+        viewport != null &&
+        typeof document !== 'undefined' &&
+        document.activeElement === viewport;
       const behaviorStyle: CSSProperties = {...props.style};
       const containInline =
         scrollChaining === 'contain' && state.inline.isScrollable;
@@ -311,7 +316,11 @@ export function useScrollableArea({
           ? {
               role: keyboardAccess.role ?? 'group',
               'aria-label': keyboardAccess.label,
-              tabIndex: hasEffectiveAxis ? 0 : undefined,
+              tabIndex: hasEffectiveAxis
+                ? 0
+                : keepsProgrammaticFocus
+                  ? -1
+                  : undefined,
             }
           : {};
 
@@ -339,6 +348,7 @@ export function useScrollableArea({
       mapping,
       scrollChaining,
       state,
+      viewport,
     ],
   );
 
