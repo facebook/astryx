@@ -51,7 +51,6 @@ import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 import {
-  Angle,
   Aperture,
   ArrowDownToLine,
   ArrowUpToLine,
@@ -92,6 +91,10 @@ import {
   TextAlignEnd,
   TextAlignJustify,
   TextAlignStart,
+  // The angle mark for the Rotation field. Not `Angle`: that landed in
+  // lucide after the version this repo pins, and a template has to build
+  // against the pack the consumer actually gets.
+  TriangleRight,
   Type,
   Underline,
   Undo2,
@@ -2539,7 +2542,7 @@ export default function CanvasEditor() {
                         <InspectorSection title="Transforms">
                           <InspectorRow label="Rotate">
                             <AxisInput
-                              icon={Angle}
+                              icon={TriangleRight}
                               label="Rotation"
                               value={selected.rotation}
                               onChange={next =>

@@ -4606,6 +4606,11 @@
       "aliases": []
     },
     {
+      "name": "template-canvas-editor",
+      "path": "templates/canvas-editor",
+      "aliases": []
+    },
+    {
       "name": "template-centered-hero",
       "path": "templates/centered-hero",
       "aliases": []
