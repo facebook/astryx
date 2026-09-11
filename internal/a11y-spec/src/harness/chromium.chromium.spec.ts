@@ -3,7 +3,7 @@
 /**
  * @file chromium.chromium.spec.ts
  * @input Uses @playwright/test and the public Chromium harness seam
- * @output Focused accessibility-tree mapping tests for computed node state
+ * @output Focused accessibility-tree mapping and clipping-aware rendered-visibility tests
  * @position Harness regression coverage; proves browser AX properties are exposed without DOM substitution.
  */
 
@@ -149,6 +149,9 @@ test('subjects report rendered visibility', async ({page}) => {
     <div id="visible">Visible</div>
     <div id="hidden" style="display:none">Hidden</div>
     <div id="transparent" style="opacity:0">Transparent</div>
+    <div id="clipped" style="clip-path:inset(100%)">Clipped</div>
+    <div id="partially-clipped" style="clip-path:inset(25%)">Partially clipped</div>
+    <div id="offscreen" style="position:absolute;left:-10000px">Offscreen</div>
   `);
   const cdp = await page.context().newCDPSession(page);
   const harness = createChromiumHarness({
@@ -158,10 +161,18 @@ test('subjects report rendered visibility', async ({page}) => {
     related: {
       hidden: page.locator('#hidden'),
       transparent: page.locator('#transparent'),
+      clipped: page.locator('#clipped'),
+      partiallyClipped: page.locator('#partially-clipped'),
+      offscreen: page.locator('#offscreen'),
     },
   });
 
   expect(await (await harness.subject()).isVisible()).toBe(true);
   expect(await (await harness.related('hidden')).isVisible()).toBe(false);
   expect(await (await harness.related('transparent')).isVisible()).toBe(false);
+  expect(await (await harness.related('clipped')).isVisible()).toBe(false);
+  expect(await (await harness.related('partiallyClipped')).isVisible()).toBe(
+    true,
+  );
+  expect(await (await harness.related('offscreen')).isVisible()).toBe(true);
 });
