@@ -391,6 +391,15 @@ block axis are props, leaving only the `min-width` HStack has no prop for.
 The zoom control's wrapper is gone entirely: a div whose only job was one
 margin is a margin the control carries itself.
 
+**A nested row action is a real `IconButton` now.** It was a hand-rolled
+20px `button` because the element scale stops at 28px and a control the
+row's own height would push a 28px row to 36. A `size="sm"` `IconButton`
+pulled in by the row's padding step on every edge lays out as 20px while
+staying 28px to the pointer: the glyph does not move, the row keeps its
+height, and the target grows to what a pointer expects. No tooltip on these
+— a bubble opening off a 28px row covers the row above it, and a padlock and
+an × already say what they do.
+
 A note if you wire the Appearance menu to a Theme of your own: a nested Theme
 recolours text but does not repaint the page behind transparent panels, so an
 explicit mode needs a surface — here a `Section` wrapping the editor — or the

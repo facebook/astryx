@@ -922,9 +922,9 @@ const styles = stylex.create({
   tabClose: {
     width: {
       default: 0,
-      '@media (hover: none)': 'var(--spacing-5)',
-      [stylex.when.ancestor(':hover')]: 'var(--spacing-5)',
-      [stylex.when.ancestor(':focus-within')]: 'var(--spacing-5)',
+      '@media (hover: none)': 'var(--size-element-sm)',
+      [stylex.when.ancestor(':hover')]: 'var(--size-element-sm)',
+      [stylex.when.ancestor(':focus-within')]: 'var(--size-element-sm)',
     },
     opacity: {
       default: 0,
@@ -941,7 +941,7 @@ const styles = stylex.create({
   },
   // The active tab keeps its close, the way an open document keeps a way to
   // be shut without being pointed at first.
-  tabClosePinned: {width: 'var(--spacing-5)', opacity: 1},
+  tabClosePinned: {width: 'var(--size-element-sm)', opacity: 1},
   // Hold the label column at its set width. The fields beside it carry the
   // flex min-width reset, so without this the row spends its shrinkage on
   // whichever item gives way first and each label ends up a different width —
@@ -959,27 +959,25 @@ const styles = stylex.create({
   // keyboard-reachable; it was the Button *component's* minimum that had to
   // go, not the element.
   itemAction: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 'var(--spacing-5)',
-    height: 'var(--spacing-5)',
-    padding: 0,
-    border: 'none',
-    borderRadius: 'var(--radius-inner)',
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': 'var(--color-neutral)',
-    },
-    // Icon tokens, not text ones. The two agree at the theme root but this
-    // editor's theme separates them, and a lock keyed to the text ramp came
-    // out darker than the layer glyphs sitting beside it on the same row.
+    // A full 28px button laid out as 20px. The row is 28px with a step of
+    // padding, so a control its own height would push it to 36; pulling that
+    // same step off every edge hands the padding back to the layout. The
+    // glyph does not move — centred in a 28px box that now starts a step
+    // early, it lands exactly where a 20px button would have put it — but
+    // the target it sits in is the full 28px the pointer expects.
+    //
+    // Stated against the row's own padding token rather than as -4px, so the
+    // two cannot drift apart.
+    margin: 'calc(-1 * var(--spacing-1))',
+    // Icon tokens, not the text ones a ghost Button reaches for. The two
+    // agree at the theme root but this editor's theme separates them, and a
+    // lock keyed to the text ramp came out darker than the layer glyphs
+    // sitting beside it on the same row.
     color: {
       default: 'var(--color-icon-secondary)',
       ':hover': 'var(--color-icon-primary)',
       ':disabled': 'var(--color-icon-disabled)',
     },
-    cursor: {default: 'pointer', ':disabled': 'default'},
   },
   // The colour chip that opens a picker. Square at the field's own height
   // and rounded to the field's own corner, so it reads as another control
@@ -1275,15 +1273,19 @@ function ItemAction({
   xstyle?: stylex.StyleXStyles;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={isDisabled}
+    <IconButton
+      label={label}
+      // No tooltip. These sit in 28px rows, and a bubble opening off one
+      // covers the row above it — a lot of chrome for a padlock and an ×
+      // that already say what they do. `label` still names them for anyone
+      // reading the rail through assistive tech.
+      icon={<Icon icon={icon} size={ICON} />}
+      variant="ghost"
+      size="sm"
+      isDisabled={isDisabled}
       onClick={onClick}
-      {...stylex.props(styles.itemAction, xstyle)}>
-      <Icon icon={icon} size={ICON} />
-    </button>
+      xstyle={[styles.itemAction, xstyle]}
+    />
   );
 }
 
