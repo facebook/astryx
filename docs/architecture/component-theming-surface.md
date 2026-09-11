@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-08-30
+approved_at: 2026-09-07
 owners: [cixzhang, imdreamrunner]
 applies_to:
   [
@@ -30,7 +30,13 @@ verified_by:
     packages/core/src/theme/extensibleAxes.test.ts,
     packages/core/src/theme/derivedVarRegistry.test.ts,
   ]
-deciding_specs: [spec:AST-012/DEC-2, spec:AST-012/DEC-3, spec:AST-012/DEC-5]
+deciding_specs:
+  [
+    spec:AST-012/DEC-2,
+    spec:AST-012/DEC-3,
+    spec:AST-012/DEC-5,
+    spec:AST-017/DEC-1,
+  ]
 ---
 
 # Component theming surface
@@ -171,7 +177,16 @@ but acceptance alone is best effort, not a compatibility promise.
   on by consumers. Exact mappings remain checked code/metadata, not copied prose;
   known enforcement gaps are recorded in `architecture:theme-compilation`.
 - **INV12 — Aliases are compatibility, not anatomy.** Deprecated target aliases
-  may remain supported but do not count as current semantic parts.
+  remain released compatibility paths until their approved removal release and do
+  not count as current semantic parts. Before removal, `themeProps(..., {legacyNames})` and `ComponentThemingTarget.deprecatedFor` remain generic
+  compatibility mechanisms: alias metadata names the exact canonical replacement,
+  CLI discovery labels the alias as deprecated, and theme build warns with that
+  replacement whenever theme source uses the deprecated key. Maintained published
+  Astryx themes, CLI templates, and copyable new examples use canonical keys;
+  deprecated aliases remain discoverable for existing consumers but are excluded
+  from new examples. Removing an alias or its supporting metadata follows
+  `spec:AST-017` as a breaking compatibility change and is not authorized before
+  the approved 0.7.0 window below.
 - **INV13 — Family ownership is explicit.** A family document may own a shared
   target for several components, but local docs link to that owner rather than
   leaving ownership to inference.
@@ -194,6 +209,60 @@ but acceptance alone is best effort, not a compatibility promise.
   authoritative; it is not a permanent adaptation exemption or an extension
   point.
 
+## Approved deprecated-surface removal window
+
+Version **0.7.0** is the first release authorized to remove the deprecated
+component-theming compatibility surface in this section. Before 0.7.0, every item
+below remains a supported compatibility path. Removal is a breaking change under
+`spec:AST-017`: it requires a `[breaking]` Changeset, the exact old-to-new mapping,
+and a usable migration path or instructions.
+
+The approved target-alias migration is:
+
+| Deprecated target             | Canonical target         |
+| ----------------------------- | ------------------------ |
+| `base-table`                  | `table`                  |
+| `checkbox`                    | `checkbox-indicator`     |
+| `codeblock`                   | `code-block`             |
+| `codeblock-copy-button`       | `code-block-copy-button` |
+| `codeblock-header`            | `code-block-header`      |
+| `codeblock-title`             | `code-block-title`       |
+| `date-input-clear-icon`       | `input-clear-icon`       |
+| `date-range-input-clear-icon` | `input-clear-icon`       |
+| `hovercard`                   | `hover-card`             |
+| `multi-selector-clear-icon`   | `input-clear-icon`       |
+| `navicon`                     | `nav-icon`               |
+| `popover-surface`             | `popover`                |
+| `progressbar`                 | `progress-bar`           |
+| `progressbar-fill`            | `progress-bar-fill`      |
+| `progressbar-mark`            | `progress-bar-mark`      |
+| `progressbar-track`           | `progress-bar-track`     |
+| `radio`                       | `radio-indicator`        |
+| `radio-dot`                   | `radio-indicator-dot`    |
+| `selector-clear-icon`         | `input-clear-icon`       |
+| `statusdot`                   | `status-dot`             |
+| `textarea`                    | `text-area`              |
+
+The same 0.7.0 window covers the compatibility machinery used only to preserve
+those aliases: the `themeProps(..., {legacyNames})` option,
+`ThemePropsOptions.legacyNames`, `ComponentThemingTarget.deprecatedFor`, and
+filtering or discovery behavior whose only purpose is to include or exclude
+those deprecated targets.
+
+It also covers deprecated bare prop/value and state selector classes emitted by
+the theming pipeline, such as `.primary`, `.sm`, and `.checked`, where the stable
+replacement is the canonical `astryx-*` target plus its explicit reflected
+`data-*` attribute. Semantic `defineTheme({components})` keys remain unchanged.
+Because a bare class does not identify its prop/state axis and may be consumer-
+authored, this CSS migration may require explicit instructions rather than a
+global codemod.
+
+Canonical target names, semantic component keys, reflected `data-*` selectors,
+and current target behavior are outside this removal authorization and remain
+supported. Built-in and generated themes must migrate to canonical targets before
+the aliases disappear. Static inline theme keys receive a supported migration;
+dynamic theme objects and custom CSS receive the complete mapping above.
+
 This record does not own semantic token definitions, theme authoring precedence,
 how themes become output, or the design rationale for a component's appearance.
 
@@ -201,7 +270,15 @@ how themes become output, or the design rationale for a component's appearance.
 
 - Adding or renaming a `themeProps()` target updates its component-spec map,
   `.doc.mjs` public target metadata, compatibility aliases when required,
-  generated/CLI discovery, and validation together.
+  generated/CLI discovery, and validation together. Before removal, a deprecated
+  alias records its exact canonical replacement, continues runtime emission and
+  discovery, and produces actionable CLI and theme-build warnings for root and
+  media-surface overrides. Maintained published theme sources, CLI templates, and
+  copyable new examples use the canonical key and omit the deprecated alias.
+- Removing the approved deprecated cohort before 0.7.0 violates this record.
+  Removing it in 0.7.0 or later follows `spec:AST-017`, preserves every canonical
+  target and semantic key, migrates built-in/generated themes first, and supplies
+  the exact alias and bare-selector migration evidence named above.
 - Adding consumer anatomy requires a deliberate component-spec mapping to a
   target, inheritance, delegation, or factual `none`. It does not automatically
   create CSS API. A `none` entry classifies the current state as `intentional`,
@@ -234,8 +311,10 @@ how themes become output, or the design rationale for a component's appearance.
 - Component `.doc.mjs` `usage.anatomy[]` owns the consumer-facing semantic part
   inventory and contains no theming disposition or maintainer rationale.
 - Component `.doc.mjs` `theming.targets[]` owns discoverable public targets and
-  their visual prop/state selector axes. `visualProps` does not declare CSS
-  property support.
+  their visual prop/state selector axes. Deprecated entries retain
+  `deprecatedFor` with the exact canonical replacement; they remain discoverable
+  compatibility metadata but do not count as current anatomy. `visualProps` does
+  not declare CSS property support.
 - The approved property catalog is owned by this record. Target
   `guaranteedProperties` declarations will live in component `.doc.mjs`
   `theming.targets[]` once the authoring schema supports them; there is not yet a
@@ -248,7 +327,10 @@ how themes become output, or the design rationale for a component's appearance.
   migration, checked against consumer anatomy, and excluded from generated
   consumer docs. Nearby component-spec prose owns non-obvious rationale,
   exceptions, and links.
-- Runtime `themeProps()` calls emit the target and state contract.
+- Runtime `themeProps()` calls emit the canonical target and state contract, and
+  their `legacyNames` entries continue emitting deprecated compatibility aliases.
+- CLI discovery preserves and labels deprecated entries, while theme build warns
+  with each exact canonical replacement and copyable new examples omit aliases.
 - `scripts/check-knowledge.mjs`, `themingTargets.test.ts`,
   `extensibleAxes.test.ts`, and `derivedVarRegistry.test.ts` enforce the
   source/metadata/generated relationship. `extensibleAxes.test.ts` proves only
@@ -263,21 +345,24 @@ how themes become output, or the design rationale for a component's appearance.
   writes to the closed ordered rule model. `spec:AST-012/DEC-5` makes component
   validation shared with root themes and reserves effective-root presence for
   values whose validity depends on theme enrollment.
+- `spec:AST-017/DEC-1` owns published compatibility classification and migration:
+  compatibility-path removal is breaking. This record owns the exact deprecated
+  theming cohort and its approved 0.7.0 removal window.
 
 ## Verification
 
-| Invariant    | Evidence                                                                                                           | Failure signal                                                                                                                                                          |
-| ------------ | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1         | Cross-package target/documentation inventory                                                                       | An exported target in a participating package is invisible to metadata or CLI validation                                                                                |
-| INV2, INV3   | Bidirectional anatomy-disposition/target check                                                                     | A current target has no semantic part owner, anatomy mechanically creates targets, or `none` silently becomes future policy                                             |
-| INV4, INV5   | Component review plus rendered DOM inspection                                                                      | Public target lands on non-painting plumbing or aliases a child primitive without distinct semantics                                                                    |
-| INV6         | `themingTargets.test.ts` and `extensibleAxes.test.ts`                                                              | State/variant is invisible to the owner target or becomes an unnecessary parallel target                                                                                |
-| INV7, INV8   | Existing property fixtures (partial; gaps below)                                                                   | A declared property is missing evidence, or an unlisted counterpart is treated as implied                                                                               |
-| INV9         | API docs and compatibility review                                                                                  | Generic property acceptance is presented as a supported compatibility promise                                                                                           |
-| INV10, INV11 | Existing registry/public-var/runtime tests (partial; gaps below)                                                   | A public semantic var bypasses admission, or a consumer must write a private var to reach promised behavior                                                             |
-| INV12, INV13 | Alias and family-owner fixtures                                                                                    | Deprecated aliases count as current parts or cross-doc ownership remains implicit                                                                                       |
-| INV14        | Component contract, owner review, focused no-match fallback test, and structural `extensibleAxes.test.ts` coverage | An ineligible axis opens, a missing rule changes behavior unpredictably, or the map/reflection/docs wiring drifts                                                       |
-| INV15        | Shared root/adaptation component-validation fixtures covering finite, open, enrolled, and unresolved domains       | Root and adaptation disagree, a valid open value requires a root style, a rule conditionally enrolls a custom value, or unresolved behavior becomes adaptation-specific |
+| Invariant    | Evidence                                                                                                                                                                                                                                  | Failure signal                                                                                                                                                                                                                                         |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| INV1         | Cross-package target/documentation inventory                                                                                                                                                                                              | An exported target in a participating package is invisible to metadata or CLI validation                                                                                                                                                               |
+| INV2, INV3   | Bidirectional anatomy-disposition/target check                                                                                                                                                                                            | A current target has no semantic part owner, anatomy mechanically creates targets, or `none` silently becomes future policy                                                                                                                            |
+| INV4, INV5   | Component review plus rendered DOM inspection                                                                                                                                                                                             | Public target lands on non-painting plumbing or aliases a child primitive without distinct semantics                                                                                                                                                   |
+| INV6         | `themingTargets.test.ts` and `extensibleAxes.test.ts`                                                                                                                                                                                     | State/variant is invisible to the owner target or becomes an unnecessary parallel target                                                                                                                                                               |
+| INV7, INV8   | Existing property fixtures (partial; gaps below)                                                                                                                                                                                          | A declared property is missing evidence, or an unlisted counterpart is treated as implied                                                                                                                                                              |
+| INV9         | API docs and compatibility review                                                                                                                                                                                                         | Generic property acceptance is presented as a supported compatibility promise                                                                                                                                                                          |
+| INV10, INV11 | Existing registry/public-var/runtime tests (partial; gaps below)                                                                                                                                                                          | A public semantic var bypasses admission, or a consumer must write a private var to reach promised behavior                                                                                                                                            |
+| INV12, INV13 | Runtime alias emission, `legacyNames`/`deprecatedFor` metadata, labeled discovery, exact-replacement diagnostics, canonical maintained-theme/template inventory, copyable-example exclusion, migration mapping, and family-owner fixtures | An alias disappears before 0.7.0, lacks its exact replacement warning, appears in a copyable new example, the approved mapping is incomplete, canonical targets change, legacy metadata survives removal without an owner, or ownership stays implicit |
+| INV14        | Component contract, owner review, focused no-match fallback test, and structural `extensibleAxes.test.ts` coverage                                                                                                                        | An ineligible axis opens, a missing rule changes behavior unpredictably, or the map/reflection/docs wiring drifts                                                                                                                                      |
+| INV15        | Shared root/adaptation component-validation fixtures covering finite, open, enrolled, and unresolved domains                                                                                                                              | Root and adaptation disagree, a valid open value requires a root style, a rule conditionally enrolls a custom value, or unresolved behavior becomes adaptation-specific                                                                                |
 
 Known conformance and verification gaps:
 

@@ -19,7 +19,11 @@ import path from 'node:path';
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
-import {InputClearButton, type InputClearButtonProps} from './InputClearButton';
+import {
+  InputClearButton,
+  InternalInputClearButton,
+  type InputClearButtonProps,
+} from './InputClearButton';
 import {Icon, registerIcons, resetIcons} from '../Icon';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
@@ -321,5 +325,35 @@ describe('InputClearButton glyph source', () => {
     });
     render(<InputClearButton label="Clear" onClick={() => {}} />);
     expect(getGlyph()).toContainElement(screen.getByTestId('custom-close'));
+  });
+});
+
+describe('InputClearButton pointer and focus interactions', () => {
+  it('prevents default on pointerdown and mousedown to keep focus on input', () => {
+    render(<InputClearButton label="Clear" onClick={() => {}} />);
+    const button = screen.getByRole('button', {name: 'Clear'});
+
+    const pointerDownEvent = fireEvent.pointerDown(button);
+    expect(pointerDownEvent).toBe(false);
+
+    const mouseDownEvent = fireEvent.mouseDown(button);
+    expect(mouseDownEvent).toBe(false);
+  });
+
+  it('composes custom onPointerDown while preventing default in InternalInputClearButton', () => {
+    const handlePointerDown = vi.fn();
+    render(
+      <InternalInputClearButton
+        label="Clear"
+        onClick={() => {}}
+        onPointerDown={handlePointerDown}
+        onClickCapture={() => {}}
+      />,
+    );
+    const button = screen.getByRole('button', {name: 'Clear'});
+    const pointerDownEvent = fireEvent.pointerDown(button);
+
+    expect(handlePointerDown).toHaveBeenCalledTimes(1);
+    expect(pointerDownEvent).toBe(false);
   });
 });

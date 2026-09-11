@@ -543,12 +543,12 @@ export const ThemedIndicator: Story = {
   ),
 };
 
-// Restyling without replacing: the indicator renders the `checkbox` theme
-// target, so ordinary component overrides reach it.
+// Restyling without replacing: the indicator renders the
+// `checkbox-indicator` theme target, so ordinary component overrides reach it.
 const roundCheckboxTheme = defineTheme({
   name: 'checkbox-round-demo',
   components: {
-    checkbox: {
+    'checkbox-indicator': {
       base: {borderRadius: 'var(--radius-full)'},
       checked: {
         backgroundColor: 'var(--color-positive)',

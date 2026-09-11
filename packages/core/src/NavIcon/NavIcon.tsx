@@ -80,8 +80,8 @@ export function NavIcon({
       ref={ref}
       {...mergeProps(
         themeProps('nav-icon', undefined, {
-          // `navicon` ran the compound name together; themes styling it keep
-          // working until the next major.
+          // `navicon` ran the compound name together; keep it emitted so
+          // existing themes continue to work.
           legacyNames: ['navicon'],
         }),
         stylex.props(styles.base, xstyle),

@@ -225,14 +225,27 @@ export function PanelSearchInput({
     [onBlur],
   );
 
-  const handleClear = useCallback(() => {
-    onValueChange('');
-    // Clearing puts the caret back where the user was typing, matching
-    // TextInput's built-in clear.
-    if (typeof ref === 'object' && ref?.current) {
-      ref.current.focus();
-    }
-  }, [onValueChange, ref]);
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      onValueChange('');
+      // Clearing puts the caret back where the user was typing, matching
+      // TextInput's built-in clear. Defer focus restoration past the button's
+      // unmount task so touch browsers don't jump page scroll on tap, while
+      // preserving synchronous focus for keyboard users.
+      if (!e || e.detail === 0) {
+        if (typeof ref === 'object' && ref?.current) {
+          ref.current.focus();
+        }
+      } else {
+        requestAnimationFrame(() => {
+          if (typeof ref === 'object' && ref?.current) {
+            ref.current.focus({preventScroll: true});
+          }
+        });
+      }
+    },
+    [onValueChange, ref],
+  );
 
   return (
     <div

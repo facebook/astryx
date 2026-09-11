@@ -168,8 +168,8 @@ export const docs = {
     targets: [
       // Canonical broad target for the painted Popover surface.
       {className: 'astryx-popover'},
-      // Deprecated compatibility alias. Existing themes keep working during
-      // migration; new themes target `popover`.
+      // Deprecated compatibility alias. Existing themes remain supported;
+      // new themes target `popover`.
       {
         className: 'astryx-popover-surface',
         deprecatedFor: 'popover',
@@ -202,7 +202,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Theme the painted surface through popover. Existing popover-surface overrides remain supported during migration, but new themes should not depend on that deprecated alias.',
+          'Theme the painted surface through popover. Existing popover-surface overrides remain supported for compatibility, while new themes use the canonical target.',
       },
       {
         guidance: false,
@@ -231,7 +231,7 @@ export const docs = {
         name: 'Popover surface',
         required: true,
         description:
-          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains only as a deprecated compatibility alias during migration.',
+          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains supported as a deprecated compatibility alias.',
       },
       {
         name: 'Popover content',
@@ -371,8 +371,8 @@ export const docsZh = {
     targets: [
       // Canonical broad target for the painted Popover surface.
       {className: 'astryx-popover'},
-      // Deprecated compatibility alias. Existing themes keep working during
-      // migration; new themes target `popover`.
+      // Deprecated compatibility alias. Existing themes remain supported;
+      // new themes target `popover`.
       {
         className: 'astryx-popover-surface',
         deprecatedFor: 'popover',
@@ -405,7 +405,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Theme the painted surface through popover. Existing popover-surface overrides remain supported during migration, but new themes should not depend on that deprecated alias.',
+          'Theme the painted surface through popover. Existing popover-surface overrides remain supported for compatibility, while new themes use the canonical target.',
       },
       {
         guidance: false,
@@ -434,7 +434,7 @@ export const docsZh = {
         name: 'Popover surface',
         required: true,
         description:
-          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains only as a deprecated compatibility alias during migration.',
+          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains supported as a deprecated compatibility alias.',
       },
       {
         name: 'Popover content',
@@ -472,7 +472,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Theme the painted surface through popover. Existing popover-surface overrides remain supported during migration, but new themes should not depend on that deprecated alias.',
+          'Theme the painted surface through popover. Existing popover-surface overrides remain supported for compatibility, while new themes use the canonical target.',
       },
       {
         guidance: false,
@@ -501,7 +501,7 @@ export const docsDense = {
         name: 'Popover surface',
         required: true,
         description:
-          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains only as a deprecated compatibility alias during migration.',
+          'Painted surface owned by Popover. Theme it through the canonical popover target; popover-surface remains supported as a deprecated compatibility alias.',
       },
       {
         name: 'Popover content',

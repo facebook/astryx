@@ -235,7 +235,7 @@ export const myTheme = defineTheme({
   //
   // Keys are the component's stable class minus the `astryx-` prefix
   // (`astryx-button` → `button`, `astryx-side-nav-item` → `side-nav-item`),
-  // including inner parts like `progressbar-fill`.
+  // including inner parts like `progress-bar-fill`.
   //
   // `astryx component <Name>` IS THE REFERENCE HERE. It prints that
   // component's theming targets, the visual props and states you can key on,

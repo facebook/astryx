@@ -54,7 +54,7 @@ import {logger} from '../../logger.mjs';
 import {loadComponentDoc} from '../../../foundation/discovery/component-loader.mjs';
 import {
   collectThemingTargets,
-  targetsByKey,
+  targetValidationRegistry,
 } from '../../../foundation/discovery/theming-targets.mjs';
 import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 import {interceptCore} from './core-interception.mjs';
@@ -1497,32 +1497,30 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
 
 /**
  * Load known theme target keys from core component docs: the visual props AND
- * the runtime states each target reflects. Both are legal override keys — the
- * Theming Infrastructure wiki documents `radio: {checked}` and
- * `'calendar-day': {today, selected}` alongside `button: {'variant:secondary'}`
- * — so validation has to know both or documented syntax warns as unknown.
- * Returns null when docs are unavailable so validation can skip unknown-key
- * warnings rather than guessing from a second registry.
+ * runtime states each target reflects, plus canonical replacements for
+ * deprecated target keys. Deprecated targets remain accepted for compatibility,
+ * but every use receives actionable build guidance. Returns null when docs are
+ * unavailable so validation skips warnings rather than guessing from a second
+ * registry.
  *
- * Shares its enumeration with `theme targets`, so what a theme author can list
- * is exactly what this validator accepts.
- *
- * @returns {Promise<Record<string, string[]> | null>}
+ * @returns {Promise<{propsByKey: Record<string, string[]>, deprecatedByKey: Record<string, string>} | null>}
  */
 async function loadKnownComponents() {
   const coreRoot = resolveCoreRoot();
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return null;
 
-  const targets = targetsByKey(await collectThemingTargets(coreSrc));
-  return Object.keys(targets).length > 0 ? targets : null;
+  const registry = targetValidationRegistry(
+    await collectThemingTargets(coreSrc),
+  );
+  return Object.keys(registry.propsByKey).length > 0 ? registry : null;
 }
 
-/** @type {Record<string, string[]> | null | undefined} */
+/** @type {{propsByKey: Record<string, string[]>, deprecatedByKey: Record<string, string>} | null | undefined} */
 let knownComponentsCache;
 
 /**
- * @returns {Promise<Record<string, string[]> | null>}
+ * @returns {Promise<{propsByKey: Record<string, string[]>, deprecatedByKey: Record<string, string>} | null>}
  */
 async function getKnownComponents() {
   if (knownComponentsCache === undefined) {
@@ -1532,73 +1530,106 @@ async function getKnownComponents() {
 }
 
 /**
- * Validate component overrides in a theme definition.
- * Warns on unknown component names and unknown prop names.
- * Returns array of warning strings.
- * @param {{components?: Record<string, Record<string, unknown>>}} themeDef
- * @returns {Promise<string[]>}
+ * Validate component overrides against one discovered target registry.
+ *
+ * @param {{components?: Record<string, Record<string, unknown>>, onDark?: {components?: Record<string, Record<string, unknown>>}, onLight?: {components?: Record<string, Record<string, unknown>>}, __onDark?: {components?: Record<string, Record<string, unknown>>}, __onLight?: {components?: Record<string, Record<string, unknown>>}}} themeDef
+ * @param {{propsByKey: Record<string, string[]>, deprecatedByKey: Record<string, string>}} knownComponents
+ * @returns {string[]}
  */
-async function validateComponentOverrides(themeDef) {
+export function validateComponentOverridesAgainstRegistry(
+  themeDef,
+  knownComponents,
+) {
   /** @type {string[]} */
   const warnings = [];
-  const componentEntries = themedComponentEntries(themeDef);
-  if (componentEntries.length === 0) return warnings;
-
-  const knownComponents = await getKnownComponents();
-  if (knownComponents == null) return warnings;
-
-  for (const [component, rules] of componentEntries) {
-    // Check component name
-    if (!(component in knownComponents)) {
-      const similar = Object.keys(knownComponents)
-        .filter(k => {
-          if (k.includes(component) || component.includes(k)) return true;
-          // Levenshtein distance 1-2 for short names
-          if (Math.abs(k.length - component.length) <= 2) {
-            let diff = 0;
-            const longer = k.length >= component.length ? k : component;
-            const shorter = k.length < component.length ? k : component;
-            let j = 0;
-            for (let i = 0; i < longer.length && diff <= 2; i++) {
-              if (longer[i] !== shorter[j]) diff++;
-              else j++;
-            }
-            diff += shorter.length - j;
-            return diff <= 2;
-          }
-          return false;
-        })
-        .slice(0, 3);
-      const hint =
-        similar.length > 0 ? ` Did you mean: ${similar.join(', ')}?` : '';
-      warnings.push(`Unknown component "${component}".${hint}`);
-      continue;
+  /** @type {{name: string, components: Record<string, Record<string, unknown>>}[]} */
+  const layers = [...getThemeComponentLayers(themeDef)];
+  let adaptationIndex = 0;
+  for (const value of adaptationRuleValues(themeDef)) {
+    adaptationIndex++;
+    if (
+      value.components &&
+      typeof value.components === 'object' &&
+      Object.keys(value.components).length > 0
+    ) {
+      layers.push({
+        name: `adaptation rule ${adaptationIndex}`,
+        components: value.components,
+      });
     }
+  }
 
-    // Check prop/state names in the override keys. A key is either `base`, a
-    // `prop:value` pair (possibly `+`-joined), or a bare state name.
-    const knownProps = knownComponents[component];
-    for (const key of Object.keys(rules)) {
-      if (key === 'base') continue;
+  for (const {name: layerName, components} of layers) {
+    for (const [component, rules] of Object.entries(components)) {
+      const location = layerName === 'base' ? '' : ` in ${layerName}`;
+      if (!(component in knownComponents.propsByKey)) {
+        const similar = Object.keys(knownComponents.propsByKey)
+          .filter(k => {
+            if (k.includes(component) || component.includes(k)) return true;
+            if (Math.abs(k.length - component.length) <= 2) {
+              let diff = 0;
+              const longer = k.length >= component.length ? k : component;
+              const shorter = k.length < component.length ? k : component;
+              let j = 0;
+              for (let i = 0; i < longer.length && diff <= 2; i++) {
+                if (longer[i] !== shorter[j]) diff++;
+                else j++;
+              }
+              diff += shorter.length - j;
+              return diff <= 2;
+            }
+            return false;
+          })
+          .slice(0, 3);
+        const hint =
+          similar.length > 0 ? ` Did you mean: ${similar.join(', ')}?` : '';
+        warnings.push(`Unknown component "${component}".${hint}`);
+        continue;
+      }
 
-      // Parse prop:value pairs (e.g. 'variant:secondary' or 'variant:destructive+size:sm')
-      const pairs = key.split('+');
-      for (const pair of pairs) {
-        const [prop] = pair.split(':');
-        if (prop && !knownProps.includes(prop)) {
-          const hint =
-            knownProps.length > 0
-              ? ` Known props/states: ${knownProps.join(', ')}`
-              : ' This component has no variant props or states.';
-          warnings.push(
-            `Unknown prop "${prop}" on component "${component}".${hint}`,
-          );
+      const replacement = knownComponents.deprecatedByKey[component];
+      if (replacement != null) {
+        warnings.push(
+          `Deprecated component target "${component}"${location}. Use "${replacement}" instead.`,
+        );
+      }
+
+      const knownProps = knownComponents.propsByKey[component];
+      for (const key of Object.keys(rules)) {
+        if (key === 'base') continue;
+
+        const pairs = key.split('+');
+        for (const pair of pairs) {
+          const [prop] = pair.split(':');
+          if (prop && !knownProps.includes(prop)) {
+            const hint =
+              knownProps.length > 0
+                ? ` Known props/states: ${knownProps.join(', ')}`
+                : ' This component has no variant props or states.';
+            warnings.push(
+              `Unknown prop "${prop}" on component "${component}".${hint}`,
+            );
+          }
         }
       }
     }
   }
 
   return [...new Set(warnings)];
+}
+
+/**
+ * Validate component overrides in a theme definition.
+ * Warns on unknown component names, deprecated targets, and unknown prop names.
+ *
+ * @param {{components?: Record<string, Record<string, unknown>>, onDark?: {components?: Record<string, Record<string, unknown>>}, onLight?: {components?: Record<string, Record<string, unknown>>}, __onDark?: {components?: Record<string, Record<string, unknown>>}, __onLight?: {components?: Record<string, Record<string, unknown>>}}} themeDef
+ * @returns {Promise<string[]>}
+ */
+async function validateComponentOverrides(themeDef) {
+  const knownComponents = await getKnownComponents();
+  return knownComponents == null
+    ? []
+    : validateComponentOverridesAgainstRegistry(themeDef, knownComponents);
 }
 
 /**

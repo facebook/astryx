@@ -1520,13 +1520,24 @@ function PointerDateTimeField({
   );
 
   // --- Clear ---
-  const handleClear = useCallback(() => {
-    setNativeTimeDraft(undefined);
-    fireChange(undefined);
-    if (!usesNativePicker) {
-      dateInputRef.current?.focus();
-    }
-  }, [fireChange, usesNativePicker]);
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      setNativeTimeDraft(undefined);
+      fireChange(undefined);
+      if (!usesNativePicker) {
+        if (!e || e.detail === 0) {
+          dateInputRef.current?.focus();
+        } else {
+          // Defer focus restoration past the button's unmount task so iOS Safari
+          // and touch browsers don't jump the page scroll to 0 on tap.
+          requestAnimationFrame(() => {
+            dateInputRef.current?.focus({preventScroll: true});
+          });
+        }
+      }
+    },
+    [fireChange, usesNativePicker],
+  );
 
   // Focus time input when clicking wrapper padding/icon
   const {onClick: handleTimeWrapperClick, onMouseUp: handleTimeWrapperMouseUp} =

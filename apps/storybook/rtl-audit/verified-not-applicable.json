@@ -144,5 +144,21 @@
   {
     "component": "core/Dialog",
     "reason": "Dialog uses logical inline offsets, logical container spacing, and direction-aware safe-area fallbacks. Its native modal lifecycle, focus entry and return, backdrop, and close glyph are direction-neutral; the directional entry translation follows the invoker's physical viewport position rather than reading direction. Dialog owns no left/right glyph swap, inline reordering, directional scroll or drag action, or horizontal keyboard behavior for the RTL audit to compare."
+  },
+  {
+    "component": "core/HoverCard",
+    "reason": "HoverCard delegates anchor geometry and logical placement to Layer and renders a direction-neutral preview surface. It owns no directional glyph, side-specific content order, horizontal scroll or drag behavior, or directional keyboard interaction."
+  },
+  {
+    "component": "core/Indicator",
+    "reason": "Indicator renders centered checkbox, radio, check, and indeterminate marks. Their geometry and state transitions are intrinsic and direction-neutral; the component has no inline-axis placement, content ordering, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/NavIcon",
+    "reason": "NavIcon is a centered circular container for caller-owned artwork. The container has symmetric geometry and no inline-axis placement, order, transform, scroll, drag, overlay, or keyboard behavior; directional meaning belongs to the supplied icon."
+  },
+  {
+    "component": "core/StatusDot",
+    "reason": "StatusDot is a symmetric painted circle with an optional centered caller-owned icon. Its pulse animation is radial, and it has no inline-axis placement, order, scrolling, dragging, overlay, or directional keyboard behavior."
   }
 ]

@@ -71,6 +71,8 @@ export interface ComputedNode {
   readonly required: boolean | null;
   /** Computed checked state, or null when the node exposes none. */
   readonly checked: 'true' | 'false' | 'mixed' | null;
+  /** Computed selected state, or null when the node exposes none. */
+  readonly selected: boolean | null;
   readonly disabled: boolean;
   readonly invalid: boolean;
 }
@@ -116,6 +118,8 @@ export interface Subject {
    * a design system's private structure.
    */
   visibleLabelText(): Promise<string | null>;
+  /** Real-browser layer: whether this node is rendered and visible. */
+  isVisible(): Promise<boolean>;
   /** Real-browser layer: whether this node currently holds focus. */
   isFocused(): Promise<boolean>;
   /** Real-browser layer: whether focus is on this node or one of its descendants. */
@@ -154,6 +158,19 @@ export interface Harness {
    * contracts never query component-private structure.
    */
   related(name: string): Promise<Subject>;
+  /** DOM layer: whether one semantic subject contains another. */
+  contains(container: Subject, candidate: Subject): Promise<boolean>;
+  /** Accessibility-tree layer: whether one semantic subject owns another. */
+  containsSemantically(
+    container: Subject,
+    candidate: Subject,
+  ): Promise<boolean>;
+  /** DOM layer: whether an IDREF attribute resolves to the exact target subject. */
+  references(
+    source: Subject,
+    attribute: string,
+    target: Subject,
+  ): Promise<boolean>;
   /**
    * Real-browser layer: click the subject the way a pointer user would,
    * including the browser's own judgement that the control is there to be

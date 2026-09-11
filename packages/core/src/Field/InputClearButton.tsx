@@ -73,8 +73,8 @@ export interface InputClearButtonProps {
    * Extra class(es) for the clear glyph itself, merged onto the shared
    * `astryx-input-clear-icon` target. Used by inputs that shipped a
    * component-specific clear-icon target before the family converged here
-   * (e.g. `astryx-date-input-clear-icon`) to keep emitting it for a
-   * deprecation window; new callers don't need it.
+   * (e.g. `astryx-date-input-clear-icon`) to keep emitting it for backwards
+   * compatibility; new callers don't need it.
    */
   iconClassName?: string;
 }
@@ -117,8 +117,12 @@ function renderInputClearButton({
           }
         />
       }
+      onPointerDown={e => {
+        e.preventDefault();
+        onPointerDown?.(e);
+      }}
+      onMouseDown={e => e.preventDefault()}
       onClick={onClick}
-      onPointerDown={onPointerDown}
       onClickCapture={onClickCapture}
       isIconOnly
       xstyle={[styles.button, xstyle]}

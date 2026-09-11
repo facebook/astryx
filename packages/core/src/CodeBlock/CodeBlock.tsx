@@ -930,8 +930,8 @@ export function CodeBlock({
         themeProps(
           'code-block',
           {size, language, container},
-          // `codeblock` ran the compound name together; themes styling it keep
-          // working until the next major.
+          // `codeblock` ran the compound name together; keep it emitted so
+          // existing themes continue to work.
           {legacyNames: ['codeblock']},
         ),
         stylex.props(
