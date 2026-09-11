@@ -134,6 +134,7 @@ jobs:
       contents: read
     outputs:
       has_components: ${{ steps.check.outputs.has_components }}
+      has_rtl_harness: ${{ steps.check.outputs.has_rtl_harness }}
       # Stable visual scope is separate from component scope: Core and the
       # non-private shipped themes participate; canaryOnly packages do not.
       has_stable_visual: ${{ steps.check.outputs.has_stable_visual }}
@@ -156,6 +157,7 @@ jobs:
           if ! git merge-base HEAD origin/${{ github.base_ref }} >/dev/null 2>&1; then
             echo "::warning::No merge base between HEAD and origin/${{ github.base_ref }} (clone too shallow) — assuming components changed so pr-a11y still runs"
             echo "has_components=true" >> "$GITHUB_OUTPUT"
+            echo "has_rtl_harness=true" >> "$GITHUB_OUTPUT"
             # Fail closed for the stable lane too: without a merge base we do
             # not know whether a stable package changed.
             echo "has_stable_visual=true" >> "$GITHUB_OUTPUT"
@@ -171,7 +173,9 @@ jobs:
           # checked-in stories by id, so renaming or deleting one breaks the
           # contract run and nothing else would notice.
           A11Y=$(printf '%s\n' "$FILES" | grep -E '^internal/a11y-spec/|^packages/[^/]+/src/.*\.a11y\.|^apps/storybook/stories/|^playwright\.config\.ts$' | head -1 || true)
+          RTL_HARNESS=$(printf '%s\n' "$FILES" | grep -E '^apps/storybook/rtl-audit/|^\.github/scripts/(rtl-audit-coverage|weekly-rtl-summary)\.test\.mjs$|^\.github/workflows/(ci|rtl-weekly)\.yml$' | head -1 || true)
           echo "has_components=$( { [ -n "$CHANGED" ] || [ -n "$A11Y" ]; } && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "has_rtl_harness=$([ -n "$RTL_HARNESS" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
           # One classifier owns the release-channel rule. It reads each
           # package's `astryx.canaryOnly` metadata rather than hard-coding
@@ -939,9 +943,11 @@ jobs:
           if-no-files-found: ignore
 
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
-  # analysis.json scoping, so a PR only pays for the components it touched.
-  # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that
-  # covers untouched components runs in rtl-weekly.yml.
+  # analysis.json scoping, so ordinary PRs only pay for the components they
+  # touched. A harness-only PR runs the fixed Chart/ChartLegend smoke scope so
+  # routing and target changes prove themselves instead of skipping their own
+  # check. Unscoped this swept ~1400 stories and took ~26 min. The full sweep
+  # that covers untouched components runs in rtl-weekly.yml.
   #
   # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
   # contextual directional decorations. Curated D2/D3/D4 adds behavior that
@@ -954,7 +960,10 @@ jobs:
   # checks. See apps/storybook/rtl-audit/README.md.
   pr-rtl:
     needs: [build-storybook, check-components]
-    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
+    if: >-
+      github.event_name == 'pull_request' &&
+      (needs.check-components.outputs.has_components == 'true' ||
+       needs.check-components.outputs.has_rtl_harness == 'true')
     runs-on: 2-core-ubuntu-arm
     continue-on-error: true
     permissions:
@@ -989,8 +998,11 @@ jobs:
         id: rtl
         run: |
           COMPONENTS=$(jq -r '(.newComponents + .modifiedComponents) | join(",")' analysis.json)
-          if [ -z "$COMPONENTS" ]; then
-            echo "No component changes resolved from analysis.json — skipping RTL audit."
+          if [ -z "$COMPONENTS" ] && [ "${{ needs.check-components.outputs.has_rtl_harness }}" = "true" ]; then
+            COMPONENTS="Chart,ChartLegend"
+            echo "RTL harness changed — running routing smoke scope: $COMPONENTS"
+          elif [ -z "$COMPONENTS" ]; then
+            echo "No component or RTL harness changes resolved — skipping RTL audit."
             echo "ran=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
