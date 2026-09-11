@@ -7,11 +7,14 @@
 import {JSDOM} from 'jsdom';
 import {describe, expect, it} from 'vitest';
 import {
+  AUDITED_PACKAGES,
   buildAuditedComponentRoster,
   buildComponentCoverage,
+  buildStoryComponentRoutes,
   classifyDirectionalDecorationPair,
   classifyLogicalInlinePair,
   collectDirectionalDecorations,
+  componentNamesFromSourceEntries,
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 
 const IDENTITY = [1, 0, 0, 1];
@@ -338,5 +341,113 @@ describe('buildAuditedComponentRoster', () => {
         filters: ['missing'],
       }),
     ).toEqual(['unknown/missing']);
+  });
+});
+
+describe('audited package and story routing', () => {
+  it('discovers flat charts components with the same rules as PR analysis', () => {
+    const entries = [
+      {name: 'Chart.tsx', isFile: () => true, isDirectory: () => false},
+      {name: 'Chart.test.tsx', isFile: () => true, isDirectory: () => false},
+      {name: 'ChartLegend.tsx', isFile: () => true, isDirectory: () => false},
+      {name: 'ChartContext.tsx', isFile: () => true, isDirectory: () => false},
+      {name: 'formatters.ts', isFile: () => true, isDirectory: () => false},
+    ];
+
+    expect(componentNamesFromSourceEntries(entries, 'flat')).toEqual([
+      'Chart',
+      'ChartLegend',
+    ]);
+    expect(AUDITED_PACKAGES.map(pkg => pkg.name)).toEqual([
+      'core',
+      'lab',
+      'charts',
+    ]);
+  });
+
+  it('routes charts stories and explicit target aliases without changing Core or Lab', () => {
+    const routes = buildStoryComponentRoutes({
+      storyIds: [
+        'core-chart--default',
+        'lab-chart--bar-chart',
+        'charts-chart--playground',
+        'charts-bar--simple',
+        'charts-chrome-legend--default',
+      ],
+      targets: [
+        {
+          component: 'ChartLegend',
+          storyId: 'charts-chrome-legend--default',
+        },
+      ],
+    });
+
+    expect(routes).toEqual([
+      {id: 'core-chart--default', component: 'core/chart'},
+      {id: 'lab-chart--bar-chart', component: 'lab/chart'},
+      {id: 'charts-chart--playground', component: 'charts/Chart'},
+      {id: 'charts-bar--simple', component: 'charts/Chart'},
+      {
+        id: 'charts-chrome-legend--default',
+        component: 'charts/ChartLegend',
+      },
+    ]);
+
+    expect(
+      buildAuditedComponentRoster({
+        sourceComponents: [
+          'core/Chart',
+          'lab/Chart',
+          'charts/Chart',
+          'charts/ChartLegend',
+        ],
+        storyComponents: routes.map(route => route.component),
+        filters: ['Chart', 'ChartLegend'],
+      }),
+    ).toEqual([
+      'core/chart',
+      'lab/chart',
+      'charts/Chart',
+      'charts/ChartLegend',
+    ]);
+  });
+
+  it('counts Chart and ChartLegend as measured when their curated targets pass', () => {
+    const coverage = buildComponentCoverage({
+      components: ['charts/Chart', 'charts/ChartLegend'],
+      curatedResults: [
+        {
+          component: 'charts/Chart',
+          storyId: 'charts-chart--playground',
+          rollup: 'RTL-ready',
+        },
+        {
+          component: 'charts/ChartLegend',
+          storyId: 'charts-chrome-legend--default',
+          rollup: 'RTL-ready',
+        },
+      ],
+    });
+
+    expect(coverage).toMatchObject({measured: 2, gaps: 0});
+    expect(coverage.results).toEqual([
+      {
+        component: 'charts/Chart',
+        applicable: [
+          {dimension: 'curated', storyId: 'charts-chart--playground'},
+        ],
+        status: 'measured',
+      },
+      {
+        component: 'charts/ChartLegend',
+        applicable: [
+          {
+            dimension: 'curated',
+            storyId: 'charts-chrome-legend--default',
+          },
+        ],
+        status: 'measured',
+      },
+    ]);
   });
 });

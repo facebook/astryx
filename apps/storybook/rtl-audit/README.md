@@ -11,7 +11,7 @@ is the `pr-rtl` job — the RTL sibling of `pr-a11y`.
 
 ## Three layers
 
-### A. Auto-discovery — over every `core-*` and `lab-*` story in scope
+### A. Auto-discovery — over every `core-*`, `lab-*`, and `charts-*` story in scope
 
 The point of the audit is to auto-catch **new or changed** components, so the
 auto-discovery layer runs with **zero curated selectors**. There are three
@@ -214,7 +214,7 @@ them universally.
 
 ### C. Applicability: no unexplained all-N/A components
 
-The report rolls every component in the live Core and Lab source roster into one
+The report rolls every component in the live Core, Lab, and Charts source roster into one
 of three states:
 
 - **measured**: at least one D1/D5/D6 or curated dimension was applicable;
@@ -298,10 +298,13 @@ Edit `targets.json`. Each entry is:
 
 ```jsonc
 {
-  "component": "MyComponent",
+  "component": "MyComponent", // explicit alias for grouped story titles
   "storyId": "core-mycomponent--some-story", // must exist in dist/index.json
   "dims": ["D2", "D3"], // D2/D3/D4 only (D1 is auto)
-  "setup": {"click": "img"}, // optional: reveal the target
+  "setup": {
+    "args": {"position": "start"}, // optional: drive Storybook args
+    "click": "img", // optional: reveal the target after args settle
+  },
   "selectors": {
     "prev": "button[aria-label=\"Prev\"]", // D2
     "next": "button[aria-label=\"Next\"]",

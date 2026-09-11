@@ -49,10 +49,14 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {discoverComponents} from '../../../packages/cli/foundation/discovery/component-discovery.mjs';
 import {
+  AUDITED_PACKAGES,
   buildAuditedComponentRoster,
   buildComponentCoverage,
+  buildStoryComponentRoutes,
   classifyLogicalInlinePair,
   collectDirectionalDecorations,
+  componentFromTarget,
+  componentNamesFromSourceEntries,
   evaluateDirectionalDecorations,
 } from './rtl-audit-coverage.mjs';
 
@@ -73,12 +77,11 @@ const VERIFIED_NA_PATH =
 const FILTER = (getArg('filter') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
-// Story-id prefixes the auto-discovery layer sweeps. These mirror the
-// publishable component packages in analyze-pr.js — a component the PR job can
-// name in --filter must also be discoverable here, or the audit silently
-// reports zero targets. Lab stories (`lab-*`) were excluded until this list
-// existed, so no lab component had ever been RTL-audited.
-const AUDITED_STORY_PREFIXES = ['core-', 'lab-'];
+// Story-id prefixes the auto-discovery layer sweeps. These derive from the
+// same publishable package roster used for source discovery below: a component
+// the PR analyzer can name in --filter must also be routable to its package's
+// stories here.
+const AUDITED_STORY_PREFIXES = AUDITED_PACKAGES.map(pkg => `${pkg.name}-`);
 const AUDITED_STORY_PREFIX = new RegExp(`^(?:${AUDITED_STORY_PREFIXES.join('|')})`);
 // Worker pool size. Each worker owns its own Playwright page; stories are
 // independent, and the run is dominated by page-load latency rather than CPU.
@@ -158,6 +161,23 @@ async function settle(page) {
 }
 
 async function doSetup(page, t) {
+  if (t?.setup?.args) {
+    await page
+      .waitForFunction(() => window.__STORYBOOK_ADDONS_CHANNEL__ != null)
+      .catch(() => {});
+    await page
+      .evaluate(
+        ({storyId, updatedArgs}) => {
+          window.__STORYBOOK_ADDONS_CHANNEL__?.emit('updateStoryArgs', {
+            storyId,
+            updatedArgs,
+          });
+        },
+        {storyId: t.storyId, updatedArgs: t.setup.args},
+      )
+      .catch(() => {});
+    await page.waitForTimeout(250);
+  }
   if (t?.setup?.click) {
     for (const sel of [].concat(t.setup.click)) {
       await page.locator(sel).first().click({timeout: 2500}).catch(() => {});
@@ -883,14 +903,6 @@ async function scoreCurated(page, coarsePage, port, t) {
 }
 
 // ---------------------------------------------------------------------------
-function componentFromId(id) {
-  // core-tabletree--default -> core/tabletree (best-effort display name)
-  // lab-listinput--tag-options -> lab/listinput
-  const packageName = id.startsWith('lab-') ? 'lab' : 'core';
-  const seg = id.replace(AUDITED_STORY_PREFIX, '').split('--')[0];
-  return `${packageName}/${seg}`;
-}
-
 function matchesFilter(component) {
   const name = component.split('/').at(-1)?.toLowerCase() ?? component;
   return !FILTER.length || FILTER.includes(name);
@@ -939,28 +951,38 @@ async function mapPool(items, pages, fn) {
     process.exit(2);
   }
 
+  let targets = [];
+  try { targets = JSON.parse(fs.readFileSync(TARGETS_PATH, 'utf8')); } catch {}
+
   const storyIds = Object.keys(entries).filter(
     id =>
       entries[id].type === 'story' &&
       AUDITED_STORY_PREFIX.test(id) &&
       !/--docs$/.test(id),
   );
+  const storyRoutes = buildStoryComponentRoutes({storyIds, targets});
   const sourceComponents = [];
-  for (const packageName of ['core', 'lab']) {
+  for (const pkg of AUDITED_PACKAGES) {
     try {
-      const grouped = discoverComponents(path.join(PROJECT_ROOT, 'packages', packageName));
+      const sourcePath = path.join(PROJECT_ROOT, 'packages', pkg.name, 'src');
+      const componentNames = pkg.layout === 'nested'
+        ? Object.values(
+            discoverComponents(path.join(PROJECT_ROOT, 'packages', pkg.name)),
+          ).flat()
+        : componentNamesFromSourceEntries(
+            fs.readdirSync(sourcePath, {withFileTypes: true}),
+            pkg.layout,
+          );
       sourceComponents.push(
-        ...Object.values(grouped)
-          .flat()
-          .map(component => `${packageName}/${component}`),
+        ...componentNames.map(component => `${pkg.name}/${component}`),
       );
     } catch (error) {
-      console.error(`WARN: cannot discover ${packageName} component roster: ${String(error).slice(0, 120)}`);
+      console.error(`WARN: cannot discover ${pkg.name} component roster: ${String(error).slice(0, 120)}`);
     }
   }
   const auditedComponents = buildAuditedComponentRoster({
     sourceComponents,
-    storyComponents: storyIds.map(componentFromId),
+    storyComponents: storyRoutes.map(route => route.component),
     filters: FILTER,
   });
 
@@ -974,13 +996,12 @@ async function mapPool(items, pages, fn) {
     // positioned bug can be story-specific (only a `withStatus` variant mounts
     // the offending element), so we don't collapse to one-per-component.
     const perComponent = new Map();
-    for (const id of storyIds) {
-      const comp = componentFromId(id);
-      if (!perComponent.has(comp)) perComponent.set(comp, id);
+    for (const {component, id} of storyRoutes) {
+      if (!perComponent.has(component)) perComponent.set(component, id);
     }
     const d1Targets = [...perComponent]
-      .filter(([comp]) => matchesFilter(comp))
-      .map(([comp, id]) => ({comp, id}));
+      .filter(([component]) => matchesFilter(component))
+      .map(([component, id]) => ({comp: component, id}));
     autoResults.push(
       ...(await mapPool(d1Targets, pages, async ({comp, id}, workerPage) => {
         try {
@@ -996,8 +1017,8 @@ async function mapPool(items, pages, fn) {
       })),
     );
     // D5 positional-mirror over every audited story.
-    const pmTargets = storyIds
-      .map(id => ({id, comp: componentFromId(id)}))
+    const pmTargets = storyRoutes
+      .map(({id, component}) => ({id, comp: component}))
       .filter(({comp}) => matchesFilter(comp));
     pmResults.push(
       ...(await mapPool(pmTargets, pages, async ({id, comp}, workerPage) => {
@@ -1037,10 +1058,8 @@ async function mapPool(items, pages, fn) {
   // machine under load is more likely to change behaviour than to save time.
   const curatedResults = [];
   if (!AUTO_ONLY) {
-    let targets = [];
-    try { targets = JSON.parse(fs.readFileSync(TARGETS_PATH, 'utf8')); } catch {}
     for (const t of targets) {
-      const component = componentFromId(t.storyId);
+      const component = componentFromTarget(t);
       if (!matchesFilter(component)) continue;
       if (!entries[t.storyId]) {
         curatedResults.push({component, storyId: t.storyId, rollup: 'MISSING-STORY', dims: {}, notes: ['story not in index.json']});

@@ -447,6 +447,33 @@
     }
   },
   {
+    "component": "Chart",
+    "storyId": "charts-chart--playground",
+    "dims": [
+      "D2"
+    ],
+    "setup": {
+      "args": {
+        "legendPosition": "start"
+      }
+    },
+    "selectors": {
+      "prev": "[role=\"list\"]",
+      "next": "svg[role=\"img\"]"
+    }
+  },
+  {
+    "component": "ChartLegend",
+    "storyId": "charts-chrome-legend--default",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "[role=\"listitem\"]:first-child",
+      "next": "[role=\"listitem\"]:last-child"
+    }
+  },
+  {
     "component": "Drawer",
     "storyId": "lab-drawer--sides",
     "dims": [

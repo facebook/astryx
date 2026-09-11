@@ -2,12 +2,105 @@
 
 /**
  * @file Shared RTL coverage and directional-decoration helpers.
- * @input Rendered DOM decorations plus D1/D5/D6/curated audit results.
- * @output Contextual decoration candidates, pair verdicts, component-filter
- *   reconciliation, and per-component measured / verified-N-A / coverage-gap
- *   classifications.
+ * @input Rendered DOM decorations, package source entries, Storybook routes,
+ *   curated targets, and D1/D5/D6/curated audit results.
+ * @output Audited package/story routing, contextual decoration candidates,
+ *   component-filter reconciliation, and per-component measured / verified-N-A /
+ *   coverage-gap classifications.
  * @position Pure support layer for rtl-audit.mjs and its unit tests.
  */
+
+export const AUDITED_PACKAGES = Object.freeze([
+  Object.freeze({name: 'core', layout: 'nested'}),
+  Object.freeze({name: 'lab', layout: 'nested'}),
+  Object.freeze({
+    name: 'charts',
+    layout: 'flat',
+    defaultStoryComponent: 'Chart',
+  }),
+]);
+
+const EXCLUDED_SOURCE_DIRECTORIES = new Set([
+  '__tests__',
+  'hooks',
+  'i18n',
+  'theme',
+  'utils',
+]);
+
+/** Return component names from one package's source-directory entries. */
+export function componentNamesFromSourceEntries(entries, layout) {
+  if (layout === 'flat') {
+    return entries
+      .filter(
+        entry =>
+          entry.isFile() &&
+          /^[A-Z]\w+\.tsx$/.test(entry.name) &&
+          !entry.name.includes('.test.') &&
+          !entry.name.includes('.stories.') &&
+          !entry.name.endsWith('Context.tsx'),
+      )
+      .map(entry => entry.name.replace(/\.tsx$/, ''));
+  }
+
+  if (layout === 'nested') {
+    return entries
+      .filter(
+        entry =>
+          entry.isDirectory() && !EXCLUDED_SOURCE_DIRECTORIES.has(entry.name),
+      )
+      .map(entry => entry.name);
+  }
+
+  throw new Error(`Unknown component source layout: ${layout}`);
+}
+
+function packageForStoryId(storyId, packages = AUDITED_PACKAGES) {
+  return packages.find(pkg => storyId.startsWith(`${pkg.name}-`)) ?? null;
+}
+
+/** Resolve the default package/component route encoded in a Storybook story id. */
+export function componentFromStoryId(storyId, packages = AUDITED_PACKAGES) {
+  const pkg = packageForStoryId(storyId, packages);
+  if (!pkg) {
+    return `unknown/${storyId.split('--')[0]}`;
+  }
+  const component =
+    pkg.defaultStoryComponent ??
+    storyId.slice(pkg.name.length + 1).split('--')[0];
+  return `${pkg.name}/${component}`;
+}
+
+/** Resolve a curated target's declared component in the story's package. */
+export function componentFromTarget(target, packages = AUDITED_PACKAGES) {
+  const declared = target?.component?.trim();
+  if (!declared) {
+    return componentFromStoryId(target.storyId, packages);
+  }
+  if (declared.includes('/')) {
+    return declared;
+  }
+  const pkg = packageForStoryId(target.storyId, packages);
+  return pkg ? `${pkg.name}/${declared}` : `unknown/${declared}`;
+}
+
+/** Apply curated component aliases while preserving default story-id routing. */
+export function buildStoryComponentRoutes({
+  storyIds,
+  targets = [],
+  packages = AUDITED_PACKAGES,
+}) {
+  const aliases = new Map(
+    targets.map(target => [
+      target.storyId,
+      componentFromTarget(target, packages),
+    ]),
+  );
+  return storyIds.map(id => ({
+    id,
+    component: aliases.get(id) ?? componentFromStoryId(id, packages),
+  }));
+}
 
 const EXPLICIT_GLYPH_PAIRS = new Map([
   ['/', '\\'],
