@@ -256,7 +256,7 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
       minValue: 0,
       maxValue: 100,
     },
-    focusSelector: '[role="progressbar"] [tabindex="0"]',
+    focusSelector: '[tabindex="0"]',
     storyId: 'a11y-status-message-pattern--progress-mark-focused-update',
   },
 ] as const satisfies ReadonlyArray<CoreStatusMessageBindingDefinition>;
