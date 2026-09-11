@@ -5,7 +5,7 @@
  * @input Uses a Playwright `Page`, the semantic subject `Locator`, optional
  *   binding-owned pointer-target and visible-label `Locator`s, and the Chrome
  *   DevTools Protocol accessibility domain behind them
- * @output `createChromiumHarness` — a harness that observes the DOM,
+ * @output `createChromiumHarness` — a clipping-aware harness that observes the DOM,
  *   accessibility-tree, and real-browser layers of a page rendered by a real
  *   shipping engine — plus `holdMotionStill`, the page setup its specs share.
  * @position The high-fidelity lane. Imported only from the Playwright specs, so
@@ -364,7 +364,27 @@ async function renderedVisible(locator: Locator): Promise<boolean> {
       return false;
     }
     const box = element.getBoundingClientRect();
-    return box.width > 0 && box.height > 0;
+    if (box.width <= 0 || box.height <= 0) {
+      return false;
+    }
+    const rootMargin = [
+      Math.max(0, -box.top),
+      Math.max(0, box.right - window.innerWidth),
+      Math.max(0, box.bottom - window.innerHeight),
+      Math.max(0, -box.left),
+    ]
+      .map(value => `${value}px`)
+      .join(' ');
+    return new Promise<boolean>(resolve => {
+      const observer = new IntersectionObserver(
+        entries => {
+          observer.disconnect();
+          resolve((entries[0]?.intersectionRatio ?? 0) > 0);
+        },
+        {rootMargin},
+      );
+      observer.observe(element);
+    });
   });
 }
 
