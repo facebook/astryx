@@ -466,7 +466,7 @@ const isNarrow = useMediaQuery('(max-width: 1024px)');
         },
         {
           type: 'prose',
-          text: 'Verify: every contract line names a mechanism, so the comment cannot drift from the behavior.',
+          text: 'Verify: every contract line names a mechanism, so the comment cannot drift from the behavior. Width breakpoints must stay independent from input capability: a narrow viewport does not prove touch, and a coarse pointer does not prove a narrow viewport. Use Responsive and Interaction Readiness (\`astryx docs responsive-interaction-readiness\`) for the full component review rubric.',
         },
 
         {type: 'heading', level: 3, text: 'Best practices'},
