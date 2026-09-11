@@ -81,6 +81,19 @@ describe('ShadCN registry CI contract', () => {
     expect(preview.run).toContain('generate-data.mjs');
   });
 
+  it('keeps the soak rollout out of public CLI discovery', () => {
+    const docsDirectory = path.join(root, 'packages/cli/assets/docs');
+    expect(fs.readdirSync(docsDirectory)).not.toContain(
+      'shadcn-compatibility.doc.mjs',
+    );
+    expect(fs.readdirSync(docsDirectory)).toContain(
+      'shadcn-compatibility.doc.draft.mjs',
+    );
+    expect(read('packages/cli/api/upgrade/upgrade.doc.mjs')).not.toMatch(
+      /shadcn/i,
+    );
+  });
+
   it('builds every workspace package before exercising local package exports', () => {
     expect(step('Build registry package exports').run).toBe('pnpm build');
   });
@@ -96,12 +109,16 @@ describe('ShadCN registry CI contract', () => {
     for (const invariant of [
       "'add', ...itemPaths",
       "'--silent'",
-      'installed different bytes',
+      'expectedInstalledFile(file, tsx)',
+      'for (const tsx of [true, false])',
       'did not install declared dependency',
       'alias route',
       'duplicate item name',
-      'must contain exactly one source and one receipt',
+      'must contain one source, one receipt, and a declaration only for precompiled JavaScript',
+      'lacks its exact JavaScript install variant',
+      'precompiled declaration type-check exited',
       'parseRegistryReceipt',
+      'verifyPrecompiledTypeDeclarations(project, catalog.items)',
       'compileSources(project, sources)',
     ]) {
       expect(verifier).toContain(invariant);
