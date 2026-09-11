@@ -74,6 +74,7 @@ import {setResultCoverage} from './coverage.mjs';
  * @typedef {object} Candidate
  * @property {'component'|'hook'|'doc'|'template'} domain
  * @property {string} name
+ * @property {string[]} [altNames] - Other names this thing is known by (a template's authored name).
  * @property {string[]} [keywords]
  * @property {string[]} [weakKeywords]
  * @property {string} [description]
@@ -332,6 +333,7 @@ export function scoreQuery(term, tokens, candidate) {
  * @param {string} term - Lowercased search term.
  * @param {object} candidate
  * @param {string} candidate.name - Primary identifier (component/hook name, topic, template name).
+ * @param {string[]} [candidate.altNames] - Other names for the same thing; scored on the name ladder.
  * @param {string[]} [candidate.keywords] - Authored intent (componentsUsed, category words).
  * @param {string[]} [candidate.weakKeywords] - Derived signal (components a page renders).
  * @param {string} [candidate.description]
@@ -341,7 +343,15 @@ export function scoreQuery(term, tokens, candidate) {
  */
 export function scoreCandidate(
   term,
-  {name, keywords = [], weakKeywords = [], description = '', prose = [], guidance = []},
+  {
+    name,
+    altNames = [],
+    keywords = [],
+    weakKeywords = [],
+    description = '',
+    prose = [],
+    guidance = [],
+  },
 ) {
   let best = 0;
   let reason = '';
@@ -356,12 +366,18 @@ export function scoreCandidate(
     }
   };
 
-  const nameLower = name.toLowerCase();
-
   // ── Name signals ────────────────────────────────────────────────
-  if (nameLower === term) {
-    consider(100, 'exact name');
-  } else {
+  // A template is addressed by its directory (`marketing-landing`) but authored
+  // with a human name (`Landing Page`). Both are identity, so both run the name
+  // ladder and the stronger one wins; indexing only the directory left a page
+  // called "Searchable Table" unfindable by that phrase.
+  for (const candidateName of [name, ...altNames]) {
+    const nameLower = String(candidateName).toLowerCase();
+    if (!nameLower) continue;
+    if (nameLower === term) {
+      consider(100, 'exact name');
+      continue;
+    }
     // Substring (both directions), min 4 chars, >=50% coverage.
     const shorter = term.length < nameLower.length ? term : nameLower;
     const longer = term.length < nameLower.length ? nameLower : term;
@@ -717,6 +733,7 @@ async function gatherTemplates(cwd) {
     return {
       domain: 'template',
       name: t.dirName,
+      altNames: t.name && t.name !== t.dirName ? [t.name] : [],
       keywords,
       weakKeywords,
       description: t.description || '',
