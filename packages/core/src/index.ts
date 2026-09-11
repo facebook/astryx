@@ -43,6 +43,7 @@ export * from './CheckboxList';
 export * from './Collapsible';
 export * from './RadioList';
 export * from './Resizable';
+export * from './ScrollableArea';
 export * from './Divider';
 export * from './VisuallyHidden';
 export * from './EmptyState';

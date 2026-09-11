@@ -56,6 +56,18 @@ export type {UseOverflowOptions, UseOverflowReturn} from './useOverflow';
 export {useScrollOverflow} from './useScrollOverflow';
 export type {ScrollOverflowState} from './useScrollOverflow';
 
+export {useScrollableArea} from './useScrollableArea';
+export type {
+  ScrollAxis,
+  ScrollAxisState,
+  ScrollChaining,
+  ScrollKeyboardAccess,
+  ScrollableAreaState,
+  ScrollableElementProps,
+  UseScrollableAreaOptions,
+  UseScrollableAreaResult,
+} from './useScrollableArea';
+
 export {useScrollLock} from './useScrollLock';
 
 export {useEntryAnimation} from './useEntryAnimation';
