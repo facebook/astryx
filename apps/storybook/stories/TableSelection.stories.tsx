@@ -8,6 +8,7 @@ import {
   useTableSelectionState,
 } from '@astryxdesign/core/Table';
 import type {TableColumn} from '@astryxdesign/core/Table';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 // =============================================================================
 // Sample Data
@@ -289,6 +290,58 @@ export const WithStripedRows: Story = {
           plugins={{selection: selectionPlugin}}
         />
       </div>
+    );
+  },
+};
+
+/**
+ * Recolour the checked-row wash from a theme, via `defineTheme`.
+ *
+ * Checked rows publish their state on the `astryx-table-row` target
+ * (`selected` class + `data-selected`), and the wash resolves through
+ * `--table-row-selected-background` — so a theme retints the selection by
+ * setting that var under the `selected` key instead of turning
+ * `hasRowHighlight` off. The same var is republished as the row overlay, so
+ * pinned cells replay the themed colour too.
+ *
+ * Defaults are unchanged; this story only demonstrates the override channel.
+ */
+const themedWashTheme = defineTheme({
+  name: 'table-selection-wash-demo',
+  components: {
+    'table-row': {
+      selected: {
+        '--table-row-selected-background': 'var(--color-success-muted)',
+      },
+    },
+  },
+});
+
+export const ThemedSelectionWash: Story = {
+  render: () => {
+    const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
+      new Set(['1', '3']),
+    );
+
+    const {selectionConfig} = useTableSelectionState<User>({
+      data: users,
+      idKey: 'id',
+      selectedKeys,
+      setSelectedKeys,
+    });
+    const selectionPlugin = useTableSelection<User>(selectionConfig);
+
+    return (
+      <Theme theme={themedWashTheme} mode="light">
+        <div style={{maxWidth: 600}}>
+          <Table
+            data={users}
+            columns={columns}
+            idKey="id"
+            plugins={{selection: selectionPlugin}}
+          />
+        </div>
+      </Theme>
     );
   },
 };
