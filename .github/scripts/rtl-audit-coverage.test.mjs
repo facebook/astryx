@@ -16,6 +16,7 @@ import {
   classifyDirectionalDecorationPair,
   classifyLogicalInlinePair,
   collectDirectionalDecorations,
+  filterStoryRoutesByPackages,
   storyIdsForComponentFilters,
   unresolvedComponentFilters,
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
@@ -493,6 +494,29 @@ describe('audited package and story routing', () => {
         component: 'vega/VegaChart',
       },
     ]);
+
+    const routesWithUnknown = [
+      ...routes,
+      {id: 'core-mystery--default', component: 'unknown/mystery'},
+    ];
+    const shardRoutes = Object.fromEntries(
+      AUDITED_PACKAGE_NAMES.map(packageName => [
+        packageName,
+        filterStoryRoutesByPackages(routesWithUnknown, [packageName]),
+      ]),
+    );
+    const routeKey = route => `${route.id}::${route.component}`;
+    const assigned = Object.values(shardRoutes).flat().map(routeKey).sort();
+    expect(assigned).toEqual(routesWithUnknown.map(routeKey).sort());
+    expect(shardRoutes.richtext.map(routeKey)).toContain(
+      'lab-richtexteditor--with-toolbar::richtext/RichTextEditorToolbar',
+    );
+    expect(shardRoutes.lab.map(routeKey)).not.toContain(
+      'lab-richtexteditor--with-toolbar::richtext/RichTextEditorToolbar',
+    );
+    expect(shardRoutes.core.map(routeKey)).toContain(
+      'core-mystery--default::unknown/mystery',
+    );
 
     const groupedOwners = [
       'charts/ChartAxis',

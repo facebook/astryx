@@ -25,8 +25,8 @@
  *     (C) APPLICABILITY: every component is measured, explicitly verified N/A,
  *         or reported as a coverage gap. An all-N/A result is never called clean.
  * @input --storybook-dir <path> --output <file> [--targets <path>]
- *   [--verified-not-applicable <path>] [--filter <csv>] [--auto-only]
- *   [--curated-only]
+ *   [--verified-not-applicable <path>] [--filter <csv>] [--packages <csv>]
+ *   [--auto-only] [--curated-only]
  * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4/D7/D8
  *   results, and a component coverage rollup. Mirrors the pr-a11y accessibility-
  *   audit harness.
@@ -58,6 +58,7 @@ import {
   collectDirectionalDecorations,
   componentFromTarget,
   evaluateDirectionalDecorations,
+  filterStoryRoutesByPackages,
 } from './rtl-audit-coverage.mjs';
 
 const {
@@ -81,6 +82,19 @@ const VERIFIED_NA_PATH =
   getArg('verified-not-applicable') ||
   path.join(HERE, 'verified-not-applicable.json');
 const FILTER = (getArg('filter') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+const PACKAGE_FILTER = (getArg('packages') || '')
+  .split(',')
+  .map(value => value.trim().toLowerCase())
+  .filter(Boolean);
+const invalidPackages = PACKAGE_FILTER.filter(
+  packageName => !AUDITED_PACKAGE_NAMES.includes(packageName),
+);
+if (invalidPackages.length > 0) {
+  throw new Error(`unknown audited package(s): ${invalidPackages.join(', ')}`);
+}
+const ACTIVE_PACKAGE_NAMES = PACKAGE_FILTER.length > 0
+  ? PACKAGE_FILTER
+  : AUDITED_PACKAGE_NAMES;
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
 // Story-id prefixes the auto-discovery layer sweeps come from the same
@@ -912,6 +926,10 @@ function matchesFilter(component) {
   return !FILTER.length || FILTER.includes(normalized) || FILTER.includes(name);
 }
 
+function belongsToActivePackage(route) {
+  return filterStoryRoutesByPackages([route], ACTIVE_PACKAGE_NAMES).length === 1;
+}
+
 // Run `fn` over `items` with `pages.length` workers, each pinned to its own
 // page. Results are written by index, so the output array is in input order
 // regardless of completion order — the report stays byte-identical to a serial
@@ -974,9 +992,11 @@ async function mapPool(items, pages, fn) {
         ? flatPackageComponentNames(PROJECT_ROOT, pkg)
         : nestedPackageComponentNames(PROJECT_ROOT, pkg);
       publicComponentsByPackage[packageName] = componentNames;
-      sourceComponents.push(
-        ...componentNames.map(component => `${packageName}/${component}`),
-      );
+      if (ACTIVE_PACKAGE_NAMES.includes(packageName)) {
+        sourceComponents.push(
+          ...componentNames.map(component => `${packageName}/${component}`),
+        );
+      }
     } catch (error) {
       console.error(`WARN: cannot discover ${packageName} component roster: ${String(error).slice(0, 120)}`);
     }
@@ -985,7 +1005,7 @@ async function mapPool(items, pages, fn) {
     stories: storyIds.map(id => ({id, title: entries[id].title})),
     targets,
     publicComponentsByPackage,
-  });
+  }).filter(belongsToActivePackage);
   const auditedComponents = buildAuditedComponentRoster({
     sourceComponents,
     storyComponents: storyRoutes.map(route => route.component),
@@ -1070,6 +1090,7 @@ async function mapPool(items, pages, fn) {
         AUDITED_PACKAGE_NAMES,
         publicComponentsByPackage,
       );
+      if (!belongsToActivePackage({component, id: t.storyId})) continue;
       if (!matchesFilter(component)) continue;
       if (!entries[t.storyId]) {
         curatedResults.push({component, storyId: t.storyId, rollup: 'MISSING-STORY', dims: {}, notes: ['story not in index.json']});
@@ -1124,6 +1145,10 @@ async function mapPool(items, pages, fn) {
   const decorationFails = decorationResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
   const report = {
     generatedAt: new Date().toISOString(),
+    scope: {
+      packages: ACTIVE_PACKAGE_NAMES,
+      filters: FILTER,
+    },
     dist: DIST,
     selfChecks: {d8LogicalInline: d8BrowserContract},
     autoDiscovery: {

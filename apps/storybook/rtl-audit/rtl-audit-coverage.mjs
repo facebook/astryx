@@ -176,6 +176,22 @@ export function buildStoryComponentRoutes({
   });
 }
 
+export function filterStoryRoutesByPackages(
+  routes,
+  packageNames,
+  packages = COMPONENT_PACKAGES,
+) {
+  return routes.filter(({component, id}) => {
+    const ownerPackage = component.split('/')[0];
+    if (packageNames.includes(ownerPackage)) return true;
+    if (ownerPackage !== 'unknown') return false;
+    const fallbackPackage = packages.find(pkg =>
+      pkg.storyPrefixes.some(prefix => id.startsWith(prefix)),
+    )?.name;
+    return fallbackPackage != null && packageNames.includes(fallbackPackage);
+  });
+}
+
 /** Whether a package-qualified route owns a bare or qualified filter. */
 function routeMatchesComponentFilter(route, filter) {
   const component = route.component.toLowerCase();

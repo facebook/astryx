@@ -952,27 +952,34 @@ jobs:
   # analysis.json scoping, so ordinary PRs only pay for the components they
   # touched. A harness-only PR runs the fixed Chart/ChartLegend smoke scope so
   # routing and target changes prove themselves instead of skipping their own
-  # check. Unscoped this swept ~1400 stories and took ~26 min. The full sweep
-  # that covers untouched components runs in rtl-weekly.yml.
+  # check. A policy-sensitive full run spans ~2,000 stories and exceeded the
+  # single-job budget, so CI partitions it by canonical package; each shard runs
+  # four browser workers, and the stable pr-rtl join requires all five reports.
+  # The scheduled full sweep also runs in rtl-weekly.yml.
   #
   # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
   # contextual directional decorations. Curated D2/D3/D4 adds behavior that
   # needs selectors. The applicability rollup treats unexplained all-N/A as a
   # coverage gap for both new and existing components.
   #
-  # SOFT / NON-BLOCKING (continue-on-error): findings surface a scorecard in the
-  # job summary but don't block the merge, while the suite is observed for
-  # flake. To promote: drop continue-on-error and add `pr-rtl` to required
-  # checks. See apps/storybook/rtl-audit/README.md.
-  pr-rtl:
+  # Audit findings remain SOFT while the stability window is observed: the audit
+  # step may fail after writing a report. Missing/canceled/incomplete shards are
+  # HARD failures, and the pr-rtl join cannot pass without every package report.
+  # To promote findings too, remove the audit step's continue-on-error.
+  pr-rtl-shard:
+    name: pr-rtl (${{ matrix.package }})
     needs: [build-storybook, check-components]
     if: >-
       github.event_name == 'pull_request' &&
       (needs.check-components.outputs.has_rtl_components == 'true' ||
        needs.check-components.outputs.has_rtl_harness == 'true' ||
        needs.check-components.outputs.force_full_component_audits == 'true')
-    runs-on: 2-core-ubuntu-arm
-    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [core, lab, charts, richtext, vega]
+    runs-on: 4-core-ubuntu
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -1004,31 +1011,62 @@ jobs:
       # harness-only change uses the bounded routing smoke scope.
       - name: Run RTL audit
         id: rtl
+        continue-on-error: true
         run: |
-          COMPONENTS=$(jq -r '((.newComponentOwners // .newComponents // []) + (.modifiedComponentOwners // .modifiedComponents // [])) | join(",")' analysis.json)
+          PACKAGE=${{ matrix.package }}
+          ALL_COMPONENTS=$(jq -r '((.newComponentOwners // .newComponents // []) + (.modifiedComponentOwners // .modifiedComponents // [])) | join(",")' analysis.json)
           FILTER_ARGS=()
           if [ "${{ needs.check-components.outputs.force_full_component_audits }}" = "true" ] \
-            || { [ -z "$COMPONENTS" ] && [ "${{ needs.check-components.outputs.has_rtl_components }}" = "true" ]; }; then
-            COMPONENTS="full canonical roster"
-            echo "Component scope is policy-sensitive or unresolved — running the full RTL audit."
-          elif [ -z "$COMPONENTS" ] && [ "${{ needs.check-components.outputs.has_rtl_harness }}" = "true" ]; then
-            COMPONENTS="Chart,ChartLegend"
+            || { [ -z "$ALL_COMPONENTS" ] && [ "${{ needs.check-components.outputs.has_rtl_components }}" = "true" ]; }; then
+            COMPONENTS="full $PACKAGE roster"
+            echo "Component scope is policy-sensitive or unresolved — running the full $PACKAGE RTL shard."
+          elif [ -z "$ALL_COMPONENTS" ] && [ "${{ needs.check-components.outputs.has_rtl_harness }}" = "true" ]; then
+            case "$PACKAGE" in
+              lab) COMPONENTS="lab/Chart" ;;
+              charts) COMPONENTS="charts/Chart,charts/ChartLegend" ;;
+              *)
+                echo "No routing-smoke owner in $PACKAGE — shard is not applicable."
+                echo "ran=false" >> "$GITHUB_OUTPUT"
+                exit 0
+                ;;
+            esac
             FILTER_ARGS=(--filter "$COMPONENTS")
-            echo "RTL harness changed — running routing smoke scope: $COMPONENTS"
-          elif [ -n "$COMPONENTS" ]; then
+            echo "RTL harness changed — running $PACKAGE routing smoke scope: $COMPONENTS"
+          elif [ -n "$ALL_COMPONENTS" ]; then
+            COMPONENTS=$(printf '%s' "$ALL_COMPONENTS" \
+              | tr ',' '\n' \
+              | awk -v prefix="$PACKAGE/" 'index($0, prefix) == 1' \
+              | paste -sd, -)
+            if [ -z "$COMPONENTS" ]; then
+              echo "No changed owner in $PACKAGE — shard is not applicable."
+              echo "ran=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
             FILTER_ARGS=(--filter "$COMPONENTS")
           else
             echo "No component or RTL harness changes resolved — skipping RTL audit."
             echo "ran=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          echo "Auditing components: $COMPONENTS"
+          echo "Auditing $PACKAGE components: $COMPONENTS"
           echo "ran=true" >> "$GITHUB_OUTPUT"
           echo "components=$COMPONENTS" >> "$GITHUB_OUTPUT"
           node apps/storybook/rtl-audit/rtl-audit.mjs \
             --storybook-dir apps/storybook/dist \
             --output rtl-audit-report.json \
+            --packages "$PACKAGE" \
+            --concurrency 4 \
             "${FILTER_ARGS[@]}"
+
+      - name: Require completed RTL shard report
+        if: always() && steps.rtl.outputs.ran == 'true'
+        run: |
+          test -s rtl-audit-report.json
+          jq -e --arg package "${{ matrix.package }}" '
+            .scope.packages == [$package] and
+            .coverage.total > 0 and
+            (.coverage.registryError == null)
+          ' rtl-audit-report.json
 
       - name: Write scorecard summary
         if: always() && steps.rtl.outputs.ran == 'true'
@@ -1138,6 +1176,30 @@ jobs:
         if: always() && steps.rtl.outputs.ran == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: rtl-audit-report
+          name: rtl-audit-report-${{ matrix.package }}
           path: rtl-audit-report.json
           retention-days: 1
+
+  # Stable required context joining the five package shards above.
+  pr-rtl:
+    needs: [check-components, pr-rtl-shard]
+    if: ${{ always() && !cancelled() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    steps:
+      - name: Require every applicable RTL shard
+        run: |
+          SHOULD_RUN=${{ needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true' }}
+          SHARD_RESULT=${{ needs.pr-rtl-shard.result }}
+          if [ "$SHOULD_RUN" = "true" ]; then
+            if [ "$SHARD_RESULT" != "success" ]; then
+              echo "RTL package shards did not all succeed: $SHARD_RESULT"
+              exit 1
+            fi
+            echo "All five canonical RTL package shards succeeded."
+          elif [ "$SHARD_RESULT" != "skipped" ]; then
+            echo "RTL shards unexpectedly ran for an out-of-scope change: $SHARD_RESULT"
+            exit 1
+          else
+            echo "No RTL-owned scope; package shards correctly skipped."
+          fi

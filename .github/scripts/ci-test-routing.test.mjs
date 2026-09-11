@@ -24,6 +24,9 @@ import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
 import yaml from 'yaml';
+import componentPackages from '../../scripts/component-packages.cjs';
+
+const {COMPONENT_PACKAGE_NAMES} = componentPackages;
 
 const root = path.resolve(import.meta.dirname, '../..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -170,6 +173,44 @@ describe.each(Object.entries(WORKFLOWS))(
     }
   },
 );
+
+describe('ci.yml RTL package sharding', () => {
+  const workflow = load('ci.yml');
+  const shard = workflow.jobs['pr-rtl-shard'];
+  const join = workflow.jobs['pr-rtl'];
+
+  it('runs one bounded shard for every canonical component package', () => {
+    expect(shard.strategy.matrix.package).toEqual([
+      ...COMPONENT_PACKAGE_NAMES,
+    ]);
+    expect(shard['runs-on']).toBe('4-core-ubuntu');
+    expect(shard['timeout-minutes']).toBeLessThanOrEqual(30);
+    expect(shard['continue-on-error']).not.toBe(true);
+    const audit = shard.steps.find(step => step.name === 'Run RTL audit');
+    expect(audit['continue-on-error']).toBe(true);
+    expect(runLines(shard)).toContain('--packages "$PACKAGE"');
+    expect(runLines(shard)).toContain('--concurrency 4');
+    expect(runLines(shard)).toContain('test -s rtl-audit-report.json');
+    expect(runLines(shard)).toContain('.coverage.total > 0');
+  });
+
+  it('keeps pr-rtl as a fail-closed join over every matrix shard', () => {
+    expect(join.needs).toEqual(
+      expect.arrayContaining(['check-components', 'pr-rtl-shard']),
+    );
+    const commands = runLines(join);
+    expect(commands).toContain('needs.pr-rtl-shard.result');
+    expect(commands).toContain('All five canonical RTL package shards succeeded');
+    expect(commands).toContain('exit 1');
+  });
+
+  it('publishes a distinct report artifact for each package shard', () => {
+    const upload = shard.steps.find(step =>
+      step.uses?.startsWith('actions/upload-artifact@'),
+    );
+    expect(upload.with.name).toBe('rtl-audit-report-${{ matrix.package }}');
+  });
+});
 
 describe('deploy.yml push gating', () => {
   const workflow = load('deploy.yml');
