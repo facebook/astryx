@@ -122,6 +122,45 @@ function findPackageRoot(startDir) {
 }
 
 /**
+ * Whether autolinking is switched off for this run.
+ *
+ * Two switches, because they answer two different emergencies.
+ *
+ *   - `ASTRYX_NO_AUTOLINK=1` in the environment. The only control that needs no
+ *     change to a repo, which is what a fleet-wide stop requires: consumers
+ *     resolve the CLI from their own lockfiles, so a fix that ships in a release
+ *     reaches them on their upgrade schedule, not ours. Any non-empty value
+ *     other than `0` or `false` counts — an operator reaching for this is not in
+ *     a mood to read a spelling rule.
+ *   - `{"astryx": {"autolink": false}}` in the project's package.json. The
+ *     durable, per-project answer, for a project that wants only what it names.
+ *
+ * package.json rather than astryx.config, for the reason
+ * {@link inheritsIntegrationDebug} gives: an unknown config key is a hard config
+ * error on an older CLI, while `astryx` in package.json is inert to every
+ * version that does not look for it. Only `false` opts out; a missing file or a
+ * malformed one is not an opt-out.
+ *
+ * This never disables a CONFIGURED integration. A project that named an
+ * integration asked for it, and this switch is about the ones it did not name.
+ *
+ * @param {string} projectDir
+ * @returns {boolean}
+ */
+function autolinkDisabled(projectDir) {
+  const env = process.env.ASTRYX_NO_AUTOLINK;
+  if (env != null && env !== '' && env !== '0' && env !== 'false') return true;
+  try {
+    const pkgPath = path.join(projectDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    return pkg?.astryx?.autolink === false;
+  } catch {
+    // No package.json, or unreadable/malformed — not an opt-out.
+    return false;
+  }
+}
+
+/**
  * Whether this project accepts `debug` handlers contributed by the
  * integrations it loads.
  *
@@ -282,11 +321,13 @@ export class Project {
     // precedence in every discovery order.
     loadedIntegrations = [
       ...loadedIntegrations,
-      ...(await autolinkIntegrations({
-        projectDir,
-        loaded: loadedIntegrations,
-        fresh,
-      })),
+      ...(autolinkDisabled(projectDir)
+        ? []
+        : await autolinkIntegrations({
+            projectDir,
+            loaded: loadedIntegrations,
+            fresh,
+          })),
     ];
 
     // The debug recorder resolves its settings synchronously, long before any
