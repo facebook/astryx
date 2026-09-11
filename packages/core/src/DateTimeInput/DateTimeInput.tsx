@@ -114,6 +114,13 @@ export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
 };
 
+/**
+ * When DateTimeInput hands date and time picking to the browser/OS instead of
+ * its own surfaces.
+ *
+ * @deprecated Use `adaptations` with `DateTimeInputAdaptationValue`. The closest
+ * policy for each shorthand is documented on `DateTimeInputProps.nativePicker`.
+ */
 export type DateTimeInputNativePicker = 'touch' | 'always' | 'never';
 
 /**
@@ -501,35 +508,35 @@ export interface DateTimeInputProps extends Omit<
   weekStartsOn?: DayOfWeek | DayOfWeekName;
 
   /**
-   * When date and time picking are handed to the browser/OS instead of Astryx's
-   * calendar and time surfaces.
+   * Deprecated shorthand for choosing the date and time surfaces. Existing
+   * calls keep their released behavior, but new code should use `adaptations`
+   * so the server-rendered surface and every environment rule are explicit.
    *
-   * - `'touch'` (default): native date and time inputs on a coarse primary
-   *   pointer; Astryx's typed fields and popovers otherwise
-   * - `'always'`: native date and time inputs wherever the browser supports them
-   * - `'never'`: Astryx's own surfaces everywhere — typed fields on a fine
-   *   pointer and the coordinated Date/Time bottom sheet on a coarse pointer
+   * For the initial render and while the field is idle, map each value as
+   * follows:
+   * - `'touch'` → `{default: 'popover', rules: [{when: {pointer: 'coarse'}, value: 'native'}]}`
+   * - `'always'` → `{default: 'native', rules: []}`
+   * - `'never'` → `{default: 'popover', rules: [{when: {pointer: 'coarse'}, value: 'bottom-sheet'}]}`
    *
-   * Native pickers cannot express `numberOfMonths`, `weekStartsOn`,
-   * `dateConstraints`, or `timeOptionInterval`. Calendar-only options are
-   * ignored in native mode and constraints are enforced on commit. The native
-   * time control is used for the default minute-precision contract; requesting
-   * `hasSeconds`, a non-default `timeIncrement`, or `timeOptionInterval` keeps
-   * Astryx's time field because iOS cannot represent those behaviors faithfully.
-   * `min` / `max` are forwarded to each native control as hints and enforced in
-   * JavaScript. `hourFormat` formats the closed value; the OS picker follows the
-   * user's locale.
+   * The new policy intentionally differs during an active interaction:
+   * `adaptations` holds the current tree until the field is idle, while
+   * `nativePicker="touch"` and `nativePicker="never"` keep their released
+   * immediate pointer-switch behavior.
+   *
+   * Those mappings select the same idle surfaces for fields whose other props
+   * every selected surface can honor. Legacy `'touch'` and `'always'` calls may
+   * instead retain an Astryx time field when `hasSeconds`, a non-default
+   * `timeIncrement`, or `timeOptionInterval` is set, and may ignore
+   * `numberOfMonths` or `weekStartsOn` on the native date control. Those mixed
+   * fallbacks have no exact `adaptations` equivalent; keep the shorthand until
+   * the callsite can choose an exact supported surface. `min`, `max`, and
+   * `dateConstraints` remain supported and are enforced on commit.
+   *
+   * Mutually exclusive with `adaptations`.
    *
    * @default 'touch'
-   * @example
-   * ```
-   * <DateTimeInput
-   *   label="Event time"
-   *   value={dateTime}
-   *   onChange={setDateTime}
-   *   nativePicker="never"
-   * />
-   * ```
+   * @deprecated Use `adaptations`; the mapping above preserves idle surface
+   * selection when the exact surfaces support the field's other props.
    */
   nativePicker?: DateTimeInputNativePicker;
 
@@ -2110,17 +2117,14 @@ function PointerDateTimeField({
 PointerDateTimeField.displayName = 'PointerDateTimeField';
 
 /**
- * A combined date and time picker whose `nativePicker` prop chooses both
- * surfaces. Native modes use OS-owned date and time controls in Astryx field
- * chrome. With `nativePicker="never"`, fine pointers keep the typed fields and
- * popovers while coarse pointers get Astryx's coordinated Date/Time bottom
- * sheet.
+ * A combined date and time picker whose `adaptations` policy selects one exact
+ * surface for both segments: native controls, typed fields with anchored
+ * popovers, or the coordinated Date/Time bottom sheet. `default` owns the
+ * server-rendered and hydration surface; ordered rules may then respond to the
+ * nearest Theme's width points and the primary pointer (spec:AST-031 FR3).
  *
- * `adaptations` replaces that pointer test at the call sites that pass it: an
- * ordered policy over the three exact surfaces (`native`, `popover`,
- * `bottom-sheet`), resolved against the nearest Theme's width points and the
- * primary pointer, with `default` as the server-rendered and hydration value
- * (spec:AST-031 FR3).
+ * Without `adaptations`, the deprecated `nativePicker` compatibility path keeps
+ * its released pointer-driven and per-segment fallback behavior.
  */
 export function DateTimeInput({
   nativePicker,
