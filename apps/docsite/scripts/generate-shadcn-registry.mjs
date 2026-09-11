@@ -657,9 +657,9 @@ function writeJson(filePath, value) {
 }
 
 export function generateShadcnRegistryForTarget({target, outDir, ...options}) {
-  if (target !== 'canary') {
+  if (target !== 'canary' && target !== 'latest') {
     fs.rmSync(outDir, {recursive: true, force: true});
-    return null;
+    throw new Error(`Unsupported ShadCN registry target: ${String(target)}`);
   }
   return generateShadcnRegistry({outDir, ...options});
 }

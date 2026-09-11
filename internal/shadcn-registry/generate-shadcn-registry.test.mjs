@@ -315,16 +315,47 @@ describe('buildShadcnRegistry', () => {
     }
   });
 
-  it('removes stale compatibility output for non-canary targets', () => {
+  it('generates exact-version compatibility output for production', () => {
     const root = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-production-'));
     const outDir = path.join(root, 'shadcn');
     try {
       mkdirSync(outDir, {recursive: true});
       writeFileSync(path.join(outDir, 'stale.json'), '{}\n');
 
+      const result = generateShadcnRegistryForTarget({
+        target: 'latest',
+        outDir,
+        ...fixture(),
+      });
+      expect(result.total).toBe(3);
+      expect(existsSync(path.join(outDir, 'stale.json'))).toBe(false);
+      const component = JSON.parse(
+        readFileSync(path.join(outDir, 'components', 'button.json'), 'utf8'),
+      );
+      expect(component.dependencies).toEqual([
+        '@astryxdesign/core@0.5.2',
+        '@stylexjs/stylex@0.19.0',
+      ]);
       expect(
-        generateShadcnRegistryForTarget({target: 'latest', outDir}),
-      ).toBeNull();
+        component.dependencies.some(dependency =>
+          dependency.includes('@canary'),
+        ),
+      ).toBe(false);
+    } finally {
+      rmSync(root, {recursive: true, force: true});
+    }
+  });
+
+  it('fails closed for an unknown registry target', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-unknown-'));
+    const outDir = path.join(root, 'shadcn');
+    try {
+      mkdirSync(outDir, {recursive: true});
+      writeFileSync(path.join(outDir, 'stale.json'), '{}\n');
+
+      expect(() =>
+        generateShadcnRegistryForTarget({target: 'unknown', outDir}),
+      ).toThrow(/Unsupported ShadCN registry target/);
       expect(existsSync(outDir)).toBe(false);
     } finally {
       rmSync(root, {recursive: true, force: true});
