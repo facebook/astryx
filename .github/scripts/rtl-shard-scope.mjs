@@ -1,0 +1,170 @@
+#!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import fs from 'node:fs';
+import {pathToFileURL} from 'node:url';
+
+/**
+ * @file Strict per-package scope resolver for the pull-request RTL matrix.
+ * @input Trusted classifier booleans, one canonical package, and analysis.json.
+ * @output GitHub step outputs describing whether and how that shard must run.
+ * @position Hard-fail setup step before the soft audit-findings step.
+ */
+
+const HARNESS_SMOKE_OWNERS = {
+  lab: ['lab/Chart'],
+  charts: ['charts/Chart', 'charts/ChartLegend'],
+};
+
+function ownerArray(analysis, qualifiedKey, legacyKey) {
+  const qualified = analysis[qualifiedKey];
+  if (qualified != null) {
+    if (!Array.isArray(qualified) || qualified.some(value => typeof value !== 'string')) {
+      throw new Error(`${qualifiedKey} must be an array of strings`);
+    }
+    return {owners: qualified, qualified: true};
+  }
+  const legacy = analysis[legacyKey] ?? [];
+  if (!Array.isArray(legacy) || legacy.some(value => typeof value !== 'string')) {
+    throw new Error(`${legacyKey} must be an array of strings`);
+  }
+  return {owners: legacy, qualified: false};
+}
+
+export function readAnalysis(analysisPath) {
+  let analysis;
+  try {
+    analysis = JSON.parse(fs.readFileSync(analysisPath, 'utf8'));
+  } catch (error) {
+    throw new Error(`Could not read analysis artifact: ${error.message}`, {
+      cause: error,
+    });
+  }
+  if (analysis == null || typeof analysis !== 'object' || Array.isArray(analysis)) {
+    throw new Error('Analysis artifact must be a JSON object');
+  }
+  const added = ownerArray(analysis, 'newComponentOwners', 'newComponents');
+  const modified = ownerArray(
+    analysis,
+    'modifiedComponentOwners',
+    'modifiedComponents',
+  );
+  const owners = [...added.owners, ...modified.owners];
+  if (owners.some(owner => owner.includes('\n') || owner.includes('\r'))) {
+    throw new Error('Analysis owner values must not contain line breaks');
+  }
+  return {
+    owners,
+    qualified: added.qualified && modified.qualified,
+  };
+}
+
+export function resolveRtlShardScope({
+  packageName,
+  forceFull,
+  hasComponents,
+  hasHarness,
+  analysis,
+}) {
+  if (!/^[a-z][a-z0-9-]*$/.test(packageName)) {
+    throw new Error(`Invalid package name: ${packageName}`);
+  }
+  const full = reason => ({
+    shouldRun: true,
+    components: `full ${packageName} roster`,
+    filter: '',
+    reason,
+  });
+  if (forceFull) return full('policy-sensitive scope');
+  if (!analysis.qualified && analysis.owners.length > 0) {
+    return full('unqualified component scope');
+  }
+  if (analysis.owners.length === 0 && hasComponents) {
+    return full('unresolved component scope');
+  }
+  if (analysis.owners.length === 0 && hasHarness) {
+    const owners = HARNESS_SMOKE_OWNERS[packageName] ?? [];
+    return owners.length > 0
+      ? {
+          shouldRun: true,
+          components: owners.join(','),
+          filter: owners.join(','),
+          reason: 'routing smoke scope',
+        }
+      : {
+          shouldRun: false,
+          components: '',
+          filter: '',
+          reason: 'no routing-smoke owner in package',
+        };
+  }
+  if (analysis.owners.length > 0) {
+    const owners = analysis.owners.filter(owner =>
+      owner.startsWith(`${packageName}/`),
+    );
+    return owners.length > 0
+      ? {
+          shouldRun: true,
+          components: [...new Set(owners)].join(','),
+          filter: [...new Set(owners)].join(','),
+          reason: 'changed owner scope',
+        }
+      : {
+          shouldRun: false,
+          components: '',
+          filter: '',
+          reason: 'no changed owner in package',
+        };
+  }
+  return {
+    shouldRun: false,
+    components: '',
+    filter: '',
+    reason: 'no component or RTL harness changes',
+  };
+}
+
+function arg(name) {
+  const index = process.argv.indexOf(`--${name}`);
+  return index >= 0 ? process.argv[index + 1] : null;
+}
+
+function booleanArg(name) {
+  const value = arg(name);
+  if (value !== 'true' && value !== 'false') {
+    throw new Error(`--${name} must be true or false`);
+  }
+  return value === 'true';
+}
+
+function writeGithubOutputs(outputPath, scope) {
+  if (!outputPath) throw new Error('--github-output is required');
+  fs.appendFileSync(
+    outputPath,
+    [
+      `should_run=${scope.shouldRun}`,
+      `components=${scope.components}`,
+      `filter=${scope.filter}`,
+      `reason=${scope.reason}`,
+      '',
+    ].join('\n'),
+  );
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  try {
+    const analysis = readAnalysis(arg('analysis'));
+    const scope = resolveRtlShardScope({
+      packageName: arg('package'),
+      forceFull: booleanArg('force-full'),
+      hasComponents: booleanArg('has-components'),
+      hasHarness: booleanArg('has-harness'),
+      analysis,
+    });
+    writeGithubOutputs(arg('github-output'), scope);
+    console.log(`${scope.reason}: ${scope.components || 'not applicable'}`);
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 1;
+  }
+}

@@ -186,8 +186,20 @@ describe('ci.yml RTL package sharding', () => {
     expect(shard['runs-on']).toBe('4-core-ubuntu');
     expect(shard['timeout-minutes']).toBeLessThanOrEqual(30);
     expect(shard['continue-on-error']).not.toBe(true);
+    const scope = shard.steps.find(
+      step => step.name === 'Resolve RTL shard scope',
+    );
     const audit = shard.steps.find(step => step.name === 'Run RTL audit');
+    const validation = shard.steps.find(
+      step => step.name === 'Require completed RTL shard report',
+    );
+    expect(scope['continue-on-error']).not.toBe(true);
+    expect(scope.run).toContain('.github/scripts/rtl-shard-scope.mjs');
+    expect(audit.if).toContain("steps.rtl-scope.outputs.should_run == 'true'");
     expect(audit['continue-on-error']).toBe(true);
+    expect(validation.if).toBe('always()');
+    expect(validation.run).toContain('steps.rtl-scope.outcome');
+    expect(validation.run).toContain('produced no explicit should_run decision');
     expect(runLines(shard)).toContain('--packages "$PACKAGE"');
     expect(runLines(shard)).toContain('--concurrency 4');
     expect(runLines(shard)).toContain('test -s rtl-audit-report.json');

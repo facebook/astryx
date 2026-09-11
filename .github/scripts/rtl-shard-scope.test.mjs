@@ -1,0 +1,192 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import {spawnSync} from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {describe, expect, it} from 'vitest';
+import {
+  readAnalysis,
+  resolveRtlShardScope,
+} from './rtl-shard-scope.mjs';
+
+const SCRIPT = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  'rtl-shard-scope.mjs',
+);
+const qualifiedAnalysis = {
+  owners: ['charts/ChartLegend', 'core/Button'],
+  qualified: true,
+};
+
+function runCli(analysisText) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rtl-shard-scope-'));
+  const analysis = path.join(dir, 'analysis.json');
+  const output = path.join(dir, 'github-output');
+  try {
+    if (analysisText !== null) fs.writeFileSync(analysis, analysisText);
+    const result = spawnSync(
+      process.execPath,
+      [
+        SCRIPT,
+        '--analysis',
+        analysis,
+        '--package',
+        'charts',
+        '--force-full',
+        'false',
+        '--has-components',
+        'true',
+        '--has-harness',
+        'false',
+        '--github-output',
+        output,
+      ],
+      {encoding: 'utf8'},
+    );
+    return {
+      ...result,
+      output: fs.existsSync(output) ? fs.readFileSync(output, 'utf8') : '',
+    };
+  } finally {
+    fs.rmSync(dir, {recursive: true, force: true});
+  }
+}
+
+describe('RTL shard scope', () => {
+  it('selects only owners from the current package', () => {
+    expect(
+      resolveRtlShardScope({
+        packageName: 'charts',
+        forceFull: false,
+        hasComponents: true,
+        hasHarness: false,
+        analysis: qualifiedAnalysis,
+      }),
+    ).toMatchObject({
+      shouldRun: true,
+      components: 'charts/ChartLegend',
+      filter: 'charts/ChartLegend',
+    });
+  });
+
+  it('skips a package with no changed owner', () => {
+    expect(
+      resolveRtlShardScope({
+        packageName: 'vega',
+        forceFull: false,
+        hasComponents: true,
+        hasHarness: false,
+        analysis: qualifiedAnalysis,
+      }),
+    ).toMatchObject({shouldRun: false});
+  });
+
+  it('runs the full package for policy-sensitive scope', () => {
+    expect(
+      resolveRtlShardScope({
+        packageName: 'vega',
+        forceFull: true,
+        hasComponents: true,
+        hasHarness: false,
+        analysis: {owners: [], qualified: true},
+      }),
+    ).toMatchObject({shouldRun: true, components: 'full vega roster', filter: ''});
+  });
+
+  it('runs the full package for unresolved component scope', () => {
+    expect(
+      resolveRtlShardScope({
+        packageName: 'core',
+        forceFull: false,
+        hasComponents: true,
+        hasHarness: false,
+        analysis: {owners: [], qualified: true},
+      }),
+    ).toMatchObject({shouldRun: true, components: 'full core roster'});
+  });
+
+  it('runs only the canonical harness smoke packages', () => {
+    const input = {
+      forceFull: false,
+      hasComponents: false,
+      hasHarness: true,
+      analysis: {owners: [], qualified: true},
+    };
+    expect(resolveRtlShardScope({...input, packageName: 'lab'})).toMatchObject({
+      shouldRun: true,
+      filter: 'lab/Chart',
+    });
+    expect(
+      resolveRtlShardScope({...input, packageName: 'charts'}),
+    ).toMatchObject({
+      shouldRun: true,
+      filter: 'charts/Chart,charts/ChartLegend',
+    });
+    expect(resolveRtlShardScope({...input, packageName: 'core'})).toMatchObject({
+      shouldRun: false,
+    });
+  });
+
+  it('fails closed to a full shard for unqualified legacy owner data', () => {
+    expect(
+      resolveRtlShardScope({
+        packageName: 'core',
+        forceFull: false,
+        hasComponents: true,
+        hasHarness: false,
+        analysis: {owners: ['Button'], qualified: false},
+      }),
+    ).toMatchObject({shouldRun: true, components: 'full core roster'});
+  });
+});
+
+describe('RTL shard scope artifact handling', () => {
+  it('reads qualified owner arrays', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rtl-analysis-'));
+    const file = path.join(dir, 'analysis.json');
+    try {
+      fs.writeFileSync(
+        file,
+        JSON.stringify({
+          newComponentOwners: ['charts/ChartLegend'],
+          modifiedComponentOwners: [],
+        }),
+      );
+      expect(readAnalysis(file)).toEqual({
+        owners: ['charts/ChartLegend'],
+        qualified: true,
+      });
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  });
+
+  it.each([
+    ['missing', null, 'Could not read analysis artifact'],
+    ['malformed', '{not json', 'Could not read analysis artifact'],
+    [
+      'wrong owner shape',
+      JSON.stringify({newComponentOwners: 'charts/ChartLegend'}),
+      'newComponentOwners must be an array of strings',
+    ],
+  ])('rejects %s analysis before writing shard outputs', (_name, input, message) => {
+    const result = runCli(input);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(message);
+    expect(result.output).toBe('');
+  });
+
+  it('writes explicit outputs only after valid analysis resolves', () => {
+    const result = runCli(
+      JSON.stringify({
+        newComponentOwners: ['charts/ChartLegend'],
+        modifiedComponentOwners: [],
+      }),
+    );
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('should_run=true');
+    expect(result.output).toContain('filter=charts/ChartLegend');
+  });
+});

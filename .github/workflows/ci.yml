@@ -1006,51 +1006,34 @@ jobs:
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
       # A registry/classifier mutation runs the full audit from the PR checkout,
-      # while eligibility itself came from trusted base policy. An unresolved
-      # changed-component list also fails closed to the full audit; an ordinary
-      # harness-only change uses the bounded routing smoke scope.
+      # while eligibility itself came from trusted base policy. Scope resolution
+      # is strict: malformed or missing analysis fails before the soft findings
+      # step can run. An ordinary harness-only change uses the bounded routing
+      # smoke scope.
+      - name: Resolve RTL shard scope
+        id: rtl-scope
+        run: |
+          node .github/scripts/rtl-shard-scope.mjs \
+            --analysis analysis.json \
+            --package "${{ matrix.package }}" \
+            --force-full "${{ needs.check-components.outputs.force_full_component_audits }}" \
+            --has-components "${{ needs.check-components.outputs.has_rtl_components }}" \
+            --has-harness "${{ needs.check-components.outputs.has_rtl_harness }}" \
+            --github-output "$GITHUB_OUTPUT"
+
       - name: Run RTL audit
         id: rtl
+        if: steps.rtl-scope.outputs.should_run == 'true'
         continue-on-error: true
         run: |
           PACKAGE=${{ matrix.package }}
-          ALL_COMPONENTS=$(jq -r '((.newComponentOwners // .newComponents // []) + (.modifiedComponentOwners // .modifiedComponents // [])) | join(",")' analysis.json)
+          COMPONENTS="${{ steps.rtl-scope.outputs.components }}"
+          FILTER="${{ steps.rtl-scope.outputs.filter }}"
           FILTER_ARGS=()
-          if [ "${{ needs.check-components.outputs.force_full_component_audits }}" = "true" ] \
-            || { [ -z "$ALL_COMPONENTS" ] && [ "${{ needs.check-components.outputs.has_rtl_components }}" = "true" ]; }; then
-            COMPONENTS="full $PACKAGE roster"
-            echo "Component scope is policy-sensitive or unresolved — running the full $PACKAGE RTL shard."
-          elif [ -z "$ALL_COMPONENTS" ] && [ "${{ needs.check-components.outputs.has_rtl_harness }}" = "true" ]; then
-            case "$PACKAGE" in
-              lab) COMPONENTS="lab/Chart" ;;
-              charts) COMPONENTS="charts/Chart,charts/ChartLegend" ;;
-              *)
-                echo "No routing-smoke owner in $PACKAGE — shard is not applicable."
-                echo "ran=false" >> "$GITHUB_OUTPUT"
-                exit 0
-                ;;
-            esac
-            FILTER_ARGS=(--filter "$COMPONENTS")
-            echo "RTL harness changed — running $PACKAGE routing smoke scope: $COMPONENTS"
-          elif [ -n "$ALL_COMPONENTS" ]; then
-            COMPONENTS=$(printf '%s' "$ALL_COMPONENTS" \
-              | tr ',' '\n' \
-              | awk -v prefix="$PACKAGE/" 'index($0, prefix) == 1' \
-              | paste -sd, -)
-            if [ -z "$COMPONENTS" ]; then
-              echo "No changed owner in $PACKAGE — shard is not applicable."
-              echo "ran=false" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            FILTER_ARGS=(--filter "$COMPONENTS")
-          else
-            echo "No component or RTL harness changes resolved — skipping RTL audit."
-            echo "ran=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          if [ -n "$FILTER" ]; then
+            FILTER_ARGS=(--filter "$FILTER")
           fi
           echo "Auditing $PACKAGE components: $COMPONENTS"
-          echo "ran=true" >> "$GITHUB_OUTPUT"
-          echo "components=$COMPONENTS" >> "$GITHUB_OUTPUT"
           node apps/storybook/rtl-audit/rtl-audit.mjs \
             --storybook-dir apps/storybook/dist \
             --output rtl-audit-report.json \
@@ -1059,22 +1042,43 @@ jobs:
             "${FILTER_ARGS[@]}"
 
       - name: Require completed RTL shard report
-        if: always() && steps.rtl.outputs.ran == 'true'
+        if: always()
         run: |
-          test -s rtl-audit-report.json
-          jq -e --arg package "${{ matrix.package }}" '
-            .scope.packages == [$package] and
-            .coverage.total > 0 and
-            (.coverage.registryError == null)
-          ' rtl-audit-report.json
+          SCOPE_OUTCOME="${{ steps.rtl-scope.outcome }}"
+          SHOULD_RUN="${{ steps.rtl-scope.outputs.should_run }}"
+          AUDIT_OUTCOME="${{ steps.rtl.outcome }}"
+          if [ "$SCOPE_OUTCOME" != "success" ]; then
+            echo "RTL shard scope did not resolve successfully: $SCOPE_OUTCOME"
+            exit 1
+          fi
+          if [ "$SHOULD_RUN" = "true" ]; then
+            if [ "$AUDIT_OUTCOME" != "success" ] && [ "$AUDIT_OUTCOME" != "failure" ]; then
+              echo "Applicable RTL audit did not run: $AUDIT_OUTCOME"
+              exit 1
+            fi
+            test -s rtl-audit-report.json
+            jq -e --arg package "${{ matrix.package }}" '
+              .scope.packages == [$package] and
+              .coverage.total > 0 and
+              (.coverage.registryError == null)
+            ' rtl-audit-report.json
+          elif [ "$SHOULD_RUN" = "false" ]; then
+            if [ "$AUDIT_OUTCOME" != "skipped" ]; then
+              echo "Out-of-scope RTL audit unexpectedly ran: $AUDIT_OUTCOME"
+              exit 1
+            fi
+          else
+            echo "RTL shard scope produced no explicit should_run decision."
+            exit 1
+          fi
 
       - name: Write scorecard summary
-        if: always() && steps.rtl.outputs.ran == 'true'
+        if: always() && steps.rtl-scope.outputs.should_run == 'true'
         run: |
           {
             echo "## RTL semantic audit"
             echo ""
-            echo "Audit scope: **${{ steps.rtl.outputs.components }}**. The scheduled unfiltered sweep also runs weekly — see \`rtl-weekly.yml\`."
+            echo "Audit scope: **${{ steps.rtl-scope.outputs.components }}**. The scheduled unfiltered sweep also runs weekly — see \`rtl-weekly.yml\`."
             echo ""
             echo "Relationship-based (LTR vs RTL in the same run) — no golden screenshots. **Soft-gated** pending a stability window."
             echo ""
@@ -1173,7 +1177,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload RTL audit report
-        if: always() && steps.rtl.outputs.ran == 'true'
+        if: always() && steps.rtl-scope.outputs.should_run == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: rtl-audit-report-${{ matrix.package }}

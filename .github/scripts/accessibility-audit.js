@@ -5,6 +5,7 @@
 /**
  * @description Runs accessibility audits on component stories using axe-core
  * @input --storybook-dir <path> --output <file> [--components <comma-separated>]
+ *   [--port <number>]
  *   --baseline <path> (compare violations against a checked-in baseline)
  *   --fail-on-new (exit 1 when violations not present in the baseline exist)
  *   --update-baseline (rewrite the baseline file from this run's report)
@@ -44,6 +45,10 @@ const hasFlag = (name) => args.includes(`--${name}`);
 
 const storybookDir = getArg('storybook-dir') || 'apps/storybook/dist';
 const outputFile = getArg('output') || 'a11y-report.json';
+const port = Number(getArg('port') || 6007);
+if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  throw new Error(`Invalid --port value: ${getArg('port')}`);
+}
 const componentsArg = getArg('components');
 const components = (componentsArg || '').split(',').filter(Boolean);
 // --components present but EMPTY means the caller derived an explicit empty
@@ -126,14 +131,24 @@ function createServer(dir, port) {
 async function getStories(storybookPath) {
   const storiesJsonPath = path.join(storybookPath, 'index.json');
 
+  let data;
   try {
-    const content = fs.readFileSync(storiesJsonPath, 'utf8');
-    const data = JSON.parse(content);
-    return data.entries || data.stories || {};
-  } catch (e) {
-    console.error('Could not read stories index:', e.message);
-    return {};
+    data = JSON.parse(fs.readFileSync(storiesJsonPath, 'utf8'));
+  } catch (error) {
+    throw new Error(`Could not read Storybook index: ${error.message}`, {
+      cause: error,
+    });
   }
+  const stories = data.entries || data.stories;
+  if (
+    stories == null ||
+    typeof stories !== 'object' ||
+    Array.isArray(stories) ||
+    Object.keys(stories).length === 0
+  ) {
+    throw new Error('Storybook index contains no story entries');
+  }
+  return stories;
 }
 
 async function routedStoryIds(stories, componentFilters) {
@@ -188,6 +203,7 @@ async function routedStoryIds(stories, componentFilters) {
 
 async function runAccessibilityAudit() {
   console.log('Starting accessibility audit...');
+  fs.rmSync(outputFile, {force: true});
 
   if (emptyComponentSet) {
     console.log('No components to audit (--components is empty) — skipping.');
@@ -204,14 +220,7 @@ async function runAccessibilityAudit() {
   const storybookPath = path.resolve(process.cwd(), storybookDir);
 
   if (!fs.existsSync(storybookPath)) {
-    console.error(`Storybook build not found at ${storybookPath}`);
-    const report = {
-      error: 'Storybook not built',
-      components: {},
-      summary: { total: 0, violations: 0 },
-    };
-    fs.writeFileSync(outputFile, JSON.stringify(report, null, 2));
-    return report;
+    throw new Error(`Storybook build not found at ${storybookPath}`);
   }
 
   // Get stories
@@ -263,7 +272,6 @@ async function runAccessibilityAudit() {
 
   console.log(`Auditing ${Object.keys(storyGroups).length} components`);
 
-  const port = 6007;
   const server = await createServer(storybookPath, port);
   const browser = await chromium.launch();
   const componentResults = {};
