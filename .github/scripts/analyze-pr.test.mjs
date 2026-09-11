@@ -46,7 +46,7 @@ function gitTry(dir, args) {
 /**
  * Build the synthetic repo and return the shallow clone dir:
  *   upstream/: branch point, 60 churn commits on main, feature off the point
- *             touching only packages/core/src/Card/.
+ *             touching Core, Rich Text, and Vega components.
  *   clone/   : --depth=5 --single-branch of feature (no merge base with main).
  */
 function buildFixture() {
@@ -114,7 +114,7 @@ function buildFixture() {
   fs.appendFileSync(path.join(upstream, 'packages/themes/neutral/src/theme.ts'), 'export const changed = true\n');
   fs.appendFileSync(path.join(upstream, 'packages/themes/probe/src/theme.ts'), 'export const changed = true\n');
   git(upstream, ['add', '-A']);
-  git(upstream, ['commit', '-qm', 'touch Card only']);
+  git(upstream, ['commit', '-qm', 'touch three component packages']);
 
   // Shallow single-branch clone of the feature branch.
   git(null, [

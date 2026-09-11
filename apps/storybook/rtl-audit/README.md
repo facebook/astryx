@@ -19,12 +19,14 @@ independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
 **D6 (directional-decoration)**.
 
 > **Scope in CI.** `pr-rtl` passes `--filter` with the components the PR
-> touched (from `analysis.json`), matching `pr-a11y`. A PR that changes the RTL
-> harness itself but no component runs the fixed `Chart,ChartLegend` routing
-> smoke scope so package discovery and curated aliases cannot skip their own
-> check. The full unfiltered sweep runs weekly in
-> `.github/workflows/rtl-weekly.yml` — that is what covers a component no PR
-> edited. Omit `--filter` to run it locally.
+> touched (from `analysis.json`), matching `pr-a11y`. Eligibility is classified
+> by the component policy and package registry loaded from the trusted base ref;
+> a missing policy, unresolved component list, or registry/classifier/workflow
+> mutation runs the full audit rather than accepting an empty scope. An ordinary
+> RTL-harness-only PR runs the fixed `Chart,ChartLegend` routing smoke scope so
+> package discovery and curated aliases cannot skip their own check. The full
+> unfiltered sweep also runs weekly in `.github/workflows/rtl-weekly.yml`. Omit
+> `--filter` to run it locally.
 
 ### A.1 D1 icon-mirror
 

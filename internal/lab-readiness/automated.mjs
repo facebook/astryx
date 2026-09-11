@@ -100,7 +100,11 @@ function ciComponentRoots(repoRoot) {
   const ci = read(repoRoot, CI_WORKFLOW);
   if (!ci) return [];
   const registry = read(repoRoot, COMPONENT_REGISTRY);
-  if (registry && /COMPONENT_PACKAGES/.test(ci)) {
+  const projectsRegistry =
+    /COMPONENT_PACKAGES/.test(ci) ||
+    (/component-audit-scope\.cjs/.test(ci) &&
+      /scripts\/component-packages\.cjs/.test(ci));
+  if (registry && projectsRegistry) {
     const roots = [...registry.matchAll(/\bsrc:\s*['"]([^'"]+)['"]/g)].map(
       match => `${match[1]}/`,
     );
