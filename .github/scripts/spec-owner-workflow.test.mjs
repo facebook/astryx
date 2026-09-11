@@ -229,6 +229,18 @@ describe('spec-only workflow contract', () => {
     expect(prComment).toContain('expectedCount: pull.changed_files');
   });
 
+  it('keeps the schema approval roster within the ENGOWNERS set', () => {
+    const {parseOwnerFile} = require('./knowledge-frontmatter.cjs');
+    const latestSchema = JSON.parse(read('docs/schemas/knowledge/v4.json'));
+    const engineeringOwners = parseOwnerFile(
+      read('.github/ENGOWNERS'),
+    );
+
+    for (const owner of latestSchema.approvalOwners) {
+      expect(engineeringOwners).toContain(owner);
+    }
+  });
+
   it('runs the tested exact-head reconciler from the trusted default branch', () => {
     const workflow = read('.github/workflows/spec-owner-gate.yml');
     const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
