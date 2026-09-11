@@ -7,6 +7,7 @@
  */
 
 import * as fs from 'node:fs';
+import {createRequire} from 'node:module';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -42,7 +43,30 @@ export function findCoreDir(startDir = process.cwd()) {
 }
 
 /**
- * Locate a package inside `startDir`'s own node_modules chain.
+ * Where Yarn's Plug'n'Play runtime says a package lives.
+ *
+ * A PnP project has no node_modules for the walk below to find. PnP answers
+ * from the project's own dependency graph and ignores NODE_PATH, so asking it
+ * keeps the lookup project-local. Outside a PnP process there is nothing to ask.
+ *
+ * @param {string} startDir
+ * @param {string} name
+ * @returns {string|null}
+ */
+function findPnpPackage(startDir, name) {
+  if (!process.versions.pnp) return null;
+  try {
+    const api = createRequire(path.join(startDir, 'noop.js'))('pnpapi');
+    const dir = api.resolveToUnqualified(name, path.join(startDir, '/'));
+    return dir && fs.existsSync(path.join(dir, 'package.json')) ? dir : null;
+  } catch {
+    // The project does not declare it, or this is not a PnP process after all.
+    return null;
+  }
+}
+
+/**
+ * Locate a package the project at `startDir` actually installed.
  *
  * Deliberately not `require.resolve`: Node folds NODE_PATH and the global
  * folders into resolution even when `paths` is given, so a package merely
@@ -51,6 +75,9 @@ export function findCoreDir(startDir = process.cwd()) {
  * and Vitest puts that directory on NODE_PATH, so the gap is not theoretical.
  * Reading package.json off disk also sidesteps packages that don't export it,
  * so the version is always available to range-check.
+ *
+ * Walks the node_modules chain first, then asks PnP, which covers the Yarn
+ * default layout where that chain does not exist.
  *
  * @param {string} startDir
  * @param {string} name
@@ -65,7 +92,7 @@ export function findInstalledPackage(startDir, name) {
     if (parent === dir) break;
     dir = parent;
   }
-  return null;
+  return findPnpPackage(startDir, name);
 }
 
 /**

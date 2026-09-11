@@ -12,3 +12,9 @@ while the project itself was missing it. It now walks the project's own
 `node_modules` and reads each `package.json` off disk, so a missing peer is
 reported and an installed one is checked against the declared range.
 
+Yarn Plug'n'Play projects have no `node_modules` for that walk to find, so the
+lookup asks the PnP runtime when the walk comes up empty. PnP resolves from the
+project's own dependency graph and ignores `NODE_PATH`, which keeps the answer
+project-local. A PnP project now gets its peers range-checked too — previously
+`require.resolve` could confirm a peer was present there but not read its
+version, because Core does not export `./package.json`.
