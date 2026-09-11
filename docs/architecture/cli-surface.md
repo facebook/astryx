@@ -23,7 +23,7 @@ verified_by:
     clients/cli/commands/upgrade.integration-policy.test.mjs,
     clients/cli/formatters/index.test.mjs,
   ]
-deciding_specs: [spec:AST-017/DEC-4]
+deciding_specs: [spec:AST-017/DEC-4, spec:AST-034/DEC-1]
 ---
 
 # CLI surface architecture
@@ -169,6 +169,17 @@ non-interactive guarantee.
 
 - `spec:AST-017/DEC-4` — stable response fields and their complete projections
   are current compatibility authority.
+- `spec:AST-034/DEC-1` — the accepted family command composition and
+  caller-supplied artifact-key boundary.
+
+`spec:AST-034` is current authority for the accepted, unshipped family-build
+surface. `theme build --family <base> <children...>` requires one value flag,
+`--family-key <key>`. The flag names only the coordinated output stem:
+`<key>.css`, `<key>.js`, `<key>.d.ts`, and `<key>.manifest.json`; it does not rename
+members or change theme semantics. It is required exactly in family mode and refused
+otherwise, before writes. Family mode is refused with `--watch` and `--out` and
+composes with `--check` and `--icons-specifier`. The accepted contract adds no
+response field or error code. Implementation remains unshipped.
 
 ## Verification
 

@@ -39,7 +39,6 @@ verified_by:
 deciding_specs:
   [
     spec:AST-006/DEC-1,
-    spec:AST-006/DEC-2,
     spec:AST-006/DEC-3,
     spec:AST-006/DEC-4,
     spec:AST-006/DEC-6,
@@ -48,6 +47,8 @@ deciding_specs:
     spec:AST-012/DEC-3,
     spec:AST-012/DEC-4,
     spec:AST-017/DEC-1,
+    spec:AST-034/DEC-1,
+    spec:AST-034/DEC-4,
   ]
 ---
 
@@ -77,8 +78,10 @@ source configuration independently.
 - ordered environmental `adaptations` with a fixed named width map.
 
 `defineTheme` resolves that input into a flat `DefinedTheme`. An extended theme
-contains the resolved values it inherits, so a build does not need the base
-stylesheet at runtime.
+contains the resolved values it inherits, so its normalized representation is
+complete. A standalone build does not need the base stylesheet. The accepted family
+contract may share compiled declarations only within one keyed family output set; it
+does not change normalized authoring semantics.
 
 Normalization follows one precedence order:
 
@@ -101,9 +104,12 @@ style key, and CSS property rather than replacing the entire inherited target.
   semantics.
 - **INV2 — Precedence is deterministic.** A value's winner follows the documented
   order and does not depend on object traversal outside that order.
-- **INV3 — Extension is flattened.** `extends` accepts a real `DefinedTheme`,
-  carries forward its resolved tokens, component rules, media surfaces, icons,
-  and indicators, and produces a self-contained child.
+- **INV3 — Extension is semantically flattened.** `extends` accepts a real
+  `DefinedTheme` and carries forward its resolved tokens, local-token owner and
+  lineage metadata, component rules, media surfaces, adaptations and axes, icons,
+  and indicators. The normalized child is complete. Family packaging may factor
+  physical output only after preserving that complete member semantics in the one
+  keyed family set.
 - **INV4 — Invalid bases fail loudly.** An undefined, namespace, or plain object
   passed to `extends` cannot produce a plausible partial theme.
 - **INV5 — Explicit tokens override generated scales.** Generated values provide
@@ -112,12 +118,15 @@ style key, and CSS property rather than replacing the entire inherited target.
   inherited properties on the same component/style key.
 - **INV7 — Surface overrides inherit coherently.** `onDark` and `onLight` combine
   system defaults, inherited surface values, and local overrides in that order.
-- **INV8 — Local-token enrollment is explicit and closed.** Supplying
+- **INV8 — Local-token enrollment is explicit and owner-tracked.** Supplying
   `localTokens`, or extending an exact enrolled base, produces a flattened local
-  declaration map plus ownership and lineage metadata. Enrolled themes validate
-  exact namespaces, case-insensitive `var()` references, cycles—including cycles
-  reachable only after co-matching adaptation rules cascade—and collisions with
-  `tokens`; unenrolled themes retain their legacy behavior.
+  declaration map plus exact ownership and lineage metadata. Every declared key is a
+  valid CSS custom-property name and no key collides with `tokens`; ownership is never
+  inferred from a prefix. Exact `var()` matches to an effective enrolled declaration
+  are owned edges on the validated local-token, component, media-surface, and
+  adaptation surfaces. Non-exact references remain external. Enrolled themes retain
+  exact owner, lineage, collision, and cycle validation; unenrolled themes retain
+  their legacy behavior.
 - **INV9 — Authoring and output are separate systems.** This record owns the
   normalized theme definition. The shared compiler owns turning it into styles;
   runtime and build own using or saving that output.
@@ -170,10 +179,11 @@ public surface belongs to
   helper, or export that causes that failure is a real compatibility cost, not
   harmless metadata. A targeted, coordinated break may proceed only through that
   compatibility owner; this record does not define its remedy.
-- A local-token change preserves explicit enrollment, exact owner namespaces,
-  source/built lineage parity, and the separation from portable `tokens`. One
-  name cannot appear in both maps because CSS output and portable token helpers
-  would otherwise resolve different values.
+- A local-token change preserves explicit enrollment, valid exact custom-property
+  names, exact owner metadata, source/built lineage parity, and the separation from
+  portable `tokens`. Prefixes are owner conventions only: they do not grant, reserve,
+  or restrict ownership. One name cannot appear in both maps because CSS output and
+  portable token helpers would otherwise resolve different values.
 - Changing precedence is a compatibility decision because existing themes may
   contain both generated and explicit values.
 - Changing `ComponentStyleMap` merge behavior verifies base, generated, explicit,
@@ -201,31 +211,44 @@ public surface belongs to
   `expandMotionScale.ts` own their derived token/component values.
 - `mergeComponents.ts` owns the shared deep-merge rule.
 - `onMediaTokens.ts` owns normalization of inverted-surface overrides.
-- `localTokens.ts` owns opt-in enrollment, exact namespaces, reference closure,
-  cycle detection, cross-map collision rejection, and flattened lineage.
+- `localTokens.ts` owns opt-in enrollment, valid CSS custom-property names, exact
+  owner metadata, reference closure, cycle detection, cross-map collision rejection,
+  and flattened lineage. It does not infer ownership from prefixes.
 - `packages/cli/assets/theme.template.ts` is an author-facing projection and must
   remain aligned; it does not define additional semantics.
 
 ## Deciding specs
 
-AST-006 decisions 1–4 and 6 establish the shipped theme-local authoring shape,
-exact naming and inheritance rules, enrolled-only validation, and shared value
-contract. AST-012 decisions 1–4 establish the fixed width map, named closed
-conditions, ordered rule cascade, and source/built adaptation metadata parity.
-AST-017 decision 1 owns released compatibility classification and migration; this
-record identifies only the theme/Core trigger that enters that path.
+AST-006 decisions 1, 3, 4, and 6 establish the shipped theme-local authoring
+shape, enrollment, inheritance, shared validation, and value contract. AST-034
+DEC-4 supersedes all of AST-006 DEC-2 and only DEC-4's reserved-prefix
+classification and validation clauses; explicit enrollment, shared runtime/static
+validation, exact lineage, collision and cycle checks, and legacy unenrolled behavior
+remain. AST-012 decisions 1–4 establish the fixed width map, named closed conditions,
+ordered rule cascade, and source/built adaptation metadata parity. AST-017 decision 1
+owns released compatibility classification and migration. AST-034 DEC-1 establishes
+that family packaging projects complete normalized members without changing authoring
+identity or semantics.
+
+`spec:AST-034` is current authority. It supersedes all of AST-006 decision 2 and
+only the reserved-prefix clauses of decision 4 with exact, prefix-independent owner
+and lineage validation. It also projects each complete normalized member into one
+caller-keyed family artifact set owned by `architecture:theme-compilation`, without
+adding per-member artifacts or changing authoring semantics. The artifact key controls
+filenames only; it does not change theme identity, local-token ownership, or CSS
+custom-property names. The implementation remains unshipped.
 
 ## Verification
 
-| Invariant                | Evidence                                                                                                | Failure signal                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV5         | `defineTheme.test.ts` plus representative runtime/build parity                                          | Runtime and build interpret one input differently, or generated values beat explicit tokens         |
-| INV3, INV4               | extension and invalid-base tests                                                                        | Child themes require a base stylesheet or silently accept a non-theme base                          |
-| INV6                     | component merge tests across base/generated/explicit rules                                              | Restating one property drops inherited component styles                                             |
-| INV7                     | `onMediaTokens.test.ts` and generated surface-rule tests                                                | A child loses inherited surface customization or surface precedence changes                         |
-| INV8                     | `defineTheme.test.ts` and CLI source/built inheritance tests                                            | Enrollment, validation, or lineage differs across runtime and static authoring paths                |
-| INV10                    | `themeAdaptations.test.ts` and CLI build fixtures                                                       | Width metadata, rule order, or child re-resolution diverges across source and built themes          |
-| INV11                    | `DefineThemeInput`/output diff plus runtime/build fixtures                                              | Validation-only data enters the normalized theme, or productive input loses construction validation |
-| INV12                    | Core theme export diff, constructed-value evidence, and current-consumer callsite                       | A theme `define*` helper only checks input and returns that exact input unchanged                   |
-| Theme/Core compatibility | Maintained theme source/build against the minimum Core in its currently supported peer/dependency range | A theme update silently requires newer in-range Core or bypasses the `spec:AST-017` path            |
-| Authoring projection     | `scripts/check-theme-template.test.mjs`                                                                 | A supported authoring concept is missing or misstated in the template                               |
+| Invariant                | Evidence                                                                                                | Failure signal                                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV2, INV5         | `defineTheme.test.ts` plus representative runtime/build parity                                          | Runtime and build interpret one input differently, or generated values beat explicit tokens                               |
+| INV3, INV4               | extension and invalid-base tests                                                                        | Child themes require a base stylesheet or silently accept a non-theme base                                                |
+| INV6                     | component merge tests across base/generated/explicit rules                                              | Restating one property drops inherited component styles                                                                   |
+| INV7                     | `onMediaTokens.test.ts` and generated surface-rule tests                                                | A child loses inherited surface customization or surface precedence changes                                               |
+| INV8                     | Shipping gate: AST-034 runtime/static validator and source/built inheritance tests                      | A valid name fails because of its prefix, ownership follows spelling, or lineage/reference/collision/cycle checks diverge |
+| INV10                    | `themeAdaptations.test.ts` and CLI build fixtures                                                       | Width metadata, rule order, or child re-resolution diverges across source and built themes                                |
+| INV11                    | `DefineThemeInput`/output diff plus runtime/build fixtures                                              | Validation-only data enters the normalized theme, or productive input loses construction validation                       |
+| INV12                    | Core theme export diff, constructed-value evidence, and current-consumer callsite                       | A theme `define*` helper only checks input and returns that exact input unchanged                                         |
+| Theme/Core compatibility | Maintained theme source/build against the minimum Core in its currently supported peer/dependency range | A theme update silently requires newer in-range Core or bypasses the `spec:AST-017` path                                  |
+| Authoring projection     | `scripts/check-theme-template.test.mjs`                                                                 | A supported authoring concept is missing or misstated in the template                                                     |
