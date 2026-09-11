@@ -376,10 +376,13 @@ structure.
 
 ## Open questions
 
-- **OQ1 — How is the Layout `isScrollable` migration sequenced?** (`checkable`)
-  LayoutContent and LayoutPanel will migrate their existing `isScrollable` path to
-  the shared managed behavior and add an internal observed content box. Because
-  `isScrollable` defaults to true, implementation MUST land as a separate change
-  above the shared hooks and `ScrollableArea`, with compatibility evidence for
-  direct-child selectors, flex/grid children, percentage sizing, full bleed,
-  container padding, and refs before the managed path replaces current behavior.
+- **OQ1 — How is the Layout `isScrollable` migration observed and sequenced?**
+  (`human-api`) LayoutContent and LayoutPanel will migrate their existing
+  `isScrollable` path to the shared managed behavior. Because `isScrollable`
+  defaults to true, implementation MUST land as a separate change above the shared
+  hooks and `ScrollableArea`. Prototype and compare one-element hybrid observation
+  (viewport plus direct-child resize, subtree mutation, resource/font, transition,
+  and explicit invalidation signals) against an internal observed content box.
+  Either path requires compatibility evidence for async and CSS-only geometry
+  changes, direct-child selectors, flex/grid children, percentage sizing, full
+  bleed, container padding, and refs before it replaces current behavior.
