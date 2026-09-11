@@ -130,8 +130,7 @@ async function getStories(storybookPath) {
     const data = JSON.parse(content);
     return data.entries || data.stories || {};
   } catch (e) {
-    console.error('Could not read stories index:', e.message);
-    return {};
+    throw new Error(`Could not read Storybook index: ${e.message}`, {cause: e});
   }
 }
 
@@ -203,14 +202,7 @@ async function runAccessibilityAudit() {
   const storybookPath = path.resolve(process.cwd(), storybookDir);
 
   if (!fs.existsSync(storybookPath)) {
-    console.error(`Storybook build not found at ${storybookPath}`);
-    const report = {
-      error: 'Storybook not built',
-      components: {},
-      summary: { total: 0, violations: 0 },
-    };
-    fs.writeFileSync(outputFile, JSON.stringify(report, null, 2));
-    return report;
+    throw new Error(`Storybook build not found at ${storybookPath}`);
   }
 
   // Get stories
@@ -284,10 +276,34 @@ async function runAccessibilityAudit() {
         try {
           const url = `http://localhost:${port}/iframe.html?id=${story.id}&viewMode=story`;
           // Higher timeout to accommodate axe-core's heavier DOM analysis
-          await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 });
+          await page.goto(url, {
+            waitUntil: 'domcontentloaded',
+            timeout: 15000,
+          });
           await page.addStyleTag({ content: FREEZE_CSS }).catch(() => {});
           // Brief wait for any post-load rendering before axe-core scans the DOM
           await page.waitForTimeout(500);
+          const finalUrl = new URL(page.url());
+          if (
+            finalUrl.origin !== `http://localhost:${port}` ||
+            finalUrl.pathname !== '/iframe.html' ||
+            finalUrl.searchParams.get('id') !== story.id
+          ) {
+            throw new Error(`story navigation ended at ${page.url()}`);
+          }
+          await page
+            .locator('body.sb-show-main')
+            .waitFor({state: 'visible', timeout: 5000});
+          const storyRoot = page.locator('#storybook-root');
+          await storyRoot.waitFor({state: 'attached', timeout: 5000});
+          const rendered = await storyRoot.evaluate(
+            root =>
+              root.childElementCount > 0 ||
+              (root.textContent ?? '').trim().length > 0,
+          );
+          if (!rendered) {
+            throw new Error('Storybook root rendered no story content');
+          }
 
           // Run axe-core accessibility analysis
           const results = await new AxeBuilder({ page })

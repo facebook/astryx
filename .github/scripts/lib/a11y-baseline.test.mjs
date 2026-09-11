@@ -118,6 +118,8 @@ describe('audit completion scope', () => {
     expect(markAudited).toBeGreaterThan(analyze);
     expect(throwError).toBeGreaterThan(catchStart);
     expect(throwError).toBeLessThan(finallyStart);
+    expect(source).toContain("waitUntil: 'domcontentloaded'");
+    expect(source).toContain("locator('body.sb-show-main')");
   });
 });
 
