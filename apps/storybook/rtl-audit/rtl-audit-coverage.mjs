@@ -184,15 +184,19 @@ function routeMatchesComponentFilter(route, filter) {
   return component === requested || bareComponent === requested;
 }
 
+/** Package-qualified owner routes selected by bare or qualified filters. */
+export function componentRoutesForFilters(routes, filters) {
+  if (filters.length === 0) return routes;
+  return routes.filter(route =>
+    filters.some(filter => routeMatchesComponentFilter(route, filter)),
+  );
+}
+
 /** Story ids owned by any bare or package-qualified component filter. */
 export function storyIdsForComponentFilters(routes, filters) {
   return [
     ...new Set(
-      routes
-        .filter(route =>
-          filters.some(filter => routeMatchesComponentFilter(route, filter)),
-        )
-        .map(route => route.id),
+      componentRoutesForFilters(routes, filters).map(route => route.id),
     ),
   ];
 }

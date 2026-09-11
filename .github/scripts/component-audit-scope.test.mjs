@@ -86,6 +86,13 @@ describe('component audit scope', () => {
         'packages/vega/src/VegaChart.tsx',
       ],
     ],
+    [
+      'verified-N/A policy with unrelated component source',
+      [
+        'apps/storybook/rtl-audit/verified-not-applicable.json',
+        'packages/core/src/Button/Button.tsx',
+      ],
+    ],
     ['unknown path', ['new/unclassified/path.xyz']],
     ['empty input', []],
   ])('fails closed for %s', (_name, paths) => {

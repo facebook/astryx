@@ -40,6 +40,7 @@ function classifyComponentAuditScope(paths, componentPackages) {
   const isSharedRoutingPolicy = file =>
     file === 'apps/storybook/rtl-audit/rtl-audit-coverage.mjs' ||
     file === 'apps/storybook/rtl-audit/targets.json' ||
+    file === 'apps/storybook/rtl-audit/verified-not-applicable.json' ||
     file === '.github/scripts/rtl-audit-coverage.test.mjs' ||
     file === 'scripts/component-packages.cjs';
 
