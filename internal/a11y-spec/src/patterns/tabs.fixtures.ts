@@ -109,6 +109,7 @@ interface GroupOptions {
   readonly duplicateTabId?: boolean;
   readonly wrongEntry?: boolean;
   readonly trapTab?: boolean;
+  readonly thirdTab?: boolean;
   readonly arrow?:
     | 'works'
     | 'inert'
@@ -148,6 +149,7 @@ function groupHtml(options: GroupOptions = {}): string {
     duplicateTabId = false,
     wrongEntry = false,
     trapTab = false,
+    thirdTab = true,
     arrow = 'works',
     keyboard = 'works',
     pointer = 'works',
@@ -183,17 +185,17 @@ function groupHtml(options: GroupOptions = {}): string {
     <div${subjectAttribute('tablist')} data-a11y-tabs role="${tablistRole}"${named ? ' aria-label="Project views"' : ''} dir="${direction}">
       <button${subjectAttribute('first-tab')} data-a11y-related="first" data-key="first" id="tab-first" role="${tabRole}" aria-selected="${firstSelected}"${controlsAttribute}${firstAria} tabindex="${wrongEntry ? -1 : firstSelected ? 0 : -1}">${firstLabel}</button>
       <button${subjectAttribute('second-tab')} data-a11y-related="second" data-key="second" id="tab-second" role="tab" aria-selected="${secondSelected}" aria-controls="panel-second" tabindex="${wrongEntry ? 0 : secondSelected ? 0 : -1}"${secondDisabled ? ' disabled' : ''}${secondAriaDisabled ? ' aria-disabled="true"' : ''}>Activity</button>
-      <button data-a11y-related="third" data-key="third" id="tab-third" role="tab" aria-selected="false" aria-controls="panel-third" tabindex="-1"${thirdDisabled ? ' disabled' : ''}>Members</button>
+      ${thirdTab ? '<button data-a11y-related="third" data-key="third" id="tab-third" role="tab" aria-selected="false" aria-controls="panel-third" tabindex="-1"' + (thirdDisabled ? ' disabled' : '') + '>Members</button>' : ''}
     </div>
     <div${subjectAttribute('first-panel')} data-a11y-related="panel-first" id="panel-first" role="${panelRole}"${panelLabelAttribute}${firstPanelHidden ? ' hidden' : ''}${firstPanelCssHidden ? ' style="display:none"' : firstPanelTransparent ? ' style="opacity:0"' : ''}>Overview panel</div>
     <div${subjectAttribute('second-panel')} data-a11y-related="panel-second" id="panel-second" role="tabpanel" aria-labelledby="tab-second"${secondPanelHidden ? ' hidden' : ''}${secondPanelCssVisible ? ' style="display:block !important"' : ''}>Activity panel</div>
-    <div data-a11y-related="panel-third" id="panel-third" role="tabpanel" aria-labelledby="tab-third" hidden>Members panel</div>
+    ${thirdTab ? '<div data-a11y-related="panel-third" id="panel-third" role="tabpanel" aria-labelledby="tab-third" hidden>Members panel</div>' : ''}
     <button type="button">After</button>
     <script>
       (() => {
         const list = document.querySelector('[data-a11y-tabs]');
         const tabs = Array.from(list.querySelectorAll('[role="tab"], [data-key]'));
-        const panels = ['first', 'second', 'third'].map(key => document.getElementById('panel-' + key));
+        const panels = [${thirdTab ? "'first', 'second', 'third'" : "'first', 'second'"}].map(key => document.getElementById('panel-' + key));
         const select = key => {
           tabs.forEach(tab => {
             const active = tab.dataset.key === key;
@@ -559,6 +561,16 @@ export const TABS_FIXTURES: readonly TabsFixture[] = [
     html: groupHtml({arrow: 'one-way'}),
   },
   {
+    id: 'violating-two-tab-arrow-no-wrap',
+    summary:
+      'a two-tab set whose arrows move only inward and stop at both outward boundaries',
+    facts: baseFacts({
+      tabRelations: ['first', 'second'],
+      panelRelations: ['panel-first', 'panel-second'],
+    }),
+    html: groupHtml({arrow: 'no-wrap', thirdTab: false}),
+  },
+  {
     id: 'violating-arrow-no-wrap',
     summary: 'a tablist whose arrows stop at the ends instead of wrapping',
     facts: baseFacts(),
@@ -670,6 +682,7 @@ export const TABS_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
     'violating-arrow-one-way',
   ],
   'tabs.focus.wraps-ends': [
+    'violating-two-tab-arrow-no-wrap',
     'violating-arrow-no-wrap',
     'violating-rtl-arrow-no-wrap',
   ],
@@ -760,6 +773,8 @@ const EXPECTED_MUTATION_FAILURES: Readonly<Record<string, string>> = {
     'pressing ArrowRight from "first" did not focus the next available tab "second"',
   'tabs.focus.arrow-round-trip:violating-arrow-one-way':
     'pressing ArrowRight moved to "second", but pressing ArrowLeft did not restore focus to "first"',
+  'tabs.focus.wraps-ends:violating-two-tab-arrow-no-wrap':
+    'pressing ArrowRight reached "second", but pressing ArrowRight again did not wrap focus to "first"',
   'tabs.focus.wraps-ends:violating-arrow-no-wrap':
     'neither ArrowLeft nor ArrowRight wrapped focus from the first tab "first" to the last tab "third"',
   'tabs.focus.wraps-ends:violating-rtl-arrow-no-wrap':
