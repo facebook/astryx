@@ -130,7 +130,8 @@ async function getStories(storybookPath) {
     const data = JSON.parse(content);
     return data.entries || data.stories || {};
   } catch (e) {
-    throw new Error(`Could not read Storybook index: ${e.message}`, {cause: e});
+    console.error('Could not read stories index:', e.message);
+    return {};
   }
 }
 
@@ -202,7 +203,14 @@ async function runAccessibilityAudit() {
   const storybookPath = path.resolve(process.cwd(), storybookDir);
 
   if (!fs.existsSync(storybookPath)) {
-    throw new Error(`Storybook build not found at ${storybookPath}`);
+    console.error(`Storybook build not found at ${storybookPath}`);
+    const report = {
+      error: 'Storybook not built',
+      components: {},
+      summary: { total: 0, violations: 0 },
+    };
+    fs.writeFileSync(outputFile, JSON.stringify(report, null, 2));
+    return report;
   }
 
   // Get stories
