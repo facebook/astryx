@@ -25,6 +25,8 @@ const LAB_SRC = 'packages/lab/src';
 const STORIES_DIR = 'apps/storybook/stories';
 const CI_WORKFLOW = '.github/workflows/ci.yml';
 const RTL_AUDIT = 'apps/storybook/rtl-audit/rtl-audit.mjs';
+const RTL_AUDIT_COVERAGE =
+  'apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 
 /** Read a repo-relative file, or null when it does not exist. */
 function read(repoRoot, relPath) {
@@ -106,6 +108,20 @@ function ciComponentRoots(repoRoot) {
 
 /** Story-id prefixes the RTL auto-discovery sweep covers. */
 function rtlAuditedPrefixes(repoRoot) {
+  const coverage = read(repoRoot, RTL_AUDIT_COVERAGE);
+  const packageBlock = coverage?.match(
+    /AUDITED_PACKAGES\s*=\s*Object\.freeze\(\[([\s\S]*?)\]\);/,
+  );
+  const packageNames = packageBlock
+    ? [...packageBlock[1].matchAll(/name:\s*['"]([^'"]+)['"]/g)].map(
+        match => match[1],
+      )
+    : [];
+  if (packageNames.length > 0) {
+    return packageNames.map(name => `${name}-`);
+  }
+
+  // Older/scratch repositories keep the prefixes directly in rtl-audit.mjs.
   const rtl = read(repoRoot, RTL_AUDIT);
   if (!rtl) return [];
   const match = rtl.match(/AUDITED_STORY_PREFIXES\s*=\s*\[([^\]]+)\]/);

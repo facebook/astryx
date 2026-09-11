@@ -352,7 +352,11 @@ describe('CI wiring parsers', () => {
 
   it('reads the audited story prefixes out of the real rtl-audit', () => {
     const repoRoot = path.resolve(import.meta.dirname, '..', '..');
-    expect(_internal.rtlAuditedPrefixes(repoRoot)).toEqual(['core-', 'lab-']);
+    expect(_internal.rtlAuditedPrefixes(repoRoot)).toEqual([
+      'core-',
+      'lab-',
+      'charts-',
+    ]);
   });
 
   it('derives the component name pr-a11y matches against', () => {
