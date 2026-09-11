@@ -220,6 +220,22 @@ describe('component detail preview state', () => {
     },
   );
 
+  it('seeds LayoutFooter children from playground defaults so the preview is not empty (#5895)', () => {
+    const knobs = pickPrimaryProps('LayoutFooter', [
+      prop({name: 'children', type: 'ReactNode'}),
+      prop({name: 'hasDivider', type: 'boolean'}),
+      prop({name: 'height', type: 'SizeValue'}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {children: 'Showing 1–10 of 24', hasDivider: true},
+    });
+
+    expect(state.children).toBe('Showing 1–10 of 24');
+    expect(state.hasDivider).toBe(true);
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
   it("satisfies Icon's required, non-generatable icon prop via playground defaults", () => {
     const knobs = pickPrimaryProps('Icon', [
       prop({

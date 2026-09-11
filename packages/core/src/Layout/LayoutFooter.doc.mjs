@@ -8,6 +8,21 @@ export const docs = {
   displayName: 'Layout Footer',
   isHiddenFromOverview: true,
   description: 'Bottom bar for action bars, pagination, and status bars.',
+  playground: {
+    // LayoutFooter is a Layout landmark region and renders an empty bar on its
+    // own. Seed representative footer content and mount it in the Layout
+    // wrapper's footer slot (not the default content slot, which would centre
+    // the text) so the properties-tab preview shows a docked footer on first
+    // load.
+    defaults: {
+      children: 'Showing 1–10 of 24',
+      hasDivider: true,
+    },
+    wrapper: {
+      component: 'Layout',
+      slotProp: 'footer',
+    },
+  },
   props: [
     {
       name: 'children',

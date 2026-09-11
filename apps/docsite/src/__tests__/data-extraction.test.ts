@@ -603,6 +603,22 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('LayoutFooter declares a playground wrapper and default content so preview is not empty (#5895)', () => {
+    const core = components['@astryxdesign/core'];
+    const layoutFooter = core.find(c => c.name === 'LayoutFooter');
+    expect(layoutFooter).toBeDefined();
+    expect(layoutFooter!.playground?.defaults).toMatchObject({
+      children: expect.any(String),
+      hasDivider: true,
+    });
+    expect(layoutFooter!.playground?.wrapper).toMatchObject({
+      component: 'Layout',
+      // Mount into Layout's footer slot, not its default (centred) content
+      // slot, so the preview shows a docked footer.
+      slotProp: 'footer',
+    });
+  });
+
   it('Lightbox declares an overlay playground with a closed initial state (#3657)', () => {
     const core = components['@astryxdesign/core'];
     const lightbox = core.find(c => c.name === 'Lightbox');
