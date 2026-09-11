@@ -176,6 +176,16 @@ describe('spec-only workflow contract', () => {
     expect(prComment).toContain('files.length !== pr.changed_files');
   });
 
+  it('keeps the workflow spec-owner roster aligned with the latest schema', () => {
+    const workflow = read('.github/workflows/spec-owner-gate.yml');
+    const latestSchema = JSON.parse(read('docs/schemas/knowledge/v4.json'));
+    const workflowOwners = workflow
+      .match(/^  SPEC_OWNERS: (.+)$/m)?.[1]
+      .split(',');
+
+    expect(workflowOwners).toEqual(latestSchema.approvalOwners);
+  });
+
   it('runs the tested exact-head reconciler from the trusted default branch', () => {
     const workflow = read('.github/workflows/spec-owner-gate.yml');
     const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
