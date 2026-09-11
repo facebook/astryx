@@ -218,7 +218,10 @@ them universally.
 ### C. Applicability: no unexplained all-N/A components
 
 The report rolls every component in the live Core, Lab, and Charts source roster into one
-of three states:
+of three states. Package roots, layouts, and public component names come from
+`scripts/component-packages.cjs`; Storybook titles project onto that canonical
+roster, including one-to-many grouped titles such as `Charts/Chrome/Axes & Grids`.
+Curated targets remain the exact alias when a title cannot name its owner:
 
 - **measured**: at least one D1/D5/D6 or curated dimension was applicable;
 - **verified N-A**: `verified-not-applicable.json` records a specific reason

@@ -47,18 +47,23 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {discoverComponents} from '../../../packages/cli/foundation/discovery/component-discovery.mjs';
+import componentPackages from '../../../scripts/component-packages.cjs';
 import {
-  AUDITED_PACKAGES,
+  AUDITED_PACKAGE_NAMES,
   buildAuditedComponentRoster,
   buildComponentCoverage,
   buildStoryComponentRoutes,
   classifyLogicalInlinePair,
   collectDirectionalDecorations,
   componentFromTarget,
-  componentNamesFromSourceEntries,
   evaluateDirectionalDecorations,
 } from './rtl-audit-coverage.mjs';
+
+const {
+  componentPackage,
+  flatPackageComponentNames,
+  nestedPackageComponentNames,
+} = componentPackages;
 
 const args = process.argv.slice(2);
 const getArg = name => {
@@ -81,7 +86,7 @@ const CURATED_ONLY = hasFlag('curated-only');
 // same publishable package roster used for source discovery below: a component
 // the PR analyzer can name in --filter must also be routable to its package's
 // stories here.
-const AUDITED_STORY_PREFIXES = AUDITED_PACKAGES.map(pkg => `${pkg.name}-`);
+const AUDITED_STORY_PREFIXES = AUDITED_PACKAGE_NAMES.map(name => `${name}-`);
 const AUDITED_STORY_PREFIX = new RegExp(`^(?:${AUDITED_STORY_PREFIXES.join('|')})`);
 // Worker pool size. Each worker owns its own Playwright page; stories are
 // independent, and the run is dominated by page-load latency rather than CPU.
@@ -960,26 +965,28 @@ async function mapPool(items, pages, fn) {
       AUDITED_STORY_PREFIX.test(id) &&
       !/--docs$/.test(id),
   );
-  const storyRoutes = buildStoryComponentRoutes({storyIds, targets});
+  const publicComponentsByPackage = {};
   const sourceComponents = [];
-  for (const pkg of AUDITED_PACKAGES) {
+  for (const packageName of AUDITED_PACKAGE_NAMES) {
     try {
-      const sourcePath = path.join(PROJECT_ROOT, 'packages', pkg.name, 'src');
-      const componentNames = pkg.layout === 'nested'
-        ? Object.values(
-            discoverComponents(path.join(PROJECT_ROOT, 'packages', pkg.name)),
-          ).flat()
-        : componentNamesFromSourceEntries(
-            fs.readdirSync(sourcePath, {withFileTypes: true}),
-            pkg.layout,
-          );
+      const pkg = componentPackage(packageName);
+      if (!pkg) throw new Error('package is missing from component registry');
+      const componentNames = pkg.layout === 'flat'
+        ? flatPackageComponentNames(PROJECT_ROOT, pkg)
+        : nestedPackageComponentNames(PROJECT_ROOT, pkg);
+      publicComponentsByPackage[packageName] = componentNames;
       sourceComponents.push(
-        ...componentNames.map(component => `${pkg.name}/${component}`),
+        ...componentNames.map(component => `${packageName}/${component}`),
       );
     } catch (error) {
-      console.error(`WARN: cannot discover ${pkg.name} component roster: ${String(error).slice(0, 120)}`);
+      console.error(`WARN: cannot discover ${packageName} component roster: ${String(error).slice(0, 120)}`);
     }
   }
+  const storyRoutes = buildStoryComponentRoutes({
+    stories: storyIds.map(id => ({id, title: entries[id].title})),
+    targets,
+    publicComponentsByPackage,
+  });
   const auditedComponents = buildAuditedComponentRoster({
     sourceComponents,
     storyComponents: storyRoutes.map(route => route.component),
@@ -1059,7 +1066,11 @@ async function mapPool(items, pages, fn) {
   const curatedResults = [];
   if (!AUTO_ONLY) {
     for (const t of targets) {
-      const component = componentFromTarget(t);
+      const component = componentFromTarget(
+        t,
+        AUDITED_PACKAGE_NAMES,
+        publicComponentsByPackage,
+      );
       if (!matchesFilter(component)) continue;
       if (!entries[t.storyId]) {
         curatedResults.push({component, storyId: t.storyId, rollup: 'MISSING-STORY', dims: {}, notes: ['story not in index.json']});

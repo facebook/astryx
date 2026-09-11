@@ -348,6 +348,14 @@ describe('CI wiring parsers', () => {
     const roots = _internal.ciComponentRoots(repoRoot);
     expect(roots).toContain('packages/core/src/');
     expect(roots).toContain('packages/lab/src/');
+    expect(roots).toContain('packages/charts/src/');
+  });
+
+  it('routes a Charts source-only change into component audit scope', () => {
+    const repoRoot = path.resolve(import.meta.dirname, '..', '..');
+    const roots = _internal.ciComponentRoots(repoRoot);
+    const changedFile = 'packages/charts/src/Chart.tsx';
+    expect(roots.some(root => changedFile.startsWith(root))).toBe(true);
   });
 
   it('reads the audited story prefixes out of the real rtl-audit', () => {

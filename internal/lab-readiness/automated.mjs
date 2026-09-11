@@ -24,6 +24,7 @@ import path from 'node:path';
 const LAB_SRC = 'packages/lab/src';
 const STORIES_DIR = 'apps/storybook/stories';
 const CI_WORKFLOW = '.github/workflows/ci.yml';
+const COMPONENT_REGISTRY = 'scripts/component-packages.cjs';
 const RTL_AUDIT = 'apps/storybook/rtl-audit/rtl-audit.mjs';
 const RTL_AUDIT_COVERAGE =
   'apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
@@ -100,6 +101,13 @@ function a11yComponentFromTitle(title) {
 function ciComponentRoots(repoRoot) {
   const ci = read(repoRoot, CI_WORKFLOW);
   if (!ci) return [];
+  const registry = read(repoRoot, COMPONENT_REGISTRY);
+  if (registry && /COMPONENT_PACKAGES/.test(ci)) {
+    const roots = [...registry.matchAll(/\bsrc:\s*['"]([^'"]+)['"]/g)].map(
+      match => `${match[1]}/`,
+    );
+    if (roots.length > 0) return roots;
+  }
   const pathspec = ci.match(/git diff --name-only [^\n]*?\.\.\.HEAD --([^|\n]+)/);
   if (pathspec) return pathspec[1].trim().split(/\s+/).filter(Boolean);
   const filtered = ci.match(/grep -E ['"]\^packages\/\(([^)]+)\)\/src\/['"]/);
@@ -110,10 +118,10 @@ function ciComponentRoots(repoRoot) {
 function rtlAuditedPrefixes(repoRoot) {
   const coverage = read(repoRoot, RTL_AUDIT_COVERAGE);
   const packageBlock = coverage?.match(
-    /AUDITED_PACKAGES\s*=\s*Object\.freeze\(\[([\s\S]*?)\]\);/,
+    /AUDITED_PACKAGE_NAMES\s*=\s*Object\.freeze\(\[([^\]]+)\]\)/,
   );
   const packageNames = packageBlock
-    ? [...packageBlock[1].matchAll(/name:\s*['"]([^'"]+)['"]/g)].map(
+    ? [...packageBlock[1].matchAll(/['"]([^'"]+)['"]/g)].map(
         match => match[1],
       )
     : [];

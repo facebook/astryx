@@ -2,7 +2,7 @@
 
 /**
  * @file Shared RTL coverage and directional-decoration helpers.
- * @input Rendered DOM decorations, package source entries, Storybook routes,
+ * @input Rendered DOM decorations, canonical package rosters, Storybook routes,
  *   curated targets, and D1/D5/D6/curated audit results.
  * @output Audited package/story routing, contextual decoration candidates,
  *   component-filter reconciliation, and per-component measured / verified-N-A /
@@ -10,96 +10,147 @@
  * @position Pure support layer for rtl-audit.mjs and its unit tests.
  */
 
-export const AUDITED_PACKAGES = Object.freeze([
-  Object.freeze({name: 'core', layout: 'nested'}),
-  Object.freeze({name: 'lab', layout: 'nested'}),
-  Object.freeze({
-    name: 'charts',
-    layout: 'flat',
-    defaultStoryComponent: 'Chart',
-  }),
+export const AUDITED_PACKAGE_NAMES = Object.freeze([
+  'core',
+  'lab',
+  'charts',
 ]);
 
-const EXCLUDED_SOURCE_DIRECTORIES = new Set([
-  '__tests__',
-  'hooks',
-  'i18n',
-  'theme',
-  'utils',
-]);
-
-/** Return component names from one package's source-directory entries. */
-export function componentNamesFromSourceEntries(entries, layout) {
-  if (layout === 'flat') {
-    return entries
-      .filter(
-        entry =>
-          entry.isFile() &&
-          /^[A-Z]\w+\.tsx$/.test(entry.name) &&
-          !entry.name.includes('.test.') &&
-          !entry.name.includes('.stories.') &&
-          !entry.name.endsWith('Context.tsx'),
-      )
-      .map(entry => entry.name.replace(/\.tsx$/, ''));
-  }
-
-  if (layout === 'nested') {
-    return entries
-      .filter(
-        entry =>
-          entry.isDirectory() && !EXCLUDED_SOURCE_DIRECTORIES.has(entry.name),
-      )
-      .map(entry => entry.name);
-  }
-
-  throw new Error(`Unknown component source layout: ${layout}`);
+function packageForStoryId(
+  storyId,
+  packageNames = AUDITED_PACKAGE_NAMES,
+) {
+  return packageNames.find(name => storyId.startsWith(`${name}-`)) ?? null;
 }
 
-function packageForStoryId(storyId, packages = AUDITED_PACKAGES) {
-  return packages.find(pkg => storyId.startsWith(`${pkg.name}-`)) ?? null;
+function pascalCase(value) {
+  return (value.match(/[A-Za-z0-9]+/g) ?? [])
+    .map(word => `${word[0]?.toUpperCase() ?? ''}${word.slice(1)}`)
+    .join('');
 }
 
-/** Resolve the default package/component route encoded in a Storybook story id. */
-export function componentFromStoryId(storyId, packages = AUDITED_PACKAGES) {
-  const pkg = packageForStoryId(storyId, packages);
-  if (!pkg) {
+function singularize(value) {
+  if (value === 'Axes') return 'Axis';
+  return value.endsWith('s') ? value.slice(0, -1) : value;
+}
+
+function componentsFromStoryTitle(title, packageName, publicComponents) {
+  const finalSegment = title?.split('/').at(-1) ?? '';
+  const candidates = new Set();
+  for (const part of finalSegment.split(/\s*(?:&|\band\b)\s*/i)) {
+    const name = pascalCase(part);
+    if (!name) continue;
+    const singular = singularize(name);
+    candidates.add(name);
+    candidates.add(singular);
+    candidates.add(`Chart${name}`);
+    candidates.add(`Chart${singular}`);
+  }
+  return publicComponents
+    .filter(component => candidates.has(component))
+    .map(component => `${packageName}/${component}`);
+}
+
+/** Resolve the best default package/component route encoded in a story id. */
+export function componentFromStoryId(
+  storyId,
+  packageNames = AUDITED_PACKAGE_NAMES,
+  publicComponentsByPackage = {},
+) {
+  const packageName = packageForStoryId(storyId, packageNames);
+  if (!packageName) {
     return `unknown/${storyId.split('--')[0]}`;
   }
-  const component =
-    pkg.defaultStoryComponent ??
-    storyId.slice(pkg.name.length + 1).split('--')[0];
-  return `${pkg.name}/${component}`;
+  const segment = storyId.slice(packageName.length + 1).split('--')[0];
+  const normalized = segment.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const publicComponents = publicComponentsByPackage[packageName] ?? [];
+  const exact = publicComponents.find(
+    component => component.toLowerCase() === normalized,
+  );
+  const fallback = exact ??
+    (publicComponents.includes('Chart') ? 'Chart' : segment);
+  return `${packageName}/${fallback}`;
 }
 
 /** Resolve a curated target's declared component in the story's package. */
-export function componentFromTarget(target, packages = AUDITED_PACKAGES) {
+export function componentFromTarget(
+  target,
+  packageNames = AUDITED_PACKAGE_NAMES,
+  publicComponentsByPackage = {},
+) {
   const declared = target?.component?.trim();
   if (!declared) {
-    return componentFromStoryId(target.storyId, packages);
+    return componentFromStoryId(
+      target.storyId,
+      packageNames,
+      publicComponentsByPackage,
+    );
   }
   if (declared.includes('/')) {
     return declared;
   }
-  const pkg = packageForStoryId(target.storyId, packages);
-  return pkg ? `${pkg.name}/${declared}` : `unknown/${declared}`;
+  const packageName = packageForStoryId(target.storyId, packageNames);
+  return packageName
+    ? `${packageName}/${declared}`
+    : `unknown/${declared}`;
 }
 
-/** Apply curated component aliases while preserving default story-id routing. */
+/**
+ * Route each story to its public component owner(s). Story titles project onto
+ * the canonical public-component roster; curated targets provide exact aliases
+ * for surfaces whose titles do not name their owner.
+ */
 export function buildStoryComponentRoutes({
+  stories,
   storyIds,
   targets = [],
-  packages = AUDITED_PACKAGES,
+  packageNames = AUDITED_PACKAGE_NAMES,
+  publicComponentsByPackage = {},
 }) {
-  const aliases = new Map(
-    targets.map(target => [
-      target.storyId,
-      componentFromTarget(target, packages),
-    ]),
-  );
-  return storyIds.map(id => ({
-    id,
-    component: aliases.get(id) ?? componentFromStoryId(id, packages),
-  }));
+  const normalizedStories = stories ?? storyIds.map(id => ({id, title: ''}));
+  const aliases = new Map();
+  for (const target of targets) {
+    const component = componentFromTarget(
+      target,
+      packageNames,
+      publicComponentsByPackage,
+    );
+    const current = aliases.get(target.storyId) ?? [];
+    current.push(component);
+    aliases.set(target.storyId, current);
+  }
+
+  return normalizedStories.flatMap(story => {
+    const packageName = packageForStoryId(story.id, packageNames);
+    const publicComponents = packageName
+      ? publicComponentsByPackage[packageName] ?? []
+      : [];
+    const titleComponents = packageName
+      ? componentsFromStoryTitle(
+          story.title,
+          packageName,
+          publicComponents,
+        )
+      : [];
+    const components = [
+      ...titleComponents,
+      ...(aliases.get(story.id) ?? []),
+    ];
+    if (components.length === 0) {
+      components.push(
+        componentFromStoryId(
+          story.id,
+          packageNames,
+          publicComponentsByPackage,
+        ),
+      );
+    }
+    return Array.from(
+      new Map(
+        components.map(component => [component.toLowerCase(), component]),
+      ).values(),
+    ).map(component => ({id: story.id, component}));
+  });
 }
 
 const EXPLICIT_GLYPH_PAIRS = new Map([

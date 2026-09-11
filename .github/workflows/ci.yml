@@ -121,11 +121,10 @@ jobs:
   # Lightweight check — does the PR touch any published components?
   # Gates pr-a11y and pr-rtl to avoid unnecessary work.
   #
-  # Keep the roots and the exclude list in sync with analyze-pr.js: this job
-  # only decides *whether* the downstream audits run, while analyze-pr.js
-  # decides *which* components they audit. When the two disagree the audits
-  # silently no-op — lab components were invisible to both audits until this
-  # job learned about packages/lab/src.
+  # `scripts/component-packages.cjs` owns the component source roots used here
+  # and by the RTL roster. `analyze-pr.js` still decides which changed components
+  # each downstream audit receives. When those projections disagree the audits
+  # silently no-op, so harness/registry changes also exercise the RTL smoke scope.
   check-components:
     needs: [check-scope]
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
@@ -164,7 +163,8 @@ jobs:
             exit 0
           fi
           FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          CHANGED=$(printf '%s\n' "$FILES" | grep -E '^packages/(core|lab)/src/' | grep -v -E '(hooks|theme|utils|i18n|__tests__)/' | head -1 || true)
+          COMPONENT_ROOTS=$(node -e 'const {COMPONENT_PACKAGES}=require("./scripts/component-packages.cjs"); process.stdout.write(COMPONENT_PACKAGES.map(pkg => pkg.src).join("|"))')
+          CHANGED=$(printf '%s\n' "$FILES" | grep -E "^(${COMPONENT_ROOTS})/" | grep -v -E '(hooks|theme|utils|i18n|__tests__)/' | head -1 || true)
           # The shared accessibility spec-test contracts gate inside pr-a11y,
           # and their component bindings live under `__tests__/` — which the
           # filter above deliberately excludes. Without this the contract could
@@ -173,7 +173,7 @@ jobs:
           # checked-in stories by id, so renaming or deleting one breaks the
           # contract run and nothing else would notice.
           A11Y=$(printf '%s\n' "$FILES" | grep -E '^internal/a11y-spec/|^packages/[^/]+/src/.*\.a11y\.|^apps/storybook/stories/|^playwright\.config\.ts$' | head -1 || true)
-          RTL_HARNESS=$(printf '%s\n' "$FILES" | grep -E '^apps/storybook/rtl-audit/|^\.github/scripts/(rtl-audit-coverage|weekly-rtl-summary)\.test\.mjs$|^\.github/workflows/(ci|rtl-weekly)\.yml$' | head -1 || true)
+          RTL_HARNESS=$(printf '%s\n' "$FILES" | grep -E '^apps/storybook/rtl-audit/|^scripts/component-packages\.cjs$|^\.github/scripts/(rtl-audit-coverage|weekly-rtl-summary)\.test\.mjs$|^\.github/workflows/(ci|rtl-weekly)\.yml$' | head -1 || true)
           echo "has_components=$( { [ -n "$CHANGED" ] || [ -n "$A11Y" ]; } && echo true || echo false )" >> "$GITHUB_OUTPUT"
           echo "has_rtl_harness=$([ -n "$RTL_HARNESS" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
