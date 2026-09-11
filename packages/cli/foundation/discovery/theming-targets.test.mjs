@@ -119,6 +119,35 @@ describe('collectThemingTargets', () => {
     },
   );
 
+  it('keeps DialogHeader theming metadata available in its direct doc', async () => {
+    const doc = await loadComponentDoc(
+      path.join(coreSrc, 'Dialog', 'DialogHeader.doc.mjs'),
+    );
+    expect(doc.subComponentOf).toBe('Dialog');
+    expect(doc.theming.targets).toEqual([
+      {className: 'astryx-dialog-header'},
+      {className: 'astryx-dialog-header-title-block'},
+      {className: 'astryx-dialog-header-close-icon'},
+    ]);
+  });
+
+  it.each([
+    'dialog-header',
+    'dialog-header-title-block',
+    'dialog-header-close-icon',
+  ])('enumerates %s once under its canonical Dialog owner', async key => {
+    const matches = (await enumerated).filter(target => target.key === key);
+    expect(matches).toEqual([
+      {
+        key,
+        className: `astryx-${key}`,
+        component: 'Dialog',
+        props: [],
+        states: [],
+      },
+    ]);
+  });
+
   it.each(['table-header', 'table-body', 'table-footer'])(
     'enumerates %s once under its canonical Table owner',
     async key => {
