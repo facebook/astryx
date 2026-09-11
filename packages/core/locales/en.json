@@ -347,6 +347,22 @@
     "defaultMessage": "Slide {current, number} of {total, number}",
     "description": "Screen-reader accessible name for one slide in a Carousel, giving its position. `current` is the 1-based slide number; `total` is the slide count."
   },
+  "@astryx.chart.label": {
+    "defaultMessage": "Chart",
+    "description": "Generic screen-reader name for a Chart with no primary series and no consumer-supplied title. Noun (a data visualization), not a verb."
+  },
+  "@astryx.chart.labelWithSeries": {
+    "defaultMessage": "Chart of {series} by {xKey}",
+    "description": "Generated screen-reader name for a Chart without a consumer-supplied title. `{series}` is a locale-formatted list of series labels; `{xKey}` is the consumer's horizontal data-field name."
+  },
+  "@astryx.chart.dataTableCaption": {
+    "defaultMessage": "{label} data",
+    "description": "Screen-reader-only caption for the small-data table that mirrors a Chart. `{label}` is the Chart's resolved accessible name."
+  },
+  "@astryx.chartLegend.label": {
+    "defaultMessage": "Chart legend",
+    "description": "Screen-reader-only accessible name for the list of series labels and swatches rendered by ChartLegend."
+  },
   "@astryx.chat.status.sending": {
     "defaultMessage": "Sending",
     "description": "Chat send-status caption under an outgoing message while it is being transmitted. Part of the set sending → sent → delivered → read (or failed) — keep tense/aspect consistent."
