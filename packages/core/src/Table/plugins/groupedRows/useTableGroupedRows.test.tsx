@@ -29,6 +29,7 @@ function Harness({
   rows = people,
   initialCollapsed = EMPTY,
   renderGroupHeader,
+  hasStickyGroupHeaders,
 }: {
   rows?: Person[];
   initialCollapsed?: Set<string>;
@@ -37,6 +38,7 @@ function Harness({
     count: number,
     collapsed: boolean,
   ) => React.ReactNode;
+  hasStickyGroupHeaders?: boolean;
 }) {
   const [collapsedGroups, setCollapsed] = useState(initialCollapsed);
   const onToggleGroup = useCallback((key: string) => {
@@ -57,6 +59,7 @@ function Harness({
     onToggleGroup,
     getRowKey: p => p.id,
     renderGroupHeader,
+    hasStickyGroupHeaders,
   });
   return (
     <Table
@@ -328,5 +331,71 @@ describe('useTableGroupedRows', () => {
     // Count reflects the new member (3), header still present.
     expect(screen.getByText('Core')).toBeInTheDocument();
     expect(screen.getByText('(3)')).toBeInTheDocument();
+  });
+
+  // ===========================================================================
+  // Sticky group headings
+  //
+  // `position: sticky`, the offset and the z-index are applied via StyleX,
+  // which compiles to classNames that jsdom does not resolve to
+  // `element.style`. They are asserted by class identity instead: the heading
+  // cell carries a class it does not carry with the option off, and every
+  // heading carries the same one.
+  // ===========================================================================
+
+  function headingCell(group: string): HTMLElement {
+    const cell = screen.getByText(group).closest('td');
+    if (!(cell instanceof HTMLElement)) {
+      throw new Error(`no heading cell for ${group}`);
+    }
+    return cell;
+  }
+
+  it('leaves group headings unpinned by default', () => {
+    const {unmount} = render(<Harness />);
+    const bare = headingCell('Core').className;
+    unmount();
+
+    render(<Harness hasStickyGroupHeaders={false} />);
+
+    expect(headingCell('Core').className).toBe(bare);
+  });
+
+  it('pins group headings when asked', () => {
+    const {unmount} = render(<Harness />);
+    const bare = headingCell('Core').className;
+    unmount();
+
+    render(<Harness hasStickyGroupHeaders />);
+
+    const pinned = headingCell('Core').className;
+    expect(pinned).not.toBe(bare);
+    expect(pinned.length).toBeGreaterThan(bare.length);
+  });
+
+  it('pins every heading, not just the first', () => {
+    render(<Harness hasStickyGroupHeaders />);
+
+    // A table that pinned only the first heading would still look right until
+    // the reader scrolled into the second group.
+    expect(headingCell('Core').className).toBe(headingCell('Infra').className);
+  });
+
+  it('pins a custom-rendered heading too', () => {
+    // The heading content is the caller's, but the cell it sits in is the
+    // plugin's, so the option has to survive renderGroupHeader.
+    const renderGroupHeader = (groupKey: string) => (
+      <span>{groupKey} team</span>
+    );
+
+    const {unmount} = render(<Harness renderGroupHeader={renderGroupHeader} />);
+    const bare = headingCell('Core team').className;
+    unmount();
+
+    render(
+      <Harness renderGroupHeader={renderGroupHeader} hasStickyGroupHeaders />,
+    );
+
+    expect(headingCell('Core team').className).not.toBe(bare);
   });
 });

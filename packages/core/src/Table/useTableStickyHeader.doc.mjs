@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableStickyHeader',
   description:
-    "Hook that returns a TablePlugin which pins the header row to the top of the table's scroll container, so column headings stay readable while the body scrolls. The header pins to a scrollport the table owns, so pass maxHeight unless an ancestor already bounds the table's height. Composes with useTableStickyColumns: install both to pin a column and the header at once, and the corner where they cross stays above both.",
+    "Hook that returns a TablePlugin which pins the header row to the top of the table's scroll container, so column headings stay readable while the body scrolls. The header pins to a scrollport the table owns, so pass maxHeight unless an ancestor already bounds the table's height. Composes with useTableStickyColumns: install both to pin a column and the header at once, and the corner where they cross stays above both. Also composes with useTableGroupedRows' hasStickyGroupHeaders: this plugin measures its header and publishes the height as --table-sticky-header-height on the scroll container, which is what lets a pinned group heading come to rest below the header rather than on top of it.",
   props: [
     {
       name: 'maxHeight',
@@ -22,7 +22,7 @@ export const docsZh = {
   name: 'useTableStickyHeader',
   displayName: 'useTableStickyHeader',
   description:
-    '返回 TablePlugin 的 Hook，将表头行固定到表格滚动容器的顶部，使列标题在正文滚动时保持可见。表头固定在表格自身拥有的滚动视口上，因此除非祖先元素已限制表格高度，否则请传入 maxHeight。可与 useTableStickyColumns 组合使用：同时安装两者即可固定某一列和表头，二者交叉的角单元格会保持在最上层。',
+    '返回 TablePlugin 的 Hook，将表头行固定到表格滚动容器的顶部，使列标题在正文滚动时保持可见。表头固定在表格自身拥有的滚动视口上，因此除非祖先元素已限制表格高度，否则请传入 maxHeight。可与 useTableStickyColumns 组合使用：同时安装两者即可固定某一列和表头，二者交叉的角单元格会保持在最上层。也可与 useTableGroupedRows 的 hasStickyGroupHeaders 组合：本插件会测量表头高度并将其作为 --table-sticky-header-height 发布到滚动容器上，固定的分组标题据此停靠在表头下方，而不会覆盖表头。',
   props: [
     {
       name: 'maxHeight',
@@ -37,7 +37,7 @@ export const docsDense = {
   name: 'useTableStickyHeader',
   displayName: 'useTableStickyHeader',
   description:
-    "Hook returning TablePlugin that pins the header row to the top of the table's scroll container. Needs a scrollport: pass maxHeight unless an ancestor bounds the height. Composes with useTableStickyColumns; the corner cell stays above both.",
+    "Hook returning TablePlugin that pins the header row to the top of the table's scroll container. Needs a scrollport: pass maxHeight unless an ancestor bounds the height. Composes with useTableStickyColumns; the corner cell stays above both. Publishes its measured height as --table-sticky-header-height, which useTableGroupedRows' hasStickyGroupHeaders reads so a pinned heading rests below the header.",
   propDescriptions: {
     maxHeight:
       "Height cap for the table's scroll container, px number or CSS length. Omit only when an ancestor already bounds the height.",
