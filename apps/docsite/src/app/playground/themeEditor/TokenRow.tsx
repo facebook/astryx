@@ -22,15 +22,18 @@ const s = stylex.create({
 });
 
 /**
- * Standard token-editor row. Left: readable token name. Right: optional visual
+ * Standard token-editor row. Left: readable token name, plus an optional
+ * second line describing what the token affects. Right: optional visual
  * preview followed by the input.
  */
 export function TokenRow({
   tokenName,
+  description,
   preview,
   input,
 }: {
   tokenName: string;
+  description?: ReactNode;
   preview?: ReactNode;
   input: ReactNode;
 }) {
@@ -40,6 +43,7 @@ export function TokenRow({
         <Text type="body" color="primary" maxLines={1}>
           {getTokenLabel(tokenName)}
         </Text>
+        {description}
       </StackItem>
       <HStack gap={2} vAlign="center" xstyle={s.controls}>
         {preview}
