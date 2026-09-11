@@ -167,6 +167,9 @@ export type DateInputSize = keyof typeof sizeStyles;
  *   popover on mouse-driven ones
  * - `'always'`: native wherever the browser supports `<input type="date">`
  * - `'never'`: Astryx's own pickers everywhere
+ *
+ * @deprecated Use `adaptations` with `DateInputAdaptationValue`. The closest
+ * policy for each shorthand is documented on `DateInputProps.nativePicker`.
  */
 export type DateInputNativePicker = 'touch' | 'always' | 'never';
 
@@ -408,36 +411,33 @@ export interface DateInputProps extends Omit<
   format?: DateInputFormat | ((value: ISODateString) => string);
 
   /**
-   * When date picking is handed to the browser/OS instead of Astryx's own
-   * surfaces: the field becomes an `<input type="date">` and the platform
-   * draws the picker — the iOS wheel, the Android calendar dialog — with the
-   * OS's own hit areas, momentum scrolling, locale and accessibility
-   * settings.
+   * Deprecated shorthand for choosing a picker surface. Existing calls keep
+   * their released behavior, but new code should use `adaptations` so the
+   * server-rendered surface and every environment rule are explicit.
    *
-   * - `'touch'` (default): native on touch devices (coarse pointer), the text
-   *   field and calendar popover on mouse-driven ones
-   * - `'always'`: native wherever the browser supports `<input type="date">`
-   * - `'never'`: Astryx's own pickers everywhere — the touch picker on a
-   *   finger, the calendar popover on a mouse
+   * For the initial render and while the field is idle, map each value as
+   * follows:
+   * - `'touch'` → `{default: 'popover', rules: [{when: {pointer: 'coarse'}, value: 'native'}]}`
+   * - `'always'` → `{default: 'native', rules: []}`
+   * - `'never'` → `{default: 'popover', rules: [{when: {pointer: 'coarse'}, value: 'bottom-sheet'}]}`
    *
-   * `format` and `placeholder` still apply in native mode: DateInput paints
-   * the closed field's text itself, over the control. `numberOfMonths` and
-   * `weekStartsOn` do not — they describe a calendar grid the native picker
-   * does not have — so a field that needs either should pass `'never'`.
+   * The new policy intentionally differs during an active interaction:
+   * `adaptations` holds the current tree until the field is idle, while
+   * `nativePicker="touch"` and `nativePicker="never"` keep their released
+   * immediate pointer-switch behavior.
    *
-   * `min` and `max` are forwarded, but note that a native picker may not
-   * *show* them: on iOS they are constraint-validation flags rather than
-   * clamps, so an out-of-range date can be selected and is refused on commit
-   * (announced to assistive technology) rather than being greyed out in the
-   * picker. `dateConstraints` is enforced the same way, on commit, and is
-   * reason enough to prefer `'never'` on a field that uses it.
+   * `format` and `placeholder` still apply in native mode. `min`, `max`, and
+   * `dateConstraints` remain supported and are enforced on commit. A legacy
+   * call that combines `'touch'` or `'always'` with `numberOfMonths={2}` or an
+   * explicit `weekStartsOn` has no exact `adaptations` equivalent because the
+   * platform picker cannot draw those options; keep the shorthand until that
+   * callsite can choose an exact supported surface.
+   *
+   * Mutually exclusive with `adaptations`.
    *
    * @default 'touch'
-   * @example
-   * ```
-   * // Astryx's own touch picker instead of the platform's
-   * <DateInput label="Event date" value={date} onChange={setDate} nativePicker="never" />
-   * ```
+   * @deprecated Use `adaptations`; the mapping above preserves idle surface
+   * selection when the exact surfaces support the field's other props.
    */
   nativePicker?: DateInputNativePicker;
 
@@ -1057,46 +1057,28 @@ function PointerDateField({
 PointerDateField.displayName = 'PointerDateField';
 
 /**
- * A date picker that fits the pointer it is being used with.
+ * A date picker whose `adaptations` policy selects an exact native, popover, or
+ * bottom-sheet surface for the server and for ordered width/pointer rules.
  *
- * With a mouse or trackpad this is a text input you can type into, with a
- * calendar in a popover — unchanged, and still the surface every existing
- * consumer gets. With a finger it is a picker built for one: a bottom sheet
- * holding one month per screen, swiped sideways, with month and year wheels
- * behind the header title for the far jumps swiping is bad at.
+ * The surfaces share one value contract but use separate trees: the native
+ * browser/OS control, a typable field with an anchored calendar, or a read-only
+ * field opening Astryx's swipe-paged month sheet. The resolved tree is held
+ * while the field is in use so a resize or rotation cannot discard a draft.
  *
- * The props are identical either way — this is one component with two
- * surfaces, not two components — so nothing at the call site changes, and a
- * date typed on a laptop and a date thumbed on a phone are the same value.
- *
- * `adaptations` takes that decision back: an ordered policy over the three
- * exact surfaces (`native`, `popover`, `bottom-sheet`) resolved against the
- * nearest Theme's width points and the primary pointer, replacing the built-in
- * pointer test for the call sites that pass it.
+ * Without `adaptations`, the deprecated `nativePicker` compatibility path keeps
+ * its released pointer-driven behavior.
  *
  * ## Why a runtime switch and not CSS
  *
- * The two surfaces are structurally different — a popover anchored to a text
- * field versus a full-width sheet holding a scroller — so "render both, hide
- * one" would double the DOM, double the tab stops, and mount two calendars.
- * The condition is not layout either: it is *which interaction is faster*,
- * and that depends on the pointer, which CSS cannot hand to JS.
- *
- * They are two components rather than one with a branch inside because the
- * hook lists differ; keeping them separate is what lets each own its own.
+ * The surfaces are structurally different, so rendering all of them and hiding
+ * the inactive ones would duplicate controls, ids, dialogs, effects, and focus
+ * targets. One exact policy value selects the mounted tree instead.
  *
  * ## Hydration
  *
- * `useMediaQuery` reports false during SSR, so server HTML is always the
- * pointer field and the swap happens after hydration. That is deliberately
- * unobservable: both surfaces render the SAME closed field — a bordered input
- * with a calendar icon and the formatted date — and differ only in what
- * opens. Nothing moves; the field just starts opening a sheet.
- *
- * An `adaptations` policy replaces that pointer test with the caller's own
- * rules, and its `default` is the server truth: the server renders `default`,
- * the hydration render matches it, and the browser's real answer arrives on the
- * render after (spec:AST-031 FR3).
+ * `adaptations.default` is the server-rendered and hydration surface. The
+ * browser publishes the last matching rule after hydration, without asking the
+ * server to guess a viewport or pointer (spec:AST-031 FR3).
  *
  * @example
  * ```
@@ -1104,6 +1086,10 @@ PointerDateField.displayName = 'PointerDateField';
  *   label="Event date"
  *   value={date}
  *   onChange={setDate}
+ *   adaptations={{
+ *     default: 'popover',
+ *     rules: [{when: {pointer: 'coarse'}, value: 'native'}],
+ *   }}
  * />
  * ```
  */

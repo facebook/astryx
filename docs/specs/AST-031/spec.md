@@ -146,12 +146,14 @@ mapping without exposing raw queries or a general conditional-props bag.
   depending directly on the `DefinedTheme.__adaptations` storage field.
 - **FR6 — Adaptation and direct policy are exclusive.** A component's
   `adaptations` prop cannot be combined with the defined direct prop that owns the
-  same choice (`presentation` or `nativePicker`). Selector's existing union can
-  encode `?: never` exclusivity. DateInput and DateTimeInput keep their exported
-  `interface` props extendable, so they add both optional members without converting
-  the interface to a union; a runtime error rejects calls where both values are
-  defined. An explicitly spread `undefined` does not conflict. This preserves
-  interface-extension compatibility while keeping one effective policy.
+  same choice (`presentation` or `nativePicker`). DateInput and DateTimeInput
+  deprecate `nativePicker` in favor of `adaptations` while preserving every legacy
+  call at runtime; Selector's `presentation` remains supported. Selector's existing
+  union can encode `?: never` exclusivity. DateInput and DateTimeInput keep their
+  exported `interface` props extendable, so they add both optional members without
+  converting the interface to a union; a runtime error rejects calls where both
+  values are defined. An explicitly spread `undefined` does not conflict. This
+  preserves interface-extension compatibility while keeping one effective policy.
 - **FR7 — Selector's shorthand migrates deliberately.** Public
   `SelectorAdaptationValue` is an alias of the existing internal
   `ResolvedAdaptivePresentation` (`popover | bottom-sheet`) and is exported from
@@ -175,7 +177,9 @@ mapping without exposing raw queries or a general conditional-props bag.
   `native` renders browser/OS date/time controls, `popover` renders Astryx's pointer
   field and anchored surface, and `bottom-sheet` renders Astryx's touch field and
   modal sheet. These values have the same whole-tree meaning regardless of pointer
-  precision. Existing shorthand maps as follows when `adaptations` is absent:
+  precision. `nativePicker` is deprecated in favor of this exact policy, but its
+  released runtime behavior remains supported. Migrate the shorthand as follows
+  when the field's other props are compatible with every selected exact surface:
 
   | Component                 | Shorthand | Equivalent requested surface policy                           |
   | ------------------------- | --------- | ------------------------------------------------------------- |
@@ -183,13 +187,19 @@ mapping without exposing raw queries or a general conditional-props bag.
   | DateInput / DateTimeInput | `always`  | constant `native`                                             |
   | DateInput / DateTimeInput | `never`   | default `popover`; primary `pointer: coarse` → `bottom-sheet` |
 
+  These mappings select the same initial and idle surface. They are intentionally
+  not interaction-equivalent: `adaptations` holds the active tree through focus or
+  an open picker under FR10, while legacy `touch` and `never` continue switching
+  immediately when the primary pointer changes.
+
   For DateInput with a non-default `numberOfMonths` or explicit `weekStartsOn`,
   legacy `touch`/`always` renders today but has no exact `native` adaptation
   equivalent because those presentation options are not expressible by the OS
   control. For DateTimeInput, `hasSeconds`, non-default `timeIncrement`, or
   `timeOptionInterval` can make legacy `touch`/`always` render a mixed native-date
   plus Astryx-time tree, which likewise has no exact `adaptations` equivalent.
-  Those legacy behaviors remain when `adaptations` is absent.
+  Those legacy behaviors remain when `adaptations` is absent. Their deprecation
+  is advisory only: it emits editor guidance and changes no runtime behavior.
 
 - **FR9 — Exact surfaces validate capabilities eagerly.** If `default` or any rule
   names `native`, DateInput rejects a non-default `numberOfMonths` or explicit
@@ -288,7 +298,8 @@ Selector's exact default 768px boundary is breaking as described by FR7 and must
 released as such. No per-callsite configuration can preserve the single equality
 case; changing the Theme's `md` moves the shared global point and is the only
 threshold migration. Existing nativePicker behavior does not change when the new
-prop is absent.
+prop is absent; the shorthand is deprecated so editors direct new and migrating
+callsites to the exact `adaptations` policy.
 
 This proposal adds no CSS-variable or context layer. Structural presentation is a
 JavaScript decision because it changes DOM identity, ARIA, focus ownership, and
@@ -349,14 +360,21 @@ CSS remains the path for visual values. Adapted policy values can change mounted
 controls, semantics, focus, and native behavior, so neither custom-property reads
 nor duplicate hidden trees provide a correct first-paint implementation.
 
-### DEC-5 — Preserve direct props as compatibility syntax
+### DEC-5 — Deprecate date-field shorthand without changing behavior
 
 **Reference:** `spec:AST-031/DEC-5`
-**Decider:** pending
+**Decider:** `cixzhang`, `2026-09-11`
 
-Selector `presentation` and DateInput/DateTimeInput `nativePicker` retain their
-existing meanings when `adaptations` is absent. The new prop is an explicit advanced
-policy, not a forced migration.
+DateInput and DateTimeInput deprecate `nativePicker` in favor of `adaptations`.
+The shorthand remains accepted and keeps its released runtime meaning so existing
+calls do not break. Consumer docs and editor annotations provide the initial/idle
+mapping for `touch`, `always`, and `never`, call out adaptations' intentional
+active-interaction latching difference, and identify legacy mixed-surface cases
+that have no exact adaptation. Removal is a separate future compatibility decision
+and requires the release process's migration evidence and codemod.
+
+Selector `presentation` remains supported compatibility syntax; this decision does
+not deprecate it.
 
 ### DEC-6 — Adopt AST-012's exclusive `below` edge for Selector
 
@@ -380,8 +398,5 @@ and `adaptations` values.
 
 ## Open questions
 
-- **OQ1 — Should compatibility shorthands be deprecated after migration?**
-  (`human-api`) The first implementation preserves them; removal needs separate
-  evidence and migration.
-- **OQ2 — Should later component value domains admit non-string primitives?**
+- **OQ1 — Should later component value domains admit non-string primitives?**
   (`human-api`) The first consumers use closed string unions only.

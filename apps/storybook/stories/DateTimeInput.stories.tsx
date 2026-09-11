@@ -14,9 +14,7 @@ const meta: Meta<typeof DateTimeInput> = {
     docs: {
       description: {
         component:
-          'A date-time field that fits the pointer it is used with. On a mouse or trackpad it renders the existing side-by-side date and time inputs: the date half opens a calendar popover, and the time half accepts typed entry plus optional preset times.\n\n' +
-          "Where the primary pointer is a finger (`pointer: coarse`), the closed control still renders separate Date and Time segments; tapping either segment opens a bottom sheet directly to the matching section. A segmented Date/Time pill stays at the top of the sheet for switching; Date reuses Astryx's custom swipable month picker and month/year wheels, its Save date action advances to Time, and Time uses accessible hour/minute/second wheels with the final Save action. The public props are the same on both surfaces.\n\n" +
-          '**Seeing the touch surface:** open any story on a phone/tablet or in device emulation reporting a coarse pointer. No separate story is needed because the same component chooses the surface at runtime.',
+          'A date-time field with an exact caller-owned adaptations policy over native, popover, and bottom-sheet surfaces for both segments. The policy names the server-rendered default and any ordered width/pointer rules. Without adaptations, the deprecated nativePicker compatibility path keeps its released pointer-driven and per-segment fallback behavior.',
       },
     },
   },
@@ -78,7 +76,8 @@ const meta: Meta<typeof DateTimeInput> = {
       control: 'radio',
       options: ['touch', 'always', 'never'],
       description:
-        "Date and time picker surfaces: native browser/OS controls on touch by default, native wherever compatible, or Astryx's surfaces everywhere",
+        'Deprecated. Use adaptations. At rest, touch maps to default popover plus a coarse-pointer native rule; always maps to constant native; never maps to default popover plus a coarse-pointer bottom-sheet rule. adaptations additionally holds the active tree until idle.',
+      table: {category: 'Deprecated'},
     },
     numberOfMonths: {
       control: 'radio',
@@ -135,39 +134,6 @@ export const WithValue: Story = {
   },
   args: {
     label: 'Event time',
-  },
-};
-
-export const NativePickerModes: Story = {
-  render: () => {
-    const [value, setValue] = useState<ISODateTimeString | undefined>(
-      '2026-03-15T14:30' as ISODateTimeString,
-    );
-    return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
-        <DateTimeInput
-          label="nativePicker='touch' (default)"
-          description="Native date and compatible time controls on a coarse primary pointer"
-          value={value}
-          onChange={setValue}
-          nativePicker="touch"
-        />
-        <DateTimeInput
-          label="nativePicker='always'"
-          description="Native date and compatible time controls on every pointer type"
-          value={value}
-          onChange={setValue}
-          nativePicker="always"
-        />
-        <DateTimeInput
-          label="nativePicker='never'"
-          description="Astryx bottom sheet on coarse pointers; calendar popover on fine pointers"
-          value={value}
-          onChange={setValue}
-          nativePicker="never"
-        />
-      </div>
-    );
   },
 };
 

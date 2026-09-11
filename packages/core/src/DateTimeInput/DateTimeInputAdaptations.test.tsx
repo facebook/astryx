@@ -5,7 +5,8 @@
  * @input Uses vitest, @testing-library/react, react-dom/server
  * @output Tests DateTimeInput's public surface policy (spec:AST-031)
  * @position Tests; validates the `adaptations` prop — resolution, eager
- *   validation, latching — and the untouched `nativePicker` path beside it.
+ *   validation, latching — and the deprecated `nativePicker` compatibility
+ *   path beside it, including the documented migration mapping.
  *   Behavior that is not surface selection (typing, the calendar, the sheet's
  *   panels, the native segments' own commit rules) stays in
  *   DateTimeInput.test.tsx, DateTimeInputTouch.test.tsx and
@@ -1625,10 +1626,10 @@ describe('latching', () => {
 });
 
 // =============================================================================
-// The released `nativePicker` contract, unchanged beside the new one
+// Deprecated `nativePicker` compatibility and migration
 // =============================================================================
 
-describe('legacy nativePicker parity', () => {
+describe('deprecated nativePicker compatibility', () => {
   it.each([
     ['touch', 'fine', 'popover'],
     ['touch', 'coarse', 'native'],
@@ -1653,6 +1654,56 @@ describe('legacy nativePicker parity', () => {
 
       expect(surfaceIn()).toBe(expected);
       expectSegments(expected);
+    },
+  );
+
+  it.each(['fine', 'coarse'] as const)(
+    'matches the documented idle adaptations policy on a %s pointer',
+    pointer => {
+      environment.set({
+        pointer,
+        width: pointer === 'coarse' ? 390 : 1280,
+      });
+      const migrations = [
+        [
+          'touch',
+          policy({
+            default: 'popover',
+            rules: [{when: {pointer: 'coarse'}, value: 'native'}],
+          }),
+        ],
+        ['always', policy({default: 'native', rules: []})],
+        [
+          'never',
+          policy({
+            default: 'popover',
+            rules: [{when: {pointer: 'coarse'}, value: 'bottom-sheet'}],
+          }),
+        ],
+      ] as const;
+
+      for (const [nativePicker, adaptations] of migrations) {
+        const legacy = render(
+          <DateTimeInput
+            label={LABEL}
+            onChange={noop}
+            nativePicker={nativePicker}
+          />,
+        );
+        const legacySurface = surfaceIn();
+        legacy.unmount();
+
+        const migrated = render(
+          <DateTimeInput
+            label={LABEL}
+            onChange={noop}
+            adaptations={adaptations}
+          />,
+        );
+        expect(surfaceIn()).toBe(legacySurface);
+        expectSegments(legacySurface);
+        migrated.unmount();
+      }
     },
   );
 
