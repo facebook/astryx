@@ -23,6 +23,10 @@ import {promisify} from 'node:util';
 import {describe, expect, it} from 'vitest';
 import {reconcileRegistryCompositions} from '../../packages/cli/api/upgrade/registry/registry.mjs';
 import {
+  createShadcnPrecompiledDeclaration,
+  shadcnPrecompiledDeclarationTarget,
+} from '../../packages/cli/authoring/shadcn/source-variants.mjs';
+import {
   parseRegistryReceipt,
   registryContentHash,
 } from '../../packages/cli/authoring/shadcn/receipt.mjs';
@@ -32,10 +36,12 @@ import {
   generateShadcnRegistryForTarget,
 } from '../../apps/docsite/scripts/generate-shadcn-registry.mjs';
 import {
+  SHADCN_CLI_VERSION,
   blockRegistryIdentity,
   componentRegistryIdentity,
   pageRegistryIdentity,
   resolveShadcnRegistryOrigin,
+  shadcnInstallCommand,
 } from '../../apps/docsite/src/lib/shadcnRegistry.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -95,7 +101,7 @@ function fixture(overrides = {}) {
   };
 }
 
-function writeConsumerProject(project) {
+function writeConsumerProject(project, {tsx = true} = {}) {
   mkdirSync(path.join(project, 'src'), {recursive: true});
   writeFileSync(
     path.join(project, 'package.json'),
@@ -111,7 +117,7 @@ function writeConsumerProject(project) {
       $schema: 'https://ui.shadcn.com/schema.json',
       style: 'nova',
       rsc: false,
-      tsx: true,
+      tsx,
       tailwind: {
         config: '',
         css: 'src/index.css',
@@ -130,10 +136,9 @@ function writeConsumerProject(project) {
     }),
   );
   writeFileSync(
-    path.join(project, 'tsconfig.json'),
+    path.join(project, tsx ? 'tsconfig.json' : 'jsconfig.json'),
     JSON.stringify({
       compilerOptions: {
-        baseUrl: '.',
         paths: {'@/*': ['./src/*']},
       },
     }),
@@ -157,6 +162,18 @@ describe('resolveShadcnRegistryOrigin', () => {
         VERCEL_URL: 'astryx-git-example.vercel.app',
       }),
     ).toBe('https://astryx-git-example.vercel.app/shadcn');
+  });
+
+  it('pins install commands to the client used for receipt variants', () => {
+    const manifest = JSON.parse(
+      readFileSync('apps/docsite/package.json', 'utf8'),
+    );
+    expect(SHADCN_CLI_VERSION).toBe(manifest.devDependencies.shadcn);
+    expect(
+      shadcnInstallCommand('components/button', 'https://registry.example'),
+    ).toBe(
+      `npx shadcn@${SHADCN_CLI_VERSION} add https://registry.example/components/button.json`,
+    );
   });
 });
 
@@ -353,7 +370,7 @@ describe('buildShadcnRegistry', () => {
       });
       const receipt = parseRegistryReceipt(JSON.parse(receiptFile.content));
       expect(receipt).toMatchObject({
-        schemaVersion: 1,
+        schemaVersion: 2,
         item: {
           name: item.name,
           path: item.astryx.path,
@@ -368,7 +385,16 @@ describe('buildShadcnRegistry', () => {
         registryPath: sourceFile.path,
         sha256: registryContentHash(sourceFile.content),
         content: sourceFile.content,
+        variants: [
+          expect.objectContaining({
+            format: 'javascript',
+            registryTarget: sourceFile.target.replace(/\.tsx$/, '.jsx'),
+          }),
+        ],
       });
+      expect(receipt.files[0].variants[0].sha256).toBe(
+        registryContentHash(receipt.files[0].variants[0].content),
+      );
     }
   });
 
@@ -460,6 +486,80 @@ describe('buildShadcnRegistry', () => {
       expect(installedSource).toBe(block.files[0].content);
       expect(installedReceipt.files[0].content).toBe(installedSource);
       expect(installedSource).toContain('// Keep this consumer guidance.');
+    } finally {
+      rmSync(project, {recursive: true, force: true});
+    }
+  });
+
+  it('records the exact JavaScript bytes written by stock ShadCN', async () => {
+    const project = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-js-'));
+    try {
+      writeConsumerProject(project, {tsx: false});
+      const base = fixture();
+      const {items} = buildShadcnRegistry(
+        fixture({
+          blocks: [
+            {
+              ...base.blocks[0],
+              source:
+                "'use client';\n\n" +
+                "import type {ReactNode} from 'react';\n" +
+                "import {Button} from '@astryxdesign/core/Button';\n" +
+                'const label: ReactNode = "Save";\n' +
+                'export default function ButtonShowcase() { return <Button label={label} isDisabled={false} onPress={() => {}} />; }\n',
+            },
+          ],
+        }),
+      );
+      const block = items.find(
+        item => item.name === 'showcase-button-variants',
+      );
+      const itemPath = path.join(project, 'block.json');
+      writeFileSync(itemPath, JSON.stringify(block));
+
+      await execFileAsync(
+        path.resolve('node_modules/.bin/shadcn'),
+        ['add', itemPath, '--yes'],
+        {cwd: project, timeout: 30_000},
+      );
+
+      const sourcePath = path.join(
+        project,
+        'src',
+        'components',
+        'astryx',
+        'showcases',
+        'ButtonShowcase.jsx',
+      );
+      const receipt = parseRegistryReceipt(
+        JSON.parse(
+          readFileSync(
+            path.join(
+              project,
+              'src',
+              'components',
+              'astryx',
+              'showcases',
+              '.astryx',
+              'showcase-button-variants.json',
+            ),
+            'utf8',
+          ),
+        ),
+      );
+      const javascript = receipt.files[0].variants.find(
+        variant => variant.format === 'javascript',
+      );
+      const installed = readFileSync(sourcePath, 'utf8');
+
+      expect(existsSync(sourcePath.replace(/\.jsx$/, '.tsx'))).toBe(false);
+      expect(javascript).toMatchObject({
+        target: '../ButtonShowcase.jsx',
+        registryTarget: 'components/astryx/showcases/ButtonShowcase.jsx',
+        content: installed,
+        sha256: registryContentHash(installed),
+      });
+      expect(installed).not.toContain('ReactNode');
     } finally {
       rmSync(project, {recursive: true, force: true});
     }
@@ -812,6 +912,21 @@ describe('buildShadcnRegistry', () => {
     expect(block.files[0].content).toContain('stylex-inject');
     expect(block.files[0].content).not.toContain('stylex.create');
     expect(block.files[0].target).toMatch(/\.jsx$/);
+    expect(block.files[0].content).not.toMatch(/:\s*[A-Z][A-Za-z]+/);
+    expect(block.files).toHaveLength(3);
+    expect(block.files[1]).toMatchObject({
+      type: 'registry:file',
+      target: shadcnPrecompiledDeclarationTarget(block.files[0].target),
+      content: createShadcnPrecompiledDeclaration(block.files[0].target),
+    });
+    const receipt = parseRegistryReceipt(JSON.parse(block.files[2].content));
+    expect(receipt.files[0].variants).toEqual([]);
+    expect(receipt.files[1]).toMatchObject({
+      id: 'types',
+      registryTarget: block.files[1].target,
+      content: block.files[1].content,
+      variants: [],
+    });
     expect(block.dependencies).toContain('@stylexjs/stylex@0.19.0');
   });
 

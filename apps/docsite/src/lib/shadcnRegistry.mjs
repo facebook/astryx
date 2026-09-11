@@ -13,6 +13,10 @@ const RELATIVE_PATH_PATTERN =
   /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
 const REGISTRY_IDENTITY_KEYS = new Set(['slug', 'aliases']);
 
+// SYNC: apps/docsite/package.json. Receipt JavaScript variants mirror this
+// client's transform, so generated install commands must pin the tested client.
+export const SHADCN_CLI_VERSION = '4.19.0';
+
 export function resolveShadcnRegistryOrigin(env = process.env) {
   const explicitOrigin = env.NEXT_PUBLIC_ASTRYX_REGISTRY_ORIGIN;
   if (explicitOrigin) {
@@ -264,5 +268,5 @@ export function shadcnInstallCommand(
   itemPath,
   registryOrigin = SHADCN_REGISTRY_ORIGIN,
 ) {
-  return `npx shadcn@latest add ${registryOrigin}/${itemPath}.json`;
+  return `npx shadcn@${SHADCN_CLI_VERSION} add ${registryOrigin}/${itemPath}.json`;
 }

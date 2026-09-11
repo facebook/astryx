@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-026
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: implementing
+approved_by: josephfarina
+approved_at: 2026-09-11
+phase: accepted
 owners: [cixzhang, josephfarina]
 affects_architecture: [architecture:public-component-api]
 affects_families: []
@@ -29,9 +29,11 @@ The compatibility layer meets builders inside an existing shadcn workflow. The
 Astryx CLI remains the primary, richer interface for discovery, composition,
 integrations, themes, validation, and upgrades.
 
-This record governs the approved compatibility foundation. The implementation
-may merge behind the canary docsite while copied-composition upgrades remain the
-launch gate for the production endpoint and announcement.
+This record governs the approved compatibility foundation. During soak testing,
+normal user-facing docsite and CLI discovery MUST NOT advertise it. Direct
+machine endpoints MAY be served on preview or production only as unlinked test
+surfaces after the full-catalog gate passes. Visible launch requires a separate
+owner decision.
 
 ## Non-goals
 
@@ -70,27 +72,32 @@ launch gate for the production endpoint and announcement.
   The Astryx CLI MAY read optional `astryx` metadata from the raw JSON for
   integration, provenance, and upgrade guidance. Standard clients may discard
   that metadata without changing the install.
-- **FR7 — Discoverable compatibility.** The public docsite MUST describe the
-  compatibility boundary and show a secondary copyable install command at the
-  end of each applicable component, example, block, and page surface. The
-  normal Astryx documentation remains the human browse experience; raw
-  `/shadcn/` paths remain machine endpoints.
+- **FR7 — Hidden soak access.** During soak testing, ordinary user-facing docsite
+  and CLI surfaces MUST NOT advertise the compatibility layer. Navigation,
+  search, sitemaps, RSS, MCP, `llms.txt`, blog indexes, docs-topic listings, and
+  component, example, block, or template UI MUST remain clean. Direct
+  `/shadcn/` machine endpoints MAY be enabled only as unlinked, know-the-URL
+  test surfaces. Visible launch requires a separate owner decision.
 - **FR8 — Staged launch.** Preview builds MUST serve the full registry from their
-  own `/shadcn` origin with `@canary` package dependencies. Production MUST use
-  exact released package versions and remain disabled until copied-composition
-  upgrades are ready.
+  own `/shadcn` origin with `@canary` package dependencies. A hidden production
+  soak, when enabled, MUST use exact released Astryx package versions and keep
+  every discovery surface in FR7 disabled. Route activation and visible launch
+  remain separate review decisions.
 - **FR9 — Upgrade-safe copied compositions.** Every copied showcase, example,
   block, and page MUST install an adjacent machine-readable receipt containing
-  the stable item route, the copied target, the exact installed bytes, and their
-  hash. `astryx upgrade` MUST only apply a canonical item that matches the
-  installed Astryx release, auto-update an unchanged file, three-way merge
-  edits, leave the original untouched when edits conflict, and never recreate a
-  deleted or moved file.
+  the stable item route, copied target, and exact bytes and hash for each
+  TypeScript or JavaScript form the pinned shadcn client can install. `astryx
+upgrade` MUST select the installed form, only apply a canonical item that
+  matches the installed Astryx release, auto-update an unchanged file,
+  three-way merge edits, leave the original untouched when edits conflict, and
+  never recreate a deleted or moved file.
 - **FR10 — Required full-catalog CI.** Required pull-request CI MUST generate
-  the complete preview catalog, reject production output before launch, install
-  every canonical item through the pinned shadcn client, verify every route and
-  exact written file, and compile every installed source against the current
-  Astryx package exports.
+  the complete preview catalog, install every canonical item through the pinned
+  shadcn client, verify every route and exact written file, and compile every
+  installed source against the current Astryx package exports. Before hidden
+  production routes activate, CI MUST also prove exact released dependencies,
+  reviewed route-lock membership, and continued absence from FR7 discovery
+  surfaces.
 - **IR1 — Generated from current sources.** Registry output MUST come from the
   existing docsite and CLI catalogs, never a parallel handwritten item list.
 - **IR2 — Build-time static output.** The docsite build MUST generate static JSON
@@ -100,10 +107,11 @@ launch gate for the production endpoint and announcement.
   unresolved package versions, escaping relative imports, and stale generated
   output MUST fail generation or verification.
 - **IR4 — End-to-end evidence.** Required verification MUST install every
-  canonical component, hook, showcase, example, block, and page into a clean
-  shadcn-style app through the pinned stock client, verify exact written bytes
-  and declared dependencies, and compile every written source file. Alias
-  routes MUST resolve to the same canonical item bytes.
+  canonical component, hook, showcase, example, block, and page into clean
+  TypeScript and JavaScript shadcn-style apps through the pinned stock client,
+  verify exact written bytes and declared dependencies, and compile every
+  written source file. Alias routes MUST resolve to the same canonical item
+  bytes.
 - **IR5 — Stable route contract.** Generated item names and canonical paths MUST
   match the reviewed route lock. Display-name edits MUST NOT change them. An
   intentional rename MUST retain old paths through `registry.aliases` unless a
@@ -111,8 +119,10 @@ launch gate for the production endpoint and announcement.
 
 ### Platform support
 
-- Supported feature/engine floor: the current Astryx Node floor and the pinned
-  shadcn version used by the experiment.
+- Supported feature/engine floor: the current Astryx Node floor and the exact
+  shadcn version pinned in generated install commands. Its Babel and AST
+  transform dependency versions are load-bearing for JavaScript receipt byte
+  parity and MUST move together with the pin and full-catalog verification.
 - Unsupported behavior: copying Astryx implementation source without an
   explicit `astryx swizzle` action; installing hidden, incomplete, or
   non-resolvable catalog entries.
@@ -128,28 +138,29 @@ compatibility layer adds a serializer over that existing catalog rather than a
 second discovery system.
 
 The current catalog generates 970 items. Its 700 copied compositions each carry
-an adjacent receipt whose base matches the exact bytes stock shadcn writes.
-Required CI installs all 970 entries through shadcn 4.19.0 into one clean
-consumer, verifies all 1,670 written source and receipt files, and compiles all
-970 source entry points. Fourteen compositions that author local StyleX are
-precompiled to compiler-free JSX during generation; all other composition
-source stays typed TSX. Component implementation copying failed because private
-imports and uncompiled StyleX crossed the package boundary; FR2 avoids that
-path by installing the package and creating a public re-export only.
+an adjacent receipt with the exact install form or forms the pinned client can
+write. Required CI installs all 970 entries through shadcn 4.19.0 into clean
+consumers in both modes, verifies every written source and receipt, and compiles
+every source entry point. Fourteen compositions that author local StyleX are
+precompiled to compiler-free `.jsx` and paired with narrow `.d.mts`
+declarations so strict TypeScript projects can import them without type-checking
+Babel output as authored TSX. Component implementation copying failed because
+private imports and uncompiled StyleX crossed the package boundary; FR2 avoids
+that path by installing the package and creating a public re-export only.
 
 ## Verification
 
-| Contract  | Verification                                                        | Representative states                           | Mutation or failure expectation                            |
-| --------- | ------------------------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| FR1, FR5  | shadcn schema validation and deterministic snapshot                 | component, showcase, example, block, page       | Unknown type, duplicate name, or unstable output fails     |
-| FR2       | clean consumer install plus source inspection                       | Core component, hook, non-Core package          | Implementation source or private import fails              |
-| FR3, IR1  | reconcile registry counts and names with generated docsite catalogs | visible and hidden entries, grouped families    | Missing or extra catalog entry fails                       |
-| FR4, IR3  | dependency extraction and relative-import audit                     | heroicons, recharts, StyleX import, page source | Escaping import or undeclared package fails                |
-| FR6       | raw JSON and shadcn parse tests                                     | optional `astryx` metadata present              | shadcn install changes or Astryx metadata becomes required |
-| FR7       | docsite tests and copy-button interaction                           | component, block, page, compatibility guide     | Command is absent, stale, or misstates copy behavior       |
-| FR8       | canary preview plus production-target assertion                     | preview and released package dependencies       | Production enables before the upgrade gate passes          |
-| FR9       | receipt mutation tests plus stock ShadCN install                    | pristine, edited, conflicting, missing, aliased | User source is overwritten or an old route stops resolving |
-| FR10, IR4 | required full-catalog clean-consumer install and build              | every canonical item, route, dependency, target | Any item fails to install, match its receipt, or compile   |
+| Contract  | Verification                                                         | Representative states                           | Mutation or failure expectation                              |
+| --------- | -------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------ |
+| FR1, FR5  | shadcn schema validation and deterministic snapshot                  | component, showcase, example, block, page       | Unknown type, duplicate name, or unstable output fails       |
+| FR2       | clean consumer install plus source inspection                        | Core component, hook, non-Core package          | Implementation source or private import fails                |
+| FR3, IR1  | reconcile registry counts and names with generated docsite catalogs  | visible and hidden entries, grouped families    | Missing or extra catalog entry fails                         |
+| FR4, IR3  | dependency extraction and relative-import audit                      | heroicons, recharts, StyleX import, page source | Escaping import or undeclared package fails                  |
+| FR6       | raw JSON and shadcn parse tests                                      | optional `astryx` metadata present              | shadcn install changes or Astryx metadata becomes required   |
+| FR7       | discovery-absence tests across CLI and production docsite            | docs topic, help text, blog, UI, indexed feeds  | Any visible promotion or indexed soak content fails          |
+| FR8       | canary preview plus production-target assertion                      | preview and released package dependencies       | Production enables before the upgrade gate passes            |
+| FR9       | receipt mutation tests plus stock ShadCN installs in TS and JS modes | pristine, edited, conflicting, missing, aliased | User source is overwritten or an install form cannot upgrade |
+| FR10, IR4 | required full-catalog clean-consumer installs and builds             | every canonical item, route, dependency, target | Any item fails to install, match its receipt, or compile     |
 
 ## Decision log
 
@@ -250,7 +261,50 @@ hundreds of times without adding protocol coverage. Also rejected: validating
 only representative items. A source or target defect can be unique to any one
 of the generated compositions.
 
+### DEC-8 — Carry exact TypeScript and JavaScript receipt variants
+
+**Reference:** `spec:AST-026/DEC-8`
+**Decider:** `josephfarina`, `2026-09-10`
+
+Shadcn rewrites `.ts`/`.tsx` targets and strips TypeScript whenever a consumer
+sets `tsx: false`. Receipt schema version 2 therefore stores both the canonical
+TypeScript base and the exact JavaScript target, bytes, and hash produced by the
+pinned client when those install forms differ. Generated install commands pin
+that client version; moving the pin requires moving every load-bearing
+Babel/recast dependency pin and rerunning both complete consumer modes. Upgrade
+selects whichever adjacent source exists. Version 1 receipts remain readable,
+and their JavaScript form is derived once so preview installs made before this
+fix can advance to version 2. If a compatible ShadCN dependency patch changes
+only printer whitespace or quotes, upgrade compares normalized JavaScript syntax
+and attached comments before classifying the file as edited.
+
+StyleX compilation strips authored types before publication. Those compositions
+therefore keep honest `.jsx` canonical targets, carry no duplicate receipt
+variant, and install a narrow ambient `.d.mts` declaration keyed to that one
+registry target. Strict TypeScript consumers can import them without treating
+compiler output as TypeScript or masking unrelated JavaScript modules.
+
+Rejected: labelling compiler-stripped output as `.tsx`. Real strict projects
+then type-check Babel's generated StyleX objects and erased generics as authored
+TypeScript and fail. Also rejected: a broad `*.jsx` declaration, which would
+silence type errors in unrelated consumer code, and a single TypeScript-only
+receipt base, which names a file that does not exist in JavaScript projects.
+
+### DEC-9 — Keep soak testing unlinked
+
+**Reference:** `spec:AST-026/DEC-9`
+**Decider:** `josephfarina`, `2026-09-11`
+
+Approve the exact client pin, receipt-v2 JavaScript behavior, and precompiled JSX
+declaration contract for hidden soak testing. Keep normal user-facing docsite and
+CLI surfaces free of ShadCN registry promotion. Production MAY serve the
+registry at direct `/shadcn` URLs for people who know the path, using exact
+released Astryx package versions and the required full-catalog gate.
+
+Rejected: visible install buttons, docs-topic discovery, navigation, search,
+sitemap, RSS, MCP, `llms.txt`, or announcement content during the soak. Route
+activation stays independently reviewable and reversible from visible launch.
+
 ## Open questions
 
-- **OQ1 — Catalog visibility.** (`human-design`) Should hidden or not-ready
-  catalog entries stay addressable by URL, or be omitted entirely?
+- None. Hidden soak visibility is settled by DEC-9.
