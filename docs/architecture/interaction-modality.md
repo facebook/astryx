@@ -131,7 +131,10 @@ work.
   modality. Evidence names the lost or stale outcome and verifies representative
   normal or legacy paths remain unchanged by the remedy. Aesthetic preference,
   speculative unsupported states, and a claim that an action merely could be easier
-  to discover do not establish a violation.
+  to discover do not establish an interaction violation. This does not bar a visual
+  correction already settled by current component, family, design, theme, or
+  objective accessibility authority; that correction uses rendered-pixel evidence
+  and its direct owner rather than being recast as interaction reachability.
 
 ## Allowed variation
 
@@ -155,9 +158,11 @@ authorize one.
 `architecture:knowledge-contracts` alone defines change disposition. INV7 and INV8
 may supply the current outcome a change restores, but they do not authorize another
 observable public delta. New APIs, exceptions, defaults, interaction models, icon or
-control sizing, sticky behavior, and caller-owned layout remain with their direct
-current owner unless evidence proves that exact mechanism is necessary to restore
-the invariant and representative unaffected paths remain unchanged.
+control sizing, sticky behavior, caller-owned layout, and new visual representations
+remain with their direct current owner unless evidence proves that exact mechanism is
+necessary to restore the invariant and representative unaffected paths remain
+unchanged. A separable delta is removed or split before this interaction restoration
+is asked to carry a new decision.
 
 ## Change coupling
 
